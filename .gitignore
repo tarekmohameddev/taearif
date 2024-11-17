@@ -1,0 +1,40 @@
+# Node modules and dependencies
+/node_modules/
+# Laravel Mix hot updates (if using Laravel Mix)
+/public/hot
+/public/*.hot-update.*
+
+# Public storage and updater files
+/public/storage
+/public/updater
+
+# Storage and cache files
+/storage/*.key
+/storage/app/public
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+/storage/logs/*
+
+# Environment files and backups
+.env
+.env.backup
+
+# PHPUnit cache
+.phpunit.result.cache
+
+# Homestead files for Vagrant (if using Homestead)
+Homestead.json
+Homestead.yaml
+
+# Debug and error logs
+npm-debug.log*
+yarn-error.log*
+
+# IDE and editor settings
+.vscode/
+.idea/*
+
+# Composer dependencies (optional if you don’t want to include vendor files)
+/vendor/
