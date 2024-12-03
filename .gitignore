@@ -16,7 +16,7 @@
 /storage/framework/testing/*
 /storage/framework/views/*
 /storage/logs/*
-
+/public/assets/front/img/user/*
 # Environment files and backups
 .env
 .env.backup
