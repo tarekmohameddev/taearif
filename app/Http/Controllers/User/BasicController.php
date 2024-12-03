@@ -61,6 +61,7 @@ class BasicController extends Controller
         $data['timezones'] = Timezone::all();
         $data['data'] = BasicSetting::where('user_id', Auth::guard('web')->user()->id)
             ->first();
+        $data['basic_setting'] = BasicSetting::where('user_id', Auth::guard('web')->user()->id)->first();
         return view('user.settings.general-settings', $data);
     }
 

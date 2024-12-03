@@ -196,6 +196,232 @@
       </div>
     </div>
   </div>
+
+
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">{{__('Update Logo')}}</div>
+        </div>
+        <div class="card-body pt-5 pb-4">
+          <div class="row">
+            <div class="col-lg-6 offset-lg-3">
+              <form  enctype="multipart/form-data" action="{{route('user.logo.update')}}" method="POST">
+                @csrf
+                <div class="row">
+                  <div class="col-lg-12">
+                    <div class="form-group">
+                      <div class="col-12 mb-2">
+                        <label for="image"><strong> {{__('Logo')}} **</strong></label>
+                      </div>
+                      <div class="col-md-12 showImage mb-3">
+                        <img src="{{isset($basic_setting->logo) ? asset('assets/front/img/user/'.$basic_setting->logo) :  asset('assets/admin/img/noimage.jpg')}}" alt="..." class="img-thumbnail">
+                      </div>
+                      <input type="file" name="file" id="image" class="form-control">
+                      <p class="text-warning">{{__('Only JPG, JPEG, PNG images are allowed')}}</p>
+                      <p id="errfile" class="mb-0 text-danger em"></p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card-footer">
+                  <div class="form">
+                    <div class="form-group from-show-notify row">
+                      <div class="col-12 text-center">
+                        <button type="submit" class="btn btn-success">{{__('Update')}}</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="row">
+        <div class="col-md-12">
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title d-inline-block">{{ __('Color Settings') }}</div>
+                </div>
+                <div class="card-body">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-6">
+                            <form id="permissionsForm" class="" action="{{ route('user.color.update') }}"
+                                method="post">
+                                {{ csrf_field() }}
+
+                                <div class="form-group">
+                                    <label for="">{{ __('Base Color') }}</label>
+                                    <input type="text" class="form-control jscolor" name="base_color"
+                                        value="{{ $data->base_color }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="">{{ __('Secondary Color') }}</label>
+                                    <input type="text" class="form-control jscolor" name="secondary_color"
+                                        value="{{ $data->secondary_color }}">
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="form">
+                        <div class="form-group from-show-notify row">
+                            <div class="col-12 text-center">
+                                <button type="submit" id="permissionBtn"
+                                    class="btn btn-success">{{ __('Update') }}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">{{__('Update Preloader')}}</div>
+        </div>
+        <div class="card-body pt-5 pb-4">
+          <div class="row">
+            <div class="col-lg-6 offset-lg-3">
+              <form  enctype="multipart/form-data" action="{{route('user.preloader.update')}}" method="POST">
+                @csrf
+                <div class="row">
+                  <div class="col-lg-12">
+                    <div class="form-group">
+                      <div class="col-12 mb-2">
+                        <label for="image"><strong> {{__('Preloader')}} **</strong></label>
+                      </div>
+                      <div class="col-md-12 showImage mb-3">
+                        <img src="{{isset($basic_setting->preloader) ? asset('assets/front/img/user/'.$basic_setting->preloader) :  asset('assets/admin/img/noimage.jpg')}}" alt="..." class="img-thumbnail">
+                      </div>
+                      <input type="file" name="file" id="image" class="form-control">
+                      <p class="text-warning">{{__('Only JPG, JPEG, PNG, GIF images are allowed')}}</p>
+                      <p id="errfile" class="mb-0 text-danger em"></p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card-footer">
+                  <div class="form">
+                    <div class="form-group from-show-notify row">
+                      <div class="col-12 text-center">
+                        <button type="submit" class="btn btn-success">{{__('Update')}}</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-lg-10">
+                            <div class="card-title">{{ __('Update Breadcrumb') }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body pt-5 pb-4">
+                    <div class="row">
+                        <div class="col-lg-6 offset-lg-3">
+                            <form id="imageForm" action="{{ route('user.update_breadcrumb') }}"
+                                  method="POST" enctype="multipart/form-data">
+                                @csrf
+                                <div class="form-group">
+                                    <div class="col-12 mb-2">
+                                        <label for="">{{ __('Breadcrumb*') }}</label>
+                                    </div>
+                                    <div class="col-md-12 showImage mb-3">
+                                        <img
+                                            src="{{isset($basic_setting->breadcrumb) ? asset('assets/front/img/user/' . $basic_setting->breadcrumb) : asset('assets/admin/img/noimage.jpg')}}"
+                                            alt="..." class="img-thumbnail">
+                                    </div>
+                                    <input type="file" name="breadcrumb" id="image"
+                                           class="form-control image">
+                                    @if ($errors->has('breadcrumb'))
+                                        <p class="mt-2 mb-0 text-danger">{{ $errors->first('breadcrumb') }}</p>
+                                    @endif
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-12 text-center">
+                            <button type="submit" form="imageForm" class="btn btn-success">
+                                {{ __('Update') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">{{__('Update Favicon')}}</div>
+        </div>
+        <div class="card-body pt-5 pb-4">
+          <div class="row">
+            <div class="col-lg-6 offset-lg-3">
+              <form id="ajaxForm" enctype="multipart/form-data" action="{{route('user.favicon.update')}}" method="POST">
+                @csrf
+                <div class="row">
+                  <div class="col-lg-12">
+                    <div class="form-group">
+                      <div class="col-12 mb-2">
+                        <label for="image"><strong>{{__('Favicon')}} **</strong></label>
+                      </div>
+                      <div class="col-md-12 showImage mb-3">
+                        <img src="{{isset($basic_setting->favicon) ? asset('assets/front/img/user/'.$basic_setting->favicon) :  asset('assets/admin/img/noimage.jpg')}}" alt="..." class="img-thumbnail">
+                      </div>
+                      <input type="file" name="favicon" id="image" class="form-control">
+                      <p id="errfavicon" class="mb-0 text-danger em"></p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card-footer">
+                  <div class="form">
+                    <div class="form-group from-show-notify row">
+                      <div class="col-12 text-center">
+                        <button type="submit" id="submitBtn" class="btn btn-success">{{__('Update')}}</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 @endsection
 
 @section('scripts')

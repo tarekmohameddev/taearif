@@ -675,16 +675,15 @@
                     </a>
                 </li>
                 
-                                                <li class="@if (request()->routeIs('user.basic_settings.general-settings')) active @endif">
-                                    <a href="{{ route('user.basic_settings.general-settings') }}">
-                                        <span class="sub-item">{{ __('General Settings') }}</span>
-                                    </a>
-                                </li>
                                 </ul>
                             </div>
                         </li>
                         
-                        
+                        <li class="@if (request()->routeIs('user.basic_settings.general-settings')) active @endif">
+                                    <a href="{{ route('user.basic_settings.general-settings') }}">
+                                        <span class="sub-item">{{ __('General Settings') }}</span>
+                                    </a>
+                                </li>
                 @if (!is_null($package))
                     <li class="
                     @if (request()->path() == 'user/contact') active @endif">
@@ -829,11 +828,11 @@
                                     </a>
                                 </li>
 
-                                <li class="@if (request()->path() == 'user/favicon') active @endif">
+                                <!-- <li class="@if (request()->path() == 'user/favicon') active @endif">
                                     <a href="{{ route('user.favicon') }}">
                                         <span class="sub-item">{{ __('Favicon') }}</span>
                                     </a>
-                                </li>
+                                </li> -->
 
                                 <li class="@if (request()->path() == 'user/menu-builder') active @endif">
                                     <a href="{{ route('user.menu_builder.index') . '?language=' . $default->code }}">
@@ -1174,29 +1173,29 @@
                                     </li>
                                 @endif
                                 @if ($userBs->theme != 'home_twelve')
-                                    <li class="@if (request()->path() == 'user/logo') active @endif">
+                                    <!-- <li class="@if (request()->path() == 'user/logo') active @endif">
                                         <a href="{{ route('user.logo') }}">
                                             <span class="sub-item">{{ __('Logo') }}</span>
                                         </a>
-                                    </li>
+                                    </li> -->
                                 @endif
-                                <li class="@if (request()->path() == 'user/breadcrumb') active @endif">
+                                <!-- <li class="@if (request()->path() == 'user/breadcrumb') active @endif">
                                     <a href="{{ route('user.breadcrumb') }}">
                                         <span class="sub-item">{{ __('Breadcrumb') }}</span>
                                     </a>
-                                </li>
+                                </li> -->
 
-                                <li class="@if (request()->path() == 'user/preloader') active @endif">
+                                <!-- <li class="@if (request()->path() == 'user/preloader') active @endif">
                                     <a href="{{ route('user.preloader') }}">
                                         <span class="sub-item">{{ __('Preloader') }}</span>
                                     </a>
-                                </li>
+                                </li> -->
 
-                                <li class="@if (request()->path() == 'user/color') active @endif">
+                                <!-- <li class="@if (request()->path() == 'user/color') active @endif">
                                     <a href="{{ route('user.color.index') }}">
                                         <span class="sub-item">{{ __('Color Settings') }}</span>
                                     </a>
-                                </li>
+                                </li> -->
 
                                 <li class="@if (request()->path() == 'user/css') active @endif">
                                     <a href="{{ route('user.css.index') }}">
