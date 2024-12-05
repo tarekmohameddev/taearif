@@ -649,7 +649,7 @@
                         <li
                             class="submenu  @if (request()->path() == 'user/gateways') active   @elseif(request()->path() == 'user/offline/gateways') active @endif">
                             <a data-toggle="collapse" href="#gateways">
-                                <span class="sub-item">{{ __('Payment Gateways') }}</span>
+                                {{ __('Payment Gateways') }}
                                 <span class="caret"></span>
                             </a>
                             <div class="collapse  @if (request()->path() == 'user/gateways') show   @elseif(request()->path() == 'user/offline/gateways') show @endif"
@@ -671,7 +671,7 @@
                     @if (request()->path() == 'user/payment-log') active @endif">
                     <a href="{{ route('user.payment-log.index') }}">
                        
-                        <p>{{ __('Payment Logs') }}</p>
+                        <p><span class="sub-item">{{ __('Payment Logs') }}</span></p>
                     </a>
                 </li>
                 
@@ -679,11 +679,7 @@
                             </div>
                         </li>
                         
-                        <li class="@if (request()->routeIs('user.basic_settings.general-settings')) active @endif">
-                                    <a href="{{ route('user.basic_settings.general-settings') }}">
-                                        <span class="sub-item">{{ __('General Settings') }}</span>
-                                    </a>
-                                </li>
+                        
                 @if (!is_null($package))
                     <li class="
                     @if (request()->path() == 'user/contact') active @endif">
@@ -692,8 +688,12 @@
                         </a>
                     </li>
                 @endif
-                
-                
+    
+                <li class="@if (request()->routeIs('user.basic_settings.general-settings')) active @endif">
+                                    <a href="{{ route('user.basic_settings.general-settings') }}">
+                                     <p>{{ __('General Settings') }}</p>
+                                    </a>
+                         </li>            
                 @if (!empty($permissions) && in_array('Team', $permissions))
                     <li
                         class="
@@ -715,62 +715,28 @@
                         <p>{{ __('Buy Plan') }}</p>
                     </a>
                 </li>
-                <li class="
+                <!-- <li class="
                     @if (request()->path() == 'user/change-password') active @endif">
                     <a href="{{ route('user.changePass') }}">
                    
                         <p>{{ __('Change Password') }}</p>
                     </a>
-                </li>
+                </li> -->
                 
                 @if (!is_null($package))
-                    <li
-                        class="submenu
-                    @if (request()->path() == 'user/domains') active
-                    @elseif(request()->path() == 'user/subdomain') active @endif">
-                        <a data-toggle="collapse" href="#domains">
-                    
-                            <p>{{ __('Domains & URLs') }}</p>
-                            <span class="caret"></span>
-                        </a>
-                        <div class="collapse
-                        @if (request()->path() == 'user/domains') show
-                        @elseif(request()->path() == 'user/subdomain') show @endif"
-                            id="domains">
-                            <ul class="nav nav-collapse subnav">
-                                @if (!empty($permissions) && in_array('Custom Domain', $permissions))
+                @if (!empty($permissions) && in_array('Custom Domain', $permissions))
                                     <li
                                         class="
                                     @if (request()->path() == 'user/domains') active @endif">
                                         <a href="{{ route('user-domains') }}">
-                                            <span class="sub-item">{{ __('Custom Domain') }}</span>
+                                            {{ __('Custom Domain') }}
                                         </a>
                                     </li>
                                 @endif
-                                @if (!empty($permissions) && in_array('Subdomain', $permissions))
-                                    <li
-                                        class="
-                                    @if (request()->path() == 'user/subdomain') active @endif">
-                                        <a href="{{ route('user-subdomain') }}">
-                                            <span class="sub-item">{{ __('Subdomain & Path URL') }}</span>
-                                        </a>
-                                    </li>
-                                @else
-                                    <li
-                                        class="
-                                    @if (request()->path() == 'user/subdomain') active @endif">
-                                        <a href="{{ route('user-subdomain') }}">
-                                            <span class="sub-item">{{ __('Path Based URL') }}</span>
-                                        </a>
-                                    </li>
-                                @endif
-                            </ul>
-                        </div>
-                    </li>
                 @endif
                 
                     <li
-                        class="nav-item
+                        class="
                     @if (request()->path() == 'user/languages') active
                     @elseif(request()->is('user/language/*/edit')) active
                     @elseif(request()->is('user/language/*/edit/keyword')) active @endif">
@@ -822,23 +788,6 @@
                         @elseif (request()->routeIs('user.plugins')) show @endif"
                             id="basic">
                             <ul class="nav nav-collapse">
-                                <li class="@if (request()->path() == 'user/theme/version') active @endif">
-                                    <a href="{{ route('user.theme.version') }}">
-                                        <span class="sub-item">{{ __('Themes') }}</span>
-                                    </a>
-                                </li>
-
-                                <!-- <li class="@if (request()->path() == 'user/favicon') active @endif">
-                                    <a href="{{ route('user.favicon') }}">
-                                        <span class="sub-item">{{ __('Favicon') }}</span>
-                                    </a>
-                                </li> -->
-
-                                <li class="@if (request()->path() == 'user/menu-builder') active @endif">
-                                    <a href="{{ route('user.menu_builder.index') . '?language=' . $default->code }}">
-                                         <span class="sub-item">{{ __('منشئ القوائم') }}</span>
-                                    </a>
-                                </li>
                                 @if (!is_null($package))
                                     <li
                                         class="submenu
@@ -1102,6 +1051,24 @@
                             </ul>
                         </div>
                                     </li>
+
+                                    <li class="@if (request()->path() == 'user/theme/version') active @endif">
+                                    <a href="{{ route('user.theme.version') }}">
+                                        <span class="sub-item">{{ __('Themes') }}</span>
+                                    </a>
+                                </li>
+
+                                <!-- <li class="@if (request()->path() == 'user/favicon') active @endif">
+                                    <a href="{{ route('user.favicon') }}">
+                                        <span class="sub-item">{{ __('Favicon') }}</span>
+                                    </a>
+                                </li> -->
+
+                                <li class="@if (request()->path() == 'user/menu-builder') active @endif">
+                                    <a href="{{ route('user.menu_builder.index') . '?language=' . $default->code }}">
+                                         <span class="sub-item">{{ __('منشئ القوائم') }}</span>
+                                    </a>
+                                </li>
                                     <li
                                         class="submenu
                                 @if (request()->routeIs('user.footer.text')) active

@@ -47,6 +47,12 @@
                         <i class="fas fa-eye"></i>
                         </a>
                     </li>
+                    <li class="mr-4">
+                    <a class="btn btn-info" target="_blank"
+                        href="{{ route('user.language.index') }}" title="Language">
+                        {{ __('Languages manage') }}
+                        </a>
+                    </li>
                 </li>
                 <li class="d-flex mr-4">
                     <label class="switch">
