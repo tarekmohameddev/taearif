@@ -641,18 +641,18 @@
                                 <p>{{ __('اعدادات المتجر') }}</p>
                                 <span class="caret"></span>
                             </a>
-                            <div class="collapse  @if (request()->path() == 'user/gateways') show   @elseif(request()->path() == 'user/offline/gateways') show @endif"
+                             <div class="collapse  @if (request()->path() == 'user/gateways') show   @elseif(request()->path() == 'user/offline/gateways') show @endif"
                                 id="store_set">
                                 <ul class="nav nav-collapse">
 
                                     
-                        <li
+                        <!-- <li
                             class="submenu  @if (request()->path() == 'user/gateways') active   @elseif(request()->path() == 'user/offline/gateways') active @endif">
                             <a data-toggle="collapse" href="#gateways">
                                 {{ __('Payment Gateways') }}
                                 <span class="caret"></span>
-                            </a>
-                            <div class="collapse  @if (request()->path() == 'user/gateways') show   @elseif(request()->path() == 'user/offline/gateways') show @endif"
+                            </a> -->
+                            <!-- <div class="collapse  @if (request()->path() == 'user/gateways') show   @elseif(request()->path() == 'user/offline/gateways') show @endif"
                                 id="gateways">
                                 <ul class="nav nav-collapse subnav">
                                     <li class="@if (request()->path() == 'user/gateways') active @endif">
@@ -676,11 +676,15 @@
                 </li>
                 
                                 </ul>
-                            </div>
-                        </li>
-                        
-                        
-                @if (!is_null($package))
+                            </div> -->
+                        </li> 
+                      
+                        @if (!is_null($package))
+                <li class="@if (request()->routeIs('user.basic_settings.general-settings')) active @endif">
+                                    <a href="{{ route('user.basic_settings.general-settings') }}">
+                                     <p>{{ __('General Settings') }}</p>
+                                    </a>
+                         </li>         
                     <li class="
                     @if (request()->path() == 'user/contact') active @endif">
                         <a href="{{ route('user.contact', ['language' => $default->code]) }}">
@@ -688,12 +692,14 @@
                         </a>
                     </li>
                 @endif
+                        <li class="
+                    @if (request()->path() == 'user/gateways-soon') active @endif">
+                        <a href="{{ route('user.gateways-soon', ['language' => $default->code]) }}">
+                            <p>{{ __('Payment Gateways') }}</p>
+                        </a>
+                    </li>
     
-                <li class="@if (request()->routeIs('user.basic_settings.general-settings')) active @endif">
-                                    <a href="{{ route('user.basic_settings.general-settings') }}">
-                                     <p>{{ __('General Settings') }}</p>
-                                    </a>
-                         </li>            
+                   
                 @if (!empty($permissions) && in_array('Team', $permissions))
                     <li
                         class="

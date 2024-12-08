@@ -84,6 +84,7 @@ Route::domain($domain)->group(function () {
         Route::post('/change-status', 'User\UserController@status')->name('user-status');
         // Payment Log
         Route::get('/payment-log', 'User\PaymentLogController@index')->name('user.payment-log.index');
+        Route::get('/gateways-soon', 'User\PaymentLogController@gateways_soon')->name('user.gateways-soon');
         // User Domains & URLs
         Route::group(['middleware' => 'checkUserPermission:Custom Domain'], function () {
             Route::get('/domains', 'User\DomainController@domains')->name('user-domains');

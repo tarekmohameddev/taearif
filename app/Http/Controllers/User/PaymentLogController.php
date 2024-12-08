@@ -25,4 +25,8 @@ class PaymentLogController extends Controller
         ->paginate(10);
         return view('user.payment_log', $data);
     }
+    public function gateways_soon(Request $request)
+    {
+        return view('user.gateways_soon');
+    }
 }
