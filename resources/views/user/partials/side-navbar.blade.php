@@ -79,7 +79,7 @@
 
                 @if (!is_null($package))
                     {{-- Menu Builder --}}
-
+<!-- 
                     @if (!empty($permissions) && in_array('Ecommerce', $permissions))
                         {{-- START SHOP MANAGEMENT --}}
                         <li
@@ -631,7 +631,7 @@
                             </a>
                         </li>
                         {{-- End Register User --}}
-                    @endif
+                    @endif -->
                     
                     
                         <li
@@ -1348,7 +1348,7 @@
                         </a>
                     </li>
                 @endif
-
+<!-- 
                 @if (!empty($permissions) && in_array('Career', $permissions))
                     <li
                         class="nav-item
@@ -1396,7 +1396,7 @@
                             </ul>
                         </div>
                     </li>
-                @endif
+                @endif -->
 
 
 
@@ -1596,7 +1596,7 @@
                         </div>
                     </li>
                 @endif
-
+<!-- 
                 @if (!empty($permissions) && in_array('Follow/Unfollow', $permissions))
                     <li
                         class="nav-item
@@ -1628,8 +1628,8 @@
                             </ul>
                         </div>
                     </li>
-                @endif
-
+                @endif -->
+<!-- 
                 @if (!is_null($package))
                     {{-- Subscribers --}}
                     <li
@@ -1671,7 +1671,7 @@
                             <p>{{ $keywords['Upload_CV'] ?? __('Upload CV') }}</p>
                         </a>
                     </li>
-                @endif
+                @endif -->
 
             </ul>
         </div>
