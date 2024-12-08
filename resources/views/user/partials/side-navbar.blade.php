@@ -699,20 +699,9 @@
                         </a>
                     </li>
     
-                   
-                @if (!empty($permissions) && in_array('Team', $permissions))
-                    <li
-                        class="
-                @if (request()->routeIs('user.team_section')) active
-                @elseif (request()->routeIs('user.team_section.create_member')) active
-                @elseif (request()->routeIs('user.team_section.edit_member')) active @endif">
-                        <a href="{{ route('user.team_section') . '?language=' . $default->code }}">
-                            <p>{{ __('Team') }}</p>
-                        </a>
-                    </li>
-                @endif
+
                 
-                <li
+                <!-- <li
                     class="
                     @if (request()->path() == 'user/package-list') active
                     @elseif(request()->is('user/package/checkout/*')) active @endif">
@@ -720,7 +709,14 @@
                
                         <p>{{ __('Buy Plan') }}</p>
                     </a>
-                </li>
+                </li> -->
+
+                <li class="
+                    @if (request()->path() == 'user/gateways-soon') active @endif">
+                        <a href="{{ route('user.gateways-soon', ['language' => $default->code]) }}">
+                            <p>{{ __('Buy Plan') }}</p>
+                        </a>
+                    </li>
                 <!-- <li class="
                     @if (request()->path() == 'user/change-password') active @endif">
                     <a href="{{ route('user.changePass') }}">
@@ -996,6 +992,17 @@
                                     </li>
                                 @endif
 
+                                @if (!empty($permissions) && in_array('Team', $permissions))
+                    <li
+                        class="
+                @if (request()->routeIs('user.team_section')) active
+                @elseif (request()->routeIs('user.team_section.create_member')) active
+                @elseif (request()->routeIs('user.team_section.edit_member')) active @endif">
+                        <a href="{{ route('user.team_section') . '?language=' . $default->code }}">
+                            <p>{{ __('Team') }}</p>
+                        </a>
+                    </li>
+                @endif
 
                                 @if (!empty($permissions) && in_array('Skill', $permissions))
                                     @if (

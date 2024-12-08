@@ -60,7 +60,7 @@
                   <p id="errwebsite_title" class="em text-danger mb-0"></p>
                 </div>
               </div>
-              <div class="col-lg-6 offset-lg-3">
+              <!-- <div class="col-lg-6 offset-lg-3">
                 <div class="form-group">
                   <label>{{ __('Timezone') }} *</label>
                   <select name="timezone" class="form-control select2">
@@ -73,8 +73,8 @@
                     <p class="mb-0 text-danger">{{ $errors->first('timezone') }}</p>
                   @endif
                 </div>
-              </div>
-              <div class="col-lg-6 offset-lg-3">
+              </div> -->
+              <!-- <div class="col-lg-6 offset-lg-3">
                 <div class="form-group">
                   <label>{{ __('Email Verification Status') . '*' }}</label>
                   <div class="selectgroup w-100">
@@ -96,9 +96,9 @@
                     {{ __('If it is deactive, the user does not receive a verification mail when he create a new account.') }}
                   </p>
                 </div>
-              </div>
+              </div> -->
             </div>
-            @if (
+            <!-- @if (
                 !empty($permissions) &&
                     (in_array('Ecommerce', $permissions) ||
                         in_array('Hotel Booking', $permissions) ||
@@ -179,7 +179,7 @@
                   </div>
                 </div>
               </div>
-            @endif
+            @endif -->
 
           </div>
 

@@ -30,13 +30,13 @@
                         <p id="errbrand_img" class="mb-0 text-danger em"></p>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group d-none">
                         @if ($userBs->theme == 'home_eleven')
                             <label for="">{{ __('Donor\'s URL*') }}</label>
                         @else
                             <label for="">{{ __('Brand\'s URL*') }}</label>
                         @endif
-                        <input type="url" class="form-control ltr" name="brand_url"
+                        <input type="url" class="form-control ltr" value="#" name="brand_url"
                             placeholder="{{ __('Enter Brand URL') }}">
                         <p id="errbrand_url" class="mt-2 mb-0 text-danger em"></p>
                     </div>
