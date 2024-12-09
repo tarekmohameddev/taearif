@@ -464,7 +464,7 @@ class CheckoutController extends Controller
             }
         }
         $menus_arabic = json_encode($menus_arabic);
-
+        $menus = json_encode($menus);
 
         if (session()->has('lang')) {
             $currentLang = Language::where('code', session()->get('lang'))->first();
