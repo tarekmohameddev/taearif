@@ -367,6 +367,18 @@ class CheckoutController extends Controller
             {"text":"Blog","href":"","icon":"empty","target":"_self","title":"","type":"blog"},
             {"text":"Contact","href":"","icon":"empty","target":"_self","title":"","type":"contact"}]';
 
+            $menus_ar = '[
+                {"text":"Home","href":"","icon":"empty","target":"_self","title":"","type":"home"},
+    
+                {"text":"About","href":"","icon":"empty","target":"_self","title":"","type":"custom","children":[{"text":"Team","href":"","icon":"empty","target":"_self","title":"","type":"team"},
+                {"text":"Career","href":"","icon":"empty","target":"_self","title":"","type":"career"},
+                {"text":"FAQ","href":"","icon":"empty","target":"_self","title":"","type":"faq"}]},
+    
+                {"text":"Services","href":"","icon":"empty","target":"_self","title":"","type":"services"},
+                {"text":"Portfolios","href":"","icon":"empty","target":"_self","title":"","type":"portfolios"},
+                {"type":"shop","text":"Shop","href":"","target":"_self"},
+                {"text":"Blog","href":"","icon":"empty","target":"_self","title":"","type":"blog"},
+                {"text":"Contact","href":"","icon":"empty","target":"_self","title":"","type":"contact"}]';
         $menus = json_decode($menus, true);
 
         foreach (array_column($menus, 'text')  as $key => $menu) {
@@ -410,7 +422,7 @@ class CheckoutController extends Controller
         }
 
 
-        $menus_arabic = json_decode($menus, true);
+        $menus_arabic = json_decode($menus_ar, true);
 
         foreach (array_column($menus_arabic, 'text')  as $key => $menu) {
             if ($menu == 'Home' && array_key_exists($menu, $deLanguageNames_arabic)) {
