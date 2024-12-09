@@ -351,8 +351,9 @@ class CheckoutController extends Controller
 
         //dynamic language translate wise menu
         $deLang = User\Language::firstOrFail();
+        $deLang_arabic = User\Language::where('user_id', 0)->firstOrFail();
         $deLanguageNames = json_decode($deLang->keywords, true);
-
+        $deLanguageNames_arabic = json_decode($deLang_arabic->keywords, true);
         $menus = '[
             {"text":"Home","href":"","icon":"empty","target":"_self","title":"","type":"home"},
 
@@ -407,7 +408,50 @@ class CheckoutController extends Controller
                 $menus[$key]['text'] = $deLanguageNames[$menu];
             }
         }
-        $menus = json_encode($menus);
+
+
+        $menus_arabic = json_decode($menus, true);
+
+        foreach (array_column($menus_arabic, 'text')  as $key => $menu) {
+            if ($menu == 'Home' && array_key_exists($menu, $deLanguageNames_arabic)) {
+                $menus_arabic[$key]['text'] = $deLanguageNames_arabic[$menu];
+            }
+            if ($menu == 'About') {
+                $menus_arabic[$key]['text'] = array_key_exists('About', $deLanguageNames_arabic) ? $deLanguageNames_arabic['About'] : 'About';
+                //if children manus exits
+                if (count($menus_arabic[$key]['children']) > 0) {
+                    $arrays = $menus_arabic[$key]['children'];
+                    foreach (array_column($arrays, 'text')  as $k => $value) {
+                        if ($value == 'Team' && array_key_exists($value, $deLanguageNames_arabic)) {
+                            $menus_arabic[$key]['children'][$k]['text'] = $deLanguageNames_arabic[$value];
+                        }
+                        if ($value == 'Career' && array_key_exists($value, $deLanguageNames_arabic)) {
+                            $menus_arabic[$key]['children'][$k]['text'] = $deLanguageNames_arabic[$value];
+                        }
+                        if ($value == 'FAQ' && array_key_exists($value, $deLanguageNames_arabic)) {
+                            $menus_arabic[$key]['children'][$k]['text'] = $deLanguageNames_arabic[$value];
+                        }
+                    }
+                }
+                //end children manus exits
+            }
+            if ($menu == 'Services' && array_key_exists($menu, $deLanguageNames_arabic)) {
+                $menus_arabic[$key]['text'] = $deLanguageNames_arabic[$menu];
+            }
+            if ($menu == 'Portfolios' && array_key_exists($menu, $deLanguageNames_arabic)) {
+                $menus_arabic[$key]['text'] = $deLanguageNames_arabic[$menu];
+            }
+            if ($menu == 'Shop' && array_key_exists($menu, $deLanguageNames_arabic)) {
+                $menus_arabic[$key]['text'] = $deLanguageNames_arabic[$menu];
+            }
+            if ($menu == 'Blog' && array_key_exists($menu, $deLanguageNames_arabic)) {
+                $menus_arabic[$key]['text'] = $deLanguageNames_arabic[$menu];
+            }
+            if ($menu == 'Contact' && array_key_exists($menu, $deLanguageNames_arabic)) {
+                $menus_arabic[$key]['text'] = $deLanguageNames_arabic[$menu];
+            }
+        }
+        $menus_arabic = json_encode($menus_arabic);
 
 
         if (session()->has('lang')) {
@@ -439,7 +483,7 @@ class CheckoutController extends Controller
             ]);
 
             $deLang = User\Language::firstOrFail();
-            $deLang_arabic = User\Language::where('user_id', 0)firstOrFail();
+            $deLang_arabic = User\Language::where('user_id', 0)->firstOrFail();
             $langCount = User\Language::where('user_id', $user->id)->where('is_default', 1)->count();
             if ($langCount == 0) {
                 $lang = new User\Language;
@@ -451,14 +495,14 @@ class CheckoutController extends Controller
                 $lang->keywords = $deLang->keywords;
                 $lang->save();
 
-                $lang = new User\Language;
-                $lang->name = $deLang_arabic->name;
-                $lang->code = $deLang_arabic->code;
-                $lang->is_default = 1;
-                $lang->rtl = $deLang_arabic->rtl;
-                $lang->user_id = $user->id;
-                $lang->keywords = $deLang_arabic->keywords;
-                $lang->save();
+                $lang_ar = new User\Language;
+                $lang_ar->name = $deLang_arabic->name;
+                $lang_ar->code = $deLang_arabic->code;
+                $lang_ar->is_default = 1;
+                $lang_ar->rtl = $deLang_arabic->rtl;
+                $lang_ar->user_id = $user->id;
+                $lang_ar->keywords = $deLang_arabic->keywords;
+                $lang_ar->save();
 
                 $htext = new HomePageText;
                 $htext->language_id = $lang->id;
@@ -469,6 +513,12 @@ class CheckoutController extends Controller
                 $umenu->language_id = $lang->id;
                 $umenu->user_id = $user->id;
                 $umenu->menus = $menus;
+                $umenu->save();
+
+                $umenu = new Menu();
+                $umenu->language_id = $lang_ar->id;
+                $umenu->user_id = $user->id;
+                $umenu->menus = $menus_arabic;
                 $umenu->save();
             }
             $ubs =  BasicSetting::select('email_verification_status')->first();
