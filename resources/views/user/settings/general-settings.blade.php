@@ -168,7 +168,7 @@
                             <span class="input-group-text">{{ __('1 USD') }} =</span>
                           </div>
                           <input type="text" name="base_currency_rate" class="form-control ltr"
-                            value="1ي">
+                            value="1">
                           <div class="input-group-append">
                             <span class="input-group-text">{{ $data->base_currency_text }}</span>
                           </div>
