@@ -439,15 +439,25 @@ class CheckoutController extends Controller
             ]);
 
             $deLang = User\Language::firstOrFail();
+            $deLang_arabic = User\Language::where('user_id', 0)firstOrFail();
             $langCount = User\Language::where('user_id', $user->id)->where('is_default', 1)->count();
             if ($langCount == 0) {
                 $lang = new User\Language;
                 $lang->name = $deLang->name;
                 $lang->code = $deLang->code;
-                $lang->is_default = 1;
+                $lang->is_default = 0;
                 $lang->rtl = $deLang->rtl;
                 $lang->user_id = $user->id;
                 $lang->keywords = $deLang->keywords;
+                $lang->save();
+
+                $lang = new User\Language;
+                $lang->name = $deLang_arabic->name;
+                $lang->code = $deLang_arabic->code;
+                $lang->is_default = 1;
+                $lang->rtl = $deLang_arabic->rtl;
+                $lang->user_id = $user->id;
+                $lang->keywords = $deLang_arabic->keywords;
                 $lang->save();
 
                 $htext = new HomePageText;
