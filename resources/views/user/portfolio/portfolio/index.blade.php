@@ -73,6 +73,9 @@
                             @if (!is_null($userDefaultLang))
                                 <a href="#" class="btn btn-primary float-right btn-sm" data-toggle="modal"
                                     data-target="#createModal"><i class="fas fa-plus"></i> {{ __('Add Portfolio') }}</a>
+                                    <a class="btn btn-success float-right btn-sm mr-2"
+                                    href="{{ route('user.portfolio.category.index') }}"><i
+                                        class="fas fa-hands"></i> {{ __('Add categore') }}</a>    
                                 <button class="btn btn-danger float-right btn-sm mr-2 d-none bulk-delete"
                                     data-href="{{ route('user.portfolio.bulk.delete') }}"><i
                                         class="flaticon-interface-5"></i> {{ __('Delete') }}</button>

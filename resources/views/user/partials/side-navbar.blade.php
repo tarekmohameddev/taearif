@@ -1004,6 +1004,17 @@
                     </li>
                 @endif
 
+                @if (!empty($permissions) && in_array('Service', $permissions))
+                    <li
+                        class="
+                    @if (request()->path() == 'user/services') active
+                    @elseif(request()->routeIs('user.service.edit')) active @endif">
+                        <a href="{{ route('user.services.index') . '?language=' . $default->code }}">
+                     
+                            <p>{{ __('Services') }}</p>
+                        </a>
+                    </li>
+                @endif
                                 @if (!empty($permissions) && in_array('Skill', $permissions))
                                     @if (
                                         $userBs->theme != 'home_three' &&
@@ -1037,6 +1048,16 @@
                                         </li>
                                     @endif
                                 @endif
+
+
+                                <li
+                                    class="
+                                @if (request()->path() == 'user/portfolios') active
+                                @elseif(request()->is('user/portfolio/*/edit')) active @endif">
+                                    <a href="{{ route('user.portfolio.index') . '?language=' . $default->code }}">
+                                        <span class="sub-item">{{ __('Portfolios') }}</span>
+                                    </a>
+                                </li>
 
                                 @if (isset($userBs->theme) &&
                                         ($userBs->theme === 'home_three' ||
@@ -1110,7 +1131,7 @@
                                 </ul>
                             </div>
                                     </li>
-                                    <li
+                                    <!-- <li
                                         class="submenu
                                 @if (request()->routeIs('user.basic_settings.mail_templates')) selected
                                 @elseif (request()->routeIs('user.basic_settings.edit_mail_template')) selected
@@ -1150,8 +1171,9 @@
                                                 @endif
                                             </ul>
                                         </div>
-                                    </li>
+                                    </li> -->
                                 @endif
+                                
                                 @if ($userBs->theme != 'home_twelve')
                                     <!-- <li class="@if (request()->path() == 'user/logo') active @endif">
                                         <a href="{{ route('user.logo') }}">
@@ -1177,19 +1199,13 @@
                                     </a>
                                 </li> -->
 
-                                <li class="@if (request()->path() == 'user/css') active @endif">
+                                <!-- <li class="@if (request()->path() == 'user/css') active @endif">
                                     <a href="{{ route('user.css.index') }}">
                                         <span class="sub-item">{{ __('Custom CSS') }}</span>
                                     </a>
-                                </li>
+                                </li> -->
 
-                                @if (!empty($permissions) && in_array('Plugins', $permissions))
-                                    <li class="{{ request()->routeIs('user.plugins') ? 'active' : '' }}">
-                                        <a href="{{ route('user.plugins') }}">
-                                            <span class="sub-item">{{ __('Plugins') }}</span>
-                                        </a>
-                                    </li>
-                                @endif
+   
 
                                 <li
                                     class="@if (request()->path() == 'user/social') active
@@ -1224,18 +1240,6 @@
                 {{-- ----------advertisement---------- --}}
 
 
-
-                @if (!empty($permissions) && in_array('Service', $permissions))
-                    <li
-                        class="nav-item
-                    @if (request()->path() == 'user/services') active
-                    @elseif(request()->routeIs('user.service.edit')) active @endif">
-                        <a href="{{ route('user.services.index') . '?language=' . $default->code }}">
-                            <i class="fas fa-hands"></i>
-                            <p>{{ __('Services') }}</p>
-                        </a>
-                    </li>
-                @endif
                 @if (!empty($permissions) && in_array('Portfolio', $permissions) && $userBs->theme === 'home_twelve')
                     <li
                         class="nav-item
@@ -1277,7 +1281,7 @@
                     </li>
                 @endif
                 @if (!empty($permissions) && in_array('Portfolio', $permissions))
-                    <li
+                    <!-- <li
                         class="nav-item
                     @if (request()->path() == 'user/portfolio-categories') active
                     @elseif(request()->path() == 'user/portfolios') active
@@ -1286,8 +1290,8 @@
                             <i class="fas fa-chalkboard-teacher"></i>
                             <p>{{ __('Portfolio') }}</p>
                             <span class="caret"></span>
-                        </a>
-                        <div class="collapse
+                        </a> -->
+                        <!-- <div class="collapse
                         @if (request()->path() == 'user/portfolio-categories') show
                         @elseif(request()->path() == 'user/portfolios') show
                         @elseif(request()->is('user/portfolio/*/edit')) show @endif"
@@ -1308,8 +1312,8 @@
                                     </a>
                                 </li>
                             </ul>
-                        </div>
-                    </li>
+                        </div> 
+                    </li> -->
                 @endif
 
 
@@ -1350,7 +1354,14 @@
                     </li>
                 @endif
 
-
+                @if (!empty($permissions) && in_array('Plugins', $permissions))
+                                    <li class="nav-item {{ request()->routeIs('user.plugins') ? 'active' : '' }}">
+                                        <a href="{{ route('user.plugins') }}">
+                                        <i class="fas fa-chalkboard-teacher"></i>
+                                            <span class="sub-item">{{ __('Plugins') }}</span>
+                                        </a>
+                                    </li>
+                                @endif
 
                 @if (!is_null($package))
                     {{-- faq --}}
