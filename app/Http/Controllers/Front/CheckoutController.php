@@ -350,7 +350,7 @@ class CheckoutController extends Controller
 
 
         //dynamic language translate wise menu
-        $deLang = User\Language::firstOrFail();
+        $deLang = User\Language::where('user_id', 0)->firstOrFail();
         $deLanguageNames = json_decode($deLang->keywords, true);
 
         $menus = '[
@@ -439,7 +439,7 @@ class CheckoutController extends Controller
             ]);
 
             $deLang = User\Language::firstOrFail();
-            $deLang_arabic = User\Language::where('user_id', 0)firstOrFail();
+            $deLang_arabic = User\Language::where('user_id', 0)->firstOrFail();
             $langCount = User\Language::where('user_id', $user->id)->where('is_default', 1)->count();
             if ($langCount == 0) {
                 $lang = new User\Language;
