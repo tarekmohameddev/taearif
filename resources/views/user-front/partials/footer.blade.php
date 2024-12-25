@@ -67,7 +67,7 @@
                             </div>
                         </div>
                         @if (count($userFooterQuickLinks) > 0)
-                            <div class="col-lg-3 col-sm-6 order-3">
+                            <div class="col-lg-3 col-sm-6 order-4">
                                 <div class="widget nav-widget">
                                     <h4 class="widget-title">{{ $keywords['Quick_Links'] ?? 'Quick Links' }}</h4>
                                     <ul>
@@ -120,7 +120,7 @@
                             </div>
                         @endif
                         @if (count($userFooterRecentBlogs) > 0)
-                            <div class="col-lg-6 col-sm-6 order-lg-5 order-4">
+                            <div class="col-lg-6 col-sm-12 order-lg-5 order-3">
                                 <div class="widget insta-feed-widget">
                                     <h4 class="widget-title">{{ $keywords['Latest_Blog'] ?? 'Latest Blogs' }}</h4>
                                     <div class="post-loops">

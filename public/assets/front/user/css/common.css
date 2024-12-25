@@ -218,9 +218,16 @@ div#preloader .loader-cubes .loader-cube .loader-cube3::before {
     line-height: 82px;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 991px) {
     .breadcrumb-section .breadcrumb-text .page-title {
         font-size: 65px;
+        line-height: 75px;
+    }
+}
+
+@media (max-width: 767px) {
+    .breadcrumb-section .breadcrumb-text .page-title {
+        font-size: 60px;
         line-height: 75px;
     }
 }
@@ -1470,6 +1477,12 @@ div#preloader .loader-cubes .loader-cube .loader-cube3::before {
     }
 }
 
+@media (max-width: 767px) {
+    .sidebar {
+        margin-top: 50px;
+    }
+}
+
 .sidebar .widget {
     border: 1px solid #ededed;
     padding: 30px 40px;
@@ -1942,10 +1955,36 @@ div#preloader .loader-cubes .loader-cube .loader-cube3::before {
 }
 
 .project-section {
-    padding-top: 130px;
+    padding-top: 100px;
     padding-bottom: 95px;
 }
 
+@media screen and (max-width: 1199px) {
+    .project-section {
+        padding-top: 90px;
+        padding-bottom: 90px;
+    }  
+}
+@media screen and (max-width: 991px) {
+    .project-section {
+        padding-top: 80px;
+        padding-bottom: 80px;
+    }  
+}
+
+@media screen and (max-width: 767px) {
+    .project-section {
+        padding-top: 60px;
+        padding-bottom: 60px;
+    }  
+}
+
+@media screen and (max-width: 575px) {
+    .project-section {
+        padding-top: 50px;
+        padding-bottom: 50px;
+    }  
+}
 
 /*=======  Project Details =======*/
 .project-details .project-content .content h2 {
@@ -4539,7 +4578,6 @@ input[type=checkbox] {
     .project-nav li {
         padding: 0 8px;
         background-color: #f1f1f1;
-        margin-bottom: 10px;
     }
 
     .project-details .project-content .details ul li h3 {
@@ -4551,7 +4589,7 @@ input[type=checkbox] {
     }
 
     .project-boxes.mt-60 {
-        margin-top: 10px;
+        margin-top: 40px;
     }
 
     .dark-version .project-nav li {
@@ -4584,6 +4622,9 @@ input[type=checkbox] {
 
     .project-details .project-content .details ul li h3 {
         margin-bottom: 0px;
+    }
+    .project-boxes.mt-60 {
+        margin-top: 30px;
     }
 }
 

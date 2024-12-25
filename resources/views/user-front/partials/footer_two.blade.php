@@ -82,7 +82,7 @@
                             </div>
                         @endif
                         @if (isset($userContact))
-                            <div class="col-lg-3 order-lg-4 order-5">
+                            <div class="col-lg-3 col-sm-6 order-lg-4 order-4">
                                 <div class="widget contact-widget">
                                     <h4 class="widget-title">{{ $keywords['Contact_Us'] ?? 'Contact Us' }}</h4>
                                     <ul class="contact-infos">
@@ -123,7 +123,7 @@
                         @endif
 
                         @if (count($userFooterRecentBlogs) > 0)
-                            <div class="col-lg-6 col-sm-6 order-lg-5 order-4">
+                            <div class="col-lg-6 col-sm-12 order-lg-5 order-5">
                                 <div class="widget insta-feed-widget">
                                     <h4 class="widget-title">{{ $keywords['Latest_Blog'] ?? 'Latest Blog' }}</h4>
                                     <div class="post-loops">
