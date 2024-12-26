@@ -348,7 +348,7 @@
 
     <!--====== Testimonials part start ======-->
     @if (isset($home_sections->testimonials_section) && $home_sections->testimonials_section == 1)
-        <section class="testimonial-section-two section-gap">
+        <section class="testimonial-section-two section-gap-top">
             <div class="container">
                 <div class="row justify-content-center no-gutters">
                     <div class="col-lg-9">

@@ -476,18 +476,18 @@ a:hover {
 }
 
 .section-gap-bottom {
-  padding-bottom: 130px;
+  padding-bottom: 100px;
 }
 
 @media (max-width: 1199px) {
   .section-gap-bottom {
-    padding-bottom: 90px;
+    padding-bottom: 80px;
   }
 }
 
 @media (max-width: 991px) {
   .section-gap-bottom {
-    padding-bottom: 80px;
+    padding-bottom: 70px;
   }
 }
 
@@ -504,18 +504,18 @@ a:hover {
 }
 
 .section-gap-top {
-  padding-top: 130px;
+  padding-top: 100px;
 }
 
 @media (max-width: 1199px) {
   .section-gap-top {
-    padding-top: 90px;
+    padding-top: 80px;
   }
 }
 
 @media (max-width: 991px) {
   .section-gap-top {
-    padding-top: 80px;
+    padding-top: 90px;
   }
 }
 
@@ -853,7 +853,7 @@ header .header-nav .nav-container .navbar-toggler {
   cursor: pointer;
   display: none;
   padding: 15px;
-  margin-left: 5px;
+  margin-left: 15px;
 }
 
 header .header-nav .nav-container .navbar-toggler span {
@@ -1093,7 +1093,6 @@ header .header-nav .nav-container .offcanvas-toggler span span:first-child {
 
 header .header-nav .nav-container .language-selection {
   position: relative;
-  margin-right: 15px;
 }
 
 header .header-nav .nav-container .language-selection.language-selection-two .language-btn {
@@ -1190,6 +1189,7 @@ header .header-nav .nav-container .language-selection:hover .language-list {
   visibility: visible;
   opacity: 1;
   top: 100%;
+  left: -50%;
 }
 
 header .header-nav .nav-container .menu-social-link {
@@ -1322,7 +1322,7 @@ header .header-nav .nav-container.breakpoint-on .navbar-toggler {
 @media only screen and (max-width: 991px) {
   header .header-nav .nav-container .navbar-toggler {
     padding: 9px;
-    margin-left: 5px;
+    margin-left: 15px;
   }
   .floating-wpp .floating-wpp-button {
     width: 50px !important;
@@ -5408,7 +5408,7 @@ header .info a:last-child::after {
 }
 
 .project-section {
-  padding-top: 130px;
+  padding-top: 100px;
   padding-bottom: 95px;
 }
 

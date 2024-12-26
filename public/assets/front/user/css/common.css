@@ -1121,6 +1121,7 @@ div#preloader .loader-cubes .loader-cube .loader-cube3::before {
     box-shadow: 0px 10px 32px 0px rgba(215, 215, 215, 0.8);
     transition: all 0.3s ease-out 0s;
     margin-top: 30px;
+    height: calc(100% - 30px);
 }
 
 .service-box-three {

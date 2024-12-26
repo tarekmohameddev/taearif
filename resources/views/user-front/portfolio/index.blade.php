@@ -40,7 +40,7 @@
             @endif
 
             <!-- Project Boxes -->
-            <div class="row project-boxes project-isotope mt-60 justify-content-center">
+            <div class="row project-boxes project-isotope mt-50 justify-content-center">
                 @foreach ($portfolios as $portfolio)
                     <div class="isotope-item col-lg-4 col-sm-6 item-{{ $portfolio->bcategory->id }}">
                         <div class="project-box hover-style">
