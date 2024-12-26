@@ -230,13 +230,13 @@ a:hover {
 
 /*=======  Common Classes  =======*/
 .main-btn {
-  line-height: 60px;
-  font-size: 18px;
+  line-height: 45px;
+  font-size: 16px;
   font-weight: 700;
   border-radius: 35px;
   border: none;
   cursor: pointer;
-  padding: 0 50px;
+  padding: 0 25px;
   background-color: var(--main-color);
   border: 1px solid transparent;
   color: #fff;
@@ -254,7 +254,13 @@ a:hover {
     font-size: 16px;
     line-height: 50px;
   }
+  .main-btn {
+    line-height: 40px;
+    font-size: 16px;
+    padding: 0 20px;
+  }
 }
+
 @media (max-width: 767px) {
   .main-btn {
     padding: 0 30px;
@@ -279,7 +285,7 @@ a:hover {
   transition: all 0.3s ease-out 0s;
   content: "";
   z-index: -1;
-  width: 85px;
+  width: 100%;
   border-radius: 30px;
   opacity: 0;
   visibility: hidden;
@@ -427,14 +433,14 @@ a:hover {
 }
 
 .section-gap {
-  padding-top: 130px;
-  padding-bottom: 130px;
+  padding-top: 100px;
+  padding-bottom: 100px;
 }
 
 @media (max-width: 1199px) {
   .section-gap {
-    padding-top: 90px;
-    padding-bottom: 90px;
+    padding-top: 80px;
+    padding-bottom: 80px;
   }
   .inner-section-gap {
     padding-top: 80px;
@@ -444,8 +450,8 @@ a:hover {
 
 @media (max-width: 991px) {
   .section-gap {
-    padding-top: 80px;
-    padding-bottom: 80px;
+    padding-top: 70px;
+    padding-bottom: 70px;
   }
   .inner-section-gap {
     padding-top: 70px;
@@ -1083,6 +1089,10 @@ header .header-nav .nav-container .offcanvas-toggler span span {
 
 header .header-nav .nav-container .offcanvas-toggler span span:first-child {
   margin-top: 0;
+}
+
+.current-language i{
+  font-size: 24px;
 }
 
 @media (max-width: 991px) {
@@ -4191,6 +4201,12 @@ header .info a:last-child::after {
   width: 60px;
   height: 60px;
   border-radius: 50%;
+  border: 3px solid transparent;
+}
+
+.testimonial-section-two .testimonial-dots li.slick-active img {
+  border-color: var(--main-color);
+  border: 3px solid var(--main-color);
 }
 
 /*=======  Testimonial Three  =======*/
@@ -4708,7 +4724,7 @@ header .info a:last-child::after {
 }
 
 .blog-loop.standard-blog .single-post-box .post-content .main-btn {
-  margin-top: 30px;
+  margin-top: 15px;
 }
 
 .blog-loop.standard-blog .single-post-box.video-post .post-video {
@@ -4928,7 +4944,7 @@ header .info a:last-child::after {
 
 .sidebar .widget {
   border: 1px solid #ededed;
-  padding: 30px 40px;
+  padding: 30px 30px;
   margin-bottom: 30px;
 }
 
@@ -4957,20 +4973,20 @@ header .info a:last-child::after {
 .sidebar .widget.search-widget form input {
   border: 1px solid #ededed;
   width: 100%;
-  padding-left: 40px;
+  padding-left: 30px;
   padding-right: 100px;
-  height: 80px;
+  height: 60px;
   color: #616161;
 }
 
 .sidebar .widget.search-widget form button {
   position: absolute;
   right: 0;
-  height: 80px;
+  height: 60px;
   width: 80px;
   background-color: var(--main-color);
   color: #fff;
-  font-size: 20px;
+  font-size: 18px;
   -webkit-transition: 0.3s;
   transition: 0.3s;
 }
@@ -5186,6 +5202,10 @@ header .info a:last-child::after {
   line-height: 1.2;
   -webkit-transition: all 0.3s ease-out 0s;
   transition: all 0.3s ease-out 0s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 @media (max-width: 767px) {
@@ -5507,7 +5527,7 @@ header .info a:last-child::after {
   background-color: var(--main-color);
   color: #fff;
   line-height: 35px;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   border-radius: 50%;
   -webkit-transition: all 0.3s ease-out 0s;
@@ -5594,6 +5614,9 @@ header .info a:last-child::after {
   cursor: pointer;
   -webkit-transition: all 0.3s ease-out 0s;
   transition: all 0.3s ease-out 0s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .working-process-section .process-video .video .paly-icon:hover {
@@ -5735,18 +5758,23 @@ header .info a:last-child::after {
 }
 
 .video-section-two .video-cont .play-btn {
-  height: 150px;
-  width: 150px;
+  height: 120px;
+  width: 120px;
   background-color: #fff;
-  line-height: 150px;
+  line-height: 120px;
   text-align: center;
   border-radius: 50%;
-  font-size: 20px;
+  font-size: 24px;
   color: var(--main-color);
   margin-bottom: 30px;
   -webkit-transition: all 0.3s ease-out 0s;
   transition: all 0.3s ease-out 0s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 30px;
 }
+
 
 @media (max-width: 991px) {
   .video-section-two .video-cont .play-btn {
@@ -8356,6 +8384,7 @@ footer .footer-copyright .back-to-top {
   -webkit-transform: translate(-50%, -50%);
   transform: translate(-50%, -50%);
   background-color: #14212b;
+  font-size: 28px;
 }
 
 @media (max-width: 767px) {
