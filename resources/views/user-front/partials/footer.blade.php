@@ -132,8 +132,10 @@
                                                         alt="Image" height="60" width="80">
                                                 </div>
                                                 <div class="post-desc post">
-                                                    <span class="date"><i
-                                                            class="far fa-calendar-alt mar-right-4"></i>{{ \Carbon\Carbon::parse($footerRecentBlog->created_at)->format('F j, Y') }}</span>
+                                                    <span class="date">
+                                                        <i class="far fa-calendar-alt mar-right-4"></i>
+                                                        {{ \Carbon\Carbon::parse($blog->created_at)->toFormattedDateString() }}
+                                                    </span>
 
                                                     <a
                                                         href="{{ route('front.user.blog.detail', [getParam(), $footerRecentBlog->slug, $footerRecentBlog->id]) }}">

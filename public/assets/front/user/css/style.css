@@ -22,6 +22,44 @@ body {
   padding-left: 20px;
 }
 
+.pagination {
+  gap: 5px;
+}
+
+.page-link {
+  font-size: 22px;
+  height: 40px;
+  width: 40px;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-item.disabled .page-link {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.page-item:first-child .page-link {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.page-item:last-child .page-link {
+  font-size: 40px;
+  line-height: 1;
+}
+
+
+[dir="rtl"] .project-link i{
+  transform: rotate(180deg);
+}
+
+[dir="rtl"] .service-link i{
+  transform: rotate(180deg);
+}
+
 @media (max-width: 575px) {
   body {
     font-size: 16px;
@@ -240,7 +278,7 @@ a:hover {
 
 /*=======  Common Classes  =======*/
 .main-btn {
-  line-height: 45px;
+  line-height: 40px;
   font-size: 16px;
   font-weight: 700;
   border-radius: 35px;
@@ -4590,7 +4628,7 @@ header .info a:last-child::after {
   background-color: var(--main-color);
   z-index: 2;
   color: #fff;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   padding: 0 15px;
@@ -4602,20 +4640,20 @@ header .info a:last-child::after {
 
 .latest-post-loop .latest-post-box-two .post-desc {
   background-color: #f5f5f5;
-  padding: 40px 30px;
+  padding: 25px 30px;
   -webkit-transition: all 0.3s ease-out 0s;
   transition: all 0.3s ease-out 0s;
 }
 
 @media (max-width: 1199px) {
   .latest-post-loop .latest-post-box-two .post-desc {
-    padding: 35px 25px;
+    padding: 20px 25px;
   }
 }
 
 @media (max-width: 991px) {
   .latest-post-loop .latest-post-box-two .post-desc {
-    padding: 30px 20px;
+    padding: 20px 20px;
   }
 }
 
@@ -4623,7 +4661,7 @@ header .info a:last-child::after {
   font-size: 24px;
   font-weight: 600;
   letter-spacing: -1px;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   line-height: 33px;
 }
 
@@ -5071,6 +5109,7 @@ header .info a:last-child::after {
   font-size: 15px;
   font-weight: 600;
   line-height: 1;
+  padding-bottom: 8px;
 }
 
 .sidebar .widget.recent-post-widget .single-post .date i {
@@ -5569,12 +5608,12 @@ header .info a:last-child::after {
   position: absolute;
   left: 0;
   top: -10px;
-  height: 35px;
-  width: 35px;
+  height: 30px;
+  width: 30px;
   background-color: var(--main-color);
   color: #fff;
-  line-height: 35px;
-  font-size: 10px;
+  line-height: 30px;
+  font-size: 13px;
   font-weight: 600;
   border-radius: 50%;
   -webkit-transition: all 0.3s ease-out 0s;
@@ -6478,11 +6517,11 @@ header .info a:last-child::after {
 .contact-section.contact-page .contact-info .contact-info-content ul li.phone a {
   color: #14212b;
   font-weight: 700;
-  font-size: 30px;
+  font-size: 22px;
 }
 
 .contact-section.contact-page .contact-info .contact-info-content ul li.phone i {
-  font-size: 30px;
+  font-size: 20px;
 }
 
 .contact-section.contact-page .contact-form {
