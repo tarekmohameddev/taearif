@@ -339,7 +339,7 @@
                                             @endif
                                         </div>
                                     </div>
-                                @endif
+                                @endif 
                                 @if (
                                     !empty($permissions) &&
                                         in_array('Portfolio', $permissions) &&

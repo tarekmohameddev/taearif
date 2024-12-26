@@ -128,14 +128,7 @@
                 alt="Bg">
 
             <!-- Bg Shape -->
-            <div class="shape">
-                <img class="shape-1" src="{{ asset('assets/frontend/images/shape/shape-4.png') }}" alt="Shape">
-                <img class="shape-2" src="{{ asset('assets/frontend/images/shape/shape-5.png') }}" alt="Shape">
-                <img class="shape-3" src="{{ asset('assets/frontend/images/shape/shape-6.png') }}" alt="Shape">
-                <img class="shape-4" src="{{ asset('assets/frontend/images/shape/shape-7.png') }}" alt="Shape">
-                <img class="shape-5" src="{{ asset('assets/frontend/images/shape/shape-8.png') }}" alt="Shape">
-                <img class="shape-6" src="{{ asset('assets/frontend/images/shape/shape-9.png') }}" alt="Shape">
-            </div>
+
         </div>
         <!--====== End Breadcrumbs-section ======-->
     @endif

@@ -10,6 +10,11 @@
 
 @includeIf('user.partials.rtl-style')
 
+@php
+    $permissions = \App\Http\Helpers\UserPermissionHelper::packagePermission(Auth::user()->id);
+    $permissions = json_decode($permissions, true);
+@endphp
+
 @section('content')
   <div class="page-header">
     <h4 class="page-title">{{ __('FAQ Management') }}</h4>
@@ -27,6 +32,117 @@
       </li>
     </ul>
   </div>
+  <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card-title d-inline-block">{{ __('Change section title') }}</div>
+                        </div>
+                        <div class="col-lg-3 offset-lg-3">
+                            @if (!is_null($userDefaultLang))
+                                @if (!empty($userLanguages))
+                                    <select name="userLanguage" class="form-control"
+                                        onchange="window.location='{{ url()->current() . '?language=' }}'+this.value">
+                                        <option value="" selected disabled>{{ __('Select a Language') }}</option>
+                                        @foreach ($userLanguages as $lang)
+                                            <option value="{{ $lang->code }}"
+                                                {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
+                                                {{ $lang->name }}</option>
+                                        @endforeach
+                                    </select>
+                                @endif
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-8 offset-lg-2">
+                            <form id="ajaxForm" action="{{ route('user.home.page.text.update') }}" method="post"
+                                enctype="multipart/form-data">
+                                @csrf
+                                <input type="hidden" name="id" value="{{ $home_setting->id }}">
+                                <input type="hidden" name="language_id" value="{{ $home_setting->language_id }}">
+
+                             
+                              
+                                @if (isset($userBs->theme) &&
+                                        ($userBs->theme === 'home_three' ||
+                                            $userBs->theme === 'home_four' ||
+                                            $userBs->theme === 'home_five' ||
+                                            $userBs->theme === 'home_seven'))
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="form-group">
+                                                <br>
+                                                <h3 class="text-warning">{{ __('FAQ Section') }}</h3>
+                                                <hr class="border-top">
+                                            </div>
+                                            @if ($userBs->theme == 'home_three')
+                                                <div class="form-group">
+                                                    <div class="col-12 mb-2">
+                                                        <label
+                                                            for="logo"><strong>{{ __('FAQ Section Image') }}</strong></label>
+                                                    </div>
+                                                    <div class="col-md-12 showFAQSectionImage mb-3">
+                                                        <img src="{{ $home_setting->faq_section_image ? asset('assets/front/img/user/home_settings/' . $home_setting->faq_section_image) : asset('assets/admin/img/noimage.jpg') }}"
+                                                            alt="..." class="img-thumbnail">
+                                                    </div>
+                                                    <input type="hidden" name="types[]" value="faq_section_image">
+                                                    <input type="file" name="faq_section_image" id="faq_section_image"
+                                                        class="form-control ltr">
+                                                    <p id="errfaq_section_image" class="mb-0 text-danger em"></p>
+                                                </div>
+                                            @endif
+                                            <div class="row">
+                                                <div class="col-lg-6 pr-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('FAQ Section Title') }}*</label>
+                                                        <input type="hidden" name="types[]" value="faq_section_title">
+                                                        <input type="text" class="form-control"
+                                                            name="faq_section_title"
+                                                            placeholder="{{ __('Enter faq section title') }}"
+                                                            value="{{ $home_setting->faq_section_title }}">
+                                                        <p id="errfaq_section_title" class="mb-0 text-danger em"></p>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6 pl-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('FAQ Section Subtitle') }}*</label>
+                                                        <input type="hidden" name="types[]"
+                                                            value="faq_section_subtitle">
+                                                        <input type="text" class="form-control"
+                                                            name="faq_section_subtitle"
+                                                            placeholder="{{ __('Enter faq section subtitle') }}"
+                                                            value="{{ $home_setting->faq_section_subtitle }}">
+                                                        <p id="errfaq_section_subtitle" class="mb-0 text-danger em"></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                               
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="form">
+                        <div class="form-group from-show-notify row">
+                            <div class="col-12 text-center">
+                                <button type="submit" id="submitBtn"
+                                    class="btn btn-success">{{ __('Update') }}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+                                </div>
 
   <div class="row">
     <div class="col-md-12">

@@ -11,6 +11,12 @@
     ])->first();
     $userLanguages = \App\Models\User\Language::where('user_id',\Illuminate\Support\Facades\Auth::id())->get();
 @endphp
+
+@php
+    $permissions = \App\Http\Helpers\UserPermissionHelper::packagePermission(Auth::user()->id);
+    $permissions = json_decode($permissions, true);
+@endphp
+
 @if(!empty($selLang) && $selLang->rtl == 1)
 @section('styles')
 <style>
@@ -51,6 +57,116 @@
       </li>
    </ul>
 </div>
+
+<div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card-title d-inline-block">{{ __('Change section title') }}</div>
+                        </div>
+                        <div class="col-lg-3 offset-lg-3">
+                            @if (!is_null($userDefaultLang))
+                                @if (!empty($userLanguages))
+                                    <select name="userLanguage" class="form-control"
+                                        onchange="window.location='{{ url()->current() . '?language=' }}'+this.value">
+                                        <option value="" selected disabled>{{ __('Select a Language') }}</option>
+                                        @foreach ($userLanguages as $lang)
+                                            <option value="{{ $lang->code }}"
+                                                {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
+                                                {{ $lang->name }}</option>
+                                        @endforeach
+                                    </select>
+                                @endif
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-8 offset-lg-2">
+                            <form id="ajaxForm" action="{{ route('user.home.page.text.update') }}" method="post"
+                                enctype="multipart/form-data">
+                                @csrf
+                                <input type="hidden" name="id" value="{{ $home_setting->id }}">
+                                <input type="hidden" name="language_id" value="{{ $home_setting->language_id }}">
+
+                             
+                                @if (
+                                    $userBs->theme != 'home_eight' &&
+                                        $userBs->theme != 'home_three' &&
+                                        $userBs->theme != 'home_nine' &&
+                                        $userBs->theme != 'home_ten' &&
+                                        (!empty($permissions) && in_array('Blog', $permissions)))
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="form-group">
+                                                <br>
+                                                <h3 class="text-warning">{{ __('Blog Section') }}</h3>
+                                                <hr class="border-top">
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-lg-6 pr-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('Blog Section Title') }}</label>
+                                                        <input type="hidden" name="types[]" value="blog_title">
+                                                        <input type="text" class="form-control" name="blog_title"
+                                                            placeholder="{{ __('Enter blog keyword') }}"
+                                                            value="{{ $home_setting->blog_title }}">
+                                                        <p id="errblog_title" class="mb-0 text-danger em"></p>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6 pl-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('Blog Section Subtitle') }}</label>
+                                                        <input type="hidden" name="types[]" value="blog_subtitle">
+                                                        <input type="text" class="form-control" name="blog_subtitle"
+                                                            placeholder="{{ __('Enter blog title') }}"
+                                                            value="{{ $home_setting->blog_subtitle }}">
+                                                        <p id="errblog_subtitle" class="mb-0 text-danger em"></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            @if ($userBs->theme !== 'home_eleven' && $userBs->theme !== 'home_twelve')
+                                                <div class="row">
+                                                    <div class="col-lg-6 pr-0">
+                                                        <div class="form-group">
+                                                            <label for="">{{ __('View All Blog Text') }}</label>
+                                                            <input type="hidden" name="types[]"
+                                                                value="view_all_blog_text">
+                                                            <input type="text" class="form-control"
+                                                                name="view_all_blog_text"
+                                                                placeholder="{{ __('Enter view all blog text') }}"
+                                                                value="{{ $home_setting->view_all_blog_text }}">
+                                                            <p id="errview_all_blog_text" class="mb-0 text-danger em"></p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+                               
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="form">
+                        <div class="form-group from-show-notify row">
+                            <div class="col-12 text-center">
+                                <button type="submit" id="submitBtn"
+                                    class="btn btn-success">{{ __('Update') }}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+                                </div>
+
 <div class="row">
    <div class="col-md-12">
       <div class="card">

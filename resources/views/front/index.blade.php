@@ -42,41 +42,13 @@
             </div>
         </div>
         <!-- Banner Images -->
-        <div class="banner-images d-none d-lg-block">
-            <img class="lazyload blur-up img-1"
-                data-src="{{ !empty($be->hero_img2) ? asset('assets/front/img/' . $be->hero_img2) : asset('assets/frontend/images/banner-img-1.jpg') }}"
-                alt="Banner Image">
-            <img class="lazyload blur-up img-2"
-                data-src="{{ !empty($be->hero_img3) ? asset('assets/front/img/' . $be->hero_img3) : asset('assets/frontend/images/banner-img-2.jpg') }}"
-                alt="Banner Image">
-            <img class="lazyload blur-up img-3"
-                data-src="{{ !empty($be->hero_img4) ? asset('assets/front/img/' . $be->hero_img4) : asset('assets/frontend/images/banner-img-3.jpg') }}"
-                alt="Banner Image">
-            <img class="lazyload blur-up img-4"
-                data-src="{{ !empty($be->hero_img5) ? asset('assets/front/img/' . $be->hero_img5) : asset('assets/frontend/images/banner-img-4.jpg') }}"
-                alt="Banner Image">
-        </div>
+
         <!-- Bg-shape -->
         <div class="bg-shape bg-primary-light">
             <img class="lazyload" data-src="{{ asset('assets/frontend/images/banner-bg.png') }}" alt="Shape">
         </div>
         <!-- Shape -->
-        <div class="shape">
-            <img class="lazyload shape-1" data-src="{{ asset('assets/frontend/images/shape/shape-1.png') }}"
-                alt="Shape">
-            <img class="lazyload shape-2" data-src="{{ asset('assets/frontend/images/shape/shape-2.png') }}"
-                alt="Shape">
-            <img class="lazyload shape-3" data-src="{{ asset('assets/frontend/images/shape/shape-3.png') }}"
-                alt="Shape">
-            <img class="lazyload shape-4" data-src="{{ asset('assets/frontend/images/shape/shape-4.png') }}"
-                alt="Shape">
-            <img class="lazyload shape-5" data-src="{{ asset('assets/frontend/images/shape/shape-5.png') }}"
-                alt="Shape">
-            <img class="lazyload shape-6" data-src="{{ asset('assets/frontend/images/shape/shape-6.png') }}"
-                alt="Shape">
-            <img class="lazyload shape-7" data-src="{{ asset('assets/frontend/images/shape/shape-7.png') }}"
-                alt="Shape">
-        </div>
+
     </section>
     <!-- Home End -->
     @if ($bs->partners_section == 1)
@@ -225,6 +197,91 @@
         </section>
         <!-- Template End -->
     @endif
+    <section id="faq" class="py-5 bg-dark text-white">
+  <div class="container">
+    <h2 class="text-center mb-5" style="letter-spacing: 2px; color:white;">الأسئلة الشائعه</h2>
+    <div class="accordion accordion-flush" id="faqAccordion">
+      <!-- Question 1 -->
+      <div class="accordion-item bg-dark border-white">
+        <h3 class="accordion-header" id="faq-heading-1">
+          <button
+            class="accordion-button collapsed text-white bg-dark border-3"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#faq-collapse-1"
+            aria-expanded="false"
+            aria-controls="faq-collapse-1"
+            style="font-weight: bold;color:white;"
+          >
+            What is your return policy?
+          </button>
+        </h3>
+        <div
+          id="faq-collapse-1"
+          class="accordion-collapse collapse"
+          aria-labelledby="faq-heading-1"
+          data-bs-parent="#faqAccordion"
+        >
+          <div class="accordion-body text-white-50">
+            We offer a 30-day return policy on all purchases. Please contact our support team for more details.
+          </div>
+        </div>
+      </div>
+      <!-- Question 2 -->
+      <div class="accordion-item bg-dark border-white">
+        <h3 class="accordion-header" id="faq-heading-2">
+          <button
+            class="accordion-button collapsed text-white bg-dark border-0"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#faq-collapse-2"
+            aria-expanded="false"
+            aria-controls="faq-collapse-2"
+            style="font-weight: bold;"
+          >
+            Do you ship internationally?
+          </button>
+        </h3>
+        <div
+          id="faq-collapse-2"
+          class="accordion-collapse collapse"
+          aria-labelledby="faq-heading-2"
+          data-bs-parent="#faqAccordion"
+        >
+          <div class="accordion-body text-white-50">
+            Yes, we ship to over 50 countries worldwide. Shipping fees and delivery times vary by location.
+          </div>
+        </div>
+      </div>
+      <!-- Question 3 -->
+      <div class="accordion-item bg-dark border-white">
+        <h3 class="accordion-header" id="faq-heading-3">
+          <button
+            class="accordion-button collapsed text-white bg-dark border-0"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#faq-collapse-3"
+            aria-expanded="false"
+            aria-controls="faq-collapse-3"
+            style="font-weight: bold;"
+          >
+            How can I track my order?
+          </button>
+        </h3>
+        <div
+          id="faq-collapse-3"
+          class="accordion-collapse collapse"
+          aria-labelledby="faq-heading-3"
+          data-bs-parent="#faqAccordion"
+        >
+          <div class="accordion-body text-white-50">
+            Once your order is shipped, we’ll email you a tracking number and a link to monitor your package.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
     @if ($bs->feature_section == 1 || $bs->intro_section == 1)
         <!-- Choose Start -->

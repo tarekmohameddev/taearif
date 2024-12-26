@@ -6,6 +6,11 @@
     Config::set('app.timezone', $userBs->timezoneinfo->timezone);
 @endphp
 
+@php
+    $permissions = \App\Http\Helpers\UserPermissionHelper::packagePermission(Auth::user()->id);
+    $permissions = json_decode($permissions, true);
+@endphp
+
 @section('content')
     <div class="page-header">
         <h4 class="page-title">{{ __('Testimonials') }}</h4>
@@ -29,6 +34,119 @@
             </li>
         </ul>
     </div>
+   
+
+                                <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card-title d-inline-block">{{ __('Change section title') }}</div>
+                        </div>
+                        <div class="col-lg-3 offset-lg-3">
+                            @if (!is_null($userDefaultLang))
+                                @if (!empty($userLanguages))
+                                    <select name="userLanguage" class="form-control"
+                                        onchange="window.location='{{ url()->current() . '?language=' }}'+this.value">
+                                        <option value="" selected disabled>{{ __('Select a Language') }}</option>
+                                        @foreach ($userLanguages as $lang)
+                                            <option value="{{ $lang->code }}"
+                                                {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
+                                                {{ $lang->name }}</option>
+                                        @endforeach
+                                    </select>
+                                @endif
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-8 offset-lg-2">
+                            <form id="ajaxForm" action="{{ route('user.home.page.text.update') }}" method="post"
+                                enctype="multipart/form-data">
+                                @csrf
+                                <input type="hidden" name="id" value="{{ $home_setting->id }}">
+                                <input type="hidden" name="language_id" value="{{ $home_setting->language_id }}">
+
+                             
+                                @if (
+                                    $userBs->theme != 'home_eight' ||
+                                        ($userBs->theme != 'home_ten' && !empty($permissions) && in_array('Testimonial', $permissions)))
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="form-group">
+                                                <br>
+                                                <h3 class="text-warning">{{ __('Testimonial Section') }}</h3>
+                                                <hr class="border-top">
+                                            </div>
+                                            @if ($userBs->theme == 'home_six' || $userBs->theme == 'home_one' || $userBs->theme == 'home_ten')
+                                                <div class="form-group">
+                                                    <div class="col-12 mb-2">
+                                                        <label
+                                                            for="logo"><strong>{{ __('Testimonial Image') }}</strong></label>
+                                                    </div>
+                                                    <div class="col-md-12 showTestimonialImage mb-3">
+                                                        <img src="{{ $home_setting->testimonial_image ? asset('assets/front/img/user/home_settings/' . $home_setting->testimonial_image) : asset('assets/admin/img/noimage.jpg') }}"
+                                                            alt="..." class="img-thumbnail">
+                                                    </div>
+                                                    <input type="file" name="testimonial_image" id="testimonial_image"
+                                                        class="form-control ltr">
+                                                    <p id="errtestimonial_image" class="mb-0 text-danger em"></p>
+                                                </div>
+                                            @endif
+                                            @if ($userBs->theme != 'home_ten')
+                                                <div class="row">
+                                                    <div class="col-lg-6 pr-0">
+                                                        <div class="form-group">
+                                                            <label
+                                                                for="">{{ __('Testimonial Section Title') }}</label>
+                                                            <input type="hidden" name="types[]"
+                                                                value="testimonial_title">
+                                                            <input type="text" class="form-control"
+                                                                name="testimonial_title" placeholder=""
+                                                                value="{{ $home_setting->testimonial_title }}">
+                                                            <p id="errtestimonial_title" class="mb-0 text-danger em"></p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-lg-6 pl-0">
+                                                        <div class="form-group">
+                                                            <label
+                                                                for="">{{ __('Testimonial Section Subtitle') }}</label>
+                                                            <input type="hidden" name="types[]"
+                                                                value="testimonial_subtitle">
+                                                            <input type="text" class="form-control"
+                                                                name="testimonial_subtitle" placeholder=""
+                                                                value="{{ $home_setting->testimonial_subtitle }}">
+                                                            <p id="errtestimonial_subtitle" class="mb-0 text-danger em">
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+                               
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="form">
+                        <div class="form-group from-show-notify row">
+                            <div class="col-12 text-center">
+                                <button type="submit" id="submitBtn"
+                                    class="btn btn-success">{{ __('Update') }}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+                                </div>
     <div class="row">
         <div class="col-md-12">
             <div class="card">
