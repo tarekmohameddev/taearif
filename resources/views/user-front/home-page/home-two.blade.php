@@ -205,12 +205,13 @@
                                         data-bg="{{ asset('assets/front/img/user/portfolios/' . $portfolio->image) }}">
                                     </div>
                                 </a>
-                                <div class="project-desc text-center">
-                                    <h4>
-                                        <a
-                                            href="{{ route('front.user.portfolio.detail', [getParam(), $portfolio->slug, $portfolio->id]) }}">{{ strlen($portfolio->title) > 25 ? mb_substr($portfolio->title, 0, 25, 'UTF-8') . '...' : $portfolio->title }}</a>
-                                    </h4>
-                                    <p>{{ $portfolio->bcategory->name }}</p>
+                                <div class="project-desc">
+                                    <div class="div">
+                                        <h4><a
+                                                href="{{ route('front.user.portfolio.detail', [getParam(), $portfolio->slug, $portfolio->id]) }}">{{ strlen($portfolio->title) > 30 ? mb_substr($portfolio->title, 0, 30, 'UTF-8') . '...' : $portfolio->title }}</a>
+                                        </h4>
+                                        <p>{{ $portfolio->bcategory->name }}</p>
+                                    </div>
                                     <a href="{{ route('front.user.portfolio.detail', [getParam(), $portfolio->slug, $portfolio->id]) }}"
                                         class="project-link">
                                         <i class="fal fa-long-arrow-right"></i>
@@ -348,7 +349,7 @@
 
     <!--====== Testimonials part start ======-->
     @if (isset($home_sections->testimonials_section) && $home_sections->testimonials_section == 1)
-        <section class="testimonial-section-two section-gap">
+        <section class="testimonial-section-two section-gap-top">
             <div class="container">
                 <div class="row justify-content-center no-gutters">
                     <div class="col-lg-9">

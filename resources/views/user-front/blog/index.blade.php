@@ -42,7 +42,7 @@
                                             <ul>
                                                 <li><i class="fal fa-folder-tree"></i><a href="{{route('front.user.blogs', getParam()) . '?category=' . $blog->bcategory->id}}">{{$blog->bcategory->name}}</a></li>
                                                 <li><i class="far fa-calendar-alt"></i><a
-                                                        href="#">{{ date_format($date, 'F d, Y') }}</a></li>
+                                                        href="#"> {{ \Carbon\Carbon::parse($blog->created_at)->toFormattedDateString() }}</a></li>
                                             </ul>
                                         </div>
                                         <div class="post-content">

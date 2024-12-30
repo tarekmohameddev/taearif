@@ -123,7 +123,7 @@
                     src="{{ asset('assets/front/img/flags/' . $userCurrentLang->code . '.png') }}" 
                     alt="{{ $userCurrentLang->name }}" 
                     class="img-fluid" 
-                    style="width: 30px; height: 20px;"> 
+                    style="width: 25px; height: 25px;"> 
                 <i class="far fa-angle-down"></i>
             </div>
         @endif
@@ -138,7 +138,7 @@
                             alt="{{ $userLang->name }}" 
                             title="{{ convertUtf8($userLang->name) }}" 
                             class="img-fluid" 
-                            style="width: 30px; height: 20px;">
+                            style="width: 25px; height: 25px;">
                             {{$userLang->name}}
                     </a>
                 </li>
