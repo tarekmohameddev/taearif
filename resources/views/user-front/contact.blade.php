@@ -55,7 +55,7 @@
                                 @endif
                                 @if (count($emails) > 0)
                                     <li>
-                                        <i class="far fa-envelope-open mr-0"></i>
+                                        <i class="far fa-envelope-open"></i>
                                         @foreach ($emails as $email)
                                             <a href="mailto:{{ $email }}">{{ $email }}</a>
                                             @if (!$loop->last)
@@ -67,7 +67,7 @@
                                 @if (count($addresses) > 0)
                                     @foreach ($addresses as $address)
                                         <li class="mb-0">
-                                            <i class="far fa-map-marker-alt mr-0"></i>
+                                            <i class="far fa-map-marker-alt"></i>
                                             <span class="mb-0">{{ $address }}</span>
                                         </li>
                                     @endforeach
