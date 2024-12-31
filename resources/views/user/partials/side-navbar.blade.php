@@ -113,7 +113,7 @@
                            role="button" 
                            aria-expanded="false">
                             <i class="bi bi-sliders"></i>
-                            <p>الإعدادات</p>
+                            <span>الإعدادات</span>
                             <i class="bi bi-chevron-down small"></i>
                         </a>
                         <div class="collapse {{ request()->is('user/favicon') || request()->is('user/theme/version') || request()->is('user/logo') || request()->is('user/preloader') || request()->routeIs('user.basic_settings.*') || request()->is('user/color') || request()->is('user/css') || request()->is('user/social') || request()->is('user/social/*') || request()->is('user/breadcrumb') ? 'show' : '' }}" id="settingsDropdown">
@@ -148,6 +148,135 @@
                         إدارة المحتوى
                     </li>
 
+                    <li class="nav-item">
+                            <a class="nav-link d-flex " 
+                               data-bs-toggle="collapse" 
+                               href="#Homepage" 
+                               role="button" 
+                               aria-expanded="false">
+                                <i class="bi bi-file-earmark-text"></i>
+                                <span>الصفحة الرئيسية</span>
+                                <i class="bi bi-chevron-down small"></i>
+                            </a>
+                            <div class="collapse {{ request()->is('user.home_page.hero.slider_version') || request()->is('user.home_page.hero.create_slider') || request()->is('user.home_page.hero.edit_slider') ? 'show' : '' }}" id="Homepage">
+                                <ul class="nav flex-column ms-3 border-start">
+                                    <li class="nav-item">
+                                        <a href="{{ route('user.home_page.hero.slider_version') . '?language=' . $default->code }}" 
+                                           class="nav-link {{ request()->is('user.home_page.hero.slider_version') ? 'active' : '' }}">
+                                            <i class="bi bi-file-earmark-plus"></i>
+                                            <span>{{ __('Hero Section') }}</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('user.home.page.text.edit', ['language' => $default->code]) }}" 
+                                           class="nav-link {{ request()->is('user.home.page.text.edit') ? 'active' : '' }}">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                            <span>{{ __('Home Sections') }}</span>
+                                        </a>
+                                    </li>
+
+                                    <li class="nav-item">
+                                        <a href="{{ route('user.home.page.about', ['language' => $default->code]) }}" 
+                                           class="nav-link {{ request()->is('user.home.page.about') ? 'active' : '' }}">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                            <span>{{ __('About Section') }}</span>
+                                        </a>
+                                    </li>
+
+
+                                @if ((!empty($permissions) && in_array('Counter Information', $permissions)) || $userBs->theme == 'home_eleven')
+                                    @if ($userBs->theme != 'home_eight')
+                                        <li class="nav-item">
+                                        <a href="{{ route('user.counter-information.index', ['language' => $default->code]) }}" 
+                                           class="nav-link {{ request()->is('user.counter-information.index') ? 'active' : '' }}">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                            <span>{{ __('Counter Information') }}</span>
+                                        </a>
+                                    </li>
+                                    @endif
+                                @endif
+
+                                @if (
+                                    $userBs->theme != 'home_three' &&
+                                        $userBs->theme != 'home_six' &&
+                                        $userBs->theme != 'home_eight' &&
+                                        $userBs->theme != 'home_eleven' &&
+                                        $userBs->theme != 'home_twelve')
+                                    <li class="nav-item">
+                                        <a href="{{ route('user.home.page.video', ['language' => $default->code]) }}" 
+                                           class="nav-link {{ request()->is('user.home.page.video') ? 'active' : '' }}">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                            <span>{{__('Video Section') }}</span>
+                                        </a>
+                                    </li>
+                                @endif
+
+
+                                @if (
+                                    $userBs->theme == 'home_one' ||
+                                        $userBs->theme == 'home_two' ||
+                                        $userBs->theme == 'home_six' ||
+                                        $userBs->theme == 'home_three' ||
+                                        $userBs->theme == 'home_nine' ||
+                                        $userBs->theme == 'home_eleven' ||
+                                        $userBs->theme == 'home_eight')
+                                    <li class="nav-item">
+                                        <a href="{{ route('user.home_page.brand_section', ['language' => $default->code]) }}" 
+                                           class="nav-link {{ request()->is('user/home_page/brand_section') ? 'active' : '' }}">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                            @if ($userBs->theme == 'home_eleven')
+                                                <span class="sub-item">{{ __('Donor Section') }}</span>
+                                            @else
+                                                <span class="sub-item">{{ __('Brand Section') }}</span>
+                                            @endif
+                                        </a>
+                                    </li>  
+                                @endif
+
+                                @if ($userBs->theme == 'home_one' || $userBs->theme == 'home_three' || $userBs->theme == 'home_nine')
+                                    <li class="nav-item">
+                                        <a href="{{ route('user.home_page.why_choose_us_section', ['language' => $default->code]) }}" 
+                                           class="nav-link {{ request()->is('user/home_page/why-choose-us') ? 'active' : '' }}">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                            <span>{{__('Why Choose Us Section') }}</span>
+                                        </a>
+                                    </li>
+                                @endif
+                                </ul>
+                            </div>
+                        </li>
+                        @if (!empty($permissions) && in_array('Skill', $permissions))
+                                    @if (
+                                        $userBs->theme != 'home_three' &&
+                                            $userBs->theme != 'home_two' &&
+                                            $userBs->theme != 'home_ten' &&
+                                            $userBs->theme != 'home_nine' &&
+                                            $userBs->theme != 'home_eleven' &&
+                                            $userBs->theme != 'home_seven' &&
+                                            $userBs->theme != 'home_eight')
+                                        <li class="nav-item">
+                                        <a href="{{ route('user.skill.index', ['language' => $default->code]) }}" 
+                                           class="nav-link {{ request()->is('user/skills') ? 'active' : '' }}">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                            <span>{{__('Skills') }}</span>
+                                        </a>
+                                    </li>
+                                    @endif
+                                @endif
+
+                                @if (!empty($permissions) && in_array('Testimonial', $permissions))
+                                    @if ($userBs->theme != 'home_eight')
+                                        <li class="nav-item">
+                                        <a href="{{ route('user.testimonials.index', ['language' => $default->code]) }}" 
+                                           class="nav-link {{ request()->is('user.testimonials.index') ? 'active' : '' }}">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                            <span>{{__('Testimonial') }}</span>
+                                        </a>
+                                    </li>
+                                    @endif
+                                @endif
+
+    
                     @if (!empty($permissions) && in_array('Team', $permissions))
                         <li class="nav-item">
                             <a href="{{ route('user.team_section') . '?language=' . $default->code }}" 
@@ -219,7 +348,35 @@
                             </a>
                         </li>
                     @endif
-
+                    <li class="nav-item">
+                            <a class="nav-link d-flex " 
+                               data-bs-toggle="collapse" 
+                               href="#Footeredit" 
+                               role="button" 
+                               aria-expanded="false">
+                                <i class="bi bi-pencil-square"></i>
+                                <span>{{ __('Footer') }}</span>
+                                <i class="bi bi-chevron-down small"></i>
+                            </a>
+                            <div class="collapse {{ request()->routeIs('user.footer.text') ? 'show' : '' }}" id="Footeredit">
+                                <ul class="nav flex-column ms-3 border-start">
+                                    <li class="nav-item">
+                                        <a href="{{ route('user.footer.text') . '?language=' . $default->code }}" 
+                                           class="nav-link {{ request()->path() == '/user/footer' ? 'active' : '' }}">
+                                            <i class="bi bi-bookmarks"></i>
+                                            <span>{{ __('Footer Logo & Text') }}</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('user.footer.quick_links') . '?language=' . $default->code }}" 
+                                           class="nav-link {{ request()->routeIs('user/footer/quick_links') ? 'active' : '' }}">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                            <span>{{ __('Quick Links') }}</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
                     @if (!empty($permissions) && in_array('Custom Page', $permissions))
                         <li class="nav-item">
                             <a class="nav-link d-flex " 
