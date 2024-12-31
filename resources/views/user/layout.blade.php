@@ -27,6 +27,70 @@
 
         </style>
     @endif
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+        :root {
+            --primary-color: rgb(0, 169, 145);
+        }
+        body {
+            direction: rtl;
+            text-align: right;
+            overflow-x: hidden; /* Prevents horizontal scrolling */
+            white-space: nowrap;
+
+        }
+        .main-content {
+            margin-right: 250px;
+            margin-left: 0;
+        }
+        .nav-link {
+            color: #495057;
+            padding: 0.5rem 1rem;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-color) !important;
+            background-color: #e9ecef  !important;
+        }
+        .sidebar-heading {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 1rem 1rem 0.5rem;
+            color: #6c757d;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            transition: transform 0.3s ease;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .btn-primary:hover {
+            background-color: #008d7a;
+            border-color: #008d7a;
+        }
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .btn-outline-primary:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        #sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+    </style>
 </head>
 <body @if (request()->cookie('user-theme') == 'dark') data-background-color="dark" @endif>
     <div class="wrapper">
@@ -42,7 +106,7 @@
                     @yield('content')
                 </div>
             </div>
-            @includeif('user.partials.footer')
+           
         </div>
     </div>
     @includeif('user.partials.scripts')
@@ -51,6 +115,40 @@
         <img src="{{ asset('assets/admin/img/loader.gif') }}" alt="">
     </div>
     {{-- Loader --}}
+
+    <script>
+           document.addEventListener('DOMContentLoaded', function() {
+        var sidebar = document.getElementById('sidebar');
+        var sidebarOverlay = document.getElementById('sidebar-overlay');
+        var sidebarToggle = document.querySelector('[data-bs-toggle="collapse"][data-bs-target="#sidebar"]');
+        
+        function toggleSidebar() {
+            sidebar.classList.toggle('active');
+            sidebarOverlay.classList.toggle('active');
+        }
+
+        sidebarToggle.addEventListener('click', toggleSidebar);
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+
+        // إغلاق الشريط الجانبي عند النقر على عنصر القائمة في الجوال
+        var sidebarLinks = sidebar.querySelectorAll('.nav-link');
+        sidebarLinks.forEach(function(link) {
+            link.addEventListener('click', function() {
+                if (window.innerWidth < 992) {
+                    toggleSidebar();
+                }
+            });
+        });
+
+        // Initialize all dropdowns
+        var dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'))
+        var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+            return new bootstrap.Dropdown(dropdownToggleEl)
+        });
+    });
+
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

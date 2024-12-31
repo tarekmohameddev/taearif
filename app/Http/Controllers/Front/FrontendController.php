@@ -487,6 +487,14 @@ class FrontendController extends Controller
         }
         $userBs = \App\Models\User\BasicSetting::where('user_id', $user->id)->first();
 
+        if (session()->has('lang')) {
+            $currentLang = Language::where('code', session()->get('lang'))->first();
+        } else {
+            $currentLang = Language::where('is_default', 1)->first();
+        }
+        $lang_id = $currentLang->id;
+        $bs = $currentLang->basic_setting;
+        $be = $currentLang->basic_extended;
 
         $data['home_sections'] = User\HomeSection::where('user_id', $user->id)->first();
 
