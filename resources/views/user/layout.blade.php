@@ -27,6 +27,7 @@
 
         </style>
     @endif
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
 <style>
@@ -38,7 +39,7 @@
             text-align: right;
             overflow-x: hidden; /* Prevents horizontal scrolling */
             white-space: nowrap;
-
+            font-family: 'Cairo', sans-serif;
         }
         .main-content {
             margin-right: 250px;
