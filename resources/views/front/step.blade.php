@@ -97,15 +97,6 @@
                                     <p class="text-danger mb-2 mt-2">{{ $message }}</p>
                                 @enderror
                             </div>
-                            <div class="form-group mt-3">
-                                <label class="form-label">{{ __('Confirm Password') }} *</label>
-                                <input id="password-confirm" type="password" class="form-control"
-                                    placeholder="{{ __('Confirm Password') }}" name="password_confirmation" required
-                                    autocomplete="new-password">
-                                @error('password')
-                                    <p class="text-danger mb-2 mt-2">{{ $message }}</p>
-                                @enderror
-                            </div>
                             <div>
                                 <input type="hidden" name="status" value="{{ $status }}">
                                 <input type="hidden" name="id" value="{{ $id }}">
