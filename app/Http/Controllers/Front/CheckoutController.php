@@ -43,6 +43,8 @@ use App\Http\Controllers\Payment\MidtransController;
 use App\Http\Controllers\Payment\IyzicoController;
 use App\Http\Controllers\Payment\MyFatoorahController;
 use App\Models\BasicSetting;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class CheckoutController extends Controller
 {
@@ -80,8 +82,7 @@ class CheckoutController extends Controller
             $transaction_id = UserPermissionHelper::uniqidReal(8);
             $transaction_details = "Trial";
             $user = $this->store($request->all(), $transaction_id, $transaction_details, $request->price, $be, $request->password);
-
-
+            Auth::login($user);
             $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
             $activation = Carbon::parse($lastMemb->start_date);
             $expire = Carbon::parse($lastMemb->expire_date);

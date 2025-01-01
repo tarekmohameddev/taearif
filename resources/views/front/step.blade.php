@@ -21,8 +21,37 @@
             <div class="row justify-content-center">
                 <div class="col-lg-8">
                     <div class="user-form">
-                        <form action="{{ route('front.checkout.view') }}" method="post" enctype="multipart/form-data">
+                        <form action="{{ route('front.membership.checkout') }}" onsubmit="document.getElementById('confirmBtn').innerHTML='Processing..';document.getElementById('confirmBtn').disabled=true;" method="post" enctype="multipart/form-data">
                             @csrf
+                            <input type="hidden" name="price" value="0">
+                            <input type="hidden" name="first_name" value="test">
+                            <input type="hidden" name="last_name" value="test">
+                            <input type="hidden" name="company_name" value="test">
+                            <input type="hidden" name="country" value="test">
+                            <input type="hidden" name="is_receipt" value="0" id="is_receipt">
+                            <input type="hidden" name="address" value="test">
+                            <input type="hidden" name="city" value="test">
+                            <input type="hidden" name="district" value="test">
+                            <input type="hidden" name="country" value="test">
+                            <input type="hidden" name="package_type" value="{{ $status }}">
+                            <input type="hidden" name="package_id" value="{{ $id }}">
+                            <input type="hidden" name="trial_days" id="trial_days" value="{{ $package->trial_days }}">
+                            <input type="hidden" name="start_date" value="{{ \Carbon\Carbon::today()->format('d-m-Y') }}">
+                            @if ($status === 'trial')
+                            <input type="hidden" name="expire_date"
+                                value="{{ \Carbon\Carbon::today()->addDay($package->trial_days)->format('d-m-Y') }}">
+                            @else
+                            @if ($package->term === 'monthly')
+                                <input type="hidden" name="expire_date"
+                                value="{{ \Carbon\Carbon::today()->addMonth()->format('d-m-Y') }}">
+                            @elseif($package->term === 'lifetime')
+                                <input type="hidden" name="expire_date" value="{{ \Carbon\Carbon::maxValue()->format('d-m-Y') }}">
+                            @else
+                                <input type="hidden" name="expire_date"
+                                value="{{ \Carbon\Carbon::today()->addYear()->format('d-m-Y') }}">
+                            @endif
+                            @endif
+
                             <div class="form-group">
                                 <label class="form-label">{{ __('Username') }} *</label>
                                 <input type="text" class="form-control" name="username" value="{{ old('username') }}"
@@ -48,6 +77,18 @@
                                     <p class="text-danger mb-2 mt-2">{{ $message }}</p>
                                 @enderror
                             </div>
+
+                            <div class="form-group mt-3">
+                                <label class="form-label">{{ __('Phone Number') }} *</label>
+                                <input id="phone" type="text" class="form-control" name="phone"
+                                    placeholder="{{ __('Phone Number') }}" required>
+                                    @if ($errors->has('phone'))
+                                    <span class="error">
+                                        <strong>{{ $errors->first('phone') }}</strong>
+                                    </span>
+                                    @endif
+                            </div>
+
                             <div class="form-group mt-3">
                                 <label class="form-label">{{ __('Password') }} *</label>
                                 <input type="password" class="form-control" name="password" value="{{ old('password') }}"
@@ -84,7 +125,7 @@
                                 @endif
                             </div>
                             <div class="form-group mt-3">
-                                <button type="submit" class="btn btn-lg btn-primary">{{ __('continue') }}</button>
+                                <button type="submit" id="confirmBtn" class="btn btn-lg btn-primary">{{ __('continue') }}</button>
                             </div>
                         </form>
                     </div>

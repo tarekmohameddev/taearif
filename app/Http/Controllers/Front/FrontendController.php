@@ -240,7 +240,8 @@ class FrontendController extends Controller
         $this->validate($request, [
             'username' => 'required|alpha_num|unique:users',
             'email' => 'required|email|unique:users',
-            'password' => 'required|min:8|confirmed',
+            'password' => 'required|min:8',
+            'phone' => 'required|min:8',
             'g-recaptcha-response' => Rule::requiredIf(function () use ($bs) {
                 if ($bs->is_recaptcha == 1) {
                     return true;
@@ -256,6 +257,7 @@ class FrontendController extends Controller
         $data['username'] = $request->username;
         $data['email'] = $request->email;
         $data['password'] = $request->password;
+        $data['phone'] = $request->phone;
         $data['status'] = $request->status;
         $data['id'] = $request->id;
         $online = PaymentGateway::query()->where('status', 1)->get();
