@@ -38,3 +38,6 @@ yarn-error.log*
 
 # Composer dependencies (optional if you don’t want to include vendor files)
 /vendor/
+public/assets/front/invoices/*
+public/assets/front/img/hero_slider/*
+public/assets/user/img/qr/*
