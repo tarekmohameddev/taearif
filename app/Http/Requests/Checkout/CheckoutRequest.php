@@ -27,6 +27,10 @@ class CheckoutRequest extends FormRequest
      */
     public function rules(): array
     {
+        $bs = BS::first();
+        Config::set('captcha.sitekey', $bs->google_recaptcha_site_key);
+        Config::set('captcha.secret', $bs->google_recaptcha_secret_key);
+        
         if (session()->has('lang')) {
             $currentLang = Language::where('code', session()->get('lang'))->first();
         } else {
