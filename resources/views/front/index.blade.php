@@ -198,46 +198,226 @@
         <!-- Template End -->
     @endif
     <div class="container my-5">
-        <h1 class="text-center mb-5">الأسئلة الشائعة</h1>
-        <div class="accordion" id="faqAccordion">
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                        ما هو لوريم إيبسوم؟
-                    </button>
-                </h2>
-                <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body">
-                        لوريم إيبسوم هو ببساطة نص شكلي يستخدم في صناعة الطباعة والتنضيد. كان لوريم إيبسوم ولايزال المعيار للنص الشكلي منذ القرن الخامس عشر.
-                    </div>
+    <h1 class="text-center mb-5">FAQ</h1>
+    <div class="accordion" id="faqAccordion">
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1" aria-expanded="false" aria-controls="collapse1">
+                    ما هي منصة تعاريف؟
+                </button>
+            </h2>
+            <div id="collapse1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    منصة تعاريف هي منصة متكاملة تتيح لك إنشاء موقع إلكتروني لشركتك بكل سهولة، بالإضافة إلى العديد من الخدمات التي تساعدك على إدارة موقعك بكفاءة عالية.
                 </div>
             </div>
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                        لماذا نستخدمه؟
-                    </button>
-                </h2>
-                <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body">
-                        هناك حقيقة مثبتة منذ زمن طويل وهي أن المحتوى المقروء لصفحة ما سيلهي القارئ عن التركيز على الشكل الخارجي للنص أو شكل توضع الفقرات في الصفحة التي يقرأها.
-                    </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2" aria-expanded="false" aria-controls="collapse2">
+                    كيف يمكنني إنشاء موقع إلكتروني باستخدام منصة تعاريف؟
+                </button>
+            </h2>
+            <div id="collapse2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    يمكنك إنشاء موقعك الإلكتروني عبر تسجيل حساب في المنصة، ثم اختيار القالب المناسب لشركتك وبدء تخصيصه بما يتناسب مع احتياجاتك.
                 </div>
             </div>
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                        من أين يأتي؟
-                    </button>
-                </h2>
-                <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body">
-                        خلافاً للإعتقاد السائد فإن لوريم إيبسوم ليس نصاَ عشوائياً، بل إن له جذور في الأدب اللاتيني الكلاسيكي منذ العام 45 قبل الميلاد.
-                    </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3" aria-expanded="false" aria-controls="collapse3">
+                    هل يجب أن أكون خبيرًا في البرمجة لإنشاء موقع إلكتروني عبر تعاريف؟
+                </button>
+            </h2>
+            <div id="collapse3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    لا، منصة تعاريف تعتمد على واجهات استخدام سهلة وبسيطة، حيث يمكنك إنشاء موقعك دون الحاجة لأي خبرة في البرمجة.
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
+                    هل منصة تعاريف تدعم تصميم مواقع الشركات الصغيرة والمتوسطة؟
+                </button>
+            </h2>
+            <div id="collapse4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    نعم، منصة تعاريف تقدم قوالب وتصاميم متنوعة تناسب مختلف أنواع الشركات، بما في ذلك الشركات الصغيرة والمتوسطة.
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse5" aria-expanded="false" aria-controls="collapse5">
+                    هل يمكنني تعديل الموقع بعد إنشائه؟
+                </button>
+            </h2>
+            <div id="collapse5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    نعم، يمكنك تعديل موقعك الإلكتروني في أي وقت بعد إنشائه من خلال لوحة التحكم الخاصة بك على المنصة.
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse6" aria-expanded="false" aria-controls="collapse6">
+                    هل يمكنني إضافة محتوى متعدد الوسائط على موقعي؟
+                </button>
+            </h2>
+            <div id="collapse6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    نعم، يمكنك إضافة نصوص، صور، فيديوهات، روابط، وأي نوع آخر من المحتوى بكل سهولة.
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse7" aria-expanded="false" aria-controls="collapse7">
+                    هل توفر منصة تعاريف استضافة للموقع الإلكتروني؟
+                </button>
+            </h2>
+            <div id="collapse7" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    نعم، منصة تعاريف تقدم خدمة استضافة لموقعك الإلكتروني ضمن خططها، مما يعني أنك لا تحتاج للبحث عن مزود استضافة منفصل.
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse8" aria-expanded="false" aria-controls="collapse8">
+                    هل يمكنني ربط موقعي الإلكتروني مع حسابات التواصل الاجتماعي؟
+                </button>
+            </h2>
+            <div id="collapse8" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    نعم، يمكنك ربط موقعك بحساباتك على منصات التواصل الاجتماعي مثل فيسبوك، تويتر، وإنستغرام.
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse9" aria-expanded="false" aria-controls="collapse9">
+                    هل منصة تعاريف توفر خدمة تحسين محركات البحث (SEO)؟
+                </button>
+            </h2>
+            <div id="collapse9" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    نعم، تقدم المنصة أدوات لتحسين محركات البحث (SEO) لتحسين ظهور موقعك في نتائج محركات البحث مثل جوجل.
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse10" aria-expanded="false" aria-controls="collapse10">
+                    هل يمكنني إضافة متجر إلكتروني إلى موقعي؟
+                </button>
+            </h2>
+            <div id="collapse10" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    نعم، يمكنك إضافة قسم متجر إلكتروني إلى موقعك لبيع منتجاتك أو خدماتك مباشرة عبر الإنترنت.
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse11" aria-expanded="false" aria-controls="collapse11">
+                    هل تقدم منصة تعاريف خدمات الدعم الفني؟
+                </button>
+            </h2>
+            <div id="collapse11" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    نعم، تقدم منصة تعاريف دعمًا فنيًا عبر البريد الإلكتروني أو الدردشة الحية لمساعدتك في حل أي مشكلة قد تواجهها.
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse12" aria-expanded="false" aria-controls="collapse12">
+                    هل أستطيع استخدام منصة تعاريف في أي وقت؟
+                </button>
+            </h2>
+            <div id="collapse12" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    نعم، يمكنك الوصول إلى منصة تعاريف واستخدامها في أي وقت طالما كان لديك اتصال بالإنترنت.
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse13" aria-expanded="false" aria-controls="collapse13">
+                    هل يمكنني تخصيص القوالب لتتناسب مع هوية شركتي؟
+                </button>
+            </h2>
+            <div id="collapse13" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    نعم، يمكنك تخصيص جميع القوالب المتاحة بما يتناسب مع شعار وهويات شركتك، بما في ذلك الألوان والخطوط.
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse14" aria-expanded="false" aria-controls="collapse14">
+                    هل يوجد خطط اشتراك مختلفة في منصة تعاريف؟
+                </button>
+            </h2>
+            <div id="collapse14" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    نعم، توفر المنصة خطط اشتراك متنوعة تناسب مختلف الميزانيات، بدءًا من الخطط المجانية إلى الخطط المدفوعة التي تقدم مزايا إضافية.
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse15" aria-expanded="false" aria-controls="collapse15">
+                    هل يمكنني إضافة صفحة مدونة لموقعي؟
+                </button>
+            </h2>
+            <div id="collapse15" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    نعم، يمكنك إضافة صفحة مدونة لكتابة مقالات أو نشر محتوى ذو صلة بمجال عملك.
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse16" aria-expanded="false" aria-controls="collapse16">
+                    هل يمكنني إضافة نموذج تواصل للعملاء على موقعي؟
+                </button>
+            </h2>
+            <div id="collapse16" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    نعم، يمكنك إضافة نماذج تواصل مخصصة لتمكين الزوار من الاتصال بك بسهولة.
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse17" aria-expanded="false" aria-controls="collapse17">
+                    هل تدعم منصة تعاريف المواقع متعددة اللغات؟
+                </button>
+            </h2>
+            <div id="collapse17" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    نعم، يمكنك إنشاء موقع متعدد اللغات ليخدم جمهورك في مختلف البلدان.
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse18" aria-expanded="false" aria-controls="collapse18">
+                    هل يمكنني تأمين موقعي باستخدام شهادة SSL؟
+                </button>
+            </h2>
+            <div id="collapse18" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    نعم، تقدم منصة تعاريف خدمة تأمين موقعك عبر شهادة SSL لضمان حماية البيانات والمعلومات الحساسة.
                 </div>
             </div>
         </div>
     </div>
+</div>
 
     @if ($bs->feature_section == 1 || $bs->intro_section == 1)
         <!-- Choose Start -->
