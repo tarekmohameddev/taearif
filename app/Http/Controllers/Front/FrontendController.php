@@ -149,7 +149,13 @@ class FrontendController extends Controller
         $rules = [
             'email' => 'required|email|unique:subscribers'
         ];
+
+
         $bs = BS::first();
+
+        if ($bs->is_recaptcha == 1) {
+            $rules['g-recaptcha-response'] = 'required|captcha';
+        }
         $messages = [];
         $validator = Validator::make($request->all(), $rules, $messages);
 
