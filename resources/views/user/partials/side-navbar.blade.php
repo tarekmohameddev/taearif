@@ -14,7 +14,7 @@
     <div class="sidebar-wrapper">
         <div class="sidebar-content">
             <div class="p-3 border-bottom text-center">
-                <h1 class="mb-2 fw-bold" style="color:black !important">{{auth()->user()->first_name}}</h1>
+                <h1 class="mb-2 fw-bold" style="color:black !important">{{auth()->user()->username}}</h1>
                 <a href="{{route('front.user.detail.view', Auth::user()->username)}}" 
                    target="_blank" 
                    class="btn btn-outline-primary w-100">

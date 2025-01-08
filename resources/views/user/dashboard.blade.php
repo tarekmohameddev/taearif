@@ -62,8 +62,7 @@
     <div class="shipments-banner p-4 mb-4">
                 <div class="row">
                     <div class="col-md-12">
-                   <b> <h2 class="pb-2">{{ __('Welcome back') }}, {{ Auth::guard('web')->user()->first_name }}
-                    {{ Auth::guard('web')->user()->last_name }}!</h2> </b>
+                   <b> <h2 class="pb-2">{{ __('Welcome back') }}, {{ Auth::guard('web')->user()->username }}!</h2> </b>
                         <p class="">مرحباً بك في النسخة التجريبية من منصتنا, برجاء التأكد من اكمال جميع الخطوات الاساسية لضمان الحصول على موقع ويب احترافي</p>
                     </div>
                 </div>
