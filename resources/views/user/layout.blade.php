@@ -35,12 +35,27 @@
             --primary-color: rgb(0, 169, 145);
         }
         body {
-            direction: rtl;
-            text-align: right;
-            overflow-x: hidden; /* Prevents horizontal scrolling */
-            white-space: nowrap;
-            font-family: 'Cairo', sans-serif;
-        }
+    overflow-x: hidden; /* Prevents horizontal scrolling */
+    white-space: nowrap;
+    font-family: 'Cairo', sans-serif;
+}
+
+/* Apply RTL for screens larger than mobile */
+@media (min-width: 768px) {
+    body {
+        direction: rtl;
+        text-align: right;
+    }
+}
+
+/* LTR for mobile devices */
+@media (max-width: 767px) {
+    body {
+        direction: ltr;
+        text-align: left;
+    }
+}
+
         .main-content {
             margin-right: 250px;
             margin-left: 0;
