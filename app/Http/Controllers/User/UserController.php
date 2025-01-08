@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Package;
 use App\Models\Customer;
 use App\Models\Membership;
+use App\Models\UserStep;
 use Illuminate\Http\Request;
 use App\Models\User\Follower;
 use App\Models\User\Language;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -115,6 +117,26 @@ class UserController extends Controller
         }
         $data['current_package'] = $data['current_membership'] ? Package::query()->where('id', $data['current_membership']->package_id)->first() : null;
         $data['package_count'] = $nextPackageCount;
+
+        $steps = UserStep::where('user_id',  Auth::guard('web')->user()->id)->first();
+
+        if (!$steps) {
+            // Initialize steps for a new user
+            $steps = UserStep::create(['user_id' =>  Auth::guard('web')->user()->id]);
+        }
+    
+        // Map progress to the required frontend structure
+        $progressSteps = [
+            ['title' => 'تحديث الشعار الخاص بك', 'completed' => (bool) $steps->logo_uploaded],
+            ['title' => 'تحديث ايقونة الموقع', 'completed' => (bool) $steps->favicon_uploaded],
+            ['title' => 'تحديث اسم الموقع الخاص بك', 'completed' => (bool) $steps->website_named],
+            ['title' => 'تحديث بيانات الصفحة الرئيسية', 'completed' => (bool) $steps->homepage_updated],
+        ];
+    
+        $data['steps'] = $progressSteps;
+
+
+
 
         return view('user.dashboard', $data);
     }

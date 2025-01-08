@@ -34,6 +34,7 @@ use PhpOffice\PhpSpreadsheet\Calculation\Web;
 use App\Models\User\BasicSetting as UserBasicSetting;
 use App\Models\User\UserVcard;
 use Illuminate\Support\Facades\DB;
+use App\Models\UserStep;
 
 class RegisterUserController extends Controller
 {
@@ -55,8 +56,20 @@ class RegisterUserController extends Controller
         $offline = OfflineGateway::where('status', 1)->get();
         $gateways = $online->merge($offline);
         $packages = Package::query()->where('status', '1')->get();
+        
+        $logoUploads = UserStep::where('logo_uploaded', true)->count();
+        $faviconUploads = UserStep::where('favicon_uploaded', true)->count();
+        $websiteNames = UserStep::where('website_named', true)->count();
+        $homepageUpdates = UserStep::where('homepage_updated', true)->count();
+    
+        $stats = [
+            ['title' => 'رفع شعار', 'count' => $logoUploads ?? 0],
+            ['title' => 'تحميل أيقونة المفضلة', 'count' => $faviconUploads ?? 0],
+            ['title' => 'تحديث الاسم', 'count' => $websiteNames ?? 0],
+            ['title' => 'تحديث الصفحة الرئيسية', 'count' => $homepageUpdates ?? 0],
+        ];
 
-        return view('admin.register_user.index', compact('users', 'gateways', 'packages'));
+        return view('admin.register_user.index', compact('users', 'gateways', 'packages','stats'));
     }
 
     public function view($id)

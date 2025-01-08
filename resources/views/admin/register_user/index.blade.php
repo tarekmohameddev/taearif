@@ -19,6 +19,45 @@
       </li>
     </ul>
   </div>
+
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card" style="border-radius: 20px; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); overflow: hidden; border: none;">
+            <div class="card-header text-white" style="padding: 1.5rem 2rem; background: linear-gradient(45deg, #000000, #333333);">
+                <h5 class="mb-0" style="font-size: 1.5rem; font-weight: 600;">إحصائيات خطوات المواقع</h5>
+            </div>
+            <div class="card-body" style="padding: 2rem;">
+                <div class="row g-4">
+                    @foreach($stats as $stat)
+                        <div class="col-md">
+                            <div class="p-4" style="background-color: rgba(0, 0, 0, 0.05); border-radius: 15px; transition: all 0.3s ease; height: 100%;">
+                                <h6 class="mb-2" style="font-size: 1.1rem; color: #6c757d;">{{ $stat['title'] }}</h6>
+                                <p class="mb-0" style="font-size: 2rem; font-weight: bold; color: #000000;">{{ $stat['count'] }}</p>
+                                <p class="mb-0" style="font-size: 1rem; color: #6c757d;">موقع</p>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary: #000000;
+    }
+
+    @media (max-width: 767.98px) {
+        .card-body .row > div:not(:last-child) {
+            margin-bottom: 1rem;
+        }
+    }
+    .card-body .row > div > div {
+        cursor: pointer;
+    }
+</style>
   <div class="row">
     <div class="col-md-12">
 

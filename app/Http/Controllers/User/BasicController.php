@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use Mews\Purifier\Facades\Purifier;
 use App\Http\Helpers\UserPermissionHelper;
+use App\Models\UserStep;
 
 class BasicController extends Controller
 {
@@ -54,6 +55,7 @@ class BasicController extends Controller
     public function favicon(Request $request)
     {
         $data['basic_setting'] = BasicSetting::where('user_id', Auth::guard('web')->user()->id)->first();
+
         return view('user.settings.favicon', $data);
     }
     public function generalSettings()
@@ -103,6 +105,11 @@ class BasicController extends Controller
         ]);
 
         $request->session()->flash('success', 'Information updated successfully!');
+        $steps = UserStep::firstOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
+        );
+        $steps->update(['website_named' => true]);
 
         return 'success';
     }
@@ -149,6 +156,13 @@ class BasicController extends Controller
                 $bs->save();
             }
         }
+
+        $steps = UserStep::firstOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
+        );
+        $steps->update(['favicon_uploaded' => true]);
+
         Session::flash('success', 'Favicon update successfully.');
         return "success";
     }
@@ -202,6 +216,13 @@ class BasicController extends Controller
                 $bs->save();
             }
         }
+
+        $steps = UserStep::firstOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
+        );
+        $steps->update(['logo_uploaded' => true]);
+
         Session::flash('success', 'Logo update successfully.');
         return back();
     }
@@ -307,6 +328,11 @@ class BasicController extends Controller
         }
 
         Session::flash('success', 'Preloader updated successfully.');
+        $steps = UserStep::firstOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
+        );
+        $steps->update(['homepage_updated' => true]);
         return back();
     }
 
@@ -391,6 +417,13 @@ class BasicController extends Controller
         $homeText->user_id = Auth::guard('web')->user()->id;
         $homeText->language_id = $request->language_id;
         $homeText->save();
+
+        $steps = UserStep::firstOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
+        );
+        $steps->update(['homepage_updated' => true]);
+
         Session::flash('success', 'Home page text updated successfully.');
         return "success";
     }
@@ -500,6 +533,13 @@ class BasicController extends Controller
         $data->team_section_subtitle = $request->team_section_subtitle;
         $data->save();
         $request->session()->flash('success', 'Team section updated successfully!');
+
+        $steps = UserStep::firstOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
+        );
+        $steps->update(['homepage_updated' => true]);
+
         return redirect()->back();
     }
 
@@ -567,6 +607,13 @@ class BasicController extends Controller
         $homeText->language_id = $request->language_id;
         $homeText->save();
         Session::flash('success', 'About section updated successfully.');
+
+        $steps = UserStep::firstOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
+        );
+        $steps->update(['homepage_updated' => true]);
+
         return "success";
     }
 
@@ -614,6 +661,11 @@ class BasicController extends Controller
             'video_section_text' => clean($request->video_section_text),
         ]);
         $request->session()->flash('success', 'Video section updated successfully!');
+        $steps = UserStep::firstOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
+        );
+        $steps->update(['homepage_updated' => true]);
         return redirect()->back();
     }
     public function whyChooseUsSection(Request $request)
@@ -682,6 +734,11 @@ class BasicController extends Controller
             'why_choose_us_section_video_url' => (strpos($request->why_choose_us_section_video_url, "&") != false) ? substr($request->why_choose_us_section_video_url, 0, strpos($request->why_choose_us_section_video_url, "&")) : $request->why_choose_us_section_video_url,
         ]);
         $request->session()->flash('success', 'Why choose us section updated successfully!');
+        $steps = UserStep::firstOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
+        );
+        $steps->update(['homepage_updated' => true]);
         return redirect()->back();
     }
     public function whyChooseUsItemStore(Request $request)

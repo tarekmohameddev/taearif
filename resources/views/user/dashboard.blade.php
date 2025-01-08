@@ -12,9 +12,99 @@
 @endphp
 @section('content')
     <div class="mt-2 mb-4">
-        <h2 class="pb-2">{{ __('Welcome back') }}, {{ Auth::guard('web')->user()->first_name }}
-            {{ Auth::guard('web')->user()->last_name }}!</h2>
+
     </div>
+<style>
+     :root {
+            --primary: rgb(0, 169, 145);
+            --primary-dark: rgb(0, 149, 125);
+        }
+        
+        .bg-primary {
+            background-color: var(--primary) !important;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+
+        .text-primary {
+            color: var(--primary) !important;
+        }
+            .stats-card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .shipments-banner {
+            background: linear-gradient(to left, #ffe4e6, #ccfbf1);
+            border-radius: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 0.5rem;
+        }
+
+        .progress-bar {
+            background-color: var(--primary);
+        }
+    </style>
+    <div class="shipments-banner p-4 mb-4">
+                <div class="row">
+                    <div class="col-md-12">
+                   <b> <h2 class="pb-2">{{ __('Welcome back') }}, {{ Auth::guard('web')->user()->first_name }}
+                    {{ Auth::guard('web')->user()->last_name }}!</h2> </b>
+                        <p class="">مرحباً بك في النسخة التجريبية من منصتنا, برجاء التأكد من اكمال جميع الخطوات الاساسية لضمان الحصول على موقع ويب احترافي</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Next Steps & Store Status -->
+ @php
+
+    $completedSteps = collect($steps)->where('completed', true)->count();
+    $totalSteps = count($steps);
+    $progress = ($completedSteps / $totalSteps) * 100;
+@endphp
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card" style="border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <div class="card-body" style="padding: 2rem;">
+                <h5 class="card-title mb-4" style="font-size: 1.5rem; color: #333; border-bottom: 2px solid var(--primary); padding-bottom: 0.5rem;">الخطوات التالية</h5>
+                
+                <div class="progress mb-4" style="height: 10px; background-color: #e9ecef; border-radius: 5px; overflow: hidden;">
+                    <div class="progress-bar" role="progressbar" style="width: {{ $progress }}%; background-color: var(--primary); transition: width 0.5s ease-in-out;"></div>
+                </div>
+                
+                <div class="d-flex flex-column gap-3">
+                    @foreach($steps as $step)
+                        <div class="d-flex align-items-center gap-3" style="padding: 10px; border-radius: 10px; transition: all 0.3s ease; cursor: pointer;" onmouseover="this.style.backgroundColor='rgba(0, 169, 145, 0.1)'" onmouseout="this.style.backgroundColor='transparent'">
+                            <div style="width: 24px; height: 24px; border-radius: 50%; {{ $step['completed'] ? 'background-color: var(--primary);' : 'border: 2px solid #ccc;' }} display: flex; justify-content: center; align-items: center; margin-right: 12px;">
+                                @if($step['completed'])
+                                    <i class="bi bi-check-lg" style="color: white; font-size: 14px;"></i>
+                                @endif
+                            </div>
+                            <span style="font-size: 1rem; color: {{ $step['completed'] ? '#333' : '#666' }}; {{ $step['completed'] ? 'text-decoration: line-through;' : '' }}">
+                                {{ $step['title'] }}
+                            </span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
     @if (is_null($package))
         @php
