@@ -55,6 +55,9 @@ class UserController extends Controller
         return back();
     }
 
+    public function sitesettings(){
+        return view('user.sitesettings');
+    }
     public function index()
     {
 

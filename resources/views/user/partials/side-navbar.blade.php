@@ -37,8 +37,16 @@
                         </a>
                     </li>
 
-                    <!-- Store Settings Dropdown -->
                     <li class="nav-item">
+                        <a href="{{ route('site-settings') }}" 
+                           class="nav-link d-flex align-items-center {{ request()->path() == 'user/site-settings' ? 'active' : '' }}">
+                           <i class="bi bi-gear"></i>
+                            <span>إعدادات الموقع</span>
+                        </a>
+                    </li>
+
+                    <!-- Store Settings Dropdown -->
+                    <li class="nav-item d-none">
                         <a class="nav-link d-flex " 
                            data-bs-toggle="collapse" 
                            href="#storeSettings" 
@@ -106,7 +114,7 @@
                     </li>
 
                     <!-- Settings Dropdown -->
-                    <li class="nav-item">
+                    <li class="nav-item d-none">
                         <a class="nav-link d-flex " 
                            data-bs-toggle="collapse" 
                            href="#settingsDropdown" 
@@ -408,6 +416,27 @@
                             </div>
                         </li>
                     @endif
+                    <li class="nav-item d-none">
+                    <a href="{{ route('user.theme.version') }}" 
+                                       class="nav-link {{ request()->is('user/theme/version') ? 'active' : '' }}">
+                                        <i class="bi bi-palette"></i>
+                                        <span>القوالب</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('user.menu_builder.index') . '?language=' . $default->code }}" 
+                                       class="nav-link {{ request()->is('user/menu-builder') ? 'active' : '' }}">
+                                        <i class="bi bi-list-ul"></i>
+                                        <span>منشئ القوائم</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('user.social.index') }}" 
+                                       class="nav-link {{ request()->is('user/social') || request()->is('user/social/*') ? 'active' : '' }}">
+                                        <i class="bi bi-facebook"></i>
+                                        <span>روابط التواصل الاجتماعي</span>
+                                    </a>
+                                </li>
 
                     <!-- Store Management -->
                     <li class="nav-section-title small text-muted px-2 py-2 mt-3">

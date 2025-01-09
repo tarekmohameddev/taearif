@@ -105,7 +105,7 @@
                                             </label>
                                             <h5 class="text-center">{{ __('Theme Five') }}</h5>
                                         </div>
-                                        <div class="col-4 col-sm-4 d-none">
+                                        <div class="col-4 col-sm-4">
                                             <label class="imagecheck mb-2">
                                                 <input name="theme" type="radio" value="home_six"
                                                     class="imagecheck-input"
@@ -115,7 +115,7 @@
                                                         alt="title" class="imagecheck-image">
                                                 </figure>
                                             </label>
-                                            <h5 class="text-center">{{ __('Theme Six') }}</h5>
+                                            <h5 class="text-center">{{ __('ثيم المجالات المتعددة') }}</h5>
                                         </div>
                                         <div class="col-4 col-sm-4 d-none">
                                             <label class="imagecheck mb-2">
