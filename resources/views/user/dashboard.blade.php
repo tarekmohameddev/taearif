@@ -305,7 +305,7 @@
             </div>
         @endif
         @if (!empty($permissions) && in_array('Follow/Unfollow', $permissions))
-            <div class="col-sm-6 col-md-4">
+            <div class="col-sm-6 col-md-4 d-none">
                 <a class="card card-stats card-default card-round" href="{{ route('user.follower.list') }}">
                     <div class="card-body">
                         <div class="row">
@@ -326,7 +326,7 @@
             </div>
         @endif
         @if (!empty($permissions) && in_array('Follow/Unfollow', $permissions))
-            <div class="col-sm-6 col-md-4">
+            <div class="col-sm-6 col-md-4 d-none">
                 <a class="card card-stats card-primary card-round" href="{{ route('user.following.list') }}">
                     <div class="card-body">
                         <div class="row">
@@ -348,7 +348,7 @@
         @endif
     </div>
 
-    <div class="row">
+    <div class="row d-none">
         <div class="col-lg-6">
             <div class="row row-card-no-pd">
                 <div class="col-md-12">

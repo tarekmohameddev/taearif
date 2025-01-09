@@ -45,7 +45,7 @@
                                 <div class="form-group">
                                     <label class="form-label">{{ __('Theme') }} *</label>
                                     <div class="row">
-                                        <div class="col-4 col-sm-4">
+                                        <div class="col-4 col-sm-4 d-none">
                                             <label class="imagecheck mb-2">
                                                 <input name="theme" type="radio" value="home_one"
                                                     class="imagecheck-input"
@@ -69,7 +69,7 @@
                                             </label>
                                             <h5 class="text-center">{{ __('Theme Two') }}</h5>
                                         </div>
-                                        <div class="col-4 col-sm-4">
+                                        <div class="col-4 col-sm-4 d-none">
                                             <label class="imagecheck mb-2">
                                                 <input name="theme" type="radio" value="home_three"
                                                     class="imagecheck-input"
@@ -81,7 +81,7 @@
                                             </label>
                                             <h5 class="text-center">{{ __('Theme Three') }}</h5>
                                         </div>
-                                        <div class="col-4 col-sm-4">
+                                        <div class="col-4 col-sm-4 d-none">
                                             <label class="imagecheck mb-2">
                                                 <input name="theme" type="radio" value="home_four"
                                                     class="imagecheck-input"
@@ -93,7 +93,7 @@
                                             </label>
                                             <h5 class="text-center">{{ __('Theme Four') }}</h5>
                                         </div>
-                                        <div class="col-4 col-sm-4">
+                                        <div class="col-4 col-sm-4 d-none">
                                             <label class="imagecheck mb-2">
                                                 <input name="theme" type="radio" value="home_five"
                                                     class="imagecheck-input"
@@ -105,7 +105,7 @@
                                             </label>
                                             <h5 class="text-center">{{ __('Theme Five') }}</h5>
                                         </div>
-                                        <div class="col-4 col-sm-4">
+                                        <div class="col-4 col-sm-4 d-none">
                                             <label class="imagecheck mb-2">
                                                 <input name="theme" type="radio" value="home_six"
                                                     class="imagecheck-input"
@@ -117,7 +117,7 @@
                                             </label>
                                             <h5 class="text-center">{{ __('Theme Six') }}</h5>
                                         </div>
-                                        <div class="col-4 col-sm-4">
+                                        <div class="col-4 col-sm-4 d-none">
                                             <label class="imagecheck mb-2">
                                                 <input name="theme" type="radio" value="home_seven"
                                                     class="imagecheck-input"
@@ -130,7 +130,7 @@
                                             <h5 class="text-center">{{ __('Theme Seven') }}</h5>
                                         </div>
                                         @if (!empty($permissions) && in_array('Ecommerce', $permissions))
-                                            <div class="col-4 col-sm-4">
+                                            <div class="col-4 col-sm-4 d-none">
                                                 <label class="imagecheck mb-2">
                                                     <input name="theme" type="radio" value="home_eight"
                                                         class="imagecheck-input"
@@ -144,7 +144,7 @@
                                             </div>
                                         @endif
                                         @if (!empty($permissions) && in_array('Hotel Booking', $permissions))
-                                            <div class="col-4 col-sm-4">
+                                            <div class="col-4 col-sm-4 d-none">
                                                 <label class="imagecheck mb-2">
                                                     <input name="theme" type="radio" value="home_nine"
                                                         class="imagecheck-input"
@@ -158,7 +158,7 @@
                                             </div>
                                         @endif
                                         @if (!empty($permissions) && in_array('Course Management', $permissions))
-                                            <div class="col-4 col-sm-4">
+                                            <div class="col-4 col-sm-4 d-none">
                                                 <label class="imagecheck mb-2">
                                                     <input name="theme" type="radio" value="home_ten"
                                                         class="imagecheck-input"
@@ -173,7 +173,7 @@
                                         @endif
 
                                         @if (!empty($permissions) && in_array('Donation Management', $permissions))
-                                            <div class="col-4 col-sm-4">
+                                            <div class="col-4 col-sm-4 d-none">
                                                 <label class="imagecheck mb-2">
                                                     <input name="theme" type="radio" value="home_eleven"
                                                         class="imagecheck-input"
@@ -187,7 +187,7 @@
                                             </div>
                                         @endif
                                         @if (!empty($permissions) && in_array('Portfolio', $permissions))
-                                            <div class="col-4 col-sm-4">
+                                            <div class="col-4 col-sm-4 d-none">
                                                 <label class="imagecheck mb-2">
                                                     <input name="theme" type="radio" value="home_twelve"
                                                         class="imagecheck-input"

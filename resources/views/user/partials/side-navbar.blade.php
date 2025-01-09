@@ -570,7 +570,7 @@
                                         <a href="{{ route('user.completed.quotes') }}" 
                                            class="nav-link {{ request()->is('user/completed/quotes') ? 'active' : '' }}">
                                             <i class="bi bi-check-circle"></i>
-                                            <span>ا��طلبات المكتملة</span>
+                                            <span>طلبات المكتملة</span>
                                         </a>
                                     </li>
                                     <li class="nav-item">
