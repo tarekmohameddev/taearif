@@ -176,24 +176,24 @@
       </a>
     </div>
 
+
     <div class="col-md-6 col-lg-4 mb-4">
-      <a href="{{ route('user.theme.version) }}" class="text-decoration-none">
+      <a href="{{ route('user.theme.version') }}" class="text-decoration-none">
         <div class="card h-100 transition-hover">
           <div class="card-body d-flex align-items-center p-4">
             <div class="flex-shrink-0 me-3">
               <div class="d-flex align-items-center justify-content-center rounded bg-primary-light" style="width: 48px; height: 48px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M21.54 15.88L20.3 14a8.94 8.94 0 0 1-1.75.8L17 18l-2 2-1.2-3.21a6.48 6.48 0 0 1-2.3 0L10.3 20 8 18l-1.55-3.2A8.94 8.94 0 0 1 4.7 14l-1.24 1.88A11.17 11.17 0 0 0 2 20.6L3 22l1.5-1.5L6 22l1.5-1.5L9 22l1.5-1.5L12 22l1.5-1.5L15 22l1.5-1.5L18 22l1-1.4a11.17 11.17 0 0 0-1.46-4.72z"></path><path d="M18.37 7.16L15 6l-3-3L9 6 5.63 7.16a6.7 6.7 0 0 0-2.45 1.85L9 13h6l5.82-3.99a6.7 6.7 0 0 0-2.45-1.85z"></path></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
               </div>
             </div>
             <div>
-              <h5 class="card-title mb-1 text-dark">الثيمات</h5>
-              <p class="card-text text-muted small">تغيير الثيم الحالي</p>
+            <h5 class="card-title mb-1 text-dark">الثيمات</h5>
+            <p class="card-text text-muted small">تغيير الثيم الحالي</p>
             </div>
           </div>
         </div>
       </a>
-    </div>
-    
+    </div>    
   </div>
 </div>
 </div>
