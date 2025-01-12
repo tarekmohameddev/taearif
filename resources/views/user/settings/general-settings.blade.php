@@ -36,31 +36,45 @@
     </ul>
   </div>
 
+  <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .btn-mint {
+            background-color: #7FD1C0;
+            border-color: #7FD1C0;
+            color: white;
+        }
+        .btn-mint:hover {
+            background-color: #6BC1AE;
+            border-color: #6BC1AE;
+            color: white;
+        }
+        .btn-teal {
+            background-color: #0C8B7C;
+            border-color: #0C8B7C;
+            color: white;
+        }
+        .btn-teal:hover {
+            background-color: #0A7A6C;
+            border-color: #0A7A6C;
+            color: white;
+        }
+    </style>
   <div class="row">
     <div class="col-md-12">
-      <div class="card">
         <form id="ajaxForm" action="{{ route('user.general_settings.update_info') }}" method="post">
           @csrf
-          <div class="card-header">
-            <div class="row">
-              <div class="col-lg-10">
-                <div class="card-title">{{ __('Update Information') }}</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card-body py-5">
-            <div class="row">
-              <div class="col-lg-6 offset-lg-3">
-                <div class="form-group">
-                  <label>{{ __('Website Title*') }}</label>
-                  <input type="text" class="form-control" name="website_title"
-                    value="{{ isset($data->website_title) ? $data->website_title : '' }}"
-                    placeholder="{{ __('Enter Website Title') }}">
-                  <p id="errwebsite_title" class="em text-danger mb-0"></p>
-                </div>
-              </div>
-              <div class="col-lg-6 offset-lg-3 d-none">
+          <div class="card mb-4">
+                    <div class="card-body">
+                        <h2 class="card-title h4 mb-3">اسم الموقع</h2>
+                        <p class="text-muted mb-4">قم بتعديل هذا الاسم للعثور عليه بسهولة في لوحة التحكم والمزيد</p>
+                        <div class="d-flex">
+							 <input type="text" class="form-control ms-2" name="website_title"
+                    value="{{ isset($data->website_title) ? $data->website_title : '' }}">
+					<p id="errwebsite_title" class="em text-danger mb-0"></p>
+					
+					<div class="col-lg-6 offset-lg-3 d-none">
                 <div class="form-group">
                   <label>{{ __('Timezone') }} *</label>
                   <select name="timezone" class="form-control select2">
@@ -180,31 +194,24 @@
                 </div>
               </div>
             @endif
-
-          </div>
-
-          <div class="card-footer">
-            <div class="row">
-              <div class="col-12 text-center">
-                <button type="submit" id="submitBtn" class="btn btn-success">
+			
+            </br>
+							<button type="submit" id="submitBtn" class="btn btn-success">
                   {{ __('Update') }}
                 </button>
-              </div>
-            </div>
-          </div>
+                        </div>
+                    </div>
+                </div>
         </form>
-      </div>
+     
     </div>
-  </div>
+  
 
 
   <div class="row">
     <div class="col-md-12">
       <div class="card">
-        <div class="card-header">
-          <div class="card-title">{{__('Update Logo')}}</div>
-        </div>
-        <div class="card-body pt-5 pb-4">
+        <div class="card-body">
           <div class="row">
             <div class="col-lg-6 offset-lg-3">
               <form  enctype="multipart/form-data" action="{{route('user.logo.update')}}" method="POST">
@@ -212,28 +219,135 @@
                 <div class="row">
                   <div class="col-lg-12">
                     <div class="form-group">
-                      <div class="col-12 mb-2">
-                        <label for="image"><strong> {{__('Logo')}} **</strong></label>
-                      </div>
+                    <h2 class="card-title h4 mb-3">شعار الموقع</h2>
+                    <p class="text-muted mb-4">قم بتحميل شعار موقعك. سيظهر هذا الشعار في أعلى موقعك وفي أماكن أخرى مهمة.</p>
+
                       <div class="col-md-12 showImage mb-3">
                         <img src="{{isset($basic_setting->logo) ? asset('assets/front/img/user/'.$basic_setting->logo) :  asset('assets/admin/img/noimage.jpg')}}" alt="..." class="img-thumbnail">
                       </div>
-                      <input type="file" name="file" id="image" class="form-control">
-                      <p class="text-warning">{{__('Only JPG, JPEG, PNG images are allowed')}}</p>
+
+                      <div class="mb-4">
+                    <input type="file" id="image" name="file" accept="image/png,image/jpeg,image/jpg,image/svg+xml" class="d-none">
+                    <button id="uploadButton" class="btn btn-outline-primary border-2 py-3 px-4 d-flex flex-column align-items-center" style="border-width: 2px;color: #0E9384;border-color: #8c9998;border-style: dashed !important;width: 80%">
+                        <i class="bi bi-upload mb-2" style="font-size: 1.5rem;"></i>
+                        <span>تحميل شعار الموقع</span>
+                    </button>
+                </div>
+
+                      <p class="text-muted small mb-0">قم بتحميل صورة بتنسيق PNG أو JPEG أو JPG أو SVG. يجب أن يكون حجم الصورة على الأقل 100×100 بكسل للحصول على أفضل جودة عرض.</p>
                       <p id="errfile" class="mb-0 text-danger em"></p>
                     </div>
                   </div>
                 </div>
+<script>
+     document.addEventListener('DOMContentLoaded', function() {
+        const image = document.getElementById('image');
+        const uploadButton = document.getElementById('uploadButton');
+        const uploadButton_pre = document.getElementById('uploadButton_pre');
+        const uploadButton_crumb = document.getElementById('uploadButton_crumb');
+        const uploadButton_fav = document.getElementById('uploadButton_fav');
+        const logoPreview = document.getElementById('logoPreview');
+        const logoThumbnail = document.getElementById('logoThumbnail');
+        const uploadSuccess = document.getElementById('uploadSuccess');
+        const removeLogo = document.getElementById('removeLogo');
 
-                <div class="card-footer">
-                  <div class="form">
-                    <div class="form-group from-show-notify row">
-                      <div class="col-12 text-center">
-                        <button type="submit" class="btn btn-success">{{__('Update')}}</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+        uploadButton.addEventListener('click', (event) => {
+    event.preventDefault(); // Prevent the form from being submitted
+    image.click(); // Trigger the file input click
+});
+
+uploadButton_pre.addEventListener('click', (event) => {
+    event.preventDefault(); // Prevent the form from being submitted
+    image_pre.click(); // Trigger the file input click
+});
+
+uploadButton_crumb.addEventListener('click', (event) => {
+    event.preventDefault(); // Prevent the form from being submitted
+    image_crumb.click(); // Trigger the file input click
+});
+
+uploadButton_fav.addEventListener('click', (event) => {
+    event.preventDefault(); // Prevent the form from being submitted
+    image.click(); // Trigger the file input click
+});
+
+        image.addEventListener('change', handleFileUpload);
+        image_pre.addEventListener('change', handleFileUpload);
+        image_crumb.addEventListener('change', handleFileUpload);
+        
+        removeLogo.addEventListener('click', () => {
+            image.value = '';
+            logoPreview.style.backgroundImage = '';
+            logoPreview.style.backgroundColor = '#6c757d';
+            logoThumbnail.style.backgroundImage = '';
+            uploadSuccess.classList.add('d-none');
+        });
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                alert('لم يتم اختيار ملف');
+                return;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                alert('يرجى تحميل ملف صورة');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    if (img.width < 100 || img.height < 100) {
+                        alert('يرجى تحميل صورة بحجم لا يقل عن 100×100 بكسل');
+                        return;
+                    }
+                    logoPreview.style.backgroundImage = `url('${e.target.result}')`;
+                    logoPreview.style.backgroundSize = 'contain';
+                    logoPreview.style.backgroundPosition = 'center';
+                    logoPreview.style.backgroundRepeat = 'no-repeat';
+                    logoPreview.style.backgroundColor = 'transparent';
+                    
+                    logoThumbnail.style.backgroundImage = `url('${e.target.result}')`;
+                    uploadSuccess.classList.remove('d-none');
+                };
+                img.onerror = () => {
+                    alert('فشل في تحميل الصورة');
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = () => {
+                alert('فشل في قراءة الملف');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Drag and drop functionality
+        const dropZone = document.querySelector('.card-body');
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('bg-light');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('bg-light');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-light');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                image.files = e.dataTransfer.files;
+                handleFileUpload({ target: { files: [file] } });
+            }
+        });
+    });
+</script>
+            </br>
+             <button type="submit" class="btn btn-success">{{__('Update')}}</button>
               </form>
             </div>
           </div>
@@ -245,19 +359,16 @@
 
   <div class="row">
         <div class="col-md-12">
-
             <div class="card">
-                <div class="card-header">
-                    <div class="card-title d-inline-block">{{ __('Color Settings') }}</div>
-                </div>
                 <div class="card-body">
-                    <div class="row justify-content-center">
-                        <div class="col-lg-6">
+                <h2 class="card-title h4 mb-3">{{ __('Color Settings') }}</h2>
+                    <div class="row justify-content-righr">
+                        <div class="col-lg-6 offset-lg-3">
                             <form id="permissionsForm" class="" action="{{ route('user.color.update') }}"
                                 method="post">
                                 {{ csrf_field() }}
-
-                                <div class="form-group">
+                                
+                                <div class="form-group">    
                                     <label for="">{{ __('Base Color') }}</label>
                                     <input type="text" class="form-control jscolor" name="base_color"
                                         value="{{ $data->base_color }}">
@@ -267,17 +378,10 @@
                                     <input type="text" class="form-control jscolor" name="secondary_color"
                                         value="{{ $data->secondary_color }}">
                                 </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <div class="form">
-                        <div class="form-group from-show-notify row">
-                            <div class="col-12 text-center">
-                                <button type="submit" id="permissionBtn"
+                                </br>
+                <button type="submit" id="permissionBtn"
                                     class="btn btn-success">{{ __('Update') }}</button>
-                            </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -287,11 +391,10 @@
 
     <div class="row">
     <div class="col-md-12">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">{{__('Update Preloader')}}</div>
-        </div>
+    <div class="card">
         <div class="card-body pt-5 pb-4">
+        <h2 class="card-title h4 mb-3">{{__('Update Preloader')}}</h2>
+        <p class="text-muted mb-4">{{__('Preloader')}}</p>
           <div class="row">
             <div class="col-lg-6 offset-lg-3">
               <form  enctype="multipart/form-data" action="{{route('user.preloader.update')}}" method="POST">
@@ -299,79 +402,66 @@
                 <div class="row">
                   <div class="col-lg-12">
                     <div class="form-group">
-                      <div class="col-12 mb-2">
-                        <label for="image"><strong> {{__('Preloader')}} **</strong></label>
-                      </div>
                       <div class="col-md-12 showImage mb-3">
                         <img src="{{isset($basic_setting->preloader) ? asset('assets/front/img/user/'.$basic_setting->preloader) :  asset('assets/admin/img/noimage.jpg')}}" alt="..." class="img-thumbnail">
                       </div>
-                      <input type="file" name="file" id="image" class="form-control">
+                      <div class="mb-4">
+                    <input type="file" id="image_pre" name="file" accept="image/png,image/jpeg,image/jpg,image/svg+xml" class="d-none">
+                    <button id="uploadButton_pre" class="btn btn-outline-primary border-2 py-3 px-4 d-flex flex-column align-items-center" style="border-width: 2px;color: #0E9384;border-color: #8c9998;border-style: dashed !important;width: 80%">
+                        <i class="bi bi-upload mb-2" style="font-size: 1.5rem;"></i>
+                        <span>رفع ايقونة تحميل الصفحة</span>
+                    </button>
+                </div>
+
                       <p class="text-warning">{{__('Only JPG, JPEG, PNG, GIF images are allowed')}}</p>
                       <p id="errfile" class="mb-0 text-danger em"></p>
                     </div>
                   </div>
                 </div>
-
-                <div class="card-footer">
-                  <div class="form">
-                    <div class="form-group from-show-notify row">
-                      <div class="col-12 text-center">
-                        <button type="submit" class="btn btn-success">{{__('Update')}}</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                </br>
+                <button type="submit" class="btn btn-success">{{__('Update')}}</button>
               </form>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+  </div>
+  </div>
   </div>
 
   <div class="row">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header">
-                    <div class="row">
-                        <div class="col-lg-10">
-                            <div class="card-title">{{ __('Update Breadcrumb') }}</div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="card-body pt-5 pb-4">
                     <div class="row">
                         <div class="col-lg-6 offset-lg-3">
+                        <h2 class="card-title h4 mb-3">{{__('Update Breadcrumb')}}</h2>
+                        <p class="text-muted mb-4">{{ __('Breadcrumb*') }}</p>
                             <form id="imageForm" action="{{ route('user.update_breadcrumb') }}"
                                   method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <div class="form-group">
-                                    <div class="col-12 mb-2">
-                                        <label for="">{{ __('Breadcrumb*') }}</label>
-                                    </div>
                                     <div class="col-md-12 showImage mb-3">
                                         <img
                                             src="{{isset($basic_setting->breadcrumb) ? asset('assets/front/img/user/' . $basic_setting->breadcrumb) : asset('assets/admin/img/noimage.jpg')}}"
                                             alt="..." class="img-thumbnail">
                                     </div>
-                                    <input type="file" name="breadcrumb" id="image"
-                                           class="form-control image">
+                                           <div class="mb-4">
+                    <input type="file" name="breadcrumb" id="image_crumb" accept="image/png,image/jpeg,image/jpg,image/svg+xml" class="d-none">
+                    <button id="uploadButton_crumb" class="btn btn-outline-primary border-dashed border-2 py-3 px-4 d-flex flex-column align-items-center" style="border-width: 2px;color: #0E9384;border-color: #8c9998;border-style: dashed !important;width: 80%">
+                        <i class="bi bi-upload mb-2" style="font-size: 1.5rem;"></i>
+                        <span>رفع صورة اعلى الصفحة</span>
+                    </button>
+                </div>
+
                                     @if ($errors->has('breadcrumb'))
                                         <p class="mt-2 mb-0 text-danger">{{ $errors->first('breadcrumb') }}</p>
                                     @endif
                                 </div>
+                                </br>
+                                <button type="submit" form="imageForm" class="btn btn-success">
+                                                              {{ __('Update') }}
+                                                          </button>
                             </form>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card-footer">
-                    <div class="row">
-                        <div class="col-12 text-center">
-                            <button type="submit" form="imageForm" class="btn btn-success">
-                                {{ __('Update') }}
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -382,38 +472,35 @@
     <div class="row">
     <div class="col-md-12">
       <div class="card">
-        <div class="card-header">
-          <div class="card-title">{{__('Update Favicon')}}</div>
-        </div>
         <div class="card-body pt-5 pb-4">
           <div class="row">
             <div class="col-lg-6 offset-lg-3">
+            <h2 class="card-title h4 mb-3">{{__('Update Favicon')}}</h2>
+            <p class="text-muted mb-4">الرمز المفضل هو رمز صغير بجوار عنوان موقعك. يساعد الزائرين على التعرف على علامتك التجارية والظهور في علامات التبويب.</p>
               <form id="ajaxForm" enctype="multipart/form-data" action="{{route('user.favicon.update')}}" method="POST">
                 @csrf
                 <div class="row">
                   <div class="col-lg-12">
                     <div class="form-group">
-                      <div class="col-12 mb-2">
-                        <label for="image"><strong>{{__('Favicon')}} **</strong></label>
-                      </div>
                       <div class="col-md-12 showImage mb-3">
                         <img src="{{isset($basic_setting->favicon) ? asset('assets/front/img/user/'.$basic_setting->favicon) :  asset('assets/admin/img/noimage.jpg')}}" alt="..." class="img-thumbnail">
                       </div>
-                      <input type="file" name="favicon" id="image" class="form-control">
+
+
+                      <div class="mb-4">
+                    <input type="file" name="favicon" id="image_fav" accept="image/png,image/jpeg,image/jpg,image/svg+xml" class="d-none">
+                    <button id="uploadButton_fav" class="btn btn-outline-primary border-dashed border-2 py-3 px-4 d-flex flex-column align-items-center" style="border-width: 2px;color: #0E9384;border-color: #8c9998;border-style: dashed !important;width: 80%">
+                        <i class="bi bi-upload mb-2" style="font-size: 1.5rem;"></i>
+                        <span>رفع ايقونة الصفحة</span>
+                    </button>
+                </div>
+
                       <p id="errfavicon" class="mb-0 text-danger em"></p>
                     </div>
                   </div>
                 </div>
-
-                <div class="card-footer">
-                  <div class="form">
-                    <div class="form-group from-show-notify row">
-                      <div class="col-12 text-center">
-                        <button type="submit" id="submitBtn" class="btn btn-success">{{__('Update')}}</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                </br>
+                <button type="submit" id="submitBtn" class="btn btn-success">{{__('Update')}}</button>
               </form>
             </div>
           </div>
@@ -421,7 +508,7 @@
       </div>
     </div>
   </div>
-
+  </div>
 @endsection
 
 @section('scripts')
