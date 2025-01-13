@@ -66,7 +66,145 @@ class BasicController extends Controller
         $data['basic_setting'] = BasicSetting::where('user_id', Auth::guard('web')->user()->id)->first();
         return view('user.settings.general-settings', $data);
     }
-
+    public function updateAllSettings(Request $request)
+    {
+        $user = Auth::guard('web')->user();
+        $package = UserPermissionHelper::currentPackagePermission($user->id);
+        if (!empty($user)) {
+            $permissions = UserPermissionHelper::packagePermission($user->id);
+            $permissions = json_decode($permissions, true);
+        }
+    
+        // Define validation rules
+        $rules = [
+            'website_title' => 'required',
+            'timezone' => 'required',
+        ];
+    
+        // Add validation rules for images if they are being uploaded
+        if ($request->hasFile('logo')) {
+            $rules['logo'] = [
+                function ($attribute, $value, $fail) use ($request) {
+                    $allowedExts = ['jpg', 'png', 'jpeg'];
+                    $ext = $request->file('logo')->getClientOriginalExtension();
+                    if (!in_array($ext, $allowedExts)) {
+                        return $fail("Only png, jpg, jpeg image is allowed for logo");
+                    }
+                }
+            ];
+        }
+    
+        if ($request->hasFile('preloader')) {
+            $rules['preloader'] = [
+                function ($attribute, $value, $fail) use ($request) {
+                    $allowedExts = ['jpg', 'png', 'jpeg', 'gif'];
+                    $ext = $request->file('preloader')->getClientOriginalExtension();
+                    if (!in_array($ext, $allowedExts)) {
+                        return $fail("Only png, jpg, jpeg, gif image is allowed for preloader");
+                    }
+                }
+            ];
+        }
+    
+        if ($request->hasFile('breadcrumb')) {
+            $rules['breadcrumb'] = [
+                function ($attribute, $value, $fail) use ($request) {
+                    $allowedExts = ['jpg', 'png', 'jpeg'];
+                    $ext = $request->file('breadcrumb')->getClientOriginalExtension();
+                    if (!in_array($ext, $allowedExts)) {
+                        return $fail("Only png, jpg, jpeg image is allowed for breadcrumb");
+                    }
+                }
+            ];
+        }
+    
+        if ($request->hasFile('favicon')) {
+            $rules['favicon'] = [
+                function ($attribute, $value, $fail) use ($request) {
+                    $allowedExts = ['jpg', 'png', 'jpeg', 'ico'];
+                    $ext = $request->file('favicon')->getClientOriginalExtension();
+                    if (!in_array($ext, $allowedExts)) {
+                        return $fail("Only png, jpg, jpeg, ico image is allowed for favicon");
+                    }
+                }
+            ];
+        }
+    
+        // Add ecommerce-specific rules if applicable
+        if (!empty($permissions) && in_array('Ecommerce', $permissions)) {
+            $rules['base_currency_symbol'] = 'required';
+            $rules['base_currency_symbol_position'] = 'required';
+            $rules['base_currency_text'] = 'required';
+            $rules['base_currency_text_position'] = 'required';
+            $rules['base_currency_rate'] = 'required|numeric|min:0.00000001';
+        }
+    
+        // Validate request
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            $validator->getMessageBag()->add('error', 'true');
+            return response()->json($validator->errors());
+        }
+    
+        // Get or create BasicSetting record
+        $bss = BasicSetting::firstOrNew(['user_id' => $user->id]);
+    
+        // Update basic information
+        $bss->website_title = $request->website_title;
+        $bss->timezone = $request->timezone;
+        $bss->email_verification_status = $request->email_verification_status;
+        $bss->base_color = $request->base_color;
+        $bss->secondary_color = $request->secondary_color;
+    
+        // Handle currency settings if applicable
+        if (!empty($permissions) && in_array('Ecommerce', $permissions)) {
+            $bss->base_currency_symbol = $request->base_currency_symbol;
+            $bss->base_currency_symbol_position = $request->base_currency_symbol_position;
+            $bss->base_currency_text = $request->base_currency_text;
+            $bss->base_currency_text_position = $request->base_currency_text_position;
+            $bss->base_currency_rate = $request->base_currency_rate;
+        }
+    
+        // Handle file uploads
+        $imageFields = ['logo', 'preloader', 'breadcrumb', 'favicon'];
+        foreach ($imageFields as $field) {
+            if ($request->hasFile($field)) {
+                // Delete old file if exists
+                if ($bss->$field) {
+                    @unlink(public_path('assets/front/img/user/' . $bss->$field));
+                }
+                
+                // Upload new file
+                $file = $request->file($field);
+                $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('assets/front/img/user/'), $filename);
+                $bss->$field = $filename;
+            }
+        }
+    
+        $bss->save();
+    
+        // Update user steps
+        $steps = UserStep::firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'logo_uploaded' => false,
+                'favicon_uploaded' => false,
+                'website_named' => false,
+                'homepage_updated' => false
+            ]
+        );
+    
+        $steps->update([
+            'website_named' => true,
+            'logo_uploaded' => $request->hasFile('logo') ? true : $steps->logo_uploaded,
+            'favicon_uploaded' => $request->hasFile('favicon') ? true : $steps->favicon_uploaded,
+            'homepage_updated' => $request->hasFile('preloader') ? true : $steps->homepage_updated
+        ]);
+    
+        Session::flash('success', 'Preloader updated successfully.');
+        return back();
+    }
     public function updateInfo(Request $request)
     {
         $user = Auth::guard('web')->user();

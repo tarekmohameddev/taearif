@@ -2309,6 +2309,25 @@
     "Latest Rooms": "أحدث الغرف",
     "Oldest Rooms": "أقدم الغرف",
     "Rent: Low to High": "الإيجار: من الأقل إلى الأعلى",
-    "Rent: High to Low": "الإيجار: من الأعلى إلى الأقل"
-  
+    "Rent: High to Low": "الإيجار: من الأعلى إلى الأقل",
+    "Site Settings":"إعدادات الموقع",
+        "Website Name": "اسم الموقع",
+        "This is the name of your website. It will appear in the header, footer, and browser tabs. Make it simple and memorable.": "هذا هو اسم موقعك الإلكتروني. سيظهر في الرأس والتذييل وعلامات تبويب المتصفح. اجعله بسيطًا وسهل التذكر.",
+        
+        "Website Logo": "شعار الموقع",
+        "Upload your website's logo here. The logo represents your brand and will appear on the website header, footer, and other sections.": "قم برفع شعار موقعك هنا. الشعار يمثل علامتك التجارية وسيظهر في رأس الموقع، التذييل، وأماكن أخرى.",
+        "Upload Logo":"ارفع شعار الموقع",
+        "Website Preloading Image": "صورة التحميل المسبق للموقع",
+        "This image will be displayed while your website is loading. Use a professional or branded image to enhance the user experience.": "هذه الصورة ستظهر أثناء تحميل الموقع. استخدم صورة احترافية أو ذات طابع العلامة التجارية لتحسين تجربة المستخدم.",
+        "Upload Preloader":"ارفع صورة التحميل المسبق للموقع",
+        "Fav Icon": "الأيقونة المصغرة (Favicon Icon)",
+        "Upload a small icon that represents your website. It will appear in the browser tab next to your website name.": "قم برفع أيقونة صغيرة تمثل موقعك. ستظهر في علامة تبويب المتصفح بجانب اسم موقعك.",
+        "Upload Favicon":"ارفع ايقونة مصغرة",
+        "Breadcrumb Photo": "صورة اعلى الصفحات الفرعية",
+        "Add an image that will appear as a background for the breadcrumb section, helping to enhance navigation visuals.": "أضف صورة ستظهر كخلفية لقسم مسار التنقل، مما يساعد على تحسين جمالية التنقل.",
+        "Upload Breadcrumb Image":"أرفع صورة",
+        "Save All Settings":"حفظ جميع الاعدادات",
+        "Main Colors for Website": "الألوان الرئيسية للموقع",
+        "Set the primary and secondary colors for your website. These colors define your website’s style and should align with your brand identity.": "قم بتحديد الألوان الأساسية والثانوية لموقعك. هذه الألوان تحدد أسلوب موقعك ويجب أن تتماشى مع هوية علامتك التجارية."
+    
 }
