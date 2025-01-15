@@ -69,7 +69,7 @@ Route::domain($domain)->group(function () {
     /*=======================================================
     ******************* User Routes *************************
     =======================================================*/
-    Route::get('/track-visitor', 'Front\FrontendController@get_info')->name('front.track.data');
+    Route::post('/track-visitor', 'Front\FrontendController@get_info')->name('front.track.data');
    
 
     Route::group(['prefix' => 'user', 'middleware' => ['auth', 'userstatus', 'Demo']], function () {

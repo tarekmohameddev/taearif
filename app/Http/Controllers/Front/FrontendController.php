@@ -20,6 +20,7 @@ use App\Models\User\Quote;
 use App\Models\Testimonial;
 use App\Models\Visitor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 use App\Models\BasicExtended;
 use App\Models\OfflineGateway;
@@ -1751,6 +1752,9 @@ class FrontendController extends Controller
 
         if ($response->successful()) {
             $country_value =  $response->json()['country'];
+            $country_code =  $response->json()['countryCode'];
+            $region_name =  $response->json()['regionName'];
+            $city =  $response->json()['city'];
         }else{
             $country_value = 'Unknown';
         }
@@ -1758,7 +1762,11 @@ class FrontendController extends Controller
         Visitor::create([
             'user_id' => $request->input('user_id'),
             'device_type' => $request->input('device_type'),
-            'country' => $request->input('country'),
+            'country' => $country_value,
+            'country_code' => $country_value,
+            'region_name' => $country_value,
+            'city' => $city,
+            'ip' => $ip,
         ]);
     
     }
