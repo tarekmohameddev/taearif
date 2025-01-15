@@ -123,6 +123,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 })(window,document,'script','dataLayer','GTM-K2SHNDR3');</script>
 <!-- End Google Tag Manager -->
 
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+
 </head>
 <body @if (request()->cookie('user-theme') == 'dark') data-background-color="dark" @endif>
 <!-- Google Tag Manager (noscript) -->

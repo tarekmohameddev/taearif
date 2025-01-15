@@ -1770,4 +1770,53 @@ class FrontendController extends Controller
         ]);
     
     }
+
+    public function getStats(Request $request)
+    {
+        $userId = Auth::user()->id;
+
+
+        if (!$userId) {
+            return response()->json(['error' => 'User ID is required'], 400);
+        }
+
+        // Device statistics filtered by user_id
+        $deviceStats = DB::table('visitors')
+            ->select(DB::raw('device_type, COUNT(*) as count'))
+            ->where('user_id', $userId)
+            ->groupBy('device_type')
+            ->get();
+
+        // Country statistics filtered by user_id
+        $countryStats = DB::table('visitors')
+            ->select(DB::raw('country, COUNT(*) as count'))
+            ->where('user_id', $userId)
+            ->groupBy('country')
+            ->get();
+
+        // Top 5 cities filtered by user_id
+        $topCities = DB::table('visitors')
+            ->select('city', DB::raw('COUNT(*) as count'))
+            ->where('user_id', $userId)
+            ->groupBy('city')
+            ->orderByDesc('count')
+            ->limit(5)
+            ->get();
+
+        // Top 5 regions filtered by user_id
+        $topRegions = DB::table('visitors')
+            ->select('region_name', DB::raw('COUNT(*) as count'))
+            ->where('user_id', $userId)
+            ->groupBy('region_name')
+            ->orderByDesc('count')
+            ->limit(5)
+            ->get();
+
+        return response()->json([
+            'deviceStats' => $deviceStats,
+            'countryStats' => $countryStats,
+            'topCities' => $topCities,
+            'topRegions' => $topRegions,
+        ]);
+    }
 }

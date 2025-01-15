@@ -70,7 +70,7 @@ Route::domain($domain)->group(function () {
     ******************* User Routes *************************
     =======================================================*/
     Route::post('/track-visitor', 'Front\FrontendController@get_info')->name('front.track.data');
-   
+    Route::get('/stats', 'Front\FrontendController@getStats')->name('front.getStats');
 
     Route::group(['prefix' => 'user', 'middleware' => ['auth', 'userstatus', 'Demo']], function () {
         // user theme change

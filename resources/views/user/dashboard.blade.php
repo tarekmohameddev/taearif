@@ -75,7 +75,44 @@
     $totalSteps = count($steps);
     $progress = ($completedSteps / $totalSteps) * 100;
 @endphp
+<div class="row">
+<div class="container mt-5">
+        <h2>Visitor Statistics</h2>
 
+        <!-- Device Chart -->
+        <div class="row">
+            <div class="col-md-6">
+                <h3>Device Distribution</h3>
+                <canvas id="deviceChart"></canvas>
+            </div>
+            <div class="col-md-6">
+                <h3>Country Distribution</h3>
+                <canvas id="countryChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Top Cities and Regions -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <h3>Top 5 Cities</h3>
+                <ul id="topCities"></ul>
+            </div>
+            <div class="col-md-6">
+                <h3>Top 5 Regions</h3>
+                <ul id="topRegions"></ul>
+            </div>
+        </div>
+
+        <!-- Map -->
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <h3>Visitor Map</h3>
+                <div id="map" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
 <div class="row mb-4">
     <div class="col-md-12">
         <div class="card" style="border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
@@ -584,4 +621,68 @@
             </div>
         @endif
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('ffff');
+            // Fetch data from backend
+            $.ajax({
+                url: '/stats',
+                method: 'GET',
+                success: function(response) {
+                    // Device Chart
+                    var ctx1 = document.getElementById('deviceChart').getContext('2d');
+                    new Chart(ctx1, {
+                        type: 'pie',
+                        data: {
+                            labels: response.deviceStats.map(stat => stat.device_type),
+                            datasets: [{
+                                data: response.deviceStats.map(stat => stat.count),
+                                backgroundColor: ['#000', '#555', '#aaa']
+                            }]
+                        }
+                    });
+
+                    // Country Chart
+                    var ctx2 = document.getElementById('countryChart').getContext('2d');
+                    new Chart(ctx2, {
+                        type: 'bar',
+                        data: {
+                            labels: response.countryStats.map(stat => stat.country),
+                            datasets: [{
+                                label: 'Country Distribution',
+                                data: response.countryStats.map(stat => stat.count),
+                                backgroundColor: '#000'
+                            }]
+                        }
+                    });
+
+                    // Top Cities
+                    var citiesList = $('#topCities');
+                    response.topCities.forEach(city => {
+                        citiesList.append('<li>' + city.city + ' (' + city.count + ' visits)</li>');
+                    });
+
+                    // Top Regions
+                    var regionsList = $('#topRegions');
+                    response.topRegions.forEach(region => {
+                        regionsList.append('<li>' + region.region_name + ' (' + region.count + ' visits)</li>');
+                    });
+
+                    // Map
+                    var map = L.map('map').setView([20.0, 0.0], 2);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                    response.countryStats.forEach(stat => {
+                        if (stat.latitude && stat.longitude) {
+                            L.marker([stat.latitude, stat.longitude]).addTo(map)
+                                .bindPopup('<b>' + stat.country + '</b><br>Visits: ' + stat.count);
+                        }
+                    });
+                },
+                error: function(error) {
+                    console.error('Error fetching stats:', error);
+                }
+            });
+        });
+    </script>
 @endsection
