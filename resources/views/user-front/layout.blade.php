@@ -184,6 +184,26 @@
             reader.readAsDataURL(file);
         })
     </script>
+
+<script>
+
+const tokenInput = document.querySelector('input[name="_token"]');
+    csrfToken = tokenInput ? tokenInput.value : null;
+    user_id_value = {{ $user->id }};
+  fetch('track-visitor', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrfToken // Include the CSRF token here
+    },
+      body: JSON.stringify({
+          user_agent: navigator.userAgent,
+          user_id: user_id_value,
+          device_type: /Mobile|Android|iP(hone|ad)/.test(navigator.userAgent) ? 'mobile' : 'web'
+      })
+  });
+</script>
+
 </body>
 
 </html>

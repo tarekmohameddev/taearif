@@ -18,6 +18,7 @@ use App\Models\Bcategory;
 use App\Models\Subscriber;
 use App\Models\User\Quote;
 use App\Models\Testimonial;
+use App\Models\Visitor;
 use Illuminate\Http\Request;
 
 use App\Models\BasicExtended;
@@ -58,6 +59,8 @@ use App\Models\User\HotelBooking\RoomContent;
 use App\Models\User\Language as UserLanguage;
 use App\Traits\MiscellaneousTrait;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
+
 
 class FrontendController extends Controller
 {
@@ -467,8 +470,7 @@ class FrontendController extends Controller
     public function userDetailView($domain)
     {
         $user = getUser();
-
-
+       
         $data['user'] = $user;
         if (Auth::check() && Auth::user()->id != $user->id && $user->online_status != 1) {
             return redirect()->route('front.index');
@@ -1740,5 +1742,24 @@ class FrontendController extends Controller
         $data['page'] = User\Page::query()->where('user_id', $userId)->where('language_id', $userCurrentLang->id)->where('slug', $slug)->firstOrFail();
 
         return view('user-front.custom-page', $data);
+    }
+
+    public function get_info(Request $request)
+    {
+        $ip = request()->ip();
+        $response = Http::get("http://ip-api.com/json/{$ip}");
+
+        if ($response->successful()) {
+            $country_value =  $response->json()['country'];
+        }else{
+            $country_value = 'Unknown';
+        }
+        
+        Visitor::create([
+            'user_id' => $request->input('user_id'),
+            'device_type' => $request->input('device_type'),
+            'country' => $request->input('country'),
+        ]);
+    
     }
 }
