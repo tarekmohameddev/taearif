@@ -1,28 +1,6 @@
 @extends('user.layout')
 
 @section('content')
-    <div class="page-header">
-        <h4 class="page-title">{{ __('Plugins') }}</h4>
-        <ul class="breadcrumbs">
-            <li class="nav-home">
-                <a href="{{ route('user-dashboard') }}">
-                    <i class="flaticon-home"></i>
-                </a>
-            </li>
-            <li class="separator">
-                <i class="flaticon-right-arrow"></i>
-            </li>
-            <li class="nav-item">
-                <a href="#">{{ __('Basic Settings') }}</a>
-            </li>
-            <li class="separator">
-                <i class="flaticon-right-arrow"></i>
-            </li>
-            <li class="nav-item">
-                <a href="#">{{ __('Plugins') }}</a>
-            </li>
-        </ul>
-    </div>
     <style>
         body {
     background-color: #f8f9fa;
