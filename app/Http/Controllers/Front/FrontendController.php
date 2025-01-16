@@ -1763,8 +1763,8 @@ class FrontendController extends Controller
             'user_id' => $request->input('user_id'),
             'device_type' => $request->input('device_type'),
             'country' => $country_value,
-            'country_code' => $country_value,
-            'region_name' => $country_value,
+            'country_code' => $country_code,
+            'region_name' => $region_name,
             'city' => $city,
             'ip' => $ip,
         ]);

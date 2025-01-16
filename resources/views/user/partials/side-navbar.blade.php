@@ -386,7 +386,7 @@
                             </div>
                         </li>
                     @if (!empty($permissions) && in_array('Custom Page', $permissions))
-                        <li class="nav-item">
+                        <li class="nav-item d-none">
                             <a class="nav-link d-flex " 
                                data-bs-toggle="collapse" 
                                href="#customPages" 
@@ -437,7 +437,7 @@
                                         <span>روابط التواصل الاجتماعي</span>
                                     </a>
                                 </li>
-
+                    <div class ="d-none">
                     <!-- Store Management -->
                     <li class="nav-section-title small text-muted px-2 py-2 mt-3">
                         إدارة الموقع
@@ -477,7 +477,7 @@
                             <span>الخصومات</span>
                         </a>
                     </li>
-
+                    </div>
                     <!-- Additional Features -->
                     <li class="nav-section-title small text-muted px-2 py-2 mt-3">
                         مميزات اضافية
@@ -516,7 +516,7 @@
                     @endif
 
                     @if (!empty($permissions) && in_array('vCard', $permissions))
-                        <li class="nav-item">
+                        <li class="nav-item d-none">
                             <a class="nav-link d-flex " 
                                data-bs-toggle="collapse" 
                                href="#vCardManagement" 
@@ -637,7 +637,7 @@
                         </a>
                     </li>
 
-                    <li class="nav-item">
+                    <li class="nav-item d-none">
                         <a href="{{ route('user.cookie.alert') . '?language=' . $default->code }}" 
                            class="nav-link d-flex align-items-center {{ request()->path() == 'user/cookie-alert' ? 'active' : '' }}">
                             <i class="bi bi-shield-check"></i>

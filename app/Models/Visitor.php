@@ -13,5 +13,9 @@ class Visitor extends Model
         'user_id',
         'device_type',
         'country',
+        'country_code',
+        'region_name',
+        'city',
+        'ip',
     ];
 }

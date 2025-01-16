@@ -117,7 +117,7 @@
     @endif
 
     @if (!request()->routeIs('front.index') && !request()->routeIs('user.login'))
-        <div class="page-title-area bg-primary-light">
+        <div class="page-title-area bg-primary-light d-none">
             <div class="container">
                 <div class="content text-center">
                     <h2>@yield('breadcrumb-title')</h2>

@@ -15,9 +15,14 @@
 @endsection
 
 @section('content')
+
     <!--====== Start user-form-section ======-->
     <section class="user-form-section pt-120 pb-120">
         <div class="container">
+        <div class="row justify-content-center h1">
+            سجل الان مجاناً
+                </div>
+                
             <div class="row justify-content-center">
                 <div class="col-lg-8">
                     <div class="user-form">
