@@ -11,6 +11,51 @@
     $permissions = json_decode($permissions, true);
 @endphp
 
+@section('styles')
+  <link rel="stylesheet" href="{{ asset('assets/admin/css/select2.min.css') }}">
+  <style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .settings-section {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 2rem;
+        margin-bottom: 2rem;
+    }
+    .settings-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    .upload-btn {
+        background-color: white;
+        border: 2px dashed #8c9998;
+        color: #0E9384;
+        padding: 1rem;
+        width: 80%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+    }
+    .upload-btn:hover {
+        border-color: #0E9384;
+    }
+    .preview-image {
+        max-width: 200px;
+        margin-bottom: 1rem;
+    }
+    .section-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    .section-description {
+        color: #6c757d;
+        margin-bottom: 1.5rem;
+    }
+  </style>
+@endsection
+
 @section('content')
 <div class="row">
 <div class="col-md-12">
@@ -77,7 +122,7 @@
                 <div class="card-header">
                     <div class="row">
           <div class="col-12 col-sm-auto ms-sm-auto col-md-auto ms-md-auto">
-            <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-4"> 
+            <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-4">
               @if(!is_null($userDefaultLang))
                     @if (!empty($userLanguages))
                         <select name="userLanguage" style="width: 200px; margin-inline: 0.8rem;height: 100%;" class="form-control btn btn-outline-secondary dropdown-toggle d-flex align-items-center justify-content-between" onchange="window.location='{{url()->current() . '?language='}}'+this.value">
@@ -102,25 +147,30 @@
                                 <input type="hidden" name="id" value="{{ $home_setting->id }}">
                                 <input type="hidden" name="language_id" value="{{ $home_setting->language_id }}">
 
-                             
+
                                 @if (
                                     $userBs->theme != 'home_eight' ||
                                         ($userBs->theme != 'home_ten' && !empty($permissions) && in_array('Testimonial', $permissions)))
                                     <div class="row">
                                         <div class="col-12">
-                                      
+
                                             @if ($userBs->theme == 'home_six' || $userBs->theme == 'home_one' || $userBs->theme == 'home_ten')
+                                            <!-- errtestimonial_image Section -->
                                                 <div class="form-group">
                                                     <div class="col-12 mb-2">
                                                         <label
                                                             for="logo"><strong>{{ __('Testimonial Image') }}</strong></label>
                                                     </div>
-                                                    <div class="col-md-12 showTestimonialImage mb-3">
+                                                    <div class="col-md-12 preview-image showTestimonialImage mb-3">
                                                         <img src="{{ $home_setting->testimonial_image ? asset('assets/front/img/user/home_settings/' . $home_setting->testimonial_image) : asset('assets/admin/img/noimage.jpg') }}"
                                                             alt="..." class="img-thumbnail">
                                                     </div>
                                                     <input type="file" name="testimonial_image" id="testimonial_image"
-                                                        class="form-control ltr">
+                                                        class="d-none">
+                                                        <button type="button" class="upload-btn" onclick="document.getElementById('testimonial_image').click()">
+                                                        <i class="bi bi-upload mb-2"></i>
+                                                        <span>{{ __('Upload Favicon') }}</span>
+                                                        </button>
                                                     <p id="errtestimonial_image" class="mb-0 text-danger em"></p>
                                                 </div>
                                             @endif
@@ -156,7 +206,7 @@
                                         </div>
                                     </div>
                                 @endif
-                               
+
                             </form>
                         </div>
                     </div>
@@ -187,7 +237,7 @@
                                 data-href="{{ route('user.testimonial.bulk.delete') }}"><i
                                     class="flaticon-interface-5"></i> {{ __('Delete') }}</button>
                         </div>
-                        
+
                         <div class="col-lg-3">
                             @if (!is_null($userDefaultLang))
                                 @if (!empty($userLanguages))
@@ -366,3 +416,23 @@
         </div>
     </div>
 @endsection
+@section('scripts')
+  <script>
+    // Preview uploaded images
+    function readURL(input, previewImg) {
+      if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          previewImg.attr('src', e.target.result);
+        }
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    // Handle file input changes
+    $('input[type="file"]').change(function() {
+      var previewImg = $(this).siblings('.preview-image').find('img');
+      readURL(this, previewImg);
+    });
+  </script>
+  @endsection
