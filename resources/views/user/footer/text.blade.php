@@ -5,6 +5,52 @@
     $userDefaultLang = \App\Models\User\Language::where([['user_id', \Illuminate\Support\Facades\Auth::id()], ['is_default', 1]])->first();
     $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support\Facades\Auth::id())->get();
 @endphp
+
+@section('styles')
+  <link rel="stylesheet" href="{{ asset('assets/admin/css/select2.min.css') }}">
+  <style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .settings-section {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 2rem;
+        margin-bottom: 2rem;
+    }
+    .settings-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    .upload-btn {
+        background-color: white;
+        border: 2px dashed #8c9998;
+        color: #0E9384;
+        padding: 1rem;
+        width: 80%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+    }
+    .upload-btn:hover {
+        border-color: #0E9384;
+    }
+    .preview-image {
+        max-width: 200px;
+        margin-bottom: 1rem;
+    }
+    .section-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    .section-description {
+        color: #6c757d;
+        margin-bottom: 1.5rem;
+    }
+  </style>
+@endsection
+
 @if (!empty($selLang) && $selLang->rtl == 1)
     @section('styles')
         <style>
@@ -40,7 +86,7 @@
             <div class="feature-card-text">
                 <h2 class="fs-4 fw-semibold mb-2">{{ __('Footer') }}</h2>
                 <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
-                    قم بتعديل بيانات التذييل من هنا 
+                    قم بتعديل بيانات التذييل من هنا
                 </p>
             </div>
         </div>
@@ -121,23 +167,31 @@
                                     </div>
                                 @endif
                                 <div class="form-group">
-                                    <label for="">{{ __('Footer\'s Logo*') }}</label>
+                                    <label for="">{{ __('Footer\'s Logo*') }}</label> <br>
                                     <div class="col-md-12 showImage mb-3">
                                         <img src="{{ isset($data) ? asset('assets/front/img/user/footer/' . $data->logo) : asset('assets/admin/img/noimage.jpg') }}"
                                             alt="..." class="img-thumbnail">
                                     </div>
-                                    <input type="file" name="logo" class="form-control image">
+                                    <input type="file" name="logo"  id="logo" class=" d-none form-control image">
                                     <p id="errlogo" class="em text-danger mt-2 mb-0"></p>
+                                    <button type="button" class="upload-btn" onclick="document.getElementById('logo').click()">
+                                    <i class="bi bi-upload mb-2"></i>
+                                    <span>{{ __('Upload Favicon') }}</span>
+                                    </button>
                                 </div>
                                 @if ($userBs->theme == 'home_six')
                                     <div class="form-group">
-                                        <label for="">{{ __('Footer\'s Background*') }}</label>
+                                        <label for="">{{ __('Footer\'s Background*') }}</label> <br>
                                         <div class="col-md-12 showImage mb-3">
                                             <img src="{{ isset($data) ? asset('assets/front/img/user/footer/' . $data->bg_image) : asset('assets/admin/img/noimage.jpg') }}"
                                                 alt="..." class="img-thumbnail">
                                         </div>
-                                        <input type="file" name="bg_image" class="form-control image">
+                                        <input type="file" id="bg_image" name="bg_image" class=" d-none form-control image">
                                         <p id="errbg_image" class="em text-danger mt-2 mb-0"></p>
+                                        <button type="button" class="upload-btn" onclick="document.getElementById('bg_image').click()">
+                                        <i class="bi bi-upload mb-2"></i>
+                                        <span>{{ __('Upload Favicon') }}</span>
+                                        </button>
                                     </div>
                                 @endif
                                 <div class="form-group">

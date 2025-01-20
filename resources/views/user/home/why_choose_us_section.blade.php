@@ -5,6 +5,51 @@
     $userDefaultLang = \App\Models\User\Language::where([['user_id', \Illuminate\Support\Facades\Auth::id()], ['is_default', 1]])->first();
 @endphp
 
+@section('styles')
+  <link rel="stylesheet" href="{{ asset('assets/admin/css/select2.min.css') }}">
+  <style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .settings-section {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 2rem;
+        margin-bottom: 2rem;
+    }
+    .settings-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    .upload-btn {
+        background-color: white;
+        border: 2px dashed #8c9998;
+        color: #0E9384;
+        padding: 1rem;
+        width: 80%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+    }
+    .upload-btn:hover {
+        border-color: #0E9384;
+    }
+    .preview-image {
+        max-width: 200px;
+        margin-bottom: 1rem;
+    }
+    .section-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    .section-description {
+        color: #6c757d;
+        margin-bottom: 1.5rem;
+    }
+  </style>
+@endsection
+
 @includeIf('user.partials.rtl-style')
 
 @section('content')
@@ -104,7 +149,11 @@
                                             alt="..." class="img-thumbnail">
                                     </div>
                                     <input type="file" name="why_choose_us_section_image" id="image"
-                                        class="form-control image">
+                                        class=" d-none form-control image">
+                                    <button type="button" class="upload-btn" onclick="document.getElementById('image').click()">
+                                    <i class="bi bi-upload mb-2"></i>
+                                    <span>{{ __('Background Image') }}</span>
+                                    </button>
                                     <p id="error_why_choose_us_section_image" class="mb-0 text-danger em"></p>
                                 </div>
                                 <div class="form-group">
