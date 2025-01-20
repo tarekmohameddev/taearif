@@ -2,120 +2,47 @@
 
 @php
     $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support\Facades\Auth::id())->get();
-    $userDefaultLang = \App\Models\User\Language::where([['user_id', \Illuminate\Support\Facades\Auth::id()], ['is_default', 1]])->first();
+    $userDefaultLang = \App\Models\User\Language::where([
+        ['user_id', \Illuminate\Support\Facades\Auth::id()],
+        ['is_default', 1],
+    ])->first();
 @endphp
-
-@section('styles')
-  <link rel="stylesheet" href="{{ asset('assets/admin/css/select2.min.css') }}">
-  <style>
-    body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .settings-section {
-        border-bottom: 1px solid #eee;
-        padding-bottom: 2rem;
-        margin-bottom: 2rem;
-    }
-    .settings-section:last-child {
-        border-bottom: none;
-        margin-bottom: 0;
-    }
-    .upload-btn {
-        background-color: white;
-        border: 2px dashed #8c9998;
-        color: #0E9384;
-        padding: 1rem;
-        width: 80%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        cursor: pointer;
-    }
-    .upload-btn:hover {
-        border-color: #0E9384;
-    }
-    .preview-image {
-        max-width: 200px;
-        margin-bottom: 1rem;
-    }
-    .section-title {
-        font-size: 1.2rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-    }
-    .section-description {
-        color: #6c757d;
-        margin-bottom: 1.5rem;
-    }
-  </style>
-@endsection
 
 @includeIf('user.partials.rtl-style')
 
 @section('content')
-<div class="row">
-<div class="col-md-12">
-<div class="min-vh-100 d-flex align-items-center justify-content-center pb-3">
-        <div class="feature-card p-4 d-flex flex-column flex-md-row align-items-start gap-3 mx-auto w-100" style="">
-            <div class="icon-container d-flex align-items-center justify-content-center flex-shrink-0 mb-3 mb-md-0">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-dark">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="3" y1="9" x2="21" y2="9"></line>
-                    <line x1="3" y1="15" x2="21" y2="15"></line>
-                    <line x1="9" y1="3" x2="9" y2="21"></line>
-                    <line x1="15" y1="3" x2="15" y2="21"></line>
-                </svg>
-            </div>
-            <div class="feature-card-text">
-                <h2 class="fs-4 fw-semibold mb-2">{{ __('Why Choose Us Section') }}</h2>
-                <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
-                اظهر مميزات شركتك, ولماذا يجب على العملاء اختيارك
-                </p>
-            </div>
-        </div>
+    <div class="page-header">
+        <h4 class="page-title">{{ __('Why Choose Us Section') }}</h4>
+        <ul class="breadcrumbs">
+            <li class="nav-home">
+                <a href="{{ route('user-dashboard') }}">
+                    <i class="flaticon-home"></i>
+                </a>
+            </li>
+            <li class="separator">
+                <i class="flaticon-right-arrow"></i>
+            </li>
+            <li class="nav-item">
+                <a href="#">{{ __('Home Page') }}</a>
+            </li>
+            <li class="separator">
+                <i class="flaticon-right-arrow"></i>
+            </li>
+            <li class="nav-item">
+                <a href="#">{{ __('Why Choose Us Section') }}</a>
+            </li>
+        </ul>
     </div>
-    </div>
-    </div>
-    <style>
-        .feature-card {
-            background-color: #ffffff;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            transition: box-shadow 0.2s;
-        }
-        .feature-card:hover {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        .icon-container {
-            width: 3.5rem;
-            height: 3.5rem;
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 0.5rem;
-        }
-        .icon-container svg {
-            width: 2rem;
-            height: 2rem;
-        }
-        .feature-card-text {
-            white-space: normal !important;
-        }
-        .feature-card-text h2,
-        .feature-card-text p {
-            white-space: normal !important;
-        }
-        @media (min-width: 768px) {
-            .feature-card-text {
-                max-width: 75%;
-            }
-        }
-    </style>
+
     <div class="row">
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
                     <div class="row">
-                        <div class="col-lg-2 float-left">
+                        <div class="col-lg-10">
+                            <div class="card-title">{{ __('Update Why Choose Us Section') }}</div>
+                        </div>
+                        <div class="col-lg-2">
                             @if (!is_null($userDefaultLang))
                                 @if (!empty($userLanguages))
                                     <select name="userLanguage" class="form-control"
@@ -141,21 +68,37 @@
                                 method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <div class="form-group">
-                                    <div class="col-12 mb-2">
-                                        <label for="image"><strong>{{ __('Background Image') }}</strong></label>
-                                    </div>
+                                    @if ($userBs->theme == 'home13')
+                                        <div class="col-12 mb-2">
+                                            <label for="image"><strong>{{ __('Image One') }}</strong></label>
+                                        </div>
+                                    @else
+                                        <div class="col-12 mb-2">
+                                            <label for="image"><strong>{{ __('Background Image') }}</strong></label>
+                                        </div>
+                                    @endif
                                     <div class="col-md-12 showImage mb-3">
                                         <img src="{{ isset($data->why_choose_us_section_image) ? asset('assets/front/img/user/home_settings/' . $data->why_choose_us_section_image) : asset('assets/admin/img/noimage.jpg') }}"
                                             alt="..." class="img-thumbnail">
                                     </div>
                                     <input type="file" name="why_choose_us_section_image" id="image"
-                                        class=" d-none form-control image">
-                                    <button type="button" class="upload-btn" onclick="document.getElementById('image').click()">
-                                    <i class="bi bi-upload mb-2"></i>
-                                    <span>{{ __('Background Image') }}</span>
-                                    </button>
+                                        class="form-control image">
                                     <p id="error_why_choose_us_section_image" class="mb-0 text-danger em"></p>
                                 </div>
+                                @if ($userBs->theme == 'home13')
+                                    <div class="form-group">
+                                        <div class="col-12 mb-2">
+                                            <label for="image"><strong>{{ __('Image Two ') }}</strong></label>
+                                        </div>
+                                        <div class="col-md-12 showImage2 mb-3">
+                                            <img src="{{ isset($data->why_choose_us_section_image_two) ? asset('assets/front/img/user/home_settings/' . $data->why_choose_us_section_image_two) : asset('assets/admin/img/noimage.jpg') }}"
+                                                alt="..." class="img-thumbnail">
+                                        </div>
+                                        <input type="file" name="why_choose_us_section_image_two" id="image2"
+                                            class="form-control image">
+                                        <p id="error_why_choose_us_section_image_two" class="mb-0 text-danger em"></p>
+                                    </div>
+                                @endif
                                 <div class="form-group">
                                     <label for="">{{ __('Why Choose Us Section Title') }}</label>
                                     <input type="text" class="form-control" name="why_choose_us_section_title"
@@ -187,44 +130,50 @@
                                                 {{ $errors->first('why_choose_us_section_text') }}</p>
                                         @endif
                                     </div>
-                                    <div class="form-group">
-                                        <label for="">{{ __('Why Choose Us Section Button Text') }}</label>
-                                        <input type="text" class="form-control" name="why_choose_us_section_button_text"
-                                            value="{{ $data->why_choose_us_section_button_text ?? '' }}"
-                                            placeholder="{{ __('Enter button text') }}">
-                                        @if ($errors->has('why_choose_us_section_button_text'))
-                                            <p class="mt-2 mb-0 text-danger">
-                                                {{ $errors->first('why_choose_us_section_button_text') }}</p>
-                                        @endif
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="">{{ __('Why Choose Us Section Button URL') }}</label>
-                                        <input type="text" class="form-control" name="why_choose_us_section_button_url"
-                                            value="{{ $data->why_choose_us_section_button_url ?? '' }}"
-                                            placeholder="{{ __('Enter button url') }}">
-                                        @if ($errors->has('why_choose_us_section_button_url'))
-                                            <p class="mt-2 mb-0 text-danger">
-                                                {{ $errors->first('why_choose_us_section_button_url') }}</p>
-                                        @endif
-                                    </div>
+                                    @if ($userBs->theme != 'home13')
+                                        <div class="form-group">
+                                            <label for="">{{ __('Why Choose Us Section Button Text') }}</label>
+                                            <input type="text" class="form-control"
+                                                name="why_choose_us_section_button_text"
+                                                value="{{ $data->why_choose_us_section_button_text ?? '' }}"
+                                                placeholder="{{ __('Enter button text') }}">
+                                            @if ($errors->has('why_choose_us_section_button_text'))
+                                                <p class="mt-2 mb-0 text-danger">
+                                                    {{ $errors->first('why_choose_us_section_button_text') }}</p>
+                                            @endif
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="">{{ __('Why Choose Us Section Button URL') }}</label>
+                                            <input type="text" class="form-control"
+                                                name="why_choose_us_section_button_url"
+                                                value="{{ $data->why_choose_us_section_button_url ?? '' }}"
+                                                placeholder="{{ __('Enter button url') }}">
+                                            @if ($errors->has('why_choose_us_section_button_url'))
+                                                <p class="mt-2 mb-0 text-danger">
+                                                    {{ $errors->first('why_choose_us_section_button_url') }}</p>
+                                            @endif
+                                        </div>
+                                    @endif
                                 @endif
-                                @if ($userBs->theme === 'home_three')
-                                    <div class="form-group">
-                                        <div class="col-12 mb-2">
-                                            <label
-                                                for="logo"><strong>{{ __('Why choose us video section image') }}</strong></label>
+                                @if ($userBs->theme === 'home_three' || $userBs->theme === 'home13')
+                                    @if ($userBs->theme != 'home13')
+                                        <div class="form-group">
+                                            <div class="col-12 mb-2">
+                                                <label
+                                                    for="logo"><strong>{{ __('Why choose us video section image') }}</strong></label>
+                                            </div>
+                                            <div class="col-md-12 showAboutVideoImage mb-3">
+                                                <img src="{{ !empty($data->why_choose_us_section_video_image) ? asset('assets/front/img/user/home_settings/' . $data->why_choose_us_section_video_image) : asset('assets/admin/img/noimage.jpg') }}"
+                                                    alt="..." class="img-thumbnail">
+                                            </div>
+                                            <input type="file" name="why_choose_us_section_video_image"
+                                                id="about_video_image" class="form-control ltr">
+                                            @if ($errors->has('why_choose_us_section_video_image'))
+                                                <p class="mt-2 mb-0 text-danger">
+                                                    {{ $errors->first('why_choose_us_section_video_image') }}</p>
+                                            @endif
                                         </div>
-                                        <div class="col-md-12 showAboutVideoImage mb-3">
-                                            <img src="{{ !empty($data->why_choose_us_section_video_image) ? asset('assets/front/img/user/home_settings/' . $data->why_choose_us_section_video_image) : asset('assets/admin/img/noimage.jpg') }}"
-                                                alt="..." class="img-thumbnail">
-                                        </div>
-                                        <input type="file" name="why_choose_us_section_video_image"
-                                            id="about_video_image" class="form-control ltr">
-                                        @if ($errors->has('why_choose_us_section_video_image'))
-                                            <p class="mt-2 mb-0 text-danger">
-                                                {{ $errors->first('why_choose_us_section_video_image') }}</p>
-                                        @endif
-                                    </div>
+                                    @endif
                                     <div class="form-group">
                                         <label for="">{{ __('Video URL') }}</label>
                                         <input type="text" class="form-control ltr"

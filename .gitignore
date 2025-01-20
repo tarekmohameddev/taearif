@@ -16,9 +16,9 @@
 /storage/framework/testing/*
 /storage/framework/views/*
 /storage/logs/*
-/public/assets/front/img/user/*
+# /public/assets/front/img/user/*
 # Environment files and backups
-.env
+# .env
 .env.backup
 
 # PHPUnit cache
@@ -37,7 +37,4 @@ yarn-error.log*
 .idea/*
 
 # Composer dependencies (optional if you don’t want to include vendor files)
-/vendor/
-public/assets/front/invoices/*
-public/assets/front/img/hero_slider/*
-public/assets/user/img/qr/*
+# /vendor/

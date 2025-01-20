@@ -36,6 +36,7 @@ use App\Models\User\DonationManagement\DonationContent;
 use App\Models\User\DonationManagement\DonationDetail;
 use App\Models\User\HomePageText as UserHomePageText;
 use App\Models\User\HotelBooking\RoomBooking;
+use App\Models\User\RealestateManagement\PropertyWishlist;
 use App\Models\User\UserEmailTemplate;
 use App\Models\User\UserOfflineGateway;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
@@ -440,7 +441,7 @@ class CustomerController extends Controller
         $data['couseCount'] = CourseEnrolment::where('customer_id', Auth::guard('customer')->user()->id)->where('payment_status', 'completed')->count();
         $data['roomSetting'] = DB::table('user_room_settings')->where('user_id', $data['author']->id)->first();
         $data['roomBookingCount'] = RoomBooking::where('customer_id', Auth::guard('customer')->user()->id)->where('payment_status', 1)->count();
-
+        $data['propertyWishlistsCount'] = PropertyWishlist::where('customer_id', Auth::guard('customer')->user()->id)->count();
         return view('user-front.customer.dashboard', $data);
     }
     public function roomBookings()
@@ -663,7 +664,8 @@ class CustomerController extends Controller
             ->first();
         return response()->json([
             'description' => $offline->short_description,
-            'instructions' => $offline->instructions ?? '', 'is_receipt' => $offline->is_receipt
+            'instructions' => $offline->instructions ?? '',
+            'is_receipt' => $offline->is_receipt
         ]);
     }
 
@@ -1114,5 +1116,56 @@ class CustomerController extends Controller
         });
 
         return view('user-front.customer.donations', compact('donations'));
+    }
+
+
+    public function addToPropertyWishlist($domain, $id)
+    {
+        dd('wait');
+        if (!Auth::guard('customer')->check()) {
+            return response()->json(['error' => 'Please Login first!']);
+        }
+        $user = getUser();
+        $wishlist = PropertyWishlist::where('customer_id', Auth::guard('customer')->user()->id)->where('property_id', $id)->first();
+        $data = explode(',,,', $id);
+        $id = (int)$data[0];
+        // if wishlist is empty then this the first Item for this user
+        if (!$wishlist) {
+            PropertyWishlist::create([
+                'user_id' => $user->id,
+                'customer_id' => Auth::guard('customer')->user()->id,
+                'property_id' => $id,
+            ]);
+            return redirect()->back()->with(['success' => 'Property added to wishlist successfully!']);
+        } else {
+            $wishlist->delete();
+            return redirect()->back()->with(['success' => 'Property removed from wishlist successfully!']);
+        }
+    }
+
+    public function removePropertyWishlist($domain, $id)
+    {
+
+        $data['wishlist'] = PropertyWishlist::findOrFail($id)->delete();
+        return redirect()->back()->with(['success' => 'Property removed from wishlist successfully!']);
+    }
+    public function propertyWishlist($domain)
+    {
+        $user = getUser();
+
+        if (session()->has('user_lang') && !empty($user)) {
+            $data['language'] = Language::where('code', session()->get('user_lang'))->where('user_id', $user->id)->first();
+            if (empty($data['language'])) {
+                $data['language'] = Language::where('is_default', 1)->where('user_id', $user->id)->first();
+                session()->put('user_lang', $data['language']->code);
+            }
+        } else {
+            $data['language'] = Language::where('is_default', 1)->where('user_id', $user->id)->first();
+        }
+
+        $data['wishlist'] = PropertyWishlist::where('customer_id', Auth::guard('customer')->user()->id)
+            ->with('property.contents')
+            ->orderBy('id', 'DESC')->get();
+        return view('user-front.customer.property-wishlist', $data);
     }
 }

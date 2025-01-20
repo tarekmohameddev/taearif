@@ -5,7 +5,6 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\User\FAQ;
 use App\Models\User\Language;
-use App\Models\User\HomePageText;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Response;
@@ -17,16 +16,6 @@ class FAQController extends Controller
     {
         // first, get the language info from db
         $language = Language::where('code', $request->language)->where('user_id', Auth::id())->firstOrFail();
-        $text = HomePageText::where('user_id', Auth::guard('web')->user()->id)->where('language_id', $language->id);
-        if ($text->count() == 0) {
-            $text = new HomePageText;
-            $text->language_id = $language->id;
-            $text->user_id = Auth::guard('web')->user()->id;
-            $text->save();
-        } else {
-            $text = $text->first();
-        }
-        $information['home_setting'] = $text;
 
         // then, get the faqs of that language from db
         $information['faqs'] = FAQ::where('language_id', $language->id)

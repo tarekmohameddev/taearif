@@ -90,7 +90,18 @@ class HomePageText extends Model
         'causes_section_subtitle',
         'job_education_title',
         'job_education_subtitle',
-        'donor_title'
+        'donor_title',
+        'about_image_two',
+        'why_choose_us_section_image_two',
+        'years_of_expricence',
+        'featured_property_title',
+        'property_title',
+        'city_title',
+        'city_subtitle',
+
+        'project_title',
+        'project_subtitle',
+        'testimonial_text'
     ];
     public function language()
     {

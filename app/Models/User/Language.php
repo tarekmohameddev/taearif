@@ -3,6 +3,7 @@
 namespace App\Models\User;
 
 use App\Models\BasicExtended;
+use App\Models\User;
 use App\Models\User\CourseManagement\CourseCategory;
 use App\Models\User\CourseManagement\CourseFaq;
 use App\Models\User\CourseManagement\CourseInformation;
@@ -16,6 +17,11 @@ use App\Models\User\DonationManagement\DonationContent;
 use App\Models\User\HotelBooking\RoomAmenity;
 use App\Models\User\HotelBooking\RoomCategory;
 use App\Models\User\HotelBooking\RoomContent;
+use App\Models\User\RealestateManagement\Amenity;
+use App\Models\User\RealestateManagement\Category;
+use App\Models\User\RealestateManagement\City;
+use App\Models\User\RealestateManagement\Country;
+use App\Models\User\RealestateManagement\State;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
@@ -32,7 +38,10 @@ class Language extends Model
         'user_id',
         'keywords'
     ];
-
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'language_id');
+    }
     public function itemInfo()
     {
         return $this->hasMany(UserItemContent::class, 'language_id');
@@ -242,5 +251,29 @@ class Language extends Model
     public function donationCategories()
     {
         return $this->hasMany(DonationCategories::class, 'language_id', 'id');
+    }
+
+    public function propertyCategories()
+    {
+        return $this->hasMany(Category::class, 'language_id');
+    }
+
+    public function propertyCountries()
+    {
+        return $this->hasMany(Country::class, 'language_id');
+    }
+
+    public function propertyStates()
+    {
+        return $this->hasMany(State::class, 'language_id');
+    }
+
+    public function propertyCities()
+    {
+        return $this->hasMany(City::class, 'language_id');
+    }
+
+    public function propertyAmenities(){
+        return $this->hasMany(Amenity::class, 'language_id');
     }
 }

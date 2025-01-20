@@ -12,135 +12,9 @@
 @endphp
 @section('content')
     <div class="mt-2 mb-4">
-
+        <h2 class="pb-2">{{ __('Welcome back') }}, {{ Auth::guard('web')->user()->first_name }}
+            {{ Auth::guard('web')->user()->last_name }}!</h2>
     </div>
-<style>
-     :root {
-            --primary: rgb(0, 169, 145);
-            --primary-dark: rgb(0, 149, 125);
-        }
-        
-        .bg-primary {
-            background-color: var(--primary) !important;
-        }
-        
-        .btn-primary {
-            background-color: var(--primary);
-            border-color: var(--primary);
-        }
-        
-        .btn-primary:hover {
-            background-color: var(--primary-dark);
-            border-color: var(--primary-dark);
-        }
-
-        .text-primary {
-            color: var(--primary) !important;
-        }
-            .stats-card {
-            background: white;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .shipments-banner {
-            background: linear-gradient(to left, #ffe4e6, #ccfbf1);
-            border-radius: 0.5rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .progress {
-            height: 0.5rem;
-        }
-
-        .progress-bar {
-            background-color: var(--primary);
-        }
-    </style>
-    <div class="shipments-banner p-4 mb-4">
-                <div class="row">
-                    <div class="col-md-12">
-                   <b> <h2 class="pb-2">{{ __('Welcome back') }}, {{ Auth::guard('web')->user()->username }}!</h2> </b>
-                        <p class="">مرحباً بك في النسخة التجريبية من منصتنا, برجاء التأكد من اكمال جميع الخطوات الاساسية لضمان الحصول على موقع ويب احترافي</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Next Steps & Store Status -->
- @php
-
-    $completedSteps = collect($steps)->where('completed', true)->count();
-    $totalSteps = count($steps);
-    $progress = ($completedSteps / $totalSteps) * 100;
-@endphp
-<div class="row">
-<div class="container mt-5">
-        <h2>Visitor Statistics</h2>
-
-        <!-- Device Chart -->
-        <div class="row">
-            <div class="col-md-6">
-                <h3>Device Distribution</h3>
-                <canvas id="deviceChart"></canvas>
-            </div>
-            <div class="col-md-6">
-                <h3>Country Distribution</h3>
-                <canvas id="countryChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Top Cities and Regions -->
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <h3>Top 5 Cities</h3>
-                <ul id="topCities"></ul>
-            </div>
-            <div class="col-md-6">
-                <h3>Top 5 Regions</h3>
-                <ul id="topRegions"></ul>
-            </div>
-        </div>
-
-        <!-- Map -->
-        <div class="row mt-4">
-            <div class="col-md-12">
-                <h3>Visitor Map</h3>
-                <div id="map" style="height: 400px;"></div>
-            </div>
-        </div>
-    </div>
-
-</div>
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card" style="border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-            <div class="card-body" style="padding: 2rem;">
-                <h5 class="card-title mb-4" style="font-size: 1.5rem; color: #333; border-bottom: 2px solid var(--primary); padding-bottom: 0.5rem;">الخطوات التالية</h5>
-                
-                <div class="progress mb-4" style="height: 10px; background-color: #e9ecef; border-radius: 5px; overflow: hidden;">
-                    <div class="progress-bar" role="progressbar" style="width: {{ $progress }}%; background-color: var(--primary); transition: width 0.5s ease-in-out;"></div>
-                </div>
-                
-                <div class="d-flex flex-column gap-3">
-                    @foreach($steps as $step)
-                        <div class="d-flex align-items-center gap-3" style="padding: 10px; border-radius: 10px; transition: all 0.3s ease; cursor: pointer;" onmouseover="this.style.backgroundColor='rgba(0, 169, 145, 0.1)'" onmouseout="this.style.backgroundColor='transparent'">
-                            <div style="width: 24px; height: 24px; border-radius: 50%; {{ $step['completed'] ? 'background-color: var(--primary);' : 'border: 2px solid #ccc;' }} display: flex; justify-content: center; align-items: center; margin-right: 12px;">
-                                @if($step['completed'])
-                                    <i class="bi bi-check-lg" style="color: white; font-size: 14px;"></i>
-                                @endif
-                            </div>
-                            <span style="font-size: 1rem; color: {{ $step['completed'] ? '#333' : '#666' }}; {{ $step['completed'] ? 'text-decoration: line-through;' : '' }}">
-                                {{ $step['title'] }}
-                            </span>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
     @if (is_null($package))
         @php
@@ -342,7 +216,7 @@
             </div>
         @endif
         @if (!empty($permissions) && in_array('Follow/Unfollow', $permissions))
-            <div class="col-sm-6 col-md-4 d-none">
+            <div class="col-sm-6 col-md-4">
                 <a class="card card-stats card-default card-round" href="{{ route('user.follower.list') }}">
                     <div class="card-body">
                         <div class="row">
@@ -363,7 +237,7 @@
             </div>
         @endif
         @if (!empty($permissions) && in_array('Follow/Unfollow', $permissions))
-            <div class="col-sm-6 col-md-4 d-none">
+            <div class="col-sm-6 col-md-4">
                 <a class="card card-stats card-primary card-round" href="{{ route('user.following.list') }}">
                     <div class="card-body">
                         <div class="row">
@@ -385,7 +259,7 @@
         @endif
     </div>
 
-    <div class="row d-none">
+    <div class="row">
         <div class="col-lg-6">
             <div class="row row-card-no-pd">
                 <div class="col-md-12">
@@ -621,68 +495,4 @@
             </div>
         @endif
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('ffff');
-            // Fetch data from backend
-            $.ajax({
-                url: '/stats',
-                method: 'GET',
-                success: function(response) {
-                    // Device Chart
-                    var ctx1 = document.getElementById('deviceChart').getContext('2d');
-                    new Chart(ctx1, {
-                        type: 'pie',
-                        data: {
-                            labels: response.deviceStats.map(stat => stat.device_type),
-                            datasets: [{
-                                data: response.deviceStats.map(stat => stat.count),
-                                backgroundColor: ['#000', '#555', '#aaa']
-                            }]
-                        }
-                    });
-
-                    // Country Chart
-                    var ctx2 = document.getElementById('countryChart').getContext('2d');
-                    new Chart(ctx2, {
-                        type: 'bar',
-                        data: {
-                            labels: response.countryStats.map(stat => stat.country),
-                            datasets: [{
-                                label: 'Country Distribution',
-                                data: response.countryStats.map(stat => stat.count),
-                                backgroundColor: '#000'
-                            }]
-                        }
-                    });
-
-                    // Top Cities
-                    var citiesList = $('#topCities');
-                    response.topCities.forEach(city => {
-                        citiesList.append('<li>' + city.city + ' (' + city.count + ' visits)</li>');
-                    });
-
-                    // Top Regions
-                    var regionsList = $('#topRegions');
-                    response.topRegions.forEach(region => {
-                        regionsList.append('<li>' + region.region_name + ' (' + region.count + ' visits)</li>');
-                    });
-
-                    // Map
-                    var map = L.map('map').setView([20.0, 0.0], 2);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                    response.countryStats.forEach(stat => {
-                        if (stat.latitude && stat.longitude) {
-                            L.marker([stat.latitude, stat.longitude]).addTo(map)
-                                .bindPopup('<b>' + stat.country + '</b><br>Visits: ' + stat.count);
-                        }
-                    });
-                },
-                error: function(error) {
-                    console.error('Error fetching stats:', error);
-                }
-            });
-        });
-    </script>
 @endsection

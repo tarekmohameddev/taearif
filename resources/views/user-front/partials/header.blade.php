@@ -4,18 +4,18 @@
     <div class="header-nav">
         <div class="container-fluid container-1600">
             <div class="nav-container mobile-rs-nav">
-                
-                    <!-- Site Logo -->
-                    <div class="site-logo">
-                        @if (isset($userBs->logo))
+
+                <!-- Site Logo -->
+                <div class="site-logo">
+                    @if (isset($userBs->logo))
                         <a href="{{ route('front.user.detail.view', getParam()) }}">
                             <img class="lazy" data-src="{{ asset('assets/front/img/user/' . $userBs->logo) }}"
                                 alt="Logo">
                         </a>
-                        @endif
-                    </div>
-                    
-                
+                    @endif
+                </div>
+
+
 
                 <!-- Main Menu -->
                 <div class="nav-menu d-lg-flex align-items-center">
@@ -66,39 +66,33 @@
                 <div class="navbar-extra d-flex align-items-center">
                     <!-- language selection -->
                     <form action="{{ route('changeUserLanguage', getParam()) }}" id="userLangForms">
-    @csrf
-    <input type="hidden" name="username" value="{{ $user->username }}">
-    <input type="hidden" name="code" id="lang-code" value="">
-    <div class="language-selection language-selection-two">
-        @if ($userCurrentLang->id)
-            <div class="current-language">
-                <img 
-                    src="{{ asset('assets/front/img/flags/' . $userCurrentLang->code . '.png') }}" 
-                    alt="{{ $userCurrentLang->name }}" 
-                    class="img-fluid" 
-                    style="width: 25px; height: 25px;"> 
-                <i class="far fa-angle-down"></i>
-            </div>
-        @endif
-        <ul class="language-list" id="language-list">
-            @foreach ($userLangs as $userLang)
-                <li>
-                    <a href="javascript:void(0)" 
-                       data-value="{{ $userLang->code }}" 
-                       onclick="changeLanguage('{{ $userLang->code }}')">
-                        <img 
-                            src="{{ asset('assets/front/img/flags/' . $userLang->code . '.png') }}" 
-                            alt="{{ $userLang->name }}" 
-                            title="{{ convertUtf8($userLang->name) }}" 
-                            class="img-fluid" 
-                            style="width: 25px; height: 25px;">
-                            {{$userLang->name}}
-                    </a>
-                </li>
-            @endforeach
-        </ul>
-    </div>
-</form>
+                        @csrf
+                        <input type="hidden" name="username" value="{{ $user->username }}">
+                        <input type="hidden" name="code" id="lang-code" value="">
+                        <div class="language-selection language-selection-two">
+                            @if ($userCurrentLang->id)
+                                <div class="current-language">
+                                    <img src="{{ asset('assets/front/img/flags/' . $userCurrentLang->code . '.png') }}"
+                                        alt="{{ $userCurrentLang->name }}" class="img-fluid mx-2"
+                                        style="  height: 25px;">
+                                    <i class="far fa-angle-down"></i>
+                                </div>
+                            @endif
+                            <ul class="language-list" id="language-list">
+                                @foreach ($userLangs as $userLang)
+                                    <li>
+                                        <a href="javascript:void(0)" data-value="{{ $userLang->code }}"
+                                            onclick="changeLanguage('{{ $userLang->code }}')">
+                                            <img src="{{ asset('assets/front/img/flags/' . $userLang->code . '.png') }}"
+                                                alt="{{ $userLang->name }}" title="{{ convertUtf8($userLang->name) }}"
+                                                class="img-fluid mx-1" style="  height: 20px;">
+                                            {{ $userLang->name }}
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </form>
 
                     <!-- Navbtn -->
                     @if (in_array('Request a Quote', $packagePermissions))
@@ -142,66 +136,63 @@
 </header>
 <style>
     .language-flag img {
-    border: 2px solid transparent;
-    border-radius: 5px;
-    transition: border-color 0.3s ease;
-}
+        border: 2px solid transparent;
+        border-radius: 5px;
+        transition: border-color 0.3s ease;
+    }
 
-.language-flag input:checked + img {
-    border-color: #007bff; /* Highlight color */
-}
+    .language-flag input:checked+img {
+        border-color: #007bff;
+        /* Highlight color */
+    }
 
-.language-selection-two {
-    position: relative;
-}
+    .language-selection-two {
+        position: relative;
+    }
 
-.current-language {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    gap: 10px;
-    padding: 20px 0px;
-}
+    .current-language {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+    }
 
-.language-list {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    list-style: none;
-    padding: 10px;
-}
+    .language-list {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        list-style: none;
+        padding: 10px;
+    }
 
-.language-list li {
-    margin: 5px 0;
-}
+    .language-list li {
+        margin: 5px 0;
+    }
 
-.language-list li a {
-    display: flex;
-    align-items: center;
-    text-decoration: none;
-}
+    .language-list li a {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+    }
 
-.language-list li a img {
-    margin-right: 5px;
-    border-radius: 3px;
-}
+    .language-list li a img {
+        margin-right: 5px;
+        border-radius: 3px;
+    }
 
-.current-language:hover + .language-list,
-.language-list:hover {
-    display: block;
-}
-
+    .current-language:hover+.language-list,
+    .language-list:hover {
+        display: block;
+    }
 </style>
 <script>
     function changeLanguage(code) {
-    const langCodeInput = document.getElementById('lang-code');
-    langCodeInput.value = code;
-    document.getElementById('userLangForms').submit();
-}
-
+        const langCodeInput = document.getElementById('lang-code');
+        langCodeInput.value = code;
+        document.getElementById('userLangForms').submit();
+    }
 </script>
 <!--====== Header part end ======-->

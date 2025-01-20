@@ -61,6 +61,17 @@
                         </div>
                     </div>
                     <div class="row">
+                        @if (in_array('Real Estate Management', $packagePermissions))
+                            <div class="col-md-4">
+                                <a href="{{ route('front.user.property.wishlist', getParam()) }}"
+                                    class="card card-box box-2 mb-3">
+                                    <div class="card-info">
+                                        <h5>{{ $keywords['Property Wishlist'] ?? __('Property Wishlist') }}</h5>
+                                        <p>{{ $propertyWishlistsCount }}</p>
+                                    </div>
+                                </a>
+                            </div>
+                        @endif
                         @if (in_array('Ecommerce', $packagePermissions))
                             @if ($userShopSetting->is_shop == 1 && $userShopSetting->catalog_mode == 0)
                                 <div class="col-md-4">
@@ -93,7 +104,7 @@
                                 </a>
                             </div>
                         @endif
-                        @if (in_array('Hotel Booking', $packagePermissions)) 
+                        @if (in_array('Hotel Booking', $packagePermissions))
                             @if (isset($roomSetting) && $roomSetting->is_room == 1)
                                 <div class="col-md-4">
                                     <a class="card card-box box-4 mb-3"

@@ -40,7 +40,7 @@
                                         href="{{ route('front.user.blogs', getParam()) . '?category=' . $blog->bcategory->id }}">{{ $blog->bcategory->name }}</a>
                                 </li>
                                 <li><i class="far fa-calendar-alt"></i><a
-                                        href="javascript:void(0)">{{ \Carbon\Carbon::parse($blog->created_at)->format('M j, Y') }}</a>
+                                        href="javascript:void(0)">{{ \Carbon\Carbon::parse($blog->created_at)->format('F j, Y') }}</a>
                                 </li>
                             </ul>
                         </div>
@@ -118,8 +118,8 @@
                                                 </a>
                                             </div>
                                             <div class="post-desc">
-                                            <span class="date"><i
-                                            class="far fa-calendar-alt"></i>{{ \Carbon\Carbon::parse($blog->created_at)->toFormattedDateString() }}</span>
+                                                <span class="date"><i
+                                                        class="far fa-calendar-alt"></i>{{ \Carbon\Carbon::parse($latestBlog->created_at)->format('F j, Y') }}</span>
                                                 <a
                                                     href="{{ route('front.user.blog.detail', [getParam(), $latestBlog->slug, $latestBlog->id]) }}">
                                                     {{ strlen($latestBlog->title) > 30 ? mb_substr($latestBlog->title, 0, 30, 'UTF-8') . '...' : $latestBlog->title }}

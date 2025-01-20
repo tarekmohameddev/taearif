@@ -1,0 +1,744 @@
+@extends('user-front.realestate.layout')
+
+@section('pageHeading', $keywords['Home'] ?? 'Home')
+
+@section('metaDescription', !empty($userSeo) ? $userSeo->home_meta_description : '')
+@section('metaKeywords', !empty($userSeo) ? $userSeo->home_meta_keywords : '')
+
+@section('content')
+
+    @if (!is_null($heroStatic))
+        <section class="home-banner home-banner-1">
+            <img class="lazyload bg-img" src="{{ asset('assets/front/img/hero_static/' . $heroStatic->img) }}">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-xxl-10">
+                        <div class="content mb-40" data-aos="fade-up">
+                            <h1 class="title">{{ $heroStatic?->title }}</h1>
+                            <p class="text">
+                                {{ $heroStatic?->subtitle }}
+                            </p>
+                        </div>
+                        <div class="banner-filter-form" data-aos="fade-up">
+                            <ul class="nav nav-tabs">
+                                <li class="nav-item">
+                                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#rent"
+                                        type="button">{{ $keywords['Rent'] ?? __('Rent') }}</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sale"
+                                        type="button">{{ $keywords['Sale'] ?? __('Sale') }}</button>
+                                </li>
+                            </ul>
+                            <div class="tab-content form-wrapper">
+                                <input type="hidden" value="{{ $min }}" id="min">
+                                <input type="hidden" value="{{ $max }}" id="max">
+
+                                <input type="hidden" id="currency_symbol" value="{{ $userBs->base_currency_symbol }}">
+                                <input class="form-control" type="hidden" value="{{ $min }}" id="o_min">
+                                <input class="form-control" type="hidden" value="{{ $max }}" id="o_max">
+
+                                <div class="tab-pane fade active show" id="rent">
+                                    <form action="{{ route('front.user.properties', getParam()) }}" method="get">
+                                        <input type="hidden" name="purposre" value="rent">
+                                        <input type="hidden" name="min" value="{{ $min }}" id="min1">
+                                        <input type="hidden" name="max" value="{{ $max }}" id="max1">
+                                        <div class="grid">
+                                            <div class="grid-item">
+                                                <div class="form-group">
+                                                    <label
+                                                        for="search1">{{ $keywords['Location'] ?? __('Location') }}</label>
+                                                    <input type="text" id="search1" name="location"
+                                                        class="form-control"
+                                                        placeholder="{{ $keywords['Enter Location'] ?? __('Enter Location') }}">
+                                                </div>
+                                            </div>
+                                            <div class="grid-item">
+                                                <div class="form-group">
+                                                    <label for="type"
+                                                        class="icon-end">{{ $keywords['Property Type'] ?? __('Property Type') }}</label>
+                                                    <select aria-label="#" name="type" class="form-control select2 type"
+                                                        id="type">
+                                                        <option selected disabled value="">
+                                                            {{ $keywords['Select Property'] ?? __('Select Property') }}
+                                                        </option>
+                                                        <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
+                                                        <option value="residential">
+                                                            {{ $keywords['Residential'] ?? __('Residential') }}</option>
+                                                        <option value="commercial">
+                                                            {{ $keywords['Commercial'] ?? __('Commercial') }}</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="grid-item">
+                                                <div class="form-group">
+                                                    <label for="category"
+                                                        class="icon-end">{{ $keywords['Categories'] ?? __('Categories') }}</label>
+                                                    <select aria-label="#" class="form-control select2 bringCategory"
+                                                        id="category" name="category">
+                                                        <option selected disabled value="">
+                                                            {{ $keywords['Select Category'] ?? __('Select Category') }}
+                                                        </option>
+                                                        <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
+                                                        @foreach ($all_proeprty_categories as $category)
+                                                            <option value="{{ $category->slug }}">
+                                                                {{ $category->name }}
+                                                            </option>
+                                                        @endforeach
+
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="grid-item city">
+                                                <div class="form-group">
+                                                    <label for="city"
+                                                        class="icon-end">{{ $keywords['City'] ?? __('City') }}</label>
+                                                    <select aria-label="#" name="city"
+                                                        class="form-control select2 city_id" id="city">
+                                                        <option selected disabled value="">
+                                                            {{ $keywords['Select City'] ?? __('Select City') }}
+                                                        </option>
+                                                        <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
+
+                                                        @foreach ($all_cities as $city)
+                                                            <option data-id="{{ $city->id }}"
+                                                                value="{{ $city->name }}">
+                                                                {{ $city->name }}</option>
+                                                        @endforeach
+
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="grid-item">
+                                                <label class="price-value">{{ $keywords['Price'] ?? __('Price') }}: <br>
+                                                    <span
+                                                        data-range-value="filterPriceSliderValue">{{ formatNumber($min) }}
+                                                        -
+                                                        {{ formatNumber($max) }}</span>
+                                                </label>
+                                                <div data-range-slider="filterPriceSlider"></div>
+                                            </div>
+                                            <div class="grid-item">
+                                                <button type="submit"
+                                                    class="btn btn-lg btn-primary bg-secondary icon-start w-100">
+                                                    {{ $keywords['Search'] ?? __('Search') }}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="tab-pane fade" id="sale">
+                                    <form action="{{ route('front.user.properties', getParam()) }}" method="get">
+                                        <input type="hidden" name="purposre" value="sale">
+                                        <input type="hidden" name="min" value="{{ $min }}"
+                                            id="min2">
+                                        <input type="hidden" name="max" value="{{ $max }}"
+                                            id="max2">
+                                        <div class="grid">
+                                            <div class="grid-item">
+                                                <div class="form-group">
+                                                    <label
+                                                        for="search1">{{ $keywords['Location'] ?? __('Location') }}</label>
+                                                    <input type="text" id="search1" name="location"
+                                                        class="form-control"
+                                                        placeholder="{{ $keywords['Enter Location'] ?? __('Enter Location') }}">
+                                                </div>
+                                            </div>
+                                            <div class="grid-item">
+                                                <div class="form-group">
+                                                    <label for="type1"
+                                                        class="icon-end">{{ $keywords['Property Type'] ?? __('Property Type') }}</label>
+                                                    <select aria-label="#" name="type"
+                                                        class="form-control select2 type" id="type1">
+                                                        <option selected disabled value="">
+                                                            {{ $keywords['Select Property'] ?? __('Select Property') }}
+                                                        </option>
+                                                        <option value="all">{{ $keywords['All'] ?? __('All') }}
+                                                        </option>
+                                                        <option value="residential">
+                                                            {{ $keywords['Residential'] ?? __('Residential') }}</option>
+                                                        <option value="commercial">
+                                                            {{ $keywords['Commercial'] ?? __('Commercial') }}</option>
+
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="grid-item">
+                                                <div class="form-group">
+                                                    <label for="category1"
+                                                        class="icon-end">{{ $keywords['Categories'] ?? __('Categories') }}</label>
+                                                    <select aria-label="#" class="form-control select2 bringCategory"
+                                                        id="category1" name="category">
+                                                        <option selected disabled value="">
+                                                            {{ $keywords['Select Category'] ?? __('Select Category') }}
+                                                        </option>
+                                                        <option value="all">{{ $keywords['All'] ?? __('All') }}
+                                                        </option>
+                                                        @foreach ($all_proeprty_categories as $category)
+                                                            <option value="{{ $category->slug }}">
+                                                                {{ $category->name }}
+                                                            </option>
+                                                        @endforeach
+
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="grid-item city">
+                                                <div class="form-group">
+                                                    <label for="city1"
+                                                        class="icon-end">{{ $keywords['City'] ?? __('City') }}</label>
+                                                    <select aria-label="#" name="city"
+                                                        class="form-control select2 city_id" id="city1">
+                                                        <option selected disabled value="">
+                                                            {{ $keywords['Select City'] ?? __('Select City') }}
+                                                        </option>
+                                                        <option value="all">{{ $keywords['All'] ?? __('All') }}
+                                                        </option>
+
+                                                        @foreach ($all_cities as $city)
+                                                            <option data-id="{{ $city->id }}"
+                                                                value="{{ $city->name }}">
+                                                                {{ $city->name }}</option>
+                                                        @endforeach
+
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="grid-item">
+                                                <label class="price-value">{{ $keywords['Price'] ?? __('Price') }}: <br>
+                                                    <span
+                                                        data-range-value="filterPriceSlider2Value">{{ formatNumber($min) }}
+                                                        -
+                                                        {{ formatNumber($max) }}</span>
+                                                </label>
+                                                <div data-range-slider="filterPriceSlider2"></div>
+                                            </div>
+                                            <div class="grid-item">
+                                                <button type="submit"
+                                                    class="btn btn-lg btn-primary bg-secondary icon-start w-100">
+                                                    {{ $keywords['Search'] ?? __('Search') }}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
+
+    @if ($home_sections->counter_info_section == 1)
+        <div class="counter-area pt-100 pb-70">
+            <div class="container">
+                <div class="row gx-xl-5" data-aos="fade-up">
+                    @forelse ($counterInformations as $counter)
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card mb-30">
+                                <div class="d-flex align-items-center justify-content-center mb-10">
+                                    <div class="card-icon me-2 color-secondary"><i class="{{ $counter->icon }}"></i>
+                                    </div>
+                                    <h2 class="m-0 color-secondary"><span class="counter">{{ $counter->count }}</span>+
+                                    </h2>
+                                </div>
+                                <p class="card-text text-center">{{ $counter->title }}</p>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="col-12">
+                            <h3 class="text-center mt-20">
+                                {{ $keywords['No Counter Information Found'] ?? __('No Counter Information Found') }} </h3>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    @endif
+
+
+    @if ($home_sections->featured_properties_section == 1)
+        <section class="product-area featured-product pb-70">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="section-title title-inline mb-40" data-aos="fade-up">
+                            <h2 class="title">{{ $home_text?->featured_property_title }}</h2>
+                        </div>
+                    </div>
+                    <div class="col-12" data-aos="fade-up">
+                        <div class="swiper product-slider">
+                            <div class="swiper-wrapper">
+                                @forelse ($featured_properties as $property)
+                                    <div class="swiper-slide">
+                                        @include('user-front.realestate.partials.property')
+                                    </div>
+                                @empty
+                                    <div class=" p-3 text-center mb-30 w-100">
+                                        <h3 class="mb-0">
+                                            {{ $keywords['No Featured Property Found'] ?? __('No Featured Property Found') }}
+                                        </h3>
+                                    </div>
+                                @endforelse
+                            </div>
+                            <!-- Slider pagination -->
+                            <div class="swiper-pagination position-static mb-30" id="product-slider-pagination"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
+
+
+    @if ($home_sections->intro_section == 1)
+        <section class="about-area pb-70 pt-30">
+            <div class="container">
+                <div class="row gx-xl-5">
+                    <div class="col-lg-6">
+                        <div class="img-content mb-30" data-aos="fade-up">
+                            <div class="image">
+                                @if (!empty($home_text->about_image))
+                                    <img class="lazyload blur-up"
+                                        data-src="{{ asset('assets/front/img/user/home_settings/' . $home_text->about_image) }}">
+                                @endif
+                                @if (!empty($home_text->about_image_two))
+                                    <img class="lazyload blur-up"
+                                        data-src="{{ asset('assets/front/img/user/home_settings/' . $home_text->about_image_two) }}">
+                                @endif
+                            </div>
+                            <div class="absolute-text bg-secondary">
+                                <div class="center-text">
+                                    <span class="h2 color-primary">{{ $home_text?->years_of_expricence }}+</span>
+                                    <span>{{ $keywords['Years'] ?? __('Years') }}</span>
+                                </div>
+                                <div id="curveText">
+                                    {{ $keywords['We are highly experience'] ?? __('We are highly experience') }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="content mb-30" data-aos="fade-up">
+                            <div class="content-title">
+                                <span class="subtitle"><span class="line"></span>
+                                    {{ $home_text?->about_title }}</span>
+                                <h2>{{ $home_text?->about_subtitle }}</h2>
+                            </div>
+                            <div class="text summernote-content">{!! $home_text?->about_content !!}</div>
+
+                            <div class="d-flex align-items-center flex-wrap gap-15">
+                                @if (!empty($home_text->about_button_url))
+                                    <a href="{{ $home_text->about_button_url }}"
+                                        class="btn btn-lg btn-primary bg-secondary">{{ $home_text->about_button_text }}</a>
+                                @endif
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+        </section>
+    @endif
+
+
+    @if ($home_sections->property_section == 1)
+        <section class="product-area popular-product product-1 pb-70">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="section-title title-inline mb-40" data-aos="fade-up">
+                            <h2 class="title">{{ $home_text?->property_title }}</h2>
+                            <div class="tabs-navigation">
+                                <ul class="nav nav-tabs">
+                                    <li class="nav-item">
+                                        <button class="nav-link active btn-md" data-bs-toggle="tab"
+                                            data-bs-target="#forAll"
+                                            type="button">{{ $keywords['All Properties'] ?? __('All Properties') }}</button>
+                                    </li>
+                                    <li class="nav-item">
+                                        <button class="nav-link btn-md" data-bs-toggle="tab" data-bs-target="#forRent"
+                                            type="button">{{ $keywords['For Rent'] ?? __('For Rent') }}</button>
+                                    </li>
+                                    <li class="nav-item">
+                                        <button class="nav-link btn-md" data-bs-toggle="tab" data-bs-target="#forSell"
+                                            type="button">{{ $keywords['For Sale'] ?? __('For Sale') }}</button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="tab-content" data-aos="fade-up">
+                            <div class="tab-pane fade show active" id="forAll">
+                                <div class="row">
+
+                                    @forelse ($properties as $property)
+                                        <div class="col-lg-4 col-xxl-3 col-md-6">
+                                            @include('user-front.realestate.partials.property')
+                                        </div>
+                                    @empty
+                                        <div class="p-3 text-center mb-30">
+                                            <h3 class="mb-0">
+                                                {{ $keywords['No Properties Found'] ?? __('No Properties Found') }}</h3>
+                                        </div>
+                                    @endforelse
+
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="forRent">
+                                <div class="row">
+                                    @forelse ($properties as $property)
+                                        @if ($property->purpose == 'rent')
+                                            <div class="col-lg-4 col-xxl-3 col-md-6">
+                                                @include('user-front.realestate.partials.property')
+                                            </div>
+                                        @endif
+                                    @empty
+                                        <div class="p-3 text-center mb-30">
+                                            <h3 class="mb-0">
+                                                {{ $keywords['No Properties Found'] ?? __('No Properties Found') }}</h3>
+                                        </div>
+                                    @endforelse
+
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="forSell">
+                                <div class="row">
+                                    @forelse ($properties as $property)
+                                        @if ($property->purpose == 'sale')
+                                            <div class="col-lg-4 col-xxl-3 col-md-6">
+                                                @include('user-front.realestate.partials.property')
+                                            </div>
+                                        @endif
+                                    @empty
+                                        <div class="p-3 text-center mb-30">
+                                            <h3 class="mb-0">
+                                                {{ $keywords['No Properties Found'] ?? __('No Properties Found') }}</h3>
+                                        </div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
+
+
+    @if ($home_sections->why_choose_us_section == 1)
+        <section class="choose-area pb-70">
+            <div class="container">
+                <div class="row gx-xl-5">
+                    <div class="col-lg-7">
+                        <div class="img-content mb-30 image-right" data-aos="fade-up">
+                            <div class="img-1">
+                                @if (!empty($home_text?->why_choose_us_section_image))
+                                    <img class="lazyload blur-up"
+                                        data-src="{{ asset('assets/front/img/user/home_settings/' . $home_text->why_choose_us_section_image) }} "
+                                        alt="Image">
+                                @endif
+                                @if (!empty($home_text->why_choose_us_section_video_url))
+                                    <a href="{{ $home_text->why_choose_us_section_video_url }}"
+                                        class="video-btn youtube-popup p-absolute">
+                                        <i class="fas fa-play"></i>
+                                    </a>
+                                @endif
+                            </div>
+                            <div class="img-2">
+                                @if (!empty($home_text->why_choose_us_section_image_two))
+                                    <img class="lazyload blur-up"
+                                        data-src="  {{ asset('assets/front/img/user/home_settings/' . $home_text->why_choose_us_section_image_two) }} "
+                                        alt="Image">
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5 order-lg-first">
+                        <div class="content" data-aos="fade-up">
+                            <div class="content-title">
+                                <span class="subtitle"><span
+                                        class="line"></span>{{ $home_text?->why_choose_us_section_title }}</span>
+                                <h2>{{ $home_text?->why_choose_us_section_subtitle }}</h2>
+                            </div>
+                            <div class="text">{!! $home_text->why_choose_us_section_text !!}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
+
+    {{-- @if ($secInfo->vendor_section_status == 1)
+    <section class="agent-area pb-70">
+                            <div class="container">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="section-title title-center mb-40" data-aos="fade-up">
+                                            <span class="subtitle">{{ $vendorInfo->title }}</span>
+                                            <h2 class="title">{{ $vendorInfo?->subtitle }}</h2>
+                                        </div>
+                                    </div>
+                                    <div class="col-12" data-aos="fade-up">
+                                        <div class="swiper agent-slider">
+                                            <div class="swiper-wrapper">
+                                                @forelse ($vendors as $vendor)
+    <div class="swiper-slide">
+                                                        <div class="agent-box radius-md mb-30">
+                                                            <div class="agent-img">
+                                                                <figure>
+                                                                    <a href="#" class="lazy-container ratio ratio-1-2">
+                                                                        <img class="lazyload"
+                                                                            data-src="{{ $vendor->photo ? asset('assets/admin/img/vendor-photo/' . $vendor->photo) : asset('assets/img/blank-user.jpg') }}">
+                                                                    </a>
+                                                                </figure>
+                                                                <div
+                                                                    class="agent-ratings d-flex align-items-center justify-content-between">
+                                                                    <div class="ratings">
+
+                                                                    </div>
+                                                                    <span class="label">{{ __('Real Estate') }}</span>
+                                                                </div>
+
+                                                            </div>
+                                                            <div class="agent-details text-center">
+                                                                @php
+                                                                    $vendor_info = App\Models\VendorInfo::where([
+                                                                        ['vendor_id', $vendor->vendorId],
+                                                                        ['language_id', $language->id],
+                                                                    ])
+                                                                        ->select('name')
+                                                                        ->first();
+                                                                    $agents = App\Models\Agent::where(
+                                                                        'vendor_id',
+                                                                        $vendor->vendorId,
+                                                                    )->get();
+
+                                                                @endphp
+                                                                <span class="color-primary font-sm">{{ count($vendor->properties) }}
+                                                                    {{ __('Properties') }}</span> |
+                                                                <span class="color-primary font-sm">{{ count($vendor->agents) }}
+                                                                    {{ __('Agents') }}</span> |
+                                                                <span class="color-primary font-sm">{{ count($vendor->projects) }}
+                                                                    {{ __('Projects') }}</span>
+
+
+                                                                <h4 class="agent-title"><a
+                                                                        href="{{ route('frontend.vendor.details', ['username' => $vendor->username]) }}">{{ @$vendor_info->name }}</a>
+                                                                </h4>
+                                                                <ul class="agent-info list-unstyled p-0">
+
+                                                                    @if ($vendor->show_phone_number == 1)
+    @if (!is_null($vendor->phone))
+    <li class="icon-start ">
+                                                                                <a href="tel:{{ $vendor->phone }}"> <i
+                                                                                        class="fal fa-phone-plus"></i>
+                                                                                    {{ $vendor->phone }}</a>
+                                                                            </li>
+    @endif
+    @endif
+
+                                                                    @if ($vendor->show_email_addresss == 1)
+    <li class="icon-start font-sm">
+                                                                            <a href="mailto:{{ $vendor->email }}"> <i
+                                                                                    class="fal fa-envelope"></i>
+                                                                                {{ $vendor->email }}</a>
+                                                                        </li>
+    @endif
+                                                                </ul>
+                                                                <a href="{{ route('frontend.vendor.details', ['username' => $vendor->username]) }}"
+                                                                    class="btn-text">{{ __('View Profile') }}</a>
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
+                                @empty
+                                                    <div class="p-3 text-center mb-30 w-100">
+                                                        <h3 class="mb-0"> {{ __('No Vendors Found') }}</h3>
+                                                    </div>
+    @endforelse
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @if (count($vendors) > 0)
+    <div class="text-center">
+                                            <a href="{{ route('frontend.vendors') }}"
+                                                class="btn btn-lg btn-primary bg-secondary mb-30">{{ $vendorInfo->btn_name }}</a>
+                                        </div>
+    @endif
+                                </div>
+                            </div>
+                        </section>
+    @endif --}}
+
+    @if ($home_sections->cities_section == 1)
+        <section class="gallery-area pt-100 pb-70">
+            <img class="lazyload bg-img" src="{{ asset('assets/front/images/245re4e1r53.png') }}">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="section-title title-inline mb-40" data-aos="fade-up">
+                            <div>
+                                <span class="subtitle"><span class="line"></span>
+                                    {{ $home_text?->city_title }}</span>
+                                <h2 class="title">{{ $home_text?->city_subtitle }}</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="row" data-aos="fade-up">
+                            @forelse ($cities as $city)
+                                <div class="col-lg-4 col-sm-6">
+                                    <div class="card radius-md mb-30">
+                                        <a href="#">
+                                            <div class="card-img">
+                                                <div class="lazy-container ratio ratio-16-11">
+                                                    <img class="lazyload blur-up"
+                                                        data-src="{{ asset('assets/img/property-city/' . $city->image) }}">
+                                                </div>
+                                            </div>
+                                            <div class="card-text text-center">
+                                                <h5 class="card-title color-white mb-0">{{ $city->name }}</h5>
+                                                <span class="font-sm color-white">{{ $city->propertyCount }}
+                                                    @if ($city->propertyCount > 0)
+                                                        {{ $keywords['Properties'] ?? __('Properties') }}
+                                                    @else
+                                                        {{ $keywords['Property'] ?? __('Property') }}
+                                                    @endif
+                                                </span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class=" p-3 text-center mb-30 w-100">
+                                    <h3 class="mb-0"> {{ $keywords['No Cities Found'] ?? __('No Cities Found') }}</h3>
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
+
+    @if ($home_sections->testimonials_section == 1)
+        <section class="testimonial-area pt-100 pb-70">
+            <div class="overlay-bg d-none d-lg-block">
+                <img class="lazyload blur-up"
+                    data-src="{{ asset('assets/front/img/user/home_settings/' . $home_text->testimonial_image) }}">
+            </div>
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-4">
+                        <div class="content mb-30" data-aos="fade-up">
+                            <div class="content-title">
+                                <span class="subtitle"><span
+                                        class="line"></span>{{ $home_text?->testimonial_title }}</span>
+                                <h2 class="title">
+                                    {{ $home_text?->testimonial_subtitle }}</h2>
+                            </div>
+                            <p class="text mb-30">
+                                {{ $home_text?->testimonial_text }}</p>
+
+                            <div class="slider-navigation scroll-animate">
+                                <button type="button" title="Slide prev" class="slider-btn slider-btn-prev">
+                                    <i class="fal fa-angle-left"></i>
+                                </button>
+                                <button type="button" title="Slide next" class="slider-btn slider-btn-next">
+                                    <i class="fal fa-angle-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-8" data-aos="fade-up">
+                        <div class="swiper" id="testimonial-slider-1">
+                            <div class="swiper-wrapper">
+                                @forelse ($testimonials as $testimonial)
+                                    <div class="swiper-slide pb-30" data-aos="fade-up">
+                                        <div class="slider-item">
+                                            <div class="client-img">
+                                                <div class="lazy-container ratio ratio-1-1">
+                                                    @if (is_null($testimonial->image))
+                                                        <img data-src="{{ asset('assets/img/profile.jpg') }}"
+                                                            class="lazyload">
+                                                    @else
+                                                        <img class="lazyload"
+                                                            data-src="{{ asset('assets/front/img/user/testimonials/' . $testimonial->image) }}">
+                                                    @endif
+
+
+                                                </div>
+                                            </div>
+                                            <div class="client-content mt-30">
+                                                <div class="quote">
+                                                    <p class="text">{{ $testimonial->content }}</p>
+                                                </div>
+                                                <div
+                                                    class="client-info d-flex flex-wrap gap-10 align-items-center justify-content-between">
+                                                    <div class="content">
+                                                        <h6 class="name">{{ $testimonial->name }}</h6>
+                                                        <span class="designation">{{ $testimonial->occupation }}</span>
+                                                    </div>
+                                                    {{-- <div class="ratings">
+
+                                                        <div class="rate">
+                                                            <div class="rating-icon"
+                                                                style="width: {{ $testimonial->rating * 20 }}%"></div>
+                                                        </div>
+                                                        <span class="ratings-total">({{ $testimonial->rating }}) </span>
+                                                    </div> --}}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="bg-light p-3 text-center mb-30 w-100">
+                                        <h3 class="mb-0">
+                                            {{ $keywords['No Testimonials Found'] ?? __('No Testimonials Found') }}</h3>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
+
+    @if ($home_sections->newsletter_section == 1)
+        <section class="newsletter-area pb-100" data-aos="fade-up">
+            <div class="container">
+                <div class="newsletter-inner px-4">
+                    <img class="lazyload bg-img"
+                        src="{{ asset('assets/front/img/user/home_settings/' . $home_text->newsletter_image) }}">
+                    <div class="row justify-content-center text-center" data-aos="fade-up">
+                        <div class="col-lg-6 col-xxl-5">
+                            <div class="content mb-30">
+                                <span
+                                    class="subtitle color-white mb-10 d-block">{{ $home_text?->newsletter_title }}</span>
+                                <h2 class="color-white">{{ $home_text?->newsletter_subtitle }}</h2>
+                            </div>
+                            <form id="newsletterForm" class="subscription-form newsletter-form"
+                                action="{{ route('front.user.subscriber', getParam()) }}" method="POST">
+                                @csrf
+                                <div class="input-group radius-md">
+                                    <input class="form-control"
+                                        placeholder="{{ $keywords['Enter Your Email'] ?? __('Enter Your Email') }}"
+                                        type="email" name="email_id" required>
+                                    <button class="btn btn-lg btn-primary" type="submit">
+                                        {{ $keywords['Start Now'] ?? __('Start Now') }}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
+@endsection

@@ -30,7 +30,7 @@
                         <p id="errbrand_img" class="mb-0 text-danger em"></p>
                     </div>
 
-                    <div class="form-group d-none">
+                    <div class="form-group  ">
                         @if ($userBs->theme == 'home_eleven')
                             <label for="">{{ __('Donor\'s URL*') }}</label>
                         @else

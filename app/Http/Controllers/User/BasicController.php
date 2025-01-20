@@ -20,7 +20,6 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use Mews\Purifier\Facades\Purifier;
 use App\Http\Helpers\UserPermissionHelper;
-use App\Models\UserStep;
 
 class BasicController extends Controller
 {
@@ -55,7 +54,6 @@ class BasicController extends Controller
     public function favicon(Request $request)
     {
         $data['basic_setting'] = BasicSetting::where('user_id', Auth::guard('web')->user()->id)->first();
-
         return view('user.settings.favicon', $data);
     }
     public function generalSettings()
@@ -66,145 +64,7 @@ class BasicController extends Controller
         $data['basic_setting'] = BasicSetting::where('user_id', Auth::guard('web')->user()->id)->first();
         return view('user.settings.general-settings', $data);
     }
-    public function updateAllSettings(Request $request)
-    {
-        $user = Auth::guard('web')->user();
-        $package = UserPermissionHelper::currentPackagePermission($user->id);
-        if (!empty($user)) {
-            $permissions = UserPermissionHelper::packagePermission($user->id);
-            $permissions = json_decode($permissions, true);
-        }
-    
-        // Define validation rules
-        $rules = [
-            'website_title' => 'required',
-            'timezone' => 'required',
-        ];
-    
-        // Add validation rules for images if they are being uploaded
-        if ($request->hasFile('logo')) {
-            $rules['logo'] = [
-                function ($attribute, $value, $fail) use ($request) {
-                    $allowedExts = ['jpg', 'png', 'jpeg'];
-                    $ext = $request->file('logo')->getClientOriginalExtension();
-                    if (!in_array($ext, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg image is allowed for logo");
-                    }
-                }
-            ];
-        }
-    
-        if ($request->hasFile('preloader')) {
-            $rules['preloader'] = [
-                function ($attribute, $value, $fail) use ($request) {
-                    $allowedExts = ['jpg', 'png', 'jpeg', 'gif'];
-                    $ext = $request->file('preloader')->getClientOriginalExtension();
-                    if (!in_array($ext, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg, gif image is allowed for preloader");
-                    }
-                }
-            ];
-        }
-    
-        if ($request->hasFile('breadcrumb')) {
-            $rules['breadcrumb'] = [
-                function ($attribute, $value, $fail) use ($request) {
-                    $allowedExts = ['jpg', 'png', 'jpeg'];
-                    $ext = $request->file('breadcrumb')->getClientOriginalExtension();
-                    if (!in_array($ext, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg image is allowed for breadcrumb");
-                    }
-                }
-            ];
-        }
-    
-        if ($request->hasFile('favicon')) {
-            $rules['favicon'] = [
-                function ($attribute, $value, $fail) use ($request) {
-                    $allowedExts = ['jpg', 'png', 'jpeg', 'ico'];
-                    $ext = $request->file('favicon')->getClientOriginalExtension();
-                    if (!in_array($ext, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg, ico image is allowed for favicon");
-                    }
-                }
-            ];
-        }
-    
-        // Add ecommerce-specific rules if applicable
-        if (!empty($permissions) && in_array('Ecommerce', $permissions)) {
-            $rules['base_currency_symbol'] = 'required';
-            $rules['base_currency_symbol_position'] = 'required';
-            $rules['base_currency_text'] = 'required';
-            $rules['base_currency_text_position'] = 'required';
-            $rules['base_currency_rate'] = 'required|numeric|min:0.00000001';
-        }
-    
-        // Validate request
-        $validator = Validator::make($request->all(), $rules);
-        if ($validator->fails()) {
-            $validator->getMessageBag()->add('error', 'true');
-            return response()->json($validator->errors());
-        }
-    
-        // Get or create BasicSetting record
-        $bss = BasicSetting::firstOrNew(['user_id' => $user->id]);
-    
-        // Update basic information
-        $bss->website_title = $request->website_title;
-        $bss->timezone = $request->timezone;
-        $bss->email_verification_status = $request->email_verification_status;
-        $bss->base_color = $request->base_color;
-        $bss->secondary_color = $request->secondary_color;
-    
-        // Handle currency settings if applicable
-        if (!empty($permissions) && in_array('Ecommerce', $permissions)) {
-            $bss->base_currency_symbol = $request->base_currency_symbol;
-            $bss->base_currency_symbol_position = $request->base_currency_symbol_position;
-            $bss->base_currency_text = $request->base_currency_text;
-            $bss->base_currency_text_position = $request->base_currency_text_position;
-            $bss->base_currency_rate = $request->base_currency_rate;
-        }
-    
-        // Handle file uploads
-        $imageFields = ['logo', 'preloader', 'breadcrumb', 'favicon'];
-        foreach ($imageFields as $field) {
-            if ($request->hasFile($field)) {
-                // Delete old file if exists
-                if ($bss->$field) {
-                    @unlink(public_path('assets/front/img/user/' . $bss->$field));
-                }
-                
-                // Upload new file
-                $file = $request->file($field);
-                $filename = uniqid() . '.' . $file->getClientOriginalExtension();
-                $file->move(public_path('assets/front/img/user/'), $filename);
-                $bss->$field = $filename;
-            }
-        }
-    
-        $bss->save();
-    
-        // Update user steps
-        $steps = UserStep::firstOrCreate(
-            ['user_id' => $user->id],
-            [
-                'logo_uploaded' => false,
-                'favicon_uploaded' => false,
-                'website_named' => false,
-                'homepage_updated' => false
-            ]
-        );
-    
-        $steps->update([
-            'website_named' => true,
-            'logo_uploaded' => $request->hasFile('logo') ? true : $steps->logo_uploaded,
-            'favicon_uploaded' => $request->hasFile('favicon') ? true : $steps->favicon_uploaded,
-            'homepage_updated' => $request->hasFile('preloader') ? true : $steps->homepage_updated
-        ]);
-    
-        Session::flash('success', 'Preloader updated successfully.');
-        return back();
-    }
+
     public function updateInfo(Request $request)
     {
         $user = Auth::guard('web')->user();
@@ -243,11 +103,6 @@ class BasicController extends Controller
         ]);
 
         $request->session()->flash('success', 'Information updated successfully!');
-        $steps = UserStep::firstOrCreate(
-            ['user_id' => Auth::guard('web')->user()->id],
-            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
-        );
-        $steps->update(['website_named' => true]);
 
         return 'success';
     }
@@ -294,13 +149,6 @@ class BasicController extends Controller
                 $bs->save();
             }
         }
-
-        $steps = UserStep::firstOrCreate(
-            ['user_id' => Auth::guard('web')->user()->id],
-            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
-        );
-        $steps->update(['favicon_uploaded' => true]);
-
         Session::flash('success', 'Favicon update successfully.');
         return "success";
     }
@@ -354,13 +202,6 @@ class BasicController extends Controller
                 $bs->save();
             }
         }
-
-        $steps = UserStep::firstOrCreate(
-            ['user_id' => Auth::guard('web')->user()->id],
-            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
-        );
-        $steps->update(['logo_uploaded' => true]);
-
         Session::flash('success', 'Logo update successfully.');
         return back();
     }
@@ -466,11 +307,6 @@ class BasicController extends Controller
         }
 
         Session::flash('success', 'Preloader updated successfully.');
-        $steps = UserStep::firstOrCreate(
-            ['user_id' => Auth::guard('web')->user()->id],
-            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
-        );
-        $steps->update(['homepage_updated' => true]);
         return back();
     }
 
@@ -555,13 +391,6 @@ class BasicController extends Controller
         $homeText->user_id = Auth::guard('web')->user()->id;
         $homeText->language_id = $request->language_id;
         $homeText->save();
-
-        $steps = UserStep::firstOrCreate(
-            ['user_id' => Auth::guard('web')->user()->id],
-            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
-        );
-        $steps->update(['homepage_updated' => true]);
-
         Session::flash('success', 'Home page text updated successfully.');
         return "success";
     }
@@ -671,13 +500,6 @@ class BasicController extends Controller
         $data->team_section_subtitle = $request->team_section_subtitle;
         $data->save();
         $request->session()->flash('success', 'Team section updated successfully!');
-
-        $steps = UserStep::firstOrCreate(
-            ['user_id' => Auth::guard('web')->user()->id],
-            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
-        );
-        $steps->update(['homepage_updated' => true]);
-
         return redirect()->back();
     }
 
@@ -715,7 +537,7 @@ class BasicController extends Controller
         $request->validate($rules, $messages);
         $homeText = HomePageText::query()->where('language_id', $request->language_id)->where('user_id', Auth::guard('web')->user()->id)->firstOrFail();
         foreach ($request->types as $key => $type) {
-            if ($type == 'about_image' || $type == 'about_video_url' || $type == 'about_video_image') {
+            if ($type == 'about_image' || $type == 'about_image_two' || $type == 'about_video_url' || $type == 'about_video_image') {
                 continue;
             }
             $homeText->$type = Purifier::clean($request[$type]);
@@ -725,6 +547,12 @@ class BasicController extends Controller
             $request->file('about_image')->move(public_path('assets/front/img/user/home_settings/'), $aboutImage);
             @unlink(public_path('assets/front/img/user/home_settings/' . $homeText->about_image));
             $homeText->about_image = $aboutImage;
+        }
+        if ($request->hasFile('about_image_two')) {
+            $aboutImage = uniqid() . '.' . $request->file('about_image_two')->getClientOriginalExtension();
+            $request->file('about_image_two')->move(public_path('assets/front/img/user/home_settings/'), $aboutImage);
+            @unlink(public_path('assets/front/img/user/home_settings/' . $homeText->about_image_two));
+            $homeText->about_image_two = $aboutImage;
         }
         if ($request->hasFile('about_video_image')) {
             $aboutVidImg = uniqid() . '.' . $request->file('about_video_image')->getClientOriginalExtension();
@@ -745,13 +573,6 @@ class BasicController extends Controller
         $homeText->language_id = $request->language_id;
         $homeText->save();
         Session::flash('success', 'About section updated successfully.');
-
-        $steps = UserStep::firstOrCreate(
-            ['user_id' => Auth::guard('web')->user()->id],
-            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
-        );
-        $steps->update(['homepage_updated' => true]);
-
         return "success";
     }
 
@@ -799,11 +620,6 @@ class BasicController extends Controller
             'video_section_text' => clean($request->video_section_text),
         ]);
         $request->session()->flash('success', 'Video section updated successfully!');
-        $steps = UserStep::firstOrCreate(
-            ['user_id' => Auth::guard('web')->user()->id],
-            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
-        );
-        $steps->update(['homepage_updated' => true]);
         return redirect()->back();
     }
     public function whyChooseUsSection(Request $request)
@@ -822,6 +638,7 @@ class BasicController extends Controller
 
     public function updateWhyChooseUsSection(Request $request, $language)
     {
+        // dd($request->all());
         $rules = [
             'why_choose_us_section_title' => 'nullable|max:255',
             'why_choose_us_section_subtitle' => 'nullable|max:255',
@@ -844,10 +661,15 @@ class BasicController extends Controller
         $data = HomePageText::where('language_id', $lang->id)->where('user_id', Auth::guard('web')->user()->id)->first();
         $request['video_image_name'] = $data->why_choose_us_section_video_image;
         $request['image_name'] = $data->why_choose_us_section_image;
+        $request['image_name2'] = $data->why_choose_us_section_image_two;
 
         if (empty($data->why_choose_us_section_image) && !$request->hasFile('why_choose_us_section_image')) {
             $rules['why_choose_us_section_image'] = 'nullable|mimes:jpeg,jpg,png';
+            $rules['why_choose_us_section_image_two'] = 'nullable|mimes:jpeg,jpg,png';
         }
+
+        $rules['why_choose_us_section_image_two'] = 'nullable|mimes:jpeg,jpg,png';
+
         if (empty($data->why_choose_us_section_video_image) && !$request->hasFile('why_choose_us_section_video_image') && $userBs->theme === 'home_three') {
             $rules['why_choose_us_section_video_image'] = 'nullable|mimes:jpeg,jpg,png';
         }
@@ -855,6 +677,10 @@ class BasicController extends Controller
         if ($request->hasFile('why_choose_us_section_image')) {
             $request['image_name'] = Uploader::update_picture('assets/front/img/user/home_settings/', $request->file('why_choose_us_section_image'), $data->why_choose_us_section_image);
         }
+        if ($request->hasFile('why_choose_us_section_image_two')) {
+            $request['image_name2'] = Uploader::update_picture('assets/front/img/user/home_settings/', $request->file('why_choose_us_section_image_two'), $data->why_choose_us_section_image_two);
+        }
+
         if ($userBs->theme === 'home_three') {
             $rules['why_choose_us_section_video_url'] = 'nullable';
             if ($request->hasFile('why_choose_us_section_video_image')) {
@@ -865,18 +691,14 @@ class BasicController extends Controller
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator);
         }
-        $data->update($request->except(['why_choose_us_section_image', 'why_choose_us_section_text', 'why_choose_us_section_video_image', 'why_choose_us_section_video_url']) + [
+        $data->update($request->except(['why_choose_us_section_image', 'why_choose_us_section_image_two', 'why_choose_us_section_text', 'why_choose_us_section_video_image', 'why_choose_us_section_video_url']) + [
             'why_choose_us_section_image' => $request->image_name,
+            'why_choose_us_section_image_two' => $request->image_name2,
             'why_choose_us_section_video_image' => $request->video_image_name,
             'why_choose_us_section_text' => clean($request->why_choose_us_section_text),
             'why_choose_us_section_video_url' => (strpos($request->why_choose_us_section_video_url, "&") != false) ? substr($request->why_choose_us_section_video_url, 0, strpos($request->why_choose_us_section_video_url, "&")) : $request->why_choose_us_section_video_url,
         ]);
         $request->session()->flash('success', 'Why choose us section updated successfully!');
-        $steps = UserStep::firstOrCreate(
-            ['user_id' => Auth::guard('web')->user()->id],
-            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
-        );
-        $steps->update(['homepage_updated' => true]);
         return redirect()->back();
     }
     public function whyChooseUsItemStore(Request $request)

@@ -1,7 +1,10 @@
 @extends('user.layout')
 
 @php
-    $userDefaultLang = \App\Models\User\Language::where([['user_id', \Illuminate\Support\Facades\Auth::id()], ['is_default', 1]])->first();
+    $userDefaultLang = \App\Models\User\Language::where([
+        ['user_id', \Illuminate\Support\Facades\Auth::id()],
+        ['is_default', 1],
+    ])->first();
     $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support\Facades\Auth::id())->get();
 @endphp
 
@@ -143,31 +146,32 @@
                                         </div>
                                     </div>
                                 @endif
-                                <div class="row">
-                                    <div class="col-lg-12">
-                                        <div class="form-group">
-                                            <label for="btn_name">{{ __('Button Name') }}</label>
-                                            <input type="text" class="form-control" name="btn_name"
-                                                value="{{ $data->btn_name ?? '' }}"
-                                                placeholder="{{ __('Enter button name') }}">
-                                            @if ($errors->has('btn_name'))
-                                                <p class="mt-2 mb-0 text-danger">{{ $errors->first('btn_name') }}</p>
-                                            @endif
+                                @if ($userBs->theme != 'home13')
+                                    <div class="row">
+                                        <div class="col-lg-12">
+                                            <div class="form-group">
+                                                <label for="btn_name">{{ __('Button Name') }}</label>
+                                                <input type="text" class="form-control" name="btn_name"
+                                                    value="{{ $data->btn_name ?? '' }}"
+                                                    placeholder="{{ __('Enter button name') }}">
+                                                @if ($errors->has('btn_name'))
+                                                    <p class="mt-2 mb-0 text-danger">{{ $errors->first('btn_name') }}</p>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-
-
-
-                                <div class="form-group">
-                                    <label for="url">{{ __('Button URL') }}</label>
-                                    <input type="url" class="form-control ltr" name="btn_url"
-                                        value="{{ $data->btn_url ?? '' }}" placeholder="{{ __('Enter button url') }}">
-                                    @if ($errors->has('btn_url'))
-                                        <p class="mt-2 mb-0 text-danger">{{ $errors->first('btn_url') }}</p>
-                                    @endif
-                                </div>
-
+                                @endif
+                                @if ($userBs->theme != 'home13')
+                                    <div class="form-group">
+                                        <label for="url">{{ __('Button URL') }}</label>
+                                        <input type="url" class="form-control ltr" name="btn_url"
+                                            value="{{ $data->btn_url ?? '' }}"
+                                            placeholder="{{ __('Enter button url') }}">
+                                        @if ($errors->has('btn_url'))
+                                            <p class="mt-2 mb-0 text-danger">{{ $errors->first('btn_url') }}</p>
+                                        @endif
+                                    </div>
+                                @endif
                                 @if ($userBs->theme == 'home_ten')
                                     <div class="row">
                                         <div class="col-lg-12">

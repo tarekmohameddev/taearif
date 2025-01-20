@@ -40,7 +40,7 @@
             @endif
 
             <!-- Project Boxes -->
-            <div class="row project-boxes project-isotope mt-40 justify-content-center">
+            <div class="row project-boxes project-isotope mt-60 justify-content-center">
                 @foreach ($portfolios as $portfolio)
                     <div class="isotope-item col-lg-4 col-sm-6 item-{{ $portfolio->bcategory->id }}">
                         <div class="project-box hover-style">
@@ -49,13 +49,11 @@
                                 <div class="thumb bg-img-c lazy"
                                     data-bg="{{ asset('assets/front/img/user/portfolios/' . $portfolio->image) }}"></div>
                             </a>
-                            <div class="project-desc portfolios-desc">
-                                <div class="div">
-                                    <h4><a
-                                            href="{{ route('front.user.portfolio.detail', [getParam(), $portfolio->slug, $portfolio->id]) }}">{{ strlen($portfolio->title) > 30 ? mb_substr($portfolio->title, 0, 30, 'UTF-8') . '...' : $portfolio->title }}</a>
-                                    </h4>
-                                    <p>{{ $portfolio->bcategory->name }}</p>
-                                </div>
+                            <div class="project-desc text-center">
+                                <h4><a
+                                        href="{{ route('front.user.portfolio.detail', [getParam(), $portfolio->slug, $portfolio->id]) }}">{{ strlen($portfolio->title) > 30 ? mb_substr($portfolio->title, 0, 30, 'UTF-8') . '...' : $portfolio->title }}</a>
+                                </h4>
+                                <p>{{ $portfolio->bcategory->name }}</p>
                                 <a href="{{ route('front.user.portfolio.detail', [getParam(), $portfolio->slug, $portfolio->id]) }}"
                                     class="project-link">
                                     <i class="fal fa-long-arrow-right"></i>

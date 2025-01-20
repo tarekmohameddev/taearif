@@ -28,7 +28,7 @@
                         <p class="paragraph-text">
                             {{ __('trial_success_msg') }}
                         </p>
-                        <a href="{{ route('user.login') }}">{{ __('Go to Home') }}</a>
+                        <a href="{{ route('front.index') }}">{{ __('Go to Home') }}</a>
                     </div>
                 </div>
             </div>

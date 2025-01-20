@@ -23,64 +23,100 @@
     </div>
     <!-- End Logo Header -->
     <!-- Navbar Header -->
-    <nav style="float:left;" class="navbar navbar-header navbar-expand-lg" @if(request()->cookie('user-theme') == 'dark') data-background-color="dark" @endif>
+    <nav class="navbar navbar-header navbar-expand-lg" @if(request()->cookie('user-theme') == 'dark') data-background-color="dark" @endif>
         <div class="container-fluid">
             <ul class="navbar-nav topbar-nav ml-md-auto align-items-center">
-            <li class="nav-item dropdown">
-                    <a class="nav-link d-flex align-items-center gap-2 pe-0" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <div class="d-flex align-items-center">
+                <form action="{{(route('user.theme.change'))}}" class="mr-4 form-inline" id="adminThemeForm">
+                    <div class="form-group">
+                        <div class="selectgroup selectgroup-secondary selectgroup-pills">
+                            <label class="selectgroup-item">
+                                <input type="radio" name="theme" value="light" class="selectgroup-input" {{empty(request()->cookie('user-theme')) || request()->cookie('user-theme') == 'light' ? 'checked' : ''}} onchange="document.getElementById('adminThemeForm').submit();">
+                                <span class="selectgroup-button selectgroup-button-icon"><i class="fa fa-sun"></i></span>
+                            </label>
+                            <label class="selectgroup-item">
+                                <input type="radio" name="theme" value="dark" class="selectgroup-input" {{request()->cookie('user-theme') == 'dark' ? 'checked' : ''}} onchange="document.getElementById('adminThemeForm').submit();">
+                                <span class="selectgroup-button selectgroup-button-icon"><i class="fa fa-moon"></i></span>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+                <li>
+                    <li class="mr-4">
+                        <a class="btn btn-primary btn-sm btn-round" target="_blank"
+                            href="{{route('front.user.detail.view',Auth::user()->username)}}" title="View Website">
+                        <i class="fas fa-eye"></i>
+                        </a>
+                    </li>
+                    <li class="mr-4">
+                    <a class="btn btn-info" target="_blank"
+                        href="{{ route('user.language.index') }}" title="Language">
+                        {{ __('Languages manage') }}
+                        </a>
+                    </li>
+                </li>
+                <li class="d-flex mr-4">
+                    <label class="switch">
+                    <input type="checkbox" name="online_status" id="toggle-btn"
+                    data-toggle="toggle" data-on="1" data-off="0"
+                    @if(Auth::user()->online_status == 1) checked @endif
+                    >
+                    <span class="slider round"></span>
+                    </label>
+                    @if(Auth::user()->online_status == 1)
+                        <h5 class="mt-2 ml-2 @if(request()->cookie('user-theme') == 'dark') text-white @endif">
+                            {{__('Active')}}
+                        </h5>
+                    @else
+                        <h5 class="mt-2 ml-2 @if(request()->cookie('user-theme') == 'dark') text-white @endif">
+                            {{__('Deactive')}}
+                        </h5>
+                    @endif
+                </li>
+                <li class="nav-item dropdown hidden-caret">
+                    <a class="dropdown-toggle profile-pic" data-toggle="dropdown" href="#" aria-expanded="false">
+                        <div class="avatar-sm">
                             @if (!empty(Auth::user()->photo))
-                                <img src="{{asset('assets/front/img/user/'.Auth::user()->photo)}}" alt="Profile Picture"
-                                    class="rounded-circle" width="32" height="32" style="object-fit: cover;">
+                            <img src="{{asset('assets/front/img/user/'.Auth::user()->photo)}}" alt="..."
+                                class="avatar-img rounded-circle">
                             @else
-                                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" 
-                                    style="width: 32px; height: 32px;">
-                                    {{ substr(Auth::user()->first_name, 0, 1) }}{{ substr(Auth::user()->last_name, 0, 1) }}
-                                </div>
+                            <img src="{{asset('assets/admin/img/propics/blank_user.jpg')}}" alt="..."
+                                class="avatar-img rounded-circle">
                             @endif
-                            <i class="bi bi-chevron-down ms-2 text-muted small"></i>
                         </div>
                     </a>
-                    <div class="dropdown-menu dropdown-menu-end border-0 shadow-sm" 
-                        style="width: 280px;">
-                        <div class="p-3 border-bottom">
-                            <div class="d-flex align-items-center gap-3">
-                                @if (!empty(Auth::user()->photo))
-                                    <img src="{{asset('assets/front/img/user/'.Auth::user()->photo)}}" alt="Profile Picture"
-                                        class="rounded-circle" width="48" height="48" style="object-fit: cover;">
-                                @else
-                                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" 
-                                        style="width: 48px; height: 48px;">
-                                        {{ substr(Auth::user()->first_name, 0, 1) }}{{ substr(Auth::user()->last_name, 0, 1) }}
+                    <ul class="dropdown-menu dropdown-user animated fadeIn">
+                        <div class="dropdown-user-scroll scrollbar-outer">
+                            <li>
+                                <div class="user-box">
+                                    <div class="avatar-lg">
+                                        @if (!empty(Auth::user()->photo))
+                                        <img src="{{asset('assets/front/img/user/'.Auth::user()->photo)}}" alt="..."
+                                            class="avatar-img rounded">
+                                        @else
+                                        <img src="{{asset('assets/admin/img/propics/blank_user.jpg')}}" alt="..."
+                                            class="avatar-img rounded">
+                                        @endif
                                     </div>
-                                @endif
-                                <div class="overflow-hidden">
-                                    <p class="mb-0 text-truncate fw-medium">{{Auth::user()->first_name}} {{Auth::user()->last_name}}</p>
-                                    <p class="mb-0 text-truncate text-muted small">{{Auth::user()->email}}</p>
+                                    <div class="u-text">
+                                        <h4>{{Auth::user()->first_name}} {{Auth::user()->last_name}}</h4>
+                                        <p class="text-muted">{{Auth::user()->email}}</p>
+                                        <a
+                                            href="{{route('user-profile-update')}}"
+                                            class="btn btn-xs btn-secondary btn-sm">{{__('Edit Profile')}}</a>
+                                    </div>
                                 </div>
-                            </div>
+                            </li>
+                            <li>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="{{route('user-profile-update')}}">{{__('Edit Profile')}}</a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="{{route('user.changePass')}}">{{__('Change Password')}}</a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="{{route('user-logout')}}">{{__('Logout')}}</a>
+                            </li>
                         </div>
-                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{{route('user-profile-update')}}">
-                            <i class="bi bi-gear"></i>
-                            {{__('Account Settings')}}
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" href="{{route('user-logout')}}">
-                            <i class="bi bi-box-arrow-right"></i>
-                            {{__('Logout')}}
-                        </a>
-                    </div>
+                    </ul>
                 </li>
-                <li class="nav-item">
-                <a class="nav-link" href="#"><i class="bi bi-bell"></i></a>
-                </li>
-                <li class="nav-item">
-                <a class="nav-link" target="_blank"
-                        href="{{ route('user.language.index') }}" title="Language">
-                        <i class="bi bi-globe"></i> {{ __('Languages manage') }}
-                        </a>
-                </li>
-         
             </ul>
         </div>
     </nav>

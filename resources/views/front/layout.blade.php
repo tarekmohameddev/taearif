@@ -87,15 +87,6 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{$bs->adsense_publisher_id}}" crossorigin="anonymous"></script>
     <!------google adsense----------->
     @endif
-
-    <script type="text/javascript">
-    (function(c,l,a,r,i,t,y){
-        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-    })(window, document, "clarity", "script", "ppln6ugd3t");
-</script>
-
 </head>
 
 <body>
@@ -117,7 +108,7 @@
     @endif
 
     @if (!request()->routeIs('front.index') && !request()->routeIs('user.login'))
-        <div class="page-title-area bg-primary-light d-none">
+        <div class="page-title-area bg-primary-light">
             <div class="container">
                 <div class="content text-center">
                     <h2>@yield('breadcrumb-title')</h2>
@@ -137,7 +128,14 @@
                 alt="Bg">
 
             <!-- Bg Shape -->
-
+            <div class="shape">
+                <img class="shape-1" src="{{ asset('assets/frontend/images/shape/shape-4.png') }}" alt="Shape">
+                <img class="shape-2" src="{{ asset('assets/frontend/images/shape/shape-5.png') }}" alt="Shape">
+                <img class="shape-3" src="{{ asset('assets/frontend/images/shape/shape-6.png') }}" alt="Shape">
+                <img class="shape-4" src="{{ asset('assets/frontend/images/shape/shape-7.png') }}" alt="Shape">
+                <img class="shape-5" src="{{ asset('assets/frontend/images/shape/shape-8.png') }}" alt="Shape">
+                <img class="shape-6" src="{{ asset('assets/frontend/images/shape/shape-9.png') }}" alt="Shape">
+            </div>
         </div>
         <!--====== End Breadcrumbs-section ======-->
     @endif

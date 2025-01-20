@@ -72,7 +72,11 @@
                                                 class="selectgroup-input" @if (is_array($features) && in_array('Donation Management', $features)) checked @endif>
                                             <span class="selectgroup-button">{{ __('Donation Management') }}</span>
                                         </label>
-                                      
+                                        <label class="selectgroup-item">
+                                            <input type="checkbox" name="features[]" value="Real Estate Management"
+                                                class="selectgroup-input" @if (is_array($features) && in_array('Real Estate Management', $features)) checked @endif>
+                                            <span class="selectgroup-button">{{ __('Real Estate Management') }}</span>
+                                        </label>
 
                                         <label class="selectgroup-item">
                                             <input type="checkbox" name="features[]" value="vCard"

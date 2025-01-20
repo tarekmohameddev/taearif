@@ -3,82 +3,62 @@
 @includeIf('user.partials.rtl-style')
 
 @section('content')
+    <div class="page-header">
+        @if ($userBs->theme == 'home_eleven')
+            <h4 class="page-title">{{ __('Donor Section') }}</h4>
+        @else
+            <h4 class="page-title">{{ __('Brand Section') }}</h4>
+        @endif
 
-<div class="row">
-<div class="col-md-12">
-<div class="min-vh-100 d-flex align-items-center justify-content-center pb-3">
-        <div class="feature-card p-4 d-flex flex-column flex-md-row align-items-start gap-3 mx-auto w-100" style="">
-            <div class="icon-container d-flex align-items-center justify-content-center flex-shrink-0 mb-3 mb-md-0">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-dark">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="3" y1="9" x2="21" y2="9"></line>
-                    <line x1="3" y1="15" x2="21" y2="15"></line>
-                    <line x1="9" y1="3" x2="9" y2="21"></line>
-                    <line x1="15" y1="3" x2="15" y2="21"></line>
-                </svg>
-            </div>
-            <div class="feature-card-text">
-                <h2 class="fs-4 fw-semibold mb-2">{{ __('Brand Section') }}</h2>
-                <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
-                    أظهر للعملاء من هم شركاءك
-                </p>
-            </div>
-        </div>
+        <ul class="breadcrumbs">
+            <li class="nav-home">
+                <a href="{{ route('user-dashboard') }}">
+                    <i class="flaticon-home"></i>
+                </a>
+            </li>
+            <li class="separator">
+                <i class="flaticon-right-arrow"></i>
+            </li>
+            <li class="nav-item">
+                <a href="#">{{ __('Home Page') }}</a>
+            </li>
+            <li class="separator">
+                <i class="flaticon-right-arrow"></i>
+            </li>
+            <li class="nav-item">
+                @if ($userBs->theme == 'home_eleven')
+                    <a href="#"> {{ __('Donor Section') }}</a>
+                @else
+                    <a href="#"> {{ __('Brand Section') }}</a>
+                @endif
+            </li>
+        </ul>
     </div>
-    </div>
-    </div>
-    <style>
-        .feature-card {
-            background-color: #ffffff;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            transition: box-shadow 0.2s;
-        }
-        .feature-card:hover {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        .icon-container {
-            width: 3.5rem;
-            height: 3.5rem;
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 0.5rem;
-        }
-        .icon-container svg {
-            width: 2rem;
-            height: 2rem;
-        }
-        .feature-card-text {
-            white-space: normal !important;
-        }
-        .feature-card-text h2,
-        .feature-card-text p {
-            white-space: normal !important;
-        }
-        @media (min-width: 768px) {
-            .feature-card-text {
-                max-width: 75%;
-            }
-        }
-    </style>
+
     <div class="row">
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
                     <div class="row">
-          <div class="col-12 col-sm-auto ms-sm-auto col-md-auto ms-md-auto">
-            <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-4"> 
-            <a href="#" data-toggle="modal" data-target="#createModal"
-                                class="btn btn-primary"><i class="fas fa-plus"></i>
+                        <div class="col-lg-4">
+                            @if ($userBs->theme == 'home_eleven')
+                                <div class="card-title d-inline-block">{{ __(' Donors') }}</div>
+                            @else
+                                <div class="card-title d-inline-block">{{ __('Brand Partners') }}</div>
+                            @endif
+                        </div>
+
+                        <div class="col-lg-4 offset-lg-4 mt-2 mt-lg-0">
+                            <a href="#" data-toggle="modal" data-target="#createModal"
+                                class="btn btn-primary btn-sm float-lg-right float-left"><i class="fas fa-plus"></i>
                                 @if ($userBs->theme == 'home_eleven')
                                     {{ __('Add Donor') }}
                                 @else
                                     {{ __('Add Brand') }}
                                 @endif
                             </a>
-            </div>
-            </div>
-          </div>  
+                        </div>
+                    </div>
                 </div>
 
                 <div class="card-body">

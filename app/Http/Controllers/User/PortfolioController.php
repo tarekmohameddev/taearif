@@ -8,7 +8,6 @@ use App\Models\User\Language;
 use App\Models\User\Portfolio;
 use App\Models\User\PortfolioCategory;
 use App\Models\User\PortfolioImage;
-use App\Models\User\HomePageText;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
@@ -24,27 +23,6 @@ class PortfolioController extends Controller
      */
     public function index(Request $request)
     {
-        $language = Language::where('user_id', Auth::guard('web')->user()->id)->where('code', $request->language)->firstOrFail();
-        $text = HomePageText::where('user_id', Auth::guard('web')->user()->id)->where('language_id', $language->id);
-        if ($text->count() == 0) {
-            $text = new HomePageText;
-            $text->language_id = $language->id;
-            $text->user_id = Auth::guard('web')->user()->id;
-            $text->save();
-        } else {
-            $text = $text->first();
-        }
-        $data['home_setting'] = $text;
-
-        if ($text->count() == 0) {
-            $text = new HomePageText;
-            $text->language_id = $language->id;
-            $text->user_id = Auth::guard('web')->user()->id;
-            $text->save();
-        } else {
-            $text = $text->first();
-        }
-
         if ($request->has('language')) {
             $lang = Language::where([
                 ['code', $request->language],
@@ -73,9 +51,6 @@ class PortfolioController extends Controller
         ])
             ->orderBy('serial_number', 'ASC')
             ->get();
-
-        
-        
         return view('user.portfolio.portfolio.index', $data);
     }
 

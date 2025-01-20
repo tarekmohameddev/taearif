@@ -2,49 +2,46 @@
 
 namespace App\Http\Controllers\Front;
 
-use Carbon\Carbon;
-use App\Models\User;
-use App\Models\Coupon;
-use App\Models\Package;
-use App\Models\Language;
-use App\Models\User\Menu;
-use App\Models\Membership;
-use Illuminate\Http\Request;
-use App\Models\OfflineGateway;
-use App\Http\Helpers\MegaMailer;
-use App\Models\User\HomeSection;
-use App\Models\User\HomePageText;
-use App\Models\User\UserPermission;
 use App\Http\Controllers\Controller;
-use App\Models\User\UserShopSetting;
-use App\Models\User\UserEmailTemplate;
-use App\Models\User\UserPaymentGeteway;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\Validator;
-use App\Http\Helpers\UserPermissionHelper;
-use App\Http\Requests\Checkout\CheckoutRequest;
-use App\Http\Controllers\Payment\PaytmController;
-use App\Http\Controllers\Payment\MollieController;
-use App\Http\Controllers\Payment\PaypalController;
-use App\Http\Controllers\Payment\StripeController;
-use App\Http\Controllers\Payment\PaystackController;
-use App\Http\Controllers\Payment\RazorpayController;
-use App\Http\Controllers\Payment\InstamojoController;
-use App\Http\Controllers\Payment\FlutterWaveController;
-use App\Http\Controllers\Payment\MercadopagoController;
 use App\Http\Controllers\Payment\AuthorizenetController;
+use App\Http\Controllers\Payment\FlutterWaveController;
+use App\Http\Controllers\Payment\InstamojoController;
+use App\Http\Controllers\Payment\IyzicoController;
+use App\Http\Controllers\Payment\MercadopagoController;
+use App\Http\Controllers\Payment\MidtransController;
+use App\Http\Controllers\Payment\MollieController;
+use App\Http\Controllers\Payment\MyFatoorahController;
+use App\Http\Controllers\Payment\PaypalController;
+use App\Http\Controllers\Payment\PaystackController;
 use App\Http\Controllers\Payment\PaytabsController;
+use App\Http\Controllers\Payment\PaytmController;
 use App\Http\Controllers\Payment\PerfectMoneyController;
 use App\Http\Controllers\Payment\PhonePeController;
+use App\Http\Controllers\Payment\RazorpayController;
+use App\Http\Controllers\Payment\StripeController;
+use App\Http\Controllers\Payment\ToyyibpayController;
 use App\Http\Controllers\Payment\XenditController;
 use App\Http\Controllers\Payment\YocoController;
-use App\Http\Controllers\Payment\ToyyibpayController;
-use App\Http\Controllers\Payment\MidtransController;
-use App\Http\Controllers\Payment\IyzicoController;
-use App\Http\Controllers\Payment\MyFatoorahController;
+use App\Http\Helpers\MegaMailer;
+use App\Http\Helpers\UserPermissionHelper;
+use App\Http\Requests\Checkout\CheckoutRequest;
 use App\Models\BasicSetting;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Coupon;
+use App\Models\Language;
+use App\Models\Membership;
+use App\Models\OfflineGateway;
+use App\Models\Package;
+use App\Models\User;
+use App\Models\User\HomePageText;
+use App\Models\User\HomeSection;
+use App\Models\User\Menu;
+use App\Models\User\UserEmailTemplate;
+use App\Models\User\UserPaymentGeteway;
+use App\Models\User\UserPermission;
+use App\Models\User\UserShopSetting;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class CheckoutController extends Controller
 {
@@ -64,8 +61,8 @@ class CheckoutController extends Controller
 
         $offline_payment_gateways = OfflineGateway::all()->pluck('name')->toArray();
         $currentLang = session()->has('lang') ?
-            (Language::where('code', session()->get('lang'))->first())
-            : (Language::where('is_default', 1)->first());
+        (Language::where('code', session()->get('lang'))->first())
+        : (Language::where('is_default', 1)->first());
         $bs = $currentLang->basic_setting;
         $be = $currentLang->basic_extended;
 
@@ -82,7 +79,7 @@ class CheckoutController extends Controller
             $transaction_id = UserPermissionHelper::uniqidReal(8);
             $transaction_details = "Trial";
             $user = $this->store($request->all(), $transaction_id, $transaction_details, $request->price, $be, $request->password);
-            Auth::login($user);
+
             $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
             $activation = Carbon::parse($lastMemb->start_date);
             $expire = Carbon::parse($lastMemb->expire_date);
@@ -100,7 +97,7 @@ class CheckoutController extends Controller
                 'membership_invoice' => $file_name,
                 'website_title' => $bs->website_title,
                 'templateType' => 'registration_with_trial_package',
-                'type' => 'registrationWithTrialPackage'
+                'type' => 'registrationWithTrialPackage',
             ];
             $mailer->mailFromAdmin($data);
             session()->flash('success', __('successful_payment'));
@@ -129,10 +126,9 @@ class CheckoutController extends Controller
                 'membership_invoice' => $file_name,
                 'website_title' => $bs->website_title,
                 'templateType' => 'registration_with_free_package',
-                'type' => 'registrationWithFreePackage'
+                'type' => 'registrationWithFreePackage',
             ];
             $mailer->mailFromAdmin($data);
-
 
             session()->flash('success', __('successful_payment'));
             return redirect()->route('success.page');
@@ -148,7 +144,7 @@ class CheckoutController extends Controller
             $amount = round(($request->price / $be->base_currency_rate), 2);
             $stripe = new StripeController();
             $cancel_url = route('membership.stripe.cancel');
-            return $stripe->paymentProcess($request, $amount, $title, NULL, $cancel_url);
+            return $stripe->paymentProcess($request, $amount, $title, null, $cancel_url);
         } elseif ($request->payment_method == "Paytm") {
             if ($be->base_currency_text != "INR") {
                 return redirect()->back()->with('error', __('only_paytm_INR'))->withInput($request->all());
@@ -202,7 +198,7 @@ class CheckoutController extends Controller
             return $mercadopagoPayment->paymentProcess($request, $amount, $success_url, $cancel_url, $email, $title, $description, $be);
         } elseif ($request->payment_method == "Flutterwave") {
             $available_currency = array(
-                'BIF', 'CAD', 'CDF', 'CVE', 'EUR', 'GBP', 'GHS', 'GMD', 'GNF', 'KES', 'LRD', 'MWK', 'NGN', 'RWF', 'SLL', 'STD', 'TZS', 'UGX', 'USD', 'XAF', 'XOF', 'ZMK', 'ZMW', 'ZWD'
+                'BIF', 'CAD', 'CDF', 'CVE', 'EUR', 'GBP', 'GHS', 'GMD', 'GNF', 'KES', 'LRD', 'MWK', 'NGN', 'RWF', 'SLL', 'STD', 'TZS', 'UGX', 'USD', 'XAF', 'XOF', 'ZMK', 'ZMW', 'ZWD',
             );
             if (!in_array($be->base_currency_text, $available_currency)) {
                 return redirect()->back()->with('error', __('invalid_currency'))->withInput($request->all());
@@ -315,7 +311,8 @@ class CheckoutController extends Controller
             }
             $amount = $request->price;
             $success_url = null;
-            $cancel_url = route('membership.perfect_money.cancel');
+            $cancel_url = route('myfatoorah.cancel');
+
             $myfatoorahPayment = new MyFatoorahController();
             return $myfatoorahPayment->paymentProcess($request, $amount, $success_url, $cancel_url, $title, $be);
         } elseif (in_array($request->payment_method, $offline_payment_gateways)) {
@@ -325,7 +322,10 @@ class CheckoutController extends Controller
             if ($request->has('receipt')) {
                 $filename = time() . '.' . $request->file('receipt')->getClientOriginalExtension();
                 $directory = public_path("assets/front/img/membership/receipt");
-                if (!file_exists($directory)) mkdir($directory, 0775, true);
+                if (!file_exists($directory)) {
+                    mkdir($directory, 0775, true);
+                }
+
                 $request->file('receipt')->move($directory, $filename);
                 $request['receipt_name'] = $filename;
             }
@@ -339,7 +339,6 @@ class CheckoutController extends Controller
         }
     }
 
-
     /**
      * Store a newly created resource in storage.
      *
@@ -349,12 +348,13 @@ class CheckoutController extends Controller
     public function store($request, $transaction_id, $transaction_details, $amount, $be, $password)
     {
 
-
         //dynamic language translate wise menu
         $deLang = User\Language::firstOrFail();
         $deLang_arabic = User\Language::where('user_id', 0)->firstOrFail();
+
         $deLanguageNames = json_decode($deLang->keywords, true);
         $deLanguageNames_arabic = json_decode($deLang_arabic->keywords, true);
+
         $menus = '[
             {"text":"Home","href":"","icon":"empty","target":"_self","title":"","type":"home"},
 
@@ -368,13 +368,13 @@ class CheckoutController extends Controller
             {"text":"Blog","href":"","icon":"empty","target":"_self","title":"","type":"blog"},
             {"text":"Contact","href":"","icon":"empty","target":"_self","title":"","type":"contact"}]';
 
-            $menus_ar = '[
+        $menus_ar = '[
                 {"text":"Home","href":"","icon":"empty","target":"_self","title":"","type":"home"},
-    
+
                 {"text":"About","href":"","icon":"empty","target":"_self","title":"","type":"custom","children":[{"text":"Team","href":"","icon":"empty","target":"_self","title":"","type":"team"},
                 {"text":"Career","href":"","icon":"empty","target":"_self","title":"","type":"career"},
                 {"text":"FAQ","href":"","icon":"empty","target":"_self","title":"","type":"faq"}]},
-    
+
                 {"text":"Services","href":"","icon":"empty","target":"_self","title":"","type":"services"},
                 {"text":"Portfolios","href":"","icon":"empty","target":"_self","title":"","type":"portfolios"},
                 {"type":"shop","text":"Shop","href":"","target":"_self"},
@@ -382,7 +382,7 @@ class CheckoutController extends Controller
                 {"text":"Contact","href":"","icon":"empty","target":"_self","title":"","type":"contact"}]';
         $menus = json_decode($menus, true);
 
-        foreach (array_column($menus, 'text')  as $key => $menu) {
+        foreach (array_column($menus, 'text') as $key => $menu) {
             if ($menu == 'Home' && array_key_exists($menu, $deLanguageNames)) {
                 $menus[$key]['text'] = $deLanguageNames[$menu];
             }
@@ -391,7 +391,7 @@ class CheckoutController extends Controller
                 //if children manus exits
                 if (count($menus[$key]['children']) > 0) {
                     $arrays = $menus[$key]['children'];
-                    foreach (array_column($arrays, 'text')  as $k => $value) {
+                    foreach (array_column($arrays, 'text') as $k => $value) {
                         if ($value == 'Team' && array_key_exists($value, $deLanguageNames)) {
                             $menus[$key]['children'][$k]['text'] = $deLanguageNames[$value];
                         }
@@ -422,10 +422,9 @@ class CheckoutController extends Controller
             }
         }
 
-
         $menus_arabic = json_decode($menus_ar, true);
 
-        foreach (array_column($menus_arabic, 'text')  as $key => $menu) {
+        foreach (array_column($menus_arabic, 'text') as $key => $menu) {
             if ($menu == 'Home' && array_key_exists($menu, $deLanguageNames_arabic)) {
                 $menus_arabic[$key]['text'] = $deLanguageNames_arabic[$menu];
             }
@@ -434,7 +433,7 @@ class CheckoutController extends Controller
                 //if children manus exits
                 if (count($menus_arabic[$key]['children']) > 0) {
                     $arrays = $menus_arabic[$key]['children'];
-                    foreach (array_column($arrays, 'text')  as $k => $value) {
+                    foreach (array_column($arrays, 'text') as $k => $value) {
                         if ($value == 'Team' && array_key_exists($value, $deLanguageNames_arabic)) {
                             $menus_arabic[$key]['children'][$k]['text'] = $deLanguageNames_arabic[$value];
                         }
@@ -499,6 +498,7 @@ class CheckoutController extends Controller
             $deLang_arabic = User\Language::where('user_id', 0)->firstOrFail();
             $langCount = User\Language::where('user_id', $user->id)->where('is_default', 1)->count();
             if ($langCount == 0) {
+                //default langauage En
                 $lang = new User\Language;
                 $lang->name = $deLang->name;
                 $lang->code = $deLang->code;
@@ -507,15 +507,6 @@ class CheckoutController extends Controller
                 $lang->user_id = $user->id;
                 $lang->keywords = $deLang->keywords;
                 $lang->save();
-
-                $lang_ar = new User\Language;
-                $lang_ar->name = $deLang_arabic->name;
-                $lang_ar->code = $deLang_arabic->code;
-                $lang_ar->is_default = 1;
-                $lang_ar->rtl = $deLang_arabic->rtl;
-                $lang_ar->user_id = $user->id;
-                $lang_ar->keywords = $deLang_arabic->keywords;
-                $lang_ar->save();
 
                 $htext = new HomePageText;
                 $htext->language_id = $lang->id;
@@ -528,13 +519,30 @@ class CheckoutController extends Controller
                 $umenu->menus = $menus;
                 $umenu->save();
 
-                $umenu = new Menu();
-                $umenu->language_id = $lang_ar->id;
-                $umenu->user_id = $user->id;
-                $umenu->menus = $menus_arabic;
-                $umenu->save();
+                //default language Ar
+
+                $lang_ar = new User\Language;
+                $lang_ar->name = $deLang_arabic->name;
+                $lang_ar->code = $deLang_arabic->code;
+                $lang_ar->is_default = 1;
+                $lang_ar->rtl = $deLang_arabic->rtl;
+                $lang_ar->user_id = $user->id;
+                $lang_ar->keywords = $deLang_arabic->keywords;
+                $lang_ar->save();
+
+                $ar_htext = new HomePageText;
+                $ar_htext->language_id = $lang_ar->id;
+                $ar_htext->user_id = $user->id;
+                $ar_htext->save();
+
+                $ar_umenu = new Menu();
+                $ar_umenu->language_id = $lang_ar->id;
+                $ar_umenu->user_id = $user->id;
+                $ar_umenu->menus = $menus_arabic;
+                $ar_umenu->save();
+
             }
-            $ubs =  BasicSetting::select('email_verification_status')->first();
+            $ubs = BasicSetting::select('email_verification_status')->first();
             if ($ubs->email_verification_status == 1) {
                 $mailer = new MegaMailer();
                 $data = [
@@ -544,7 +552,7 @@ class CheckoutController extends Controller
                     'verification_link' => $verification_link,
                     'website_title' => $bs->website_title,
                     'templateType' => 'email_verification',
-                    'type' => 'emailVerification'
+                    'type' => 'emailVerification',
                 ];
                 $mailer->mailFromAdmin($data);
             }
@@ -562,7 +570,7 @@ class CheckoutController extends Controller
             Membership::create([
                 'package_price' => $package->price,
                 'discount' => session()->has('coupon_amount') ? session()->get('coupon_amount') : 0,
-                'coupon_code' => session()->has('coupon') ? session()->get('coupon') : NULL,
+                'coupon_code' => session()->has('coupon') ? session()->get('coupon') : null,
                 'price' => $amount,
                 'currency' => $be->base_currency_text ? $be->base_currency_text : "USD",
                 'currency_symbol' => $be->base_currency_symbol ? $be->base_currency_symbol : $be->base_currency_text,
@@ -578,7 +586,7 @@ class CheckoutController extends Controller
                 'user_id' => $user->id,
                 'start_date' => Carbon::parse($request['start_date']),
                 'expire_date' => Carbon::parse($request['expire_date']),
-                'conversation_id' => $conversation_id
+                'conversation_id' => $conversation_id,
             ]);
 
             $features = json_decode($package->features, true);
@@ -586,7 +594,7 @@ class CheckoutController extends Controller
             UserPermission::create([
                 'package_id' => $request['package_id'],
                 'user_id' => $user->id,
-                'permissions' => json_encode($features)
+                'permissions' => json_encode($features),
             ]);
 
             // create payment gateways
@@ -600,10 +608,9 @@ class CheckoutController extends Controller
                     'subtitle' => null,
                     'name' => ucfirst($value),
                     'type' => 'automatic',
-                    'information' => null
+                    'information' => null,
                 ]);
             }
-
 
             // create email template
             $templates = ['email_verification', 'product_order', 'reset_password', 'room_booking', 'room_booking', 'payment_received', 'payment_cancelled', 'course_enrolment', 'course_enrolment_approved', 'course_enrolment_rejected', 'donation', 'donation_approved'];
@@ -623,7 +630,7 @@ class CheckoutController extends Controller
             User\BasicSetting::create([
                 'theme' => 'home_one',
                 'user_id' => $user->id,
-                'timezone' => 1
+                'timezone' => 1,
             ]);
 
             UserShopSetting::create([

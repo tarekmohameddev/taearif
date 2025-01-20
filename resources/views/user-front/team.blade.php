@@ -23,7 +23,7 @@
             <!-- Team Boxes -->
             <div class="row team-members justify-content-center">
                 @foreach($members as $member)
-                    <div class="col-lg-3 col-sm-6  col-md-4 col-tiny-12">
+                    <div class="col-lg-3 col-md-4 col-tiny-12">
                         <div class="team-member mt-0 mb-40">
                             <div class="member-picture-wrap">
                                 <div class="member-picture">

@@ -10,6 +10,15 @@
 
         reader.readAsDataURL(file);
     })
+    $(document).on('change', '#about_image2', function (event) {
+        var file = event.target.files[0];
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            $('.showAboutImage2 img').attr('src', e.target.result);
+        };
+
+        reader.readAsDataURL(file);
+    })
     $(document).on('change', '#about_video_image', function (event) {
         var file = event.target.files[0];
         var reader = new FileReader();

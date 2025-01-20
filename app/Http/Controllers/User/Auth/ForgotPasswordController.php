@@ -7,8 +7,6 @@ use App\Models\Language;
 use App\Models\Seo;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 use Illuminate\Support\Facades\Password;
-use Config;
-use App\Models\BasicSetting as BS;
 
 class ForgotPasswordController extends Controller
 {
@@ -42,20 +40,12 @@ class ForgotPasswordController extends Controller
      */
     public function showLinkRequestForm()
     {
-        $bs = BS::first();
-        
-        Config::set('captcha.sitekey', $bs->google_recaptcha_site_key);
-        Config::set('captcha.secret', $bs->google_recaptcha_secret_key);
-
         if (session()->has('lang')) {
             $currentLang = Language::where('code', session()->get('lang'))->first();
         } else {
             $currentLang = Language::where('is_default', 1)->first();
         }
-        $bs = $currentLang->basic_setting;
-
         $data['seo'] = Seo::where('language_id', $currentLang->id)->first();
-        $data['bs'] = $bs;
         return view('front.auth.passwords.email', $data);
     }
 

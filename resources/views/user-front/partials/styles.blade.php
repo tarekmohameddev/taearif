@@ -27,6 +27,7 @@
 <link rel="stylesheet" href="{{ asset('assets/front/user/css/datatables.min.css') }}" />
 <link rel="stylesheet" href="{{ asset('assets/front/user/css/dataTables.bootstrap4.css') }}" />
 <link rel="stylesheet" href="{{ asset('assets/front/user/css/theme10/nice-select.css') }}" />
+{{-- <link rel="stylesheet" href="{{ asset('assets/front/css/vendors/nouislider.min.css') }}"> --}}
 <!--====== Base color ======-->
 @php
     if (!empty($userBs->base_color)) {
@@ -34,7 +35,7 @@
     } else {
         $baseColor = 'ff5f00';
     }
-    
+
     if (!empty($userBs->secondary_color)) {
         $hoverColor = $userBs->secondary_color;
     } else {
@@ -46,7 +47,7 @@
         $footer_color = 'ff5f00';
     }
     $base_rgb = hex2rgb('#' . $baseColor);
-    
+
 @endphp
 {{-- version 4,5,6 --}}
 <link rel="stylesheet" href="{{ asset('assets/front/user/css/course.css') }}" />
@@ -150,6 +151,7 @@
 <style>
     :root {
         --main-color: <?php echo htmlspecialchars('#' . $baseColor); ?>;
+        --color-primary: <?php echo htmlspecialchars('#' . $baseColor); ?>;
         --hover-color: <?php echo htmlspecialchars('#' . $hoverColor); ?>;
 
         --footer-color: <?php echo htmlspecialchars('#' . $footer_color); ?>;

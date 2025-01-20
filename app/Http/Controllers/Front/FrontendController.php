@@ -2,66 +2,64 @@
 
 namespace App\Http\Controllers\Front;
 
-use Validator;
-use Carbon\Carbon;
-use App\Models\Faq;
-use App\Models\Seo;
-use App\Models\Blog;
-use App\Models\Page;
-use App\Models\User;
-use App\Models\Feature;
-use App\Models\Package;
-use App\Models\Partner;
-use App\Models\Process;
-use App\Models\Language;
-use App\Models\Bcategory;
-use App\Models\Subscriber;
-use App\Models\User\Quote;
-use App\Models\Testimonial;
-use App\Models\Visitor;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-
-use App\Models\BasicExtended;
-use App\Models\OfflineGateway;
-use App\Models\PaymentGateway;
-use App\Models\User\UserVcard;
-use App\Models\User\HeroSlider;
-use App\Models\User\QuoteInput;
-use App\Http\Helpers\MegaMailer;
-use App\Models\User\UserContact;
-use App\Models\User\UserFeature;
-use App\Models\User\BasicSetting;
-use App\Models\User\HomePageText;
-use JeroenDesloovere\VCard\VCard;
-use App\Models\BasicSetting as BS;
-use Illuminate\Support\Facades\DB;
-use PHPMailer\PHPMailer\Exception;
-use PHPMailer\PHPMailer\PHPMailer;
-use App\Models\BasicExtended as BE;
 use App\Http\Controllers\Controller;
-use App\Models\User\UserOfferBanner;
-use Illuminate\Support\Facades\Auth;
-use App\Models\User\CustomerWishList;
-use App\Models\User\UserCustomDomain;
-use App\Models\User\PortfolioCategory;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Session;
+use App\Http\Helpers\MegaMailer;
 use App\Http\Helpers\UserPermissionHelper;
+use App\Models\BasicExtended;
+use App\Models\BasicExtended as BE;
+use App\Models\BasicSetting as BS;
+use App\Models\Bcategory;
+use App\Models\Blog;
+use App\Models\Faq;
+use App\Models\Feature;
+use App\Models\Language;
+use App\Models\OfflineGateway;
+use App\Models\Package;
+use App\Models\Page;
+use App\Models\Partner;
+use App\Models\PaymentGateway;
+use App\Models\Process;
+use App\Models\Seo;
+use App\Models\Subscriber;
+use App\Models\Testimonial;
+use App\Models\User;
+use App\Models\User\BasicSetting;
 use App\Models\User\CounterInformation;
 use App\Models\User\CourseManagement\Course;
 use App\Models\User\CourseManagement\CourseCategory;
 use App\Models\User\CourseManagement\CourseEnrolment;
+use App\Models\User\CustomerWishList;
 use App\Models\User\DonationManagement\Donation;
-use App\Models\User\DonationManagement\DonationContent;
 use App\Models\User\DonationManagement\DonationDetail;
+use App\Models\User\HeroSlider;
+use App\Models\User\HomePageText;
 use App\Models\User\HotelBooking\Room;
 use App\Models\User\HotelBooking\RoomContent;
 use App\Models\User\Language as UserLanguage;
+use App\Models\User\PortfolioCategory;
+use App\Models\User\Quote;
+use App\Models\User\QuoteInput;
+use App\Models\User\RealestateManagement\Category;
+use App\Models\User\RealestateManagement\City;
+use App\Models\User\RealestateManagement\Project;
+use App\Models\User\RealestateManagement\Property;
+use App\Models\User\UserContact;
+use App\Models\User\UserCustomDomain;
+use App\Models\User\UserFeature;
+use App\Models\User\UserOfferBanner;
+use App\Models\User\UserVcard;
 use App\Traits\MiscellaneousTrait;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Log;
-
+use JeroenDesloovere\VCard\VCard;
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailer;
+use Validator;
 
 class FrontendController extends Controller
 {
@@ -95,7 +93,7 @@ class FrontendController extends Controller
         $data['features'] = Feature::where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->get();
         $data['featured_users'] = User::where([
             ['featured', 1],
-            ['status', 1]
+            ['status', 1],
         ])
             ->whereHas('memberships', function ($q) {
                 $q->where('status', '=', 1)
@@ -107,7 +105,7 @@ class FrontendController extends Controller
             ['preview_template', 1],
             ['show_home', 1],
             ['status', 1],
-            ['online_status', 1]
+            ['online_status', 1],
         ])
             ->whereHas('memberships', function ($q) {
                 $q->where('status', '=', 1)
@@ -151,15 +149,9 @@ class FrontendController extends Controller
     public function subscribe(Request $request)
     {
         $rules = [
-            'email' => 'required|email|unique:subscribers'
+            'email' => 'required|email|unique:subscribers',
         ];
-
-
         $bs = BS::first();
-
-        if ($bs->is_recaptcha == 1) {
-            $rules['g-recaptcha-response'] = 'required|captcha';
-        }
         $messages = [];
         $validator = Validator::make($request->all(), $rules, $messages);
 
@@ -250,13 +242,12 @@ class FrontendController extends Controller
         $this->validate($request, [
             'username' => 'required|alpha_num|unique:users',
             'email' => 'required|email|unique:users',
-            'password' => 'required|min:8',
-            'phone' => 'required|min:8',
+            'password' => 'required|min:8|confirmed',
             'g-recaptcha-response' => Rule::requiredIf(function () use ($bs) {
                 if ($bs->is_recaptcha == 1) {
                     return true;
                 }
-            })
+            }),
         ], [
             'g-recaptcha-response.required' => 'Please verify that you are not a robot.',
             'g-recaptcha-response.captcha' => 'Captcha error! try again later or contact site admin.',
@@ -267,7 +258,6 @@ class FrontendController extends Controller
         $data['username'] = $request->username;
         $data['email'] = $request->email;
         $data['password'] = $request->password;
-        $data['phone'] = $request->phone;
         $data['status'] = $request->status;
         $data['id'] = $request->id;
         $online = PaymentGateway::query()->where('status', 1)->get();
@@ -279,7 +269,6 @@ class FrontendController extends Controller
         $request->session()->put('data', $data);
         return redirect()->route('front.registration.step2');
     }
-
 
     // packages start
     public function pricing(Request $request)
@@ -333,9 +322,6 @@ class FrontendController extends Controller
         }
         $term = $request->term;
 
-
-
-
         $data['blogs'] = Blog::when($category, function ($query, $category) {
             return $query->where('bcategory_id', $category);
         })
@@ -358,7 +344,6 @@ class FrontendController extends Controller
 
         $lang_id = $currentLang->id;
 
-
         $data['blog'] = Blog::findOrFail($id);
         $data['bcats'] = Bcategory::where('status', 1)->where('language_id', $lang_id)->orderBy('serial_number', 'ASC')->get();
         $data['recentBlogs'] = Blog::where('language_id', $currentLang->id)->take(3)->latest()->get();
@@ -370,7 +355,7 @@ class FrontendController extends Controller
         $data['templates'] = User::where([
             ['preview_template', 1],
             ['status', 1],
-            ['online_status', 1]
+            ['online_status', 1],
         ])
             ->whereHas('memberships', function ($q) {
                 $q->where('status', '=', 1)
@@ -386,7 +371,6 @@ class FrontendController extends Controller
     }
     public function contactView()
     {
-
 
         if (session()->has('lang')) {
             $currentLang = Language::where('code', session()->get('lang'))->first();
@@ -470,8 +454,8 @@ class FrontendController extends Controller
     }
     public function userDetailView($domain)
     {
+
         $user = getUser();
-       
         $data['user'] = $user;
         if (Auth::check() && Auth::user()->id != $user->id && $user->online_status != 1) {
             return redirect()->route('front.index');
@@ -498,21 +482,12 @@ class FrontendController extends Controller
         }
         $userBs = \App\Models\User\BasicSetting::where('user_id', $user->id)->first();
 
-        if (session()->has('lang')) {
-            $currentLang = Language::where('code', session()->get('lang'))->first();
-        } else {
-            $currentLang = Language::where('is_default', 1)->first();
-        }
-        $lang_id = $currentLang->id;
-        $bs = $currentLang->basic_setting;
-        $be = $currentLang->basic_extended;
-
         $data['home_sections'] = User\HomeSection::where('user_id', $user->id)->first();
 
         $data['home_text'] = User\HomePageText::query()
             ->where([
                 ['user_id', $user->id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->first();
         $data['portfolios'] = $user->portfolios()
             ->where('language_id', $userCurrentLang->id)
@@ -537,7 +512,7 @@ class FrontendController extends Controller
             ->get() ?? collect([]);
         $data['services'] = $user->services()->where([
             ['lang_id', $userCurrentLang->id],
-            ['featured', 1]
+            ['featured', 1],
         ])
             ->orderBy('serial_number', 'ASC')
             ->get() ?? collect([]);
@@ -548,10 +523,10 @@ class FrontendController extends Controller
         $blogLimits = 3;
         $userdefaultLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
         $data['videoSectionDetails'] =
-            User\HomePageText::query()
+        User\HomePageText::query()
             ->where([
                 ['user_id', $user->id],
-                ['language_id', $userdefaultLang->id]
+                ['language_id', $userdefaultLang->id],
             ])->select(['video_section_image', 'video_section_title', 'video_section_subtitle', 'video_section_button_url', 'video_section_button_text', 'video_section_url', 'video_section_text'])->first();
 
         if ($userBs->theme == 'home_one') {
@@ -584,20 +559,21 @@ class FrontendController extends Controller
             ->where('user_id', $user->id)
             ->orderBy('serial_number', 'asc')
             ->get();
+
         if ($userBs->theme == 'home_two') {
             $data['work_processes'] = User\WorkProcess::where([
                 ['user_id', $user->id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->orderBy('serial_number', 'ASC')->get();
             return view('user-front.home-page.home-two', $data);
         } elseif ($userBs->theme == 'home_three') {
             $data['work_processes'] = User\WorkProcess::where([
                 ['user_id', $user->id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->orderBy('serial_number', 'ASC')->get();
             $data['contact'] = UserContact::where([
                 ['user_id', $user->id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->first();
             $data['faqs'] = User\FAQ::query()
                 ->where('user_id', $user->id)
@@ -612,11 +588,11 @@ class FrontendController extends Controller
 
             $data['work_processes'] = User\WorkProcess::where([
                 ['user_id', $user->id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->orderBy('serial_number', 'ASC')->get();
             $data['contact'] = UserContact::where([
                 ['user_id', $user->id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->first();
             $data['faqs'] = User\FAQ::query()
                 ->where('user_id', $user->id)
@@ -633,11 +609,11 @@ class FrontendController extends Controller
 
             $data['work_processes'] = User\WorkProcess::where([
                 ['user_id', $user->id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->orderBy('serial_number', 'ASC')->get();
             $data['contact'] = UserContact::where([
                 ['user_id', $user->id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->first();
             $data['faqs'] = User\FAQ::query()
                 ->where('user_id', $user->id)
@@ -653,11 +629,11 @@ class FrontendController extends Controller
         } elseif ($userBs->theme == 'home_six') {
             $data['work_processes'] = User\WorkProcess::where([
                 ['user_id', $user->id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->orderBy('serial_number', 'ASC')->get();
             $data['contact'] = UserContact::where([
                 ['user_id', $user->id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->first();
             $data['faqs'] = User\FAQ::query()
                 ->where('user_id', $user->id)
@@ -671,11 +647,11 @@ class FrontendController extends Controller
         } elseif ($userBs->theme == 'home_seven') {
             $data['contact'] = UserContact::where([
                 ['user_id', $user->id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->first();
             $data['work_processes'] = User\WorkProcess::where([
                 ['user_id', $user->id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->orderBy('serial_number', 'ASC')->get();
             $data['faqs'] = User\FAQ::query()
                 ->where('user_id', $user->id)
@@ -714,7 +690,7 @@ class FrontendController extends Controller
                 ->get();
 
             $itemlimit = 10;
-            $data['featured_items']  = DB::table('user_items')->where('user_items.user_id', $user->id)->where('user_items.status', 1)
+            $data['featured_items'] = DB::table('user_items')->where('user_items.user_id', $user->id)->where('user_items.status', 1)
                 ->where('user_items.is_feature', 1)
                 ->Join('user_item_contents', 'user_items.id', '=', 'user_item_contents.item_id')
                 ->join('user_item_categories', 'user_item_contents.category_id', '=', 'user_item_categories.id')
@@ -724,7 +700,7 @@ class FrontendController extends Controller
                 ->where('user_item_categories.language_id', '=', $userCurrentLang->id)
                 ->limit($itemlimit)
                 ->get();
-            $data['new_items']  = DB::table('user_items')->where('user_items.status', 1)->where('user_items.user_id', $user->id)
+            $data['new_items'] = DB::table('user_items')->where('user_items.status', 1)->where('user_items.user_id', $user->id)
                 ->Join('user_item_contents', 'user_items.id', '=', 'user_item_contents.item_id')
                 ->join('user_item_categories', 'user_item_contents.category_id', '=', 'user_item_categories.id')
                 ->select('user_items.*', 'user_items.id AS item_id', 'user_item_contents.*', 'user_item_categories.name AS category')
@@ -734,7 +710,7 @@ class FrontendController extends Controller
                 ->limit($itemlimit)
                 ->get();
 
-            $data['rating_items']  = DB::table('user_items')->where('user_items.rating', '>', 0)->where('user_items.status', 1)->where('user_items.user_id', $user->id)
+            $data['rating_items'] = DB::table('user_items')->where('user_items.rating', '>', 0)->where('user_items.status', 1)->where('user_items.user_id', $user->id)
                 ->Join('user_item_contents', 'user_items.id', '=', 'user_item_contents.item_id')
                 ->join('user_item_categories', 'user_item_contents.category_id', '=', 'user_item_categories.id')
                 ->select('user_items.*', 'user_items.id AS item_id', 'user_item_contents.*', 'user_item_categories.name AS category')
@@ -743,7 +719,7 @@ class FrontendController extends Controller
                 ->where('user_item_categories.language_id', '=', $userCurrentLang->id)
                 ->limit($itemlimit)
                 ->get();
-            $data['special_offer_items']  = DB::table('user_items')->where('user_items.status', 1)->where('user_items.user_id', $user->id)
+            $data['special_offer_items'] = DB::table('user_items')->where('user_items.status', 1)->where('user_items.user_id', $user->id)
                 ->where('user_items.special_offer', 1)
                 ->Join('user_item_contents', 'user_items.id', '=', 'user_item_contents.item_id')
                 ->join('user_item_categories', 'user_item_contents.category_id', '=', 'user_item_categories.id')
@@ -752,7 +728,7 @@ class FrontendController extends Controller
                 ->where('user_item_contents.language_id', '=', $userCurrentLang->id)
                 ->where('user_item_categories.language_id', '=', $userCurrentLang->id)
                 ->get();
-            $data['best_seller_items']  = DB::table('user_order_items')
+            $data['best_seller_items'] = DB::table('user_order_items')
                 ->leftJoin('user_items', 'user_items.id', '=', 'user_order_items.item_id')
                 ->leftJoin('user_orders', 'user_orders.id', '=', 'user_order_items.user_order_id')
                 ->Join('user_item_contents', 'user_items.id', '=', 'user_item_contents.item_id')
@@ -789,7 +765,7 @@ class FrontendController extends Controller
             $bs = BasicSetting::where('user_id', $user->id)->first();
             // dd($bs->timezoneinfo);
             Config::set('app.timezone', $bs->timezoneinfo->timezone);
-            $data['flash_items']  = DB::table('user_items')->where('user_items.status', 1)->where('user_items.user_id', $user->id)
+            $data['flash_items'] = DB::table('user_items')->where('user_items.status', 1)->where('user_items.user_id', $user->id)
                 ->where('user_items.flash', 1)
                 ->where('user_items.start_date_time', '<=', Carbon::now()->tz($bs->timezoneinfo->timezone)->format('Y-m-d H:i:s A'))
                 ->where('user_items.end_date_time', '>=', Carbon::now()->tz($bs->timezoneinfo->timezone)->format('Y-m-d H:i:s A'))
@@ -813,7 +789,6 @@ class FrontendController extends Controller
                 $userBs->save();
                 return redirect()->route('front.user.view');
             }
-
 
             $data['sliders'] = HeroSlider::where('language_id', $userCurrentLang->id)
                 ->orderBy('serial_number', 'ASC')
@@ -898,7 +873,7 @@ class FrontendController extends Controller
                 ->where('language_id', $userCurrentLang->id)
                 ->orderBy('serial_number', 'ASC')
                 ->get();
-            $data['currencyInfo'] =  MiscellaneousTrait::getCurrencyInfo($user->id);
+            $data['currencyInfo'] = MiscellaneousTrait::getCurrencyInfo($user->id);
 
             return view('user-front.home-page.home-ten', $data);
         } elseif ($userBs->theme == 'home_eleven') {
@@ -920,7 +895,6 @@ class FrontendController extends Controller
                 ->orderBy('serial_number', 'ASC')
                 ->get();
             $data['donationCategories'] = $userCurrentLang->donationCategories->where('status', 1)->where('is_featured', 1);
-
 
             $causes = Donation::where('user_id', $user->id)->latest()->take(6)->get();
 
@@ -966,6 +940,105 @@ class FrontendController extends Controller
                 ->get() ?? collect([]);
 
             return view('user-front.home-page.home_twelve', $data);
+        } elseif ($userBs->theme == 'home13' || $userBs->theme == 'home14' || $userBs->theme == 'home15') {
+
+            $data['featured_properties'] = Property::where([['user_properties.status', 1], ['user_properties.featured', 1], ['user_properties.user_id', $user->id]])
+                ->leftJoin('user_property_contents', 'user_property_contents.property_id', 'user_properties.id')
+            // ->leftJoin('user_property_categories', 'user_property_categories.id', 'user_properties.category_id')
+                ->leftJoin('user_cities', 'user_cities.id', '=', 'user_property_contents.city_id')
+                ->leftJoin('user_states', 'user_states.id', '=', 'user_property_contents.state_id')
+                ->leftJoin('user_countries', 'user_countries.id', '=', 'user_property_contents.country_id')
+                ->where('user_property_contents.language_id', $userCurrentLang->id)
+                ->select(
+                    'user_properties.*',
+                    'user_property_contents.slug',
+                    'user_property_contents.title',
+                    'user_property_contents.address',
+                    'user_property_contents.language_id',
+                    'user_cities.name as city_name',
+                    'user_states.name as state_name',
+                    'user_countries.name as country_name'
+                )
+                ->inRandomOrder()
+                ->take(10)
+                ->get();
+
+            $data['properties'] = Property::where([['user_properties.status', 1], ['user_properties.user_id', $user->id]])
+                ->where('user_property_contents.language_id', $userCurrentLang->id)
+                ->leftJoin('user_property_contents', 'user_property_contents.property_id', 'user_properties.id')
+
+                ->leftJoin('user_cities', 'user_cities.id', '=', 'user_property_contents.city_id')
+                ->leftJoin('user_states', 'user_states.id', '=', 'user_property_contents.state_id')
+                ->leftJoin('user_countries', 'user_countries.id', '=', 'user_property_contents.country_id')
+                ->where('user_property_contents.language_id', $userCurrentLang->id)
+                ->select(
+                    'user_properties.*',
+                    'user_property_contents.slug',
+                    'user_property_contents.title',
+                    'user_property_contents.address',
+                    'user_property_contents.language_id',
+                    'user_cities.name as city_name',
+                    'user_states.name as state_name',
+                    'user_countries.name as country_name'
+                )->latest()->take(8)->get();
+
+            $cities = City::where([['status', 1], ['featured', 1], ['user_id', $user->id]])->limit(6)->orderBy('serial_number', 'asc')->get();
+            $cities->map(function ($city) {
+                $city['propertyCount'] = $city->propertyContent()->count();
+            });
+            $data['cities'] = $cities;
+
+            $data['all_cities'] = City::where([['status', 1], ['user_id', $user->id], ['language_id', $userCurrentLang->id]])->get();
+
+            $data['all_proeprty_categories'] =
+            Category::where([['status', 1], ['user_id', $user->id], ['language_id', $userCurrentLang->id]])->orderBy('serial_number', 'asc')->get();
+
+            $min = Property::where([['status', 1], ['user_id', $user->id]])->min('price');
+            $max = Property::where([['status', 1], ['user_id', $user->id]])->max('price');
+            $data['min'] = intval($min);
+            $data['max'] = intval($max);
+            if ($userBs->theme == 'home13') {
+                $data['heroStatic'] = User\HeroStatic::where('user_id', $user->id)
+                    ->where('language_id', $userCurrentLang->id)
+                    ->first();
+                return view('user-front.realestate.home.index-v1', $data);
+            } elseif ($userBs->theme == 'home14') {
+
+                $data['sliderInfos'] = HeroSlider::where('language_id', $userCurrentLang->id)
+                    ->orderBy('serial_number', 'ASC')
+                    ->where('user_id', $user->id)
+                    ->get();
+                $data['property_categories'] = Category::where([['status', 1], ['user_id', $user->id], ['featured', 1], ['language_id', $userCurrentLang->id]])->orderBy('serial_number', 'asc')->get();
+
+                $data['callToActionInfo'] = User\ActionSection::query()
+                    ->where('user_id', $user->id)
+                    ->where('language_id', $userCurrentLang->id)
+                    ->first();
+
+                $data['work_processes'] = User\WorkProcess::where([
+                    ['user_id', $user->id],
+                    ['language_id', $userCurrentLang->id],
+                ])->orderBy('serial_number', 'ASC')->get();
+
+                return view('user-front.realestate.home.index-v2', $data);
+            } elseif ($userBs->theme == 'home15') {
+                $data['heroStatic'] = User\HeroStatic::where('user_id', $user->id)
+                    ->where('language_id', $userCurrentLang->id)
+                    ->first();
+                $data['work_processes'] = User\WorkProcess::where([
+                    ['user_id', $user->id],
+                    ['language_id', $userCurrentLang->id],
+                ])->orderBy('serial_number', 'ASC')->get();
+
+                $data['projects'] = Project::where('user_projects.user_id', $user->id)->leftJoin('user_project_contents', 'user_project_contents.project_id', 'user_projects.id')
+                    ->where('user_projects.featured', 1)
+
+                    ->where('user_project_contents.language_id', $userCurrentLang->id)
+                    ->select('user_projects.*', 'user_project_contents.slug', 'user_project_contents.title', 'user_project_contents.address')->inRandomOrder()->latest()->take(8)->get();
+
+                $data['property_categories'] = Category::where([['status', 1], ['user_id', $user->id], ['featured', 1], ['language_id', $userCurrentLang->id]])->orderBy('serial_number', 'asc')->get();
+                return view('user-front.realestate.home.index-v3', $data);
+            }
         } else {
             return view('user-front.home-page.home-one', $data);
         }
@@ -977,7 +1050,8 @@ class FrontendController extends Controller
             ->first();
         return response()->json([
             'description' => $offline->short_description,
-            'instructions' => $offline->instructions, 'is_receipt' => $offline->is_receipt
+            'instructions' => $offline->instructions,
+            'is_receipt' => $offline->is_receipt,
         ]);
     }
 
@@ -988,10 +1062,10 @@ class FrontendController extends Controller
             'fullname' => 'required',
             'email' => 'required|email:rfc,dns',
             'subject' => 'required',
-            'message' => 'required'
+            'message' => 'required',
         ];
 
-        $ubs  = BasicSetting::where('user_id', getUser()->id)->first();
+        $ubs = BasicSetting::where('user_id', getUser()->id)->first();
         $messages = [];
         if ($ubs->is_recaptcha == 1) {
             $rules['g-recaptcha-response'] = 'required|captcha';
@@ -1002,7 +1076,6 @@ class FrontendController extends Controller
         }
 
         $request->validate($rules, $messages);
-
 
         $request->validate($rules);
         if (!empty($request->type) && $request->type == 'vcard') {
@@ -1034,7 +1107,7 @@ class FrontendController extends Controller
             'name' => 'required',
             'email' => 'required|email:rfc,dns',
             'subject' => 'required',
-            'message' => 'required'
+            'message' => 'required',
         ];
 
         $bs = BS::select('is_recaptcha')->first();
@@ -1081,7 +1154,7 @@ class FrontendController extends Controller
         $data['home_text'] = User\HomePageText::query()
             ->where([
                 ['user_id', $id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->first();
 
         $data['services'] = User\UserService::query()
@@ -1119,9 +1192,8 @@ class FrontendController extends Controller
         $data['home_text'] = User\HomePageText::query()
             ->where([
                 ['user_id', $id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->first();
-
 
         $data['blogs'] = User\Blog::query()
             ->when($catid, function ($query, $catid) {
@@ -1202,7 +1274,7 @@ class FrontendController extends Controller
         $data['home_text'] = User\HomePageText::query()
             ->where([
                 ['user_id', $id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->first();
         $data['portfolio_categories'] = User\PortfolioCategory::query()
             ->where('status', 1)
@@ -1270,7 +1342,7 @@ class FrontendController extends Controller
         $data['home_text'] = User\HomePageText::query()
             ->where([
                 ['user_id', $id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->first();
 
         $data['jobs'] = User\Job::query()
@@ -1335,7 +1407,6 @@ class FrontendController extends Controller
         return view('user-front.job.show', $data);
     }
 
-
     public function userTeam($domain)
     {
         $user = getUser();
@@ -1354,7 +1425,7 @@ class FrontendController extends Controller
         $data['home_text'] = User\HomePageText::query()
             ->where([
                 ['user_id', $id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->first();
 
         $data['members'] = User\Member::query()
@@ -1380,7 +1451,7 @@ class FrontendController extends Controller
         $data['home_text'] = User\HomePageText::query()
             ->where([
                 ['user_id', $id],
-                ['language_id', $userCurrentLang->id]
+                ['language_id', $userCurrentLang->id],
             ])->first();
 
         $data['faqs'] = User\FAQ::query()
@@ -1410,11 +1481,10 @@ class FrontendController extends Controller
 
         $data['inputs'] = QuoteInput::where([
             ['language_id', $userCurrentLang->id],
-            ['user_id', $user->id]
+            ['user_id', $user->id],
         ])->orderBy('order_number', 'ASC')->get();
         return view('user-front.quote', $data);
     }
-
 
     public function sendquote(Request $request, $domain)
     {
@@ -1432,12 +1502,12 @@ class FrontendController extends Controller
 
         $quote_inputs = QuoteInput::where([
             ['language_id', $userCurrentLang->id],
-            ['user_id', $user->id]
+            ['user_id', $user->id],
         ])->get();
 
         $rules = [
             'name' => 'required',
-            'email' => 'required|email'
+            'email' => 'required|email',
         ];
         $userBs = BasicSetting::where('user_id', $user->id)->first();
         if ($userBs->is_recaptcha == 1) {
@@ -1447,9 +1517,6 @@ class FrontendController extends Controller
             'g-recaptcha-response.required' => 'Please verify that you are not a robot.',
             'g-recaptcha-response.captcha' => 'Captcha error! try again later or contact site admin.',
         ];
-
-
-
 
         $allowedExts = array('zip');
         foreach ($quote_inputs as $input) {
@@ -1493,7 +1560,6 @@ class FrontendController extends Controller
         $jsonfields = json_encode($fields);
         $jsonfields = str_replace("\/", "/", $jsonfields);
 
-
         $quote = new Quote;
         $quote->name = $request->name;
         $quote->email = $request->email;
@@ -1512,18 +1578,18 @@ class FrontendController extends Controller
         if ($be->is_smtp == 1) {
             try {
                 //Server settings
-                $mail->isSMTP();                                            // Send using SMTP
-                $mail->Host = $be->smtp_host;                    // Set the SMTP server to send through
-                $mail->SMTPAuth = true;                                   // Enable SMTP authentication
-                $mail->Username = $be->smtp_username;                     // SMTP username
-                $mail->Password = $be->smtp_password;                               // SMTP password
-                $mail->SMTPSecure = $be->encryption;         // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
-                $mail->Port = $be->smtp_port;                                    // TCP port to connect to, use 465 for `PHPMailer::ENCRYPTION_SMTPS` above
+                $mail->isSMTP(); // Send using SMTP
+                $mail->Host = $be->smtp_host; // Set the SMTP server to send through
+                $mail->SMTPAuth = true; // Enable SMTP authentication
+                $mail->Username = $be->smtp_username; // SMTP username
+                $mail->Password = $be->smtp_password; // SMTP password
+                $mail->SMTPSecure = $be->encryption; // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
+                $mail->Port = $be->smtp_port; // TCP port to connect to, use 465 for `PHPMailer::ENCRYPTION_SMTPS` above
                 $mail->CharSet = 'UTF-8';
                 $mail->addReplyTo($request->email);
                 //Recipients
                 $mail->setFrom($be->from_mail, $request->name);
-                $mail->addAddress($user->email);     // Add a recipient
+                $mail->addAddress($user->email); // Add a recipient
 
             } catch (Exception $e) {
                 Session::flash('error', $e->getMessage());
@@ -1534,7 +1600,7 @@ class FrontendController extends Controller
                 //Recipients
                 $mail->setFrom($be->from_mail, $request->name);
                 $mail->addReplyTo($request->email);
-                $mail->addAddress($user->email);     // Add a recipient
+                $mail->addAddress($user->email); // Add a recipient
             } catch (Exception $e) {
                 Session::flash('error', $e->getMessage());
                 return back();
@@ -1567,9 +1633,9 @@ class FrontendController extends Controller
         $message .= "</div>";
 
         // Content
-        $mail->isHTML(true);   // Set email format to HTML
+        $mail->isHTML(true); // Set email format to HTML
         $mail->Subject = $subject;
-        $mail->Body    = $message;
+        $mail->Body = $message;
 
         $mail->send();
 
@@ -1743,80 +1809,5 @@ class FrontendController extends Controller
         $data['page'] = User\Page::query()->where('user_id', $userId)->where('language_id', $userCurrentLang->id)->where('slug', $slug)->firstOrFail();
 
         return view('user-front.custom-page', $data);
-    }
-
-    public function get_info(Request $request)
-    {
-        $ip = request()->ip();
-        $response = Http::get("http://ip-api.com/json/{$ip}");
-
-        if ($response->successful()) {
-            $country_value =  $response->json()['country'];
-            $country_code =  $response->json()['countryCode'];
-            $region_name =  $response->json()['regionName'];
-            $city =  $response->json()['city'];
-        }else{
-            $country_value = 'Unknown';
-        }
-        
-        Visitor::create([
-            'user_id' => $request->input('user_id'),
-            'device_type' => $request->input('device_type'),
-            'country' => $country_value,
-            'country_code' => $country_code,
-            'region_name' => $region_name,
-            'city' => $city,
-            'ip' => $ip,
-        ]);
-    
-    }
-
-    public function getStats(Request $request)
-    {
-        $userId = Auth::user()->id;
-
-
-        if (!$userId) {
-            return response()->json(['error' => 'User ID is required'], 400);
-        }
-
-        // Device statistics filtered by user_id
-        $deviceStats = DB::table('visitors')
-            ->select(DB::raw('device_type, COUNT(*) as count'))
-            ->where('user_id', $userId)
-            ->groupBy('device_type')
-            ->get();
-
-        // Country statistics filtered by user_id
-        $countryStats = DB::table('visitors')
-            ->select(DB::raw('country, COUNT(*) as count'))
-            ->where('user_id', $userId)
-            ->groupBy('country')
-            ->get();
-
-        // Top 5 cities filtered by user_id
-        $topCities = DB::table('visitors')
-            ->select('city', DB::raw('COUNT(*) as count'))
-            ->where('user_id', $userId)
-            ->groupBy('city')
-            ->orderByDesc('count')
-            ->limit(5)
-            ->get();
-
-        // Top 5 regions filtered by user_id
-        $topRegions = DB::table('visitors')
-            ->select('region_name', DB::raw('COUNT(*) as count'))
-            ->where('user_id', $userId)
-            ->groupBy('region_name')
-            ->orderByDesc('count')
-            ->limit(5)
-            ->get();
-
-        return response()->json([
-            'deviceStats' => $deviceStats,
-            'countryStats' => $countryStats,
-            'topCities' => $topCities,
-            'topRegions' => $topRegions,
-        ]);
     }
 }

@@ -73,7 +73,14 @@
     @else
         @includeIf('user-front.partials.header')
     @endif
-    @if (!request()->routeIs('front.user.detail.view') && !request()->routeIs('front.user.course.details'))
+    @if (
+        !request()->routeIs('front.user.detail.view') &&
+            !request()->routeIs('front.user.course.details') &&
+            // !request()->routeIs('front.user.projects') &&
+            !request()->routeIs('front.user.project.details') &&
+    
+            !request()->routeIs('front.user.property.details') &&
+            !request()->routeIs('front.user.properties'))
         @php
             $brBg = $userBs->breadcrumb ?? 'breadcrumb.jpg';
         @endphp
@@ -184,26 +191,6 @@
             reader.readAsDataURL(file);
         })
     </script>
-
-<script>
-
-const tokenInput = document.querySelector('input[name="_token"]');
-    csrfToken = tokenInput ? tokenInput.value : null;
-    user_id_value = {{ $user->id }};
-  fetch('track-visitor', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': csrfToken // Include the CSRF token here
-    },
-      body: JSON.stringify({
-          user_agent: navigator.userAgent,
-          user_id: user_id_value,
-          device_type: /Mobile|Android|iP(hone|ad)/.test(navigator.userAgent) ? 'mobile' : 'web'
-      })
-  });
-</script>
-
 </body>
 
 </html>

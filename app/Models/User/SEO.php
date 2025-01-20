@@ -51,7 +51,12 @@ class SEO extends Model
         'meta_keyword_rooms',
         'meta_description_rooms',
         'meta_keyword_room_details',
-        'meta_description_room_details'
+        'meta_description_room_details',
+
+        'meta_keyword_properties',
+        'meta_description_properties',
+        'meta_keyword_projects',
+        'meta_description_projects'
     ];
 
     public function language()

@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\User\BasicSetting;
 use App\Models\User\Language;
 use App\Models\User\UserService;
-use App\Models\User\HomePageText;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
@@ -22,17 +21,6 @@ class ServiceController extends Controller
      */
     public function index(Request $request)
     {
-
-        $language = Language::where('user_id', Auth::guard('web')->user()->id)->where('code', $request->language)->firstOrFail();
-        $text = HomePageText::where('user_id', Auth::guard('web')->user()->id)->where('language_id', $language->id);
-        if ($text->count() == 0) {
-            $text = new HomePageText;
-            $text->language_id = $language->id;
-            $text->user_id = Auth::guard('web')->user()->id;
-            $text->save();
-        } else {
-            $text = $text->first();
-        }
         $data = null;
         if ($request->has('language')) {
             $lang = Language::where([
@@ -48,7 +36,7 @@ class ServiceController extends Controller
                 ->first();
             Session::put('currentLangCode', $lang->code);
         }
-        $data['home_setting'] = $text;
+
         $data['services'] = UserService::where([
             ['lang_id', '=', $lang->id],
             ['user_id', '=', Auth::id()],

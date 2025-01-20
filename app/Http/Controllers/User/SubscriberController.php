@@ -53,7 +53,7 @@ class SubscriberController extends Controller
             'g-recaptcha-response.required' => 'Please verify that you are not a robot.',
             'g-recaptcha-response.captcha' => 'Captcha error! try again later or contact site admin.',
         ]);
-        $request['user_id'] = $user->id;
+        $request['user_id'] = $user->id; 
         Subscriber::create($request->all());
         Session::flash('success', 'You subscribed successfully!');
         return back();
@@ -107,7 +107,7 @@ class SubscriberController extends Controller
         $be = BasicExtended::first();
 
         $mail = new PHPMailer(true);
-        $mail->CharSet = "UTF-8"; 
+        $mail->CharSet = "UTF-8";
         if ($be->is_smtp == 1) {
             try {
                 //Server settings
