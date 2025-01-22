@@ -141,9 +141,15 @@
                                 method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <div class="form-group">
+                                    @if ($userBs->theme == 'home13')
+                                        <div class="col-12 mb-2">
+                                            <label for="image"><strong>{{ __('Image One') }}</strong></label>
+                                        </div>
+                                    @else
                                     <div class="col-12 mb-2">
                                         <label for="image"><strong>{{ __('Background Image') }}</strong></label>
                                     </div>
+                                    @endif
                                     <div class="col-md-12 showImage mb-3">
                                         <img src="{{ isset($data->why_choose_us_section_image) ? asset('assets/front/img/user/home_settings/' . $data->why_choose_us_section_image) : asset('assets/admin/img/noimage.jpg') }}"
                                             alt="..." class="img-thumbnail">
@@ -156,6 +162,20 @@
                                     </button>
                                     <p id="error_why_choose_us_section_image" class="mb-0 text-danger em"></p>
                                 </div>
+                                @if ($userBs->theme == 'home13')
+                                    <div class="form-group">
+                                        <div class="col-12 mb-2">
+                                            <label for="image"><strong>{{ __('Image Two ') }}</strong></label>
+                                        </div>
+                                        <div class="col-md-12 showImage2 mb-3">
+                                            <img src="{{ isset($data->why_choose_us_section_image_two) ? asset('assets/front/img/user/home_settings/' . $data->why_choose_us_section_image_two) : asset('assets/admin/img/noimage.jpg') }}"
+                                                alt="..." class="img-thumbnail">
+                                        </div>
+                                        <input type="file" name="why_choose_us_section_image_two" id="image2"
+                                            class="form-control image">
+                                        <p id="error_why_choose_us_section_image_two" class="mb-0 text-danger em"></p>
+                                    </div>
+                                @endif
                                 <div class="form-group">
                                     <label for="">{{ __('Why Choose Us Section Title') }}</label>
                                     <input type="text" class="form-control" name="why_choose_us_section_title"
@@ -187,9 +207,11 @@
                                                 {{ $errors->first('why_choose_us_section_text') }}</p>
                                         @endif
                                     </div>
+                                    @if ($userBs->theme != 'home13')
                                     <div class="form-group">
                                         <label for="">{{ __('Why Choose Us Section Button Text') }}</label>
-                                        <input type="text" class="form-control" name="why_choose_us_section_button_text"
+                                            <input type="text" class="form-control"
+                                                name="why_choose_us_section_button_text"
                                             value="{{ $data->why_choose_us_section_button_text ?? '' }}"
                                             placeholder="{{ __('Enter button text') }}">
                                         @if ($errors->has('why_choose_us_section_button_text'))
@@ -208,7 +230,9 @@
                                         @endif
                                     </div>
                                 @endif
-                                @if ($userBs->theme === 'home_three')
+                                @endif
+                                @if ($userBs->theme === 'home_three' || $userBs->theme === 'home13')
+                                    @if ($userBs->theme != 'home13')
                                     <div class="form-group">
                                         <div class="col-12 mb-2">
                                             <label
@@ -225,6 +249,7 @@
                                                 {{ $errors->first('why_choose_us_section_video_image') }}</p>
                                         @endif
                                     </div>
+                                    @endif
                                     <div class="form-group">
                                         <label for="">{{ __('Video URL') }}</label>
                                         <input type="text" class="form-control ltr"

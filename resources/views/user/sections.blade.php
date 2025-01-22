@@ -1,6 +1,9 @@
 @extends('user.layout')
 @php
-    $userDefaultLang = \App\Models\User\Language::where([['user_id', \Illuminate\Support\Facades\Auth::id()], ['is_default', 1]])->first();
+    $userDefaultLang = \App\Models\User\Language::where([
+        ['user_id', \Illuminate\Support\Facades\Auth::id()],
+        ['is_default', 1],
+    ])->first();
     $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support\Facades\Auth::id())->get();
     $permissions = \App\Http\Helpers\UserPermissionHelper::packagePermission(Auth::id());
     $permissions = json_decode($permissions, true);
@@ -54,6 +57,8 @@
                                         $userBs->theme == 'home_nine' ||
                                         $userBs->theme == 'home_eleven' ||
                                         $userBs->theme == 'home_twelve' ||
+                                        $userBs->theme == 'home13' ||
+                                        $userBs->theme == 'home15' ||
                                         $userBs->theme == 'home_three')
                                     <div class="form-group">
                                         <label>{{ __('About Section') }} **</label>
@@ -153,7 +158,11 @@
                                     </div>
                                 @endif
 
-                                @if ($userBs->theme == 'home_one' || $userBs->theme == 'home_three' || $userBs->theme == 'home_nine')
+                                @if (
+                                    $userBs->theme == 'home_one' ||
+                                        $userBs->theme == 'home_three' ||
+                                        $userBs->theme == 'home_nine' ||
+                                        $userBs->theme == 'home13')
                                     <div class="form-group">
                                         <label>{{ __('Why Choose Us Section') }} **</label>
                                         <div class="selectgroup w-100">
@@ -202,6 +211,8 @@
                                         $userBs->theme == 'home_ten' ||
                                         $userBs->theme == 'home_eleven' ||
                                         $userBs->theme == 'home_twelve' ||
+                                        $userBs->theme == 'home13' ||
+                                        $userBs->theme == 'home15' ||
                                         $userBs->theme == 'home_three')
                                     @if (!empty($permissions) && in_array('Counter Information', $permissions))
                                         <div class="form-group">
@@ -222,6 +233,82 @@
                                             </div>
                                         </div>
                                     @endif
+                                @endif
+                                @if ($userBs->theme == 'home13' || $userBs->theme == 'home14')
+                                    <div class="form-group">
+                                        <label>{{ __('Featured Property Section') }} **</label>
+                                        <div class="selectgroup w-100">
+                                            <label class="selectgroup-item">
+                                                <input type="radio" name="featured_properties_section" value="1"
+                                                    class="selectgroup-input"
+                                                    {{ isset($sections->featured_properties_section) && $sections->featured_properties_section == 1 ? 'checked' : '' }}>
+                                                <span class="selectgroup-button">{{ __('Active') }}</span>
+                                            </label>
+                                            <label class="selectgroup-item">
+                                                <input type="radio" name="featured_properties_section" value="0"
+                                                    class="selectgroup-input"
+                                                    {{ !isset($sections->featured_properties_section) || $sections->featured_properties_section == 0 ? 'checked' : '' }}>
+                                                <span class="selectgroup-button">{{ __('Deactive') }}</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                @endif
+                                @if ($userBs->theme == 'home13' || $userBs->theme == 'home14' || $userBs->theme == 'home15')
+                                    <div class="form-group">
+                                        <label>{{ __('Property Section') }} **</label>
+                                        <div class="selectgroup w-100">
+                                            <label class="selectgroup-item">
+                                                <input type="radio" name="property_section" value="1"
+                                                    class="selectgroup-input"
+                                                    {{ isset($sections->property_section) && $sections->property_section == 1 ? 'checked' : '' }}>
+                                                <span class="selectgroup-button">{{ __('Active') }}</span>
+                                            </label>
+                                            <label class="selectgroup-item">
+                                                <input type="radio" name="property_section" value="0"
+                                                    class="selectgroup-input"
+                                                    {{ !isset($sections->property_section) || $sections->property_section == 0 ? 'checked' : '' }}>
+                                                <span class="selectgroup-button">{{ __('Deactive') }}</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                @endif
+                                @if ($userBs->theme == 'home13')
+                                    <div class="form-group">
+                                        <label>{{ __('Cities Section') }} **</label>
+                                        <div class="selectgroup w-100">
+                                            <label class="selectgroup-item">
+                                                <input type="radio" name="cities_section" value="1"
+                                                    class="selectgroup-input"
+                                                    {{ isset($sections->cities_section) && $sections->cities_section == 1 ? 'checked' : '' }}>
+                                                <span class="selectgroup-button">{{ __('Active') }}</span>
+                                            </label>
+                                            <label class="selectgroup-item">
+                                                <input type="radio" name="cities_section" value="0"
+                                                    class="selectgroup-input"
+                                                    {{ !isset($sections->cities_section) || $sections->cities_section == 0 ? 'checked' : '' }}>
+                                                <span class="selectgroup-button">{{ __('Deactive') }}</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                @endif
+                                 @if ($userBs->theme == 'home15')
+                                    <div class="form-group">
+                                        <label>{{ __('Project Section') }} **</label>
+                                        <div class="selectgroup w-100">
+                                            <label class="selectgroup-item">
+                                                <input type="radio" name="cities_section" value="1"
+                                                    class="selectgroup-input"
+                                                    {{ isset($sections->cities_section) && $sections->cities_section == 1 ? 'checked' : '' }}>
+                                                <span class="selectgroup-button">{{ __('Active') }}</span>
+                                            </label>
+                                            <label class="selectgroup-item">
+                                                <input type="radio" name="cities_section" value="0"
+                                                    class="selectgroup-input"
+                                                    {{ !isset($sections->cities_section) || $sections->cities_section == 0 ? 'checked' : '' }}>
+                                                <span class="selectgroup-button">{{ __('Deactive') }}</span>
+                                            </label>
+                                        </div>
+                                    </div>
                                 @endif
 
                                 @if (
@@ -308,6 +395,7 @@
                                         $userBs->theme == 'home_ten' ||
                                         $userBs->theme == 'home_eleven' ||
                                         $userBs->theme == 'home_twelve' ||
+                                        $userBs->theme == 'home13' ||
                                         $userBs->theme == 'home_three')
                                     @if (!empty($permissions) && in_array('Testimonial', $permissions))
                                         <div class="form-group">
@@ -413,6 +501,8 @@
                                             $userBs->theme === 'home_four' ||
                                             $userBs->theme === 'home_five' ||
                                             $userBs->theme === 'home_two' ||
+                                            $userBs->theme == 'home14' ||
+                                            $userBs->theme == 'home15' ||
                                             $userBs->theme === 'home_six'))
                                     <div class="form-group">
                                         <label>{{ __('Work Process Section') }} **</label>
@@ -439,6 +529,8 @@
                                         $userBs->theme == 'home_eight' ||
                                         $userBs->theme == 'home_nine' ||
                                         $userBs->theme == 'home_eleven' ||
+                                        $userBs->theme == 'home14' ||
+                                        $userBs->theme == 'home15' ||
                                         $userBs->theme == 'home_three')
                                     <div class="form-group">
                                         @if ($userBs->theme == 'home_eleven')
@@ -493,6 +585,7 @@
                                         $userBs->theme == 'home_three' ||
                                         $userBs->theme == 'home_eight' ||
                                         $userBs->theme == 'home_ten' ||
+                                        $userBs->theme == 'home13' ||
                                         $userBs->theme == 'home_eleven')
                                     <div class="form-group">
                                         <label>{{ __('Newsletter Section') }} **</label>
@@ -512,7 +605,12 @@
                                         </div>
                                     </div>
                                 @endif
-                                @if ($userBs->theme == 'home_eight' || $userBs->theme == 'home_ten' || $userBs->theme == 'home_eleven')
+                                @if (
+                                    $userBs->theme == 'home_eight' ||
+                                        $userBs->theme == 'home_ten' ||
+                                        $userBs->theme == 'home14' ||
+                                        $userBs->theme == 'home15' ||
+                                        $userBs->theme == 'home_eleven')
                                     <div class="form-group">
                                         <label>{{ __('Category Section') }} **</label>
                                         <div class="selectgroup w-100">
@@ -531,7 +629,7 @@
                                         </div>
                                     </div>
                                 @endif
-                                @if ($userBs->theme == 'home_ten')
+                                @if ($userBs->theme == 'home_ten' || $userBs->theme == 'home14')
                                     <div class="form-group">
                                         <label>{{ __('Call To Action Section Status') }} **</label>
                                         <div class="selectgroup w-100">
@@ -549,6 +647,8 @@
                                             </label>
                                         </div>
                                     </div>
+                                @endif
+                                @if ($userBs->theme == 'home_ten')
                                     @if (!empty($permissions) && in_array('Course Management', $permissions))
                                         <div class="form-group">
                                             <label>{{ __('Featured Course Section') }} **</label>

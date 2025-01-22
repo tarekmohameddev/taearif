@@ -238,6 +238,47 @@
                                                 <h5 class="text-center">{{ __('Theme Twelve') }}</h5>
                                             </div>
                                         @endif
+
+                                        @if (!empty($permissions) && in_array('Real Estate Management', $permissions))
+                                            <div class="col-4 col-sm-4">
+                                                <label class="imagecheck mb-2">
+                                                    <input name="theme" type="radio" value="home13"
+                                                        class="imagecheck-input"
+                                                        {{ !empty($data->theme) && $data->theme == 'home13' ? 'checked' : '' }}>
+                                                    <figure class="imagecheck-figure">
+                                                        <img src="{{ asset('assets/front/img/user/templates/realestate_one.png') }}"
+                                                            alt="title" class="imagecheck-image">
+                                                    </figure>
+                                                </label>
+                                                <h5 class="text-center">{{ __('Real Estate One') }}</h5>
+                                            </div>
+                                            <div class="col-4 col-sm-4">
+                                                <label class="imagecheck mb-2">
+                                                    <input name="theme" type="radio" value="home14"
+                                                        class="imagecheck-input"
+                                                        {{ !empty($data->theme) && $data->theme == 'home14' ? 'checked' : '' }}>
+                                                    <figure class="imagecheck-figure">
+                                                        <img src="{{ asset('assets/front/img/user/templates/realestate_two.png') }}"
+                                                            alt="title" class="imagecheck-image">
+                                                    </figure>
+                                                </label>
+                                                <h5 class="text-center">{{ __('Real Estate Two') }}</h5>
+                                            </div>
+
+
+                                            <div class="col-4 col-sm-4">
+                                                <label class="imagecheck mb-2">
+                                                    <input name="theme" type="radio" value="home15"
+                                                        class="imagecheck-input"
+                                                        {{ !empty($data->theme) && $data->theme == 'home15' ? 'checked' : '' }}>
+                                                    <figure class="imagecheck-figure">
+                                                        <img src="{{ asset('assets/front/img/user/templates/realestate_three.png') }}"
+                                                            alt="title" class="imagecheck-image">
+                                                    </figure>
+                                                </label>
+                                                <h5 class="text-center">{{ __('Real Estate Three') }}</h5>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
 

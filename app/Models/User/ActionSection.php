@@ -26,7 +26,8 @@ class ActionSection extends Model
         'first_button_url',
         'second_button',
         'second_button_url',
-        'image'
+        'image',
+        'content'
     ];
 
     public function language()

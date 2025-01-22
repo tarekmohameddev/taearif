@@ -715,7 +715,7 @@ class BasicController extends Controller
         $request->validate($rules, $messages);
         $homeText = HomePageText::query()->where('language_id', $request->language_id)->where('user_id', Auth::guard('web')->user()->id)->firstOrFail();
         foreach ($request->types as $key => $type) {
-            if ($type == 'about_image' || $type == 'about_video_url' || $type == 'about_video_image') {
+            if ($type == 'about_image' || $type == 'about_image_two' || $type == 'about_video_url' || $type == 'about_video_image') {
                 continue;
             }
             $homeText->$type = Purifier::clean($request[$type]);
@@ -725,6 +725,12 @@ class BasicController extends Controller
             $request->file('about_image')->move(public_path('assets/front/img/user/home_settings/'), $aboutImage);
             @unlink(public_path('assets/front/img/user/home_settings/' . $homeText->about_image));
             $homeText->about_image = $aboutImage;
+        }
+        if ($request->hasFile('about_image_two')) {
+            $aboutImage = uniqid() . '.' . $request->file('about_image_two')->getClientOriginalExtension();
+            $request->file('about_image_two')->move(public_path('assets/front/img/user/home_settings/'), $aboutImage);
+            @unlink(public_path('assets/front/img/user/home_settings/' . $homeText->about_image_two));
+            $homeText->about_image_two = $aboutImage;
         }
         if ($request->hasFile('about_video_image')) {
             $aboutVidImg = uniqid() . '.' . $request->file('about_video_image')->getClientOriginalExtension();
@@ -822,6 +828,7 @@ class BasicController extends Controller
 
     public function updateWhyChooseUsSection(Request $request, $language)
     {
+        // dd($request->all());
         $rules = [
             'why_choose_us_section_title' => 'nullable|max:255',
             'why_choose_us_section_subtitle' => 'nullable|max:255',
@@ -844,10 +851,15 @@ class BasicController extends Controller
         $data = HomePageText::where('language_id', $lang->id)->where('user_id', Auth::guard('web')->user()->id)->first();
         $request['video_image_name'] = $data->why_choose_us_section_video_image;
         $request['image_name'] = $data->why_choose_us_section_image;
+        $request['image_name2'] = $data->why_choose_us_section_image_two;
 
         if (empty($data->why_choose_us_section_image) && !$request->hasFile('why_choose_us_section_image')) {
             $rules['why_choose_us_section_image'] = 'nullable|mimes:jpeg,jpg,png';
+            $rules['why_choose_us_section_image_two'] = 'nullable|mimes:jpeg,jpg,png';
         }
+
+        $rules['why_choose_us_section_image_two'] = 'nullable|mimes:jpeg,jpg,png';
+
         if (empty($data->why_choose_us_section_video_image) && !$request->hasFile('why_choose_us_section_video_image') && $userBs->theme === 'home_three') {
             $rules['why_choose_us_section_video_image'] = 'nullable|mimes:jpeg,jpg,png';
         }
@@ -855,6 +867,10 @@ class BasicController extends Controller
         if ($request->hasFile('why_choose_us_section_image')) {
             $request['image_name'] = Uploader::update_picture('assets/front/img/user/home_settings/', $request->file('why_choose_us_section_image'), $data->why_choose_us_section_image);
         }
+        if ($request->hasFile('why_choose_us_section_image_two')) {
+            $request['image_name2'] = Uploader::update_picture('assets/front/img/user/home_settings/', $request->file('why_choose_us_section_image_two'), $data->why_choose_us_section_image_two);
+        }
+
         if ($userBs->theme === 'home_three') {
             $rules['why_choose_us_section_video_url'] = 'nullable';
             if ($request->hasFile('why_choose_us_section_video_image')) {
@@ -865,8 +881,9 @@ class BasicController extends Controller
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator);
         }
-        $data->update($request->except(['why_choose_us_section_image', 'why_choose_us_section_text', 'why_choose_us_section_video_image', 'why_choose_us_section_video_url']) + [
+        $data->update($request->except(['why_choose_us_section_image', 'why_choose_us_section_image_two', 'why_choose_us_section_text', 'why_choose_us_section_video_image', 'why_choose_us_section_video_url']) + [
             'why_choose_us_section_image' => $request->image_name,
+            'why_choose_us_section_image_two' => $request->image_name2,
             'why_choose_us_section_video_image' => $request->video_image_name,
             'why_choose_us_section_text' => clean($request->why_choose_us_section_text),
             'why_choose_us_section_video_url' => (strpos($request->why_choose_us_section_video_url, "&") != false) ? substr($request->why_choose_us_section_video_url, 0, strpos($request->why_choose_us_section_video_url, "&")) : $request->why_choose_us_section_video_url,

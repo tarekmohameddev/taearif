@@ -274,6 +274,143 @@
                                         </div>
                                     </div>
                                 @endif
+                                @if ($userBs->theme == 'home13' || $userBs->theme == 'home14')
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="form-group">
+                                                <br>
+                                                <h3 class="text-warning">{{ __('Featuded Property Section') }}</h3>
+                                                <hr class="border-top">
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-lg-6 pr-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('Featuded Property Title') }}</label>
+                                                        <input type="hidden" name="types[]"
+                                                            value="featured_property_title">
+                                                        <input type="text" class="form-control"
+                                                            name="featured_property_title"
+                                                            placeholder="{{ __('Enter title') }}"
+                                                            value="{{ $home_setting->featured_property_title }}">
+                                                        <p id="errfeatured_property_title" class="mb-0 text-danger em">
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                                @if ($userBs->theme == 'home13' || $userBs->theme == 'home14' || $userBs->theme == 'home15')
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="form-group">
+                                                <br>
+                                                <h3 class="text-warning">{{ __('Property Section') }}</h3>
+                                                <hr class="border-top">
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-lg-6 pr-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('Property Title') }}</label>
+                                                        <input type="hidden" name="types[]" value="property_title">
+                                                        <input type="text" class="form-control" name="property_title"
+                                                            placeholder="{{ __('Enter title') }}"
+                                                            value="{{ $home_setting->property_title }}">
+                                                        <p id="errproperty_title" class="mb-0 text-danger em">
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+
+
+                                        </div>
+                                    </div>
+                                @endif
+                                @if ($userBs->theme == 'home13')
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="form-group">
+                                                <br>
+                                                <h3 class="text-warning">{{ __('Cities Section') }}</h3>
+                                                <hr class="border-top">
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-lg-6 pr-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('Cities Title') }}</label>
+                                                        <input type="hidden" name="types[]" value="city_title">
+                                                        <input type="text" class="form-control" name="city_title"
+                                                            placeholder="{{ __('Enter title') }}"
+                                                            value="{{ $home_setting->city_title }}">
+                                                        <p id="city_title" class="mb-0 text-danger em">
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6 pr-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('Cities Subtitle') }}</label>
+                                                        <input type="hidden" name="types[]" value="city_subtitle">
+                                                        <input type="text" class="form-control" name="city_subtitle"
+                                                            placeholder="{{ __('Enter title') }}"
+                                                            value="{{ $home_setting->city_subtitle }}">
+                                                        <p id="errcity_subtitle" class="mb-0 text-danger em">
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+
+
+
+                                            </div>
+
+
+                                        </div>
+                                    </div>
+                                @endif
+                                @if ($userBs->theme == 'home15')
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="form-group">
+                                                <br>
+                                                <h3 class="text-warning">{{ __('Pojects Section') }}</h3>
+                                                <hr class="border-top">
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-lg-6 pr-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('Pojects Title') }}</label>
+                                                        <input type="hidden" name="types[]" value="project_title">
+                                                        <input type="text" class="form-control" name="project_title"
+                                                            placeholder="{{ __('Enter title') }}"
+                                                            value="{{ $home_setting->project_title }}">
+                                                        <p id="errproject_title" class="mb-0 text-danger em">
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6 pr-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('Pojects Subtitle') }}</label>
+                                                        <input type="hidden" name="types[]" value="project_subtitle">
+                                                        <input type="text" class="form-control"
+                                                            name="project_subtitle" placeholder="{{ __('Enter title') }}"
+                                                            value="{{ $home_setting->project_subtitle }}">
+                                                        <p id="errproject_subtitle" class="mb-0 text-danger em">
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+
+                                            </div>
+
+
+                                        </div>
+                                    </div>
+                                @endif
+
                                 @if (!empty($permissions) && in_array('Donation Management', $permissions) && $userBs->theme == 'home_eleven')
                                     <div class="row">
                                         <div class="col-12">
@@ -519,7 +656,12 @@
                                                 <h3 class="text-warning">{{ __('Testimonial Section') }}</h3>
                                                 <hr class="border-top">
                                             </div>
-                                            @if ($userBs->theme == 'home_six' || $userBs->theme == 'home_one' || $userBs->theme == 'home_ten')
+                                            @if (
+                                                $userBs->theme == 'home_six' ||
+                                                    $userBs->theme == 'home_one' ||
+                                                    $userBs->theme == 'home13' ||
+                                                    $userBs->theme == 'home14' ||
+                                                    $userBs->theme == 'home_ten')
                                                 <div class="form-group">
                                                     <div class="col-12 mb-2">
                                                         <label
@@ -569,6 +711,20 @@
                                                             </p>
                                                         </div>
                                                     </div>
+                                                    @if ($userBs->theme != 'home15')
+                                                        <div class="col-lg-12 ">
+                                                            <div class="form-group">
+                                                                <label
+                                                                    for="">{{ __('Testimonial Text') }}</label>
+                                                                <input type="hidden" name="types[]"
+                                                                    value="testimonial_text">
+                                                                <textarea name="testimonial_text" id="" class="form-control" rows="4"
+                                                                    placeholder="{{ __('Enter Text') }}">{{ $home_setting->testimonial_text }}</textarea>
+                                                                <p id="errtestimonial_text" class="mb-0 text-danger em">
+                                                                </p>
+                                                    </div>
+                                                        </div>
+                                                    @endif
                                                 </div>
                                             @endif
                                         </div>
@@ -638,6 +794,9 @@
                                     $userBs->theme != 'home_eight' &&
                                         $userBs->theme != 'home_three' &&
                                         $userBs->theme != 'home_nine' &&
+                                        $userBs->theme != 'home13' &&
+                                        $userBs->theme != 'home14' &&
+                                        $userBs->theme != 'home15' &&
                                         $userBs->theme != 'home_ten' &&
                                         (!empty($permissions) && in_array('Blog', $permissions)))
                                     <div class="row">
@@ -745,7 +904,11 @@
                                         </div>
                                     </div>
                                 @endif
-                                @if ($userBs->theme == 'home_ten' || $userBs->theme == 'home_eleven')
+                                @if (
+                                    $userBs->theme == 'home_ten' ||
+                                        $userBs->theme == 'home14' ||
+                                        $userBs->theme == 'home15' ||
+                                        $userBs->theme == 'home_eleven')
                                     <div class="row">
                                         <div class="col-12">
                                             <div class="form-group">
@@ -767,7 +930,7 @@
                                                         <p id="errcategory_section_title" class="mb-0 text-danger em"></p>
                                                     </div>
                                                 </div>
-                                                @if ($userBs->theme == 'home_eleven')
+                                                @if ($userBs->theme == 'home_eleven' || $userBs->theme == 'home15')
                                                     <div class="col-lg-6 pr-0">
                                                         <div class="form-group">
                                                             <label
@@ -1081,7 +1244,11 @@
                                         </div>
                                     @endif
                                 </div>
-                                @if ($userBs->theme == 'home_eight' || $userBs->theme == 'home_ten' || $userBs->theme == 'home_eleven')
+                                @if (
+                                    $userBs->theme == 'home_eight' ||
+                                        $userBs->theme == 'home_ten' ||
+                                        $userBs->theme == 'home13' ||
+                                        $userBs->theme == 'home_eleven')
                                     <div class="row">
                                         <div class="col-12">
                                             <div class="form-group">
@@ -1090,7 +1257,7 @@
                                                 <hr class="border-top">
                                             </div>
                                             <div class="row">
-                                                @if ($userBs->theme == 'home_ten')
+                                                @if ($userBs->theme == 'home_ten' || $userBs->theme == 'home13')
                                                     <div class="col-12">
                                                         <div class="form-group">
                                                             <div class="row">
@@ -1111,6 +1278,7 @@
                                                             </div>
                                                         </div>
                                                     </div>
+                                                    @if ($userBs->theme != 'home13')
                                                     <div class="col-12">
                                                         <div class="form-group">
                                                             <div class="row">
@@ -1137,6 +1305,7 @@
                                                             </div>
                                                         </div>
                                                     </div>
+                                                    @endif
                                                 @endif
                                                 <div class="col-lg-6 pr-0">
                                                     <div class="form-group">

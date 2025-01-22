@@ -1,7 +1,18 @@
 <?php
 
+use App\Http\Controllers\Front\ProjectController as FrontProjectController;
+use App\Http\Controllers\Front\PropertyController as FrontPropertyController;
 use App\Http\Controllers\User\HotelBooking\RoomController;
 use App\Http\Controllers\User\HotelBooking\RoomManagementController;
+use App\Http\Controllers\User\RealestateManagement\ManageProject\ProjectController;
+use App\Http\Controllers\User\RealestateManagement\ManageProject\TypeController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\AmenityController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\CityController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\StateController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 
@@ -657,6 +668,134 @@ Route::domain($domain)->group(function () {
             Route::get('/donation/export', 'User\DonationManagement\DonationController@exportReport')->name('user.donation.export');
         });
         // end donation management routes
+
+        Route::prefix('realestate')->middleware('checkUserPermission:Real Estate Management')->group(function () {
+            Route::prefix('property')->group(function () {
+                // property category route
+                Route::controller(CategoryController::class)->group(function () {
+                    Route::get('/categories', 'index')->name('user.property_management.categories');
+                    Route::post('/store-category', 'store')->name('user.property_management.store_category');
+                    Route::post('/update-category', 'update')->name('user.property_management.update_category');
+                    Route::post('/update-category-featured', 'updateFeatured')->name('user.property_management.update_category_featured');
+                    Route::post('/delete-category', 'destroy')->name('user.property_management.delete_category');
+                    Route::post('/bulk-delete-category', 'bulkDestroy')->name('user.property_management.bulk_delete_category');
+                });
+
+                // property Amenities route
+                Route::controller(AmenityController::class)->group(function () {
+                    Route::get('/amenity', 'index')->name('user.property_management.amenities');
+                    Route::post('/store-amenity', 'store')->name('user.property_management.store_amenity');
+                    Route::post('/update-amenity', 'update')->name('user.property_management.update_amenity');
+                    Route::post('/delete-amenity', 'destroy')->name('user.property_management.delete_amenity');
+                    Route::post('/bulk-delete-amenity', 'bulkDestroy')->name('user.property_management.bulk_delete_amenity');
+                });
+
+                // property countries route
+                Route::controller(CountryController::class)->group(function () {
+                    Route::get('/country', 'index')->name('user.property_management.countries');
+                    Route::get('/countries/{langId}', 'getCountries')->name('user.property_management.get_countries');
+                    Route::post('/store-country', 'store')->name('user.property_management.store_country');
+                    Route::post('/update-country', 'update')->name('user.property_management.update_country');
+                    Route::post('/delete-country', 'destroy')->name('user.property_management.delete_country');
+                    Route::post('/bulk-delete-country', 'bulkDestroy')->name('user.property_management.bulk_delete_country');
+                });
+                // property state route
+                Route::controller(StateController::class)->group(function () {
+                    Route::get('/states', 'index')->name('user.property_management.states');
+                    Route::get('/get-state/{country}', 'getState')->name('user.property_management.get_state');
+                    Route::get('/states/{langId}', 'langStates')->name('user.property_management.lang_states');
+                    Route::get('/get-states-cities/{country}', 'getStateCities')->name('user.property_management.get_state_cities');
+                    Route::post('/store-state', 'store')->name('user.property_management.store_state');
+                    Route::post('/update-state', 'update')->name('user.property_management.update_state');
+                    Route::post('/delete-state', 'destroy')->name('user.property_management.delete_state');
+                    Route::post('/bulk-delete-state', 'bulkDestroy')->name('user.property_management.bulk_delete_state');
+                });
+
+                // property cities route
+                Route::controller(CityController::class)->group(function () {
+                    Route::get('/cities', 'index')->name('user.property_management.cities');
+                    Route::get('/get-cities', 'getCities')->name('user.property_management.get_cities');
+                    Route::post('/store-city', 'store')->name('user.property_management.store_city');
+                    Route::post('/update-city', 'update')->name('user.property_management.update_city');
+                    Route::post('/update-featured', 'updateFeatured')->name('user.property_management.update_city_featured');
+                    Route::post('/delete-city', 'destroy')->name('user.property_management.delete_city');
+                    Route::post('/bulk-delete-city', 'bulkDestroy')->name('user.property_management.bulk_delete_city');
+                });
+                // properties route 
+                Route::controller(PropertyController::class)->group(function () {
+                    Route::get('/settings', 'settings')->name('user.property_management.settings');
+                    Route::post('/update-settings', 'update_settings')->name('user.property_management.update_settings');
+                    Route::get('/properties', 'index')->name('user.property_management.properties');
+                    Route::get('/type', 'type')->name('user.property_management.type');
+                    Route::get('/create', 'create')->name('user.property_management.create_property');
+
+                    Route::post('/store', 'store')->name('user.property_management.store_property');
+                    Route::post('/update_featured', 'updateFeatured')->name('user.property_management.update_featured');
+                    Route::post('update_status', 'updateStatus')->name('user.property_management.update_status');
+                    Route::get('edit-property/{id}', 'edit')->name('user.property_management.edit');
+                    Route::post('update/{id}', 'update')->name('user.property_management.update_property');
+                    Route::post('specification/delete', 'specificationDelete')->name('user.property_management.specification_delete');
+                    Route::post('/featured-payment', 'featuredPayment')->name('user.property_management.featured_payment');
+                    //#========== Property slider image
+                    // Route::post('/img-store', 'imagesstore')->name('user.property.imagesstore');
+                    // Route::post('/img-update', 'imagesstore')->name('user.property.imagesupdate');
+                    // Route::post('/img-remove', 'imagermv')->name('user.property.imagermv');
+
+                    Route::post('/img-db-remove', 'imagedbrmv')->name('user.property.imgdbrmv');
+                    //#==========property slider image end
+                    Route::post('delete', 'delete')->name('user.property_management.delete_property');
+                    Route::post('bulk-delete', 'bulkDelete')->name('user.property_management.bulk_delete_property');
+                });
+                // property messages 
+                Route::controller(PropertyMessageController::class)->group(function () {
+                    Route::get('/messages', 'propertyMessages')->name('user.property_management.property_message');
+                    Route::post('/message-delete', 'destroy')->name('user.property_management.property_message.destroy');
+                });
+            });
+
+
+
+            /* <<<<<<<<<====================>>>>>>>
+             * Project routes start form here
+             * <<<<<<<<<====================>>>>>>>>
+             */
+
+            Route::prefix('manage-project')->controller(ProjectController::class)->group(function () {
+                // Route::get('/settings', 'settings')->name('user.project_management.settings');
+                // Route::post('/update-settings', 'updateSettings')->name('user.project_management.update_settings');
+                Route::get('/projects', 'index')->name('user.project_management.projects');
+                Route::get('/create', 'create')->name('user.project_management.create_project');
+                Route::post('/store', 'store')->name('user.project_management.store_project');
+                Route::post('/update_featured', 'updateFeatured')->name('user.project_management.update_featured');
+                Route::post('update_status', 'updateStatus')->name('user.project_management.update_status');
+                // Route::post('approve-status', 'approveStatus')->name('user.project_management.approve_status');
+                Route::get('edit-project/{id}', 'edit')->name('user.project_management.edit');
+                Route::post('update/{id}', 'update')->name('user.project_management.update_project');
+                Route::post('specification/delete', 'specificationDelete')->name('user.project_management.specification_delete');
+                Route::post('/delete', 'destroy')->name('user.project_management.delete_project');
+                Route::post('/bulk-delete', 'bulkDestroy')->name('user.project_management.bulk_delete_project');
+                //#========== project gallery image
+                // Route::post('/gallery-img-store', 'galleryImagesStore')->name('user.project.gallery_image_store');
+                // Route::post('/img-remove', 'galleryImageRmv')->name('user.project.gallery_imagermv');
+                Route::post('/img-db-remove', 'galleryImageDbrmv')->name('user.project.gallery_imgdbrmv');
+                //#========== project slider image end
+                //#========== project gallery image
+                // Route::post('/floor-plan-img-store', 'floorPlanImagesStore')->name('user.project.floor_plan_image_store');
+                // Route::post('/floor-plan-img-remove', 'floorPlanImageRmv')->name('user.project.floor_plan_imagermv');
+                Route::post('/floor-plan-img-db-remove', 'floorPlanImageDbrmv')->name('user.project.floor_plan_imgdbrmv');
+                //#========== project slider image end
+
+
+                // Project type routes 
+                Route::prefix('type')->controller(TypeController::class)->group(function () {
+                    Route::get('/{id}', 'index')->name('user.project_management.project_types');
+                    Route::post('/store', 'store')->name('user.project_management.project_type.store');
+                    Route::post('/update', 'update')->name('user.project_management.project_type.update');
+                    Route::post('/delete', 'delete')->name('user.project_management.delete_type');
+                    Route::post('/bulk-delete', 'bulkDelete')->name('user.project_management.bulk_delete_type');
+                });
+            });
+        });
         Route::group(['middleware' => 'checkUserPermission:Ecommerce|Donation Management|Course Management|Hotel Booking'], function () {
             // user start register-user, ban user, details, reports
             Route::post('user/customer/ban', 'User\UserController@userban')->name('user.customer.ban');
@@ -1422,6 +1561,25 @@ if (array_key_exists('host', $parsedUrl)) {
 Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
     Route::get('/', 'Front\FrontendController@userDetailView')->name('front.user.detail.view');
 
+
+    // Route::group(['middleware' => ['routeAccess:Real Estate']], function () {
+    // Properties route  
+    Route::controller(FrontPropertyController::class)->group(function () {
+        Route::get('/properties', 'index')->name('front.user.properties');
+        Route::get('/property/{slug}', 'details')->name('front.user.property.details');
+        Route::post('/property-contact', 'contact')->name('front.user.property_contact');
+        Route::get('/state-cities', 'getStateCities')->name('front.user.get_state_cities');
+        Route::get('/cities', 'getCities')->name('front.user.get_cities');
+        Route::get('/categories', 'getCategories')->name('front.user.get_categories');
+    });
+
+    // Projects route  
+    Route::controller(FrontProjectController::class)->group(function () {
+        Route::get('/projects', 'index')->name('front.user.projects');
+        Route::get('/project/{slug}', 'details')->name('front.user.project.details');
+    });
+    // });
+
     Route::group(['middleware' => ['routeAccess:Service']], function () {
         Route::get('/services', 'Front\FrontendController@userServices')->name('front.user.services');
         Route::get('/service/{slug}/{id}', 'Front\FrontendController@userServiceDetail')->name('front.user.service.detail');
@@ -1577,7 +1735,7 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
     });
 
 
-    Route::prefix('/customer')->middleware(['auth:customer', 'accountStatus', 'checkWebsiteOwner', 'routeAccess:Ecommerce|Hotel Booking|Course Management|Donation Management', 'Demo'])->group(function () {
+    Route::prefix('/customer')->middleware(['auth:customer', 'accountStatus', 'checkWebsiteOwner', 'routeAccess:Ecommerce|Hotel Booking|Course Management|Donation Management|Real Estate Management', 'Demo'])->group(function () {
         // user redirect to dashboard route
         Route::get('/dashboard', 'Front\CustomerController@redirectToDashboard')->name('customer.dashboard');
 
@@ -1703,7 +1861,15 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         // CHECKOUT SECTION ENDS
         Route::post('/payment/instructions', 'Front\CustomerController@paymentInstruction')->name('user.front.payment.instructions');
     });
-
+    Route::middleware(['routeAccess:Real Estate Management', 'auth:customer'])->group(function ($q) {
+        Route::get('/property/add-to-wishlist/{id}', 'Front\CustomerController@addToPropertyWishlist')->name('front.user.property.add-to-wishlist');
+        Route::get('/property/remove-to-wishlist/{id}', 'Front\CustomerController@removePropertyWishlist')->name('customer.property.remove-to-wishlist');
+        Route::get('/property/wishlist', 'Front\CustomerController@propertyWishlist')->name('front.user.property.wishlist');
+    });
+    // Route::middleware('routeAccess:Real Estate Management')->group(function ($q) {
+    //     // Route::get('/property/add-to-wishlist/{id}', 'Front\CustomerController@addToPropertyWishlist')->name('front.user.property.add-to-wishlist');
+    //     // Route::get('/property/wishlist', 'Front\CustomerController@propertyWishlist')->name('front.user.property.wishlist');
+    // });
     Route::group(['middleware' => ['routeAccess:Request a Quote', 'Demo']], function () {
         Route::get('/quote', 'Front\FrontendController@quote')->name('front.user.quote');
         Route::post('/sendquote', 'Front\FrontendController@sendquote')->name('front.user.sendquote');

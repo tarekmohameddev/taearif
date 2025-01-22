@@ -179,7 +179,7 @@
                                     <span>{{ __('Upload Favicon') }}</span>
                                     </button>
                                 </div>
-                                @if ($userBs->theme == 'home_six')
+                                @if ($userBs->theme == 'home_six' || $userBs->theme == 'home13')
                                     <div class="form-group">
                                         <label for="">{{ __('Footer\'s Background*') }}</label> <br>
                                         <div class="col-md-12 showImage mb-3">

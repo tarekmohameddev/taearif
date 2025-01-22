@@ -25,7 +25,7 @@
 <script src="{{ asset('assets/front/user/js/jquery.easypiechart.min.js') }}"></script>
 <!--====== Jquery Ui ======-->
 <script src="{{ asset('assets/front/user/js/jquery-ui.min.js') }}"></script>
-
+{{-- <script src="{{ asset('assets/front/js/vendors/nouislider.min.js') }}"></script> --}}
 <!-- jQuery Timepicker -->
 <script src="{{ asset('assets/front/js/jquery.timepicker.min.js') }}"></script>
 <!--====== Wow JS ======-->

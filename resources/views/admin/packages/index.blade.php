@@ -305,13 +305,18 @@
                                         value="Donation Management" class="selectgroup-input">
                                     <span class="selectgroup-button">{{ __('Donation Management') }}</span>
                                 </label>
+                                <label class="selectgroup-item">
+                                    <input id="RealestateManagement" type="checkbox" name="features[]"
+                                        value="Real Estate Management" class="selectgroup-input">
+                                    <span class="selectgroup-button">{{ __('Real Estate Management') }}</span>
+                                </label>
                             </div>
                         </div>
 
                         <div class="form-group" id="max_video_size" style="display: none;">
                             <label for="products ">{{ __('Maximum Size of Single Video') }} (MB) *</label>
                             <input id="products " type="number" class="form-control" name="video_size_limit"
-                                placeholder="{{ __('Enter max video size') }}"  >
+                                placeholder="{{ __('Enter max video size') }}">
                             <p class="text-warning">
                                 <small>{{ __('Enter 999999 , than it will appear as unlimited') }}</small>
                             </p>
@@ -320,7 +325,7 @@
                         <div class="form-group" id="max_file_size" style="display: none;">
                             <label for="products1">{{ __('Maximum Size of Single File') }} (MB) *</label>
                             <input id="products1" type="number" class="form-control" name="file_size_limit"
-                                placeholder="{{ __('Enter max file size') }}" >
+                                placeholder="{{ __('Enter max file size') }}">
                             <p class="text-warning">
                                 <small>{{ __('Enter 999999 , than it will appear as unlimited') }}</small>
                             </p>
