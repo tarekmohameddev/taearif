@@ -58,6 +58,31 @@ class UserController extends Controller
     public function sitesettings(){
         return view('user.sitesettings');
     }
+    public function home_page_settings(){
+        return view('user.home_page_settings');
+    }
+    public function show_steps(){
+    $steps = UserStep::where('user_id',  Auth::guard('web')->user()->id)->first();
+
+    if (!$steps) {
+        // Initialize steps for a new user
+        $steps = UserStep::create(['user_id' =>  Auth::guard('web')->user()->id]);
+    }
+
+    // Map progress to the required frontend structure
+    $progressSteps = [
+        ['title' => 'تحديث الشعار الخاص بك', 'completed' => (bool) $steps->logo_uploaded],
+        ['title' => 'تحديث ايقونة الموقع', 'completed' => (bool) $steps->favicon_uploaded],
+        ['title' => 'تحديث اسم الموقع الخاص بك', 'completed' => (bool) $steps->website_named],
+        ['title' => 'تحديث بيانات الصفحة الرئيسية', 'completed' => (bool) $steps->homepage_updated],
+    ];
+
+    $data['steps'] = $progressSteps;
+
+        return view('user.show_steps', $data);
+
+    }
+
     public function index()
     {
 
@@ -121,22 +146,22 @@ class UserController extends Controller
         $data['current_package'] = $data['current_membership'] ? Package::query()->where('id', $data['current_membership']->package_id)->first() : null;
         $data['package_count'] = $nextPackageCount;
 
-        $steps = UserStep::where('user_id',  Auth::guard('web')->user()->id)->first();
+        // $steps = UserStep::where('user_id',  Auth::guard('web')->user()->id)->first();
 
-        if (!$steps) {
-            // Initialize steps for a new user
-            $steps = UserStep::create(['user_id' =>  Auth::guard('web')->user()->id]);
-        }
-    
-        // Map progress to the required frontend structure
-        $progressSteps = [
-            ['title' => 'تحديث الشعار الخاص بك', 'completed' => (bool) $steps->logo_uploaded],
-            ['title' => 'تحديث ايقونة الموقع', 'completed' => (bool) $steps->favicon_uploaded],
-            ['title' => 'تحديث اسم الموقع الخاص بك', 'completed' => (bool) $steps->website_named],
-            ['title' => 'تحديث بيانات الصفحة الرئيسية', 'completed' => (bool) $steps->homepage_updated],
-        ];
-    
-        $data['steps'] = $progressSteps;
+        // if (!$steps) {
+        //     // Initialize steps for a new user
+        //     $steps = UserStep::create(['user_id' =>  Auth::guard('web')->user()->id]);
+        // }
+
+        // // Map progress to the required frontend structure
+        // $progressSteps = [
+        //     ['title' => 'تحديث الشعار الخاص بك', 'completed' => (bool) $steps->logo_uploaded],
+        //     ['title' => 'تحديث ايقونة الموقع', 'completed' => (bool) $steps->favicon_uploaded],
+        //     ['title' => 'تحديث اسم الموقع الخاص بك', 'completed' => (bool) $steps->website_named],
+        //     ['title' => 'تحديث بيانات الصفحة الرئيسية', 'completed' => (bool) $steps->homepage_updated],
+        // ];
+
+        // $data['steps'] = $progressSteps;
 
 
 
@@ -350,15 +375,15 @@ class UserController extends Controller
     {
         $user = Customer::findOrFail($request->user_id);
 
-        // room booking info delete  
+        // room booking info delete
         if ($user->roomBookings()->count() > 0) {
             $user->roomBookings()->delete();
         }
-        // room reviews delete  
+        // room reviews delete
         if ($user->roomReviews()->count() > 0) {
             $user->roomReviews()->delete();
         }
-        // donation delails delete  
+        // donation delails delete
         if ($user->donationDetails()->count() > 0) {
             $user->donationDetails()->delete();
         }
@@ -375,7 +400,7 @@ class UserController extends Controller
             $user->review()->delete();
         }
 
-        // deleting customer wishlist, order list and order item list 
+        // deleting customer wishlist, order list and order item list
 
         if ($user->customerWishlist()->count()) {
             $user->customerWishlist()->delete();
@@ -444,15 +469,15 @@ class UserController extends Controller
         $ids = $request->ids;
         foreach ($ids as $id) {
             $user = Customer::findOrFail($id);
-            // room booking info delete  
+            // room booking info delete
             if ($user->roomBookings()->count() > 0) {
                 $user->roomBookings()->delete();
             }
-            // room reviews delete  
+            // room reviews delete
             if ($user->roomReviews()->count() > 0) {
                 $user->roomReviews()->delete();
             }
-            // donation delails delete  
+            // donation delails delete
             if ($user->donationDetails()->count() > 0) {
                 $user->donationDetails()->delete();
             }

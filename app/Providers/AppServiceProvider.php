@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
 use App\Http\Helpers\UserPermissionHelper;
 use App\Models\User\Language as UserLanguage;
+use App\Models\UserStep;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -222,5 +223,24 @@ class AppServiceProvider extends ServiceProvider
             View::share('langs', $langs);
             View::share('socials', $socials);
         }
+
+
+        View::composer('user.layout', function ($view) {
+            $user = Auth::guard('web')->user();
+            $progressSteps = [];
+
+            if ($user) {
+                $steps = UserStep::firstOrCreate(['user_id' => $user->id]);
+                $progressSteps = [
+                    ['title' => 'تحديث الشعار الخاص بك', 'completed' => (bool)$steps->logo_uploaded],
+                    ['title' => 'تحديث ايقونة الموقع', 'completed' => (bool)$steps->favicon_uploaded],
+                    ['title' => 'تحديث اسم الموقع الخاص بك', 'completed' => (bool)$steps->website_named],
+                    ['title' => 'تحديث بيانات الصفحة الرئيسية', 'completed' => (bool)$steps->homepage_updated],
+                ];
+            }
+
+            $view->with('steps', $progressSteps);
+        });
+
     }
 }

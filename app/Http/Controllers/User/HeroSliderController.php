@@ -8,13 +8,30 @@ use App\Models\User\HeroSlider;
 use App\Models\User\Language;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class HeroSliderController extends Controller
 {
     public function sliderVersion(Request $request)
     {
         // first, get the language info from db
-        $language = Language::where('code', $request->language)->where('user_id', Auth::guard('web')->user()->id)->first();
+        // $language = Language::where('code', $request->language)->where('user_id', Auth::guard('web')->user()->id)->first();
+
+        if ($request->has('language')) {
+            $language = Language::where([
+                ['code', $request->language],
+                ['user_id', Auth::id()]
+            ])->first();
+            Session::put('currentLangCode', $request->language);
+        } else {
+            $language = Language::where([
+                ['is_default', 1],
+                ['user_id', Auth::id()]
+            ])
+                ->first();
+            Session::put('currentLangCode', $language->code);
+        }
+
         // then, get the slider version info of that language from db
         $information['sliders'] = HeroSlider::where('language_id', $language->id)
             ->orderBy('id', 'desc')
