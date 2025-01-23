@@ -451,7 +451,7 @@ $pendingMemb = \App\Models\Membership::query()
                             labels: response.deviceStats.map(stat => stat.device_type),
                             datasets: [{
                                 data: response.deviceStats.map(stat => stat.count),
-                                backgroundColor: ['#3a9636', '#555', '#aaa']
+                                backgroundColor: ['#00a991', '#555', '#aaa']
                             }]
                         }
                     });
@@ -465,7 +465,7 @@ $pendingMemb = \App\Models\Membership::query()
                             datasets: [{
                                 label: 'Country Distribution',
                                 data: response.countryStats.map(stat => stat.count),
-                                backgroundColor: '#3a9636'
+                                backgroundColor: '#00a991'
                             }]
                         }
                     });
@@ -499,7 +499,7 @@ $pendingMemb = \App\Models\Membership::query()
         });
 
         // chart colors
-        var colors = ['#007bff', '#28a745', '#333333', '#c3e6cb', '#dc3545', '#6c757d'];
+        var colors = ['#00a991','#007bff', '#28a745', '#333333', '#c3e6cb', '#dc3545', '#6c757d'];
 
         /* large line chart */
         var chLine = document.getElementById("chLine");
@@ -509,7 +509,7 @@ $pendingMemb = \App\Models\Membership::query()
                     data: [589, 445, 483, 503, 689, 692, 634],
                     backgroundColor: 'transparent',
                     borderColor: colors[0],
-                    borderWidth: 4,
+                    borderWidth: 1,
                     pointBackgroundColor: colors[0]
                 }
                 //   {

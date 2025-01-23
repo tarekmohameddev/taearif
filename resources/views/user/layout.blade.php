@@ -185,39 +185,32 @@
             <div class="content">
                 <div class="page-inner">
                     <div>
-                    <div class="status-bar">
-    <div class="progress" style="height: 30px; font-size: large;">
-        @php
-            // Calculate the percentage of steps completed dynamically.
-            $completedSteps = collect($steps)->where('completed', true)->count();
-            $totalSteps = count($steps);
-            $percentage = $totalSteps > 0 ? (100 * $completedSteps / $totalSteps) : 0;
-        @endphp
+                        <div class="status-bar">
+                            <div class="progress" style="height: 30px; font-size: large;">
+                                @php
+                                // Calculate the percentage of steps completed dynamically.
+                                $completedSteps = collect($steps)->where('completed', true)->count();
+                                $totalSteps = count($steps);
+                                $percentage = $totalSteps > 0 ? (100 * $completedSteps / $totalSteps) : 0;
+                                @endphp
 
-        @if ($percentage == 100)
-            <!-- 100% complete: Display congratulatory icon and message with a green background -->
-            <div class="progress-bar-status d-flex justify-content-center align-items-center bg-success"
-                 role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
-                 <span> تم اكتمال بيانات الموقع تهانينا!</span>
-                <i class="bi bi-check-circle-fill text-white" style="font-size: 1.5rem; margin-right: 0.5rem;"></i>
-            </div>
-        @else
-            <!-- Less than 100%: Display the progress bar with percentage and a yellow background -->
-            <div class="progress-bar-status d-flex justify-content-center align-items-center bg-warning"
-                 role="progressbar" style="width: {{ $percentage }}%;"
-                 aria-valuenow="{{ $percentage }}" aria-valuemin="0" aria-valuemax="100">
-                 {{ $percentage }}% لاإكمال بيانات الموقع
-            </div>
-        @endif
-    </div>
-</div>
-
-
-
-
-
+                                @if ($percentage == 100)
+                                <!-- 100% complete: Display congratulatory icon and message with a green background -->
+                                <div class="progress-bar-status d-flex justify-content-center align-items-center bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                                    <span> تم اكتمال بيانات الموقع تهانينا!</span>
+                                    <i class="bi bi-check-circle-fill text-white" style="font-size: 1.5rem; margin-right: 0.5rem;"></i>
+                                </div>
+                                @else
+                                <!-- Less than 100%: Display the progress bar with percentage and a yellow background -->
+                                <div class="progress-bar-status d-flex justify-content-center align-items-center bg-warning" role="progressbar" style="width: {{ $percentage }}%;" aria-valuenow="{{ $percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ $percentage }}% لاإكمال بيانات الموقع <a href="{{ route('view-steps')}}" class="btn-danger"> اضغط هنا </a>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
 
                         @yield('content')
+
                     </div>
                 </div>
 

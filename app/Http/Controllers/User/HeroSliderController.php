@@ -9,6 +9,8 @@ use App\Models\User\Language;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use App\Models\User\Menu;
+use App\Models\User\Page;
 
 class HeroSliderController extends Controller
 {
@@ -16,6 +18,19 @@ class HeroSliderController extends Controller
     {
         // first, get the language info from db
         // $language = Language::where('code', $request->language)->where('user_id', Auth::guard('web')->user()->id)->first();
+        $lang = Language::where('code', $request->language)->where('user_id', Auth::user()->id)->firstOrFail();
+        $data['lang_id'] = $lang->id;
+        $data['keywords'] = json_decode($lang->keywords, true);
+
+        // get previous menus
+        $menu = Menu::where('language_id', $lang->id)->where('user_id', Auth::user()->id)->first();
+        $data['prevMenu'] = '';
+        if (!empty($menu)) {
+            $data['prevMenu'] = $menu->menus;
+        }
+
+        $data['apages'] = Page::where('language_id', $lang->id)->where('user_id', Auth::user()->id)->orderBy('id', 'DESC')->get();
+
 
         if ($request->has('language')) {
             $language = Language::where([
@@ -37,7 +52,7 @@ class HeroSliderController extends Controller
             ->orderBy('id', 'desc')
             ->where('user_id', Auth::guard('web')->user()->id)
             ->get();
-        return view('user.home.hero_section.slider_version', $information);
+        return view('user.home.hero_section.slider_version', $information,$data);
     }
 
     public function createSlider(Request $request)

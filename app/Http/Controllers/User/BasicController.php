@@ -5,22 +5,24 @@ namespace App\Http\Controllers\User;
 use Response;
 use App\Models\Timezone;
 use App\Models\User\SEO;
+use App\Models\UserStep;
 use App\Models\User\Member;
+use App\Models\User\Social;
 use Illuminate\Http\Request;
 use App\Models\User\Language;
 use App\Http\Helpers\Uploader;
+use App\Models\User\FooterText;
 use App\Models\User\HomeSection;
 use App\Models\User\WorkProcess;
 use App\Models\User\BasicSetting;
 use App\Models\User\HomePageText;
+use Illuminate\Support\Facades\DB;
+use Mews\Purifier\Facades\Purifier;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
-use Mews\Purifier\Facades\Purifier;
 use App\Http\Helpers\UserPermissionHelper;
-use App\Models\UserStep;
 
 class BasicController extends Controller
 {
@@ -80,7 +82,33 @@ class BasicController extends Controller
 
         $data['home_setting'] = $text;
 
-        return view('user.settings.general-settings', $data);
+        //footer text
+        if ($request->has('language')) {
+            $lang = Language::where([
+                ['code', $request->language],
+                ['user_id', Auth::id()]
+            ])->first();
+            Session::put('currentLangCode', $request->language);
+        } else {
+            $lang = Language::where([
+                ['is_default', 1],
+                ['user_id', Auth::id()]
+            ])
+                ->first();
+            Session::put('currentLangCode', $lang->code);
+        }
+
+        // then, get the footer text info of that language from db
+        $information['data'] = FooterText::where('language_id', $lang->id)->where('user_id', Auth::id())->first();
+
+        // socials
+        $data['socials'] = Social::where('user_id', Auth::id())
+            ->orderBy('id', 'DESC')
+            ->get();
+
+
+
+        return view('user.settings.general-settings', $data , $information);
     }
 
     public function updateAllSettings(Request $request)
