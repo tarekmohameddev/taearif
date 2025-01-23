@@ -227,6 +227,7 @@
     "Custom CSS": "CSS مخصص",
     "Plugins": "التطبيقات",
     "Social Links": "روابط التواصل الاجتماعي",
+    "Social media": "التواصل الاجتماعي",
     "SEO Information": "معلومات تحسين محركات البحث",
     "Cookie Alert": "تنبيه الكوكيز",
     "Services": "الخدمات",
@@ -2308,10 +2309,11 @@
     "Oldest Rooms": "أقدم الغرف",
     "Rent: Low to High": "الإيجار: من الأقل إلى الأعلى",
     "Rent: High to Low": "الإيجار: من الأعلى إلى الأقل",
+    "Add Achievement": "اضافة الأنجازات",
     "Site Settings":"إعدادات الموقع",
         "Website Name": "اسم الموقع",
         "This is the name of your website. It will appear in the header, footer, and browser tabs. Make it simple and memorable.": "هذا هو اسم موقعك الإلكتروني. سيظهر في الرأس والتذييل وعلامات تبويب المتصفح. اجعله بسيطًا وسهل التذكر.",
-        
+
         "Website Logo": "شعار الموقع",
         "Upload your website's logo here. The logo represents your brand and will appear on the website header, footer, and other sections.": "قم برفع شعار موقعك هنا. الشعار يمثل علامتك التجارية وسيظهر في رأس الموقع، التذييل، وأماكن أخرى.",
         "Upload Logo":"ارفع شعار الموقع",
@@ -2327,5 +2329,5 @@
         "Save All Settings":"حفظ جميع الاعدادات",
         "Main Colors for Website": "الألوان الرئيسية للموقع",
         "Set the primary and secondary colors for your website. These colors define your website’s style and should align with your brand identity.": "قم بتحديد الألوان الأساسية والثانوية لموقعك. هذه الألوان تحدد أسلوب موقعك ويجب أن تتماشى مع هوية علامتك التجارية."
-    
+
 }

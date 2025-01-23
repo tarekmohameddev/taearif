@@ -193,7 +193,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 </a>
             </div>
             <div class="col-md-6 col-lg-4 mb-4">
-                <a href="{{ route('user.counter-information.index') }}" class="text-decoration-none">
+                <a href="{{ route('user.counter-information.index'). '?language=' . $default->code }}" class="text-decoration-none">
                     <div class="card h-100 transition-hover">
                         <div class="card-body d-flex align-items-center p-4">
                             <div class="flex-shrink-0 me-3">
@@ -316,7 +316,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 </a>
             </div>
             <div class="col-md-6 col-lg-4 mb-4">
-                <a href="{{ route('front.blogs') }}" class="text-decoration-none">
+                <a href="{{ route('front.blogs'). '?language=' . $default->code }}" class="text-decoration-none">
                     <div class="card h-100 transition-hover">
                         <div class="card-body d-flex align-items-center p-4">
                             <div class="flex-shrink-0 me-3">
@@ -416,7 +416,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 </a>
             </div>
             <div class="col-md-6 col-lg-4 mb-4">
-                <a href="{{ route('user.social.index') }}" class="text-decoration-none">
+                <a href="{{ route('user.social.index'). '?language=' . $default->code }}" class="text-decoration-none">
                     <div class="card h-100 transition-hover">
                         <div class="card-body d-flex align-items-center p-4">
                             <div class="flex-shrink-0 me-3">

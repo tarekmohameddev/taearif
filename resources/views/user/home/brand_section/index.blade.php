@@ -67,7 +67,7 @@
                 <div class="card-header">
                     <div class="row">
           <div class="col-12 col-sm-auto ms-sm-auto col-md-auto ms-md-auto">
-            <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-4"> 
+            <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-4">
             <a href="#" data-toggle="modal" data-target="#createModal"
                                 class="btn btn-primary"><i class="fas fa-plus"></i>
                                 @if ($userBs->theme == 'home_eleven')
@@ -78,7 +78,7 @@
                             </a>
             </div>
             </div>
-          </div>  
+          </div>
                 </div>
 
                 <div class="card-body">
