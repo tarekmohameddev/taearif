@@ -192,6 +192,7 @@
                                 $completedSteps = collect($steps)->where('completed', true)->count();
                                 $totalSteps = count($steps);
                                 $percentage = $totalSteps > 0 ? (100 * $completedSteps / $totalSteps) : 0;
+                                $percentage = number_format($percentage, 0);
                                 @endphp
 
                                 @if ($percentage == 100)

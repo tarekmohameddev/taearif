@@ -479,6 +479,12 @@ class BasicController extends Controller
             }
         }
         Session::flash('success', 'Breadcrumb update successfully.');
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['sub_pages_upper_image' => true]
+        );
+
         return back();
     }
 
@@ -816,6 +822,11 @@ class BasicController extends Controller
             ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
         );
         $steps->update(['homepage_updated' => true]);
+
+        // UserStep::updateOrCreate(
+        //     ['user_id' => Auth::guard('web')->user()->id],
+        //     ['homepage_updated' => true]
+        // );
 
         return "success";
     }

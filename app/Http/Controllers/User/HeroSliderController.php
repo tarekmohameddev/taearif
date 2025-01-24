@@ -93,6 +93,12 @@ class HeroSliderController extends Controller
             'img' => $request->image_name,
             'user_id' => Auth::guard('web')->user()->id,
         ]);
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['sub_pages_upper_image' => true]
+        );
+
         $request->session()->flash('success', 'New slider added successfully!');
         return redirect()->back();
     }
@@ -130,6 +136,12 @@ class HeroSliderController extends Controller
         $slider->update($request->except('img') + [
             'img' => $request->image_name,
         ]);
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['sub_pages_upper_image' => true]
+        );
+
         $request->session()->flash('success', 'Slider info updated successfully!');
         return redirect()->back();
     }

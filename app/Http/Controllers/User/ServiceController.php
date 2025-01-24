@@ -135,6 +135,11 @@ class ServiceController extends Controller
         $blog = new UserService();
         $blog->create($input);
 
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['services' => true]
+        );
+
         Session::flash('success', 'Service added successfully!');
         return "success";
     }
@@ -219,6 +224,12 @@ class ServiceController extends Controller
         }
         $input['content'] = Purifier::clean($request->content);
         $service->update($input);
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['services' => true]
+        );
+
         Session::flash('success', 'Service updated successfully!');
         return "success";
     }

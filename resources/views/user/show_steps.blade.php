@@ -111,39 +111,37 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             <div class="card-body" style="padding: 2rem;">
                 <h5 class="card-title mb-4" style="font-size: 1.5rem; color: #333; border-bottom: 2px solid var(--primary); padding-bottom: 0.5rem;">يرجى إكمال الخطوات التالية</h5>
 
-
-
                 <div class="d-flex flex-column gap-3">
-    @foreach($steps as $step)
-        <div class="d-flex align-items-center gap-3"
-             style="margin-bottom:5px;  padding: 10px; border-radius: 10px; transition: all 0.3s ease; cursor: pointer;
-            {{ !$step['completed'] ? 'background-color: #ffe495;' : '' }}"
-             onmouseover="this.style.backgroundColor='rgba(0, 169, 145, 0.1)'"
-             onmouseout="this.style.backgroundColor='{{ !$step['completed'] ? '#ffe495' : 'transparent' }}'">
+                    @foreach($steps as $step)
+                        <div class="d-flex align-items-center gap-3"
+                            style="margin-bottom:5px;  padding: 10px; border-radius: 10px; transition: all 0.3s ease; cursor: pointer;
+                            {{ !$step['completed'] ? 'background-color: #ffe495;' : '' }}"
+                            onmouseover="this.style.backgroundColor='rgba(0, 169, 145, 0.1)'"
+                            onmouseout="this.style.backgroundColor='{{ !$step['completed'] ? '#ffe495' : 'transparent' }}'">
 
-            @if(!$step['completed'])
-                <a href="#" style="text-decoration: none; color: inherit; display: flex; align-items: center; width: 100%;">
-            @endif
+                            @if(!$step['completed'])
+                                <a href="{{route($step['url']). '?language=' . $default->code }}" style="text-decoration: none; color: inherit; display: flex; align-items: center; width: 100%;">
+                            @endif
 
-            <div style="width: 24px; height: 24px; border-radius: 50%;
-             {{ $step['completed'] ? 'background-color: var(--primary);' : 'border: 2px solid #ccc;' }} display: flex;
-             justify-content: center;
-             align-items: center;
-             margin-right: 12px;">
-                @if($step['completed'])
-                    <i class="bi bi-check-lg" style="color: white; font-size: 14px;"></i>
-                @endif
-            </div>
-            <span style="font-size: 1rem; color: {{ $step['completed'] ? '#333' : '#666' }}; {{ $step['completed'] ? 'text-decoration: underline;' : '' }}">
-                {{ $step['title'] }}
-            </span>
+                            <div style="width: 24px; height: 24px; border-radius: 50%;
+                            {{ $step['completed'] ? 'background-color: var(--primary);' : 'border: 2px solid #ccc;' }} display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            margin-right: 12px;">
+                                @if($step['completed'])
+                                    <i class="bi bi-check-lg" style="color: white; font-size: 14px;"></i>
+                                @endif
+                            </div>
+                            <span style="font-size: 1rem; color: {{ $step['completed'] ? '#333' : '#666' }}; {{ $step['completed'] ? 'text-decoration: underline;' : '' }}">
+                                {{ $step['title'] }}
+                            </span>
 
-            @if(!$step['completed'])
-                </a>
-            @endif
-        </div>
-    @endforeach
-</div>
+                            @if(!$step['completed'])
+                                </a>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
 
 
             </div>
