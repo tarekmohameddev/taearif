@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Http\Controllers\Controller;
-use App\Models\User\CounterInformation;
-use App\Models\User\Language;
+use App\Models\User\Brand;
+use App\Models\User\Skill;
 use Illuminate\Http\Request;
+use App\Models\User\Language;
+use App\Models\User\UserService;
+use App\Models\User\HomePageText;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User\CounterInformation;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 
@@ -28,12 +32,49 @@ class CounterInformationController extends Controller
                 ->first();
             Session::put('currentLangCode', $lang->code);
         }
+
+        // counter-informations
         $data['counterInformations'] = CounterInformation::where([
             ['language_id', '=', $lang->id],
             ['user_id', '=', Auth::id()],
         ])
         ->orderBy('id', 'DESC')
         ->get();
+
+        // skills
+        $data['skills'] = Skill::where([
+            ['language_id', '=', $lang->id],
+            ['user_id', '=', Auth::id()],
+        ])
+            ->orderBy('id', 'DESC')
+            ->get();
+
+        //services
+        $language = Language::where('user_id', Auth::guard('web')->user()->id)->where('code', $request->language)->firstOrFail();
+
+        $text = HomePageText::where('user_id', Auth::guard('web')->user()->id)->where('language_id', $language->id);
+        if ($text->count() == 0) {
+            $text = new HomePageText;
+            $text->language_id = $language->id;
+            $text->user_id = Auth::guard('web')->user()->id;
+            $text->save();
+        } else {
+            $text = $text->first();
+        }
+        $data['home_setting'] = $text;
+        $data['services'] = UserService::where([
+            ['lang_id', '=', $lang->id],
+            ['user_id', '=', Auth::id()],
+        ])
+            ->orderBy('id', 'DESC')
+            ->get();
+
+        //brands
+        $data['brands'] = Brand::where('user_id', Auth::guard('web')->user()->id)
+            ->orderBy('id', 'desc')
+            ->get();
+
+
         return view('user.counter-information.index', $data);
     }
 

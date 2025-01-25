@@ -9,6 +9,14 @@
 @section('meta-description', !empty($userSeo) ? $userSeo->home_meta_description : '')
 @section('meta-keywords', !empty($userSeo) ? $userSeo->home_meta_keywords : '')
 
+<style>
+.arro-btn {
+    color: #151d2e !important;
+}
+.main-btn:hover {
+    color: #fff !important;
+}
+</style>
 @section('content')
     <!--====== Start Hero section ======-->
     <section class="hero-area">

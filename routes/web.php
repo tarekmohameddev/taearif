@@ -79,6 +79,8 @@ Route::domain($domain)->group(function () {
         Route::get('/rtlcheck/{langid}', 'User\LanguageController@rtlcheck')->name('user.rtlcheck');
         Route::get('/dashboard', 'User\UserController@index')->name('user-dashboard');
         Route::get('/site-settings', 'User\UserController@sitesettings')->name('site-settings');
+        Route::get('/home-page-settings', 'User\UserController@home_page_settings')->name('home-page-settings');
+        Route::get('/show-steps', 'User\UserController@show_steps')->name('view-steps');
         Route::get('/reset', 'User\UserController@resetform')->name('user-reset');
         Route::post('/reset', 'User\UserController@reset')->name('user-reset-submit');
         Route::get('/profile', 'User\UserController@profile')->name('user-profile');

@@ -17,6 +17,13 @@ class UserStep extends Model
         'favicon_uploaded',  // Boolean for completion status
         'website_named',
         'homepage_updated',
+        'homepage_about_update',
+        'contacts_social_info',
+        'banner',
+        'sub_pages_upper_image',
+        'menu_builder',
+        'services',
+        'footer',
     ];
 
     // Define relationships, if needed

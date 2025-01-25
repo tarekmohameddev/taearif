@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Http\Controllers\Controller;
-use App\Http\Helpers\Uploader;
-use App\Models\User\FooterQuickLink;
-use App\Models\User\FooterText;
-use App\Models\User\Language;
+use App\Models\UserStep;
 use Illuminate\Http\Request;
+use App\Models\User\Language;
+use App\Http\Helpers\Uploader;
+use App\Models\User\FooterText;
+use App\Http\Controllers\Controller;
+use App\Models\User\FooterQuickLink;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
 
 class FooterController extends Controller
@@ -32,6 +33,8 @@ class FooterController extends Controller
                 ->first();
             Session::put('currentLangCode', $lang->code);
         }
+
+
 
         // then, get the footer text info of that language from db
         $information['data'] = FooterText::where('language_id', $lang->id)->where('user_id', Auth::id())->first();
@@ -83,6 +86,12 @@ class FooterController extends Controller
         $data->about_company = clean($request->about_company);
         $data->newsletter_text = clean($request->newsletter_text);
         $data->save();
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['footer' => true]
+        );
+
         $request->session()->flash('success', 'Footer text info updated successfully!');
         return 'success';
     }
@@ -136,6 +145,11 @@ class FooterController extends Controller
 
         $request->session()->flash('success', 'New quick link added successfully!');
 
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['contacts_social_info' => true]
+        );
+
         return 'success';
     }
 
@@ -158,6 +172,10 @@ class FooterController extends Controller
 
         $request->session()->flash('success', 'Quick link updated successfully!');
 
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['contacts_social_info' => true]
+        );
         return 'success';
     }
 

@@ -5,22 +5,24 @@ namespace App\Http\Controllers\User;
 use Response;
 use App\Models\Timezone;
 use App\Models\User\SEO;
+use App\Models\UserStep;
 use App\Models\User\Member;
+use App\Models\User\Social;
 use Illuminate\Http\Request;
 use App\Models\User\Language;
 use App\Http\Helpers\Uploader;
+use App\Models\User\FooterText;
 use App\Models\User\HomeSection;
 use App\Models\User\WorkProcess;
 use App\Models\User\BasicSetting;
 use App\Models\User\HomePageText;
+use Illuminate\Support\Facades\DB;
+use Mews\Purifier\Facades\Purifier;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
-use Mews\Purifier\Facades\Purifier;
 use App\Http\Helpers\UserPermissionHelper;
-use App\Models\UserStep;
 
 class BasicController extends Controller
 {
@@ -58,14 +60,57 @@ class BasicController extends Controller
 
         return view('user.settings.favicon', $data);
     }
-    public function generalSettings()
+    public function generalSettings(Request $request)
     {
+        $language = Language::where('user_id', Auth::guard('web')->user()->id)->where('code', $request->language)->firstOrFail();
+
         $data['timezones'] = Timezone::all();
         $data['data'] = BasicSetting::where('user_id', Auth::guard('web')->user()->id)
             ->first();
         $data['basic_setting'] = BasicSetting::where('user_id', Auth::guard('web')->user()->id)->first();
-        return view('user.settings.general-settings', $data);
+
+
+        $text = HomePageText::where('user_id', Auth::guard('web')->user()->id)->where('language_id', $language->id);
+        if ($text->count() == 0) {
+            $text = new HomePageText;
+            $text->language_id = $language->id;
+            $text->user_id = Auth::guard('web')->user()->id;
+            $text->save();
+        } else {
+            $text = $text->first();
+        }
+
+        $data['home_setting'] = $text;
+
+        //footer text
+        if ($request->has('language')) {
+            $lang = Language::where([
+                ['code', $request->language],
+                ['user_id', Auth::id()]
+            ])->first();
+            Session::put('currentLangCode', $request->language);
+        } else {
+            $lang = Language::where([
+                ['is_default', 1],
+                ['user_id', Auth::id()]
+            ])
+                ->first();
+            Session::put('currentLangCode', $lang->code);
+        }
+
+        // then, get the footer text info of that language from db
+        $information['data'] = FooterText::where('language_id', $lang->id)->where('user_id', Auth::id())->first();
+
+        // socials
+        $data['socials'] = Social::where('user_id', Auth::id())
+            ->orderBy('id', 'DESC')
+            ->get();
+
+
+
+        return view('user.settings.general-settings', $data , $information);
     }
+
     public function updateAllSettings(Request $request)
     {
         $user = Auth::guard('web')->user();
@@ -74,13 +119,13 @@ class BasicController extends Controller
             $permissions = UserPermissionHelper::packagePermission($user->id);
             $permissions = json_decode($permissions, true);
         }
-    
-        // Define validation rules
+
+        // Use "sometimes" so the fields are validated only when provided.
         $rules = [
-            'website_title' => 'required',
-            'timezone' => 'required',
+            'website_title' => 'sometimes|required',
+            'timezone'      => 'sometimes|required',
         ];
-    
+
         // Add validation rules for images if they are being uploaded
         if ($request->hasFile('logo')) {
             $rules['logo'] = [
@@ -88,123 +133,143 @@ class BasicController extends Controller
                     $allowedExts = ['jpg', 'png', 'jpeg'];
                     $ext = $request->file('logo')->getClientOriginalExtension();
                     if (!in_array($ext, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg image is allowed for logo");
+                        return $fail("Only png, jpg, jpeg images are allowed for logo.");
                     }
                 }
             ];
         }
-    
+
         if ($request->hasFile('preloader')) {
             $rules['preloader'] = [
                 function ($attribute, $value, $fail) use ($request) {
                     $allowedExts = ['jpg', 'png', 'jpeg', 'gif'];
                     $ext = $request->file('preloader')->getClientOriginalExtension();
                     if (!in_array($ext, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg, gif image is allowed for preloader");
+                        return $fail("Only png, jpg, jpeg, gif images are allowed for preloader.");
                     }
                 }
             ];
         }
-    
+
         if ($request->hasFile('breadcrumb')) {
             $rules['breadcrumb'] = [
                 function ($attribute, $value, $fail) use ($request) {
                     $allowedExts = ['jpg', 'png', 'jpeg'];
                     $ext = $request->file('breadcrumb')->getClientOriginalExtension();
                     if (!in_array($ext, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg image is allowed for breadcrumb");
+                        return $fail("Only png, jpg, jpeg images are allowed for breadcrumb.");
                     }
                 }
             ];
         }
-    
+
         if ($request->hasFile('favicon')) {
             $rules['favicon'] = [
                 function ($attribute, $value, $fail) use ($request) {
                     $allowedExts = ['jpg', 'png', 'jpeg', 'ico'];
                     $ext = $request->file('favicon')->getClientOriginalExtension();
                     if (!in_array($ext, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg, ico image is allowed for favicon");
+                        return $fail("Only png, jpg, jpeg, ico images are allowed for favicon.");
                     }
                 }
             ];
         }
-    
-        // Add ecommerce-specific rules if applicable
+
+        // Add ecommerce-specific rules if applicable.
         if (!empty($permissions) && in_array('Ecommerce', $permissions)) {
-            $rules['base_currency_symbol'] = 'required';
-            $rules['base_currency_symbol_position'] = 'required';
-            $rules['base_currency_text'] = 'required';
-            $rules['base_currency_text_position'] = 'required';
-            $rules['base_currency_rate'] = 'required|numeric|min:0.00000001';
+            $rules['base_currency_symbol']          = 'sometimes|required';
+            $rules['base_currency_symbol_position']   = 'sometimes|required';
+            $rules['base_currency_text']              = 'sometimes|required';
+            $rules['base_currency_text_position']     = 'sometimes|required';
+            $rules['base_currency_rate']              = 'sometimes|required|numeric|min:0.00000001';
         }
-    
-        // Validate request
+
+        // Validate request.
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
             $validator->getMessageBag()->add('error', 'true');
             return response()->json($validator->errors());
         }
-    
-        // Get or create BasicSetting record
+
+        // Get or create BasicSetting record.
         $bss = BasicSetting::firstOrNew(['user_id' => $user->id]);
-    
-        // Update basic information
-        $bss->website_title = $request->website_title;
-        $bss->timezone = $request->timezone;
-        $bss->email_verification_status = $request->email_verification_status;
-        $bss->base_color = $request->base_color;
-        $bss->secondary_color = $request->secondary_color;
-    
-        // Handle currency settings if applicable
-        if (!empty($permissions) && in_array('Ecommerce', $permissions)) {
-            $bss->base_currency_symbol = $request->base_currency_symbol;
-            $bss->base_currency_symbol_position = $request->base_currency_symbol_position;
-            $bss->base_currency_text = $request->base_currency_text;
-            $bss->base_currency_text_position = $request->base_currency_text_position;
-            $bss->base_currency_rate = $request->base_currency_rate;
+
+        // Update basic information if these fields are provided.
+        if ($request->has('website_title')) {
+            $bss->website_title = $request->website_title;
         }
-    
-        // Handle file uploads
+        if ($request->has('timezone')) {
+            $bss->timezone = $request->timezone;
+        }
+        if ($request->has('email_verification_status')) {
+            $bss->email_verification_status = $request->email_verification_status;
+        }
+        if ($request->has('base_color')) {
+            $bss->base_color = $request->base_color;
+        }
+        if ($request->has('secondary_color')) {
+            $bss->secondary_color = $request->secondary_color;
+        }
+
+        // Handle currency settings if applicable and provided.
+        if (!empty($permissions) && in_array('Ecommerce', $permissions)) {
+            if ($request->has('base_currency_symbol')) {
+                $bss->base_currency_symbol = $request->base_currency_symbol;
+            }
+            if ($request->has('base_currency_symbol_position')) {
+                $bss->base_currency_symbol_position = $request->base_currency_symbol_position;
+            }
+            if ($request->has('base_currency_text')) {
+                $bss->base_currency_text = $request->base_currency_text;
+            }
+            if ($request->has('base_currency_text_position')) {
+                $bss->base_currency_text_position = $request->base_currency_text_position;
+            }
+            if ($request->has('base_currency_rate')) {
+                $bss->base_currency_rate = $request->base_currency_rate;
+            }
+        }
+
+        // Handle file uploads.
         $imageFields = ['logo', 'preloader', 'breadcrumb', 'favicon'];
         foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {
-                // Delete old file if exists
+                // Delete old file if exists.
                 if ($bss->$field) {
                     @unlink(public_path('assets/front/img/user/' . $bss->$field));
                 }
-                
-                // Upload new file
-                $file = $request->file($field);
+                // Upload new file.
+                $file     = $request->file($field);
                 $filename = uniqid() . '.' . $file->getClientOriginalExtension();
                 $file->move(public_path('assets/front/img/user/'), $filename);
                 $bss->$field = $filename;
             }
         }
-    
+
         $bss->save();
-    
-        // Update user steps
+
+        // Update user steps.
         $steps = UserStep::firstOrCreate(
             ['user_id' => $user->id],
             [
-                'logo_uploaded' => false,
-                'favicon_uploaded' => false,
-                'website_named' => false,
-                'homepage_updated' => false
+                'logo_uploaded'      => false,
+                'favicon_uploaded'   => false,
+                'website_named'      => false,
+                'homepage_updated'   => false,
             ]
         );
-    
+
         $steps->update([
-            'website_named' => true,
-            'logo_uploaded' => $request->hasFile('logo') ? true : $steps->logo_uploaded,
+            'website_named'    => $request->has('website_title') ? true : $steps->website_named,
+            'logo_uploaded'    => $request->hasFile('logo') ? true : $steps->logo_uploaded,
             'favicon_uploaded' => $request->hasFile('favicon') ? true : $steps->favicon_uploaded,
-            'homepage_updated' => $request->hasFile('preloader') ? true : $steps->homepage_updated
+            'homepage_updated' => $request->hasFile('preloader') ? true : $steps->homepage_updated,
         ]);
-    
-        Session::flash('success', 'Preloader updated successfully.');
+
+        Session::flash('success', 'Settings updated successfully.');
         return back();
     }
+
     public function updateInfo(Request $request)
     {
         $user = Auth::guard('web')->user();
@@ -414,6 +479,12 @@ class BasicController extends Controller
             }
         }
         Session::flash('success', 'Breadcrumb update successfully.');
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['sub_pages_upper_image' => true]
+        );
+
         return back();
     }
 
@@ -751,6 +822,11 @@ class BasicController extends Controller
             ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
         );
         $steps->update(['homepage_updated' => true]);
+
+        // UserStep::updateOrCreate(
+        //     ['user_id' => Auth::guard('web')->user()->id],
+        //     ['homepage_updated' => true]
+        // );
 
         return "success";
     }

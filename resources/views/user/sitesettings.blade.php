@@ -19,16 +19,16 @@
             --primary: rgb(0, 169, 145);
             --primary-dark: rgb(0, 149, 125);
         }
-        
+
         .bg-primary {
             background-color: var(--primary) !important;
         }
-        
+
         .btn-primary {
             background-color: var(--primary);
             border-color: var(--primary);
         }
-        
+
         .btn-primary:hover {
             background-color: var(--primary-dark);
             border-color: var(--primary-dark);
@@ -91,7 +91,7 @@
   <h1 class="h3 mb-4 font-weight-bold text-dark">إعدادات الموقع</h1>
   <div class="row g-4">
     <div class="col-md-6 col-lg-4 mb-4">
-      <a href="{{ route('user.basic_settings.general-settings') }}" class="text-decoration-none">
+      <a href="{{ route('user.basic_settings.general-settings') . '?language=' . $default->code }}" class="text-decoration-none">
         <div class="card h-100 transition-hover">
           <div class="card-body d-flex align-items-center p-4">
             <div class="flex-shrink-0 me-3">
@@ -193,7 +193,7 @@
           </div>
         </div>
       </a>
-    </div>    
+    </div>
   </div>
 </div>
 </div>
