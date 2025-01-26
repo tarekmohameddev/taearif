@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\User;
 
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use App\Models\User\Language;
+use Auth;
+use App\Models\UserStep;
 use App\Models\User\Menu;
 use App\Models\User\Page;
-use Auth;
+use Illuminate\Http\Request;
+use App\Models\User\Language;
+use App\Http\Controllers\Controller;
 
 class MenuBuilderController extends Controller
 {
@@ -37,6 +38,10 @@ class MenuBuilderController extends Controller
         $menu->menus = $request->str;
         $menu->save();
 
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['menu_builder' => true]
+        );
         return response()->json(['status' => 'success', 'message' => 'Menu updated successfully!']);
     }
 }

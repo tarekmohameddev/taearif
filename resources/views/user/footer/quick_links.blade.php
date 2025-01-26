@@ -43,9 +43,9 @@
                 </svg>
             </div>
             <div class="feature-card-text">
-                <h2 class="fs-4 fw-semibold mb-2">{{ __('Quick Links') }}</h2>
+                <h2 class="fs-4 fw-semibold mb-2">{{ __('Social media') }}</h2>
                 <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
-                    يمكنك تعديل جزء الروابط السريعه المتواجدة في التذييل من هنا
+                    يمكنك تعديل جزء روابط التواصل الاجتماعي المتواجدة في التذييل من هنا
                 </p>
             </div>
         </div>
@@ -92,7 +92,7 @@
       <div class="card">
         <div class="card-header">
           <div class="row">
-            
+
           <div class="col-lg-4 offset-lg-1 mt-2 mt-lg-0">
               <a
                 href="#"

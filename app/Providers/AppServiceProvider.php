@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
 use App\Http\Helpers\UserPermissionHelper;
 use App\Models\User\Language as UserLanguage;
+use App\Models\UserStep;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -222,5 +223,31 @@ class AppServiceProvider extends ServiceProvider
             View::share('langs', $langs);
             View::share('socials', $socials);
         }
+
+
+        View::composer('user.layout', function ($view) {
+            $user = Auth::guard('web')->user();
+            $progressSteps = [];
+
+            if ($user) {
+                $steps = UserStep::firstOrCreate(['user_id' => $user->id]);
+                $progressSteps = [
+                    ['url' => 'user.basic_settings.general-settings','title' => 'تحديث الشعار الخاص بك', 'completed' => (bool) $steps->logo_uploaded],
+                    ['url' => 'user.basic_settings.general-settings','title' => 'تحديث ايقونة الموقع', 'completed' => (bool) $steps->favicon_uploaded],
+                    ['url' => 'user.basic_settings.general-settings','title' => 'تحديث اسم الموقع الخاص بك', 'completed' => (bool) $steps->website_named],
+                    ['url' => 'user.home.page.text.edit','title' => 'تحديث بيانات الصفحة الرئيسية', 'completed' => (bool) $steps->homepage_updated],
+                    ['url' => 'user.basic_settings.general-settings','title' => 'تحديث بيانات الصفحة عن الشركه', 'completed' => (bool) $steps->homepage_about_update],
+                    ['url' => 'user.basic_settings.general-settings','title' => 'تحديث بيانات الصفحة معلومات الاتصال', 'completed' => (bool) $steps->contacts_social_info],
+                    ['url' => 'user.home_page.hero.slider_version','title' => 'تحديث بيانات الصفحة البانرات', 'completed' => (bool) $steps->banner],
+                    ['url' => 'user.home_page.hero.slider_version','title' => 'تحديث بيانات الصفحة صورة اعلى الصفحات الفرعية', 'completed' => (bool) $steps->sub_pages_upper_image],
+                    ['url' => 'user.menu_builder.index','title' => 'تحديث بيانات الصفحة منشئ القائمة', 'completed' => (bool) $steps->menu_builder],
+                    ['url' => 'user.services.index','title' => 'تحديث بيانات الصفحة خدماتنا', 'completed' => (bool) $steps->services],
+                    ['url' => 'user.footer.text','title' => 'تحديث بيانات الصفحة الذيل', 'completed' => (bool) $steps->footer],
+                ];
+            }
+
+            $view->with('steps', $progressSteps);
+        });
+
     }
 }

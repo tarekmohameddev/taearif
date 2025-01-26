@@ -8,19 +8,51 @@ use App\Models\User\HeroSlider;
 use App\Models\User\Language;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
+use App\Models\User\Menu;
+use App\Models\User\Page;
 
 class HeroSliderController extends Controller
 {
     public function sliderVersion(Request $request)
     {
         // first, get the language info from db
-        $language = Language::where('code', $request->language)->where('user_id', Auth::guard('web')->user()->id)->first();
+        // $language = Language::where('code', $request->language)->where('user_id', Auth::guard('web')->user()->id)->first();
+        $lang = Language::where('code', $request->language)->where('user_id', Auth::user()->id)->firstOrFail();
+        $data['lang_id'] = $lang->id;
+        $data['keywords'] = json_decode($lang->keywords, true);
+
+        // get previous menus
+        $menu = Menu::where('language_id', $lang->id)->where('user_id', Auth::user()->id)->first();
+        $data['prevMenu'] = '';
+        if (!empty($menu)) {
+            $data['prevMenu'] = $menu->menus;
+        }
+
+        $data['apages'] = Page::where('language_id', $lang->id)->where('user_id', Auth::user()->id)->orderBy('id', 'DESC')->get();
+
+
+        if ($request->has('language')) {
+            $language = Language::where([
+                ['code', $request->language],
+                ['user_id', Auth::id()]
+            ])->first();
+            Session::put('currentLangCode', $request->language);
+        } else {
+            $language = Language::where([
+                ['is_default', 1],
+                ['user_id', Auth::id()]
+            ])
+                ->first();
+            Session::put('currentLangCode', $language->code);
+        }
+
         // then, get the slider version info of that language from db
         $information['sliders'] = HeroSlider::where('language_id', $language->id)
             ->orderBy('id', 'desc')
             ->where('user_id', Auth::guard('web')->user()->id)
             ->get();
-        return view('user.home.hero_section.slider_version', $information);
+        return view('user.home.hero_section.slider_version', $information,$data);
     }
 
     public function createSlider(Request $request)
@@ -61,6 +93,12 @@ class HeroSliderController extends Controller
             'img' => $request->image_name,
             'user_id' => Auth::guard('web')->user()->id,
         ]);
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['sub_pages_upper_image' => true]
+        );
+
         $request->session()->flash('success', 'New slider added successfully!');
         return redirect()->back();
     }
@@ -98,6 +136,12 @@ class HeroSliderController extends Controller
         $slider->update($request->except('img') + [
             'img' => $request->image_name,
         ]);
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['sub_pages_upper_image' => true]
+        );
+
         $request->session()->flash('success', 'Slider info updated successfully!');
         return redirect()->back();
     }
