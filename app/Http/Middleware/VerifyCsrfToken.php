@@ -62,5 +62,6 @@ class VerifyCsrfToken extends Middleware
         '*/cause-donation/razorpay/notify',
         '*/cause-donation/paytm/notify',
         '*/cause-donation/phonepe/notify',
+        '*/membership/arb/success',
     ];
 }

@@ -33,6 +33,7 @@ use App\Http\Controllers\Payment\PaytabsController;
 use App\Http\Controllers\Payment\MidtransController;
 use App\Http\Controllers\Payment\IyzicoController;
 use App\Http\Controllers\Payment\MyFatoorahController;
+use App\Http\Controllers\Payment\ArbController;
 
 class UserCheckoutController extends Controller
 {
@@ -255,6 +256,14 @@ class UserCheckoutController extends Controller
             $cancel_url = route('membership.perfect_money.cancel');
             $myfatoorahPayment = new MyFatoorahController();
             return $myfatoorahPayment->paymentProcess($request, $amount, $success_url, $cancel_url, $title, $be);
+        }elseif ($request->payment_method == "Arb") {
+            // changing the currency before redirect to Stripe
+
+            $amount = $request->price;
+            $success_url = route('membership.arb.success');
+            $cancel_url = route('membership.arb.cancel');
+            $arbPayment = new ArbController();
+            return $arbPayment->paymentProcess($request, $amount, $success_url, $cancel_url, $title, $be);
         } elseif (in_array($request->payment_method, $offline_payment_gateways)) {
             $request['status'] = "0";
             if ($request->hasFile('receipt')) {

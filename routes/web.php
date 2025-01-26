@@ -1381,6 +1381,7 @@ Route::domain($domain)->group(function () {
             Route::post('/xendit/update', 'Admin\GatewayController@xenditUpdate')->name('admin.xendit.update');
 
             Route::post('/myfatoorah/update', 'Admin\GatewayController@myfatoorahUpdate')->name('admin.myfatoorah.update');
+            Route::post('/arb/update', 'Admin\GatewayController@arbUpdate')->name('admin.arb.update');
             Route::post('/yoco/update', 'Admin\GatewayController@yocoUpdate')->name('admin.yoco.update');
             Route::post('/toyyibpay/update', 'Admin\GatewayController@toyyibpayUpdate')->name('admin.toyyibpay.update');
             Route::post('/paytabs/update', 'Admin\GatewayController@paytabsUpdate')->name('admin.paytabs.update');
@@ -1532,6 +1533,9 @@ Route::domain($domain)->group(function () {
             Route::post('/paytabs/success', 'Payment\PaytabsController@successPayment')->name('membership.paytabs.success');
             Route::get('/midtrans/success', 'Payment\MidtransController@successPayment')->name('membership.midtrans.success');
             Route::post('/iyzico/success', 'Payment\IyzicoController@successPayment')->name('membership.iyzico.success');
+
+            Route::post('/arb/success', 'Payment\ArbController@successPayment')->name('membership.arb.success');
+            Route::post('/arb/cancel', 'Payment\ArbController@errorPayment')->name('membership.arb.cancel');
 
             Route::get('/offline/success', 'Front\CheckoutController@offlineSuccess')->name('membership.offline.success')->middleware('setlang');
             Route::get('/trial/success', 'Front\CheckoutController@trialSuccess')->name('membership.trial.success')->middleware('setlang');

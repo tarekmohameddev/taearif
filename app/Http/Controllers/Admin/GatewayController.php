@@ -34,6 +34,7 @@ class GatewayController extends Controller
         $data['paytabs'] = PaymentGateway::where('keyword', 'paytabs')->first();
         $data['iyzico'] = PaymentGateway::where('keyword', 'iyzico')->first();
         $data['midtrans'] = PaymentGateway::where('keyword', 'midtrans')->first();
+        $data['arb'] = PaymentGateway::where('keyword', 'arb')->first();
         return view('admin.gateways.index', $data);
     }
 
@@ -286,6 +287,32 @@ class GatewayController extends Controller
     }
 
     public function myfatoorahUpdate(Request $request)
+    {
+        $information = [
+            'token' => $request->token,
+            'sandbox_status' => $request->sandbox_status
+        ];
+
+        $data = PaymentGateway::where('keyword', 'myfatoorah')->first();
+        $data->information = json_encode($information);
+        $data->status = $request->status;
+        $data->save();
+
+
+        $array = [
+            'MYFATOORAH_TOKEN' => $request->token,
+            'MYFATOORAH_CALLBACK_URL' => route('myfatoorah.success'),
+            'MYFATOORAH_ERROR_URL' => route('myfatoorah.cancel'),
+        ];
+
+        setEnvironmentValue($array);
+        Artisan::call('config:clear');
+
+        Session::flash('success', 'Updated Myfatoorah Information Successfully');
+        return back();
+    }
+
+    public function arbUpdate(Request $request)
     {
         $information = [
             'token' => $request->token,
