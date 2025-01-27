@@ -115,9 +115,9 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     @foreach($steps as $step)
                         <div class="d-flex align-items-center gap-3"
                             style="margin-bottom:5px;  padding: 10px; border-radius: 10px; transition: all 0.3s ease; cursor: pointer;
-                            {{ !$step['completed'] ? 'background-color: #ffe495;' : '' }}"
+                            {{ !$step['completed'] ? 'background-color: #eeeeee6b;' : '' }}"
                             onmouseover="this.style.backgroundColor='rgba(0, 169, 145, 0.1)'"
-                            onmouseout="this.style.backgroundColor='{{ !$step['completed'] ? '#ffe495' : 'transparent' }}'">
+                            onmouseout="this.style.backgroundColor='{{ !$step['completed'] ? '#eeeeee6b' : 'transparent' }}'">
 
                             @if(!$step['completed'])
                                 <a href="{{route($step['url']). '?language=' . $default->code }}" style="text-decoration: none; color: inherit; display: flex; align-items: center; width: 100%;">

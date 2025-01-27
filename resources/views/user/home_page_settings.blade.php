@@ -235,7 +235,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     </div>
                 </a>
             </div>
-            <div class="col-md-6 col-lg-4 mb-4">
+            <div class="col-md-6 col-lg-4 mb-4 d-none">
                 <a href="{{ route('user.testimonials.index'). '?language=' . $default->code }}" class="text-decoration-none">
                     <div class="card h-100 transition-hover">
                         <div class="card-body d-flex align-items-center p-4">
@@ -275,7 +275,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     </div>
                 </a>
             </div>
-            <div class="col-md-6 col-lg-4 mb-4">
+            <div class="col-md-6 col-lg-4 mb-4 d-none">
                 <a href="{{ route('user.services.index'). '?language=' . $default->code  }}" class="text-decoration-none">
                     <div class="card h-100 transition-hover">
                         <div class="card-body d-flex align-items-center p-4">
@@ -295,7 +295,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     </div>
                 </a>
             </div>
-            <div class="col-md-6 col-lg-4 mb-4">
+            <div class="col-md-6 col-lg-4 mb-4 d-none">
                 <a href="{{ route('user.portfolio.index'). '?language=' . $default->code  }}" class="text-decoration-none">
                     <div class="card h-100 transition-hover">
                         <div class="card-body d-flex align-items-center p-4">
@@ -395,7 +395,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     </div>
                 </a>
             </div>
-            <div class="col-md-6 col-lg-4 mb-4">
+            <div class="col-md-6 col-lg-4 mb-4 d-none">
                 <a href="{{ route('user.menu_builder.index'). '?language=' . $default->code }}" class="text-decoration-none">
                     <div class="card h-100 transition-hover">
                         <div class="card-body d-flex align-items-center p-4">
@@ -415,7 +415,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     </div>
                 </a>
             </div>
-            <div class="col-md-6 col-lg-4 mb-4">
+            <div class="col-md-6 col-lg-4 mb-4 d-none">
                 <a href="{{ route('user.social.index'). '?language=' . $default->code }}" class="text-decoration-none">
                     <div class="card h-100 transition-hover">
                         <div class="card-body d-flex align-items-center p-4">

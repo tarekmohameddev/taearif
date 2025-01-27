@@ -149,7 +149,7 @@ Route::domain($domain)->group(function () {
         //user favicon routes
         Route::get('/general-settings', 'User\BasicController@generalSettings')->name('user.basic_settings.general-settings');
         Route::post('general-settings/updateinfo', 'User\BasicController@updateInfo')->name('user.general_settings.update_info');
-        Route::post('general-settings/update-all', 'User\BasicController@updateAllSettings')->name('user.general_settings.update_all');
+        Route::post('general-settings/update-all/{language}', 'User\BasicController@updateAllSettings')->name('user.general_settings.update_all');
         // user logo routes
         Route::get('/logo', 'User\BasicController@logo')->name('user.logo');
         Route::post('/logo/post', 'User\BasicController@updatelogo')->name('user.logo.update');

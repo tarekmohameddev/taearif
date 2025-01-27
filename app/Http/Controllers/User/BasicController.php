@@ -11,14 +11,17 @@ use App\Models\User\Social;
 use Illuminate\Http\Request;
 use App\Models\User\Language;
 use App\Http\Helpers\Uploader;
+use App\Models\User\Portfolio;
 use App\Models\User\FooterText;
 use App\Models\User\HomeSection;
+use App\Models\User\UserService;
 use App\Models\User\WorkProcess;
 use App\Models\User\BasicSetting;
 use App\Models\User\HomePageText;
 use Illuminate\Support\Facades\DB;
 use Mews\Purifier\Facades\Purifier;
 use App\Http\Controllers\Controller;
+use App\Models\User\UserTestimonial;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
@@ -111,8 +114,9 @@ class BasicController extends Controller
         return view('user.settings.general-settings', $data , $information);
     }
 
-    public function updateAllSettings(Request $request)
+    public function updateAllSettings(Request $request, $language)
     {
+        // $lang = Language::where('code', $language)->where('user_id', Auth::id())->firstOrFail();
         $user = Auth::guard('web')->user();
         $package = UserPermissionHelper::currentPackagePermission($user->id);
         if (!empty($user)) {
@@ -139,41 +143,41 @@ class BasicController extends Controller
             ];
         }
 
-        if ($request->hasFile('preloader')) {
-            $rules['preloader'] = [
-                function ($attribute, $value, $fail) use ($request) {
-                    $allowedExts = ['jpg', 'png', 'jpeg', 'gif'];
-                    $ext = $request->file('preloader')->getClientOriginalExtension();
-                    if (!in_array($ext, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg, gif images are allowed for preloader.");
-                    }
-                }
-            ];
-        }
+        // if ($request->hasFile('preloader')) {
+        //     $rules['preloader'] = [
+        //         function ($attribute, $value, $fail) use ($request) {
+        //             $allowedExts = ['jpg', 'png', 'jpeg', 'gif'];
+        //             $ext = $request->file('preloader')->getClientOriginalExtension();
+        //             if (!in_array($ext, $allowedExts)) {
+        //                 return $fail("Only png, jpg, jpeg, gif images are allowed for preloader.");
+        //             }
+        //         }
+        //     ];
+        // }
 
-        if ($request->hasFile('breadcrumb')) {
-            $rules['breadcrumb'] = [
-                function ($attribute, $value, $fail) use ($request) {
-                    $allowedExts = ['jpg', 'png', 'jpeg'];
-                    $ext = $request->file('breadcrumb')->getClientOriginalExtension();
-                    if (!in_array($ext, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg images are allowed for breadcrumb.");
-                    }
-                }
-            ];
-        }
+        // if ($request->hasFile('breadcrumb')) {
+        //     $rules['breadcrumb'] = [
+        //         function ($attribute, $value, $fail) use ($request) {
+        //             $allowedExts = ['jpg', 'png', 'jpeg'];
+        //             $ext = $request->file('breadcrumb')->getClientOriginalExtension();
+        //             if (!in_array($ext, $allowedExts)) {
+        //                 return $fail("Only png, jpg, jpeg images are allowed for breadcrumb.");
+        //             }
+        //         }
+        //     ];
+        // }
 
-        if ($request->hasFile('favicon')) {
-            $rules['favicon'] = [
-                function ($attribute, $value, $fail) use ($request) {
-                    $allowedExts = ['jpg', 'png', 'jpeg', 'ico'];
-                    $ext = $request->file('favicon')->getClientOriginalExtension();
-                    if (!in_array($ext, $allowedExts)) {
-                        return $fail("Only png, jpg, jpeg, ico images are allowed for favicon.");
-                    }
-                }
-            ];
-        }
+        // if ($request->hasFile('favicon')) {
+        //     $rules['favicon'] = [
+        //         function ($attribute, $value, $fail) use ($request) {
+        //             $allowedExts = ['jpg', 'png', 'jpeg', 'ico'];
+        //             $ext = $request->file('favicon')->getClientOriginalExtension();
+        //             if (!in_array($ext, $allowedExts)) {
+        //                 return $fail("Only png, jpg, jpeg, ico images are allowed for favicon.");
+        //             }
+        //         }
+        //     ];
+        // }
 
         // Add ecommerce-specific rules if applicable.
         if (!empty($permissions) && in_array('Ecommerce', $permissions)) {
@@ -231,18 +235,62 @@ class BasicController extends Controller
         }
 
         // Handle file uploads.
-        $imageFields = ['logo', 'preloader', 'breadcrumb', 'favicon'];
-        foreach ($imageFields as $field) {
-            if ($request->hasFile($field)) {
-                // Delete old file if exists.
-                if ($bss->$field) {
-                    @unlink(public_path('assets/front/img/user/' . $bss->$field));
+        if ($request->hasFile('logo')) {
+            try {
+                // Delete old files if they exist.
+                $imageFields = ['logo', 'preloader', 'breadcrumb', 'favicon'];
+                foreach ($imageFields as $field) {
+                    if ($bss->$field) {
+                        @unlink(public_path('assets/front/img/user/' . $bss->$field));
+                    }
                 }
-                // Upload new file.
-                $file     = $request->file($field);
+
+                // Upload new logo file to the first directory: assets/front/img/user/
+                $file = $request->file('logo');
                 $filename = uniqid() . '.' . $file->getClientOriginalExtension();
                 $file->move(public_path('assets/front/img/user/'), $filename);
-                $bss->$field = $filename;
+
+                // Assign the same filename to all fields in BasicSetting.
+                foreach ($imageFields as $field) {
+                    $bss->$field = $filename;
+                }
+
+                // Copy the uploaded file to the second directory: assets/front/img/user/footer/
+                $sourcePath = public_path('assets/front/img/user/' . $filename);
+                $destinationPath = public_path('assets/front/img/user/footer/' . $filename);
+                if (!file_exists(public_path('assets/front/img/user/footer/'))) {
+                    mkdir(public_path('assets/front/img/user/footer/'), 0775, true); // Create directory if it doesn't exist
+                }
+                copy($sourcePath, $destinationPath);
+
+                // Update FooterText with the same logo and bg_image.
+                // $lang = Language::where('user_id', $user->id)->first(); // Get the default language for the user.
+                $lang = Language::where('code', $language)->where('user_id', Auth::id())->firstOrFail();
+                if ($lang) {
+                    $footerText = FooterText::where('language_id', $lang->id)->where('user_id', $user->id)->first();
+                    if (is_null($footerText)) {
+                        $footerText = new FooterText;
+                    }
+
+                    // Delete old footer logo and bg_image if they exist.
+                    if ($footerText->logo) {
+                        @unlink(public_path('assets/front/img/user/footer/' . $footerText->logo));
+                    }
+                    if ($footerText->bg_image) {
+                        @unlink(public_path('assets/front/img/user/footer/' . $footerText->bg_image));
+                    }
+
+                    // Set the new logo and bg_image in FooterText.
+                    $footerText->logo = $filename;
+                    $footerText->bg_image = $filename; // Set the same logo as bg_image.
+                    $footerText->language_id = $lang->id;
+                    $footerText->user_id = $user->id;
+                    $footerText->save();
+                }
+            } catch (\Exception $e) {
+                \Log::error("File upload failed: " . $e->getMessage());
+                Session::flash('error', 'File upload failed. Please try again.');
+                return back();
             }
         }
 
@@ -269,6 +317,10 @@ class BasicController extends Controller
         Session::flash('success', 'Settings updated successfully.');
         return back();
     }
+
+    //
+    //
+
 
     public function updateInfo(Request $request)
     {
@@ -559,6 +611,27 @@ class BasicController extends Controller
         }
 
         $data['home_setting'] = $text;
+
+        $data['testimonials'] = UserTestimonial::where([
+            ['lang_id', '=', $language->id],
+            ['user_id', '=', Auth::id()],
+        ])
+            ->orderBy('id', 'DESC')
+            ->get();
+
+        $data['services'] = UserService::where([
+            ['lang_id', '=', $language->id],
+            ['user_id', '=', Auth::id()],
+        ])
+            ->orderBy('id', 'DESC')
+            ->get();
+
+            $data['portfolios'] = Portfolio::where([
+                ['language_id', '=', $language->id],
+                ['user_id', '=', Auth::id()],
+            ])
+                ->orderBy('id', 'DESC')
+                ->get();
 
         return view('user.home.edit', $data);
     }
