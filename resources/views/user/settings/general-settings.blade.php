@@ -151,8 +151,27 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
 <div class="row">
     <div class="col-md-12">
         <div class="card">
+        <div class="card-header">
+                <div class="row">
+                    <div class="col-lg-3 float-left">
+                        @if (!is_null($userDefaultLang))
+                        @if (!empty($userLanguages))
+                        <select name="userLanguage" class="form-control" onchange="window.location='{{ url()->current() . '?language=' }}'+this.value">
+                            <option value="" selected disabled>Select a Language</option>
+                            @foreach ($userLanguages as $lang)
+                            <option value="{{ $lang->code }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
+                                {{ $lang->name }}
+                            </option>
+                            @endforeach
+                        </select>
+                        @endif
+                        @endif
+                    </div>
+                </div>
+            </div>
+
             <div class="card-body">
-                <form action="{{ route('user.general_settings.update_all') }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ route('user.general_settings.update_all',['language' => request()->input('language')]) }}" method="POST" enctype="multipart/form-data">
                     @csrf
 
                     <!-- Website Title Section -->
@@ -185,7 +204,7 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                     </div>
 
                     <!-- Logo Section -->
-                    <div class="settings-section">
+                    <div class="settings-section col-lg-6">
                         <h3 class="section-title">{{ __('Website Logo') }}</h3>
                         <p class="section-description">{{ __('Upload your website logo here. The logo represents your brand and will appear on the website header, footer, and other sections.') }}</p>
                         <div class="form-group">
@@ -200,39 +219,39 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                         </div>
                     </div>
 
-                    <!-- Preloader Section -->
+                    <!--delete Preloader Section -->
                     <div class="settings-section">
                         <h3 class="section-title">{{ __('Website Preloading Image') }}</h3>
                         <p class="section-description">{{ __('This image will be displayed while your website is loading. Use a professional or branded image to enhance the user experience.') }}</p>
-                        <div class="form-group">
+                        <div class="form-group ">
                             <div class="preview-image">
                                 <img src="{{ isset($basic_setting->preloader) ? asset('assets/front/img/user/'.$basic_setting->preloader) : asset('assets/admin/img/noimage.jpg') }}" alt="preloader" class="img-thumbnail">
                             </div>
-                            <input type="file" id="preloader" name="preloader" class="d-none" accept="image/*">
-                            <button type="button" class="upload-btn" onclick="document.getElementById('preloader').click()">
+                            <!-- <input type="file" id="preloader" name="preloader" class="d-none" accept="image/*"> -->
+                            <button type="button " class="upload-btn  d-none" onclick="document.getElementById('preloader').click()">
                                 <i class="bi bi-upload mb-2"></i>
                                 <span>{{ __('Upload Preloader') }}</span>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Breadcrumb Section -->
-                    <div class="settings-section d-none">
+                    <!--delete Breadcrumb Section -->
+                    <div class="settings-section">
                         <h3 class="section-title">{{ __('Breadcrumb Photo') }}</h3>
                         <p class="section-description">{{ __('Add an image that will appear as a background for the breadcrumb section, helping to enhance navigation visuals.') }}</p>
                         <div class="form-group">
                             <div class="preview-image">
                                 <img src="{{ isset($basic_setting->breadcrumb) ? asset('assets/front/img/user/'.$basic_setting->breadcrumb) : asset('assets/admin/img/noimage.jpg') }}" alt="breadcrumb" class="img-thumbnail">
                             </div>
-                            <input type="file" id="breadcrumb" name="breadcrumb" class="d-none" accept="image/*">
-                            <button type="button" class="upload-btn" onclick="document.getElementById('breadcrumb').click()">
+                            <!-- <input type="file" id="breadcrumb" name="breadcrumb" class="d-none" accept="image/*"> -->
+                            <button type="button " class="upload-btn  d-none" onclick="document.getElementById('breadcrumb').click()">
                                 <i class="bi bi-upload mb-2"></i>
                                 <span>{{ __('Upload Breadcrumb Image') }}</span>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Favicon Section -->
+                    <!--delete Favicon Section -->
                     <div class="settings-section">
                         <h3 class="section-title">{{ __('Fav Icon') }}</h3>
                         <p class="section-description">{{ __('Upload a small icon that represents your website. It will appear in the browser tab next to your website name.') }}</p>
@@ -240,8 +259,8 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                             <div class="preview-image">
                                 <img src="{{ isset($basic_setting->favicon) ? asset('assets/front/img/user/'.$basic_setting->favicon) : asset('assets/admin/img/noimage.jpg') }}" alt="favicon" class="img-thumbnail">
                             </div>
-                            <input type="file" id="favicon" name="favicon" class="d-none" accept="image/*">
-                            <button type="button" class="upload-btn" onclick="document.getElementById('favicon').click()">
+                            <!-- <input type="file" id="favicon" name="favicon" class="d-none" accept="image/*"> -->
+                            <button type="button " class="upload-btn  d-none" onclick="document.getElementById('favicon').click()">
                                 <i class="bi bi-upload mb-2"></i>
                                 <span>{{ __('Upload Favicon') }}</span>
                             </button>
@@ -377,7 +396,7 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
             <div class="card-body">
 
 
-
+            <!-- home-page-about -->
                 <div class="card-body pt-5 pb-5">
                     <div class="row">
                         <div class="col-lg-6 offset-lg-3">
@@ -506,7 +525,7 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                         </div>
                     </div>
                 </div>
-
+            <!-- home-page-about -->
                 <div class="card-footer">
                     <div class="row">
                         <div class="col-12 text-center">
