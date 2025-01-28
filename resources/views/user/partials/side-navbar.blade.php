@@ -19,7 +19,8 @@
                    target="_blank"
                    class="btn btn-outline-primary w-100">
                     <i class="bi bi-eye me-1"></i>
-                    معاينة الموقع
+                    <!-- معاينة الموقع -->
+                   {{ __('Site Preview')}}
                 </a>
             </div>
 
@@ -31,7 +32,7 @@
                     @if (!empty($permissions) && in_array('Real Estate Management', $permissions))
                         <li
                             class="nav-item
-                                @if (request()->routeIs('user.property_management.settings')) active 
+                                @if (request()->routeIs('user.property_management.settings')) active
                                 @elseif(request()->routeIs('user.property_management.categories')) active
                                 @elseif(request()->routeIs('user.property_management.countries')) active
                                 @elseif(request()->routeIs('user.property_management.states')) active
@@ -52,7 +53,7 @@
                                 <span class="caret"></span>
                             </a>
                             <div class="collapse
-                                    @if (request()->routeIs('user.property_management.settings')) show 
+                                    @if (request()->routeIs('user.property_management.settings')) show
                                     @elseif(request()->routeIs('user.property_management.categories')) show
                                     @elseif(request()->routeIs('user.property_management.countries')) show
                                     @elseif(request()->routeIs('user.property_management.states')) show
@@ -72,7 +73,7 @@
 
                                     <li
                                         class="submenu
-                                        @if (request()->routeIs('user.property_management.settings')) selected 
+                                        @if (request()->routeIs('user.property_management.settings')) selected
                                         @elseif (request()->routeIs('user.property_management.categories')) selected
                                         @elseif (request()->routeIs('user.property_management.countries')) selected
                                         @elseif (request()->routeIs('user.property_management.states')) selected
@@ -187,7 +188,7 @@
 
                                     <li
                                         class="submenu
-                                        @if (request()->routeIs('user.project_management.projects')) selected 
+                                        @if (request()->routeIs('user.project_management.projects')) selected
                                         @elseif (request()->routeIs('user.project_management.create_project')) selected @endif">
                                         <a data-toggle="collapse" href="#projectManage"
                                             aria-expanded="{{ request()->routeIs('user.project_management.create_project') ||

@@ -2,64 +2,65 @@
 
 namespace App\Http\Controllers\Front;
 
-use App\Http\Controllers\Controller;
-use App\Http\Helpers\MegaMailer;
-use App\Http\Helpers\UserPermissionHelper;
-use App\Models\BasicExtended;
-use App\Models\BasicExtended as BE;
-use App\Models\BasicSetting as BS;
-use App\Models\Bcategory;
-use App\Models\Blog;
-use App\Models\Faq;
-use App\Models\Feature;
-use App\Models\Language;
-use App\Models\OfflineGateway;
-use App\Models\Package;
-use App\Models\Page;
-use App\Models\Partner;
-use App\Models\PaymentGateway;
-use App\Models\Process;
-use App\Models\Seo;
-use App\Models\Subscriber;
-use App\Models\Testimonial;
-use App\Models\User;
-use App\Models\User\BasicSetting;
-use App\Models\User\CounterInformation;
-use App\Models\User\CourseManagement\Course;
-use App\Models\User\CourseManagement\CourseCategory;
-use App\Models\User\CourseManagement\CourseEnrolment;
-use App\Models\User\CustomerWishList;
-use App\Models\User\DonationManagement\Donation;
-use App\Models\User\DonationManagement\DonationDetail;
-use App\Models\User\HeroSlider;
-use App\Models\User\HomePageText;
-use App\Models\User\HotelBooking\Room;
-use App\Models\User\HotelBooking\RoomContent;
-use App\Models\User\Language as UserLanguage;
-use App\Models\User\PortfolioCategory;
-use App\Models\User\Quote;
-use App\Models\User\QuoteInput;
-use App\Models\User\RealestateManagement\Category;
-use App\Models\User\RealestateManagement\City;
-use App\Models\User\RealestateManagement\Project;
-use App\Models\User\RealestateManagement\Property;
-use App\Models\User\UserContact;
-use App\Models\User\UserCustomDomain;
-use App\Models\User\UserFeature;
-use App\Models\User\UserOfferBanner;
-use App\Models\User\UserVcard;
-use App\Traits\MiscellaneousTrait;
+use Validator;
 use Carbon\Carbon;
+use App\Models\Faq;
+use App\Models\Seo;
+use App\Models\Blog;
+use App\Models\Page;
+use App\Models\User;
+use App\Models\Feature;
+use App\Models\Package;
+use App\Models\Partner;
+use App\Models\Process;
+use App\Models\Language;
+use App\Models\Bcategory;
+use App\Models\Subscriber;
+use App\Models\User\Quote;
+use App\Models\Testimonial;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Session;
+use App\Models\BasicExtended;
+use App\Models\OfflineGateway;
+use App\Models\PaymentGateway;
+use App\Models\User\UserVcard;
+use App\Models\User\HeroSlider;
+use App\Models\User\QuoteInput;
 use Illuminate\Validation\Rule;
+use App\Http\Helpers\MegaMailer;
+use App\Models\User\UserContact;
+use App\Models\User\UserFeature;
+use App\Models\User\BasicSetting;
+use App\Models\User\HomePageText;
 use JeroenDesloovere\VCard\VCard;
+use App\Models\BasicSetting as BS;
+use App\Traits\MiscellaneousTrait;
+use Illuminate\Support\Facades\DB;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
-use Validator;
+use App\Models\BasicExtended as BE;
+use App\Http\Controllers\Controller;
+use App\Models\User\UserOfferBanner;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use App\Models\User\CustomerWishList;
+use App\Models\User\UserCustomDomain;
+use App\Models\User\HotelBooking\Room;
+use App\Models\User\PortfolioCategory;
+use Illuminate\Support\Facades\Config;
+use App\Models\User\CounterInformation;
+use Illuminate\Support\Facades\Session;
+use App\Http\Helpers\UserPermissionHelper;
+use App\Models\User\CourseManagement\Course;
+use App\Models\User\HotelBooking\RoomContent;
+use App\Models\User\Language as UserLanguage;
+use App\Models\User\RealestateManagement\City;
+use App\Models\User\DonationManagement\Donation;
+use App\Models\User\RealestateManagement\Project;
+use App\Models\User\RealestateManagement\Category;
+use App\Models\User\RealestateManagement\Property;
+use App\Models\User\CourseManagement\CourseCategory;
+use App\Models\User\CourseManagement\CourseEnrolment;
+use App\Models\User\DonationManagement\DonationDetail;
 
 class FrontendController extends Controller
 {
@@ -468,7 +469,7 @@ class FrontendController extends Controller
     public function userDetailView($domain)
     {
         $user = getUser();
-       
+
         $data['user'] = $user;
         if (Auth::check() && Auth::user()->id != $user->id && $user->online_status != 1) {
             return redirect()->route('front.index');
@@ -1846,7 +1847,7 @@ class FrontendController extends Controller
         }else{
             $country_value = 'Unknown';
         }
-        
+
         Visitor::create([
             'user_id' => $request->input('user_id'),
             'device_type' => $request->input('device_type'),
@@ -1856,7 +1857,7 @@ class FrontendController extends Controller
             'city' => $city,
             'ip' => $ip,
         ]);
-    
+
     }
 
     public function getStats(Request $request)

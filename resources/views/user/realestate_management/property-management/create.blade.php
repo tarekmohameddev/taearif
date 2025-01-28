@@ -3,7 +3,7 @@
 @section('content')
 
     <div class="page-header">
-        <h4 class="page-title">{{ __('Add Porperty') }}</h4>
+        <h4 class="page-title">{{ __('Add Property') }}</h4>
         <ul class="breadcrumbs">
             <li class="nav-home">
                 <a href="{{ route('user-dashboard') }}">
@@ -26,7 +26,7 @@
                 <i class="flaticon-right-arrow"></i>
             </li>
             <li class="nav-item">
-                <a href="#">{{ __('Add Porperty') }}</a>
+                <a href="#">{{ __('Add Property') }}</a>
             </li>
         </ul>
     </div>
@@ -35,7 +35,7 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title d-inline-block">{{ __('Add Porperty') }}</div>
+                    <div class="card-title d-inline-block">{{ __('Add Property') }}</div>
                 </div>
 
                 <div class="card-body">
