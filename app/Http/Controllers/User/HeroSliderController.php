@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Http\Controllers\Controller;
-use App\Http\Helpers\Uploader;
-use App\Models\User\HeroSlider;
-use App\Models\User\Language;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
+use App\Models\UserStep;
 use App\Models\User\Menu;
 use App\Models\User\Page;
+use Illuminate\Http\Request;
+use App\Models\User\Language;
+use App\Http\Helpers\Uploader;
+use App\Models\User\HeroSlider;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class HeroSliderController extends Controller
 {
