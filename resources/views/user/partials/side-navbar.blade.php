@@ -256,7 +256,7 @@
                         <a href="{{ route('home-page-settings') }}"
                            class="nav-link d-flex align-items-center {{ request()->path() == 'user/home-page-settings' ? 'active' : '' }}">
                            <i class="bi bi-gear"></i>
-                            <span>إعدادات الاقسام</span>
+                            <span>إعدادات التصميم</span>
                         </a>
                     </li>
 
