@@ -19,7 +19,8 @@
                    target="_blank"
                    class="btn btn-outline-primary w-100">
                     <i class="bi bi-eye me-1"></i>
-                    معاينة الموقع
+                    <!-- معاينة الموقع -->
+                   {{ __('Site Preview')}}
                 </a>
             </div>
 
@@ -28,7 +29,213 @@
                     <li class="nav-section-title small text-muted px-2 py-2">
                         موقعي
                     </li>
+                    @if (!empty($permissions) && in_array('Real Estate Management', $permissions))
+                        <li
+                            class="nav-item
+                                @if (request()->routeIs('user.property_management.settings')) active
+                                @elseif(request()->routeIs('user.property_management.categories')) active
+                                @elseif(request()->routeIs('user.property_management.countries')) active
+                                @elseif(request()->routeIs('user.property_management.states')) active
+                                @elseif(request()->routeIs('user.property_management.cities')) active
+                                @elseif (request()->routeIs('user.property_management.type')) active
+                                @elseif (request()->routeIs('user.property_management.properties')) active
+                                @elseif (request()->routeIs('user.property_management.create_property')) active
+                                @elseif (request()->routeIs('user.property_management.edit')) active
+                                @elseif (request()->routeIs('user.project_management.projects')) active
+                                @elseif (request()->routeIs('user.project_management.edit')) active
+                                @elseif (request()->routeIs('user.property_management.property_message')) active
+                                @elseif (request()->routeIs('user.project_management.project_types')) active
+                                @elseif (request()->routeIs('user.project_management.create_project')) active
+                                @elseif(request()->routeIs('user.property_management.amenities')) active @endif">
+                            <a data-toggle="collapse" href="#realestate_manage">
+                                <i class="fas fa-city"></i>
+                                <p>{{ __('Real Estate Management') }}</p>
+                                <span class="caret"></span>
+                            </a>
+                            <div class="collapse
+                                    @if (request()->routeIs('user.property_management.settings')) show
+                                    @elseif(request()->routeIs('user.property_management.categories')) show
+                                    @elseif(request()->routeIs('user.property_management.countries')) show
+                                    @elseif(request()->routeIs('user.property_management.states')) show
+                                    @elseif(request()->routeIs('user.property_management.cities')) show
+                                    @elseif (request()->routeIs('user.property_management.type')) show
+                                    @elseif (request()->routeIs('user.property_management.properties')) show
+                                    @elseif (request()->routeIs('user.property_management.create_property')) show
+                                    @elseif (request()->routeIs('user.property_management.edit')) show
+                                    @elseif (request()->routeIs('user.project_management.projects')) show
+                                    @elseif (request()->routeIs('user.project_management.project_types')) show
+                                    @elseif (request()->routeIs('user.property_management.property_message')) show
+                                    @elseif (request()->routeIs('user.project_management.create_project')) show
+                                    @elseif (request()->routeIs('user.project_management.edit')) show
+                                    @elseif(request()->routeIs('user.property_management.amenities')) show @endif"
+                                id="realestate_manage">
+                                <ul class="nav nav-collapse">
 
+                                    <li
+                                        class="submenu
+                                        @if (request()->routeIs('user.property_management.settings')) selected
+                                        @elseif (request()->routeIs('user.property_management.categories')) selected
+                                        @elseif (request()->routeIs('user.property_management.countries')) selected
+                                        @elseif (request()->routeIs('user.property_management.states')) selected
+                                        @elseif (request()->routeIs('user.property_management.cities')) selected
+                                        @elseif (request()->routeIs('user.property_management.type')) selected
+                                         @elseif (request()->routeIs('user.property_management.properties')) selected
+                                         @elseif (request()->routeIs('user.property_management.create_property')) selected
+                                         @elseif (request()->routeIs('user.property_management.edit')) selected
+                                         @elseif (request()->routeIs('user.property_management.property_message')) selected
+                                        @elseif (request()->routeIs('user.property_management.amenities')) selected @endif">
+                                        <a data-toggle="collapse" href="#propertyManage"
+                                            aria-expanded="{{ request()->routeIs('user.property_management.settings') ||
+                                            request()->routeIs('user.property_management.categories') ||
+                                            request()->routeIs('user.property_management.countries') ||
+                                            request()->routeIs('user.property_management.states') ||
+                                            request()->routeIs('user.property_management.cities') ||
+                                            request()->routeIs('user.property_management.type') ||
+                                            request()->routeIs('user.property_management.properties') ||
+                                            request()->routeIs('user.property_management.create_property') ||
+                                            request()->routeIs('user.property_management.property_message') ||
+                                            request()->routeIs('user.property_management.edit') ||
+                                            request()->routeIs('user.property_management.amenities')
+                                                ? 'true'
+                                                : 'false' }}">
+                                            <span class="sub-item">{{ __('Manage Property') }}</span>
+                                            <span class="caret"></span>
+                                        </a>
+                                        <div class="collapse {{ request()->routeIs('user.property_management.settings') ||
+                                        request()->routeIs('user.property_management.categories') ||
+                                        request()->routeIs('user.property_management.countries') ||
+                                        request()->routeIs('user.property_management.states') ||
+                                        request()->routeIs('user.property_management.cities') ||
+                                        request()->routeIs('user.property_management.type') ||
+                                        request()->routeIs('user.property_management.properties') ||
+                                        request()->routeIs('user.property_management.create_property') ||
+                                        request()->routeIs('user.property_management.property_message') ||
+                                        request()->routeIs('user.property_management.edit') ||
+                                        request()->routeIs('user.property_management.amenities')
+                                            ? 'show'
+                                            : '' }}"
+                                            id="propertyManage">
+                                            <ul class="nav nav-collapse subnav">
+                                                <li
+                                                    class="{{ request()->routeIs('user.property_management.settings') ? 'active' : '' }}">
+                                                    <a href="{{ route('user.property_management.settings') }}">
+                                                        <span class="sub-item">{{ __('Settings') }}</span>
+                                                    </a>
+                                                </li>
+                                                <li
+                                                    class="{{ request()->routeIs('user.property_management.categories') ? 'active' : '' }}">
+                                                    <a href="{{ route('user.property_management.categories') }}">
+                                                        <span class="sub-item">{{ __('Categories') }}</span>
+                                                    </a>
+                                                </li>
+                                                <li
+                                                    class="{{ request()->routeIs('user.property_management.amenities') ? 'active' : '' }}">
+                                                    <a href="{{ route('user.property_management.amenities') }}">
+                                                        <span class="sub-item">{{ __('Amenities') }}</span>
+                                                    </a>
+                                                </li>
+                                                @if ($userBs->property_country_status == 1)
+                                                    <li
+                                                        class="{{ request()->routeIs('user.property_management.countries') ? 'active' : '' }}">
+                                                        <a href="{{ route('user.property_management.countries') }}">
+                                                            <span class="sub-item">{{ __('Country') }}</span>
+                                                        </a>
+                                                    </li>
+                                                @endif
+                                                @if ($userBs->property_state_status == 1)
+                                                    <li
+                                                        class="{{ request()->routeIs('user.property_management.states') ? 'active' : '' }}">
+                                                        <a
+                                                            href="{{ route('user.property_management.states') . '?language=' . $default->code }}">
+                                                            <span class="sub-item">{{ __('States') }}</span>
+                                                        </a>
+                                                    </li>
+                                                @endif
+                                                <li
+                                                    class="{{ request()->routeIs('user.property_management.cities') ? 'active' : '' }}">
+                                                    <a href="{{ route('user.property_management.cities') }}">
+                                                        <span class="sub-item">{{ __('Cities') }}</span>
+                                                    </a>
+                                                </li>
+
+                                                <li
+                                                    class="{{ request()->routeIs('user.property_management.type') ||
+                                                    request()->routeIs('user.property_management.create_property')
+                                                        ? 'active'
+                                                        : '' }}">
+                                                    <a href="{{ route('user.property_management.type') }}">
+                                                        <span class="sub-item">{{ __('Add Property') }}</span>
+                                                    </a>
+                                                </li>
+
+                                                <li
+                                                    class="{{ request()->routeIs('user.property_management.properties') || request()->routeIs('user.property_management.edit') ? 'active' : '' }}">
+                                                    <a href="{{ route('user.property_management.properties') }}">
+                                                        <span class="sub-item">{{ __('All Properties') }}</span>
+                                                    </a>
+                                                </li>
+
+                                                <li
+                                                    class="{{ request()->routeIs('user.property_management.property_message') ? 'active' : '' }}">
+                                                    <a
+                                                        href="{{ route('user.property_management.property_message') }}">
+                                                        <span class="sub-item">{{ __('Messages') }}</span>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+
+                                    <li
+                                        class="submenu
+                                        @if (request()->routeIs('user.project_management.projects')) selected
+                                        @elseif (request()->routeIs('user.project_management.create_project')) selected @endif">
+                                        <a data-toggle="collapse" href="#projectManage"
+                                            aria-expanded="{{ request()->routeIs('user.project_management.create_project') ||
+                                            request()->routeIs('user.project_management.projects') ||
+                                            request()->routeIs('user.project_management.project_types') ||
+                                            request()->routeIs('user.project_management.edit')
+                                                ? 'true'
+                                                : 'false' }}">
+                                            <span class="sub-item">{{ __('Manage Project') }}</span>
+                                            <span class="caret"></span>
+                                        </a>
+                                        <div class="collapse {{ request()->routeIs('user.project_management.create_project') ||
+                                        request()->routeIs('user.project_management.projects') ||
+                                        request()->routeIs('user.project_management.project_types')
+                                            ? 'show'
+                                            : '' }}"
+                                            id="projectManage">
+                                            <ul class="nav nav-collapse subnav">
+                                                {{-- <li
+                                                    class="{{ request()->routeIs('user.project_management.settings') ? 'active' : '' }}">
+                                                    <a href="{{ route('user.project_management.settings') }}">
+                                                        <span class="sub-item">{{ __('Settings') }}</span>
+                                                    </a>
+                                                </li> --}}
+                                                <li
+                                                    class="{{ request()->routeIs('user.project_management.create_project') ? 'active' : '' }}">
+                                                    <a href="{{ route('user.project_management.create_project') }}">
+                                                        <span class="sub-item">{{ __('Add Project') }}</span>
+                                                    </a>
+                                                </li>
+                                                <li
+                                                    class="{{ request()->routeIs('user.project_management.projects') ||
+                                                    request()->routeIs('user.project_management.edit') ||
+                                                    request()->routeIs('user.project_management.project_types')
+                                                        ? 'active'
+                                                        : '' }}">
+                                                    <a href="{{ route('user.project_management.projects') }}">
+                                                        <span class="sub-item">{{ __('All Projects') }}</span>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                    @endif
                     <li class="nav-item">
                         <a href="{{ route('user-dashboard') }}"
                            class="nav-link d-flex align-items-center {{ request()->path() == 'user/dashboard' ? 'active' : '' }}">
@@ -49,7 +256,7 @@
                         <a href="{{ route('home-page-settings') }}"
                            class="nav-link d-flex align-items-center {{ request()->path() == 'user/home-page-settings' ? 'active' : '' }}">
                            <i class="bi bi-gear"></i>
-                            <span>إعدادات الاقسام</span>
+                            <span>إعدادات التصميم</span>
                         </a>
                     </li>
 

@@ -386,6 +386,34 @@
                                 </div>
                             @endif
 
+                            @if (in_array('Course Management', $packageFeatures))
+                                <div class="col-lg-6">
+                                    <div class="form-group">
+                                        <label>{{ __('Meta Keywords For Properties Page') }}</label>
+                                        <input class="form-control" name="meta_keyword_properties"
+                                            value="{{ $data->meta_keyword_properties }}"
+                                            placeholder="Enter Meta Keywords" data-role="tagsinput">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>{{ __('Meta Description For Properties Page') }}</label>
+                                        <textarea class="form-control" name="meta_description_properties" placeholder="Enter Meta Description"
+                                            rows="5">{{ $data->meta_description_properties }}</textarea>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="form-group">
+                                        <label>{{ __('Meta Keywords For Projects Page') }}</label>
+                                        <input class="form-control" name="meta_keyword_projects"
+                                            value="{{ $data->meta_keyword_projects }}" placeholder="Enter Meta Keywords"
+                                            data-role="tagsinput">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>{{ __('Meta Description For Projects Page') }}</label>
+                                        <textarea class="form-control" name="meta_description_projects" placeholder="Enter Meta Description" rows="5">{{ $data->meta_description_projects }}</textarea>
+                                    </div>
+                                </div>
+                            @endif
+
                         </div>
                     </div>
 

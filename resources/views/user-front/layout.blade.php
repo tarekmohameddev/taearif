@@ -73,7 +73,14 @@
     @else
         @includeIf('user-front.partials.header')
     @endif
-    @if (!request()->routeIs('front.user.detail.view') && !request()->routeIs('front.user.course.details'))
+    @if (
+        !request()->routeIs('front.user.detail.view') &&
+            !request()->routeIs('front.user.course.details') &&
+            // !request()->routeIs('front.user.projects') &&
+            !request()->routeIs('front.user.project.details') &&
+    
+            !request()->routeIs('front.user.property.details') &&
+            !request()->routeIs('front.user.properties'))
         @php
             $brBg = $userBs->breadcrumb ?? 'breadcrumb.jpg';
         @endphp

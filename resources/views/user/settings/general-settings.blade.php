@@ -220,7 +220,7 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                     </div>
 
                     <!--delete Preloader Section -->
-                    <div class="settings-section">
+                    <div class="settings-section d-none">
                         <h3 class="section-title">{{ __('Website Preloading Image') }}</h3>
                         <p class="section-description">{{ __('This image will be displayed while your website is loading. Use a professional or branded image to enhance the user experience.') }}</p>
                         <div class="form-group ">
@@ -236,7 +236,7 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                     </div>
 
                     <!--delete Breadcrumb Section -->
-                    <div class="settings-section">
+                    <div class="settings-section d-none">
                         <h3 class="section-title">{{ __('Breadcrumb Photo') }}</h3>
                         <p class="section-description">{{ __('Add an image that will appear as a background for the breadcrumb section, helping to enhance navigation visuals.') }}</p>
                         <div class="form-group">
@@ -252,7 +252,7 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                     </div>
 
                     <!--delete Favicon Section -->
-                    <div class="settings-section">
+                    <div class="settings-section  d-none">
                         <h3 class="section-title">{{ __('Fav Icon') }}</h3>
                         <p class="section-description">{{ __('Upload a small icon that represents your website. It will appear in the browser tab next to your website name.') }}</p>
                         <div class="form-group">
@@ -566,46 +566,7 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
         </div>
     </div>
 </div>
-<style>
-    .feature-card {
-        background-color: #ffffff;
-        border-radius: 0.5rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        transition: box-shadow 0.2s;
-    }
 
-    .feature-card:hover {
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    }
-
-    .icon-container {
-        width: 3.5rem;
-        height: 3.5rem;
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 0.5rem;
-    }
-
-    .icon-container svg {
-        width: 2rem;
-        height: 2rem;
-    }
-
-    .feature-card-text {
-        white-space: normal !important;
-    }
-
-    .feature-card-text h2,
-    .feature-card-text p {
-        white-space: normal !important;
-    }
-
-    @media (min-width: 768px) {
-        .feature-card-text {
-            max-width: 75%;
-        }
-    }
-</style>
 
 <div class="row">
     <div class="col-md-12">
@@ -727,46 +688,7 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
         </div>
     </div>
 </div>
-<style>
-    .feature-card {
-        background-color: #ffffff;
-        border-radius: 0.5rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        transition: box-shadow 0.2s;
-    }
 
-    .feature-card:hover {
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    }
-
-    .icon-container {
-        width: 3.5rem;
-        height: 3.5rem;
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 0.5rem;
-    }
-
-    .icon-container svg {
-        width: 2rem;
-        height: 2rem;
-    }
-
-    .feature-card-text {
-        white-space: normal !important;
-    }
-
-    .feature-card-text h2,
-    .feature-card-text p {
-        white-space: normal !important;
-    }
-
-    @media (min-width: 768px) {
-        .feature-card-text {
-            max-width: 75%;
-        }
-    }
-</style>
 <div class="card">
     <div class="card-body">
         <div class="row">

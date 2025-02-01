@@ -1,13 +1,13 @@
 @php
     $shopSettings = App\Models\User\UserShopSetting::where('user_id', $user->id)->first();
-    
+
     $donation = DB::table('user_donation_settings')
         ->where('user_id', $user->id)
         ->first();
     $room = DB::table('user_room_settings')
         ->where('user_id', $user->id)
         ->first();
-    
+
 @endphp
 <div class="col-lg-3">
     <div class="user-sidebar mb-40">
@@ -22,6 +22,13 @@
                     href="{{ route('customer.edit_profile', getParam()) }}"><i class="fal fa-user"></i>
                     {{ $keywords['my_profile'] ?? __('My Profile') }}</a>
             </li>
+            @if (in_array('Real Estate Management', $packagePermissions))
+                <li>
+                    <a class=" @if (request()->routeIs('front.user.property.wishlist')) active @endif"
+                        href="{{ route('front.user.property.wishlist', getParam()) }}"><i class="fal fa-heart"></i>
+                        {{ $keywords['Property Wishlist'] ?? __('Property Wishlist') }}</a>
+                </li>
+            @endif
             @if (in_array('Course Management', $packagePermissions))
                 <li class="menu-item-has-children @if (request()->routeIs('customer.my_courses') || request()->routeIs('customer.purchase_history')) open @endif">
                     <a href="#" target="_blank">
@@ -50,7 +57,8 @@
                 @if (!is_null($donation) && $donation->is_donation == 1)
                     <li>
                         <a class=" @if (request()->routeIs('customer.donations')) active @endif"
-                            href="{{ route('customer.donations', getParam()) }}"><i class="fas fa-hand-holding-usd"></i>
+                            href="{{ route('customer.donations', getParam()) }}"><i
+                                class="fas fa-hand-holding-usd"></i>
                             {{ $keywords['donation'] ?? __('Donation') }}</a>
                     </li>
                 @endif

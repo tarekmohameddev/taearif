@@ -255,6 +255,11 @@ $(function ($) {
   $('.icp').on('iconpickerSelected', function (event) {
     $("#inputIcon").val($(".iconpicker-component").find('i').attr('class'));
   });
+  $('.icp-dd2').iconpicker();
+  $('.icp-dd2').on('iconpickerSelected', function (event) {
+    $("#in_icon").val($(".iconpicker-upd").find('i').attr('class'));
+  });
+
   /* ***************************************************
   ==========fontawesome icon picker upload end==========
   ******************************************************/
@@ -698,10 +703,19 @@ $(function ($) {
       } else if ($("#in_" + x).hasClass('select2')) {
         $("#in_" + x).val(datas[x]);
         $("#in_" + x).trigger('change');
+      } else if ($("#in_" + x).hasClass('language')) {
+        $("#in_" + x).val(datas[x]);
+        $("#in_" + x).trigger('change');
       } else {
         $("#in_" + x).val(datas[x]);
+        $('.category-img').attr('src', datas['image']);
         $('.brand-img').attr('src', datas['brand_img']);
         $('.gallery-img').attr('src', datas['gallery_img']);
+        if ($('#in_icon').length > 0) {
+          $('#in_icon').attr('class', datas['icon']);
+          $('.iconpicker-component i').removeClass();
+          $('.iconpicker-component i').addClass(datas['icon']);
+        }
       }
     }
     // focus & blur colorpicker inputs
@@ -1043,6 +1057,26 @@ $(function ($) {
     };
     reader.readAsDataURL(file);
   });
+
+  //  image (id) preview js 2/
+  $(document).on('change', '#image2', function (event) {
+    var file = event.target.files[0];
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      $('.showImage2 img').attr('src', e.target.result);
+    };
+    reader.readAsDataURL(file);
+  })
+
+  //  image (id) preview js 3/
+  $(document).on('change', '#image3', function (event) {
+    var file = event.target.files[0];
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      $('.showImage3 img').attr('src', e.target.result);
+    };
+    reader.readAsDataURL(file);
+  })
 
   // datepicker & timepicker
   $("input.datepicker").datepicker();

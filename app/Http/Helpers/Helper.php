@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Config;
 use App\Http\Helpers\UserPermissionHelper;
 use App\Models\BasicSetting as AdminBasicSettings;
 use App\Models\PaymentGateway;
+use App\Models\User\RealestateManagement\PropertyWishlist;
 use App\Models\User\UserPaymentGeteway;
 use Illuminate\Support\Facades\Session;
 
@@ -198,6 +199,10 @@ if (!function_exists('getUserHref')) {
         $href = "#";
         if ($link["type"] == 'home') {
             $href = route('front.user.detail.view', getParam());
+        } else if ($link["type"] == 'properties') {
+            $href = route('front.user.properties', getParam());
+        } else if ($link["type"] == 'projects') {
+            $href = route('front.user.projects', getParam());
         } else if ($link["type"] == 'services') {
             $href = route('front.user.services', getParam());
         } else if ($link["type"] == 'blog') {
@@ -501,6 +506,19 @@ if (!function_exists('getParam')) {
     }
 }
 
+if (!function_exists('checkWishList')) {
+    function checkWishList($property_id, $customer_id)
+    {
+        $check = PropertyWishlist::where('property_id', $property_id)
+            ->where('customer_id', $customer_id)
+            ->first();
+        if ($check) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
 
 if (!function_exists('cartLength')) {
     function cartLength()

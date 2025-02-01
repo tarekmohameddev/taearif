@@ -237,6 +237,13 @@
                                             <span class="selectgroup-button">{{ __('Donation Management') }}</span>
                                         </label>
 
+                                        <label class="selectgroup-item">
+                                            <input id="RealestateManagement" type="checkbox" name="features[]"
+                                                value="Real Estate Management" class="selectgroup-input"
+                                                @if (is_array($permissions) && in_array('Real Estate Management', $permissions)) checked @endif>
+                                            <span class="selectgroup-button">{{ __('Real Estate Management') }}</span>
+                                        </label>
+
                                     </div>
                                 </div>
                                 <div class="form-group" id="max_video_size">

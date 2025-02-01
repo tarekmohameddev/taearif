@@ -199,7 +199,7 @@ $userLanguages = \App\Models\User\Language::where('user_id',\Illuminate\Support\
                                 @endif
                             </div>
                             <div class="row">
-                                <div class="col-lg-6">
+                                    <div @if ($userBs->theme != 'home14') class="col-lg-6"@else class="col-lg-12" @endif>
                                     <div class="form-group">
                                         <label for="">{{ __('Title') }}</label>
                                         <input type="text" class="form-control" name="title" placeholder="{{__('Enter Slider Title')}}">
@@ -208,7 +208,7 @@ $userLanguages = \App\Models\User\Language::where('user_id',\Illuminate\Support\
                                         @endif
                                     </div>
                                 </div>
-                                <div class="col-lg-6">
+                                    <div @if ($userBs->theme != 'home14') class="col-lg-6" @else class="col-lg-12" @endif>
                                     <div class="form-group">
                                         <label for="">{{ __('Subtitle') }}</label>
                                         <input type="text" class="form-control" name="subtitle" placeholder="{{__('Enter Slider Subtitle')}}">
@@ -219,6 +219,7 @@ $userLanguages = \App\Models\User\Language::where('user_id',\Illuminate\Support\
                                 </div>
                             </div>
 
+                                @if ($userBs->theme != 'home14')
                             <div class="row">
                                 <div class="col-lg-6">
                                     <div class="form-group">
@@ -241,7 +242,7 @@ $userLanguages = \App\Models\User\Language::where('user_id',\Illuminate\Support\
                                 </div>
 
                             </div>
-
+                                @endif
                             <div class="row">
 
                                 <div class="col-lg-12">
@@ -251,10 +252,12 @@ $userLanguages = \App\Models\User\Language::where('user_id',\Illuminate\Support\
                                         @if ($errors->has('serial_number'))
                                         <p class="mt-2 mb-0 text-danger">{{ $errors->first('serial_number') }}</p>
                                         @endif
-                                        <p class="text-warning mt-2 mb-0">{{ __('The higher the serial number is, the later the slider will be shown.') }}</p>
+                                            <p class="text-warning mt-2 mb-0">
+                                                {{ __('The higher the serial number is, the later the slider will be shown.') }}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
                         </form>
                     </div>
                 </div>

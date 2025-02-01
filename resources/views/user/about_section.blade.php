@@ -170,6 +170,23 @@
                                             <p id="errabout_image" class="mb-0 text-danger em"></p>
                                         </div>
                                     </div>
+                                    @if ($userBs->theme == 'home13' || $userBs->theme == 'home15')
+                                        <div class="col-lg-6">
+                                            <div class="form-group">
+                                                <div class="col-12 mb-2">
+                                                    <label for="logo"><strong>{{ __('Image Two') }}</strong></label>
+                                                </div>
+                                                <div class="col-md-12 showAboutImage2 mb-3">
+                                                    <img src="{{ $home_setting->about_image_two ? asset('assets/front/img/user/home_settings/' . $home_setting->about_image_two) : asset('assets/admin/img/noimage.jpg') }}"
+                                                        alt="..." class="  img-fluid">
+                                                </div>
+                                                <input type="hidden" name="types[]" value="about_image_two">
+                                                <input type="file" name="about_image_two" id="about_image2"
+                                                    class="form-control ltr">
+                                                <p id="errabout_image_two" class="mb-0 text-danger em"></p>
+                                            </div>
+                                        </div>
+                                    @endif
                                 </div>
                                 <div class="row">
                                     <div class="col-lg-6 pr-0">
@@ -199,7 +216,24 @@
                                     <textarea class="form-control" name="about_content" rows="5">{{ $home_setting->about_content }}</textarea>
                                     <p id="errabout_content" class="mb-0 text-danger em"></p>
                                 </div>
-                                @if ((isset($userBs->theme) && !$userBs->theme === 'home_two') || $userBs->theme === 'home_eleven')
+                                @if ($userBs->theme === 'home13')
+                                    <div class="row">
+                                        <div class="col-lg-12">
+                                            <div class="form-group">
+                                                <label for="">{{ __('Years Of Exprience') }}</label>
+                                                <input type="hidden" name="types[]" value="years_of_expricence">
+                                                <input type="number" class="form-control" name="years_of_expricence"
+                                                    value="{{ $home_setting->years_of_expricence }}">
+                                                <p id="erryears_of_expricence" class="mb-0 text-danger em"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                                @if (
+                                    (isset($userBs->theme) && !$userBs->theme === 'home_two') ||
+                                        $userBs->theme === 'home_eleven' ||
+                                        $userBs->theme === 'home15' ||
+                                        $userBs->theme === 'home13')
                                     <div class="row">
                                         <div class="col-lg-6 pr-0">
                                             <div class="form-group">
@@ -259,6 +293,8 @@
                                             class="form-control ltr">
                                         <p id="errabout_video_image" class="mb-0 text-danger em"></p>
                                     </div>
+                                @endif
+                                @if ((isset($userBs->theme) && $userBs->theme === 'home_two') || $userBs->theme == 'home15')
                                     <div class="form-group">
                                         <label for="">{{ __('Video URL') }}</label>
                                         <input type="hidden" name="types[]" value="about_video_url">

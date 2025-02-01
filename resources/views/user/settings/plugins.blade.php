@@ -203,7 +203,7 @@
                     </div>
                     <div class="d-flex align-items-center">
                         <span class="badge inactive me-3">Inactive</span>
-                        <button class="btn btn-connect" data-service="snapchat-pixel">Connect</button>
+                        <button class="btn btn-connect" data-service="whatsapp">Connect</button>
                     </div>
                 </div>
             </div>
@@ -239,18 +239,104 @@
                 </div>
                 <div class="modal-body">
                     <p class="text-secondary mb-4">You need to log in to your provider account and change your settings.<br>Follow the step-by-step instructions to get started or email it to an expert.</p>
-                    <div class="mb-3">
+                    <div class="mb-3 d-none">
                         <label for="serviceId" class="form-label" id="serviceIdLabel"></label>
                         <input type="text" class="form-control" id="serviceId">
                         <div class="form-text mt-2">
                             <a href="#" class="text-decoration-none" id="helpLink">Where can I get <span id="serviceName"></span> ID?</a>
                         </div>
                     </div>
+
+                    <div class="mb-3">
+                    <form action="{{ route('user.update_whatsapp') }}" method="post">
+                    @csrf
+                                <div class="col-8">
+                                <div class="form-group">
+                                    <label>{{ __('WhatsApp Status*') }}</label>
+                                    <div class="selectgroup w-100">
+                                        <label class="selectgroup-item">
+                                            <input type="radio" name="whatsapp_status" value="1"
+                                                class="selectgroup-input"
+                                                {{ isset($data) && $data->whatsapp_status == 1 ? 'checked' : '' }}>
+                                            <span class="selectgroup-button">{{ __('Active') }}</span>
+                                        </label>
+
+                                        <label class="selectgroup-item">
+                                            <input type="radio" name="whatsapp_status" value="0"
+                                                class="selectgroup-input"
+                                                {{ !isset($data) || $data->whatsapp_status != 1 ? 'checked' : '' }}>
+                                            <span class="selectgroup-button">{{ __('Deactive') }}</span>
+                                        </label>
+                                    </div>
+                                    @if ($errors->has('whatsapp_status'))
+                                        <p class="mb-0 text-danger">{{ $errors->first('whatsapp_status') }}</p>
+                                    @endif
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ __('WhatsApp Number*') }}</label>
+                                    <input type="text" class="form-control" name="whatsapp_number"
+                                        value="{{ isset($data) && $data->whatsapp_number ? $data->whatsapp_number : null }}">
+                                    <p class="text-warning mb-0">Phone Code must be included in Phone Number</p>
+
+                                    @if ($errors->has('whatsapp_number'))
+                                        <p class="mb-0 text-danger">{{ $errors->first('whatsapp_number') }}</p>
+                                    @endif
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ __('WhatsApp Header Title*') }}</label>
+                                    <input type="text" class="form-control" name="whatsapp_header_title"
+                                        value="{{ isset($data) && $data->whatsapp_header_title ? $data->whatsapp_header_title : null }}">
+
+                                    @if ($errors->has('whatsapp_header_title'))
+                                        <p class="mb-0 text-danger">{{ $errors->first('whatsapp_header_title') }}</p>
+                                    @endif
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ __('WhatsApp Popup Status*') }}</label>
+                                    <div class="selectgroup w-100">
+                                        <label class="selectgroup-item">
+                                            <input type="radio" name="whatsapp_popup_status" value="1"
+                                                class="selectgroup-input"
+                                                {{ isset($data) && $data->whatsapp_popup_status == 1 ? 'checked' : '' }}>
+                                            <span class="selectgroup-button">{{ __('Active') }}</span>
+                                        </label>
+
+                                        <label class="selectgroup-item">
+                                            <input type="radio" name="whatsapp_popup_status" value="0"
+                                                class="selectgroup-input"
+                                                {{ !isset($data) || $data->whatsapp_popup_status != 1 ? 'checked' : '' }}>
+                                            <span class="selectgroup-button">{{ __('Deactive') }}</span>
+                                        </label>
+                                    </div>
+                                    @if ($errors->has('whatsapp_popup_status'))
+                                        <p class="mb-0 text-danger">{{ $errors->first('whatsapp_popup_status') }}</p>
+                                    @endif
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ __('WhatsApp Popup Message*') }}</label>
+                                    <textarea class="form-control" name="whatsapp_popup_message" rows="2">{{ isset($data) && $data->whatsapp_popup_message ? $data->whatsapp_popup_message : null }}</textarea>
+                                    @if ($errors->has('whatsapp_popup_message'))
+                                        <p class="mb-0 text-danger">{{ $errors->first('whatsapp_popup_message') }}</p>
+                                    @endif
+                                </div>
+ 
+
+
+                    </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-connect px-4">Connect</button>
+                    <button type="submit" class="btn btn-connect px-4">
+                                    {{ __('Update') }}
+                                </button>
                 </div>
+
+                </div>
+                </form>
             </div>
         </div>
     </div>
@@ -288,6 +374,11 @@
             title: 'Connect Snapchat Pixel account',
             icon: '<img src="https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Snap_Inc_Logo.png" alt="Snapchat" class="service-icon">',
             label: 'Snapchat Pixel ID'
+        },
+        'whatsapp': {
+            title: 'Connect Whatsapp Pixel account',
+            icon: '<img src="https://png.pngtree.com/element_our/sm/20180626/sm_5b321c99945a2.jpg" alt="Whatsapp" class="service-icon">',
+            label: 'Whatsapp'
         }
     };
 

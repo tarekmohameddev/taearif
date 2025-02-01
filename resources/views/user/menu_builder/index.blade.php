@@ -265,6 +265,27 @@
                                                     href="">{{ __('Add to Menus') }}</a>
                                             </li>
                                         @endif
+
+                                        @if (!empty($permissions) && in_array('Real Estate Management', $permissions))
+                                            <li class="list-group-item">
+
+                                                {{ $keywords['Properties'] ?? 'Properties' }} <a
+                                                    @if ($userBs->theme == 'home13' || $userBs->theme == 'home14' || $userBs->theme == 'home15') data-icon="far fa-store-alt" @endif
+                                                    data-text="{{ $keywords['Properties'] ?? 'Properties' }}"
+                                                    data-type="properties"
+                                                    class="addToMenus btn btn-primary btn-sm float-right"
+                                                    href="">{{ __('Add to Menus') }}</a>
+                                            </li>
+                                            <li class="list-group-item">
+
+                                                {{ $keywords['Projects'] ?? 'Projects' }} <a
+                                                    @if ($userBs->theme == 'home13' || $userBs->theme == 'home14' || $userBs->theme == 'home15') data-icon="far fa-store-alt" @endif
+                                                    data-text="{{ $keywords['Projects'] ?? 'Projects' }}"
+                                                    data-type="projects"
+                                                    class="addToMenus btn btn-primary btn-sm float-right"
+                                                    href="">{{ __('Add to Menus') }}</a>
+                                            </li>
+                                        @endif
                                         @if (!empty($permissions) && in_array('Custom Page', $permissions))
                                             @foreach ($apages as $apage)
                                                 <li class="list-group-item">

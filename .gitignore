@@ -41,3 +41,4 @@ yarn-error.log*
 public/assets/front/invoices/*
 public/assets/front/img/hero_slider/*
 public/assets/user/img/qr/*
+public/assets/img/*

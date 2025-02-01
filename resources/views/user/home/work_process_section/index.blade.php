@@ -1,8 +1,11 @@
 @extends('user.layout')
 
 @php
-$userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support\Facades\Auth::id())->get();
-$userDefaultLang = \App\Models\User\Language::where([['user_id', \Illuminate\Support\Facades\Auth::id()], ['is_default', 1]])->first();
+    $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support\Facades\Auth::id())->get();
+    $userDefaultLang = \App\Models\User\Language::where([
+        ['user_id', \Illuminate\Support\Facades\Auth::id()],
+        ['is_default', 1],
+    ])->first();
 @endphp
 
 @includeIf('user.partials.rtl-style')
@@ -73,13 +76,17 @@ $userDefaultLang = \App\Models\User\Language::where([['user_id', \Illuminate\Sup
                                 action="{{ route('user.home_page.update_work_process_section', ['language' => request()->input('language')]) }}"
                                 method="POST" enctype="multipart/form-data">
                                 @csrf
-                                @if ($userBs->theme === 'home_two' || $userBs->theme === 'home_six' || $userBs->theme === 'home_four' || $userBs->theme === 'home_five')
+                                @if (
+                                    $userBs->theme === 'home_two' ||
+                                        $userBs->theme === 'home_six' ||
+                                        $userBs->theme === 'home_four' ||
+                                        $userBs->theme === 'home_five')
                                     <div class="form-group">
                                         <div class="col-12 mb-2">
                                             <label for="">{{ __('Image') }}</label>
                                         </div>
                                         <div class="col-md-12 showImage mb-3">
-                                            <img src="{{ isset($data->work_process_section_img)? asset('assets/front/img/work_process/' . $data->work_process_section_img): asset('assets/admin/img/noimage.jpg') }}"
+                                            <img src="{{ isset($data->work_process_section_img) ? asset('assets/front/img/work_process/' . $data->work_process_section_img) : asset('assets/admin/img/noimage.jpg') }}"
                                                 alt="..." class="img-thumbnail">
                                         </div>
                                         <input type="file" name="work_process_section_img" id="image"
@@ -121,7 +128,7 @@ $userDefaultLang = \App\Models\User\Language::where([['user_id', \Illuminate\Sup
                                         </div>
                                     </div>
                                 @endif
-                                @if ($userBs->theme != 'home_six')
+                                @if ($userBs->theme != 'home_six' && $userBs->theme != 'home14')
                                     <div class="form-group">
                                         <label for="">{{ __('Text') }}</label>
                                         <textarea class="form-control" name="work_process_section_text" rows="5" cols="80"
@@ -138,7 +145,7 @@ $userDefaultLang = \App\Models\User\Language::where([['user_id', \Illuminate\Sup
                                             <label for="">{{ __('Video Image') }}</label>
                                         </div>
                                         <div class="col-md-12 showTestimonialImage mb-3">
-                                            <img src="{{ isset($data->work_process_section_video_img)? asset('assets/front/img/work_process/' . $data->work_process_section_video_img): asset('assets/admin/img/noimage.jpg') }}"
+                                            <img src="{{ isset($data->work_process_section_video_img) ? asset('assets/front/img/work_process/' . $data->work_process_section_video_img) : asset('assets/admin/img/noimage.jpg') }}"
                                                 alt="..." class="img-thumbnail">
                                         </div>
                                         <input type="file" name="work_process_section_video_img" id="testimonial_image"
@@ -231,7 +238,7 @@ $userDefaultLang = \App\Models\User\Language::where([['user_id', \Illuminate\Sup
                                                     <td>{{ $workProcessInfo->serial_number }}</td>
                                                     <td>
                                                         <a class="btn btn-secondary btn-sm mr-1"
-                                                            href="{{ route('user.home_page.work_process_section.edit_work_process', $workProcessInfo->id) .'?language=' .request()->input('language') }}">
+                                                            href="{{ route('user.home_page.work_process_section.edit_work_process', $workProcessInfo->id) . '?language=' . request()->input('language') }}">
                                                             <i class="fas fa-edit"></i>
                                                         </a>
 
@@ -241,7 +248,8 @@ $userDefaultLang = \App\Models\User\Language::where([['user_id', \Illuminate\Sup
                                                             @csrf
                                                             <input type="hidden" name="work_process_id"
                                                                 value="{{ $workProcessInfo->id }}">
-                                                            <button type="submit" class="btn btn-danger btn-sm deletebtn">
+                                                            <button type="submit"
+                                                                class="btn btn-danger btn-sm deletebtn">
                                                                 <i class="fas fa-trash"></i>
                                                             </button>
                                                         </form>
