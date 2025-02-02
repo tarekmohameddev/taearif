@@ -495,7 +495,7 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                                 <div class="form-group">
                                     <label>{{ __('Serial Number') }} **</label>
                                     <!-- Change input name to social_links[0][serial_number] -->
-                                    <input type="number" class="form-control ltr" name="social_links[0][serial_number]" value="" placeholder="Enter Serial Number">
+                                    <input type="number" class="form-control" name="social_links[0][serial_number]" value="" placeholder="Enter Serial Number">
                                     <p id="errserial_number" class="mb-0 text-danger em"></p>
                                     <p class="text-warning">
                                         <small>{{ __('The higher the serial number is, the later the social link will be shown.') }}</small>
