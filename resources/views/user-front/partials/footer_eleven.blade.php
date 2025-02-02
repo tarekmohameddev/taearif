@@ -56,9 +56,9 @@
                     @if (isset($home_sections->newsletter_section) && $home_sections->newsletter_section == 1)
                         <div class="col-lg-4 col-md-6">
                             <div class="widget newsletters-widget pl-xl-4">
-                                <h4 class="widget-title">{{ @$home_text->newsletter_title }}</h4>
-                                <p> {{ @$home_text->newsletter_subtitle }} </p>
-                                <div class="newsletter-form">
+                                <h4 class="widget-title d-none">{{ @$home_text->newsletter_title }}</h4>
+                                <p class=" d-none"> {{ @$home_text->newsletter_subtitle }} </p>
+                                <div class="newsletter-form  d-none">
                                     <form action="{{ route('front.user.subscriber', getParam()) }}" method="post"
                                         enctype="multipart/form-data">
                                         @csrf

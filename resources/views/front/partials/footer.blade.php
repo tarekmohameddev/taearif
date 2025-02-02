@@ -84,7 +84,7 @@
                             </ul>
                         </div>
                     </div>
-                    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
+                    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12   d-none">
                         <div class="footer-widget" data-aos="fade-up" data-aos-delay="300">
                             <h5>{{ $bs->newsletter_title }}</h5>
                             <p class="lh-1 mb-20">{{ $bs->newsletter_subtitle }}</p>

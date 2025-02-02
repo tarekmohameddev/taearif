@@ -445,7 +445,7 @@
     @endif
     @if (isset($home_sections->newsletter_section) && $home_sections->newsletter_section == 1)
         <!--====== Start Newsletter section ======-->
-        <section class="newsletter-area pt-130">
+        <section class="newsletter-area pt-130 d-none">
             <div class="container">
                 <div class="newsletter-wrapper-one pt-70 pb-80">
                     <div class="map text-center">

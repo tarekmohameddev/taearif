@@ -587,7 +587,7 @@
                                         $userBs->theme == 'home_ten' ||
                                         $userBs->theme == 'home13' ||
                                         $userBs->theme == 'home_eleven')
-                                    <div class="form-group">
+                                    <div class="form-group   d-none">
                                         <label>{{ __('Newsletter Section') }} **</label>
                                         <div class="selectgroup w-100">
                                             <label class="selectgroup-item">

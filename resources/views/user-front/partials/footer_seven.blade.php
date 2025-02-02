@@ -68,7 +68,7 @@
                         </div>
                     </div>
                 @endif
-                <div class="col-lg-3 col-md-6 col-sm-6">
+                <div class="col-lg-3 col-md-6 col-sm-6 d-none">
                     <div class="footer-item mt-30">
                         <div class="footer-title">
                             <h4 class="title">{{ $keywords['newsletter'] ?? 'NEWSLETTER' }}</h4>

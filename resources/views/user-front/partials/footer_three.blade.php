@@ -34,7 +34,7 @@
                             </div>
                         </div>
                         @if (isset($home_sections->newsletter_section) && $home_sections->newsletter_section == 1)
-                            <div class="col-lg-8 col-sm-7 order-2">
+                            <div class="col-lg-8 col-sm-7 order-2 d-none">
                                 <div class="widget newsletter-widget">
                                     <h4 class="widget-title">
                                         {{ $keywords['SUBSCRIBE_FOR_NEWSLETTER'] ?? 'SUBSCRIBE FOR NEWSLETTER' }}</h4>

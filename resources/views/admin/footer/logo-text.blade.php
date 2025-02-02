@@ -83,26 +83,26 @@ $selLang = \App\Models\Language::where('code', request()->input('language'))->fi
                     </div>
                   </div>
                 </div>
-                
+
                 <div class="form-group">
                   <label for="">{{__('Footer Text')}}</label>
                   <input type="text" class="form-control" name="footer_text" value="{{$abs->footer_text}}">
                   <p id="errfooter_text" class="em text-danger mb-0"></p>
                 </div>
-                
+
                 <div class="form-group">
                   <label for="">{{__('Useful Links Title')}}</label>
                   <input type="text" class="form-control" name="useful_links_title" value="{{$abs->useful_links_title}}">
                   <p id="erruseful_links_title" class="em text-danger mb-0"></p>
                 </div>
-                
-                <div class="form-group">
+
+                <div class="form-group   d-none">
                   <label for="">{{__('Newsletter Title')}}</label>
                   <input type="text" class="form-control" name="newsletter_title" value="{{$abs->newsletter_title}}">
                   <p id="errnewsletter_title" class="em text-danger mb-0"></p>
                 </div>
-                
-                <div class="form-group">
+
+                <div class="form-group   d-none">
                   <label for="">{{__('Newsletter Subtitle')}}</label>
                   <input type="text" class="form-control" name="newsletter_subtitle" value="{{$abs->newsletter_subtitle}}">
                   <p id="errnewsletter_subtitle" class="em text-danger mb-0"></p>
