@@ -99,7 +99,31 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
         <h1 class="h3 mb-4 font-weight-bold text-dark">إعدادات التصميم</h1>
         <div class="row g-4">
             <div class="col-md-6 col-lg-4 mb-4">
-                <a href="{{ route('user.home_page.hero.slider_version', ['language' => $default->code]) }}" class="text-decoration-none">
+
+
+            @if (
+                                        $userBs->theme == 'home_one' ||
+                                            $userBs->theme == 'home_two' ||
+                                            $userBs->theme == 'home_six' ||
+                                            $userBs->theme == 'home_seven' ||
+                                            $userBs->theme == 'home_eight' ||
+                                            $userBs->theme == 'home14' ||
+                                            $userBs->theme == 'home_nine')
+                                        <a href="{{ route('user.home_page.hero.slider_version', ['language' => $default->code]) }}" class="text-decoration-none">
+                                    @endif
+
+                                    @if (
+                                        $userBs->theme == 'home_three' ||
+                                            $userBs->theme == 'home_four' ||
+                                            $userBs->theme == 'home_five' ||
+                                            $userBs->theme == 'home_eleven' ||
+                                            $userBs->theme == 'home_twelve' ||
+                                            $userBs->theme == 'home13' ||
+                                            $userBs->theme == 'home_ten')
+                                        <a href="{{ route('user.home_page.hero.static_version', ['language' => $default->code]) }}" class="text-decoration-none">
+
+                                    @endif
+
                     <div class="card h-100 transition-hover">
                         <div class="card-body d-flex align-items-center p-4">
                             <div class="flex-shrink-0 me-3">
