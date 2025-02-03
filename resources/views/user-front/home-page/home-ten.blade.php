@@ -412,14 +412,14 @@
         <!--======COMMUNITY PART START ======-->
         <section class="community-area">
 
-            <div class="container">
+            <div class="container  d-none">
                 <div class="row">
                     <div class="col-lg-7">
-                        <div class="community-content">
-                            <h3 class="title">{{ @$home_text->newsletter_title }}</h3>
-                            <p class="mt-3">{{ @$home_text->newsletter_subtitle }}</p>
+                        <div class="community-content   d-none">
+                            <h3 class="title d-none ">{{ @$home_text->newsletter_title }}</h3>
+                            <p class="mt-3  d-none ">{{ @$home_text->newsletter_subtitle }}</p>
 
-                            <form class="newsletter-form" action="{{ route('front.user.subscriber', getParam()) }}"
+                            <form class="newsletter-form  d-none" action="{{ route('front.user.subscriber', getParam()) }}"
                                 method="POST">
                                 @csrf
                                 <div class="input-box">

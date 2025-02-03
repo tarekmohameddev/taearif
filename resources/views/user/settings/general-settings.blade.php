@@ -151,7 +151,8 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-        <div class="card-header">
+
+            <div class="card-header">
                 <div class="row">
                     <div class="col-lg-3 float-left">
                         @if (!is_null($userDefaultLang))
@@ -171,13 +172,17 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
             </div>
 
             <div class="card-body">
-                <form action="{{ route('user.general_settings.update_all',['language' => request()->input('language')]) }}" method="POST" enctype="multipart/form-data">
+
+                <form id="mySettingsForm" action="{{ route('user.general_settings.update_all',['language' => request()->input('language')]) }}" method="POST" enctype="multipart/form-data">
                     @csrf
 
                     <!-- Website Title Section -->
+
                     <div class="settings-section">
                         <h3 class="section-title">{{ __('Website Name') }}</h3>
-                        <p class="section-description">{{ __('This is the name of your website. It will appear in the header, footer, and browser tabs. Make it simple and memorable.') }}</p>
+                        <p class="section-description">
+                            {{ __('This is the name of your website. It will appear in the header, footer, and browser tabs. Make it simple and memorable.') }}
+                        </p>
                         <div class="form-group">
                             <input type="text" class="form-control" name="website_title" value="{{ isset($data->website_title) ? $data->website_title : '' }}">
                             <p id="errwebsite_title" class="text-danger mb-0"></p>
@@ -203,14 +208,17 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                         </div>
                     </div>
 
-                    <!-- Logo Section -->
+                    <!-- Website Logo Section -->
                     <div class="settings-section col-lg-6">
                         <h3 class="section-title">{{ __('Website Logo') }}</h3>
-                        <p class="section-description">{{ __('Upload your website logo here. The logo represents your brand and will appear on the website header, footer, and other sections.') }}</p>
+                        <p class="section-description">
+                            {{ __('Upload your website logo here. The logo represents your brand and will appear on the website header, footer, and other sections.') }}
+                        </p>
                         <div class="form-group">
                             <div class="preview-image">
-                                <img src="{{ isset($basic_setting->logo) ? asset('assets/front/img/user/'.$basic_setting->logo) : asset('assets/admin/img/noimage.jpg') }}" alt="logo" class="img-thumbnail">
+                                <img src="{{ isset($basic_setting->logo) ? asset('assets/front/img/user/'.$basic_setting->logo) : asset('assets/admin/img/noimage.jpg') }}" alt="website logo" class="img-thumbnail">
                             </div>
+                            <!-- This input remains for the website logo -->
                             <input type="file" id="logo" name="logo" class="d-none" accept="image/*">
                             <button type="button" class="upload-btn" onclick="document.getElementById('logo').click()">
                                 <i class="bi bi-upload mb-2"></i>
@@ -219,218 +227,80 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                         </div>
                     </div>
 
-                    <!--delete Preloader Section -->
+                    <!-- Preloader, Breadcrumb, Favicon Sections (Hidden) -->
+                    <!-- Preloader Sections (Hidden) -->
                     <div class="settings-section d-none">
                         <h3 class="section-title">{{ __('Website Preloading Image') }}</h3>
-                        <p class="section-description">{{ __('This image will be displayed while your website is loading. Use a professional or branded image to enhance the user experience.') }}</p>
-                        <div class="form-group ">
+                        <p class="section-description">
+                            {{ __('This image will be displayed while your website is loading. Use a professional or branded image to enhance the user experience.') }}
+                        </p>
+                        <div class="form-group">
                             <div class="preview-image">
                                 <img src="{{ isset($basic_setting->preloader) ? asset('assets/front/img/user/'.$basic_setting->preloader) : asset('assets/admin/img/noimage.jpg') }}" alt="preloader" class="img-thumbnail">
                             </div>
-                            <!-- <input type="file" id="preloader" name="preloader" class="d-none" accept="image/*"> -->
-                            <button type="button " class="upload-btn  d-none" onclick="document.getElementById('preloader').click()">
+                            <!-- Preloader input is commented out -->
+                            <button type="button" class="upload-btn d-none" onclick="document.getElementById('preloader').click()">
                                 <i class="bi bi-upload mb-2"></i>
                                 <span>{{ __('Upload Preloader') }}</span>
                             </button>
                         </div>
                     </div>
-
-                    <!--delete Breadcrumb Section -->
+                    <!-- Breadcrumb Sections (Hidden) -->
                     <div class="settings-section d-none">
                         <h3 class="section-title">{{ __('Breadcrumb Photo') }}</h3>
-                        <p class="section-description">{{ __('Add an image that will appear as a background for the breadcrumb section, helping to enhance navigation visuals.') }}</p>
+                        <p class="section-description">
+                            {{ __('Add an image that will appear as a background for the breadcrumb section, helping to enhance navigation visuals.') }}
+                        </p>
                         <div class="form-group">
                             <div class="preview-image">
                                 <img src="{{ isset($basic_setting->breadcrumb) ? asset('assets/front/img/user/'.$basic_setting->breadcrumb) : asset('assets/admin/img/noimage.jpg') }}" alt="breadcrumb" class="img-thumbnail">
                             </div>
-                            <!-- <input type="file" id="breadcrumb" name="breadcrumb" class="d-none" accept="image/*"> -->
-                            <button type="button " class="upload-btn  d-none" onclick="document.getElementById('breadcrumb').click()">
+                            <button type="button" class="upload-btn d-none" onclick="document.getElementById('breadcrumb').click()">
                                 <i class="bi bi-upload mb-2"></i>
                                 <span>{{ __('Upload Breadcrumb Image') }}</span>
                             </button>
                         </div>
                     </div>
-
-                    <!--delete Favicon Section -->
-                    <div class="settings-section  d-none">
+                    <!-- Favicon Sections (Hidden) -->
+                    <div class="settings-section d-none">
                         <h3 class="section-title">{{ __('Fav Icon') }}</h3>
-                        <p class="section-description">{{ __('Upload a small icon that represents your website. It will appear in the browser tab next to your website name.') }}</p>
+                        <p class="section-description">
+                            {{ __('Upload a small icon that represents your website. It will appear in the browser tab next to your website name.') }}
+                        </p>
                         <div class="form-group">
                             <div class="preview-image">
                                 <img src="{{ isset($basic_setting->favicon) ? asset('assets/front/img/user/'.$basic_setting->favicon) : asset('assets/admin/img/noimage.jpg') }}" alt="favicon" class="img-thumbnail">
                             </div>
-                            <!-- <input type="file" id="favicon" name="favicon" class="d-none" accept="image/*"> -->
-                            <button type="button " class="upload-btn  d-none" onclick="document.getElementById('favicon').click()">
+                            <button type="button" class="upload-btn d-none" onclick="document.getElementById('favicon').click()">
                                 <i class="bi bi-upload mb-2"></i>
                                 <span>{{ __('Upload Favicon') }}</span>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Submit Button -->
-                    <div class="text-center">
-                        <button type="submit" class="btn btn-success btn-lg">
-                            {{ __('Save All Settings') }}
-                        </button>
-                    </div>
-                    <div class="row d-none">
-                        <div class="col-lg-6 offset-lg-3 d-none">
-                            <div class="form-group">
-                                <label>{{ __('Timezone') }} *</label>
-                                <select name="timezone" class="form-control select2">
-                                    @foreach ($timezones as $timezone)
-                                    <option value="{{ $timezone->id }}" {{ $timezone->id == $data->timezone ? 'selected' : '' }}>
-                                        {{ $timezone->timezone }} / (UTC {{ $timezone->gmt_offset }})
-                                    </option>
-                                    @endforeach
-                                </select>
-                                @if ($errors->has('timezone'))
-                                <p class="mb-0 text-danger">{{ $errors->first('timezone') }}</p>
-                                @endif
-                            </div>
-                        </div>
-                        <div class="col-lg-6 offset-lg-3 d-none">
-                            <div class="form-group">
-                                <label>{{ __('Email Verification Status') . '*' }}</label>
-                                <div class="selectgroup w-100">
-                                    <label class="selectgroup-item">
-                                        <input type="radio" name="email_verification_status" value="1" class="selectgroup-input" {{ $data->email_verification_status == 1 ? 'checked' : '' }}>
-                                        <span class="selectgroup-button">{{ __('Active') }}</span>
-                                    </label>
-
-                                    <label class="selectgroup-item">
-                                        <input type="radio" name="email_verification_status" value="0" class="selectgroup-input" {{ $data->email_verification_status == 0 ? 'checked' : '' }}>
-                                        <span class="selectgroup-button">{{ __('Deactive') }}</span>
-                                    </label>
-                                </div>
-                                <p id="err_email_verification_status" class="mb-0 text-danger em"></p>
-
-                                <p class="text-warning mt-2 mb-0">
-                                    {{ __('If it is deactive, the user does not receive a verification mail when he create a new account.') }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    @if (
-                    !empty($permissions) &&
-                    (in_array('Ecommerce', $permissions) ||
-                    in_array('Hotel Booking', $permissions) ||
-                    in_array('Donation Management', $permissions) ||
-                    in_array('Course Management', $permissions)))
-                    <div class="row d-none">
-                        <div class="col-lg-6 offset-lg-3">
-                            <div class="form-group">
-                                <br>
-                                <h3 class="text-warning">{{ __('Currency Settings') }}</h3>
-                                <hr class="divider">
-                            </div>
-                        </div>
-                        <div class="col-lg-6 offset-lg-3">
-                            <div class="form-group">
-
-                                <label>{{ __('Base Currency Symbol') }} **</label>
-                                <input type="text" class="form-control ltr" name="base_currency_symbol" value="{{ $data->base_currency_symbol }}">
-                                <p id="errbase_currency_symbol" class="em text-danger mb-0"></p>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-6 offset-lg-3">
-                            <div class="form-group">
-                                <label>{{ __('Base Currency Symbol Position') }} **</label>
-                                <select name="base_currency_symbol_position" class="form-control ltr">
-                                    <option value="left" {{ $data->base_currency_symbol_position == 'left' ? 'selected' : '' }}>
-                                        Left
-                                    </option>
-                                    <option value="right" {{ $data->base_currency_symbol_position == 'right' ? 'selected' : '' }}>
-                                        Right
-                                    </option>
-                                </select>
-                                <p id="errbase_currency_symbol_position" class="em text-danger mb-0"></p>
-                            </div>
-                        </div>
-                        <div class="col-lg-6 offset-lg-3">
-                            <div class="row">
-                                <div class="col-lg-4">
-                                    <div class="form-group">
-                                        <label>{{ __('Base Currency Text') }} **</label>
-                                        <input type="text" class="form-control ltr" name="base_currency_text" value="{{ $data->base_currency_text }}">
-                                        <p id="errbase_currency_text" class="em text-danger mb-0"></p>
-                                    </div>
-                                </div>
-                                <div class="col-lg-4">
-                                    <div class="form-group">
-                                        <label>{{ __('Base Currency Text Position') }} **</label>
-                                        <select name="base_currency_text_position" class="form-control ltr">
-                                            <option value="left" {{ $data->base_currency_text_position == 'left' ? 'selected' : '' }}>
-                                                Left
-                                            </option>
-                                            <option value="right" {{ $data->base_currency_text_position == 'right' ? 'selected' : '' }}>
-                                                Right
-                                            </option>
-                                        </select>
-                                        <p id="errbase_currency_text_position" class="em text-danger mb-0"></p>
-                                    </div>
-                                </div>
-                                <div class="col-lg-4">
-                                    <div class="form-group">
-                                        <label>{{ __('Base Currency Rate') }} **</label>
-                                        <div class="input-group mb-2">
-                                            <div class="input-group-prepend">
-                                                <span class="input-group-text">{{ __('1 USD') }} =</span>
-                                            </div>
-                                            <input type="text" name="base_currency_rate" class="form-control ltr" value="1">
-                                            <div class="input-group-append">
-                                                <span class="input-group-text">{{ $data->base_currency_text }}</span>
-                                            </div>
-                                        </div>
-                                        <p id="errbase_currency_rate" class="em text-danger mb-0"></p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    @endif
-                </form>
-            </div>
-
-            <div class="card-body">
-
-
-            <!-- home-page-about -->
-                <div class="card-body pt-5 pb-5">
-                    <div class="row">
-                        <div class="col-lg-6 offset-lg-3">
-                            <form id="ajaxForm" action="{{ route('user.home.page.update.about') }}" method="POST" enctype="multipart/form-data">
-                                @csrf
+                    <!-- Home Page About Section -->
+                    <div class="card-body pt-5 pb-5">
+                        <div class="row">
+                            <div class="col-lg-6 offset-lg-3">
                                 <input type="hidden" name="id" value="{{ $home_setting->id }}">
                                 <input type="hidden" name="language_id" value="{{ $home_setting->language_id }}">
                                 <div class="row">
                                     <div class="col-lg-12">
                                         <div class="form-group">
                                             <div class="col-12 mb-2">
-                                                <label for="image"><strong> </strong></label>
-                                                <h3 class="section-title"> تعريف بالشركه (من نحن)</h3>
+                                                <h3 class="section-title">{{ __('Company Introduction (About Us)') }}</h3>
                                                 <p class="section-description">
-                                                    في الصفحة الرئيسية يوجد قسم عن الشركة, يحتوي على معلومات نصيه وصورة, يمكنك التحكم بالمحتوى الخاص به من هنا
+                                                    {{ __('This section contains text and an image about your company. You can control its content here.') }}
                                                 </p>
-
                                             </div>
                                             <div class="col-md-12 showAboutImage mb-3">
-                                                <img src="{{ $home_setting->about_image ? asset('assets/front/img/user/home_settings/' . $home_setting->about_image) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
+                                                <img src="{{ $home_setting->about_image ? asset('assets/front/img/user/home_settings/' . $home_setting->about_image) : asset('assets/admin/img/noimage.jpg') }}" alt="about image" class="img-thumbnail">
                                             </div>
-                                            <input type="hidden" name="types[]" value="about_image">
+                                            <!-- Removed redundant hidden "types[]" inputs -->
                                             <input type="file" name="about_image" id="about_image" class="d-none form-control ltr">
-                                            <button type="button" class="upload-btn" style="background-color: white;
-                                                            border: 2px dashed #8c9998;
-                                                            color: #0E9384;
-                                                            padding: 1rem;
-                                                            width: 80%;
-                                                            display: flex;
-                                                            flex-direction: column;
-                                                            align-items: center;
-                                                            cursor: pointer;" onclick="document.getElementById('about_image').click()">
+                                            <button type="button" class="upload-btn" style="background-color: white; border: 2px dashed #8c9998; color: #0E9384; padding: 1rem; width: 80%; display: flex; flex-direction: column; align-items: center; cursor: pointer;" onclick="document.getElementById('about_image').click()">
                                                 <i class="bi bi-upload mb-2"></i>
-                                                <span>{{ __('Upload')  }} {{ __('Image') }}</span>
+                                                <span>{{ __('Upload Image') }}</span>
                                             </button>
                                             <p id="errabout_image" class="mb-0 text-danger em"></p>
                                         </div>
@@ -439,65 +309,40 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                                 <div class="row">
                                     <div class="col-lg-6 pr-0">
                                         <div class="form-group">
-                                            <label for="">{{ __('Title') }}</label>
-                                            <input type="hidden" name="types[]" value="about_title">
+                                            <label>{{ __('Title') }}</label>
                                             <input type="text" class="form-control" name="about_title" value="{{ $home_setting->about_title }}">
                                             <p id="errabout_title" class="mb-0 text-danger em"></p>
                                         </div>
                                     </div>
-                                    @if ($userBs->theme !== 'home_eleven')
-                                    <div class="col-lg-6 pl-0 d-none">
+                                    @if ($userBs->theme === 'home_eleven')
+                                    <div class="col-lg-6 pl-0">
                                         <div class="form-group">
-                                            <label for="">{{ __('Subtitle') }}</label>
-                                            <input type="hidden" name="types[]" value="about_subtitle">
-                                            <input type="text" class="form-control" name="about_subtitle" value="{{ $home_setting->about_subtitle }}">
-                                            <p id="errabout_subtitle" class="mb-0 text-danger em"></p>
+                                            <label>{{ __('Second Button Text') }}</label>
+                                            <input type="text" class="form-control" name="about_snd_button_text" value="{{ $home_setting->about_snd_button_text }}">
+                                            <p id="errabout_snd_button_text" class="mb-0 text-danger em"></p>
                                         </div>
                                     </div>
                                     @endif
                                 </div>
                                 <div class="form-group">
-                                    <label for="">{{ __('Content') }}</label>
-                                    <input type="hidden" name="types[]" value="about_content">
+                                    <label>{{ __('Content') }}</label>
                                     <textarea class="form-control" name="about_content" rows="5">{{ $home_setting->about_content }}</textarea>
                                     <p id="errabout_content" class="mb-0 text-danger em"></p>
                                 </div>
-                                @if ((isset($userBs->theme) && !$userBs->theme === 'home_two') || $userBs->theme === 'home_eleven')
+                                @if ((isset($userBs->theme) && $userBs->theme !== 'home_two') || $userBs->theme === 'home_eleven')
                                 <div class="row">
                                     <div class="col-lg-6 pr-0">
                                         <div class="form-group">
-                                            <label for="">{{ __('Button Text') }}</label>
-                                            <input type="hidden" name="types[]" value="about_button_text">
+                                            <label>{{ __('Button Text') }}</label>
                                             <input type="text" class="form-control" name="about_button_text" value="{{ $home_setting->about_button_text }}">
                                             <p id="errabout_button_text" class="mb-0 text-danger em"></p>
                                         </div>
                                     </div>
                                     <div class="col-lg-6 pl-0">
                                         <div class="form-group">
-                                            <label for="">{{ __('Button URL') }}</label>
-                                            <input type="hidden" name="types[]" value="about_button_url">
+                                            <label>{{ __('Button URL') }}</label>
                                             <input type="text" class="form-control ltr" name="about_button_url" value="{{ $home_setting->about_button_url }}">
                                             <p id="errabout_button_url" class="mb-0 text-danger em"></p>
-                                        </div>
-                                    </div>
-                                </div>
-                                @endif
-                                @if (isset($userBs->theme) && $userBs->theme === 'home_eleven')
-                                <div class="row">
-                                    <div class="col-lg-6 pr-0">
-                                        <div class="form-group">
-                                            <label for="">{{ __('Secound Button Text') }}</label>
-                                            <input type="hidden" name="types[]" value="about_snd_button_text">
-                                            <input type="text" class="form-control" name="about_snd_button_text" value="{{ $home_setting->about_snd_button_text }}">
-                                            <p id="errabout_snd_button_text" class="mb-0 text-danger em"></p>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6 pl-0">
-                                        <div class="form-group">
-                                            <label for="">{{ __('Secound Button URL') }}</label>
-                                            <input type="hidden" name="types[]" value="about_snd_button_url">
-                                            <input type="text" class="form-control ltr" name="about_snd_button_url" value="{{ $home_setting->about_snd_button_url }}">
-                                            <p id="errabout_snd_button_url" class="mb-0 text-danger em"></p>
                                         </div>
                                     </div>
                                 </div>
@@ -505,308 +350,214 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                                 @if (isset($userBs->theme) && $userBs->theme === 'home_two')
                                 <div class="form-group">
                                     <div class="col-12 mb-2">
-                                        <label for="logo"><strong>{{ __('Video Background Image') }}</strong></label>
+                                        <label for="about_video_image"><strong>{{ __('Video Background Image') }}</strong></label>
                                     </div>
                                     <div class="col-md-12 showAboutVideoImage mb-3">
-                                        <img src="{{ $home_setting->about_video_image ? asset('assets/front/img/user/home_settings/' . $home_setting->about_video_image) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
+                                        <img src="{{ $home_setting->about_video_image ? asset('assets/front/img/user/home_settings/' . $home_setting->about_video_image) : asset('assets/admin/img/noimage.jpg') }}" alt="video background" class="img-thumbnail">
                                     </div>
-                                    <input type="hidden" name="types[]" value="about_video_image">
                                     <input type="file" name="about_video_image" id="about_video_image" class="form-control ltr">
                                     <p id="errabout_video_image" class="mb-0 text-danger em"></p>
                                 </div>
                                 <div class="form-group">
-                                    <label for="">{{ __('Video URL') }}</label>
-                                    <input type="hidden" name="types[]" value="about_video_url">
+                                    <label>{{ __('Video URL') }}</label>
                                     <input type="text" class="form-control ltr" name="about_video_url" value="{{ $home_setting->about_video_url }}">
                                     <p id="errabout_video_url" class="mb-0 text-danger em"></p>
                                 </div>
                                 @endif
-                            </form>
+                            </div>
                         </div>
                     </div>
-                </div>
-            <!-- home-page-about -->
-                <div class="card-footer">
+                    <!-- End Home Page About Section -->
+
+                    <!-- Footer Section -->
                     <div class="row">
-                        <div class="col-12 text-center">
-                            <button type="submit" id="submitBtn" class="btn btn-success">
-                                {{ __('Update') }}
-                            </button>
+                        <div class="col-md-12">
+                            <div class="feature-card-text">
+                                <h2 class="fs-4 fw-semibold mb-2">{{ __('Footer') }}</h2>
+                                <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
+                                    {{ __('Edit the footer details here') }}
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-        </div>
-    </div>
-
-</div>
-
-<!-- footer section -->
-<div class="row">
-    <div class="col-md-12">
-        <div class="min-vh-100 d-flex align-items-center justify-content-center pb-3">
-            <div class="feature-card p-4 d-flex flex-column flex-md-row align-items-start gap-3 mx-auto w-100" style="">
-                <div class="icon-container d-flex align-items-center justify-content-center flex-shrink-0 mb-3 mb-md-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-dark">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                        <line x1="3" y1="9" x2="21" y2="9"></line>
-                        <line x1="3" y1="15" x2="21" y2="15"></line>
-                        <line x1="9" y1="3" x2="9" y2="21"></line>
-                        <line x1="15" y1="3" x2="15" y2="21"></line>
-                    </svg>
-                </div>
-                <div class="feature-card-text">
-                    <h2 class="fs-4 fw-semibold mb-2">{{ __('Footer') }}</h2>
-                    <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
-                        قم بتعديل بيانات التذييل من هنا
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <div class="row">
-                    <div class="col-lg-3 float-left">
-                        @if (!is_null($userDefaultLang))
-                        @if (!empty($userLanguages))
-                        <select name="userLanguage" class="form-control" onchange="window.location='{{ url()->current() . '?language=' }}'+this.value">
-                            <option value="" selected disabled>Select a Language</option>
-                            @foreach ($userLanguages as $lang)
-                            <option value="{{ $lang->code }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
-                                {{ $lang->name }}
-                            </option>
-                            @endforeach
-                        </select>
-                        @endif
-                        @endif
-                    </div>
-                </div>
-            </div>
-
-            <div class="card-body pt-5 pb-5">
-                <div class="row">
-                    <div class="col-lg-6 offset-lg-3">
-                        <form id="ajaxForm" action="{{ route('user.footer.update_footer_info', ['language' => request()->input('language')]) }}" method="post" enctype="multipart/form-data">
-                            @csrf
-                            @if ($userBs->theme == 'home_ten')
-                            <div class="form-group">
-                                <label for="">{{ __('Footer Color') . ' *' }}</label>
-                                <input type="text" class="form-control jscolor" name="color" value="{{ isset($data) ? $data->footer_color : '' }}" required>
-                                <p id="errcolor" class="mb-0 text-danger em"></p>
-                            </div>
-                            @endif
-                            <div class="form-group">
-                                <label for="">{{ __('Footer\'s Logo*') }}</label> <br>
-                                <div class="col-md-12 showImage mb-3">
-                                    <img src="{{ isset($data) ? asset('assets/front/img/user/footer/' . $data->logo) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card-body pt-5 pb-5">
+                                <div class="row">
+                                    <div class="col-lg-6 offset-lg-3">
+                                        @if ($userBs->theme == 'home_ten')
+                                        <div class="form-group d-none">
+                                            <label>{{ __('Footer Color') }} *</label>
+                                            <!-- Change name to footer_color -->
+                                            <input type="text" class="form-control jscolor" name="footer_color" value="{{ isset($footertext) ? $footertext->footer_color : '' }}" required>
+                                            <p id="errcolor" class="mb-0 text-danger em"></p>
+                                        </div>
+                                        @endif
+                                        <div class="form-group d-none">
+                                            <label>{{ __('Footer\'s Logo*') }}</label> <br>
+                                            <div class="col-md-12 showImage mb-3">
+                                                <!-- Use $footertext->logo (FooterText model field) -->
+                                                <img src="{{ isset($footertext) ? asset('assets/front/img/user/footer/' . $footertext->logo) : asset('assets/admin/img/noimage.jpg') }}" alt="footer logo" class="img-thumbnail">
+                                            </div>
+                                            <!-- Change name and id to footer_logo -->
+                                            <input type="file" name="footer_logo" id="footer_logo" class="d-none form-control image">
+                                            <p id="errlogo" class="em text-danger mt-2 mb-0"></p>
+                                            <button type="button" class="upload-btn" onclick="document.getElementById('footer_logo').click()">
+                                                <i class="bi bi-upload mb-2"></i>
+                                                <span>{{ __('Upload Favicon') }}</span>
+                                            </button>
+                                        </div>
+                                        @if ($userBs->theme == 'home_six')
+                                        <div class="form-group d-none">
+                                            <label>{{ __('Footer\'s Background*') }}</label> <br>
+                                            <div class="col-md-12 showImage mb-3">
+                                                <!-- Change to use $footertext->bg_image -->
+                                                <img src="{{ isset($footertext) ? asset('assets/front/img/user/footer/' . $footertext->bg_image) : asset('assets/admin/img/noimage.jpg') }}" alt="footer background" class="img-thumbnail">
+                                            </div>
+                                            <!-- Change name and id to footer_bg_image -->
+                                            <input type="file" id="bg_image" name="footer_bg_image" class="d-none form-control image">
+                                            <p id="errbg_image" class="em text-danger mt-2 mb-0"></p>
+                                            <button type="button" class="upload-btn" onclick="document.getElementById('bg_image').click()">
+                                                <i class="bi bi-upload mb-2"></i>
+                                                <span>{{ __('Upload Favicon') }}</span>
+                                            </button>
+                                        </div>
+                                        @endif
+                                        <div class="form-group">
+                                            <label>{{ __('About Company') }}</label>
+                                            <textarea class="form-control" name="about_company" rows="3" cols="80">{{ isset($footertext) ? $footertext->about_company : '' }}</textarea>
+                                            <p id="errabout_company" class="em text-danger mt-2 mb-0"></p>
+                                        </div>
+                                        @if ($userBs->theme == 'home_four' || $userBs->theme == 'home_five' || $userBs->theme == 'home_seven')
+                                        <div class="form-group d-none">
+                                            <label>{{ __('Newsletter Text') }}</label>
+                                            <textarea class="form-control" name="newsletter_text" rows="3" cols="80">{{ isset($footertext) ? $footertext->newsletter_text : '' }}</textarea>
+                                            <p id="errnewsletter_text" class="em text-danger mt-2 mb-0"></p>
+                                        </div>
+                                        @endif
+                                        <div class="form-group d-none">
+                                            <label>{{ __('Copyright Text') }}</label>
+                                            <textarea id="copyrightSummernote" class="form-control summernote" name="copyright_text" data-height="80">{{ isset($footertext) ? replaceBaseUrl($footertext->copyright_text) : '' }}</textarea>
+                                            <p id="errcopyright_text" class="em text-danger mb-0"></p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <input type="file" name="logo" id="logo" class=" d-none form-control image">
-                                <p id="errlogo" class="em text-danger mt-2 mb-0"></p>
-                                <button type="button" class="upload-btn" onclick="document.getElementById('logo').click()">
-                                    <i class="bi bi-upload mb-2"></i>
-                                    <span>{{ __('Upload Favicon') }}</span>
-                                </button>
                             </div>
-                            @if ($userBs->theme == 'home_six')
-                            <div class="form-group">
-                                <label for="">{{ __('Footer\'s Background*') }}</label> <br>
-                                <div class="col-md-12 showImage mb-3">
-                                    <img src="{{ isset($data) ? asset('assets/front/img/user/footer/' . $data->bg_image) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
-                                </div>
-                                <input type="file" id="bg_image" name="bg_image" class=" d-none form-control image">
-                                <p id="errbg_image" class="em text-danger mt-2 mb-0"></p>
-                                <button type="button" class="upload-btn" onclick="document.getElementById('bg_image').click()">
-                                    <i class="bi bi-upload mb-2"></i>
-                                    <span>{{ __('Upload Favicon') }}</span>
-                                </button>
-                            </div>
-                            @endif
-                            <div class="form-group">
-                                <label for="">{{ __('About Company') }}</label>
-                                <textarea class="form-control" name="about_company" rows="3" cols="80">{{ isset($data) ? $data->about_company : '' }}</textarea>
-                                <p id="errabout_company" class="em text-danger mt-2 mb-0"></p>
-                            </div>
-                            @if ($userBs->theme == 'home_four' || $userBs->theme == 'home_five' || $userBs->theme == 'home_seven')
-                            <div class="form-group">
-                                <label for="">{{ __('Newsletter Text') }}</label>
-                                <textarea class="form-control" name="newsletter_text" rows="3" cols="80">{{ isset($data) ? $data->newsletter_text : '' }}</textarea>
-                                <p id="errnewsletter_text" class="em text-danger mt-2 mb-0"></p>
-                            </div>
-                            @endif
-                            <div class="form-group">
-                                <label for="">{{ __('Copyright Text') }}</label>
-                                <textarea id="copyrightSummernote" class="form-control summernote" name="copyright_text" data-height="80">{{ isset($data) ? replaceBaseUrl($data->copyright_text) : '' }}</textarea>
-                                <p id="errcopyright_text" class="em text-danger mb-0"></p>
-                            </div>
-                        </form>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <div class="card-footer">
-                <div class="row">
-                    <div class="col-12 text-center">
-                        <button type="submit" id="submitBtn" class="btn btn-success">
-                            {{ __('Update') }}
+                    <!-- Social Links Section -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="feature-card-text">
+                                <h2 class="fs-4 fw-semibold mb-2">{{ __('Social Links') }}</h2>
+                                <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
+                                    {{ __('Edit your company\'s social links here') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Social Links - Add Social Link Form -->
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="card-body pt-5 pb-5">
+                                <div class="card-title">{{ __('Add Social Link') }}</div>
+                                <div class="container " style="margin-right: 0px !important; margin-left: 0px !important;">
+                                    <div class="form-group">
+                                        <label>{{ __('Social Icon') }} **</label>
+                                        <div class="btn-group d-block" style="position: relative;">
+                                            <button type="button" class="btn btn-primary iconpicker-component">
+                                                <i class="fa fa-fw fa-heart"></i>
+                                            </button>
+                                            <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle" data-selected="fa-car" data-toggle="dropdown"></button>
+                                            <div class="dropdown-menu"></div>
+                                        </div>
+                                        <!-- Change input name to social_links[0][icon] -->
+                                        <input id="inputIcon" type="hidden" name="social_links[0][icon]" value="">
+                                        @if ($errors->has('social_links.0.icon'))
+                                        <p class="mb-0 text-danger">{{ $errors->first('social_links.0.icon') }}</p>
+                                        @endif
+                                        <div class="mt-2">
+                                            <small>{{ __('NB: click on the dropdown icon to select a social link icon.') }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>{{ __('URL') }} **</label>
+                                    <!-- Change input name to social_links[0][url] -->
+                                    <input type="text" class="form-control" name="social_links[0][url]" value="" placeholder="Enter URL of social media account">
+                                    @if ($errors->has('social_links.0.url'))
+                                    <p class="mb-0 text-danger">{{ $errors->first('social_links.0.url') }}</p>
+                                    @endif
+                                </div>
+                                <div class="form-group">
+                                    <label>{{ __('Serial Number') }} **</label>
+                                    <!-- Change input name to social_links[0][serial_number] -->
+                                    <input type="number" class="form-control" name="social_links[0][serial_number]" value="" placeholder="Enter Serial Number">
+                                    <p id="errserial_number" class="mb-0 text-danger em"></p>
+                                    <p class="text-warning">
+                                        <small>{{ __('The higher the serial number is, the later the social link will be shown.') }}</small>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                    <!-- Social Links List -->
+                    <div class="table-responsive">
+                        <table class="table table-striped mt-3">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">{{ __('Icon') }}</th>
+                                    <th scope="col">{{ __('URL') }}</th>
+                                    <th scope="col">{{ __('Serial Number') }}</th>
+                                    <th scope="col">{{ __('Actions') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($socials as $key => $social)
+                                <tr id="socialRow-{{ $social->id }}">
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td><i class="{{ $social->icon }}"></i></td>
+                                    <td>{{ $social->url }}</td>
+                                    <td>{{ $social->serial_number }}</td>
+                                    <td>
+                                        <a class="btn btn-secondary btn-sm" href="{{ route('user.social.edit', $social->id) }}">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <!-- Delete button with data-socialid attribute -->
+                                        <button type="button" class="btn btn-danger btn-sm deleteSocialBtn" data-socialid="{{ $social->id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+
+                    <!-- End Social Links Section -->
+
+                    <!-- Submit Button -->
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            {{ __('Save All Settings') }}
                         </button>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- //end footer section -->
 
-<!-- social section -->
-<div class="row">
-    <div class="col-md-12">
-        <div class="min-vh-100 d-flex align-items-center justify-content-center pb-3">
-            <div class="feature-card p-4 d-flex flex-column flex-md-row align-items-start gap-3 mx-auto w-100" style="">
-                <div class="icon-container d-flex align-items-center justify-content-center flex-shrink-0 mb-3 mb-md-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-dark">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                        <line x1="3" y1="9" x2="21" y2="9"></line>
-                        <line x1="3" y1="15" x2="21" y2="15"></line>
-                        <line x1="9" y1="3" x2="9" y2="21"></line>
-                        <line x1="15" y1="3" x2="15" y2="21"></line>
-                    </svg>
-                </div>
-                <div class="feature-card-text">
-                    <h2 class="fs-4 fw-semibold mb-2">{{ __('Social Links') }}</h2>
-                    <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
-                        تعديل روابط الاجتماعية الخاصه بشركتك من هنا
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-body">
-        <div class="row">
-            <!-- Left Box: Add Social Link Form -->
-            <div class="col-lg-12">
-
-                <form id="socialForm" action="{{ route('user.social.store') }}" method="post">
-
-                    <div class="card-body pt-5 pb-5">
-                        <div class="card-title">{{ __('Add Social Link') }}</div>
-
-
-                        @csrf
-                        <div class="form-group">
-                            <label for="">{{ __('Social Icon') }} **</label>
-                            <div class="btn-group d-block">
-                                <button type="button" class="btn btn-primary iconpicker-component"><i class="fa fa-fw fa-heart"></i></button>
-                                <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle" data-selected="fa-car" data-toggle="dropdown">
-                                </button>
-                                <div class="dropdown-menu"></div>
-                            </div>
-                            <input id="inputIcon" type="hidden" name="icon" value="">
-                            @if ($errors->has('icon'))
-                            <p class="mb-0 text-danger">{{ $errors->first('icon') }}</p>
-                            @endif
-                            <div class="mt-2">
-                                <small>{{ __('NB: click on the dropdown icon to select a social link icon.') }}</small>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="">{{ __('URL') }} **</label>
-                            <input type="text" class="form-control" name="url" value="" placeholder="Enter URL of social media account">
-                            @if ($errors->has('url'))
-                            <p class="mb-0 text-danger">{{ $errors->first('url') }}</p>
-                            @endif
-                        </div>
-                        <div class="form-group">
-                            <label for="">{{ __('Serial Number') }} **</label>
-                            <input type="number" class="form-control ltr" name="serial_number" value="" placeholder="Enter Serial Number">
-                            <p id="errserial_number" class="mb-0 text-danger em"></p>
-                            <p class="text-warning">
-                                <small>{{ __('The higher the serial number is, the later the social link will be shown.') }}</small>
-                            </p>
-                        </div>
-
-
-                    </div>
-                    <div class="card-footer pt-3">
-                        <div class="form">
-                            <div class="form-group from-show-notify row">
-                                <div class="col-12 text-center">
-                                    <button type="submit" id="displayNotif" class="btn btn-success">{{ __('Submit') }}</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </form>
 
             </div>
 
-            <!-- Right Box: Social Links List -->
-            <div class="col-lg-12">
-
-                <div class="card-header">
-                    <div class="card-title">{{ __('Social Links') }}</div>
-                </div>
-
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-lg-12">
-                            @if (count($socials) == 0)
-                            <h2 class="text-center">{{ __('NO LINK ADDED') }}</h2>
-                            @else
-                            <div class="table-responsive">
-                                <table class="table table-striped mt-3">
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">#</th>
-                                            <th scope="col">{{ __('Icon') }}</th>
-                                            <th scope="col">{{ __('URL') }}</th>
-                                            <th scope="col">{{ __('Serial Number') }}</th>
-                                            <th scope="col">{{ __('Actions') }}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($socials as $key => $social)
-                                        <tr>
-                                            <td>{{ $loop->iteration }}</td>
-                                            <td><i class="{{ $social->icon }}"></i></td>
-                                            <td>{{ $social->url }}</td>
-                                            <td>{{ $social->serial_number }}</td>
-                                            <td>
-                                                <a class="btn btn-secondary btn-sm" href="{{ route('user.social.edit', $social->id) }}">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <form class="d-inline-block deleteform" action="{{ route('user.social.delete') }}" method="post">
-                                                    @csrf
-                                                    <input type="hidden" name="socialid" value="{{ $social->id }}">
-                                                    <button type="submit" class="btn btn-danger btn-sm deletebtn">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-
-            </div>
         </div>
     </div>
+
 </div>
-<!-- //end social section -->
+
+
 @endsection
 
 @section('scripts')
@@ -828,5 +579,127 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
         readURL(this, previewImg);
     });
 </script>
+
+
+
+<script>
+    $(document).ready(function(){
+
+        // CSRF token for all AJAX requests.
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+
+        // click event to delete buttons.
+        $('.deleteSocialBtn').on('click', function(e) {
+            e.preventDefault();
+            var socialId = $(this).data('socialid');
+            var row = $('#socialRow-' + socialId);
+
+            // SweetAlert confirmation.
+            swal({
+                title: "Are you sure?",
+                text: "You won't be able to revert this!",
+                icon: "warning",
+                buttons: {
+                    cancel: {
+                        text: "Cancel",
+                        visible: true,
+                        className: "btn btn-danger",
+                        closeModal: true
+                    },
+                    confirm: {
+                        text: "Yes, delete it!",
+                        className: "btn btn-success"
+                    }
+                }
+            }).then((willDelete) => {
+                if (willDelete) {
+                    // AJAX request.
+                    $.ajax({
+                        url: "{{ route('user.social.delete') }}",
+                        type: "POST",
+                        data: { socialid: socialId },
+                        success: function(response) {
+                            if(response.success) {
+                                // Remove the table row.
+                                row.fadeOut(500, function(){
+                                    $(this).remove();
+                                });
+                                swal("Deleted!", response.message, "success");
+                            } else {
+                                swal("Error!", response.message, "error");
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error(error);
+                            swal("Error!", "An error occurred while deleting the social link.", "error");
+                        }
+                    });
+                } else {
+                    swal.close();
+                }
+            });
+        });
+    });
+</script>
+
+
+<script>
+  let isFormDirty = false;
+
+  const form = document.getElementById('mySettingsForm');
+
+  form.addEventListener('change', function () {
+    isFormDirty = true;
+  });
+
+  document.querySelectorAll('a').forEach(function(link){
+    link.addEventListener('click', function(e){
+      if(isFormDirty) {
+         e.preventDefault();
+         const destination = this.href;
+         swal({
+             title: "لديك تغييرات غير محفوظة",
+             text: "هل أنت متأكد أنك تريد مغادرة هذه الصفحة",
+             icon: "warning",
+             buttons: {
+               cancel: {
+                 text: "Cancel",
+                 visible: true,
+                 className: "btn btn-danger",
+                 closeModal: true
+               },
+               confirm: {
+                 text: "Yes, leave it!",
+                 className: "btn btn-success"
+               }
+             },
+             dangerMode: true
+         }).then((willLeave) => {
+             if (willLeave) {
+                 isFormDirty = false;
+                 window.location.href = destination;
+             }
+         });
+      }
+    });
+  });
+
+   window.addEventListener('beforeunload', function (e) {
+    if (isFormDirty) {
+       e.preventDefault();
+      e.returnValue = 'لديك تغييرات غير محفوظة?';
+    }
+  });
+
+   form.addEventListener('submit', function () {
+    isFormDirty = false;
+  });
+</script>
+
+
 
 @endsection

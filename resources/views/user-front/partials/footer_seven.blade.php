@@ -31,7 +31,7 @@
                 @if (in_array('Service', $packagePermissions) &&
                         isset($home_sections->featured_services_section) &&
                         $home_sections->featured_services_section == 1)
-                    <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="col-lg-3 col-md-6 col-sm-6 d-none">
                         <div class="footer-item mt-30">
                             <div class="footer-title">
                                 <h4 class="title">{{ $home_text->service_title ?? '' }}</h4>
@@ -69,6 +69,49 @@
                     </div>
                 @endif
                 <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="footer-item mt-30">
+                        <div class="footer-title">
+                            <h4 class="title">{{ $keywords['Contact_Us'] ?? 'Contact Us' }}</h4>
+                        </div>
+                        @php
+                            $phone_numbers = !empty($userContact->contact_numbers) ? explode(',', $userContact->contact_numbers) : [];
+                            $emails = !empty($userContact->contact_mails) ? explode(',', $userContact->contact_mails) : [];
+                            $addresses = !empty($userContact->contact_addresses) ? explode(PHP_EOL, $userContact->contact_addresses) : [];
+                        @endphp
+                        <div class="footer-text pt-15">
+                            <p>
+                            @if (count($phone_numbers) > 0)
+                                <p>
+                                    <i class="fal fa-phone"></i>
+                                    @foreach ($phone_numbers as $phone_number)
+                                        <a
+                                            href="tel: {{ $phone_number }}">{{ $phone_number }}</a>{{ !$loop->last ? ', ' : '' }}
+                                    @endforeach
+                                </p>
+                            @endif
+                            @if (count($emails) > 0)
+                                <p>
+                                    <i class="fal fa-envelope"></i>
+                                    @foreach ($emails as $email)
+                                        <a
+                                            href="mailto: {{ $email }}">{{ $email }}</a>{{ !$loop->last ? ', ' : '' }}
+                                    @endforeach
+                                </p>
+                            @endif
+                            @if (count($addresses) > 0)
+                                <p>
+                                    <i class="fal fa-map-marker-alt"></i>
+                                    @foreach ($addresses as $address)
+                                        <span>{{ $address }}</span>{{ !$loop->last ? ' | ' : '' }}
+                                    @endforeach
+                                </p>
+                            @endif
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 col-sm-6 d-none">
                     <div class="footer-item mt-30">
                         <div class="footer-title">
                             <h4 class="title">{{ $keywords['newsletter'] ?? 'NEWSLETTER' }}</h4>

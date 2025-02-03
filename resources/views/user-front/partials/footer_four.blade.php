@@ -54,11 +54,11 @@
                       @endif
                       <div class="col-lg-4 col-md-6">
                           <div class="widget newsletters-widget pl-xl-4">
-                              <h4 class="widget-title">{{ $keywords['newsletter'] ?? 'NEWSLETTER' }}</h4>
-                              <p>
+                              <h4 class="widget-title  d-none">{{ $keywords['newsletter'] ?? 'NEWSLETTER' }}</h4>
+                              <p class=" d-none">
                                   {!! replaceBaseUrl($userFooterData->newsletter_text ?? null) !!}
                               </p>
-                              <div class="newsletter-form">
+                              <div class="newsletter-form  d-none">
                                   <form action="{{ route('front.user.subscriber', getParam()) }}" method="post"
                                       enctype="multipart/form-data">
                                       @csrf

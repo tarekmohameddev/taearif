@@ -102,7 +102,8 @@ class BasicController extends Controller
         }
 
         // then, get the footer text info of that language from db
-        $information['data'] = FooterText::where('language_id', $lang->id)->where('user_id', Auth::id())->first();
+        // $information['data'] = FooterText::where('language_id', $lang->id)->where('user_id', Auth::id())->first();
+        $data['footertext'] = FooterText::where('language_id', $lang->id)->where('user_id', Auth::id())->first();
 
         // socials
         $data['socials'] = Social::where('user_id', Auth::id())
@@ -110,27 +111,34 @@ class BasicController extends Controller
             ->get();
 
 
-
-        return view('user.settings.general-settings', $data , $information);
+        return view('user.settings.general-settings', $data);
     }
+
+    //
 
     public function updateAllSettings(Request $request, $language)
     {
-        // $lang = Language::where('code', $language)->where('user_id', Auth::id())->firstOrFail();
+
         $user = Auth::guard('web')->user();
+
+        $lang = Language::where('code', $language)
+        ->where('user_id', $user->id)
+        ->firstOrFail();
+
+
         $package = UserPermissionHelper::currentPackagePermission($user->id);
         if (!empty($user)) {
             $permissions = UserPermissionHelper::packagePermission($user->id);
             $permissions = json_decode($permissions, true);
         }
 
-        // Use "sometimes" so the fields are validated only when provided.
+        // Validate Basic Settings Input
         $rules = [
             'website_title' => 'sometimes|required',
             'timezone'      => 'sometimes|required',
         ];
 
-        // Add validation rules for images if they are being uploaded
+        // Validate the main logo file upload.
         if ($request->hasFile('logo')) {
             $rules['logo'] = [
                 function ($attribute, $value, $fail) use ($request) {
@@ -143,62 +151,24 @@ class BasicController extends Controller
             ];
         }
 
-        // if ($request->hasFile('preloader')) {
-        //     $rules['preloader'] = [
-        //         function ($attribute, $value, $fail) use ($request) {
-        //             $allowedExts = ['jpg', 'png', 'jpeg', 'gif'];
-        //             $ext = $request->file('preloader')->getClientOriginalExtension();
-        //             if (!in_array($ext, $allowedExts)) {
-        //                 return $fail("Only png, jpg, jpeg, gif images are allowed for preloader.");
-        //             }
-        //         }
-        //     ];
-        // }
 
-        // if ($request->hasFile('breadcrumb')) {
-        //     $rules['breadcrumb'] = [
-        //         function ($attribute, $value, $fail) use ($request) {
-        //             $allowedExts = ['jpg', 'png', 'jpeg'];
-        //             $ext = $request->file('breadcrumb')->getClientOriginalExtension();
-        //             if (!in_array($ext, $allowedExts)) {
-        //                 return $fail("Only png, jpg, jpeg images are allowed for breadcrumb.");
-        //             }
-        //         }
-        //     ];
-        // }
-
-        // if ($request->hasFile('favicon')) {
-        //     $rules['favicon'] = [
-        //         function ($attribute, $value, $fail) use ($request) {
-        //             $allowedExts = ['jpg', 'png', 'jpeg', 'ico'];
-        //             $ext = $request->file('favicon')->getClientOriginalExtension();
-        //             if (!in_array($ext, $allowedExts)) {
-        //                 return $fail("Only png, jpg, jpeg, ico images are allowed for favicon.");
-        //             }
-        //         }
-        //     ];
-        // }
-
-        // Add ecommerce-specific rules if applicable.
         if (!empty($permissions) && in_array('Ecommerce', $permissions)) {
-            $rules['base_currency_symbol']          = 'sometimes|required';
-            $rules['base_currency_symbol_position']   = 'sometimes|required';
-            $rules['base_currency_text']              = 'sometimes|required';
-            $rules['base_currency_text_position']     = 'sometimes|required';
-            $rules['base_currency_rate']              = 'sometimes|required|numeric|min:0.00000001';
+            $rules['base_currency_symbol']        = 'sometimes|required';
+            $rules['base_currency_symbol_position'] = 'sometimes|required';
+            $rules['base_currency_text']            = 'sometimes|required';
+            $rules['base_currency_text_position']   = 'sometimes|required';
+            $rules['base_currency_rate']            = 'sometimes|required|numeric|min:0.00000001';
         }
 
-        // Validate request.
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
             $validator->getMessageBag()->add('error', 'true');
             return response()->json($validator->errors());
         }
 
-        // Get or create BasicSetting record.
+        // Update General (Basic) Settings section
         $bss = BasicSetting::firstOrNew(['user_id' => $user->id]);
 
-        // Update basic information if these fields are provided.
         if ($request->has('website_title')) {
             $bss->website_title = $request->website_title;
         }
@@ -215,7 +185,6 @@ class BasicController extends Controller
             $bss->secondary_color = $request->secondary_color;
         }
 
-        // Handle currency settings if applicable and provided.
         if (!empty($permissions) && in_array('Ecommerce', $permissions)) {
             if ($request->has('base_currency_symbol')) {
                 $bss->base_currency_symbol = $request->base_currency_symbol;
@@ -234,10 +203,10 @@ class BasicController extends Controller
             }
         }
 
-        // Handle file uploads.
+        // main "logo" upload.
         if ($request->hasFile('logo')) {
             try {
-                // Delete old files if they exist.
+                // Delete old images if they exist.
                 $imageFields = ['logo', 'preloader', 'breadcrumb', 'favicon'];
                 foreach ($imageFields as $field) {
                     if ($bss->$field) {
@@ -245,55 +214,41 @@ class BasicController extends Controller
                     }
                 }
 
-                // Upload new logo file to the first directory: assets/front/img/user/
                 $file = $request->file('logo');
                 $filename = uniqid() . '.' . $file->getClientOriginalExtension();
                 $file->move(public_path('assets/front/img/user/'), $filename);
 
-                // Assign the same filename to all fields in BasicSetting.
+                // Set the same filename for all the related fields.
                 foreach ($imageFields as $field) {
                     $bss->$field = $filename;
                 }
 
-                // Copy the uploaded file to the second directory: assets/front/img/user/footer/
+                // Copy logo file to footer folder.
                 $sourcePath = public_path('assets/front/img/user/' . $filename);
                 $destinationPath = public_path('assets/front/img/user/footer/' . $filename);
                 if (!file_exists(public_path('assets/front/img/user/footer/'))) {
-                    mkdir(public_path('assets/front/img/user/footer/'), 0775, true); // Create directory if it doesn't exist
+                    mkdir(public_path('assets/front/img/user/footer/'), 0775, true);
                 }
                 copy($sourcePath, $destinationPath);
 
-                // Update FooterText with the same logo and bg_image.
-                // $lang = Language::where('user_id', $user->id)->first(); // Get the default language for the user.
-                $lang = Language::where('code', $language)->where('user_id', Auth::id())->firstOrFail();
-                if ($lang) {
-                    $footerText = FooterText::where('language_id', $lang->id)->where('user_id', $user->id)->first();
-                    if (is_null($footerText)) {
-                        $footerText = new FooterText;
-                    }
 
-                    // Delete old footer logo and bg_image if they exist.
-                    if ($footerText->logo) {
-                        @unlink(public_path('assets/front/img/user/footer/' . $footerText->logo));
-                    }
-                    if ($footerText->bg_image) {
-                        @unlink(public_path('assets/front/img/user/footer/' . $footerText->bg_image));
-                    }
-
-                    // Set the new logo and bg_image in FooterText.
-                    $footerText->logo = $filename;
-                    $footerText->bg_image = $filename; // Set the same logo as bg_image.
-                    $footerText->language_id = $lang->id;
-                    $footerText->user_id = $user->id;
-                    $footerText->save();
+                $tempFooterText = FooterText::where('language_id', $lang->id)
+                                             ->where('user_id', $user->id)
+                                             ->first();
+                if (!$tempFooterText) {
+                    $tempFooterText = new FooterText;
                 }
+                $tempFooterText->logo = $filename;
+                $tempFooterText->bg_image = $filename;
+                $tempFooterText->language_id = $lang->id;
+                $tempFooterText->user_id = $user->id;
+                $tempFooterText->save();
             } catch (\Exception $e) {
                 \Log::error("File upload failed: " . $e->getMessage());
                 Session::flash('error', 'File upload failed. Please try again.');
                 return back();
             }
         }
-
         $bss->save();
 
         // Update user steps.
@@ -306,7 +261,6 @@ class BasicController extends Controller
                 'homepage_updated'   => false,
             ]
         );
-
         $steps->update([
             'website_named'    => $request->has('website_title') ? true : $steps->website_named,
             'logo_uploaded'    => $request->hasFile('logo') ? true : $steps->logo_uploaded,
@@ -314,11 +268,161 @@ class BasicController extends Controller
             'homepage_updated' => $request->hasFile('preloader') ? true : $steps->homepage_updated,
         ]);
 
+
+        // for the about section.
+        $aboutImageFilename = null;
+        if ($request->hasFile('about_image')) {
+            try {
+                $file = $request->file('about_image');
+                $aboutImageFilename = uniqid() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('assets/front/img/user/home_settings/'), $aboutImageFilename);
+            } catch (\Exception $e) {
+                \Log::error("About image upload failed: " . $e->getMessage());
+            }
+        }
+
+        $aboutVideoImageFilename = null;
+        if ($request->hasFile('about_video_image')) {
+            try {
+                $file = $request->file('about_video_image');
+                $aboutVideoImageFilename = uniqid() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('assets/front/img/user/home_settings/'), $aboutVideoImageFilename);
+            } catch (\Exception $e) {
+                \Log::error("About video image upload failed: " . $e->getMessage());
+            }
+        }
+
+        //  fields allowed for HomePageText updates.
+        $homePageFields = [
+            'about_title',
+            'about_content',
+            'about_button_text',
+            'about_button_url',
+            'about_snd_button_text',
+            'about_video_url'
+        ];
+        $homeUpdateData = $request->only($homePageFields);
+
+        // If file uploads .
+        if ($aboutImageFilename) {
+            $homeUpdateData['about_image'] = $aboutImageFilename;
+        }
+        if ($aboutVideoImageFilename) {
+            $homeUpdateData['about_video_image'] = $aboutVideoImageFilename;
+        }
+        // Set the language and user IDs.
+        $homeUpdateData['language_id'] = $request->input('language_id');
+        $homeUpdateData['user_id'] = $user->id;
+
+        $homePageText = HomePageText::find($request->input('id'));
+        if (!$homePageText) {
+            $homePageText = new HomePageText;
+        }
+        $homePageText->update($homeUpdateData);
+
+
+        // file uploads for footer fields.
+        $footerLogoFilename = null;
+        if ($request->hasFile('footer_logo')) {
+            try {
+                $file = $request->file('footer_logo');
+                $footerLogoFilename = uniqid() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('assets/front/img/user/footer/'), $footerLogoFilename);
+            } catch (\Exception $e) {
+                \Log::error("Footer logo upload failed: " . $e->getMessage());
+            }
+        }
+
+        $footerBgImageFilename = null;
+        if ($request->hasFile('footer_bg_image')) {
+            try {
+                $file = $request->file('footer_bg_image');
+                $footerBgImageFilename = uniqid() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('assets/front/img/user/footer/'), $footerBgImageFilename);
+            } catch (\Exception $e) {
+                \Log::error("Footer background image upload failed: " . $e->getMessage());
+            }
+        }
+
+        $footerText = FooterText::where('language_id', $lang->id)
+        ->where('user_id', $user->id)
+        ->first();
+        if (!$footerText) {
+        $footerText = new FooterText;
+        }
+
+        $footerFields = [
+        'footer_color',
+        'about_company',
+        'newsletter_text',
+        'copyright_text'
+        ];
+        $footerUpdateData = $request->only($footerFields);
+
+        // Add file upload data if available.
+        if ($footerLogoFilename) {
+        $footerUpdateData['logo'] = $footerLogoFilename;
+        }
+        if ($footerBgImageFilename) {
+        $footerUpdateData['bg_image'] = $footerBgImageFilename;
+        }
+        // Set the language and user IDs.
+        $footerUpdateData['language_id'] = $lang->id;
+        $footerUpdateData['user_id'] = $user->id;
+
+        if ($footerText->exists) {
+        $footerText->update($footerUpdateData);
+        } else {
+        $footerText->fill($footerUpdateData);
+        $footerText->save();
+        }
+
+        // Social Links section:
+        if ($request->has('social_links')) {
+            if ($request->has('socialid')) {
+                $socialId = $request->input('socialid');
+                $socialLinkData = $request->input('social_links.0');
+
+                $social = Social::where('user_id', Auth::id())
+                                ->where('id', $socialId)
+                                ->first();
+                if ($social) {
+                    $social->update([
+                        'icon'          => $socialLinkData['icon'],
+                        'url'           => $socialLinkData['url'],
+                        'serial_number' => $socialLinkData['serial_number'],
+                    ]);
+                }
+            } else {
+
+                foreach ($request->input('social_links') as $socialData) {
+                    if (isset($socialData['id'])) {
+                        $social = Social::where('user_id', Auth::id())
+                                        ->where('id', $socialData['id'])
+                                        ->first();
+                        if ($social) {
+                            $social->update([
+                                'icon'          => $socialData['icon'],
+                                'url'           => $socialData['url'],
+                                'serial_number' => $socialData['serial_number'],
+                            ]);
+                        }
+                    } else {
+                        Social::create([
+                            'user_id'       => Auth::id(),
+                            'icon'          => $socialData['icon'],
+                            'url'           => $socialData['url'],
+                            'serial_number' => $socialData['serial_number'],
+                        ]);
+                    }
+                }
+            }
+        }
+
         Session::flash('success', 'Settings updated successfully.');
         return back();
     }
 
-    //
     //
 
 
@@ -1193,7 +1297,7 @@ class BasicController extends Controller
             'work_process_section_text' => clean($request->work_process_section_text),
             'work_process_section_video_url' => $videoLink
         ]);
-        $request->session()->flash('success', 'Work process section updated successfully!');
+        $request->session()->flash('success', 'Work section updated successfully!');
         return redirect()->back();
     }
 
