@@ -383,7 +383,7 @@
               @endforeach
             @endif
             @if ($home_sections->newsletter_section == 1)
-              <div class="shop-lookbook-item newsletter mt-75 mb-50">
+              <div class="shop-lookbook-item newsletter mt-75 mb-50   d-none">
                 <div class="shop-lookbook-title">
                   <h5 class="title">
                     {{ $home_text->newsletter_subtitle ?? ($keywords['newsletter'] ?? 'Newsletter') }}

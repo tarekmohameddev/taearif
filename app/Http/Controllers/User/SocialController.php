@@ -65,10 +65,20 @@ class SocialController extends Controller
     public function delete(Request $request)
     {
 
-        $social = Social::where('user_id', Auth::id())->where('id', $request->socialid)->firstOrFail();
+        $social = Social::where('user_id', Auth::id())
+                        ->where('id', $request->socialid)
+                        ->firstOrFail();
         $social->delete();
-
+        //  return a JSON response If the request is AJAX
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Social link deleted successfully.'
+            ]);
+        }
+        // otherwise, flash a message and return back.
         Session::flash('success', 'Social link deleted successfully!');
         return back();
     }
+
 }
