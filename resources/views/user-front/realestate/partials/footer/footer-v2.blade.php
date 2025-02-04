@@ -4,7 +4,7 @@
       @if (!empty($userFooterData->bg_image))
           <!-- Background Image -->
           <img class="lazyload blur-up bg-img"
-              src="{{ isset($userFooterData->bg_image) ? asset('assets/front/img/user/footer/' . $userFooterData->bg_image) : asset('assets/front/img/static/lawyer/footer-bg-1.jpg') }}">
+              src="https://aqar-riyadh.site/website/images/footer-bg-3.png">
       @endif
       @if ($home_sections->top_footer_section == 1)
           <div class="footer-top">

@@ -1,14 +1,14 @@
  <header class="header-area header-2 @if (!request()->routeIs('front.user.detail.view', getParam())) header-static @endif" data-aos="slide-down">
      <!-- Start mobile menu -->
-     <div class="mobile-menu">
+     <div class="mobile-menu text-white">
          <div class="container">
-             <div class="mobile-menu-wrapper"></div>
+             <div class="mobile-menu-wrapper text-white"></div>
          </div>
      </div>
      <!-- End mobile menu -->
 
-     <div class="main-responsive-nav">
-         <div class="container">
+     <div class="main-responsive-nav text-white">
+         <div class="container text-white">
              <!-- Mobile Logo -->
              <div class="logo">
                  @if (!empty($userBs->logo))
@@ -25,7 +25,7 @@
              </button>
          </div>
      </div>
-     <div class="main-navbar">
+     <div class="main-navbar text-white">
          <div class="container">
              <nav class="navbar navbar-expand-lg">
                  <!-- Logo -->
@@ -36,7 +36,7 @@
                  @endif
                  <!-- Navigation items -->
                  <div class="collapse navbar-collapse">
-                     <ul id="mainMenu" class="navbar-nav mobile-item">
+                     <ul id="mainMenu" class="navbar-nav mobile-item text-white">
                          @php
                              $links = json_decode($userMenus, true);
                          @endphp
@@ -70,7 +70,7 @@
 
                      </ul>
                  </div>
-                 <div class="more-option mobile-item">
+                 <div class="more-option mobile-item text-white">
 
                      <div class="item">
                          <div class="language">

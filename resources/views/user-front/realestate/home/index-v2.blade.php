@@ -4,7 +4,6 @@
 @section('style')
    <style>
       .header-area.header-2:not(.header-static, .is-sticky) :is(.nav-link:not(:is(.active, .menu-dropdown .nav-link)), .wishlist-btn, .nice-select, .nice-select::after) {
-         color: var(--color-dark);
          font-weight: var(--font-medium);
       }
    </style>
@@ -28,13 +27,18 @@
                      <div class="content">
                         <span class="subtitle color-white">{{ $slider->title }}</span>
                         <h1 class="title color-white mb-0">{{ $slider->subtitle }}</h1>
+</br>
+<button class="btn bg-white text-dark border-dark">تملك دارك</button>
+
+
                      </div>
                   </div>
                @endforeach
 
             </div>
          </div>
-         <div class="banner-filter-form mt-40" data-aos="fade-up">
+
+         <div class="banner-filter-form mt-40 d-none" data-aos="fade-up">
             <div class="row justify-content-center">
                <div class="col-xxl-10">
                   <div class="tabs-navigation">
@@ -250,7 +254,8 @@
             <div class="row">
                <div class="col-12">
                   <div class="section-title title-inline mb-40" data-aos="fade-up">
-                     <h2 class="title">{{ $home_text?->category_section_title }}</h2>
+                     <!-- <h2 class="title">{{ $home_text?->category_section_title }}</h2> -->
+                     <h2 class="title">الفئات</h2>
                      <!-- Slider navigation buttons -->
                      <div class="slider-navigation">
                         <button type="button" title="Slide prev" class="slider-btn cat-slider-btn-prev rounded-pill">
@@ -301,7 +306,8 @@
             <div class="row">
                <div class="col-12">
                   <div class="section-title title-inline mb-40" data-aos="fade-up">
-                     <h2 class="title">{{ $home_text?->featured_property_title }}</h2>
+                     <!-- <h2 class="title">{{ $home_text?->featured_property_title }}</h2> -->
+                     <h2 class="title">افضل العقارات</h2>
                   </div>
                </div>
                <div class="col-12" data-aos="fade-up">
@@ -328,37 +334,35 @@
       </section>
    @endif
 
-   @if ($home_sections->call_to_action_section_status == 1)
-      @if (!is_null($callToActionInfo))
+
          <section class="video-banner with-radius pt-100 pb-70">
             <!-- Background Image -->
             <div class="bg-overlay">
                <img class="lazyload bg-img"
-                  src=" {{ asset('assets/tenant/image/action-section/' . $callToActionInfo->background_image) }}">
+                  src="https://codecanyon8.kreativdev.com/estaty/assets/img/6576af4f8ac2d.jpg">
             </div>
             <div class="container">
                <div class="row align-items-center">
                   <div class="col-lg-5">
                      <div class="content mb-30" data-aos="fade-up">
-                        <span class="subtitle text-white">{{ $callToActionInfo?->first_title }}</span>
-                        <h2 class="title text-white mb-10">{{ $callToActionInfo?->second_title }}</h2>
-                        <p class="text-white m-0 w-75 w-sm-100">{{ $callToActionInfo?->content }}</p>
+                        <span class="subtitle text-white">فيديو</span>
+                        <h2 class="title text-white mb-10">كيف يمكتك شراء وحدة عقارية من شركة شاهقة ومراحل الشراء</h2>
+                        <p class="text-white m-0 w-75 w-sm-100">يمكنك عن طريق شاهقة تملك وحده عقارية بسهوله تامة, وبدون اي تعقيدات ادارية</p>
                      </div>
                   </div>
                   <div class="col-lg-7">
-                     @if (!empty($callToActionSecInfo->first_button_url))
+                   
                         <div class="d-flex align-items-center justify-content-center h-100 mb-30" data-aos="fade-up">
-                           <a href="{{ $callToActionInfo->first_button_url }}" class="video-btn youtube-popup">
+                           <a href="#" class="video-btn youtube-popup">
                               <i class="fas fa-play"></i>
                            </a>
                         </div>
-                     @endif
+                    
                   </div>
                </div>
             </div>
          </section>
-      @endif
-   @endif
+
 
    @if ($home_sections->property_section == 1)
       <section class="popular-product pt-100 pb-70">
@@ -366,7 +370,8 @@
             <div class="row">
                <div class="col-12">
                   <div class="section-title title-inline mb-40" data-aos="fade-up">
-                     <h2 class="title">{{ $home_text?->property_title }}</h2>
+                     <!-- <h2 class="title">{{ $home_text?->property_title }}</h2> -->
+                     <h2 class="title">كل العقارات<h2>
                      <div class="tabs-navigation">
                         <ul class="nav nav-tabs">
                            <li class="nav-item">
@@ -448,7 +453,7 @@
    @if ($home_sections->work_process_section == 1)
       <section class="work-process pt-100 pb-70">
          <!-- Bg image -->
-         <img class="lazyload bg-img">
+         <img class="lazyload bg-img" src="https://codecanyon8.kreativdev.com/estaty/assets/front/images/work-process-bg.png">
          <div class="container">
             <div class="row">
                <div class="col-12">
@@ -1061,7 +1066,7 @@
          <!-- Bg image -->
          @if ($home_text->testimonial_image)
             <img class="lazyload bg-img"
-               src="{{ asset('assets/front/img/user/home_settings/' . $home_text->testimonial_image) }}">
+               src="https://aqar-riyadh.site/website/images/our_clintes.png">
          @endif
 
          <div class="container">

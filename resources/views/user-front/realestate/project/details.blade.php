@@ -135,13 +135,7 @@
                         <p class="font-lg color-white mx-auto"> <span class="product-location icon-start"><i
                                     class="fal fa-map-marker-alt"></i>{{ $project->address }}</span>
                         </p>
-                        <p class="font-lg color-white mx-auto"> <span class="product-location icon-start"><i
-                                    class="fal fa-user"></i>
 
-                                {{ $project->user->username }}
-
-                            </span>
-                        </p>
                     </div>
                 </div>
             </div>
