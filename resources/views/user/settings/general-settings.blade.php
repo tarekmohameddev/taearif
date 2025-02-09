@@ -227,8 +227,7 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                         </div>
                     </div>
 
-                    <!-- Preloader, Breadcrumb, Favicon Sections (Hidden) -->
-                    <!-- Preloader Sections (Hidden) -->
+                    <!--delete Preloader Section -->
                     <div class="settings-section d-none">
                         <h3 class="section-title">{{ __('Website Preloading Image') }}</h3>
                         <p class="section-description">
@@ -245,7 +244,8 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                             </button>
                         </div>
                     </div>
-                    <!-- Breadcrumb Sections (Hidden) -->
+
+                    <!--delete Breadcrumb Section -->
                     <div class="settings-section d-none">
                         <h3 class="section-title">{{ __('Breadcrumb Photo') }}</h3>
                         <p class="section-description">
@@ -261,8 +261,9 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                             </button>
                         </div>
                     </div>
-                    <!-- Favicon Sections (Hidden) -->
-                    <div class="settings-section d-none">
+
+                    <!--delete Favicon Section -->
+                    <div class="settings-section  d-none">
                         <h3 class="section-title">{{ __('Fav Icon') }}</h3>
                         <p class="section-description">
                             {{ __('Upload a small icon that represents your website. It will appear in the browser tab next to your website name.') }}
@@ -367,19 +368,49 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                             </div>
                         </div>
                     </div>
-                    <!-- End Home Page About Section -->
-
-                    <!-- Footer Section -->
+                </div>
+            <!-- home-page-about -->
+                <div class="card-footer">
                     <div class="row">
-                        <div class="col-md-12">
-                            <div class="feature-card-text">
-                                <h2 class="fs-4 fw-semibold mb-2">{{ __('Footer') }}</h2>
-                                <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
-                                    {{ __('Edit the footer details here') }}
-                                </p>
-                            </div>
+                        <div class="col-12 text-center">
+                            <button type="submit" id="submitBtn" class="btn btn-success">
+                                {{ __('Update') }}
+                            </button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- footer section -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="min-vh-100 d-flex align-items-center justify-content-center pb-3">
+            <div class="feature-card p-4 d-flex flex-column flex-md-row align-items-start gap-3 mx-auto w-100" style="">
+                <div class="icon-container d-flex align-items-center justify-content-center flex-shrink-0 mb-3 mb-md-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-dark">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="3" y1="15" x2="21" y2="15"></line>
+                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                        <line x1="15" y1="3" x2="15" y2="21"></line>
+                    </svg>
+                </div>
+                <div class="feature-card-text">
+                    <h2 class="fs-4 fw-semibold mb-2">{{ __('Footer') }}</h2>
+                    <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
+                        قم بتعديل بيانات التذييل من هنا
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
                     <div class="row">
                         <div class="col-md-12">
@@ -447,59 +478,83 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                         </div>
                     </div>
 
-                    <!-- Social Links Section -->
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="feature-card-text">
-                                <h2 class="fs-4 fw-semibold mb-2">{{ __('Social Links') }}</h2>
-                                <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
-                                    {{ __('Edit your company\'s social links here') }}
-                                </p>
+<!-- social section -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="min-vh-100 d-flex align-items-center justify-content-center pb-3">
+            <div class="feature-card p-4 d-flex flex-column flex-md-row align-items-start gap-3 mx-auto w-100" style="">
+                <div class="icon-container d-flex align-items-center justify-content-center flex-shrink-0 mb-3 mb-md-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-dark">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="3" y1="15" x2="21" y2="15"></line>
+                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                        <line x1="15" y1="3" x2="15" y2="21"></line>
+                    </svg>
+                </div>
+                <div class="feature-card-text">
+                    <h2 class="fs-4 fw-semibold mb-2">{{ __('Social Links') }}</h2>
+                    <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
+                        تعديل روابط الاجتماعية الخاصه بشركتك من هنا
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <!-- Left Box: Add Social Link Form -->
+            <div class="col-lg-12">
+
+                <form id="socialForm" action="{{ route('user.social.store') }}" method="post">
+
+                    <div class="card-body pt-5 pb-5">
+                        <div class="card-title">{{ __('Add Social Link') }}</div>
+
+
+                        @csrf
+                        <div class="form-group">
+                            <label for="">{{ __('Social Icon') }} **</label>
+                            <div class="btn-group d-block">
+                                <button type="button" class="btn btn-primary iconpicker-component"><i class="fa fa-fw fa-heart"></i></button>
+                                <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle" data-selected="fa-car" data-toggle="dropdown">
+                                </button>
+                                <div class="dropdown-menu"></div>
+                            </div>
+                            <input id="inputIcon" type="hidden" name="icon" value="">
+                            @if ($errors->has('icon'))
+                            <p class="mb-0 text-danger">{{ $errors->first('icon') }}</p>
+                            @endif
+                            <div class="mt-2">
+                                <small>{{ __('NB: click on the dropdown icon to select a social link icon.') }}</small>
                             </div>
                         </div>
-                    </div>
+                        <div class="form-group">
+                            <label for="">{{ __('URL') }} **</label>
+                            <input type="text" class="form-control" name="url" value="" placeholder="Enter URL of social media account">
+                            @if ($errors->has('url'))
+                            <p class="mb-0 text-danger">{{ $errors->first('url') }}</p>
+                            @endif
+                        </div>
+                        <div class="form-group">
+                            <label for="">{{ __('Serial Number') }} **</label>
+                            <input type="number" class="form-control ltr" name="serial_number" value="" placeholder="Enter Serial Number">
+                            <p id="errserial_number" class="mb-0 text-danger em"></p>
+                            <p class="text-warning">
+                                <small>{{ __('The higher the serial number is, the later the social link will be shown.') }}</small>
+                            </p>
+                        </div>
 
-                    <!-- Social Links - Add Social Link Form -->
-                    <div class="row">
-                        <div class="col-lg-12">
-                            <div class="card-body pt-5 pb-5">
-                                <div class="card-title">{{ __('Add Social Link') }}</div>
-                                <div class="container " style="margin-right: 0px !important; margin-left: 0px !important;">
-                                    <div class="form-group">
-                                        <label>{{ __('Social Icon') }} **</label>
-                                        <div class="btn-group d-block" style="position: relative;">
-                                            <button type="button" class="btn btn-primary iconpicker-component">
-                                                <i class="fa fa-fw fa-heart"></i>
-                                            </button>
-                                            <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle" data-selected="fa-car" data-toggle="dropdown"></button>
-                                            <div class="dropdown-menu"></div>
-                                        </div>
-                                        <!-- Change input name to social_links[0][icon] -->
-                                        <input id="inputIcon" type="hidden" name="social_links[0][icon]" value="">
-                                        @if ($errors->has('social_links.0.icon'))
-                                        <p class="mb-0 text-danger">{{ $errors->first('social_links.0.icon') }}</p>
-                                        @endif
-                                        <div class="mt-2">
-                                            <small>{{ __('NB: click on the dropdown icon to select a social link icon.') }}</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label>{{ __('URL') }} **</label>
-                                    <!-- Change input name to social_links[0][url] -->
-                                    <input type="text" class="form-control" name="social_links[0][url]" value="" placeholder="Enter URL of social media account">
-                                    @if ($errors->has('social_links.0.url'))
-                                    <p class="mb-0 text-danger">{{ $errors->first('social_links.0.url') }}</p>
-                                    @endif
-                                </div>
-                                <div class="form-group">
-                                    <label>{{ __('Serial Number') }} **</label>
-                                    <!-- Change input name to social_links[0][serial_number] -->
-                                    <input type="number" class="form-control" name="social_links[0][serial_number]" value="" placeholder="Enter Serial Number">
-                                    <p id="errserial_number" class="mb-0 text-danger em"></p>
-                                    <p class="text-warning">
-                                        <small>{{ __('The higher the serial number is, the later the social link will be shown.') }}</small>
-                                    </p>
+
+                    </div>
+                    <div class="card-footer pt-3">
+                        <div class="form">
+                            <div class="form-group from-show-notify row">
+                                <div class="col-12 text-center">
+                                    <button type="submit" id="displayNotif" class="btn btn-success">{{ __('Submit') }}</button>
                                 </div>
                             </div>
                         </div>
