@@ -203,8 +203,12 @@
                                 </div>
                                 @else
                                 <!-- Less than 100%: Display the progress bar with percentage and a yellow background -->
-                                <div class="progress-bar-status d-flex justify-content-center align-items-center bg-warning" role="progressbar" style="width: {{ $percentage }}%;" aria-valuenow="{{ $percentage }}" aria-valuemin="0" aria-valuemax="100">
-                                {{ $percentage }}% لاإكمال بيانات الموقع <a href="{{ route('view-steps')}}" class="btn-danger"> اضغط هنا </a>
+                                <div class="progress-bar-status align-items-center bg-warning" role="progressbar"
+                                aria-valuenow="{{ $percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                <div style=" padding: 0px 10px 0 10px; ">
+                                {{ $percentage }}% لاإكمال بيانات الموقع
+                                </div>
+                                <a href="{{ route('view-steps')}}" class="btn-danger"> اضغط هنا </a>
                                 </div>
                                 @endif
                             </div>
