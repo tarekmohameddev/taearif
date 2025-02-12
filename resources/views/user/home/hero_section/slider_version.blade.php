@@ -2,11 +2,6 @@
 
 @section('styles')
     <link rel="stylesheet" href="{{ asset('assets/admin/css/bootstrap-iconpicker.min.css') }}">
-    <style>
-        .set{
-            margin: 0 0 0 5px;
-        }
-    </style>
 @endsection
 
 @php
@@ -304,10 +299,9 @@ $user = Auth::guard('web')->user();
                                         @if ($userBs->theme == 'home_twelve')
                                         <i class="fas fa-home"></i>
                                         @endif
-                                        {{ __($keywords['Home'] ?? 'Home') }} <a data-text="{{ __($keywords['Home'] ?? 'Home') }}" data-type="home" @if ($userBs->theme == 'home_twelve') data-icon="fas fa-home" @endif
-                                            class="  set addToMenus btn btn-primary btn-sm float-right"
-                                            href=""
-                                            >{{ __('Add to Menus') }}</a>
+                                        {{ $keywords['Home'] ?? 'Home' }} <a data-text="{{ $keywords['Home'] ?? 'Home' }}" data-type="home" @if ($userBs->theme == 'home_twelve') data-icon="fas fa-home" @endif
+                                            class="addToMenus btn btn-primary btn-sm float-right"
+                                            href="">{{ __('Add to Menus') }}</a>
                                     </li>
 
                                     @if (!empty($permissions) && in_array('Service', $permissions))
@@ -315,10 +309,10 @@ $user = Auth::guard('web')->user();
                                         @if ($userBs->theme == 'home_twelve')
                                         <i class="fas fa-hands"></i>
                                         @endif
-                                        {{ __($keywords['Services'] ?? 'Services') }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hands" @endif
-                                            data-text="{{ __($keywords['Services'] ?? 'Services') }}"
+                                        {{ $keywords['Services'] ?? 'Services' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hands" @endif
+                                            data-text="{{ $keywords['Services'] ?? 'Services' }}"
                                             data-type="services"
-                                            class="set addToMenus btn btn-primary btn-sm float-right"
+                                            class="addToMenus btn btn-primary btn-sm float-right"
                                             href="">{{ __('Add to Menus') }}</a>
                                     </li>
                                     @endif
@@ -327,9 +321,9 @@ $user = Auth::guard('web')->user();
                                         @if ($userBs->theme == 'home_twelve')
                                         <i class="fas fa-hotel"></i>
                                         @endif
-                                        {{ __($keywords['Rooms'] ?? 'Rooms') }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hotel" @endif
-                                            data-text="{{ __($keywords['Rooms'] ?? 'Rooms') }}" data-type="rooms"
-                                            class="set addToMenus btn btn-primary btn-sm float-right"
+                                        {{ $keywords['Rooms'] ?? 'Rooms' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hotel" @endif
+                                            data-text="{{ $keywords['Rooms'] ?? 'Rooms' }}" data-type="rooms"
+                                            class="addToMenus btn btn-primary btn-sm float-right"
                                             href="">{{ __('Add to Menus') }}</a>
                                     </li>
                                     @endif
@@ -338,9 +332,9 @@ $user = Auth::guard('web')->user();
                                         @if ($userBs->theme == 'home_twelve')
                                         <i class="fas fa-play"></i>
                                         @endif
-                                        {{ __($keywords['Courses'] ?? 'Courses') }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-play" @endif
-                                            data-text="{{ __($keywords['Courses'] ?? 'Courses') }}" data-type="courses"
-                                            class="set addToMenus btn btn-primary btn-sm float-right"
+                                        {{ $keywords['Courses'] ?? 'Courses' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-play" @endif
+                                            data-text="{{ $keywords['Courses'] ?? 'Courses' }}" data-type="courses"
+                                            class="addToMenus btn btn-primary btn-sm float-right"
                                             href="">{{ __('Add to Menus') }}</a>
                                     </li>
                                     @endif
@@ -349,9 +343,9 @@ $user = Auth::guard('web')->user();
                                         @if ($userBs->theme == 'home_twelve')
                                         <i class="fas fa-hand-holding-usd"></i>
                                         @endif
-                                        {{ __($keywords['Causes'] ?? 'Causes') }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hand-holding-usd" @endif
-                                            data-text="{{ __($keywords['Causes'] ?? 'Causes') }}" data-type="causes"
-                                            class="set addToMenus btn btn-primary btn-sm float-right"
+                                        {{ $keywords['Causes'] ?? 'Causes' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hand-holding-usd" @endif
+                                            data-text="{{ $keywords['Causes'] ?? 'Causes' }}" data-type="causes"
+                                            class="addToMenus btn btn-primary btn-sm float-right"
                                             href="">{{ __('Add to Menus') }}</a>
                                     </li>
                                     @endif
@@ -360,24 +354,24 @@ $user = Auth::guard('web')->user();
                                         @if ($userBs->theme == 'home_twelve')
                                         <i class="fas fa-blog"></i>
                                         @endif
-                                        {{ __($keywords['Blog'] ?? 'Blog') }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-blog" @endif
-                                            data-text="{{ __($keywords['Blog'] ?? 'Blog') }}" data-type="blog"
-                                            class="set addToMenus btn btn-primary btn-sm float-right"
+                                        {{ $keywords['Blog'] ?? 'Blog' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-blog" @endif
+                                            data-text="{{ $keywords['Blog'] ?? 'Blog' }}" data-type="blog"
+                                            class="addToMenus btn btn-primary btn-sm float-right"
                                             href="">{{ __('Add to Menus') }}</a>
                                     </li>
                                     @endif
 
                                     @if (!empty($permissions) && in_array('Portfolio', $permissions))
-                                    <li class="list-group-item">{{ __($keywords['Portfolios'] ?? 'Portfolios') }} <a data-text="{{ __($keywords['Portfolios'] ?? 'Portfolios') }}" data-type="portfolios" class="set addToMenus btn btn-primary btn-sm float-right" href="">{{ __('Add to Menus') }}</a></li>
+                                    <li class="list-group-item">{{ $keywords['Portfolios'] ?? 'Portfolios' }} <a data-text="{{ $keywords['Portfolios'] ?? 'Portfolios' }}" data-type="portfolios" class="addToMenus btn btn-primary btn-sm float-right" href="">{{ __('Add to Menus') }}</a></li>
                                     @endif
 
                                     <li class="list-group-item">
                                         @if ($userBs->theme == 'home_twelve')
                                         <i class="fas fa-chalkboard-teacher"></i>
                                         @endif
-                                        {{ __($keywords['Contact'] ?? 'Contact') }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-chalkboard-teacher" @endif
-                                            data-text="{{ __($keywords['Contact'] ?? 'Contact') }}" data-type="contact"
-                                            class="set addToMenus btn btn-primary btn-sm float-right"
+                                        {{ $keywords['Contact'] ?? 'Contact' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-chalkboard-teacher" @endif
+                                            data-text="{{ $keywords['Contact'] ?? 'Contact' }}" data-type="contact"
+                                            class="addToMenus btn btn-primary btn-sm float-right"
                                             href="">{{ __('Add to Menus') }}</a>
                                     </li>
 
@@ -386,9 +380,9 @@ $user = Auth::guard('web')->user();
                                         @if ($userBs->theme == 'home_twelve')
                                         <i class="fas fa-user-friends"></i>
                                         @endif
-                                        {{ __($keywords['Team'] ?? 'Team') }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-friends" @endif
-                                            data-text="{{ __($keywords['Team'] ?? 'Team') }}" data-type="team"
-                                            class="set addToMenus btn btn-primary btn-sm float-right"
+                                        {{ $keywords['Team'] ?? 'Team' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-friends" @endif
+                                            data-text="{{ $keywords['Team'] ?? 'Team' }}" data-type="team"
+                                            class="addToMenus btn btn-primary btn-sm float-right"
                                             href="">{{ __('Add to Menus') }}</a>
                                     </li>
                                     @endif
@@ -398,9 +392,9 @@ $user = Auth::guard('web')->user();
                                         @if ($userBs->theme == 'home_twelve')
                                         <i class="fas fa-user-md"></i>
                                         @endif
-                                        {{ __($keywords['Career'] ?? 'Career') }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-md" @endif
-                                            data-text="{{ __($keywords['Career'] ?? 'Career') }}" data-type="career"
-                                            class="set addToMenus btn btn-primary btn-sm float-right"
+                                        {{ $keywords['Career'] ?? 'Career' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-md" @endif
+                                            data-text="{{ $keywords['Career'] ?? 'Career' }}" data-type="career"
+                                            class="addToMenus btn btn-primary btn-sm float-right"
                                             href="">{{ __('Add to Menus') }}</a>
                                     </li>
                                     @endif
@@ -409,9 +403,9 @@ $user = Auth::guard('web')->user();
                                         @if ($userBs->theme == 'home_twelve')
                                         <i class="far fa-question-circle"></i>
                                         @endif
-                                        {{ __($keywords['FAQ'] ?? 'FAQ') }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-question-circle" @endif
-                                            data-text="{{ __($keywords['FAQ'] ?? 'FAQ') }}" data-type="faq"
-                                            class="set addToMenus btn btn-primary btn-sm float-right"
+                                        {{ $keywords['FAQ'] ?? 'FAQ' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-question-circle" @endif
+                                            data-text="{{ $keywords['FAQ'] ?? 'FAQ' }}" data-type="faq"
+                                            class="addToMenus btn btn-primary btn-sm float-right"
                                             href="">{{ __('Add to Menus') }}</a>
                                     </li>
                                     @if (!empty($permissions) && in_array('Ecommerce', $permissions))
@@ -419,28 +413,28 @@ $user = Auth::guard('web')->user();
                                         @if ($userBs->theme == 'home_twelve')
                                         <i class="far fa-store-alt"></i>
                                         @endif
-                                        {{ __($keywords['Shop'] ?? 'Shop') }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-store-alt" @endif
-                                            data-text="{{ __($keywords['Shop'] ?? 'Shop') }}" data-type="shop"
-                                            class="set addToMenus btn btn-primary btn-sm float-right"
+                                        {{ $keywords['Shop'] ?? 'Shop' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-store-alt" @endif
+                                            data-text="{{ $keywords['Shop'] ?? 'Shop' }}" data-type="shop"
+                                            class="addToMenus btn btn-primary btn-sm float-right"
                                             href="">{{ __('Add to Menus') }}</a>
                                     </li>
                                     <li class="list-group-item">
                                         @if ($userBs->theme == 'home_twelve')
                                         <i class="far fa-cart-plus"></i>
                                         @endif
-                                        {{ __($keywords['Cart'] ?? 'Cart') }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
-                                            data-text="{{ __($keywords['Cart'] ?? 'Cart') }}" data-type="cart"
-                                            class="set addToMenus btn btn-primary btn-sm float-right"
+                                        {{ $keywords['Cart'] ?? 'Cart' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
+                                            data-text="{{ $keywords['Cart'] ?? 'Cart' }}" data-type="cart"
+                                            class="addToMenus btn btn-primary btn-sm float-right"
                                             href="">{{ __('Add to Menus') }}</a>
                                     </li>
                                     <li class="list-group-item">
                                         @if ($userBs->theme == 'home_twelve')
                                         <i class="far fa-cart-plus"></i>
                                         @endif
-                                        {{ __($keywords['Checkout'] ?? 'Checkout') }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
-                                            data-text="{{ __($keywords['Checkout'] ?? 'Checkout') }}"
+                                        {{ $keywords['Checkout'] ?? 'Checkout' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
+                                            data-text="{{ $keywords['Checkout'] ?? 'Checkout' }}"
                                             data-type="checkout"
-                                            class="set addToMenus btn btn-primary btn-sm float-right"
+                                            class="addToMenus btn btn-primary btn-sm float-right"
                                             href="">{{ __('Add to Menus') }}</a>
                                     </li>
                                     @endif

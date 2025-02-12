@@ -96,7 +96,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 </style>
 <div calss="row">
     <div class="container-fluid website-settings">
-        <h1 class="h3 mb-4 font-weight-bold text-dark">إعدادات التصميم</h1>
+        <h1 class="h3 mb-4 font-weight-bold text-dark">إعدادات الاقسام</h1>
         <div class="row g-4">
             <div class="col-md-6 col-lg-4 mb-4">
 
@@ -193,7 +193,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     </div>
                 </a>
             </div>
-            <div class="col-md-6 col-lg-4 mb-4 d-none">
+            <div class="col-md-6 col-lg-4 mb-4">
                 <a href="{{ route('user.home_page.brand_section') }}" class="text-decoration-none">
                     <div class="card h-100 transition-hover">
                         <div class="card-body d-flex align-items-center p-4">
@@ -238,7 +238,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             </div>
             <!--  -->
 
-            <div class="col-md-6 col-lg-4 mb-4 d-none">
+            <div class="col-md-6 col-lg-4 mb-4">
                 <a href="{{ route('user.skill.index') }}" class="text-decoration-none">
                     <div class="card h-100 transition-hover">
                         <div class="card-body d-flex align-items-center p-4">
@@ -279,7 +279,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     </div>
                 </a>
             </div>
-            <div class="col-md-6 col-lg-4 mb-4  d-none">
+            <div class="col-md-6 col-lg-4 mb-4">
                 <a href="{{ route('user.team_section') . '?language=' . $default->code }}" class="text-decoration-none">
                     <div class="card h-100 transition-hover">
                         <div class="card-body d-flex align-items-center p-4">
@@ -359,7 +359,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     </div>
                 </a>
             </div>
-            <div class="col-md-6 col-lg-4 mb-4 d-none">
+            <div class="col-md-6 col-lg-4 mb-4">
                 <a href="{{ route('user.blog.category.index'). '?language=' . $default->code  }}" class="text-decoration-none">
                     <div class="card h-100 transition-hover">
                         <div class="card-body d-flex align-items-center p-4">
@@ -379,7 +379,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     </div>
                 </a>
             </div>
-            <div class="col-md-6 col-lg-4 mb-4 d-none">
+            <div class="col-md-6 col-lg-4 mb-4">
                 <a href="{{ route('user.footer.text'). '?language=' . $default->code  }}" class="text-decoration-none">
                     <div class="card h-100 transition-hover">
                         <div class="card-body d-flex align-items-center p-4">
@@ -399,7 +399,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     </div>
                 </a>
             </div>
-            <div class="col-md-6 col-lg-4 mb-4 d-none">
+            <div class="col-md-6 col-lg-4 mb-4">
                 <a href="{{ route('user.footer.quick_links'). '?language=' . $default->code }}" class="text-decoration-none">
                     <div class="card h-100 transition-hover">
                         <div class="card-body d-flex align-items-center p-4">
