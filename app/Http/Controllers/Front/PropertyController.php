@@ -381,6 +381,30 @@ class PropertyController extends Controller
 
         return back()->with('success', 'Message sent successfully');
     }
+
+    public function buynow($website, Request $request)
+    {
+        $user = getUser();
+        
+        $info = BasicSetting::where('user_id', $user->id)->select('is_recaptcha')->first();
+        $messages = [];
+        
+        
+
+        $request['to_mail'] = $user->email;
+
+        try {
+            PropertyContact::createContact($user->id,  $request->all());
+            $this->sendMail($request);
+        } catch (\Exception $e) {
+            // return back()->with('error', $e->getMessage());
+            return back()->with('error', 'Something went wrong!');
+        }
+
+
+
+        return back()->with('success', 'Message sent successfully');
+    }
     public function contactUser(Request $request)
     {
 
