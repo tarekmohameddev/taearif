@@ -148,6 +148,7 @@ class CustomerController extends Controller
             return redirect()->back();
         }
     }
+
     public function forgetPassword($domain)
     {
 
@@ -263,6 +264,7 @@ class CustomerController extends Controller
     {
         $user = getUser();
 
+        // dd($user);
         return view('user-front.customer.signup', $user);
     }
     public function contact(Request $request, $domain)
@@ -294,6 +296,8 @@ class CustomerController extends Controller
 
     public function signupSubmit(Request $request, $domain)
     {
+        // dd($request->all());
+
         $user = getUser();
         $messages = [];
         $rules = [];
@@ -395,19 +399,19 @@ class CustomerController extends Controller
             $mail->Port = $info->smtp_port;
         }
         // finally, add other information and send the mail
-        try {
-            $mail->setFrom($info->from_mail, $name);
-            $mail->addReplyTo($email);
-            $mail->addAddress($request->email);
-            $mail->isHTML(true);
-            $mail->Subject = $mailSubject;
-            $mail->Body = $mailBody;
-            $mail->send();
-            $request->session()->flash('success', 'A verification mail has been sent to your email address.');
-        } catch (\Exception $e) {
-            dd($e);
-            $request->session()->flash('error', 'Mail could not be sent!');
-        }
+        // try {
+        //     $mail->setFrom($info->from_mail, $name);
+        //     $mail->addReplyTo($email);
+        //     $mail->addAddress($request->email);
+        //     $mail->isHTML(true);
+        //     $mail->Subject = $mailSubject;
+        //     $mail->Body = $mailBody;
+        //     $mail->send();
+        //     $request->session()->flash('success', 'A verification mail has been sent to your email address.');
+        // } catch (\Exception $e) {
+        //     dd($e);
+        //     $request->session()->flash('error', 'Mail could not be sent!');
+        // }
         return;
     }
     public function signupVerify(Request $request, $domain, $token)
@@ -442,6 +446,7 @@ class CustomerController extends Controller
         $data['roomSetting'] = DB::table('user_room_settings')->where('user_id', $data['author']->id)->first();
         $data['roomBookingCount'] = RoomBooking::where('customer_id', Auth::guard('customer')->user()->id)->where('payment_status', 1)->count();
         $data['propertyWishlistsCount'] = PropertyWishlist::where('customer_id', Auth::guard('customer')->user()->id)->count();
+        // dd($data);
         return view('user-front.customer.dashboard', $data);
     }
     public function roomBookings()
@@ -623,10 +628,31 @@ class CustomerController extends Controller
             return back();
         }
 
+        // $bex = UserShopSetting::where('user_id', $user->id)->first();
+
+        // if ($bex->is_shop == 0 || $bex->catalog_mode == null) {
+        //     $bex->is_shop = 0;
+        //     // return back();
+        // }
+
+        // for demo
         $bex = UserShopSetting::where('user_id', $user->id)->first();
-        if ($bex->is_shop == 0) {
-            return back();
+
+        if (!$bex) {
+            $bex = UserShopSetting::create([
+                'user_id' => $user->id,
+                'is_shop' => 1,
+                'catalog_mode' => 1,
+                'item_rating_system' => 1,
+            ]);
         }
+
+        if ($bex->is_shop == 0 || $bex->catalog_mode == null) {
+            $bex->is_shop = 1;
+            $bex->save();
+        }
+
+
         $data['orders'] = UserOrder::where('customer_id', Auth::guard('customer')->user()->id)->orderBy('id', 'DESC')->get();
         return view('user-front.customer.order', $data);
     }
@@ -1168,4 +1194,102 @@ class CustomerController extends Controller
             ->orderBy('id', 'DESC')->get();
         return view('user-front.customer.property-wishlist', $data);
     }
+
+    // // for crm show  customers
+    // public function customers()
+    // {
+    //     $user = getUser();
+    //     $language = $this->getUserCurrentLanguage($user->id);
+    //     // customers
+    //     $customers = Customer::orderBy('id', 'DESC')->get();
+
+    //     dd($customers);
+
+    //     return view('real-estate.back.customers.index', compact('customers'));
+
+    // }
+    // //
+    // // for create new customer
+    // public function createCustomer()
+    // {
+    //     return view('real-estate.back.customers.create');
+    // }
+
+    // // for store new customer
+    // public function storeCustomer(Request $request)
+    // {
+    //     $request->validate([
+    //         'first_name' => 'required',
+    //         'last_name' => 'required',
+    //         'email' => 'required|unique:customers',
+    //         'phone' => 'required',
+    //         'address' => 'required',
+    //         'city' => 'required',
+    //         'state' => 'required',
+    //         'country' => 'required',
+    //         'zip' => 'required',
+    //     ]);
+
+    //     $customer = new Customer();
+    //     $customer->first_name = $request->first_name;
+    //     $customer->last_name = $request->last_name;
+    //     $customer->email = $request->email;
+    //     $customer->phone = $request->phone;
+    //     $customer->address = $request->address;
+    //     $customer->city = $request->city;
+    //     $customer->state = $request->state;
+    //     $customer->country = $request->country;
+    //     $customer->zip = $request->zip;
+    //     $customer->save();
+
+    //     return redirect()->route('customers')->with('success', 'Customer created successfully');
+    // }
+
+    // // for edit customer
+    // public function editCustomer($id)
+    // {
+    //     $customer = Customer::findOrFail($id);
+    //     return view('real-estate.back.customers.edit', compact('customer'));
+    // }
+
+    // // for update customer
+    // public function updateCustomer(Request $request, $id)
+    // {
+    //     $request->validate([
+    //         'first_name' => 'required',
+    //         'last_name' => 'required',
+    //         'email' => 'required|unique:customers,email,' . $id,
+    //         'phone' => 'required',
+    //         'address' => 'required',
+    //         'city' => 'required',
+    //         'state' => 'required',
+    //         'country' => 'required',
+    //         'zip' => 'required',
+    //     ]);
+
+    //     $customer = Customer::findOrFail($id);
+    //     $customer->first_name = $request->first_name;
+    //     $customer->last_name = $request->last_name;
+    //     $customer->email = $request->email;
+    //     $customer->phone = $request->phone;
+    //     $customer->address = $request->address;
+    //     $customer->city = $request->city;
+    //     $customer->state = $request->state;
+    //     $customer->country = $request->country;
+    //     $customer->zip = $request->zip;
+    //     $customer->save();
+
+    //     return redirect()->route('customers')->with('success', 'Customer updated successfully');
+    // }
+
+    // // for delete customer
+    // public function deleteCustomer($id)
+    // {
+    //     $customer = Customer::findOrFail($id);
+    //     $customer->delete();
+    //     return redirect()->route('customers')->with('success', 'Customer deleted successfully');
+    // }
+
+    // //
+
 }
