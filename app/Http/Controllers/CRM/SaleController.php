@@ -41,8 +41,8 @@ class SaleController extends Controller
         $users = User::all();
         $properties = PropertyContent::all();
         $contracts = Contract::all();
-        $categories = Category::all(); // Fetch all categories
-        $cities = City::all(); // Fetch all cities
+        $categories = Category::all();
+        $cities = City::all();
 // dd($cities);
         return view('real-estate.back.sales.create', compact('users', 'properties', 'contracts', 'categories' , 'cities'));
     }
@@ -82,6 +82,7 @@ class SaleController extends Controller
             'area' => 'required|numeric|min:0',
             'property_status' => 'required|in:1,2',
             'category_id' => 'required|exists:user_property_categories,id',
+            'contract_subject' => 'required|string|max:255',
         ]);
 
 
@@ -103,7 +104,7 @@ class SaleController extends Controller
             'user_id' => auth()->id(),
             'property_id' => $property->id,
             'language_id' => $language->id,
-            'category_id' => $request->category_id, // ✅ Ensure this is present
+            'category_id' => $request->category_id,
             'title' => $request->property_title,
             'city_id' => $request->city_id,
             'state_id' => $request->state_id,
@@ -111,7 +112,14 @@ class SaleController extends Controller
             'address' => $request->address,
             'description' => $request->description,
         ]);
-
+        // Create Contract
+        $contract = Contract::create([
+            'customer_id' => auth()->id(),
+            'subject' => $request->contract_subject,
+            'contract_value' => 5454,
+            'start_date' => $request->sale_date,
+            'end_date' => $request->sale_date,
+        ]);
         // Create Sale
         Sale::create([
             'user_id' => auth()->id(),
@@ -171,10 +179,14 @@ class SaleController extends Controller
 
      public function update(Request $request, $id)
      {
+         // Debugging step
+         // dd($request->all());
+
          $request->validate([
              'sale_price' => 'required|numeric',
              'sale_date' => 'required|date',
              'status' => 'required|in:pending,completed,canceled',
+             'contract_subject' => 'required|string|max:255',
 
              // Property fields
              'price' => 'required|numeric',
@@ -191,11 +203,10 @@ class SaleController extends Controller
              'floor_planning_image' => 'nullable|string',
              'video_image' => 'nullable|string',
              'property_status' => 'required|in:1,2',
-
          ]);
 
-         // Find the Sale with its related property
-         $sale = Sale::with('property')->findOrFail($id);
+         // Find the Sale with its related property and contract
+         $sale = Sale::with(['property', 'contract'])->findOrFail($id);
 
          // Update Sale details
          $sale->update([
@@ -206,7 +217,6 @@ class SaleController extends Controller
 
          // Update related Property if exists
          if ($sale->property) {
-
              $sale->property->update([
                  'price' => $request->price,
                  'purpose' => $request->purpose,
@@ -224,9 +234,18 @@ class SaleController extends Controller
                  'video_image' => $request->video_image,
              ]);
          }
+         if (!$sale->contract) {
+             return redirect()->route('crm.sales.index')->with('error', 'No contract found for this sale.');
+         }
+         $sale->contract->update([
+             'subject' => $request->contract_subject,
+             'start_date' => $request->sale_date,
+         ]);
 
-         return redirect()->route('crm.sales.index')->with('success', 'Sale and Property updated successfully!');
+         return redirect()->route('crm.sales.index')->with('success', 'Sale, Property, and Contract updated successfully!');
      }
+
+
 
 
 

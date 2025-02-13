@@ -29,6 +29,13 @@
                     <label for="Property" class="form-label mt-3">Property title </label>
                     <input type="text" class="form-control" id="Property" name="Property" value="{{ $sale->property->contents->first()?->title ?? 'No Title Available' }}">
 
+                <!-- Contract Subject Field -->
+                <div class="form-label mt-3">
+                    <label for="contract_subject" class="form-label">Contract Subject</label>
+                    <input type="text" class="form-control" id="contract_subject" name="contract_subject" value="{{ $sale->contract->subject ?? 'No Title Available' }}">
+                    @error('contract_subject') <div class="text-danger">{{ $message }}</div> @enderror
+                </div>
+
                     <label for="price" class="form-label">Price</label>
                     <input type="number" class="form-control" id="price" name="price" value="{{ old('price', $sale->property->price) }}" required>
 

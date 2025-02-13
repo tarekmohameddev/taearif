@@ -21,6 +21,12 @@
         <div class="card p-3 my-3">
             <h4>Sale Details</h4>
             <div class="row">
+                <!-- Contract Subject Field -->
+                <div class="col-md-offset-2 col-md-6">
+                    <label for="contract_subject" class="form-label">Contract Subject</label>
+                    <input type="text" class="form-control @error('contract_subject') is-invalid @enderror" id="contract_subject" name="contract_subject" value="{{ old('contract_subject') }}" required>
+                    @error('contract_subject') <div class="text-danger">{{ $message }}</div> @enderror
+                </div>
                 <div class="col-md-6">
                     <label for="sale_price" class="form-label">Sale Price</label>
                     <input type="number" class="form-control @error('sale_price') is-invalid @enderror" id="sale_price" name="sale_price" value="{{ old('sale_price') }}" required>
@@ -42,6 +48,9 @@
                     </select>
                     @error('status') <div class="text-danger">{{ $message }}</div> @enderror
                 </div>
+
+
+
             </div>
         </div>
 
@@ -58,9 +67,7 @@
                     <!-- // Add address -->
                     <label for="address" class="form-label mt-3">Address</label>
                     <input type="text" class="form-control" id="address" name="address" value="{{ old('address') }}" required>
-                    <!-- //description -->
-                    <label for="description" class="form-label mt-3">Description</label>
-                    <textarea class="form-control" id="description" name="description" rows="3" required>{{ old('description') }}</textarea>
+
 
                     <label for="price" class="form-label">Price</label>
                     <input type="number" class="form-control" id="price" name="price" value="{{ old('price') }}" required>
@@ -96,21 +103,29 @@
                         <option value="2" {{ old('property_status') == '2' ? 'selected' : '' }}>Sold</option>
                     </select>
 
-<label for="category_id" class="form-label">Category</label>
-<select class="form-control" id="category_id" name="category_id" required>
-    @foreach ($categories as $category)
-        <option value="{{ $category->id }}">{{ $category->name }}</option>
-    @endforeach
-</select>
+                    <label for="category_id" class="form-label">Category</label>
+                    <select class="form-control" id="category_id" name="category_id" required>
+                        @foreach ($categories as $category)
+                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                        @endforeach
+                    </select>
 
-<label for="city_id" class="form-label">city id</label>
-<select class="form-control" id="city_id" name="city_id" required>
-    @foreach ($cities as $city)
-        <option value="{{ $city->id }}">{{ $city->name }}</option>
-    @endforeach
-</select>
+                    <label for="city_id" class="form-label">city id</label>
+                    <select class="form-control" id="city_id" name="city_id" required>
+                        @foreach ($cities as $city)
+                            <option value="{{ $city->id }}">{{ $city->name }}</option>
+                        @endforeach
+                    </select>
 
 
+                </div>
+
+            </div>
+            <div class="row">
+                <div class="offset-md-2  col-md-6 ">
+                    <!-- //description -->
+                    <label for="description" class="form-label mt-3">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3" required>{{ old('description') }}</textarea>
                 </div>
             </div>
         </div>
