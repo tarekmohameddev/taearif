@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+
 class Property extends Model
 {
     use HasFactory;
@@ -88,6 +89,7 @@ class Property extends Model
         return $this->hasMany(PropertyContent::class, 'property_id');
     }
 
+
     public function content($langId)
     {
         return  $this->contents()->where('language_id', $langId)->first();
@@ -112,4 +114,26 @@ class Property extends Model
     {
         return $this->hasMany(PropertyWishlist::class, 'property_id', 'id');
     }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class, 'property_id');
+    }
+
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'property_id');
+    }
+
+
+    public function getFirstContentAttribute()
+    {
+        return $this->contents->first();
+    }
+    public function getTitleAttribute()
+    {
+        return $this->contents->where('language_id', 1)->first()?->title ?? 'Untitled Property';
+    }
+
+
 }

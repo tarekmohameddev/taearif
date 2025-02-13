@@ -1,20 +1,36 @@
 <?php
 
-use App\Http\Controllers\Front\ProjectController as FrontProjectController;
-use App\Http\Controllers\Front\PropertyController as FrontPropertyController;
-use App\Http\Controllers\User\HotelBooking\RoomController;
-use App\Http\Controllers\User\HotelBooking\RoomManagementController;
-use App\Http\Controllers\User\RealestateManagement\ManageProject\ProjectController;
-use App\Http\Controllers\User\RealestateManagement\ManageProject\TypeController;
-use App\Http\Controllers\User\RealestateManagement\ManageProperty\AmenityController;
-use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
-use App\Http\Controllers\User\RealestateManagement\ManageProperty\CityController;
-use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryController;
-use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
-use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
-use App\Http\Controllers\User\RealestateManagement\ManageProperty\StateController;
+use App\Models\Sale;
+use Admin\ItemOrderController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
+use App\Http\Controllers\ContractController;
+use App\Http\Controllers\CRM\SaleController;
+use App\Http\Controllers\CRM\SalesController;
+use App\Http\Controllers\CRM\BookingController;
+use App\Http\Controllers\CRM\ContractsController;
+use App\Http\Controllers\Front\CustomerController;
+use App\Http\Controllers\CRM\CustcrmomerController;
+use App\Http\Controllers\CRM\PaymentRecordController;
+use App\Http\Controllers\CRM\PaymentRecordsController;
+use App\Http\Controllers\User\HotelBooking\RoomController;
+use App\Http\Controllers\User\HotelBooking\RoomManagementController;
+use App\Http\Controllers\Front\ProjectController as FrontProjectController;
+// CRM
+use App\Http\Controllers\Front\PropertyController as FrontPropertyController;
+use App\Http\Controllers\User\RealestateManagement\ManageProject\TypeController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\CityController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\StateController;
+use App\Http\Controllers\User\RealestateManagement\ManageProject\ProjectController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\AmenityController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
+
+Route::get('/test-sales', function () {
+    return Sale::with('property', 'user', 'contract')->get();
+});
 
 $domain = env('WEBSITE_HOST');
 if (!app()->runningInConsole()) {
@@ -25,6 +41,40 @@ if (!app()->runningInConsole()) {
 Route::fallback(function () {
     return view('errors.404');
 })->middleware('setlang');
+
+//
+
+Route::get('/all-web-routes', function () {
+    $routes = collect(Route::getRoutes())->filter(function ($route) {
+        return in_array('web', $route->middleware());
+    });
+
+    // Sort routes to have GET methods at the top
+    $sortedRoutes = $routes->sortByDesc(function ($route) {
+        return in_array('GET', $route->methods());
+    });
+
+    echo "<table border='1' cellpadding='8' cellspacing='0' style='border-collapse: collapse; width: 100%; text-align: left;'>";
+    echo "<tr style='background-color: #f2f2f2;'>";
+    echo "<th>URI</th><th>Name</th><th>Methods</th></tr>";
+
+    foreach ($sortedRoutes as $route) {
+        $methods = implode(' | ', $route->methods());
+        $uri = $route->uri();
+        $name = $route->getName() ?? 'N/A';
+
+        echo "<tr>";
+        echo "<td><a href='/$uri' target='_blank' style='text-decoration: none; color: blue;'>/$uri</a></td>";
+        echo "<td>$name</td>";
+        echo "<td>$methods</td>";
+        echo "</tr>";
+    }
+
+    echo "</table>";
+
+});
+
+//
 
 // cron job for sending expiry mail
 Route::get('/subcheck', 'CronJobController@expired')->name('cron.expired');
@@ -83,7 +133,42 @@ Route::domain($domain)->group(function () {
     Route::post('/track-visitor', 'Front\FrontendController@get_info')->name('front.track.data');
     Route::get('/stats', 'Front\FrontendController@getStats')->name('front.getStats');
 
+    //crm customers
+    Route::get('crm-customers/all', 'CRM\CustcrmomerController@customers')->name('crm.customers');
+    Route::get('crm-customers/create', 'CRM\CustcrmomerController@createCustomer')->name('crm.customers.create');
+    Route::post('crm-customers/store', 'CRM\CustcrmomerController@storeCustomer')->name('crm.customers.store'); //
+    Route::get('crm-customers/edit/{id}', 'CRM\CustcrmomerController@editCustomer')->name('crm.customers.edit');
+    Route::post('crm-customers/update/{id}', 'CRM\CustcrmomerController@updateCustomer')->name('crm.customers.update'); //update
+    Route::get('crm-customers/delete/{id}', 'CRM\CustcrmomerController@deleteCustomer')->name('crm.customers.delete');
+    Route::post('crm-customers/bulk-delete', 'CRM\CustcrmomerController@bulkDelete')->name('crm.customers.bulk_delete');
+
+    //crm sales
+
+    Route::prefix('crm')->name('crm.')->group(function () {
+    Route::resource('sales', SaleController::class);
+    });
+    // Route::get('crm-customers/sales', 'CustcrmomerController@customers')->name('crm.sales');
+    //crm payment-records
+    Route::resource('payment-records', PaymentRecordController::class);
+
+
+    //
+    Route::get('/contractsign', [ContractController::class, 'contractsign'])->name('contractsign');
+
     Route::group(['prefix' => 'user', 'middleware' => ['auth', 'userstatus', 'Demo']], function () {
+        // real estate management
+        Route::resource('contracts', ContractController::class);
+        Route::post('/contracts/{contract}/sign', [ContractController::class, 'sign'])->name('contracts.sign');
+        Route::get('/contracts/{contract}/download', [ContractController::class, 'downloadPDF'])->name('contracts.download');
+        Route::get('/contracts/{contract}/{action}', [ContractController::class, 'handleAction'])
+            ->where('action', 'print|send|reminder|cancel|renew')
+            ->name('contracts.action');
+        //
+        //crm bookings
+        Route::resource('bookings', BookingController::class);
+        // Route::get('/bookings', 'CRM\BookingController@index')->name('crm.bookings');
+
+
         // user theme change
         Route::get('/change-theme', 'User\UserController@changeTheme')->name('user.theme.change');
         // RTL check
@@ -221,7 +306,7 @@ Route::domain($domain)->group(function () {
         Route::post('/home_page/brand_section/store_brand', 'User\BrandSectionController@storeBrand')->name('user.home_page.brand_section.store_brand');
         Route::post('/home_page/brand_section/update_brand', 'User\BrandSectionController@updateBrand')->name('user.home_page.brand_section.update_brand');
         Route::post('/home_page/brand_section/delete_brand', 'User\BrandSectionController@deleteBrand')->name('user.home_page.brand_section.delete_brand');
-        Route::get('/home_page/update_intro_section', 'User\AchievementController@updateHomePageSection')->name('user.home_page.update_intro_section');
+        // Route::get('/home_page/update_intro_section', 'User\AchievementController@updateHomePageSection')->name('user.home_page.update_intro_section');
         // home page hero-section static-version route
         Route::get('/home_page/hero/static_version', 'User\HeroStaticController@staticVersion')->name('user.home_page.hero.static_version');
         Route::post('/home_page/hero/static_version/update_static_info/{language}', 'User\HeroStaticController@updateStaticInfo')->name('user.home_page.hero.update_static_info');
@@ -723,7 +808,7 @@ Route::domain($domain)->group(function () {
                     Route::post('/delete-city', 'destroy')->name('user.property_management.delete_city');
                     Route::post('/bulk-delete-city', 'bulkDestroy')->name('user.property_management.bulk_delete_city');
                 });
-                // properties route 
+                // properties route
                 Route::controller(PropertyController::class)->group(function () {
                     Route::get('/settings', 'settings')->name('user.property_management.settings');
                     Route::post('/update-settings', 'update_settings')->name('user.property_management.update_settings');
@@ -748,11 +833,12 @@ Route::domain($domain)->group(function () {
                     Route::post('delete', 'delete')->name('user.property_management.delete_property');
                     Route::post('bulk-delete', 'bulkDelete')->name('user.property_management.bulk_delete_property');
                 });
-                // property messages 
+                // property messages
                 Route::controller(PropertyMessageController::class)->group(function () {
                     Route::get('/messages', 'propertyMessages')->name('user.property_management.property_message');
                     Route::post('/message-delete', 'destroy')->name('user.property_management.property_message.destroy');
                 });
+
             });
 
 
@@ -788,7 +874,7 @@ Route::domain($domain)->group(function () {
                 //#========== project slider image end
 
 
-                // Project type routes 
+                // Project type routes
                 Route::prefix('type')->controller(TypeController::class)->group(function () {
                     Route::get('/{id}', 'index')->name('user.project_management.project_types');
                     Route::post('/store', 'store')->name('user.project_management.project_type.store');
@@ -797,13 +883,30 @@ Route::domain($domain)->group(function () {
                     Route::post('/bulk-delete', 'bulkDelete')->name('user.project_management.bulk_delete_type');
                 });
             });
+
+            // customers management
+            // Route::prefix('customers')->controller(CustomerController::class)->group(function () {
+            //     Route::get('/all', 'customers')->name('user.customers');
+            //     Route::get('/create', 'create')->name('user.customers.create');
+            //     Route::post('/store', 'store')->name('user.customers.store');
+            //     Route::get('/edit/{id}', 'edit')->name('user.customers.edit');
+            //     Route::post('/update', 'update')->name('user.customers.update');
+            //     Route::post('/delete', 'delete')->name('user.customers.delete');
+            //     Route::post('/bulk-delete', 'bulkDelete')->name('user.customers.bulk_delete');
+            // });
+
+            // Route::get('/all', 'Front\CustomerController@customers')->name('crm.customers');
+            // //customers.create
+            // Route::get('/create', 'Front\CustomerController@create')->name('crm.customers.create');
+
         });
+
         Route::group(['middleware' => 'checkUserPermission:Ecommerce|Donation Management|Course Management|Hotel Booking'], function () {
             // user start register-user, ban user, details, reports
             Route::post('user/customer/ban', 'User\UserController@userban')->name('user.customer.ban');
             Route::get('register/customer/details/{id}', 'User\UserController@view')->name('register.customer.view');
             Route::post('register/customer/email', 'User\UserController@emailStatus')->name('register.customer.email');
-            Route::get('/ads-reports', 'User\PostController@viewReports')->name('user.ads-report');
+            // Route::get('/ads-reports', 'User\PostController@viewReports')->name('user.ads-report');
             Route::get('/register-user', 'User\UserController@registerUsers')->name('user.register-user');
             Route::get('/secrect-login', 'User\UserController@secretLogin')->name('customer.secrect.login');
             Route::get('register/customer/{id}/changePassword', 'User\UserController@changePassCstmr')->name('register.customer.changePass');
@@ -882,21 +985,21 @@ Route::domain($domain)->group(function () {
             Route::post('/coupon/update', 'User\CouponController@update')->name('user.coupon.update');
             Route::post('/coupon/delete', 'User\CouponController@delete')->name('user.coupon.delete');
             // User Coupon Routes End
-            Route::post('/orders/mail', 'Admin\ItemOrderController@mail')->name('user.orders.mail');
+            // Route::post('/orders/mail', 'ItemOrderController@mail')->name('user.orders.mail');
 
             // Product Order
-            Route::get('/item/all/orders', 'User\ItemOrderController@all')->name('user.all.item.orders');
-            Route::get('/item/pending/orders', 'User\ItemOrderController@pending')->name('user.pending.item.orders');
-            Route::get('/item/processing/orders', 'User\ItemOrderController@processing')->name('user.processing.item.orders');
-            Route::get('/item/completed/orders', 'User\ItemOrderController@completed')->name('user.completed.item.orders');
-            Route::get('/item/rejected/orders', 'User\ItemOrderController@rejected')->name('user.rejected.item.orders');
-            Route::post('/item/orders/status', 'User\ItemOrderController@status')->name('user.item.orders.status');
-            Route::post('/item/payment/status', 'User\ItemOrderController@paymentStatus')->name('user.item.paymentStatus');
-            Route::get('/item/orders/details/{id}', 'User\ItemOrderController@details')->name('user.item.details');
-            Route::post('/item/order/delete', 'User\ItemOrderController@orderDelete')->name('user.item.order.delete');
-            Route::post('/item/order/bulk-delete', 'User\ItemOrderController@bulkOrderDelete')->name('user.item.order.bulk.delete');
-            Route::get('/item/orders/report', 'User\ItemOrderController@report')->name('user.orders.report');
-            Route::get('/item/export/report', 'User\ItemOrderController@exportReport')->name('user.orders.export');
+            // Route::get('/item/all/orders', 'User\ItemOrderController@all')->name('user.all.item.orders');
+            // Route::get('/item/pending/orders', 'User\ItemOrderController@pending')->name('user.pending.item.orders');
+            // Route::get('/item/processing/orders', 'User\ItemOrderController@processing')->name('user.processing.item.orders');
+            // Route::get('/item/completed/orders', 'User\ItemOrderController@completed')->name('user.completed.item.orders');
+            // Route::get('/item/rejected/orders', 'User\ItemOrderController@rejected')->name('user.rejected.item.orders');
+            // Route::post('/item/orders/status', 'User\ItemOrderController@status')->name('user.item.orders.status');
+            // Route::post('/item/payment/status', 'User\ItemOrderController@paymentStatus')->name('user.item.paymentStatus');
+            // Route::get('/item/orders/details/{id}', 'User\ItemOrderController@details')->name('user.item.details');
+            // Route::post('/item/order/delete', 'User\ItemOrderController@orderDelete')->name('user.item.order.delete');
+            // Route::post('/item/order/bulk-delete', 'User\ItemOrderController@bulkOrderDelete')->name('user.item.order.bulk.delete');
+            // Route::get('/item/orders/report', 'User\ItemOrderController@report')->name('user.orders.report');
+            // Route::get('/item/export/report', 'User\ItemOrderController@exportReport')->name('user.orders.export');
             Route::get('/item-download/{itemid}', 'User\OrderController@digitalDownload')->name('user-digital-item-download');
             // Product Order end
 
@@ -1511,7 +1614,7 @@ Route::domain($domain)->group(function () {
             Route::get('stripe/cancel', "Payment\StripeController@cancelPayment")->name('membership.stripe.cancel');
             Route::post('paytm/payment-status', "Payment\PaytmController@paymentStatus")->name('membership.paytm.status');
             Route::get('paystack/success', 'Payment\PaystackController@successPayment')->name('membership.paystack.success');
-            Route::post('mercadopago/cancel', 'Payment\paymenMercadopagoController@cancelPayment')->name('membership.mercadopago.cancel');
+            // Route::post('mercadopago/cancel', 'Payment\paymenMercadopagoController@cancelPayment')->name('membership.mercadopago.cancel');
             Route::post('mercadopago/success', 'Payment\MercadopagoController@successPayment')->name('membership.mercadopago.success');
             Route::post('razorpay/success', 'Payment\RazorpayController@successPayment')->name('membership.razorpay.success');
             Route::post('razorpay/cancel', 'Payment\RazorpayController@cancelPayment')->name('membership.razorpay.cancel');
@@ -1567,9 +1670,12 @@ if (array_key_exists('host', $parsedUrl)) {
 Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
     Route::get('/', 'Front\FrontendController@userDetailView')->name('front.user.detail.view');
 
+    // Route::group(['middleware' => 'auth:customer'], function () {
 
+        // Route::get('/customers', 'Front\CustomerController@crmDashboard')->name('crm.dashboard')->middleware('setlang');
+    // });
     // Route::group(['middleware' => ['routeAccess:Real Estate']], function () {
-    // Properties route  
+    // Properties route
     Route::controller(FrontPropertyController::class)->group(function () {
         Route::get('/properties', 'index')->name('front.user.properties');
         Route::get('/property/{slug}', 'details')->name('front.user.property.details');
@@ -1579,7 +1685,7 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         Route::get('/categories', 'getCategories')->name('front.user.get_categories');
     });
 
-    // Projects route  
+    // Projects route
     Route::controller(FrontProjectController::class)->group(function () {
         Route::get('/projects', 'index')->name('front.user.projects');
         Route::get('/project/{slug}', 'details')->name('front.user.project.details');
@@ -1713,7 +1819,8 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
     });
 
 
-    Route::prefix('/user')->middleware(['guest:customer', 'routeAccess:Ecommerce|Hotel Booking|Course Management|Donation Management'])->group(function () {
+    // Route::prefix('/user')->middleware(['guest:customer', 'routeAccess:Ecommerce|Hotel Booking|Course Management|Donation Management'])->group(function () {
+    Route::prefix('/user')->middleware(['guest:customer'])->group(function () {
         // user redirect to login page route
         Route::get('/login',  'Front\CustomerController@login')->name('customer.login');
         // user login submit route
@@ -1732,6 +1839,8 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         Route::post('/signup-submit', 'Front\CustomerController@signupSubmit')->name('customer.signup.submit')->middleware('Demo');
         // signup verify route
         Route::get('/signup-verify/{token}', 'Front\CustomerController@signupVerify')->name('customer.signup.verify');
+
+        // Route::get('/customers', 'Front\CustomerController@crmDashboard')->name('crm.dashboard');
     });
 
 
@@ -1741,7 +1850,8 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
     });
 
 
-    Route::prefix('/customer')->middleware(['auth:customer', 'accountStatus', 'checkWebsiteOwner', 'routeAccess:Ecommerce|Hotel Booking|Course Management|Donation Management|Real Estate Management', 'Demo'])->group(function () {
+    // Route::prefix('/customer')->middleware(['auth:customer', 'accountStatus', 'checkWebsiteOwner', 'routeAccess:Ecommerce|Hotel Booking|Course Management|Donation Management|Real Estate Management', 'Demo'])->group(function () {
+    Route::prefix('/customer')->middleware(['auth:customer'])->group(function () {
         // user redirect to dashboard route
         Route::get('/dashboard', 'Front\CustomerController@redirectToDashboard')->name('customer.dashboard');
 
@@ -1759,7 +1869,7 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         // user logout attempt route
         Route::get('/logout',  'Front\CustomerController@logoutSubmit')->name('customer.logout');
         // all ads route
-        Route::middleware('routeAccess:Ecommerce')->group(function () {
+        // Route::middleware('routeAccess:Ecommerce')->group(function () {
             Route::get('/shipping/details', 'Front\CustomerController@shippingdetails')->name('customer.shpping-details');
             Route::post('/shipping/details/update', 'Front\CustomerController@shippingupdate')->name('customer.shipping-update');
             //user order
@@ -1767,8 +1877,20 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
             Route::get('/orders', 'Front\CustomerController@customerOrders')->name('customer.orders');
             Route::get('/wishlist', 'Front\CustomerController@customerWishlist')->name('customer.wishlist');
             Route::get('/remove-from-wishlist/{id}', 'Front\CustomerController@removefromWish')->name('customer.removefromWish');
-        });
+        // });
 
+        // Route::get('/all', 'Front\CustomerController@customers')->name('crm.customers');
+        // //customers.create
+        // Route::get('/create', 'Front\CustomerController@create')->name('crm.customers.create');
+        // Route::prefix('customers')->controller(CustomerController::class)->group(function () {
+        //     Route::get('/all', 'customers')->name('user.customers');
+        //     Route::get('/create', 'create')->name('user.customers.create');
+        //     Route::post('/store', 'store')->name('user.customers.store');
+        //     Route::get('/edit/{id}', 'edit')->name('user.customers.edit');
+        //     Route::post('/update', 'update')->name('user.customers.update');
+        //     Route::post('/delete', 'delete')->name('user.customers.delete');
+        //     Route::post('/bulk-delete', 'bulkDelete')->name('user.customers.bulk_delete');
+        // });
 
         Route::middleware('routeAccess:Donation Management')->group(function () {
             //  donation route
@@ -1885,7 +2007,7 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         Route::get('paypal/cancel', "User\Payment\PaypalController@cancelPayment")->name('customer.itemcheckout.paypal.cancel');
         Route::get('stripe/cancel', "User\Payment\StripeController@cancelPayment")->name('customer.itemcheckout.stripe.cancel');
         Route::get('paystack/success', 'User\Payment\PaystackController@successPayment')->name('customer.itemcheckout.paystack.success');
-        Route::post('mercadopago/cancel', 'User\Payment\paymenMercadopagoController@cancelPayment')->name('customer.itemcheckout.mercadopago.cancel');
+        // Route::post('mercadopago/cancel', 'User\Payment\paymenMercadopagoController@cancelPayment')->name('customer.itemcheckout.mercadopago.cancel');
         Route::post('mercadopago/success', 'User\Payment\MercadopagoController@successPayment')->name('customer.itemcheckout.mercadopago.success');
         Route::post('razorpay/success', 'User\Payment\RazorpayController@successPayment')->name('customer.itemcheckout.razorpay.success');
         Route::post('razorpay/cancel', 'User\Payment\RazorpayController@cancelPayment')->name('customer.itemcheckout.razorpay.cancel');
