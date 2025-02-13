@@ -41,6 +41,7 @@ use App\Models\User\UserShippingCharge;
 use App\Models\User\UserShopSetting;
 use App\Models\User\UserVcard;
 use App\Models\User\WorkProcess;
+use App\Models\User\RealestateManagement\Property;
 
 class User extends Authenticatable
 {
@@ -434,4 +435,21 @@ class User extends Authenticatable
     {
         return $this->hasMany(LessonContentComplete::class, 'user_id', 'id');
     }
+
+    public function properties(): HasMany
+    {
+        return $this->hasMany(Property::class, 'user_id');
+    }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class, 'user_id');
+    }
+
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'user_id');
+    }
+
+
 }

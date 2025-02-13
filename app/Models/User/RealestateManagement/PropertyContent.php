@@ -2,11 +2,19 @@
 
 namespace App\Models\User\RealestateManagement;
 
+use App\Models\Sale;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\Contract;
 use Mews\Purifier\Facades\Purifier;
+use Illuminate\Database\Eloquent\Model;
+use App\Models\User\RealestateManagement\City;
+use App\Models\User\RealestateManagement\State;
+use App\Models\User\RealestateManagement\Country;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Models\User\RealestateManagement\Property;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\User\RealestateManagement\PropertySliderImg;
+use App\Models\User\RealestateManagement\PropertySpecification;
 
 class PropertyContent extends Model
 {
@@ -91,5 +99,25 @@ class PropertyContent extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    // contracts
+    public function contracts()
+    {
+        return $this->hasMany(Contract::class, 'property_id', 'property_id');
+    }
+
+    // sales
+    public function sales()
+    {
+        return $this->hasMany(Sale::class, 'property_id', 'property_id');
+    }
+    public function property()
+    {
+        return $this->belongsTo(Property::class, 'property_id');
+    }
+    public function category()
+    {
+        return $this->belongsTo(Category::class, 'category_id');
     }
 }

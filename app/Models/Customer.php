@@ -2,21 +2,22 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use App\Http\Controllers\Controller;
-use App\Models\User\CourseManagement\CourseEnrolment;
-use App\Models\User\CourseManagement\CourseReview;
-use App\Models\User\CourseManagement\QuizScore;
-use App\Models\User\CustomerWishList;
-use App\Models\User\DonationManagement\DonationDetail;
-use App\Models\User\HotelBooking\RoomBooking;
-use App\Models\User\HotelBooking\RoomReview;
+use App\Models\Contract;
 use App\Models\User\UserOrder;
 use App\Models\User\UserOrderItem;
+
+use App\Http\Controllers\Controller;
+use App\Models\User\CustomerWishList;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notifiable;
+use App\Models\User\HotelBooking\RoomReview;
+use App\Models\User\HotelBooking\RoomBooking;
+use App\Models\User\CourseManagement\QuizScore;
+use App\Models\User\CourseManagement\CourseReview;
+use App\Models\User\CourseManagement\CourseEnrolment;
+use App\Models\User\DonationManagement\DonationDetail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class Customer extends Authenticatable
 {
@@ -40,9 +41,6 @@ class Customer extends Authenticatable
         'password',
         'contact_number',
         'address',
-        'city',
-        'state',
-        'country',
         'status',
         'verification_token',
         'remember_token',
@@ -154,5 +152,16 @@ class Customer extends Authenticatable
         return $this->hasMany(RoomBooking::class, 'customer_id', 'id');
     }
 
+    /**
+     * Get all contracts associated with the customer.
+     */
+    public function contracts()
+    {
+        return $this->hasMany(Contract::class);
+    }
 
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'customer_id');
+    }
 }
