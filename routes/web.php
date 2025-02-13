@@ -13,6 +13,7 @@ use App\Http\Controllers\Front\CustomerController;
 use App\Http\Controllers\CRM\CustcrmomerController;
 use App\Http\Controllers\CRM\PaymentRecordController;
 use App\Http\Controllers\CRM\PaymentRecordsController;
+use App\Http\Controllers\CRM\ReservationController;
 use App\Http\Controllers\User\HotelBooking\RoomController;
 use App\Http\Controllers\User\HotelBooking\RoomManagementController;
 use App\Http\Controllers\Front\ProjectController as FrontProjectController;
@@ -146,6 +147,9 @@ Route::domain($domain)->group(function () {
 
     Route::prefix('crm')->name('crm.')->group(function () {
     Route::resource('sales', SaleController::class);
+    // Route::resource('bookings', BookingController::class);
+    Route::resource('reservations', ReservationController::class);
+
     });
     // Route::get('crm-customers/sales', 'CustcrmomerController@customers')->name('crm.sales');
     //crm payment-records
