@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\User;
+use App\Models\Contract;
 use App\Models\Customer;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User\RealestateManagement\Property;
@@ -37,7 +38,7 @@ class Sale extends Model
         }
         public function contract()
         {
-            return $this->belongsTo(Contract::class);
+            return $this->belongsTo(Contract::class, 'contract_id');
         }
 
         public function customer()
