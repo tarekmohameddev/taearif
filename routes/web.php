@@ -29,6 +29,8 @@ use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryContro
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
 
+use App\Http\Controllers\User\OnboardingController;
+
 Route::get('/test-sales', function () {
     return Sale::with('property', 'user', 'contract')->get();
 });
@@ -46,6 +48,11 @@ Route::fallback(function () {
 //
 
 Route::get('/all-web-routes', function () {
+    // Basic access control: Only allow access if the user is authenticated
+    if (!auth()->check()) {
+        return redirect('/login')->with('error', 'You must be logged in to view this page.');
+    }
+
     $routes = collect(Route::getRoutes())->filter(function ($route) {
         return in_array('web', $route->middleware());
     });
@@ -55,24 +62,70 @@ Route::get('/all-web-routes', function () {
         return in_array('GET', $route->methods());
     });
 
-    echo "<table border='1' cellpadding='8' cellspacing='0' style='border-collapse: collapse; width: 100%; text-align: left;'>";
-    echo "<tr style='background-color: #f2f2f2;'>";
-    echo "<th>URI</th><th>Name</th><th>Methods</th></tr>";
+    echo "<!DOCTYPE html>
+    <html>
+    <head>
+        <title>All Web Routes</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+            th { background-color: #f2f2f2; }
+            a { text-decoration: none; color: blue; }
+            a:hover { text-decoration: underline; }
+        </style>
+    </head>
+    <body>
+        <h1>All Web Routes</h1>
+        <table>
+            <tr>
+                <th>URI</th>
+                <th>Name</th>
+                <th>Methods</th>
+                <th>Action</th>
+            </tr>";
 
     foreach ($sortedRoutes as $route) {
         $methods = implode(' | ', $route->methods());
         $uri = $route->uri();
         $name = $route->getName() ?? 'N/A';
+        $action = $route->getActionName();
 
-        echo "<tr>";
-        echo "<td><a href='/$uri' target='_blank' style='text-decoration: none; color: blue;'>/$uri</a></td>";
-        echo "<td>$name</td>";
-        echo "<td>$methods</td>";
-        echo "</tr>";
+        // Extract the method name if the action contains '@'
+        if (strpos($action, '@') !== false) {
+            $actionParts = explode('@', $action);
+            $method = $actionParts[1];
+            $actionDisplay = '@' . $method;
+        } else {
+            $actionDisplay = 'Closure';
+        }
+
+        echo "<tr>
+                <td><a href='/$uri' target='_blank'>/$uri</a></td>
+                <td>$name</td>
+                <td>$methods</td>
+                <td>$actionDisplay</td>
+              </tr>";
     }
 
-    echo "</table>";
+    echo "</table>
+    </body>
+    </html>";
+});
 
+//
+
+// onboarding steps
+
+// Onboarding Steps
+Route::middleware(['auth'])->group(function () {
+    Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding.index');
+    Route::post('/onboarding/store', [OnboardingController::class, 'store'])->name('onboarding.store'); // Step 1 Submission
+
+    Route::get('/onboarding/show-step2', [OnboardingController::class, 'showStep2'])->name('onboarding.showStep2');
+    Route::post('/onboarding/step2', [OnboardingController::class, 'step2'])->name('onboarding.step2'); // Step 2 Submission
+
+    Route::get('/onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
 });
 
 //

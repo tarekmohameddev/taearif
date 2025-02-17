@@ -70,7 +70,13 @@ class User extends Authenticatable
         'verification_link',
         'email_verified',
         'template_name',
-        'show_home'
+        'show_home',
+        'onboarding_completed',
+        'industry_type',
+        'short_description',
+        'logo',
+        'icon',
+        'primary_color',
     ];
 
     /**
@@ -89,6 +95,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'onboarding_completed' => 'boolean',
     ];
 
     public function user_custom_domains()
