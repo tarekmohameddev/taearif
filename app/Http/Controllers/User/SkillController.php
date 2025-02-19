@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Validator;
 
+use Illuminate\Support\Facades\Log;
 class SkillController extends Controller
 {
     /**
@@ -50,6 +51,8 @@ class SkillController extends Controller
      */
     public function store(Request $request)
     {
+        log::info($request->all());
+        // dd($request->all());
         $messages = [
             'user_language_id.required' => 'The language field is required',
             'title.required' => 'The title field is required',

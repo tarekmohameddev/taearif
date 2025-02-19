@@ -13,6 +13,7 @@ use App\Models\Feature;
 use App\Models\Package;
 use App\Models\Partner;
 use App\Models\Process;
+use App\Models\Visitor;
 use App\Models\Language;
 use App\Models\Bcategory;
 use App\Models\Subscriber;
@@ -38,6 +39,7 @@ use Illuminate\Support\Facades\DB;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
 use App\Models\BasicExtended as BE;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\User\UserOfferBanner;
 use Illuminate\Support\Facades\Auth;
@@ -61,6 +63,7 @@ use App\Models\User\RealestateManagement\Property;
 use App\Models\User\CourseManagement\CourseCategory;
 use App\Models\User\CourseManagement\CourseEnrolment;
 use App\Models\User\DonationManagement\DonationDetail;
+
 
 class FrontendController extends Controller
 {
@@ -1836,29 +1839,42 @@ class FrontendController extends Controller
 
     public function get_info(Request $request)
     {
-        $ip = request()->ip();
+        // Get the client IP
+        $ip = $request->ip();
+
+        if ($ip === '127.0.0.1' || $ip === '::1') {
+            $publicIpResponse = Http::get('https://api.ipify.org?format=json');
+            $ip = $publicIpResponse->json()['ip'] ?? $ip;
+        }
+
+        // Use the IP for your logic...
         $response = Http::get("http://ip-api.com/json/{$ip}");
 
-        if ($response->successful()) {
-            $country_value =  $response->json()['country'];
-            $country_code =  $response->json()['countryCode'];
-            $region_name =  $response->json()['regionName'];
-            $city =  $response->json()['city'];
-        }else{
+        $json = $response->json();
+        if (isset($json['status']) && $json['status'] === 'success') {
+            $country_value = $json['country'];
+            $country_code  = $json['countryCode'];
+            $region_name   = $json['regionName'];
+            $city          = $json['city'];
+        } else {
             $country_value = 'Unknown';
+            $country_code  = null;
+            $region_name   = null;
+            $city          = null;
         }
 
         Visitor::create([
-            'user_id' => $request->input('user_id'),
+            'user_id'     => $request->input('user_id'),
             'device_type' => $request->input('device_type'),
-            'country' => $country_value,
-            'country_code' => $country_code,
+            'country'     => $country_value,
+            'country_code'=> $country_code,
             'region_name' => $region_name,
-            'city' => $city,
-            'ip' => $ip,
+            'city'        => $city,
+            'ip'          => $ip,
         ]);
-
     }
+
+
 
     public function getStats(Request $request)
     {

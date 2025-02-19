@@ -14,6 +14,7 @@ use App\Models\User\CounterInformation;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 
+use Illuminate\Support\Facades\Log;
 class CounterInformationController extends Controller
 {
     public function index(Request $request)
@@ -40,7 +41,6 @@ class CounterInformationController extends Controller
         ])
         ->orderBy('id', 'DESC')
         ->get();
-
         // skills
         $data['skills'] = Skill::where([
             ['language_id', '=', $lang->id],
@@ -63,17 +63,20 @@ class CounterInformationController extends Controller
         }
         $data['home_setting'] = $text;
         $data['services'] = UserService::where([
-            ['lang_id', '=', $lang->id],
+            ['lang_id', '=', $language->id],
             ['user_id', '=', Auth::id()],
         ])
             ->orderBy('id', 'DESC')
             ->get();
+        // dd($data['home_setting']);
 
         //brands
         $data['brands'] = Brand::where('user_id', Auth::guard('web')->user()->id)
             ->orderBy('id', 'desc')
             ->get();
 
+        // dd($lang->id);
+        // dd($data['counterInformations']);
 
         return view('user.counter-information.index', $data);
     }
@@ -86,6 +89,7 @@ class CounterInformationController extends Controller
      */
     public function store(Request $request)
     {
+        log::info($request->all());
         $messages = [
             'user_language_id.required' => 'The language field is required',
         ];

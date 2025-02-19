@@ -13,6 +13,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
+use Illuminate\Support\Facades\Log;
 class HeroSliderController extends Controller
 {
     public function sliderVersion(Request $request)
@@ -66,6 +67,8 @@ class HeroSliderController extends Controller
 
     public function storeSliderInfo(Request $request): \Illuminate\Http\RedirectResponse
     {
+
+        log::info($request);
         $request->validate(
             [
                 'title' => 'nullable|max:255',

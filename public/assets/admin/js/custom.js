@@ -408,17 +408,18 @@ $(function ($) {
   ******************************************************/
 
   $(document).on('click', '#submitBtn', function (e) {
+    console.log('clicked2');
     $(e.target).attr('disabled', true);
 
     $(".request-loader").addClass("show");
 
-    let ajaxForm = document.getElementById('ajaxForm');
+    let ajaxForm = document.getElementById('ajaxFormSkill');
     let fd = new FormData(ajaxForm);
-    let url = $("#ajaxForm").attr('action');
-    let method = $("#ajaxForm").attr('method');
+    let url = $("#ajaxFormSkill").attr('action');
+    let method = $("#ajaxFormSkill").attr('method');
 
-    if ($("#ajaxForm .summernote").length > 0) {
-      $("#ajaxForm .summernote").each(function (i) {
+    if ($("#ajaxFormSkill .summernote").length > 0) {
+      $("#ajaxFormSkill .summernote").each(function (i) {
         let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
 
         fd.delete($(this).attr('name'));
@@ -433,7 +434,7 @@ $(function ($) {
       contentType: false,
       processData: false,
       success: function (data) {
-        console.log(data, 'success', typeof data.error);
+        console.log(data, 'errrer', typeof data.error);
         $(e.target).attr('disabled', false);
         $(".request-loader").removeClass("show");
 
@@ -474,6 +475,7 @@ $(function ($) {
 
   // flash Sale form
   $(document).on('click', '.submitBtn', function (e) {
+    console.log('clicked1')
     $(e.target).attr('disabled', true);
     var $id = $(this).attr('data-id')
     $(".request-loader").addClass("show");

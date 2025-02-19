@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Helpers\UserPermissionHelper;
+use Illuminate\Support\Facades\Log;
 
 class BasicController extends Controller
 {
@@ -116,9 +117,10 @@ class BasicController extends Controller
 
     //
 
-    public function updateAllSettings(Request $request, $language)
-    {
 
+	public function updateAllSettings(Request $request, $language)
+    {
+        // dd($request->all());
         $user = Auth::guard('web')->user();
 
         $lang = Language::where('code', $language)
@@ -139,11 +141,11 @@ class BasicController extends Controller
         ];
 
         // Validate the main logo file upload.
-        if ($request->hasFile('logo')) {
-            $rules['logo'] = [
+        if ($request->hasFile('website-logo')) {
+            $rules['website-logo'] = [
                 function ($attribute, $value, $fail) use ($request) {
                     $allowedExts = ['jpg', 'png', 'jpeg'];
-                    $ext = $request->file('logo')->getClientOriginalExtension();
+                    $ext = $request->file('website-logo')->getClientOriginalExtension();
                     if (!in_array($ext, $allowedExts)) {
                         return $fail("Only png, jpg, jpeg images are allowed for logo.");
                     }
@@ -204,7 +206,7 @@ class BasicController extends Controller
         }
 
         // main "logo" upload.
-        if ($request->hasFile('logo')) {
+        if ($request->hasFile('website-logo')) {
             try {
                 // Delete old images if they exist.
                 $imageFields = ['logo', 'preloader', 'breadcrumb', 'favicon'];
@@ -214,7 +216,7 @@ class BasicController extends Controller
                     }
                 }
 
-                $file = $request->file('logo');
+                $file = $request->file('website-logo');
                 $filename = uniqid() . '.' . $file->getClientOriginalExtension();
                 $file->move(public_path('assets/front/img/user/'), $filename);
 
@@ -263,7 +265,7 @@ class BasicController extends Controller
         );
         $steps->update([
             'website_named'    => $request->has('website_title') ? true : $steps->website_named,
-            'logo_uploaded'    => $request->hasFile('logo') ? true : $steps->logo_uploaded,
+            'logo_uploaded'    => $request->hasFile('website-logo') ? true : $steps->logo_uploaded,
             'favicon_uploaded' => $request->hasFile('favicon') ? true : $steps->favicon_uploaded,
             'homepage_updated' => $request->hasFile('preloader') ? true : $steps->homepage_updated,
         ]);
@@ -292,33 +294,42 @@ class BasicController extends Controller
             }
         }
 
-        //  fields allowed for HomePageText updates.
-        $homePageFields = [
+        // Define the allowed fields for updating the HomePageText.
+        $allowedFields = [
             'about_title',
             'about_content',
             'about_button_text',
             'about_button_url',
             'about_snd_button_text',
-            'about_video_url'
+            'about_video_url',
+            'about_snd_button_url'
         ];
-        $homeUpdateData = $request->only($homePageFields);
 
-        // If file uploads .
+        // Extract only the allowed fields from the request.
+        $updateData = $request->only($allowedFields);
+
+        // Add file upload fields if they exist.
         if ($aboutImageFilename) {
-            $homeUpdateData['about_image'] = $aboutImageFilename;
+            $updateData['about_image'] = $aboutImageFilename;
         }
-        if ($aboutVideoImageFilename) {
-            $homeUpdateData['about_video_image'] = $aboutVideoImageFilename;
-        }
-        // Set the language and user IDs.
-        $homeUpdateData['language_id'] = $request->input('language_id');
-        $homeUpdateData['user_id'] = $user->id;
 
-        $homePageText = HomePageText::find($request->input('id'));
-        if (!$homePageText) {
-            $homePageText = new HomePageText;
+        if ($aboutVideoImageFilename) {
+            $updateData['about_video_image'] = $aboutVideoImageFilename;
         }
-        $homePageText->update($homeUpdateData);
+
+        // Set additional fields for language and user.
+        $updateData['language_id'] = $request->input('language_id');
+        $updateData['user_id']     = $user->id;
+
+        // Retrieve the HomePageText record by ID, or create a new instance if not found.
+        $homePageText = HomePageText::find($request->input('id')) ?? new HomePageText;
+
+        // Update the HomePageText record with the new data.
+        $homePageText->update($updateData);
+
+        // Log the allowed fields for debugging purposes.
+        Log::info('Allowed HomePageText fields: ' . json_encode($allowedFields));
+
 
 
         // file uploads for footer fields.
@@ -357,12 +368,20 @@ class BasicController extends Controller
         'newsletter_text',
         'copyright_text'
         ];
+
         $footerUpdateData = $request->only($footerFields);
 
         // Add file upload data if available.
-        if ($footerLogoFilename) {
-        $footerUpdateData['logo'] = $footerLogoFilename;
+        // if ($footerLogoFilename) {
+        // $footerUpdateData['logo'] = $footerLogoFilename;
+        // }
+
+        if (empty($footerUpdateData['logo']) && $request->has('existing_footer_logo')) {
+            $footerUpdateData['logo'] = $request->input('existing_footer_logo');
         }
+
+        //
+
         if ($footerBgImageFilename) {
         $footerUpdateData['bg_image'] = $footerBgImageFilename;
         }
@@ -396,6 +415,11 @@ class BasicController extends Controller
             } else {
 
                 foreach ($request->input('social_links') as $socialData) {
+
+                    if (!isset($socialData['serial_number']) || $socialData['serial_number'] === null) {
+                        continue;
+                    }
+
                     if (isset($socialData['id'])) {
                         $social = Social::where('user_id', Auth::id())
                                         ->where('id', $socialData['id'])
@@ -422,6 +446,7 @@ class BasicController extends Controller
         Session::flash('success', 'Settings updated successfully.');
         return back();
     }
+
 
     //
 
