@@ -71,10 +71,10 @@
                 <div class="card-header">
                     <div class="row">
                     <div class="col-12 col-sm-auto ms-sm-auto col-md-auto ms-md-auto">
-                     <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-4"> 
+                     <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-4">
             @if (!is_null($userDefaultLang))
                                 <a href="#" class="btn btn-primary" data-toggle="modal"
-                                    data-target="#createModal"><i class="fas fa-plus"></i> {{ __('Add Skill') }}</a>
+                                    data-target="#createModalSkill"><i class="fas fa-plus"></i> {{ __('Add Skill') }}</a>
                                 <button class="btn btn-danger mr-2 d-none bulk-delete"
                                     data-href="{{ route('user.skill.bulk.delete') }}"><i class="flaticon-interface-5"></i>
                                     {{ __('Delete') }}</button>
@@ -172,7 +172,7 @@
         </div>
     </div>
     <!-- Create Skill Modal -->
-    <div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+    <div class="modal fade" id="createModalSkill" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <div class="modal-content">

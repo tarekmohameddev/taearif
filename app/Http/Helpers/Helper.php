@@ -305,14 +305,16 @@ if (!function_exists('getUser')) {
         $parsedUrl = parse_url(url()->current());
 
         $host =  $parsedUrl['host'];
+        $path = isset($parsedUrl['path']) ? explode('/', trim($parsedUrl['path'], '/')) : [];
 
         // if the current URL contains the website domain
         if (strpos($host, env('WEBSITE_HOST')) !== false) {
             $host = str_replace('www.', '', $host);
             // if current URL is a path based URL
             if ($host == env('WEBSITE_HOST')) {
-                $path = explode('/', $parsedUrl['path']);
-                $username = $path[1];
+
+                $username = $path[0] ?? '';                // $path = explode('/', $parsedUrl['path']);
+                // $username = $path[1];
             }
             // if the current URL is a subdomain
             else {

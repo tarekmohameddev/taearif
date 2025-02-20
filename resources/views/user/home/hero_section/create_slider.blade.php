@@ -1,10 +1,7 @@
 @extends('user.layout')
 
 @php
-$userDefaultLang = \App\Models\User\Language::where([
-['user_id',\Illuminate\Support\Facades\Auth::id()],
-['is_default',1]
-])->first();
+$userDefaultLang = \App\Models\User\Language::where([['user_id',\Illuminate\Support\Facades\Auth::id()],['is_default',1]])->first();
 $userLanguages = \App\Models\User\Language::where('user_id',\Illuminate\Support\Facades\Auth::id())->get();
 @endphp
 

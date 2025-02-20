@@ -219,8 +219,8 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                                 <img src="{{ isset($basic_setting->logo) ? asset('assets/front/img/user/'.$basic_setting->logo) : asset('assets/admin/img/noimage.jpg') }}" alt="website logo" class="img-thumbnail">
                             </div>
                             <!-- This input remains for the website logo -->
-                            <input type="file" id="logo" name="logo" class="d-none" accept="image/*">
-                            <button type="button" class="upload-btn" onclick="document.getElementById('logo').click()">
+                            <input type="file" id="website-logo" name="website-logo" class="d-none" accept="image/*">
+                            <button type="button" class="upload-btn" onclick="document.getElementById('website-logo').click()">
                                 <i class="bi bi-upload mb-2"></i>
                                 <span>{{ __('Upload Logo') }}</span>
                             </button>
@@ -293,7 +293,7 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                                                     {{ __('This section contains text and an image about your company. You can control its content here.') }}
                                                 </p>
                                             </div>
-                                            <div class="col-md-12 showAboutImage mb-3">
+                                            <div class="col-md-12 showAboutImage mb-3 preview-image">
                                                 <img src="{{ $home_setting->about_image ? asset('assets/front/img/user/home_settings/' . $home_setting->about_image) : asset('assets/admin/img/noimage.jpg') }}" alt="about image" class="img-thumbnail">
                                             </div>
                                             <!-- Removed redundant hidden "types[]" inputs -->
@@ -401,9 +401,9 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                                                 <img src="{{ isset($footertext) ? asset('assets/front/img/user/footer/' . $footertext->logo) : asset('assets/admin/img/noimage.jpg') }}" alt="footer logo" class="img-thumbnail">
                                             </div>
                                             <!-- Change name and id to footer_logo -->
-                                            <input type="file" name="footer_logo" id="footer_logo" class="d-none form-control image">
+                                            <input type="file" name="logo" id="logo" class="d-none form-control image">
                                             <p id="errlogo" class="em text-danger mt-2 mb-0"></p>
-                                            <button type="button" class="upload-btn" onclick="document.getElementById('footer_logo').click()">
+                                            <button type="button" class="upload-btn" onclick="document.getElementById('logo').click()">
                                                 <i class="bi bi-upload mb-2"></i>
                                                 <span>{{ __('Upload Favicon') }}</span>
                                             </button>
@@ -504,49 +504,49 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                             </div>
                         </div>
 
-                    <!-- Social Links List -->
-                    <div class="table-responsive">
-                        <table class="table table-striped mt-3">
-                            <thead>
-                                <tr>
-                                    <th scope="col">#</th>
-                                    <th scope="col">{{ __('Icon') }}</th>
-                                    <th scope="col">{{ __('URL') }}</th>
-                                    <th scope="col">{{ __('Serial Number') }}</th>
-                                    <th scope="col">{{ __('Actions') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($socials as $key => $social)
-                                <tr id="socialRow-{{ $social->id }}">
-                                    <td>{{ $loop->iteration }}</td>
-                                    <td><i class="{{ $social->icon }}"></i></td>
-                                    <td>{{ $social->url }}</td>
-                                    <td>{{ $social->serial_number }}</td>
-                                    <td>
-                                        <a class="btn btn-secondary btn-sm" href="{{ route('user.social.edit', $social->id) }}">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <!-- Delete button with data-socialid attribute -->
-                                        <button type="button" class="btn btn-danger btn-sm deleteSocialBtn" data-socialid="{{ $social->id }}">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                        <!-- Social Links List -->
+                        <div class="table-responsive">
+                            <table class="table table-striped mt-3">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">{{ __('Icon') }}</th>
+                                        <th scope="col">{{ __('URL') }}</th>
+                                        <th scope="col">{{ __('Serial Number') }}</th>
+                                        <th scope="col">{{ __('Actions') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($socials as $key => $social)
+                                    <tr id="socialRow-{{ $social->id }}">
+                                        <td>{{ $loop->iteration }}</td>
+                                        <td><i class="{{ $social->icon }}"></i></td>
+                                        <td>{{ $social->url }}</td>
+                                        <td>{{ $social->serial_number }}</td>
+                                        <td>
+                                            <a class="btn btn-secondary btn-sm" href="{{ route('user.social.edit', $social->id) }}">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <!-- Delete button with data-socialid attribute -->
+                                            <button type="button" class="btn btn-danger btn-sm deleteSocialBtn" data-socialid="{{ $social->id }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
 
 
-                    <!-- End Social Links Section -->
+                        <!-- End Social Links Section -->
 
-                    <!-- Submit Button -->
-                    <div class="text-center">
-                        <button type="submit" class="btn btn-success btn-lg">
-                            {{ __('Save All Settings') }}
-                        </button>
-                    </div>
+                        <!-- Submit Button -->
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                {{ __('Save All Settings') }}
+                            </button>
+                        </div>
 
                 </form>
 
@@ -583,7 +583,7 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
 
 
 <script>
-    $(document).ready(function(){
+    $(document).ready(function() {
 
         // CSRF token for all AJAX requests.
         $.ajaxSetup({
@@ -621,11 +621,13 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
                     $.ajax({
                         url: "{{ route('user.social.delete') }}",
                         type: "POST",
-                        data: { socialid: socialId },
+                        data: {
+                            socialid: socialId
+                        },
                         success: function(response) {
-                            if(response.success) {
+                            if (response.success) {
                                 // Remove the table row.
-                                row.fadeOut(500, function(){
+                                row.fadeOut(500, function() {
                                     $(this).remove();
                                 });
                                 swal("Deleted!", response.message, "success");
@@ -648,56 +650,56 @@ $userLanguages = \App\Models\User\Language::where('user_id', \Illuminate\Support
 
 
 <script>
-  let isFormDirty = false;
+    let isFormDirty = false;
 
-  const form = document.getElementById('mySettingsForm');
+    const form = document.getElementById('mySettingsForm');
 
-  form.addEventListener('change', function () {
-    isFormDirty = true;
-  });
-
-  document.querySelectorAll('a').forEach(function(link){
-    link.addEventListener('click', function(e){
-      if(isFormDirty) {
-         e.preventDefault();
-         const destination = this.href;
-         swal({
-             title: "لديك تغييرات غير محفوظة",
-             text: "هل أنت متأكد أنك تريد مغادرة هذه الصفحة",
-             icon: "warning",
-             buttons: {
-               cancel: {
-                 text: "Cancel",
-                 visible: true,
-                 className: "btn btn-danger",
-                 closeModal: true
-               },
-               confirm: {
-                 text: "Yes, leave it!",
-                 className: "btn btn-success"
-               }
-             },
-             dangerMode: true
-         }).then((willLeave) => {
-             if (willLeave) {
-                 isFormDirty = false;
-                 window.location.href = destination;
-             }
-         });
-      }
+    form.addEventListener('change', function() {
+        isFormDirty = true;
     });
-  });
 
-   window.addEventListener('beforeunload', function (e) {
-    if (isFormDirty) {
-       e.preventDefault();
-      e.returnValue = 'لديك تغييرات غير محفوظة?';
-    }
-  });
+    document.querySelectorAll('a').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            if (isFormDirty) {
+                e.preventDefault();
+                const destination = this.href;
+                swal({
+                    title: "لديك تغييرات غير محفوظة",
+                    text: "هل أنت متأكد أنك تريد مغادرة هذه الصفحة",
+                    icon: "warning",
+                    buttons: {
+                        cancel: {
+                            text: "Cancel",
+                            visible: true,
+                            className: "btn btn-danger",
+                            closeModal: true
+                        },
+                        confirm: {
+                            text: "Yes, leave it!",
+                            className: "btn btn-success"
+                        }
+                    },
+                    dangerMode: true
+                }).then((willLeave) => {
+                    if (willLeave) {
+                        isFormDirty = false;
+                        window.location.href = destination;
+                    }
+                });
+            }
+        });
+    });
 
-   form.addEventListener('submit', function () {
-    isFormDirty = false;
-  });
+    window.addEventListener('beforeunload', function(e) {
+        if (isFormDirty) {
+            e.preventDefault();
+            e.returnValue = 'لديك تغييرات غير محفوظة?';
+        }
+    });
+
+    form.addEventListener('submit', function() {
+        isFormDirty = false;
+    });
 </script>
 
 
