@@ -4,7 +4,7 @@
         <a href="{{route('front.index')}}" class="logo" target="_blank">
             @if(!empty($userBs->logo))
         <img src="{{!empty($userBs->logo) ? asset('assets/front/img/user/'.$userBs->logo) : 'logo'}}" alt="LOGO" class="navbar-brand">
-            @else 
+            @else
             {{__('logo')}}
             @endif
         </a>
@@ -33,7 +33,7 @@
                                 <img src="{{asset('assets/front/img/user/'.Auth::user()->photo)}}" alt="Profile Picture"
                                     class="rounded-circle" width="32" height="32" style="object-fit: cover;">
                             @else
-                                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" 
+                                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white"
                                     style="width: 32px; height: 32px;">
                                     {{ substr(Auth::user()->first_name, 0, 1) }}{{ substr(Auth::user()->last_name, 0, 1) }}
                                 </div>
@@ -41,7 +41,7 @@
                             <i class="bi bi-chevron-down ms-2 text-muted small"></i>
                         </div>
                     </a>
-                    <div class="dropdown-menu dropdown-menu-end border-0 shadow-sm" 
+                    <div class="dropdown-menu dropdown-menu-end border-0 shadow-sm"
                         style="width: 280px;">
                         <div class="p-3 border-bottom">
                             <div class="d-flex align-items-center gap-3">
@@ -49,7 +49,7 @@
                                     <img src="{{asset('assets/front/img/user/'.Auth::user()->photo)}}" alt="Profile Picture"
                                         class="rounded-circle" width="48" height="48" style="object-fit: cover;">
                                 @else
-                                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" 
+                                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white"
                                         style="width: 48px; height: 48px;">
                                         {{ substr(Auth::user()->first_name, 0, 1) }}{{ substr(Auth::user()->last_name, 0, 1) }}
                                     </div>
@@ -64,6 +64,11 @@
                             <i class="bi bi-gear"></i>
                             {{__('Account Settings')}}
                         </a>
+                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{{route('user.language.index')}}">
+                        <i class="bi bi-globe"></i>
+                            {{__('Languages manage')}}
+                        </a>
+
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" href="{{route('user-logout')}}">
                             <i class="bi bi-box-arrow-right"></i>
@@ -71,16 +76,36 @@
                         </a>
                     </div>
                 </li>
+
+                <!-- Notifications -->
                 <li class="nav-item">
-                <a class="nav-link" href="#"><i class="bi bi-bell"></i></a>
+                    <a class="nav-link" href="#">
+                        <i class="bi bi-bell"></i>
+                    </a>
                 </li>
-                <li class="nav-item">
-                <a class="nav-link" target="_blank"
-                        href="{{ route('user.language.index') }}" title="Language">
-                        <i class="bi bi-globe"></i> {{ __('Languages manage') }}
-                        </a>
+
+                <!-- Language Dropdown -->
+                @php
+                    $currentLang = request()->get('language', 'en');
+                @endphp
+
+                <li class="nav-item dropdown submenu">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-globe"></i>
+                        {{-- Display the active language --}}
+                        {{ $currentLang === 'ar' ? 'العربية' : 'English' }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
+                        <li>
+                            <a class="dropdown-item" href="{{ request()->fullUrlWithQuery(['language' => 'en']) }}">English</a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ request()->fullUrlWithQuery(['language' => 'ar']) }}">العربية</a>
+                        </li>
+                    </ul>
                 </li>
-         
+                <!--// Language Dropdown -->
+
             </ul>
         </div>
     </nav>

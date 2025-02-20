@@ -2,16 +2,18 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Http\Controllers\Controller;
-use App\Models\User\BasicSetting;
-use App\Models\User\Language;
-use App\Models\User\UserService;
-use App\Models\User\HomePageText;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
 use Purifier;
 use Validator;
+use App\Models\UserStep;
+use Illuminate\Http\Request;
+use App\Models\User\Language;
+use App\Models\User\UserService;
+use App\Models\User\BasicSetting;
+use App\Models\User\HomePageText;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class ServiceController extends Controller
 {
@@ -76,6 +78,7 @@ class ServiceController extends Controller
      */
     public function store(Request $request)
     {
+        // dd($request->all());
         $img = $request->file('image');
         $allowedExts = array('jpg', 'png', 'jpeg');
         $messages = [
@@ -267,6 +270,7 @@ class ServiceController extends Controller
 
     public function featured(Request $request): \Illuminate\Http\RedirectResponse
     {
+        Log::info($request->all());
         $member = UserService::where('user_id', Auth::user()->id)->where('id', $request->service_id)->firstOrFail();
         $member->featured = $request->featured;
         $member->save();

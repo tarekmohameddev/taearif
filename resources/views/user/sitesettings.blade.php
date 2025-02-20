@@ -90,23 +90,7 @@
     <div class="container-fluid website-settings">
   <h1 class="h3 mb-4 font-weight-bold text-dark">إعدادات الموقع</h1>
   <div class="row g-4">
-    <div class="col-md-6 col-lg-4 mb-4">
-      <a href="{{ route('user.basic_settings.general-settings') . '?language=' . $default->code }}" class="text-decoration-none">
-        <div class="card h-100 transition-hover">
-          <div class="card-body d-flex align-items-center p-4">
-            <div class="flex-shrink-0 me-3">
-              <div class="d-flex align-items-center justify-content-center rounded bg-primary-light" style="width: 48px; height: 48px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-              </div>
-            </div>
-            <div>
-              <h5 class="card-title mb-1 text-dark">إعدادات عامة</h5>
-              <p class="card-text text-muted small">تعديل البيانات الاساسية للموقع</p>
-            </div>
-          </div>
-        </div>
-      </a>
-    </div>
+
     <div class="col-md-6 col-lg-4 mb-4">
       <a href="{{ route('user.gateways-soon', ['language' => $default->code]) }}" class="text-decoration-none">
         <div class="card h-100 transition-hover">

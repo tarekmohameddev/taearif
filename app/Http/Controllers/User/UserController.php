@@ -8,19 +8,30 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Package;
 use App\Models\Customer;
-use App\Models\Membership;
 use App\Models\UserStep;
+use App\Models\Membership;
+use App\Models\User\Brand;
+use App\Models\User\Skill;
 use Illuminate\Http\Request;
 use App\Models\User\Follower;
 use App\Models\User\Language;
+use App\Models\User\Portfolio;
+use App\Models\User\FooterText;
+use App\Models\User\HeroSlider;
+use App\Models\User\UserService;
 use App\Models\User\BasicSetting;
+use App\Models\User\HomePageText;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Models\User\FooterQuickLink;
+use App\Models\User\UserTestimonial;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\User\PortfolioCategory;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Response;
+use App\Models\User\CounterInformation;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Response;
 
 class UserController extends Controller
 {
@@ -28,6 +39,158 @@ class UserController extends Controller
     {
         $this->middleware('auth');
     }
+    // webstie_settings
+    // public function webstie_settings(Request $request)
+    // {
+    //     // $language = Language::where('user_id', Auth::guard('web')->user()->id)->where('code', $request->language)->firstOrFail();
+    //     if ($request->has('language')) {
+    //         $lang = Language::where([
+    //             ['code', $request->language],
+    //             ['user_id', Auth::id()]
+    //         ])->first();
+    //         Session::put('currentLangCode', $request->language);
+    //     } else {
+    //         $lang = Language::where([
+    //             ['is_default', 1],
+    //             ['user_id', Auth::id()]
+    //         ])
+    //             ->first();
+    //         Session::put('currentLangCode', $lang->code);
+    //     }
+
+    //     if (!$lang) {
+    //         return redirect()->back()->with('error', 'Default language not found.');
+    //     }
+
+    //     // Collect all necessary information
+    //     $information = [
+
+    //         'footertext' => FooterText::where('language_id', $lang->id)
+    //             ->where('user_id', Auth::id())
+    //             ->first(),
+
+    //         'brands' => Brand::where('user_id', Auth::id())
+    //             ->orderBy('id', 'desc')
+    //             ->get(),
+
+    //         'footer_quick_links' => FooterQuickLink::where('user_id', Auth::id())
+    //             ->get(),
+
+    //         'basic_settings' => BasicSetting::where('user_id', Auth::id())
+    //             ->first(),
+
+    //         'counterInformations' => CounterInformation::where('language_id', $lang->id)
+    //             ->where('user_id', Auth::id())
+    //             ->orderBy('id', 'DESC')
+    //             ->get(),
+
+    //         'skills' => Skill::where('language_id', $lang->id)
+    //             ->where('user_id', Auth::id())
+    //             ->orderBy('id', 'DESC')
+    //             ->get(),
+    //         'portfolios' => Portfolio::where('language_id', $lang->id)
+    //             ->where('user_id', Auth::id())
+    //             ->orderBy('id', 'DESC')
+    //             ->get(),
+    //         'sliders' => HeroSlider::where('language_id', $lang->id)
+    //             ->where('user_id', Auth::id())
+    //             ->orderBy('id', 'DESC')
+    //             ->get(),
+
+    //         'home_setting' => HomePageText::firstOrCreate(
+    //             ['user_id' => Auth::id(), 'language_id' => $lang->id],
+    //             []
+    //         ),
+
+    //         'services' => UserService::where('lang_id', $lang->id)
+    //             ->where('user_id', Auth::id())
+    //             ->orderBy('id', 'DESC')
+    //             ->get()
+
+    //     ];
+    //     // dd($language );
+    //     // dd($lang->id );
+    //     // dd($information['home_setting'] );
+
+    //     return view('user.webstie_settings', compact('information',));
+    // }
+
+    //
+    public function webstie_settings(Request $request)
+    {
+        $lang = Language::where('user_id', Auth::id())->first();
+        if ($request->has('language')) {
+            $lang = Language::where([
+                ['code', $request->language],
+                ['user_id', Auth::id()]
+            ])->first();
+            Session::put('currentLangCode', $request->language);
+        } else {
+            if (!$lang) {
+                $lang = Language::where([
+                    ['is_default', 1],
+                    ['user_id', Auth::id()]
+                ])->first();
+            }
+            Session::put('currentLangCode', $lang->code);
+        }
+
+        if (!$lang) {
+            return redirect()->back()->with('error', 'Default language not found.');
+        }
+
+        $information = [
+            'footertext' => FooterText::where('language_id', $lang->id)
+                ->where('user_id', Auth::id())
+                ->first(),
+            'brands' => Brand::where('user_id', Auth::id())
+                ->orderBy('id', 'desc')
+                ->get(),
+            'footer_quick_links' => FooterQuickLink::where('user_id', Auth::id())
+                ->get(),
+            'basic_settings' => BasicSetting::where('user_id', Auth::id())
+                ->first(),
+            'counterInformations' => CounterInformation::where('language_id', $lang->id)
+                ->where('user_id', Auth::id())
+                ->orderBy('id', 'DESC')
+                ->get(),
+            'skills' => Skill::where('language_id', $lang->id)
+                ->where('user_id', Auth::id())
+                ->orderBy('id', 'DESC')
+                ->get(),
+            'portfolios' => Portfolio::where('language_id', $lang->id)
+                ->where('user_id', Auth::id())
+                ->orderBy('id', 'DESC')
+                ->get(),
+            'categories' => PortfolioCategory::where([
+                ['language_id', '=', $lang->id],
+                ['user_id', '=', Auth::id()],
+                ])
+                ->orderBy('id', 'DESC')
+                ->get(),
+            'sliders' => HeroSlider::where('language_id', $lang->id)
+                ->where('user_id', Auth::id())
+                ->orderBy('id', 'DESC')
+                ->get(),
+            'testimonials' => UserTestimonial::where([
+                ['user_id', '=', Auth::id()],
+                ['lang_id', '=', $lang->id],
+                ])->orderBy('id', 'DESC')
+                ->get(),
+            'home_setting' => HomePageText::firstOrCreate(
+                ['user_id' => Auth::id(), 'language_id' => $lang->id],
+                []
+            ),
+            'services' => UserService::where('lang_id', $lang->id)
+                ->where('user_id', Auth::id())
+                ->orderBy('id', 'DESC')
+                ->get()
+        ];
+
+        return view('user.webstie_settings', compact('information'));
+    }
+    //
+
     public function userban(Request $request)
     {
         $user = Customer::where('id', $request->user_id)->first();
@@ -55,39 +218,41 @@ class UserController extends Controller
         return back();
     }
 
-    public function sitesettings(){
+    public function sitesettings()
+    {
         return view('user.sitesettings');
     }
-    public function home_page_settings(){
+    public function home_page_settings()
+    {
         return view('user.home_page_settings');
     }
-    public function show_steps(){
-    $steps = UserStep::where('user_id',  Auth::guard('web')->user()->id)->first();
+    public function show_steps()
+    {
+        $steps = UserStep::where('user_id',  Auth::guard('web')->user()->id)->first();
 
-    if (!$steps) {
-        // Initialize steps for a new user
-        $steps = UserStep::create(['user_id' =>  Auth::guard('web')->user()->id]);
-    }
+        if (!$steps) {
+            // Initialize steps for a new user
+            $steps = UserStep::create(['user_id' =>  Auth::guard('web')->user()->id]);
+        }
 
-    // Map progress to the required frontend structure
-    $progressSteps = [
-        ['url' => 'user.basic_settings.general-settings','title' => 'تحديث الشعار الخاص بك', 'completed' => (bool) $steps->logo_uploaded],
-        ['url' => 'user.basic_settings.general-settings','title' => 'تحديث ايقونة الموقع', 'completed' => (bool) $steps->favicon_uploaded],
-        ['url' => 'user.basic_settings.general-settings','title' => 'تحديث اسم الموقع الخاص بك', 'completed' => (bool) $steps->website_named],
-        ['url' => 'user.home.page.text.edit','title' => 'تحديث بيانات الصفحة الرئيسية', 'completed' => (bool) $steps->homepage_updated],
-        ['url' => 'user.basic_settings.general-settings','title' => 'تحديث بيانات الصفحة عن الشركه', 'completed' => (bool) $steps->homepage_about_update],
-        ['url' => 'user.basic_settings.general-settings','title' => 'تحديث بيانات الصفحة معلومات الاتصال', 'completed' => (bool) $steps->contacts_social_info],
-        ['url' => 'user.home_page.hero.slider_version','title' => 'تحديث بيانات الصفحة البانرات', 'completed' => (bool) $steps->banner],
-        ['url' => 'user.home_page.hero.slider_version','title' => 'تحديث بيانات الصفحة صورة اعلى الصفحات الفرعية', 'completed' => (bool) $steps->sub_pages_upper_image],
-        ['url' => 'user.menu_builder.index','title' => 'تحديث بيانات الصفحة منشئ القائمة', 'completed' => (bool) $steps->menu_builder],
-        ['url' => 'user.services.index','title' => 'تحديث بيانات الصفحة خدماتنا', 'completed' => (bool) $steps->services],
-        ['url' => 'user.footer.text','title' => 'تحديث بيانات الصفحة الذيل', 'completed' => (bool) $steps->footer],
-    ];
+        // Map progress to the required frontend structure
+        $progressSteps = [
+            ['url' => 'user.basic_settings.general-settings', 'title' => 'تحديث الشعار الخاص بك', 'completed' => (bool) $steps->logo_uploaded],
+            ['url' => 'user.basic_settings.general-settings', 'title' => 'تحديث ايقونة الموقع', 'completed' => (bool) $steps->favicon_uploaded],
+            ['url' => 'user.basic_settings.general-settings', 'title' => 'تحديث اسم الموقع الخاص بك', 'completed' => (bool) $steps->website_named],
+            ['url' => 'user.home.page.text.edit', 'title' => 'تحديث بيانات الصفحة الرئيسية', 'completed' => (bool) $steps->homepage_updated],
+            ['url' => 'user.basic_settings.general-settings', 'title' => 'تحديث بيانات الصفحة عن الشركه', 'completed' => (bool) $steps->homepage_about_update],
+            ['url' => 'user.basic_settings.general-settings', 'title' => 'تحديث بيانات الصفحة معلومات الاتصال', 'completed' => (bool) $steps->contacts_social_info],
+            ['url' => 'user.home_page.hero.slider_version', 'title' => 'تحديث بيانات الصفحة البانرات', 'completed' => (bool) $steps->banner],
+            ['url' => 'user.home_page.hero.slider_version', 'title' => 'تحديث بيانات الصفحة صورة اعلى الصفحات الفرعية', 'completed' => (bool) $steps->sub_pages_upper_image],
+            ['url' => 'user.menu_builder.index', 'title' => 'تحديث بيانات الصفحة منشئ القائمة', 'completed' => (bool) $steps->menu_builder],
+            ['url' => 'user.services.index', 'title' => 'تحديث بيانات الصفحة خدماتنا', 'completed' => (bool) $steps->services],
+            ['url' => 'user.footer.text', 'title' => 'تحديث بيانات الصفحة الذيل', 'completed' => (bool) $steps->footer],
+        ];
 
-    $data['steps'] = $progressSteps;
+        $data['steps'] = $progressSteps;
 
         return view('user.show_steps', $data);
-
     }
 
     public function index()

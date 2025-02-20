@@ -120,7 +120,7 @@
                                 <input type="hidden" name="id" value="{{ $home_setting->id }}">
                                 <input type="hidden" name="language_id" value="{{ $home_setting->language_id }}">
 
-                             
+
 
                                 @if (
                                     !empty($permissions) &&
@@ -162,7 +162,7 @@
                                         </div>
                                     </div>
                                 @endif
-                               
+
                             </form>
                         </div>
                     </div>

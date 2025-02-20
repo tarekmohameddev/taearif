@@ -16,7 +16,9 @@ class BasicSetting extends Model
         'base_color',
         'theme',
         'user_id',
-        'timezone'
+        'timezone',
+        'short_description',
+        'industry_type'
     ];
 
     public function language()

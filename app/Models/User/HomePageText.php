@@ -101,7 +101,11 @@ class HomePageText extends Model
 
         'project_title',
         'project_subtitle',
-        'testimonial_text'
+        'testimonial_text',
+        'about_content',
+        'about_button_text',
+        'about_button_url',
+
     ];
     public function language()
     {

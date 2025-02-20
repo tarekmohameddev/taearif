@@ -280,12 +280,27 @@
                             <span>إعدادات الموقع</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ route('user.blog.category.index'). '?language=' . $default->code}}"
+                           class="nav-link d-flex align-items-center {{ request()->path() == 'user/blog-categories' ? 'active' : '' }}">
+                           <i class="bi bi-gear"></i>
+                            <span>المدونة</span>
+                        </a>
+                    </li>
 
                     <li class="nav-item">
-                        <a href="{{ route('home-page-settings') }}"
+                        <a href="{{ route('home-page-settings'). '?language=' . $default->code}}"
                            class="nav-link d-flex align-items-center {{ request()->path() == 'user/home-page-settings' ? 'active' : '' }}">
                            <i class="bi bi-gear"></i>
-                            <span>إعدادات الاقسام</span>
+                            <span>إعدادات المحتوى</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="{{ route('webstie.settings'). '?language=' . $default->code}}"
+                           class="nav-link d-flex align-items-center {{ request()->path() == 'user/webstie-settings' ? 'active' : '' }}">
+                           <i class="bi bi-gear"></i>
+                            <span>الإعدادات</span>
                         </a>
                     </li>
 
