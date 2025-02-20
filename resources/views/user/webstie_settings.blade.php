@@ -155,7 +155,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                         </p>
                                         <div class="form-group">
                                             <div class="preview-image">
-                                                <img src="{{ isset($basic_setting->preloader) ? asset('assets/front/img/user/'.$basic_setting->preloader) : asset('assets/admin/img/noimage.jpg') }}" alt="preloader" class="img-thumbnail">
+                                                <img src="{{ isset($information['home_setting']->preloader) ? asset('assets/front/img/user/'.$information['home_setting']->preloader) : asset('assets/admin/img/noimage.jpg') }}" alt="preloader" class="img-thumbnail">
                                             </div>
                                             <!-- Preloader input is commented out -->
                                             <button type="button" class="upload-btn d-none" onclick="document.getElementById('preloader').click()">
@@ -173,7 +173,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                         </p>
                                         <div class="form-group">
                                             <div class="preview-image">
-                                                <img src="{{ isset($basic_setting->breadcrumb) ? asset('assets/front/img/user/'.$basic_setting->breadcrumb) : asset('assets/admin/img/noimage.jpg') }}" alt="breadcrumb" class="img-thumbnail">
+                                                <img src="{{ isset($information['basic_settings']->breadcrumb) ? asset('assets/front/img/user/'.$information['basic_settings']->breadcrumb) : asset('assets/admin/img/noimage.jpg') }}" alt="breadcrumb" class="img-thumbnail">
                                             </div>
                                             <button type="button" class="upload-btn d-none" onclick="document.getElementById('breadcrumb').click()">
                                                 <i class="bi bi-upload mb-2"></i>
@@ -190,7 +190,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                         </p>
                                         <div class="form-group">
                                             <div class="preview-image">
-                                                <img src="{{ isset($basic_setting->favicon) ? asset('assets/front/img/user/'.$basic_setting->favicon) : asset('assets/admin/img/noimage.jpg') }}" alt="favicon" class="img-thumbnail">
+                                                <img src="{{ isset($information['home_setting']->favicon) ? asset('assets/front/img/user/'.$information['home_setting']->favicon) : asset('assets/admin/img/noimage.jpg') }}" alt="favicon" class="img-thumbnail">
                                             </div>
                                             <button type="button" class="upload-btn d-none" onclick="document.getElementById('favicon').click()">
                                                 <i class="bi bi-upload mb-2"></i>
@@ -314,18 +314,6 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <div class="row">
                     <div class="col-md-12">
                         <div class="card">
-                            <div class="card-header">
-                                <div class="row">
-                                    <div class="col-12 col-sm-auto ms-sm-auto col-md-auto ms-md-auto">
-                                        <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-4">
-                                            <a href="{{ route('user.home_page.hero.create_slider')}}" class="btn btn-primary"><i class="fas fa-plus"></i> {{ __('Add Slider') }}</a>
-                                            <!--  -->
-                                            <!--  -->
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-12">
@@ -491,16 +479,17 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                 <div class="row">
                                     <div class="col-md-12">
                                         <!-- Breadcrumb Section -->
-
-                                        <div class="settings-section">
-                                            <h3 class="section-title">{{ __('Breadcrumb Photo') }}</h3>
-                                            <p class="section-description">{{ __('Add an image that will appear as a background for the breadcrumb section, helping to enhance navigation visuals.') }}</p>
-                                            <div class="form-group">
-                                                <div class="preview-image">
-                                                    <img src="{{ isset($basic_setting->breadcrumb) ? asset('assets/front/img/user/'.$basic_setting->breadcrumb) : asset('assets/admin/img/noimage.jpg') }}" alt="breadcrumb" class="img-thumbnail">
-                                                </div>
-                                                <input type="file" id="breadcrumb" name="breadcrumb" class="d-none" accept="image/*">
-                                                <button type="button" class="upload-btn" style="background-color: white;
+                                        <form action="{{ route('user.update_breadcrumb') }}" method="POST" enctype="multipart/form-data">
+                                            @csrf
+                                            <div class="settings-section">
+                                                <h3 class="section-title">{{ __('Breadcrumb Photo') }}</h3>
+                                                <p class="section-description">{{ __('Add an image that will appear as a background for the breadcrumb section, helping to enhance navigation visuals.') }}</p>
+                                                <div class="form-group">
+                                                    <div class="preview-image">
+                                                        <img src="{{ isset($information['home_setting']->breadcrumb) ? asset('assets/front/img/user/'.$information['home_setting']->breadcrumb) : asset('assets/admin/img/noimage.jpg') }}" alt="breadcrumb" class="img-thumbnail">
+                                                    </div>
+                                                    <input type="file" id="breadcrumb" name="breadcrumb" class="d-none" accept="image/*">
+                                                    <button type="button" class="upload-btn" style="background-color: white;
                                                                         border: 2px dashed #8c9998;
                                                                         color: #0E9384;
                                                                         padding: 1rem;
@@ -509,13 +498,20 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                                         flex-direction: column;
                                                                         align-items: center;
                                                                         cursor: pointer;" onclick="document.getElementById('breadcrumb').click()">
-                                                    <i class="bi bi-upload mb-2"></i>
-                                                    <span>{{ __('Upload Breadcrumb Image') }}</span>
+                                                        <i class="bi bi-upload mb-2"></i>
+                                                        <span>{{ __('Upload Breadcrumb Image') }}</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Submit Button -->
+                                            <div class="text-center">
+                                                <button type="submit" class="btn btn-success btn-lg">
+                                                    {{ __('Save') }}
                                                 </button>
                                             </div>
-                                        </div>
 
-
+                                        </form>
                                     </div>
 
                                 </div>
@@ -538,99 +534,92 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                         <div class="card">
                             <div class="card-header">
                                 <div class="row">
-                                <div class="col-12 col-sm-auto ms-sm-auto col-md-auto ms-md-auto">
-                                <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-4">
-                        @if (!is_null($userDefaultLang))
-                                            <a href="#" class="btn btn-primary" data-toggle="modal"
-                                                data-target="#createModalSkill"><i class="fas fa-plus"></i> {{ __('Add Skill') }}</a>
-                                            <button class="btn btn-danger mr-2 d-none bulk-delete"
-                                                data-href="{{ route('user.skill.bulk.delete') }}"><i class="flaticon-interface-5"></i>
+                                    <div class="col-12 col-sm-auto ms-sm-auto col-md-auto ms-md-auto">
+                                        <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-4">
+                                            @if (!is_null($userDefaultLang))
+                                            <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createModalSkill"><i class="fas fa-plus"></i> {{ __('Add Skill') }}</a>
+                                            <button class="btn btn-danger mr-2 d-none bulk-delete" data-href="{{ route('user.skill.bulk.delete') }}"><i class="flaticon-interface-5"></i>
                                                 {{ __('Delete') }}</button>
-                                        @endif
+                                            @endif
 
-                        @if(!is_null($userDefaultLang))
-                                @if (!empty($userLanguages))
-                                    <select name="userLanguage" style="width: 200px; margin-inline: 0.8rem;height: 100%;" class="form-control btn btn-outline-secondary dropdown-toggle d-flex align-items-center justify-content-between" onchange="window.location='{{url()->current() . '?language='}}'+this.value">
-                                        <option value="" selected disabled>{{__('Select a Language')}}</option>
-                                        @foreach ($userLanguages as $lang)
-                                            <option value="{{$lang->code}}" {{$lang->code == request()->input('language') ? 'selected' : ''}}>{{$lang->name}}</option>
-                                        @endforeach
-                                    </select>
-                                @endif
-                            @endif
-                        </div>
-                        </div>
-                    </div>
+                                            @if(!is_null($userDefaultLang))
+                                            @if (!empty($userLanguages))
+                                            <select name="userLanguage" style="width: 200px; margin-inline: 0.8rem;height: 100%;" class="form-control btn btn-outline-secondary dropdown-toggle d-flex align-items-center justify-content-between" onchange="window.location='{{url()->current() . '?language='}}'+this.value">
+                                                <option value="" selected disabled>{{__('Select a Language')}}</option>
+                                                @foreach ($userLanguages as $lang)
+                                                <option value="{{$lang->code}}" {{$lang->code == request()->input('language') ? 'selected' : ''}}>{{$lang->name}}</option>
+                                                @endforeach
+                                            </select>
+                                            @endif
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
 
                             </div>
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-lg-12">
                                         @if (is_null($userDefaultLang))
-                                            <h3 class="text-center">{{ __('NO LANGUAGE FOUND') }}</h3>
+                                        <h3 class="text-center">{{ __('NO LANGUAGE FOUND') }}</h3>
                                         @else
-                                            @if (count($information['skills']) == 0)
-                                                <h3 class="text-center">{{ __('NO SKILL FOUND') }}</h3>
-                                            @else
-                                                <div class="table-responsive">
-                                                    <table class="table table-striped mt-3" id="basic-datatables">
-                                                        <thead>
-                                                            <tr>
-                                                                <th scope="col">
-                                                                    <input type="checkbox" class="bulk-check" data-val="all">
-                                                                </th>
-                                                                @if ($userBs->theme !== 'home_twelve')
-                                                                    <th scope="col">{{ __('Icon') }}</th>
-                                                                @endif
-                                                                <th scope="col">{{ __('Title') }}</th>
-                                                                <th scope="col">{{ __('Language') }}</th>
-                                                                <th scope="col">{{ __('Percentage') }}</th>
-                                                                <th scope="col">{{ __('Actions') }}</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            @foreach ($information['skills'] as $key => $skill)
-                                                                <tr>
-                                                                    <td>
-                                                                        <input type="checkbox" class="bulk-check"
-                                                                            data-val="{{ $skill->id }}">
-                                                                    </td>
-                                                                    @if ($userBs->theme !== 'home_twelve')
-                                                                        <td><i class="{{ $skill->icon ?? 'fa fa-fw fa-heart' }}"></i>
-                                                                        </td>
-                                                                    @endif
-                                                                    <td>{{ strlen($skill->title) > 30 ? mb_substr($skill->title, 0, 30, 'UTF-8') . '...' : $skill->title }}
-                                                                    </td>
-                                                                    <td>{{ $skill->language->name }}</td>
-                                                                    <td>{{ $skill->percentage }}</td>
-                                                                    <td>
-                                                                        <a class="btn btn-secondary btn-sm"
-                                                                            href="{{ route('user.skill.edit', $skill->id) . '?language=' . $skill->language->code }}">
-                                                                            <span class="btn-label">
-                                                                                <i class="fas fa-edit"></i>
-                                                                            </span>
-                                                                            {{ __('Edit') }}
-                                                                        </a>
-                                                                        <form class="deleteform d-inline-block"
-                                                                            action="{{ route('user.skill.delete') }}" method="post">
-                                                                            @csrf
-                                                                            <input type="hidden" name="skill_id"
-                                                                                value="{{ $skill->id }}">
-                                                                            <button type="submit"
-                                                                                class="btn btn-danger btn-sm deletebtn">
-                                                                                <span class="btn-label">
-                                                                                    <i class="fas fa-trash"></i>
-                                                                                </span>
-                                                                                {{ __('Delete') }}
-                                                                            </button>
-                                                                        </form>
-                                                                    </td>
-                                                                </tr>
-                                                            @endforeach
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            @endif
+                                        @if (count($information['skills']) == 0)
+                                        <h3 class="text-center">{{ __('NO SKILL FOUND') }}</h3>
+                                        @else
+                                        <div class="table-responsive">
+                                            <table class="table table-striped mt-3" id="basic-datatables">
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col">
+                                                            <input type="checkbox" class="bulk-check" data-val="all">
+                                                        </th>
+                                                        @if ($userBs->theme !== 'home_twelve')
+                                                        <th scope="col">{{ __('Icon') }}</th>
+                                                        @endif
+                                                        <th scope="col">{{ __('Title') }}</th>
+                                                        <th scope="col">{{ __('Language') }}</th>
+                                                        <th scope="col">{{ __('Percentage') }}</th>
+                                                        <th scope="col">{{ __('Actions') }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach ($information['skills'] as $key => $skill)
+                                                    <tr>
+                                                        <td>
+                                                            <input type="checkbox" class="bulk-check" data-val="{{ $skill->id }}">
+                                                        </td>
+                                                        @if ($userBs->theme !== 'home_twelve')
+                                                        <td><i class="{{ $skill->icon ?? 'fa fa-fw fa-heart' }}"></i>
+                                                        </td>
+                                                        @endif
+                                                        <td>{{ strlen($skill->title) > 30 ? mb_substr($skill->title, 0, 30, 'UTF-8') . '...' : $skill->title }}
+                                                        </td>
+                                                        <td>{{ $skill->language->name }}</td>
+                                                        <td>{{ $skill->percentage }}</td>
+                                                        <td>
+                                                            <a class="btn btn-secondary btn-sm" href="{{ route('user.skill.edit', $skill->id) . '?language=' . $skill->language->code }}">
+                                                                <span class="btn-label">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </span>
+                                                                {{ __('Edit') }}
+                                                            </a>
+                                                            <form class="deleteform d-inline-block" action="{{ route('user.skill.delete') }}" method="post">
+                                                                @csrf
+                                                                <input type="hidden" name="skill_id" value="{{ $skill->id }}">
+                                                                <button type="submit" class="btn btn-danger btn-sm deletebtn">
+                                                                    <span class="btn-label">
+                                                                        <i class="fas fa-trash"></i>
+                                                                    </span>
+                                                                    {{ __('Delete') }}
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        @endif
                                         @endif
                                     </div>
                                 </div>
@@ -648,91 +637,218 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <p class="text-muted">Provide information about your company.</p>
                 <!--  -->
                 <!-- Home Page About Section -->
-                <div class="card-body pt-5 pb-5">
-                    <div class="row">
-                        <div class="col-lg-6 offset-lg-3">
-                            <input type="hidden" name="id" value="{{ $information['home_setting']->id }}">
-                            <input type="hidden" name="language_id" value="{{ $information['home_setting']->language_id }}">
-                            <div class="row">
-                                <div class="col-lg-12">
-                                    <div class="form-group">
-                                        <div class="col-12 mb-2">
-                                            <h3 class="section-title">{{ __('Company Introduction (About Us)') }}</h3>
-                                            <p class="section-description">
-                                                {{ __('This section contains text and an image about your company. You can control its content here.') }}
-                                            </p>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="min-vh-100 d-flex align-items-center justify-content-center pb-3">
+                            <div class="feature-card p-4 d-flex flex-column flex-md-row align-items-start gap-3 mx-auto w-100" style="">
+                                <div class="icon-container d-flex align-items-center justify-content-center flex-shrink-0 mb-3 mb-md-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-dark">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                                        <line x1="3" y1="15" x2="21" y2="15"></line>
+                                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                                        <line x1="15" y1="3" x2="15" y2="21"></line>
+                                    </svg>
+                                </div>
+                                <div class="feature-card-text">
+                                    <h2 class="fs-4 fw-semibold mb-2"> {{ __('About Section')}}</h2>
+                                    <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
+                                        في الصفحة الرئيسية يوجد قسم عن الشركة, يحتوي على معلومات نصيه وصورة, يمكنك التحكم بالمحتوى الخاص به من هنا
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="row">
+                                    <div class="col-12 col-sm-auto ms-sm-auto col-md-auto ms-md-auto">
+                                        <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-4">
+                                            @if(!is_null($userDefaultLang))
+                                            @if (!empty($userLanguages))
+                                            <select name="userLanguage" style="width: 200px; margin-inline: 0.8rem;height: 100%;" class="form-control btn btn-outline-secondary dropdown-toggle d-flex align-items-center justify-content-between" onchange="window.location='{{url()->current() . '?language='}}'+this.value">
+                                                <option value="" selected disabled>{{__('Select a Language')}}</option>
+                                                @foreach ($userLanguages as $lang)
+                                                <option value="{{$lang->code}}" {{$lang->code == request()->input('language') ? 'selected' : ''}}>{{$lang->name}}</option>
+                                                @endforeach
+                                            </select>
+                                            @endif
+                                            @endif
                                         </div>
-                                        <div class="col-md-12 showAboutImage mb-3">
-                                            <img src="{{ $information['home_setting']->about_image ? asset('assets/front/img/user/home_settings/' . $information['home_setting']->about_image) : asset('assets/admin/img/noimage.jpg') }}" alt="about image" class="img-thumbnail">
-                                        </div>
-                                        <!-- Removed redundant hidden "types[]" inputs -->
-                                        <input type="file" name="about_image" id="about_image" class="d-none form-control ltr">
-                                        <button type="button" class="upload-btn" style="background-color: white; border: 2px dashed #8c9998; color: #0E9384; padding: 1rem; width: 80%; display: flex; flex-direction: column; align-items: center; cursor: pointer;" onclick="document.getElementById('about_image').click()">
-                                            <i class="bi bi-upload mb-2"></i>
-                                            <span>{{ __('Upload Image') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-body pt-5 pb-5">
+                                <div class="row">
+                                    <div class="col-lg-6 offset-lg-3">
+                                        <form id="ajaxForm" action="{{ route('user.home.page.update.about') }}" method="POST" enctype="multipart/form-data">
+                                            @csrf
+                                            <input type="hidden" name="id" value="{{ $information['home_setting']->id }}">
+                                            <input type="hidden" name="language_id" value="{{ $information['home_setting']->language_id }}">
+                                            <div class="row">
+                                                <div class="col-lg-12">
+                                                    <div class="form-group">
+                                                        <div class="col-12 mb-2">
+                                                            <label for="logo"><strong>{{ __('Image') }}</strong></label>
+                                                        </div>
+                                                        <div class="col-md-12 showAboutImage mb-3">
+                                                            <img src="{{ $information['home_setting']->about_image ? asset('assets/front/img/user/home_settings/' . $information['home_setting']->about_image) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
+                                                        </div>
+                                                        <input type="hidden" name="types[]" value="about_image">
+                                                        <input type="file" name="about_image" id="about_image" class="d-none form-control ltr">
+                                                        <button type="button" class="upload-btn" style="background-color: white;
+                                                        border: 2px dashed #8c9998;
+                                                        color: #0E9384;
+                                                        padding: 1rem;
+                                                        width: 80%;
+                                                        display: flex;
+                                                        flex-direction: column;
+                                                        align-items: center;
+                                                        cursor: pointer;" onclick="document.getElementById('about_image').click()">
+                                                            <i class="bi bi-upload mb-2"></i>
+                                                            <span>{{ __('Upload Logo') }}</span>
+                                                        </button>
+                                                        <p id="errabout_image" class="mb-0 text-danger em"></p>
+                                                    </div>
+                                                </div>
+                                                @if ($userBs->theme == 'home13' || $userBs->theme == 'home15')
+                                                <div class="col-lg-6">
+                                                    <div class="form-group">
+                                                        <div class="col-12 mb-2">
+                                                            <label for="logo"><strong>{{ __('Image Two') }}</strong></label>
+                                                        </div>
+                                                        <div class="col-md-12 showAboutImage2 mb-3">
+                                                            <img src="{{ $information['home_setting']->about_image_two ? asset('assets/front/img/user/home_settings/' . $information['home_setting']->about_image_two) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="  img-fluid">
+                                                        </div>
+                                                        <input type="hidden" name="types[]" value="about_image_two">
+                                                        <input type="file" name="about_image_two" id="about_image2" class="form-control ltr">
+                                                        <p id="errabout_image_two" class="mb-0 text-danger em"></p>
+                                                    </div>
+                                                </div>
+                                                @endif
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-lg-6 pr-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('Title') }}</label>
+                                                        <input type="hidden" name="types[]" value="about_title">
+                                                        <input type="text" class="form-control" name="about_title" value="{{ $information['home_setting']->about_title }}">
+                                                        <p id="errabout_title" class="mb-0 text-danger em"></p>
+                                                    </div>
+                                                </div>
+                                                @if ($userBs->theme !== 'home_eleven')
+                                                <div class="col-lg-6 pl-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('Subtitle') }}</label>
+                                                        <input type="hidden" name="types[]" value="about_subtitle">
+                                                        <input type="text" class="form-control" name="about_subtitle" value="{{ $information['home_setting']->about_subtitle }}">
+                                                        <p id="errabout_subtitle" class="mb-0 text-danger em"></p>
+                                                    </div>
+                                                </div>
+                                                @endif
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="">{{ __('Content') }}</label>
+                                                <input type="hidden" name="types[]" value="about_content">
+                                                <textarea class="form-control" name="about_content" rows="5">{{ $information['home_setting']->about_content }}</textarea>
+                                                <p id="errabout_content" class="mb-0 text-danger em"></p>
+                                            </div>
+                                            @if ($userBs->theme === 'home13')
+                                            <div class="row">
+                                                <div class="col-lg-12">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('Years Of Exprience') }}</label>
+                                                        <input type="hidden" name="types[]" value="years_of_expricence">
+                                                        <input type="number" class="form-control" name="years_of_expricence" value="{{ $information['home_setting']->years_of_expricence }}">
+                                                        <p id="erryears_of_expricence" class="mb-0 text-danger em"></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            @endif
+                                            @if (
+                                            (isset($userBs->theme) && !$userBs->theme === 'home_two') ||
+                                            $userBs->theme === 'home_eleven' ||
+                                            $userBs->theme === 'home15' ||
+                                            $userBs->theme === 'home13')
+                                            <div class="row">
+                                                <div class="col-lg-6 pr-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('Button Text') }}</label>
+                                                        <input type="hidden" name="types[]" value="about_button_text">
+                                                        <input type="text" class="form-control" name="about_button_text" value="{{ $information['home_setting']->about_button_text }}">
+                                                        <p id="errabout_button_text" class="mb-0 text-danger em"></p>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6 pl-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('Button URL') }}</label>
+                                                        <input type="hidden" name="types[]" value="about_button_url">
+                                                        <input type="text" class="form-control ltr" name="about_button_url" value="{{ $information['home_setting']->about_button_url }}">
+                                                        <p id="errabout_button_url" class="mb-0 text-danger em"></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            @endif
+                                            @if (isset($userBs->theme) && $userBs->theme === 'home_eleven')
+                                            <div class="row">
+                                                <div class="col-lg-6 pr-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('Secound Button Text') }}</label>
+                                                        <input type="hidden" name="types[]" value="about_snd_button_text">
+                                                        <input type="text" class="form-control" name="about_snd_button_text" value="{{ $information['home_setting']->about_snd_button_text }}">
+                                                        <p id="errabout_snd_button_text" class="mb-0 text-danger em"></p>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6 pl-0">
+                                                    <div class="form-group">
+                                                        <label for="">{{ __('Secound Button URL') }}</label>
+                                                        <input type="hidden" name="types[]" value="about_snd_button_url">
+                                                        <input type="text" class="form-control ltr" name="about_snd_button_url" value="{{ $information['home_setting']->about_snd_button_url }}">
+                                                        <p id="errabout_snd_button_url" class="mb-0 text-danger em"></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            @endif
+                                            @if (isset($userBs->theme) && $userBs->theme === 'home_two')
+                                            <div class="form-group">
+                                                <div class="col-12 mb-2">
+                                                    <label for="logo"><strong>{{ __('Video Background Image') }}</strong></label>
+                                                </div>
+                                                <div class="col-md-12 showAboutVideoImage mb-3">
+                                                    <img src="{{ $information['home_setting']->about_video_image ? asset('assets/front/img/user/home_settings/' . $information['home_setting']->about_video_image) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
+                                                </div>
+                                                <input type="hidden" name="types[]" value="about_video_image">
+                                                <input type="file" name="about_video_image" id="about_video_image" class="form-control ltr">
+                                                <p id="errabout_video_image" class="mb-0 text-danger em"></p>
+                                            </div>
+                                            @endif
+                                            @if ((isset($userBs->theme) && $userBs->theme === 'home_two') || $userBs->theme == 'home15')
+                                            <div class="form-group">
+                                                <label for="">{{ __('Video URL') }}</label>
+                                                <input type="hidden" name="types[]" value="about_video_url">
+                                                <input type="text" class="form-control ltr" name="about_video_url" value="{{ $information['home_setting']->about_video_url }}">
+                                                <p id="errabout_video_url" class="mb-0 text-danger em"></p>
+                                            </div>
+                                            @endif
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-footer">
+                                <div class="row">
+                                    <div class="col-12 text-center">
+                                        <button type="submit" id="submitBtn" class="btn btn-success">
+                                            {{ __('Update') }}
                                         </button>
-                                        <p id="errabout_image" class="mb-0 text-danger em"></p>
                                     </div>
                                 </div>
                             </div>
-                            <div class="row">
-                                <div class="col-lg-6 pr-0">
-                                    <div class="form-group">
-                                        <label>{{ __('Title') }}</label>
-                                        <input type="text" class="form-control" name="about_title" value="{{ $information['home_setting']->about_title }}">
-                                        <p id="errabout_title" class="mb-0 text-danger em"></p>
-                                    </div>
-                                </div>
-                                @if ($userBs->theme === 'home_eleven')
-                                <div class="col-lg-6 pl-0">
-                                    <div class="form-group">
-                                        <label>{{ __('Second Button Text') }}</label>
-                                        <input type="text" class="form-control" name="about_snd_button_text" value="{{ $information['home_setting']->about_snd_button_text }}">
-                                        <p id="errabout_snd_button_text" class="mb-0 text-danger em"></p>
-                                    </div>
-                                </div>
-                                @endif
-                            </div>
-                            <div class="form-group">
-                                <label>{{ __('Content') }}</label>
-                                <textarea class="form-control" name="about_content" rows="5">{{ $information['home_setting']->about_content }}</textarea>
-                                <p id="errabout_content" class="mb-0 text-danger em"></p>
-                            </div>
-                            @if ((isset($userBs->theme) && $userBs->theme !== 'home_two') || $userBs->theme === 'home_eleven')
-                            <div class="row">
-                                <div class="col-lg-6 pr-0">
-                                    <div class="form-group">
-                                        <label>{{ __('Button Text') }}</label>
-                                        <input type="text" class="form-control" name="about_button_text" value="{{ $information['home_setting']->about_button_text }}">
-                                        <p id="errabout_button_text" class="mb-0 text-danger em"></p>
-                                    </div>
-                                </div>
-                                <div class="col-lg-6 pl-0">
-                                    <div class="form-group">
-                                        <label>{{ __('Button URL') }}</label>
-                                        <input type="text" class="form-control ltr" name="about_button_url" value="{{ $information['home_setting']->about_button_url }}">
-                                        <p id="errabout_button_url" class="mb-0 text-danger em"></p>
-                                    </div>
-                                </div>
-                            </div>
-                            @endif
-                            @if (isset($userBs->theme) && $userBs->theme === 'home_two')
-                            <div class="form-group">
-                                <div class="col-12 mb-2">
-                                    <label for="about_video_image"><strong>{{ __('Video Background Image') }}</strong></label>
-                                </div>
-                                <div class="col-md-12 showAboutVideoImage mb-3">
-                                    <img src="{{ $information['home_setting']->about_video_image ? asset('assets/front/img/user/home_settings/' . $information['home_setting']->about_video_image) : asset('assets/admin/img/noimage.jpg') }}" alt="video background" class="img-thumbnail">
-                                </div>
-                                <input type="file" name="about_video_image" id="about_video_image" class="form-control ltr">
-                                <p id="errabout_video_image" class="mb-0 text-danger em"></p>
-                            </div>
-                            <div class="form-group">
-                                <label>{{ __('Video URL') }}</label>
-                                <input type="text" class="form-control ltr" name="about_video_url" value="{{ $information['home_setting']->about_video_url }}">
-                                <p id="errabout_video_url" class="mb-0 text-danger em"></p>
-                            </div>
-                            @endif
                         </div>
                     </div>
                 </div>
@@ -745,99 +861,148 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <p class="text-muted">Manage projects and case studies in the portfolio section.</p>
 
                 <!-- portfolio -->
+                <div class="page-header">
+                    <h4 class="page-title">{{ __('Portfolio Categories') }}</h4>
+                    <ul class="breadcrumbs">
+                        <li class="nav-home">
+                            <a href="{{ route('user-dashboard') }}">
+                                <i class="flaticon-home"></i>
+                            </a>
+                        </li>
+                        <li class="separator">
+                            <i class="flaticon-right-arrow"></i>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#">{{ __('Portfolios') }}</a>
+                        </li>
+                        <li class="separator">
+                            <i class="flaticon-right-arrow"></i>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#">{{ __('Categories') }}</a>
+                        </li>
+                    </ul>
+                </div>
                 <div class="row">
                     <div class="col-md-12">
 
-                        <div class="row">
-
-
-                            <div class="col-lg-12 offset-lg-1 mt-2 mt-lg-0">
-                                @if (!is_null($userDefaultLang))  <!-- portfolio -->
-                                <a href="#" class="btn btn-primary float-right btn-sm" data-toggle="modal" data-target="#createModal"><i class="fas fa-plus"></i> {{ __('Add Portfolio') }}</a>
-                                <a class="btn btn-success float-right btn-sm mr-2" href="{{ route('user.portfolio.category.index') }}"><i class="fas fa-hands"></i> {{ __('Add categore') }}</a>
-                                <button class="btn btn-danger float-right btn-sm mr-2 d-none bulk-delete" data-href="{{ route('user.portfolio.bulk.delete') }}"><i class="flaticon-interface-5"></i> {{ __('Delete') }}</button>
-                                @endif
-                            </div>
-                        </div>
-
-
-                        <div class="row">
-                            <div class="col-lg-12">
-                                @if (is_null($userDefaultLang))
-                                <h3 class="text-center">{{ __('NO LANGUAGE FOUND') }}</h3>
-                                @else
-                                @if (count($information['portfolios']) == 0)
-                                <h3 class="text-center">{{ __('NO PORTFOLIO FOUND') }}</h3>
-                                @else
-                                <div class="table-responsive">
-                                    <table class="table table-striped mt-3" id="basic-datatables">
-                                        <thead>
-                                            <tr>
-                                                <th scope="col">
-                                                    <input type="checkbox" class="bulk-check" data-val="all">
-                                                </th>
-                                                <th scope="col">{{ __('Image') }}</th>
-                                                <th scope="col">{{ __('Title') }}</th>
-                                                <th scope="col">{{ __('Category') }}</th>
-                                                @if ($userBs->theme != 'home_ten')
-                                                <th scope="col">{{ __('Featured') }}</th>
-                                                @endif
-                                                <th scope="col">{{ __('Serial Number') }}</th>
-                                                <th scope="col">{{ __('Actions') }}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($information['portfolios'] as $key => $portfolio)
-                                            <tr>
-                                                <td>
-                                                    <input type="checkbox" class="bulk-check" data-val="{{ $portfolio->id }}">
-                                                </td>
-                                                <td><img src="{{ asset('assets/front/img/user/portfolios/' . $portfolio->image) }}" alt="" width="80"></td>
-                                                <td>{{ strlen($portfolio->title) > 30 ? mb_substr($portfolio->title, 0, 30, 'UTF-8') . '...' : $portfolio->title }}
-                                                </td>
-                                                <td>{{ $portfolio->bcategory->name }}</td>
-                                                @if ($userBs->theme != 'home_ten')
-                                                <td>
-                                                    <form id="featureForm{{ $portfolio->id }}" class="d-inline-block" action="{{ route('user.portfolio.featured') }}" method="post">
-                                                        @csrf
-                                                        <input type="hidden" name="portfolio_id" value="{{ $portfolio->id }}">
-                                                        <select class="form-control {{ $portfolio->featured == 1 ? 'bg-success' : 'bg-danger' }}" name="featured" onchange="document.getElementById('featureForm{{ $portfolio->id }}').submit();">
-                                                            <option value="1" {{ $portfolio->featured == 1 ? 'selected' : '' }}>
-                                                                {{ __('Yes') }}
-                                                            </option>
-                                                            <option value="0" {{ $portfolio->featured == 0 ? 'selected' : '' }}>
-                                                                {{ __('No') }}
-                                                            </option>
-                                                        </select>
-                                                    </form>
-
-
-                                                </td>
-                                                @endif
-                                                <td>{{ $portfolio->serial_number }}</td>
-                                                <td>
-                                                    <a class="btn btn-secondary btn-sm" href="{{ route('user.portfolio.edit', $portfolio->id) . '?language=' . $portfolio->language->code }}">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    <form class="deleteform d-inline-block" action="{{ route('user.portfolio.delete') }}" method="post">
-                                                        @csrf
-                                                        <input type="hidden" name="id" value="{{ $portfolio->id }}">
-                                                        <button type="submit" class="btn btn-danger btn-sm deletebtn">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </form>
-                                                </td>
-                                            </tr>
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="row">
+                                    <div class="col-lg-4">
+                                        <div class="card-title d-inline-block">{{ __('Categories') }}</div>
+                                    </div>
+                                    <div class="col-lg-3">
+                                        @if (!is_null($userDefaultLang))
+                                        @if (!empty($userLanguages))
+                                        <select name="userLanguage" class="form-control" onchange="window.location='{{ url()->current() . '?language=' }}'+this.value">
+                                            <option value="" selected disabled>{{ __('Select a Language') }}</option>
+                                            @foreach ($userLanguages as $lang)
+                                            <option value="{{ $lang->code }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
+                                                {{ $lang->name }}
+                                            </option>
                                             @endforeach
-                                        </tbody>
-                                    </table>
+                                        </select>
+                                        @endif
+                                        @endif
+                                    </div>
+                                    <div class="col-lg-4 offset-lg-1 mt-2 mt-lg-0">
+                                        @if (!is_null($userDefaultLang))
+                                        <a href="#" class="btn btn-primary float-right btn-sm" data-toggle="modal" data-target="#createModalportfolioCategory"><i class="fas fa-plus"></i>
+                                            {{ __('Add Portfolio Category') }}</a>
+                                        <button class="btn btn-danger float-right btn-sm mr-2 d-none bulk-delete" data-href="{{ route('user.portfolio.category.bulk.delete') }}"><i class="flaticon-interface-5"></i> {{ __('Delete') }}
+                                        </button>
+                                        @endif
+                                    </div>
                                 </div>
-                                @endif
-                                @endif
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-lg-12">
+                                        @if (is_null($userDefaultLang))
+                                        <h3 class="text-center">{{ __('NO LANGUAGE FOUND') }}</h3>
+                                        @else
+                                        @if (count($information['categories']) == 0)
+                                        <h3 class="text-center">{{ __('NO PORTFOLIO CATEGORY FOUND') }}</h3>
+                                        @else
+                                        <div class="table-responsive">
+                                            <table class="table table-striped mt-3" id="basic-datatables">
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col">
+                                                            <input type="checkbox" class="bulk-check" data-val="all">
+                                                        </th>
+                                                        <th scope="col">{{ __('Name') }}</th>
+                                                        <th scope="col">{{ __('Status') }}</th>
+                                                        @if ($userBs->theme === 'home_four' || $userBs->theme === 'home_five')
+                                                        <th scope="col">{{ __('Featured') }}</th>
+                                                        @endif
+                                                        <th scope="col">{{ __('Serial Number') }}</th>
+                                                        <th scope="col">{{ __('Actions') }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach ($information['categories'] as $key => $category)
+                                                    <tr>
+                                                        <td>
+                                                            <input type="checkbox" class="bulk-check" data-val="{{ $category->id }}">
+                                                        </td>
+                                                        <td>{{ $category->name }}</td>
+                                                        <td>
+                                                            @if ($category->status == 1)
+                                                            <h2 class="d-inline-block"><span class="badge badge-success">{{ __('Active') }}</span>
+                                                            </h2>
+                                                            @else
+                                                            <h2 class="d-inline-block"><span class="badge badge-danger">{{ __('Deactive') }}</span>
+                                                            </h2>
+                                                            @endif
+                                                        </td>
+                                                        @if ($userBs->theme === 'home_four' || $userBs->theme === 'home_five')
+                                                        <td>
+                                                            <form class="d-inline-block" id="featuredPortfoliCat{{ $category->id }}" method="post" action="{{ route('user.portfolio.category.makeFeatured') }}">
+                                                                @csrf
+                                                                <input type="hidden" value="{{ $category->id }}" name="id">
+                                                                <select name="status" class="form-control text-light form-control-sm {{ $category->is_featured == 1 ? 'bg-success' : 'bg-danger' }} featured-portfoliCat" data-data="{{ $category->id }}">
+                                                                    <option value="1" {{ $category->is_featured == 1 ? 'selected' : '' }}>
+                                                                        {{ __('Yes') }}
+                                                                    </option>
+                                                                    <option value="0" {{ $category->is_featured == 0 ? 'selected' : '' }}>
+                                                                        {{ __('No') }}
+                                                                    </option>
+                                                                </select>
+                                                            </form>
+                                                        </td>
+                                                        @endif
+                                                        <td>{{ $category->serial_number }}</td>
+                                                        <td>
+                                                            <a class="btn btn-secondary btn-sm editbtn" href="#editModal" data-toggle="modal" data-bcategory_id="{{ $category->id }}" data-name="{{ $category->name }}" data-status="{{ $category->status }}" data-serial_number="{{ $category->serial_number }}">
+                                                                <span class="btn-label">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </span>
+                                                                {{ __('Edit') }}
+                                                            </a>
+                                                            <form class="deleteform d-inline-block" action="{{ route('user.portfolio.category.delete') }}" method="post">
+                                                                @csrf
+                                                                <input type="hidden" name="bcategory_id" value="{{ $category->id }}">
+                                                                <button type="submit" class="btn btn-danger btn-sm deletebtn">
+                                                                    <span class="btn-label">
+                                                                        <i class="fas fa-trash"></i>
+                                                                    </span>
+                                                                    {{ __('Delete') }}
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        @endif
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
-
                     </div>
                 </div>
                 <!--// portfolio -->
@@ -850,96 +1015,211 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <p class="text-muted">Manage customer testimonials and reviews.</p>
 
                 <!--  -->
-                @if (
-                $userBs->theme != 'home_eight' ||
-                ($userBs->theme != 'home_ten' && !empty($permissions) && in_array('Testimonial', $permissions)))
                 <div class="row">
-                    <div class="col-12">
-                        <div class="form-group">
-                            <br>
-                            <h3 class="text-warning">{{ __('Testimonial Section') }}</h3>
-                            <hr class="border-top">
-                        </div>
-                        @if ($userBs->theme == 'home_six' || $userBs->theme == 'home_one' || $userBs->theme == 'home_ten')
-                        <div class="form-group">
-                            <div class="col-12 mb-2">
-                                <label for="logo"><strong>{{ __('Testimonial Image') }}</strong></label>
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="row">
+                                    <div class="col-12 col-sm-auto ms-sm-auto col-md-auto ms-md-auto">
+                                        <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-4">
+                                            @if(!is_null($userDefaultLang))
+                                            @if (!empty($userLanguages))
+                                            <select name="userLanguage" style="width: 200px; margin-inline: 0.8rem;height: 100%;" class="form-control btn btn-outline-secondary dropdown-toggle d-flex align-items-center justify-content-between" onchange="window.location='{{url()->current() . '?language='}}'+this.value">
+                                                <option value="" selected disabled>{{__('Select a Language')}}</option>
+                                                @foreach ($userLanguages as $lang)
+                                                <option value="{{$lang->code}}" {{$lang->code == request()->input('language') ? 'selected' : ''}}>{{$lang->name}}</option>
+                                                @endforeach
+                                            </select>
+                                            @endif
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
                             </div>
-                            <div class="col-md-12 showTestimonialImage mb-3">
-                                <img src="{{ $information['home_setting']->testimonial_image ? asset('assets/front/img/user/home_settings/' . $information['home_setting']->testimonial_image) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
-                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-lg-8 offset-lg-2">
+                                        <form id="ajaxFormTestimonialupdate" action="{{ route('user.home.page.text.update') }}" method="post" enctype="multipart/form-data">
+                                            @csrf
+                                            <input type="hidden" name="id" value="{{ $information['home_setting']->id }}">
+                                            <input type="hidden" name="language_id" value="{{ $information['home_setting']->language_id }}">
 
-                            <input type="file" id="testimonial_image" name="testimonial_image" class="d-none form-control ltr" accept="image/*">
 
-                            <button type="button" class="upload-btn" style="color: #0E9384;background-color:white;border: 2px dashed #8c9998; padding: 1rem;width: 80%; display: flex; flex-direction: column; align-items: center; cursor: pointer;" onclick="document.getElementById('testimonial_image').click()">
-                                <i class="bi bi-upload mb-2"></i>
-                                <span>{{ __('Testimonial Image') }}</span>
-                            </button>
+                                            @if (
+                                            $userBs->theme != 'home_eight' ||
+                                            ($userBs->theme != 'home_ten' && !empty($permissions) && in_array('Testimonial', $permissions)))
+                                            <div class="row">
+                                                <div class="col-12">
 
-                            <p id="errtestimonial_image" class="mb-0 text-danger em"></p>
-                        </div>
-                        @endif
-                        @if ($userBs->theme != 'home_ten')
-                        <div class="row">
-                            <div class="col-lg-6 pr-0">
-                                <div class="form-group">
-                                    <label for="">{{ __('Testimonial Section Title') }}</label>
-                                    <input type="hidden" name="types[]" value="testimonial_title">
-                                    <input type="text" class="form-control" name="testimonial_title" placeholder="" value="{{ $information['home_setting']->testimonial_title }}">
-                                    <p id="errtestimonial_title" class="mb-0 text-danger em"></p>
+                                                    @if ($userBs->theme == 'home_six' || $userBs->theme == 'home_one' || $userBs->theme == 'home_ten')
+                                                    <!-- errtestimonial_image Section -->
+                                                    <div class="form-group">
+                                                        <div class="col-12 mb-2">
+                                                            <label for="logo"><strong>{{ __('Testimonial Image') }}</strong></label>
+                                                        </div>
+                                                        <div class="col-md-12 preview-image showTestimonialImage mb-3">
+                                                            <img src="{{ $information['home_setting']->testimonial_image ? asset('assets/front/img/user/home_settings/' . $information['home_setting']->testimonial_image) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
+                                                        </div>
+                                                        <input type="file" name="testimonial_image" id="testimonial_image" class="d-none">
+                                                        <button type="button" class="upload-btn" style="background-color: white;
+                                                                                    border: 2px dashed #8c9998;
+                                                                                    color: #0E9384;
+                                                                                    padding: 1rem;
+                                                                                    width: 50%;
+                                                                                    display: flex;
+                                                                                    flex-direction: column;
+                                                                                    align-items: center;
+                                                                                    cursor: pointer;" onclick="document.getElementById('testimonial_image').click()">
+                                                            <i class="bi bi-upload mb-2"></i>
+                                                            <span>{{ __('Upload Favicon') }}</span>
+                                                        </button>
+                                                        <p id="errtestimonial_image" class="mb-0 text-danger em"></p>
+                                                    </div>
+                                                    @endif
+                                                    @if ($userBs->theme != 'home_ten')
+                                                    <div class="row">
+                                                        <div class="col-lg-6 pr-0">
+                                                            <div class="form-group">
+                                                                <label for="">{{ __('Testimonial Section Title') }}</label>
+                                                                <input type="hidden" name="types[]" value="testimonial_title">
+                                                                <input type="text" class="form-control" name="testimonial_title" placeholder="" value="{{ $information['home_setting']->testimonial_title }}">
+                                                                <p id="errtestimonial_title" class="mb-0 text-danger em"></p>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-lg-6 pl-0">
+                                                            <div class="form-group">
+                                                                <label for="">{{ __('Testimonial Section Subtitle') }}</label>
+                                                                <input type="hidden" name="types[]" value="testimonial_subtitle">
+                                                                <input type="text" class="form-control" name="testimonial_subtitle" placeholder="" value="{{ $information['home_setting']->testimonial_subtitle }}">
+                                                                <p id="errtestimonial_subtitle" class="mb-0 text-danger em">
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            @endif
+
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-lg-6 pl-0">
-                                <div class="form-group">
-                                    <label for="">{{ __('Testimonial Section Subtitle') }}</label>
-                                    <input type="hidden" name="types[]" value="testimonial_subtitle">
-                                    <input type="text" class="form-control" name="testimonial_subtitle" placeholder="" value="{{ $information['home_setting']->testimonial_subtitle }}">
-                                    <p id="errtestimonial_subtitle" class="mb-0 text-danger em">
-                                    </p>
+                            <div class="card-footer">
+                                <div class="form">
+                                    <div class="form-group from-show-notify row">
+                                        <div class="col-12 text-center">
+                                            <button type="submit" id="submitBtnTestimonialUpdate" class="btn btn-success">{{ __('Update') }}</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <!-- Add Testimonial -->
-                            <div class="col-lg-4 offset-lg-1 mt-2 mt-lg-0">
-                                <a href="#" class="btn btn-primary float-right btn-sm" data-toggle="modal" data-target="#create_testimonial_Modal"><i class="fas fa-plus"></i> {{ __('Add Testimonial') }}</a>
-                                <button class="btn btn-danger float-right btn-sm mr-2 d-none bulk-delete" data-href="{{ route('user.testimonial.bulk.delete') }}"><i class="flaticon-interface-5"></i> {{ __('Delete') }}</button>
-                            </div>
-                            <!--// Add Testimonial -->
                         </div>
-                        @endif
+
                     </div>
                 </div>
-                @endif
-                @if ($userBs->theme == 'home_six' || $userBs->theme == 'home_ten')
                 <div class="row">
-                    <div class="col-12">
-                        <div class="form-group">
-                            <br>
-                            <h3 class="text-warning">{{ __('Counter Section') }}</h3>
-                            <hr class="border-top">
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-6 pr-0">
-                                <div class="form-group">
-                                    <div class="col-12 mb-2">
-                                        <label for="logo"><strong>{{ __('Counter Section Image') }}</strong></label>
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="row">
+                                    <div class="col-lg-4 offset-lg-1 mt-2 mt-lg-0">
+                                        <a href="#" class="btn btn-primary float-right btn-sm" data-toggle="modal" data-target="#create_testimonial_Modal"><i class="fas fa-plus"></i> {{ __('Add Testimonial') }}</a>
+                                        <button class="btn btn-danger float-right btn-sm mr-2 d-none bulk-delete" data-href="{{ route('user.testimonial.bulk.delete') }}"><i class="flaticon-interface-5"></i> {{ __('Delete') }}</button>
                                     </div>
-                                    <div class="col-md-12 showImage  mb-3">
-                                        <img src="{{ $information['home_setting']->counter_section_image ? asset('assets/front/img/user/home_settings/' . $information['home_setting']->counter_section_image) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
-                                    </div>
-                                    <input type="hidden" name="types[]" value="counter_section_image">
-                                    <input type="file" id="counter_section_image" name="counter_section_image" class="image" class=" d-none form-control ltr">
 
-                                    <button type="button" class="upload-btn" onclick="document.getElementById('counter_section_image').click()">
-                                        <i class="bi bi-upload mb-2"></i>
-                                        <span>{{ __('Testimonial Image') }}</span>
-                                    </button>
-                                    <p id="errcounter_section_image" class="mb-0 text-danger em"></p>
+                                    <div class="col-lg-3">
+                                        @if (!is_null($userDefaultLang))
+                                        @if (!empty($userLanguages))
+                                        <select name="userLanguage" class="form-control" onchange="window.location='{{ url()->current() . '?language=' }}'+this.value">
+                                            <option value="" selected disabled>{{ __('Select a Language') }}</option>
+                                            @foreach ($userLanguages as $lang)
+                                            <option value="{{ $lang->code }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
+                                                {{ $lang->name }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                        @endif
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-lg-12">
+                                        @if (is_null($userDefaultLang))
+                                        <h3 class="text-center">{{ __('NO LANGUAGE FOUND') }}</h3>
+                                        @else
+                                        @if (count($information['testimonials']) == 0)
+                                        <h3 class="text-center">{{ __('NO TESTIMONIAL FOUND') }}</h3>
+                                        @else
+                                        <div class="table-responsive">
+                                            <table class="table table-striped mt-3" id="basic-datatables">
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col">
+                                                            <input type="checkbox" class="bulk-check" data-val="all">
+                                                        </th>
+                                                        @if ($userBs->theme !== 'home_nine')
+                                                        <th scope="col">{{ __('Image') }}</th>
+                                                        @endif
+                                                        <th scope="col">{{ __('Name') }}</th>
+                                                        <th scope="col">{{ __('Publish Date') }}</th>
+                                                        <th scope="col">{{ __('Serial Number') }}</th>
+                                                        <th scope="col">{{ __('Actions') }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach ($information['testimonials'] as $key => $testimonial)
+                                                    <tr>
+                                                        <td>
+                                                            <input type="checkbox" class="bulk-check" data-val="{{ $testimonial->id }}">
+                                                        </td>
+                                                        @if ($userBs->theme !== 'home_nine')
+                                                        <td><img src="{{ asset('assets/front/img/user/testimonials/' . $testimonial->image) }}" alt="" width="80"></td>
+                                                        @endif
+                                                        <td>{{ strlen($testimonial->name) > 30 ? mb_substr($testimonial->name, 0, 30, 'UTF-8') . '...' : $testimonial->name }}
+                                                        </td>
+                                                        <td>
+                                                            @php
+                                                            $date = \Carbon\Carbon::parse($testimonial->created_at);
+                                                            @endphp
+                                                            {{ $date->translatedFormat('jS F, Y') }}
+                                                        </td>
+                                                        <td>{{ $testimonial->serial_number }}</td>
+                                                        <td>
+                                                            <a class="btn btn-secondary btn-sm" href="{{ route('user.testimonial.edit', $testimonial->id) . '?language=' . $testimonial->language->code }}">
+                                                                <span class="btn-label">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </span>
+                                                                {{ __('Edit') }}
+                                                            </a>
+                                                            <form class="deleteform d-inline-block" action="{{ route('user.testimonial.delete') }}" method="post">
+                                                                @csrf
+                                                                <input type="hidden" name="id" value="{{ $testimonial->id }}">
+                                                                <button type="submit" class="btn btn-danger btn-sm deletebtn">
+                                                                    <span class="btn-label">
+                                                                        <i class="fas fa-trash"></i>
+                                                                    </span>
+                                                                    {{ __('Delete') }}
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        @endif
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
-                @endif
                 <!--  -->
             </div>
 
@@ -949,54 +1229,283 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <p class="text-muted">Manage services offered by the company.</p>
 
                 <!--  -->
-                <div class="col-lg-4 offset-lg-1 mt-2 mt-lg-0">
-                    @if (!is_null($userDefaultLang))
-                    <a href="#" class="btn btn-primary float-right btn-sm" data-toggle="modal" data-target="#createModal"><i class="fas fa-plus"></i> {{ __('Add Service') }}</a>
-                    <button class="btn btn-danger float-right btn-sm mr-2 d-none bulk-delete" data-href="{{ route('user.service.bulk.delete') }}"><i class="flaticon-interface-5"></i> {{ __('Delete') }}</button>
-                    @endif
-                </div>
-                <!--  -->
-                <input type="hidden" name="id" value="{{ $information['home_setting']->id }}">
-                <input type="hidden" name="language_id" value="{{ $information['home_setting']->language_id }}">
-
-
-
-                @if (
-                !empty($permissions) &&
-                in_array('Service', $permissions) &&
-                ($userBs->theme == 'home_one' ||
-                $userBs->theme == 'home_two' ||
-                $userBs->theme == 'home_three' ||
-                $userBs->theme == 'home_four' ||
-                $userBs->theme == 'home_five' ||
-                $userBs->theme == 'home_six' ||
-                $userBs->theme == 'home_nine' ||
-                $userBs->theme == 'home_twelve' ||
-                $userBs->theme == 'home_seven'))
+                <!-- service -->
                 <div class="row">
-                    <div class="col-12">
-                        <div class="row">
-                            <div class="col-lg-6 pr-0">
-                                <div class="form-group">
-                                    <label for="">{{ __('Service Section Title') }}</label>
-                                    <input type="hidden" name="types[]" value="service_title">
-                                    <input type="text" class="form-control" name="service_title" placeholder="{{ __('Enter service title') }}" value="{{ $information['home_setting']->service_title }}">
-                                    <p id="errservice_title" class="mb-0 text-danger em"></p>
+                    <div class="col-md-12">
+                        <div class="min-vh-100 d-flex align-items-center justify-content-center pb-3">
+                            <div class="feature-card p-4 d-flex flex-column flex-md-row align-items-start gap-3 mx-auto w-100" style="">
+                                <div class="icon-container d-flex align-items-center justify-content-center flex-shrink-0 mb-3 mb-md-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-dark">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                                        <line x1="3" y1="15" x2="21" y2="15"></line>
+                                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                                        <line x1="15" y1="3" x2="15" y2="21"></line>
+                                    </svg>
                                 </div>
-                            </div>
-                            <div class="col-lg-6 pl-0">
-                                <div class="form-group">
-                                    <label for="">{{ __('Service Section Subtitle') }}</label>
-                                    <input type="hidden" name="types[]" value="service_subtitle">
-                                    <input type="text" class="form-control" name="service_subtitle" placeholder="{{ __('Enter service subtitle') }}" value="{{ $information['home_setting']->service_subtitle }}">
-                                    <p id="errservice_subtitle" class="mb-0 text-danger em"></p>
+                                <div class="feature-card-text">
+                                    <h2 class="fs-4 fw-semibold mb-2">{{ __('Services') }}</h2>
+                                    <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
+                                        يعتبر قسم صفحة الخدمات من الاقسام المهمة في موقعك الألكتروني
+                                    </p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                @endif
+                <style>
+                    .feature-card {
+                        background-color: #ffffff;
+                        border-radius: 0.5rem;
+                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                        transition: box-shadow 0.2s;
+                    }
 
+                    .feature-card:hover {
+                        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                    }
+
+                    .icon-container {
+                        width: 3.5rem;
+                        height: 3.5rem;
+                        background-color: #f8f9fa;
+                        border: 1px solid #e9ecef;
+                        border-radius: 0.5rem;
+                    }
+
+                    .icon-container svg {
+                        width: 2rem;
+                        height: 2rem;
+                    }
+
+                    .feature-card-text {
+                        white-space: normal !important;
+                    }
+
+                    .feature-card-text h2,
+                    .feature-card-text p {
+                        white-space: normal !important;
+                    }
+
+                    @media (min-width: 768px) {
+                        .feature-card-text {
+                            max-width: 75%;
+                        }
+                    }
+                </style>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="row">
+
+                                    <div class="col-lg-3 offset-lg-3">
+                                        @if (!is_null($userDefaultLang))
+                                        @if (!empty($userLanguages))
+                                        <select name="userLanguage" class="form-control" onchange="window.location='{{ url()->current() . '?language=' }}'+this.value">
+                                            <option value="" selected disabled>{{ __('Select a Language') }}</option>
+                                            @foreach ($userLanguages as $lang)
+                                            <option value="{{ $lang->code }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
+                                                {{ $lang->name }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                        @endif
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-lg-8 offset-lg-2">
+                                        <form id="ajaxForm" action="{{ route('user.home.page.text.update') }}" method="post" enctype="multipart/form-data">
+                                            @csrf
+                                            <input type="hidden" name="id" value="{{ $information['home_setting']->id }}">
+                                            <input type="hidden" name="language_id" value="{{ $information['home_setting']->language_id }}">
+
+
+
+                                            @if (
+                                            !empty($permissions) &&
+                                            in_array('Service', $permissions) &&
+                                            ($userBs->theme == 'home_one' ||
+                                            $userBs->theme == 'home_two' ||
+                                            $userBs->theme == 'home_three' ||
+                                            $userBs->theme == 'home_four' ||
+                                            $userBs->theme == 'home_five' ||
+                                            $userBs->theme == 'home_six' ||
+                                            $userBs->theme == 'home_nine' ||
+                                            $userBs->theme == 'home_twelve' ||
+                                            $userBs->theme == 'home_seven'))
+                                            <div class="row">
+                                                <div class="col-12">
+                                                    <div class="row">
+                                                        <div class="col-lg-6 pr-0">
+                                                            <div class="form-group">
+                                                                <label for="">{{ __('Service Section Title') }}</label>
+                                                                <input type="hidden" name="types[]" value="service_title">
+                                                                <input type="text" class="form-control" name="service_title" placeholder="{{ __('Enter service title') }}" value="{{ $information['home_setting']->service_title }}">
+                                                                <p id="errservice_title" class="mb-0 text-danger em"></p>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-lg-6 pl-0">
+                                                            <div class="form-group">
+                                                                <label for="">{{ __('Service Section Subtitle') }}</label>
+                                                                <input type="hidden" name="types[]" value="service_subtitle">
+                                                                <input type="text" class="form-control" name="service_subtitle" placeholder="{{ __('Enter service subtitle') }}" value="{{ $information['home_setting']->service_subtitle }}">
+                                                                <p id="errservice_subtitle" class="mb-0 text-danger em"></p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            @endif
+
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="form">
+                                    <div class="form-group from-show-notify row">
+                                        <div class="col-12 text-center">
+                                            <button type="submit" id="submitBtn" class="btn btn-success">{{ __('Update') }}</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="row">
+                                    <div class="col-lg-4">
+                                        <div class="card-title d-inline-block">{{ __('Services') }}</div>
+                                    </div>
+                                    <div class="col-lg-3">
+                                        @if (!is_null($userDefaultLang))
+                                        @if (!empty($userLanguages))
+                                        <select name="userLanguage" class="form-control" onchange="window.location='{{ url()->current() . '?language=' }}'+this.value">
+                                            <option value="" selected disabled>{{ __('Select a Language') }}</option>
+                                            @foreach ($userLanguages as $lang)
+                                            <option value="{{ $lang->code }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
+                                                {{ $lang->name }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                        @endif
+                                        @endif
+                                    </div>
+                                    <div class="col-lg-4 offset-lg-1 mt-2 mt-lg-0">
+                                        @if (!is_null($userDefaultLang))
+                                        <a href="#" class="btn btn-primary float-right btn-sm" data-toggle="modal" data-target="#createServiceModal"><i class="fas fa-plus"></i> {{ __('Add Service') }}</a>
+                                        <button class="btn btn-danger float-right btn-sm mr-2 d-none bulk-delete" data-href="{{ route('user.service.bulk.delete') }}"><i class="flaticon-interface-5"></i> {{ __('Delete') }}</button>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-lg-12">
+                                        @if (is_null($userDefaultLang))
+                                        <h3 class="text-center">{{ __('NO LANGUAGE FOUND') }}</h3>
+                                        @else
+                                        @if (count($information['services']) == 0)
+                                        <h3 class="text-center">{{ __('NO SERVICE FOUND') }}</h3>
+                                        @else
+                                        <div class="table-responsive">
+                                            <table class="table table-striped mt-3" id="basic-datatables">
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col">
+                                                            <input type="checkbox" class="bulk-check" data-val="all">
+                                                        </th>
+                                                        <th scope="col">{{ __('Image') }}</th>
+
+                                                        @if ($userBs->theme === 'home_six' || $userBs->theme === 'home_seven' || $userBs->theme === 'home_nine')
+                                                        <th scope="col">{{ __('Icon') }}</th>
+                                                        @endif
+                                                        <th scope="col">{{ __('Name') }}</th>
+                                                        <th scope="col">{{ __('Language') }}</th>
+                                                        @if ($userBs->theme == 'home_ten' || $userBs->theme == 'home_eleven')
+                                                        @else
+                                                        <th scope="col">{{ __('Featured') }}</th>
+                                                        @endif
+                                                        <th scope="col">{{ __('Actions') }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach ($information['services'] as $key => $service)
+                                                    <tr>
+                                                        <td>
+                                                            <input type="checkbox" class="bulk-check" data-val="{{ $service->id }}">
+                                                        </td>
+                                                        <td>
+                                                            <img src="{{ asset('assets/front/img/user/services/' . $service->image) }}" alt="" width="80">
+                                                        </td>
+                                                        @if ($userBs->theme === 'home_six' || $userBs->theme === 'home_seven' || $userBs->theme === 'home_nine')
+                                                        <td>
+                                                            <i class="{{ $service->icon }}"></i>
+                                                        </td>
+                                                        @endif
+                                                        <td>{{ strlen($service->name) > 30 ? mb_substr($service->name, 0, 30, 'UTF-8') . '...' : $service->name }}
+                                                        </td>
+                                                        <td>{{ $service->language->name }}</td>
+                                                        @if ($userBs->theme == 'home_ten' || $userBs->theme == 'home_eleven')
+                                                        @else
+                                                        <td>
+                                                            <form id="featureForm{{ $service->id }}" class="d-inline-block" action="{{ route('user.service.feature') }}" method="post">
+                                                                @csrf
+                                                                <input type="hidden" name="service_id" value="{{ $service->id }}">
+                                                                <select class="form-control {{ $service->featured == 1 ? 'bg-success' : 'bg-danger' }}" name="featured" onchange="document.getElementById('featureForm{{ $service->id }}').submit();">
+                                                                    <option value="1" {{ $service->featured == 1 ? 'selected' : '' }}>
+                                                                        {{ __('Yes') }}
+                                                                    </option>
+                                                                    <option value="0" {{ $service->featured == 0 ? 'selected' : '' }}>
+                                                                        {{ __('No') }}
+                                                                    </option>
+                                                                </select>
+                                                            </form>
+
+
+                                                        </td>
+                                                        @endif
+                                                        <td>
+                                                            <a class="btn btn-secondary btn-sm" href="{{ route('user.service.edit', $service->id) . '?language=' . $service->language->code }}">
+                                                                <span class="btn-label">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </span>
+                                                                {{ __('Edit') }}
+                                                            </a>
+                                                            <form class="deleteform d-inline-block" action="{{ route('user.service.delete') }}" method="post">
+                                                                @csrf
+                                                                <input type="hidden" name="id" value="{{ $service->id }}">
+                                                                <button type="submit" class="btn btn-danger btn-sm deletebtn">
+                                                                    <span class="btn-label">
+                                                                        <i class="fas fa-trash"></i>
+                                                                    </span>
+                                                                    {{ __('Delete') }}
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        @endif
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
                 <!--  -->
             </div>
 
@@ -1006,164 +1515,115 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <p class="text-muted">Showcase company awards and achievements.</p>
 
                 <!--  -->
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-lg-12">
-                            @if (is_null($userDefaultLang))
-                            <h3 class="text-center">{{ __('NO LANGUAGE FOUND') }}
-                            </h3>
-                            @else
-
-                            @if (count($information['counterInformations']) == 0)
-                            <h3 class="text-center">
-                                {{ __('NO COUNTER INFORMATION FOUND') }}
-                            </h3>
-                            @else
-                            <div class="table-responsive">
-                                <table class="table table-striped mt-3" id="basic-datatables">
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">
-                                                <input type="checkbox" class="bulk-check" data-val="all">
-                                            </th>
-                                            @if (
-                                            $userBs->theme != 'home_four' &&
-                                            $userBs->theme != 'home_five' &&
-                                            $userBs->theme != 'home_ten' &&
-                                            $userBs->theme != 'home_twelve')
-                                            <th scope="col">{{ __('Icon') }}</th>
-                                            @else
+                <!-- Edit Achievement Modal -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="row">
+                                    <div class="col-12 col-sm-auto ms-sm-auto col-md-auto ms-md-auto">
+                                        <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-4">
+                                            @if (!is_null($userDefaultLang))
+                                            <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#createAchievementModal"><i class="fas fa-plus"></i>
+                                                {{ __('Add Counter') }}</a>
+                                            <button class="btn btn-danger float-right btn-sm mr-2 d-none bulk-delete" data-href="{{ route('user.counter-information.bulk.delete') }}"><i class="flaticon-interface-5"></i>
+                                                {{ __('Delete') }}
+                                            </button>
                                             @endif
-                                            <th scope="col">{{ __('Title') }}</th>
-                                            <th scope="col">{{ __('Count') }}</th>
-                                            <th scope="col">{{ __('Actions') }}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($information['counterInformations'] as $key => $counterInformation)
-                                        <tr>
-                                            <td>
-                                                <input type="checkbox" class="bulk-check" data-val="{{ $counterInformation->id }}">
-                                            </td>
-
-                                            @if (
-                                            $userBs->theme != 'home_four' &&
-                                            $userBs->theme != 'home_five' &&
-                                            $userBs->theme != 'home_ten' &&
-                                            $userBs->theme != 'home_twelve')
-                                            <td><i class="{{ $counterInformation->icon ?? 'fa fa-fw fa-heart' }}"></i>
-                                            </td>
-                                            @else
+                                            @if(!is_null($userDefaultLang))
+                                            @if (!empty($userLanguages))
+                                            <select name="userLanguage" style="width: 200px; margin-inline: 0.8rem;height: 100%;" class="form-control btn btn-outline-secondary dropdown-toggle d-flex align-items-center justify-content-between" onchange="window.location='{{url()->current() . '?language='}}'+this.value">
+                                                <option value="" selected disabled>{{__('Select a Language')}}</option>
+                                                @foreach ($userLanguages as $lang)
+                                                <option value="{{$lang->code}}" {{$lang->code == request()->input('language') ? 'selected' : ''}}>{{$lang->name}}</option>
+                                                @endforeach
+                                            </select>
                                             @endif
-                                            <td>{{ strlen($counterInformation->title) > 30 ? mb_substr($counterInformation->title, 0, 30, 'UTF-8') . '...' : $counterInformation->title }}
-                                            </td>
-                                            <td>{{ $counterInformation->count }}</td>
-                                            <td>
-                                                <a class="btn btn-secondary btn-sm" href="{{ route('user.counter-information.edit', $counterInformation->id) . '?language=' . $counterInformation->language->code }}">
-                                                    <span class="btn-label">
-                                                        <i class="fas fa-edit"></i>
-                                                    </span>
-                                                    {{ __('Edit') }}
-                                                </a>
-                                                <form class="deleteform d-inline-block" action="{{ route('user.counter-information.delete') }}" method="post">
-                                                    @csrf
-                                                    <input type="hidden" name="counter_information_id" value="{{ $counterInformation->id }}">
-                                                    <button type="submit" class="btn btn-danger btn-sm deletebtn">
-                                                        <span class="btn-label">
-                                                            <i class="fas fa-trash"></i>
-                                                        </span>
-                                                        {{ __('Delete') }}
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                            @endif
-                            @endif
-                        </div>
-                    </div>
-                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
 
-                <!--  -->
-                <!-- Create Achievement Modal -->
-                <div class="modal fade" id="createAchievementModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="exampleModalLongTitle">{{ __('Add Achievement') }}
-                                </h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
                             </div>
-                            <div class="modal-body">
-                                <!-- Achievement -->
-                                <form id="ajaxForm" enctype="multipart/form-data" class="modal-form" action="{{ route('user.counter-information.store') }}" method="POST">
-                                    @csrf
-                                    <div class="form-group">
-                                        <label for="">{{ __('Language') }} **</label>
-                                        <select id="language" name="user_language_id" class="form-control">
-                                            <option value="" selected disabled>
-                                                {{ __('Select a language') }}
-                                            </option>
-                                            @foreach ($userLanguages as $lang)
-                                            <option value="{{ $lang->id }}">{{ $lang->name }}</option>
-                                            @endforeach
-                                        </select>
-                                        <p id="erruser_language_id" class="mb-0 text-danger em"></p>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-lg-12">
+                                        @if (is_null($userDefaultLang))
+                                        <h3 class="text-center">{{ __('NO LANGUAGE FOUND') }}
+                                        </h3>
+                                        @else
+
+                                        @if (count($information['counterInformations']) == 0)
+                                        <h3 class="text-center">
+                                            {{ __('NO COUNTER INFORMATION FOUND') }}
+                                        </h3>
+                                        @else
+                                        <div class="table-responsive">
+                                            <table class="table table-striped mt-3" id="basic-datatables">
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col">
+                                                            <input type="checkbox" class="bulk-check" data-val="all">
+                                                        </th>
+                                                        @if (
+                                                        $userBs->theme != 'home_four' &&
+                                                        $userBs->theme != 'home_five' &&
+                                                        $userBs->theme != 'home_ten' &&
+                                                        $userBs->theme != 'home_twelve')
+                                                        <th scope="col">{{ __('Icon') }}</th>
+                                                        @else
+                                                        @endif
+                                                        <th scope="col">{{ __('Title') }}</th>
+                                                        <th scope="col">{{ __('Count') }}</th>
+                                                        <th scope="col">{{ __('Actions') }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach ($information['counterInformations'] as $key => $counterInformation)
+                                                    <tr>
+                                                        <td>
+                                                            <input type="checkbox" class="bulk-check" data-val="{{ $counterInformation->id }}">
+                                                        </td>
+
+                                                        @if (
+                                                        $userBs->theme != 'home_four' &&
+                                                        $userBs->theme != 'home_five' &&
+                                                        $userBs->theme != 'home_ten' &&
+                                                        $userBs->theme != 'home_twelve')
+                                                        <td><i class="{{ $counterInformation->icon ?? 'fa fa-fw fa-heart' }}"></i>
+                                                        </td>
+                                                        @else
+                                                        @endif
+                                                        <td>{{ strlen($counterInformation->title) > 30 ? mb_substr($counterInformation->title, 0, 30, 'UTF-8') . '...' : $counterInformation->title }}
+                                                        </td>
+                                                        <td>{{ $counterInformation->count }}</td>
+                                                        <td>
+                                                            <a class="btn btn-secondary btn-sm" href="{{ route('user.counter-information.edit', $counterInformation->id) . '?language=' . $counterInformation->language->code }}">
+                                                                <span class="btn-label">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </span>
+                                                                {{ __('Edit') }}
+                                                            </a>
+                                                            <form class="deleteform d-inline-block" action="{{ route('user.counter-information.delete') }}" method="post">
+                                                                @csrf
+                                                                <input type="hidden" name="counter_information_id" value="{{ $counterInformation->id }}">
+                                                                <button type="submit" class="btn btn-danger btn-sm deletebtn">
+                                                                    <span class="btn-label">
+                                                                        <i class="fas fa-trash"></i>
+                                                                    </span>
+                                                                    {{ __('Delete') }}
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        @endif
+                                        @endif
                                     </div>
-                                    @if ($userBs->theme != 'home_ten' && $userBs->theme != 'home_twelve')
-                                    <div class="form-group">
-                                        <label for="">{{ __('Icon') . '*' }}</label>
-                                        <div class="btn-group d-block">
-                                            <button type="button" class="btn btn-primary iconpicker-component"><i class="fa fa-fw fa-heart"></i></button>
-                                            <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle" data-selected="fa-car" data-toggle="dropdown"></button>
-                                            <div class="dropdown-menu"></div>
-                                        </div>
-                                        <input type="hidden" id="inputIcon" name="icon">
-                                        <p id="err_icon" class="mt-1 mb-0 text-danger em"></p>
-                                        <div class="text-warning mt-2">
-                                            <small>{{ __('Click on the dropdown icon to select a icon.') }}</small>
-                                        </div>
-                                    </div>
-                                    @endif
-                                    <div class="row">
-                                        <div class="col-lg-6">
-                                            <div class="form-group">
-                                                <label for="">{{ __('Title') }} **</label>
-                                                <input type="text" class="form-control" name="title" placeholder="{{ __('Enter title') }}" value="">
-                                                <p id="errtitle" class="mb-0 text-danger em"></p>
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-6">
-                                            <div class="form-group">
-                                                <label for="count">{{ __('Count') }}**</label>
-                                                <input id="count" type="number" class="form-control ltr" name="count" value="" placeholder="{{ __('Enter achievement count') }}" min="1">
-                                                <p id="errcount" class="mb-0 text-danger em"></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-lg-12">
-                                            <div class="form-group">
-                                                <label for="">{{ __('Serial Number') }}
-                                                    **</label>
-                                                <input type="number" class="form-control ltr" name="serial_number" value="" placeholder="{{ __('Enter Serial Number') }}">
-                                                <p id="errserial_number" class="mb-0 text-danger em"></p>
-                                                <p class="text-warning mb-0">
-                                                    <small>{{ __('The higher the serial number is, the later the Skill will be shown.') }}</small>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
-                                <button id="submitBtn" type="button" class="btn btn-primary">{{ __('Submit') }}</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1178,7 +1638,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <h3 class="h4 font-weight-bold">Brands</h3>
                 <p class="text-muted">Manage brand logos displayed on the website.</p>
                 <!--  -->
-                <a href="#" data-toggle="modal" data-target="#createModal" class="btn btn-primary"><i class="fas fa-plus"></i>
+                <a href="#" data-toggle="modal" data-target="#createModalBrand" class="btn btn-primary"><i class="fas fa-plus"></i>
                     @if ($userBs->theme == 'home_eleven')
                     {{ __('Add Donor') }}
                     @else
@@ -1205,7 +1665,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                         </div>
 
                                         <div class="card-footer text-center">
-                                            <a class="edit-btn btn btn-secondary btn-sm mr-2" href="#" data-toggle="modal" data-target="#editModalbrand" data-id="{{ $brand->id }}" data-brandimg="{{ asset('assets/front/img/user/brands/' . $brand->brand_img) }}" data-brand_url="{{ $brand->brand_url }}" data-serial_number="{{ $brand->serial_number }}">
+                                            <a class="edit-btn btn btn-secondary btn-sm mr-2" href="#" data-toggle="modal" data-target="#createModalBrand" data-id="{{ $brand->id }}" data-brandimg="{{ asset('assets/front/img/user/brands/' . $brand->brand_img) }}" data-brand_url="{{ $brand->brand_url }}" data-serial_number="{{ $brand->serial_number }}">
                                                 <span class="btn-label">
                                                     <i class="fas fa-edit"></i>
                                                 </span>
@@ -1239,57 +1699,409 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <h3 class="h4 font-weight-bold">Footer</h3>
                 <p class="text-muted">Edit footer content and social media links.</p>
 
-                <div class="form-group mt-4">
-                    <div class="form-group">
-                        <label for="">{{ __('Footer\'s Logo*') }}</label> <br>
-                        <div class="col-md-12 showImage mb-3">
-                            <img src="{{ isset($information['footertext']) ? asset('assets/front/img/user/footer/' . $information['footertext']->logo) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
+                <!--  -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="row">
+                                    <div class="col-lg-3 float-left">
+                                        @if (!is_null($userDefaultLang))
+                                        @if (!empty($userLanguages))
+                                        <select name="userLanguage" class="form-control" onchange="window.location='{{ url()->current() . '?language=' }}'+this.value">
+                                            <option value="" selected disabled>Select a Language</option>
+                                            @foreach ($userLanguages as $lang)
+                                            <option value="{{ $lang->code }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
+                                                {{ $lang->name }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                        @endif
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-body pt-5 pb-5">
+                                <div class="row">
+                                    <div class="col-lg-6 offset-lg-3">
+                                        <form id="ajaxForm" action="{{ route('user.footer.update_footer_info', ['language' => request()->input('language')]) }}" method="post" enctype="multipart/form-data">
+                                            @csrf
+                                            @if ($userBs->theme == 'home_ten')
+                                            <div class="form-group">
+                                                <label for="">{{ __('Footer Color') . ' *' }}</label>
+                                                <input type="text" class="form-control jscolor" name="color" value="{{ isset($information['footertext']) ? $information['footertext']->footer_color : '' }}" required>
+                                                <p id="errcolor" class="mb-0 text-danger em"></p>
+                                            </div>
+                                            @endif
+                                            <div class="form-group">
+                                                <label for="">{{ __('Footer\'s Logo*') }}</label> <br>
+                                                <div class="col-md-12 showImage mb-3">
+                                                    <img src="{{ isset($information['footertext']) ? asset('assets/front/img/user/footer/' . $information['footertext']->logo) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
+                                                </div>
+                                                <input type="file" name="logo" id="logo" class=" d-none form-control image">
+                                                <p id="errlogo" class="em text-danger mt-2 mb-0"></p>
+                                                <button type="button" class="upload-btn" style="background-color: white; border: 2px dashed #8c9998; color: #0E9384; padding: 1rem; width: 30%; display: flex; flex-direction: column; align-items: center; cursor: pointer;" onclick="document.getElementById('logo').click()">
+                                                    <i class="bi bi-upload mb-2"></i>
+                                                    <span>{{ __('Upload Favicon') }}</span>
+                                                </button>
+                                            </div>
+                                            @if ($userBs->theme == 'home_six' || $userBs->theme == 'home13')
+                                            <div class="form-group">
+                                                <label for="">{{ __('Footer\'s Background*') }}</label> <br>
+                                                <div class="col-md-12 showImage mb-3">
+                                                    <img src="{{ isset($information['footertext']) ? asset('assets/front/img/user/footer/' . $information['footertext']->bg_image) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
+                                                </div>
+                                                <input type="file" id="bg_image" name="bg_image" class=" d-none form-control image">
+                                                <p id="errbg_image" class="em text-danger mt-2 mb-0"></p>
+                                                <button type="button" class="upload-btn" onclick="document.getElementById('bg_image').click()">
+                                                    <i class="bi bi-upload mb-2"></i>
+                                                    <span>{{ __('Upload Favicon') }}</span>
+                                                </button>
+                                            </div>
+                                            @endif
+                                            <div class="form-group">
+                                                <label for="">{{ __('About Company') }}</label>
+                                                <textarea class="form-control" name="about_company" rows="3" cols="80">{{ isset($information['footertext']) ? $information['footertext']->about_company : '' }}</textarea>
+                                                <p id="errabout_company" class="em text-danger mt-2 mb-0"></p>
+                                            </div>
+                                            @if ($userBs->theme == 'home_four' || $userBs->theme == 'home_five' || $userBs->theme == 'home_seven')
+                                            <div class="form-group">
+                                                <label for="">{{ __('Newsletter Text') }}</label>
+                                                <textarea class="form-control" name="newsletter_text" rows="3" cols="80">{{ isset($information['footertext']) ? $information['footertext']->newsletter_text : '' }}</textarea>
+                                                <p id="errnewsletter_text" class="em text-danger mt-2 mb-0"></p>
+                                            </div>
+                                            @endif
+                                            <div class="form-group">
+                                                <label for="">{{ __('Copyright Text') }}</label>
+                                                <textarea id="copyrightSummernote" class="form-control summernote" name="copyright_text" data-height="80">{{ isset($information['footertext']) ? replaceBaseUrl($information['footertext']->copyright_text) : '' }}</textarea>
+                                                <p id="errcopyright_text" class="em text-danger mb-0"></p>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-footer">
+                                <div class="row">
+                                    <div class="col-12 text-center">
+                                        <button type="submit" id="submitBtn" class="btn btn-success">
+                                            {{ __('Update') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <input type="file" name="logo" id="logo" class=" d-none form-control image">
-                        <p id="errlogo" class="em text-danger mt-2 mb-0"></p>
-                        <button type="button" class="upload-btn" onclick="document.getElementById('logo').click()">
-                            <i class="bi bi-upload mb-2"></i>
-                            <span>{{ __('Upload Favicon') }}</span>
-                        </button>
-                    </div>
-                    @if ($userBs->theme == 'home_six' || $userBs->theme == 'home13')
-                    <div class="form-group">
-                        <label for="">{{ __('Footer\'s Background*') }}</label> <br>
-                        <div class="col-md-12 showImage mb-3">
-                            <img src="{{ isset($information['footertext']) ? asset('assets/front/img/user/footer/' . $information['footertext']->bg_image) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
-                        </div>
-                        <input type="file" id="bg_image" name="bg_image" class=" d-none form-control image">
-                        <p id="errbg_image" class="em text-danger mt-2 mb-0"></p>
-                        <button type="button" class="upload-btn" onclick="document.getElementById('bg_image').click()">
-                            <i class="bi bi-upload mb-2"></i>
-                            <span>{{ __('Upload Favicon') }}</span>
-                        </button>
-                    </div>
-                    @endif
-                    <div class="form-group">
-                        <label for="">{{ __('About Company') }}</label>
-                        <textarea class="form-control" name="about_company" rows="3" cols="80">{{ isset($information['footertext']) ? $information['footertext']->about_company : '' }}</textarea>
-                        <p id="errabout_company" class="em text-danger mt-2 mb-0"></p>
-                    </div>
-                    @if ($userBs->theme == 'home_four' || $userBs->theme == 'home_five' || $userBs->theme == 'home_seven')
-                    <div class="form-group">
-                        <label for="">{{ __('Newsletter Text') }}</label>
-                        <textarea class="form-control" name="newsletter_text" rows="3" cols="80">{{ isset($information['footertext']) ? $information['footertext']->newsletter_text : '' }}</textarea>
-                        <p id="errnewsletter_text" class="em text-danger mt-2 mb-0"></p>
-                    </div>
-                    @endif
-                    <div class="form-group">
-                        <label for="">{{ __('Copyright Text') }}</label>
-                        <textarea id="copyrightSummernote" class="form-control summernote" name="copyright_text" data-height="80">{{ isset($information['footertext']) ? replaceBaseUrl($information['footertext']->copyright_text) : '' }}</textarea>
-                        <p id="errcopyright_text" class="em text-danger mb-0"></p>
                     </div>
                 </div>
+                <!--  -->
 
             </div>
+            <!--// Footer Section -->
         </main>
     </div>
 
+    <!-- Create portfolio Category Modal -->
+    <div class="modal fade" id="createModalportfolioCategory" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLongTitle">{{ __('Add Portfolio Category') }}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="ajaxFormPortfolioCategory" class="modal-form create" action="{{ route('user.portfolio.category.store') }}" method="POST">
+                        @csrf
+                        <div class="form-group">
+                            <label for="">{{ __('Language') }} **</label>
+                            <select name="user_language_id" class="form-control">
+                                <option value="" selected disabled>{{ __('Select a language') }}</option>
+                                @foreach ($userLanguages as $lang)
+                                <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                @endforeach
+                            </select>
+                            <p id="erruser_language_id" class="mb-0 text-danger em"></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="">{{ __('Name') }} **</label>
+                            <input type="text" class="form-control" name="name" value="">
+                            <p id="errname" class="mb-0 text-danger em"></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="">{{ __('Status') }} **</label>
+                            <select class="form-control ltr" name="status">
+                                <option value="" selected disabled>{{ __('Select a status') }}</option>
+                                <option value="1">{{ __('Active') }}</option>
+                                <option value="0">{{ __('Deactive') }}</option>
+                            </select>
+                            <p id="errstatus" class="mb-0 text-danger em"></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="">{{ __('Serial Number') }} **</label>
+                            <input type="number" class="form-control ltr" name="serial_number" value="">
+                            <p id="errserial_number" class="mb-0 text-danger em"></p>
+                            <p class="text-warning">
+                                <small>{{ __('The higher the serial number is, the later the portfolio category will be shown.') }}</small>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
+                    <button id="submitBtnportfolioCategory" type="button" class="btn btn-primary">{{ __('Submit') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Edit portfolio Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLongTitle">{{ __('Edit Portfolio Category') }}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="ajaxEditForm" class="" action="{{ route('user.portfolio.category.update') }}" method="POST">
+                        @csrf
+                        <input id="inbcategory_id" type="hidden" name="bcategory_id" value="">
+                        <div class="form-group">
+                            <label for="">{{ __('Name') }} **</label>
+                            <input id="inname" type="name" class="form-control" name="name" value="">
+                            <p id="eerrname" class="mb-0 text-danger em"></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="">{{ __('Status') }} **</label>
+                            <select id="instatus" class="form-control ltr" name="status">
+                                <option value="" selected disabled>{{ __('Select a status') }}</option>
+                                <option value="1">{{ __('Active') }}</option>
+                                <option value="0">{{ __('Deactive') }}</option>
+                            </select>
+                            <p id="eerrstatus" class="mb-0 text-danger em"></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="">{{ __('Serial Number') }} **</label>
+                            <input id="inserial_number" type="number" class="form-control ltr" name="serial_number" value="">
+                            <p id="eerrserial_number" class="mb-0 text-danger em"></p>
+                            <p class="text-warning">
+                                <small>{{ __('The higher the serial number is, the later the blog category will be shown.') }}</small>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
+                    <button id="updateBtn" type="button" class="btn btn-primary">{{ __('Save Changes') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Create Service Modal -->
+    <div class="modal fade" id="createServiceModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLongTitle">{{ __('Add Service') }}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="ajaxFormServices" enctype="multipart/form-data" class="modal-form" action="{{ route('user.service.store') }}" method="POST">
+                        @csrf
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <div class="col-12 mb-2">
+                                        <label for="image"><strong>{{ __('Image') }}*</strong></label>
+                                    </div>
+                                    <div class="col-md-12 showImage mb-3">
+                                        <img src="{{ asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
+                                    </div>
+                                    <input type="file" name="image" id="image" class="form-control">
+                                    <p id="errimage" class="mb-0 text-danger em"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="">{{ __('Language') }} **</label>
+                            <select name="user_language_id" class="form-control">
+                                <option value="" selected disabled>{{ __('Select a language') }}</option>
+                                @foreach ($userLanguages as $lang)
+                                <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                @endforeach
+                            </select>
+                            <p id="erruser_language_id" class="mb-0 text-danger em"></p>
+                        </div>
+                        @if ($userBs->theme === 'home_six' || $userBs->theme === 'home_seven' || $userBs->theme === 'home_nine')
+                        <div class="form-group">
+                            <label for="">{{ __('Service Icon') }} **</label>
+                            <div class="btn-group d-block">
+                                <button type="button" class="btn btn-primary iconpicker-component"><i class="fa fa-fw fa-heart"></i></button>
+                                <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle" data-selected="fa-car" data-toggle="dropdown">
+                                </button>
+                                <div class="dropdown-menu"></div>
+                            </div>
+                            <input id="inputIcon" type="hidden" name="icon" value="">
+                            @if ($errors->has('icon'))
+                            <p class="mb-0 text-danger">{{ $errors->first('icon') }}</p>
+                            @endif
+                            <div class="text-warning mt-2">
+                                <small>{{ __('NB: click on the dropdown icon to select a service icon.') }}</small>
+                            </div>
+                            <p id="erricon" class="mb-0 text-danger em"></p>
+                        </div>
+                        @endif
+                        <div class="form-group">
+                            <label for="">{{ __('Name') }} **</label>
+                            <input type="text" class="form-control" name="name" value="">
+                            <p id="errname" class="mb-0 text-danger em"></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="">{{ __('Content') }}</label>
+                            <textarea class="form-control summernote" name="content" rows="8" cols="80"></textarea>
+                            <p id="errcontent" class="mb-0 text-danger em"></p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="">{{ __('Serial Number') }} **</label>
+                            <input type="number" class="form-control ltr" name="serial_number" value="">
+                            <p id="errserial_number" class="mb-0 text-danger em"></p>
+                            <p class="text-warning mb-0">
+                                <small>{{ __('The higher the serial number is, the later the service will be shown.') }}</small>
+                            </p>
+                        </div>
+                        @if (
+                        $userBs->theme != 'home_nine' ||
+                        $userBs->theme != 'home_ten' ||
+                        $userBs->theme != 'home_eleven' ||
+                        $userBs->theme != 'home_twelve')
+                        @else
+                        <div class="form-group">
+                            <label for="featured" class="my-label mr-3">{{ __('Featured') }}</label>
+                            <input id="featured" type="checkbox" name="featured" value="1">
+                            <p id="errfeatured" class="mb-0 text-danger em"></p>
+                        </div>
+                        @endif
+                        <div class="form-group">
+                            <div class="d-flex">
+                                <label class="mr-3">{{ __('Detail Page') }}</label>
+                                <div class="radio mr-3">
+                                    <label><input type="radio" name="detail_page" value="1" checked class="mr-1">{{ __('Enable') }}</label>
+                                </div>
+                                <div class="radio">
+                                    <label><input type="radio" name="detail_page" value="0" class="mr-1">{{ __('Disable') }}</label>
+                                </div>
+                            </div>
+                            <p id="errdetail_page" class="mb-0 text-danger em"></p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="">{{ __('Meta Keywords') }}</label>
+                            <input type="text" class="form-control" name="meta_keywords" value="" data-role="tagsinput">
+                        </div>
+                        <div class="form-group">
+                            <label for="">{{ __('Meta Description') }}</label>
+                            <textarea type="text" class="form-control" name="meta_description" rows="5"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
+                    <button id="submitBtnServices" type="button" class="btn btn-primary">{{ __('Submit') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Create Achievement Modal -->
+    <div class="modal fade" id="createAchievementModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLongTitle">{{ __('Add Achievement') }}
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="ajaxFormServicesAchievement" enctype="multipart/form-data" class="modal-form" action="{{ route('user.counter-information.store') }}" method="POST">
+                        @csrf
+                        <div class="form-group">
+                            <label for="">{{ __('Language') }} **</label>
+                            <select id="language" name="user_language_id" class="form-control">
+                                <option value="" selected disabled>
+                                    {{ __('Select a language') }}
+                                </option>
+                                @foreach ($userLanguages as $lang)
+                                <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                @endforeach
+                            </select>
+                            <p id="erruser_language_id" class="mb-0 text-danger em"></p>
+                        </div>
+                        @if ($userBs->theme != 'home_ten' && $userBs->theme != 'home_twelve')
+                        <div class="form-group">
+                            <label for="">{{ __('Icon') . '*' }}</label>
+                            <div class="btn-group d-block">
+                                <button type="button" class="btn btn-primary iconpicker-component"><i class="fa fa-fw fa-heart"></i></button>
+                                <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle" data-selected="fa-car" data-toggle="dropdown"></button>
+                                <div class="dropdown-menu"></div>
+                            </div>
+                            <input type="hidden" id="inputIcon" name="icon">
+                            <p id="err_icon" class="mt-1 mb-0 text-danger em"></p>
+                            <div class="text-warning mt-2">
+                                <small>{{ __('Click on the dropdown icon to select a icon.') }}</small>
+                            </div>
+                        </div>
+                        @endif
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="">{{ __('Title') }} **</label>
+                                    <input type="text" class="form-control" name="title" placeholder="{{ __('Enter title') }}" value="">
+                                    <p id="errtitle" class="mb-0 text-danger em"></p>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="count">{{ __('Count') }}**</label>
+                                    <input id="count" type="number" class="form-control ltr" name="count" value="" placeholder="{{ __('Enter achievement count') }}" min="1">
+                                    <p id="errcount" class="mb-0 text-danger em"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="">{{ __('Serial Number') }}
+                                        **</label>
+                                    <input type="number" class="form-control ltr" name="serial_number" value="" placeholder="{{ __('Enter Serial Number') }}">
+                                    <p id="errserial_number" class="mb-0 text-danger em"></p>
+                                    <p class="text-warning mb-0">
+                                        <small>{{ __('The higher the serial number is, the later the Skill will be shown.') }}</small>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
+                    <button id="submitBtnAchievement" type="button" class="btn btn-primary">{{ __('Submit') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--  -->
     <!-- Create Add Testimonial Modal -->
     <div class="modal fade" id="create_testimonial_Modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
@@ -1302,7 +2114,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 </div>
                 <div class="modal-body">
                     <!-- Testimonial -->
-                    <form id="ajaxForm" enctype="multipart/form-data" class="modal-form" action="{{ route('user.testimonial.store') }}" method="POST">
+                    <form id="ajaxFormTestimonial" enctype="multipart/form-data" class="modal-form" action="{{ route('user.testimonial.store') }}" method="POST">
                         @csrf
                         @if ($userBs->theme !== 'home_nine')
                         <div class="row">
@@ -1358,18 +2170,17 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer"><!-- Testimonial -->
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
-                    <button id="submitBtn" type="button" class="btn btn-primary">{{ __('Submit') }}</button>
+                    <button id="submitBtnTestimonial" type="button" class="btn btn-primary">{{ __('Submit') }}</button>
                 </div>
             </div>
         </div>
     </div>
 
-
-        <!-- Create Skill Modal -->
-    <div class="modal fade" id="createModalSkill" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
-    aria-hidden="true">
+    {{-- create modal --}}
+    <!-- Create Skill Modal -->
+    <div class="modal fade" id="createModalSkill" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -1380,35 +2191,32 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 </div>
                 <div class="modal-body">
                     <!-- skills -->
-                    <form id="ajaxFormSkill" enctype="multipart/form-data" class="modal-form"
-                        action="{{ route('user.skill.store') }}" method="POST">
+                    <form id="ajaxFormSkill" enctype="multipart/form-data" class="modal-form" action="{{ route('user.skill.store') }}" method="POST">
                         @csrf
                         <div class="form-group">
                             <label for="">{{ __('Language') }} **</label>
                             <select id="language" name="user_language_id" class="form-control">
                                 <option value="" selected disabled>{{ __('Select a language') }}</option>
                                 @foreach ($userLanguages as $lang)
-                                    <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                <option value="{{ $lang->id }}">{{ $lang->name }}</option>
                                 @endforeach
                             </select>
                             <p id="erruser_language_id" class="mb-0 text-danger em"></p>
                         </div>
                         @if ($userBs->theme !== 'home_twelve')
-                            <div class="form-group">
-                                <label for="">{{ __('Icon*') }}</label>
-                                <div class="btn-group d-block">
-                                    <button type="button" class="btn btn-primary iconpicker-component"><i
-                                            class="fa fa-fw fa-heart"></i></button>
-                                    <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle"
-                                        data-selected="fa-car" data-toggle="dropdown"></button>
-                                    <div class="dropdown-menu"></div>
-                                </div>
-                                <input type="hidden" id="inputIcon" name="icon">
-                                <p id="erricon" class="mt-1 mb-0 text-danger em"></p>
-                                <div class="text-warning mt-2">
-                                    <small>{{ __('Click on the dropdown icon to select a icon.') }}</small>
-                                </div>
+                        <div class="form-group">
+                            <label for="">{{ __('Icon*') }}</label>
+                            <div class="btn-group d-block">
+                                <button type="button" class="btn btn-primary iconpicker-component"><i class="fa fa-fw fa-heart"></i></button>
+                                <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle" data-selected="fa-car" data-toggle="dropdown"></button>
+                                <div class="dropdown-menu"></div>
                             </div>
+                            <input type="hidden" id="inputIcon" name="icon">
+                            <p id="erricon" class="mt-1 mb-0 text-danger em"></p>
+                            <div class="text-warning mt-2">
+                                <small>{{ __('Click on the dropdown icon to select a icon.') }}</small>
+                            </div>
+                        </div>
                         @endif
                         <div class="row">
                             <div class="col-lg-6">
@@ -1421,9 +2229,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                             <div class="col-lg-6">
                                 <div class="form-group">
                                     <label for="percentage">{{ __('Percentage') }}**</label>
-                                    <input id="percentage" type="number" class="form-control ltr" name="percentage"
-                                        value="" min="1" max="100"
-                                        onkeyup="if(parseInt(this.value)>100 || parseInt(this.value)<=0 ){this.value =100; return false;}">
+                                    <input id="percentage" type="number" class="form-control ltr" name="percentage" value="" min="1" max="100" onkeyup="if(parseInt(this.value)>100 || parseInt(this.value)<=0 ){this.value =100; return false;}">
                                     <p id="errpercentage" class="mb-0 text-danger em"></p>
                                     <p class="text-warning mb-0">
                                         <small>{{ __('The percentage should between 1 to 100.') }}</small>
@@ -1435,8 +2241,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                             <div class="col-lg-6">
                                 <div class="form-group">
                                     <label for="">{{ __('Color') }} **</label>
-                                    <input type="text" name="color" value="#F78058"
-                                        class="form-control jscolor ltr">
+                                    <input type="text" name="color" value="#F78058" class="form-control jscolor ltr">
                                 </div>
                             </div>
                             <div class="col-lg-6">
@@ -1454,14 +2259,77 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
-                    <button id="submitBtn" type="button" class="btn btn-primary">{{ __('Submit') }}</button>
+                    <button id="submitBtnSkill" type="button" class="btn btn-primary">{{ __('Submit') }}</button>
                 </div>
             </div>
         </div>
     </div>
     <!--  -->
-    {{-- create modal --}}
-    @include('user.home.brand_section.create')
+
+    <!-- create brand model  -->
+    <div class="modal fade" id="createModalBrand" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLongTitle">
+                        @if ($userBs->theme == 'home_eleven')
+                        {{ __('Add Donor') }}
+                        @else
+                        {{ __('Add Brand') }}
+                        @endif
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <form id="ajaxFormBrand" class="modal-form" action="{{ route('user.home_page.brand_section.store_brand') }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <div class="form-group">
+                            <div class="col-12 mb-2">
+                                <label for="image"><strong>{{ __('Image') }}</strong></label>
+                            </div>
+                            <div class="col-md-12 showImage mb-3">
+                                <img src="{{ asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
+                            </div>
+                            <input type="file" name="brand_img" id="image" class="form-control image">
+                            <p id="errbrand_img" class="mb-0 text-danger em"></p>
+                        </div>
+
+                        <div class="form-group d-none">
+                            @if ($userBs->theme == 'home_eleven')
+                            <label for="">{{ __('Donor\'s URL*') }}</label>
+                            @else
+                            <label for="">{{ __('Brand\'s URL*') }}</label>
+                            @endif
+                            <input type="url" class="form-control ltr" value="#" name="brand_url" placeholder="{{ __('Enter Brand URL') }}">
+                            <p id="errbrand_url" class="mt-2 mb-0 text-danger em"></p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="">{{ __('Serial Number*') }}</label>
+                            <input type="number" class="form-control ltr" name="serial_number" placeholder="{{ __('Enter Serial Number') }}">
+                            <p id="errserial_number" class="mt-2 mb-0 text-danger em"></p>
+                            <p class="text-warning mt-2">
+                                <small>{{ __('The higher the serial number is, the later the brand will be shown.') }}</small>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        {{ __('Close') }}
+                    </button>
+                    <button id="submitBtnBrand" type="button" class="btn btn-primary">
+                        {{ __('Save') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--  -->
 
     {{-- edit modal --}}
     @include('user.home.brand_section.edit')

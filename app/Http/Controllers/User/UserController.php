@@ -24,8 +24,10 @@ use App\Models\User\HomePageText;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\User\FooterQuickLink;
+use App\Models\User\UserTestimonial;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\User\PortfolioCategory;
 use Illuminate\Support\Facades\Config;
 use App\Models\User\CounterInformation;
 use Illuminate\Support\Facades\Session;
@@ -119,16 +121,16 @@ class UserController extends Controller
         $lang = Language::where('user_id', Auth::id())->first();
         if ($request->has('language')) {
             $lang = Language::where([
-            ['code', $request->language],
-            ['user_id', Auth::id()]
+                ['code', $request->language],
+                ['user_id', Auth::id()]
             ])->first();
             Session::put('currentLangCode', $request->language);
         } else {
             if (!$lang) {
-            $lang = Language::where([
-                ['is_default', 1],
-                ['user_id', Auth::id()]
-            ])->first();
+                $lang = Language::where([
+                    ['is_default', 1],
+                    ['user_id', Auth::id()]
+                ])->first();
             }
             Session::put('currentLangCode', $lang->code);
         }
@@ -160,9 +162,20 @@ class UserController extends Controller
                 ->where('user_id', Auth::id())
                 ->orderBy('id', 'DESC')
                 ->get(),
+            'categories' => PortfolioCategory::where([
+                ['language_id', '=', $lang->id],
+                ['user_id', '=', Auth::id()],
+                ])
+                ->orderBy('id', 'DESC')
+                ->get(),
             'sliders' => HeroSlider::where('language_id', $lang->id)
                 ->where('user_id', Auth::id())
                 ->orderBy('id', 'DESC')
+                ->get(),
+            'testimonials' => UserTestimonial::where([
+                ['user_id', '=', Auth::id()],
+                ['lang_id', '=', $lang->id],
+                ])->orderBy('id', 'DESC')
                 ->get(),
             'home_setting' => HomePageText::firstOrCreate(
                 ['user_id' => Auth::id(), 'language_id' => $lang->id],
