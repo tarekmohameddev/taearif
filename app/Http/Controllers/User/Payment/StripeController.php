@@ -21,6 +21,10 @@ class StripeController extends Controller
     use MiscellaneousTrait;
     public function __construct()
     {
+        // Skip everything if we're in Artisan / console.
+        if (app()->runningInConsole()) {
+            return;
+        }
         //Set Spripe Keys
         $stripe = UserPaymentGeteway::whereKeyword('stripe')->where('user_id', getUser()->id)->first();
         $stripeConf = json_decode($stripe->information, true);

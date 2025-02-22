@@ -298,7 +298,9 @@ if (!function_exists('getUser')) {
 
     function getUser()
     {
-
+        if (app()->runningInConsole()) {
+            return null;
+        }
         $bs = AdminBasicSettings::first();
         Config::set('app.timezone', $bs->timezone);
 
