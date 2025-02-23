@@ -18,6 +18,10 @@ class AuthorizenetController extends Controller
 
     public function __construct()
     {
+        // Skip everything if we're in Artisan / console.
+        if (app()->runningInConsole()) {
+            return;
+        }
         $data = UserPaymentGeteway::whereKeyword('Authorize.net')->where('user_id', getUser()->id)->first();
         $paydata = $data->convertAutoData();
         $this->gateway = Omnipay::create('AuthorizeNetApi_Api');

@@ -158,15 +158,18 @@ class UserController extends Controller
                 ->where('user_id', Auth::id())
                 ->orderBy('id', 'DESC')
                 ->get(),
-            'portfolios' => Portfolio::where('language_id', $lang->id)
-                ->where('user_id', Auth::id())
+            'portfolios' => Portfolio::where([
+                ['language_id', '=', $lang->id],
+                ['user_id', '=', Auth::id()],
+            ])
                 ->orderBy('id', 'DESC')
                 ->get(),
             'categories' => PortfolioCategory::where([
                 ['language_id', '=', $lang->id],
                 ['user_id', '=', Auth::id()],
-                ])
-                ->orderBy('id', 'DESC')
+                ['status', '=', 1]
+            ])
+                ->orderBy('serial_number', 'ASC')
                 ->get(),
             'sliders' => HeroSlider::where('language_id', $lang->id)
                 ->where('user_id', Auth::id())
@@ -175,7 +178,7 @@ class UserController extends Controller
             'testimonials' => UserTestimonial::where([
                 ['user_id', '=', Auth::id()],
                 ['lang_id', '=', $lang->id],
-                ])->orderBy('id', 'DESC')
+            ])->orderBy('id', 'DESC')
                 ->get(),
             'home_setting' => HomePageText::firstOrCreate(
                 ['user_id' => Auth::id(), 'language_id' => $lang->id],

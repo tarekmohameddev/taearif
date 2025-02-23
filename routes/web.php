@@ -4,20 +4,24 @@ use App\Models\Sale;
 use Admin\ItemOrderController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
+use App\Http\Controllers\Front\RoomBooking;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\CRM\SaleController;
 use App\Http\Controllers\CRM\SalesController;
 use App\Http\Controllers\CRM\BookingController;
 use App\Http\Controllers\CRM\ContractsController;
 use App\Http\Controllers\Front\CustomerController;
+use App\Http\Controllers\User\PortfolioController;
 use App\Http\Controllers\CRM\CustcrmomerController;
+use App\Http\Controllers\CRM\ReservationController;
+use App\Http\Controllers\User\OnboardingController;
 use App\Http\Controllers\CRM\PaymentRecordController;
 use App\Http\Controllers\CRM\PaymentRecordsController;
-use App\Http\Controllers\CRM\ReservationController;
+// CRM
 use App\Http\Controllers\User\HotelBooking\RoomController;
+use User\CourseManagement\Instructor\InstructorController;
 use App\Http\Controllers\User\HotelBooking\RoomManagementController;
 use App\Http\Controllers\Front\ProjectController as FrontProjectController;
-// CRM
 use App\Http\Controllers\Front\PropertyController as FrontPropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProject\TypeController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CityController;
@@ -26,10 +30,9 @@ use App\Http\Controllers\User\RealestateManagement\ManageProject\ProjectControll
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\AmenityController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
+
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
-
-use App\Http\Controllers\User\OnboardingController;
 
 Route::get('/test-sales', function () {
     return Sale::with('property', 'user', 'contract')->get();
@@ -1797,7 +1800,7 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         Route::post('/room_booking/iyzico/notify', 'User\Payment\IyzicoController@successPayment')->name('front.user.room_booking.iyzico.notify');
 
         Route::get('/room_booking/cancel', 'Front\RoomBookingController@cancel')->name('front.user.room_booking.cancel');
-        Route::get('/room_booking/complete', 'Front\RoomBooking@complete')->name('front.user.room_booking.complete');
+        Route::get('/room_booking/complete', 'Front\RoomBookingController@complete')->name('front.user.room_booking.complete');
     });
 
     // start course management routes
@@ -1808,7 +1811,7 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         Route::post('/course-enrolment/{id}', 'Front\CourseManagement\EnrolmentController@enrolment')->name('front.user.course.enrolment');
         Route::post('/course/{id}/store-feedback', 'Front\CourseManagement\CourseController@storeFeedback')->name('front.user.course.store_feedback');
 
-        Route::get('/instructors', 'Front\InstructorController@instructors')->name('front.user.instructors');
+        // Route::get('/instructors', 'Front\InstructorController@instructors')->name('front.user.instructors');
         //  start course enrollment payment gateway route
         Route::get('/course-enrolment/paypal/notify', 'User\CourseManagement\Payment\PayPalController@notify')->name('course_enrolment.paypal.notify');
 
@@ -2011,39 +2014,39 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         Route::post('/coupon', 'Front\ItemController@coupon')->name('front.coupon');
         Route::get('/customer-success', 'Front\CustomerController@onlineSuccess')->name('customer.success.page');
         // CHECKOUT SECTION
-        Route::get('/product/payment/return', 'Payment\product\PaymentController@payreturn')->name('product.payment.return');
-        Route::get('/product/payment/cancle', 'Payment\product\PaymentController@paycancle')->name('product.payment.cancle');
-        Route::get('/product/paypal/notify', 'Payment\product\PaypalController@notify')->name('product.paypal.notify');
+        // Route::get('/product/payment/return', 'Payment\product\PaymentController@payreturn')->name('product.payment.return');
+        // Route::get('/product/payment/cancle', 'Payment\product\PaymentController@paycancle')->name('product.payment.cancle');
+        // Route::get('/product/paypal/notify', 'Payment\product\PaypalController@notify')->name('product.paypal.notify');
         Route::post('/item/payment/submit', 'Front\UsercheckoutController@checkout')->name('item.payment.submit')->middleware('Demo');
         // paypal routes
-        Route::post('/product/paypal/submit', 'Payment\product\PaypalController@store')->name('product.paypal.submit');
+        // Route::post('/product/paypal/submit', 'Payment\product\PaypalController@store')->name('product.paypal.submit');
         // stripe routes
-        Route::post('/product/stripe/submit', 'Payment\product\StripeController@store')->name('product.stripe.submit');
-        Route::post('/product/offline/{gatewayid}/submit', 'Payment\product\OfflineController@store')->name('product.offline.submit');
+        // Route::post('/product/stripe/submit', 'Payment\product\StripeController@store')->name('product.stripe.submit');
+        // Route::post('/product/offline/{gatewayid}/submit', 'Payment\product\OfflineController@store')->name('product.offline.submit');
         //Flutterwave Routes
-        Route::post('/product/flutterwave/submit', 'Payment\product\FlutterWaveController@store')->name('product.flutterwave.submit');
-        Route::post('/product/flutterwave/notify', 'Payment\product\FlutterWaveController@notify')->name('product.flutterwave.notify');
-        Route::get('/product/flutterwave/notify', 'Payment\product\FlutterWaveController@success')->name('product.flutterwave.success');
+        // Route::post('/product/flutterwave/submit', 'Payment\product\FlutterWaveController@store')->name('product.flutterwave.submit');
+        // Route::post('/product/flutterwave/notify', 'Payment\product\FlutterWaveController@notify')->name('product.flutterwave.notify');
+        // Route::get('/product/flutterwave/notify', 'Payment\product\FlutterWaveController@success')->name('product.flutterwave.success');
         //Paystack Routes
-        Route::post('/product/paystack/submit', 'Payment\product\PaystackController@store')->name('product.paystack.submit');
+        // Route::post('/product/paystack/submit', 'Payment\product\PaystackController@store')->name('product.paystack.submit');
         // RazorPay
-        Route::post('/product/razorpay/submit', 'Payment\product\RazorpayController@store')->name('product.razorpay.submit');
-        Route::post('/product/razorpay/notify', 'Payment\product\RazorpayController@notify')->name('product.razorpay.notify');
+        // Route::post('/product/razorpay/submit', 'Payment\product\RazorpayController@store')->name('product.razorpay.submit');
+        // Route::post('/product/razorpay/notify', 'Payment\product\RazorpayController@notify')->name('product.razorpay.notify');
         //Instamojo Routes
-        Route::post('/product/instamojo/submit', 'Payment\product\InstamojoController@store')->name('product.instamojo.submit');
-        Route::get('/product/instamojo/notify', 'Payment\product\InstamojoController@notify')->name('product.instamojo.notify');
+        // Route::post('/product/instamojo/submit', 'Payment\product\InstamojoController@store')->name('product.instamojo.submit');
+        // Route::get('/product/instamojo/notify', 'Payment\product\InstamojoController@notify')->name('product.instamojo.notify');
         //PayTM Routes
-        Route::post('/product/paytm/submit', 'Payment\product\PaytmController@store')->name('product.paytm.submit');
-        Route::post('/product/paytm/notify', 'Payment\product\PaytmController@notify')->name('product.paytm.notify');
-        //Mollie Routes
-        Route::post('/product/mollie/submit', 'Payment\product\MollieController@store')->name('product.mollie.submit');
-        Route::get('/product/mollie/notify', 'Payment\product\MollieController@notify')->name('product.mollie.notify');
-        // Mercado Pago
-        Route::post('/product/mercadopago/submit', 'Payment\product\MercadopagoController@store')->name('product.mercadopago.submit');
-        Route::post('/product/mercadopago/notify', 'Payment\product\MercadopagoController@notify')->name('product.mercadopago.notify');
-        // PayUmoney
-        Route::post('/product/payumoney/submit', 'Payment\product\PayumoneyController@store')->name('product.payumoney.submit');
-        Route::post('/product/payumoney/notify', 'Payment\product\PayumoneyController@notify')->name('product.payumoney.notify');
+        // Route::post('/product/paytm/submit', 'Payment\product\PaytmController@store')->name('product.paytm.submit');
+        // Route::post('/product/paytm/notify', 'Payment\product\PaytmController@notify')->name('product.paytm.notify');
+        // //Mollie Routes
+        // Route::post('/product/mollie/submit', 'Payment\product\MollieController@store')->name('product.mollie.submit');
+        // Route::get('/product/mollie/notify', 'Payment\product\MollieController@notify')->name('product.mollie.notify');
+        // // Mercado Pago
+        // Route::post('/product/mercadopago/submit', 'Payment\product\MercadopagoController@store')->name('product.mercadopago.submit');
+        // Route::post('/product/mercadopago/notify', 'Payment\product\MercadopagoController@notify')->name('product.mercadopago.notify');
+        // // PayUmoney
+        // Route::post('/product/payumoney/submit', 'Payment\product\PayumoneyController@store')->name('product.payumoney.submit');
+        // Route::post('/product/payumoney/notify', 'Payment\product\PayumoneyController@notify')->name('product.payumoney.notify');
         // CHECKOUT SECTION ENDS
         Route::post('/payment/instructions', 'Front\CustomerController@paymentInstruction')->name('user.front.payment.instructions');
     });

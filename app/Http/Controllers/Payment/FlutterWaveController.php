@@ -21,6 +21,10 @@ class FlutterWaveController extends Controller
 
     public function __construct()
     {
+        // Skip if we're running in Artisan / console
+        if (app()->runningInConsole()) {
+            return;
+        }
         $data = PaymentGateway::whereKeyword('flutterwave')->first();
         $paydata = $data->convertAutoData();
         $this->public_key = $paydata['public_key'];
@@ -129,7 +133,7 @@ class FlutterWaveController extends Controller
                         $checkout = new CheckoutController();
                         $user = $checkout->store($requestData, $transaction_id, $transaction_details, $amount,$be,$password);
 
-                        
+
                         $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
                         $activation = Carbon::parse($lastMemb->start_date);
                         $expire = Carbon::parse($lastMemb->expire_date);

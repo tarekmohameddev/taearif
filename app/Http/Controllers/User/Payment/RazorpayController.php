@@ -28,6 +28,9 @@ class RazorpayController extends Controller
     private $keyId, $keySecret, $api;
     public function __construct()
     {
+        if (app()->runningInConsole()) {
+            return;
+        }
         $data = UserPaymentGeteway::whereKeyword('razorpay')->where('user_id', getUser()->id)->first();
         $paydata = $data->convertAutoData();
         $this->keyId = $paydata['key'];

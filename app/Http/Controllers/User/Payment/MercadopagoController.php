@@ -28,6 +28,9 @@ class MercadopagoController extends Controller
 
     public function __construct()
     {
+        if (app()->runningInConsole()) {
+            return;
+        }
         $data = UserPaymentGeteway::whereKeyword('mercadopago')->where('user_id',  getUser()->id)->first();
         $paydata = $data->convertAutoData();
         $this->access_token = $paydata['token'];
@@ -86,7 +89,7 @@ class MercadopagoController extends Controller
         $err = curl_error($curl);
         curl_close($curl);
         // dd($payment);
-        // store room booking information 
+        // store room booking information
         if ($_title == "Room Booking") {
             $roomBooking = new RoomBookingController();
             $currencyInfo = MiscellaneousTrait::getCurrencyInfo(getUser()->id);

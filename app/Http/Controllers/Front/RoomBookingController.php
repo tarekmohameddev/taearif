@@ -224,7 +224,7 @@ class RoomBookingController extends Controller
 
             $callback_url = route('front.user.room_booking.xendit.notify', getParam());
 
-            // checking whether the currency is set to 'INR' or not 
+            // checking whether the currency is set to 'INR' or not
             $allowed_currency = array('IDR', 'PHP', 'USD', 'SGD', 'MYR');
             if (!in_array($currencyInfo->base_currency_text, $allowed_currency)) {
                 return redirect()->back()->with('error', 'Invalid currency for perfect money payment.');
@@ -245,7 +245,7 @@ class RoomBookingController extends Controller
 
             $callback_url = route('front.user.room_booking.yoco.notify', getParam());
 
-            // checking whether the currency is set to 'ZAR' or not 
+            // checking whether the currency is set to 'ZAR' or not
             if ($currencyInfo->base_currency_text != 'ZAR') {
                 return redirect()->back()->with('error', 'Invalid currency for yoco payment.');
             }
@@ -265,7 +265,7 @@ class RoomBookingController extends Controller
 
             $callback_url = route('front.user.room_booking.toyyibpay.notify', getParam());
 
-            // checking whether the currency is set to 'ZAR' or not 
+            // checking whether the currency is set to 'ZAR' or not
             if ($currencyInfo->base_currency_text != 'RM') {
                 return redirect()->back()->with('error', 'Invalid currency for toyyibpay payment.');
             }
@@ -285,7 +285,7 @@ class RoomBookingController extends Controller
 
             $callback_url = route('front.user.room_booking.paytabs.notify', getParam());
             $paytabInfo = paytabInfo('user', $user->id);
-            // checking whether the currency is set to 'ZAR' or not 
+            // checking whether the currency is set to 'ZAR' or not
             if ($currencyInfo->base_currency_text != $paytabInfo['currency']) {
                 return redirect()->back()->with('error', 'Invalid currency for paytabs payment.');
             }

@@ -2,18 +2,19 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Http\Controllers\Controller;
-use App\Http\Helpers\Uploader;
-use App\Models\User\Language;
-use App\Models\User\Portfolio;
-use App\Models\User\PortfolioCategory;
-use App\Models\User\PortfolioImage;
-use App\Models\User\HomePageText;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
 use Purifier;
 use Validator;
+use Illuminate\Http\Request;
+use App\Models\User\Language;
+use App\Http\Helpers\Uploader;
+use App\Models\User\Portfolio;
+use App\Models\User\HomePageText;
+use App\Models\User\PortfolioImage;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User\PortfolioCategory;
+use Illuminate\Support\Facades\Session;
 
 class PortfolioController extends Controller
 {
@@ -74,13 +75,14 @@ class PortfolioController extends Controller
             ->orderBy('serial_number', 'ASC')
             ->get();
 
-        
-        
+
+
         return view('user.portfolio.portfolio.index', $data);
     }
 
     public function sliderstore(Request $request)
     {
+        Log::info($request->all());
         $img = $request->file('file');
         $allowedExts = ['jpg', 'png', 'jpeg'];
 
@@ -134,6 +136,7 @@ class PortfolioController extends Controller
      */
     public function store(Request $request)
     {
+        Log::info($request->all());
         $img = $request->file('image');
         $allowedExts = array('jpg', 'png', 'jpeg');
         $slug = make_slug($request->title);
@@ -338,9 +341,13 @@ class PortfolioController extends Controller
 
     public function bulkDelete(Request $request)
     {
+        // Log::info($request->all());
+
         $ids = $request->ids;
         foreach ($ids as $id) {
             $portfolio = Portfolio::where('user_id', Auth::user()->id)->where('id', $id)->firstOrFail();
+
+            Log::info($portfolio);
             foreach ($portfolio->portfolio_images as $key => $pi) {
                 @unlink(public_path('assets/front/img/user/portfolios/' . $pi->image));
                 $pi->delete();
@@ -351,6 +358,52 @@ class PortfolioController extends Controller
         Session::flash('success', 'Portfolios deleted successfully!');
         return "success";
     }
+    // public function bulkDelete(Request $request)
+    // {
+    //     try {
+    //         // Log the incoming request data
+    //         // Log::info('Bulk Delete Request:', $request->all());
+
+    //         $ids = $request->ids;
+
+    //         foreach ($ids as $id) {
+    //             Log::info($id);
+    //             // This could throw a ModelNotFoundException if the portfolio doesn't exist
+    //             $portfolio = Portfolio::where('user_id', Auth::user()->id)
+    //                 ->where('id', $id)
+    //                 ->firstOrFail();
+
+    //             // Log the portfolio information
+    //             Log::info('Deleting portfolio:', $portfolio->toArray());
+
+    //             // Delete each portfolio image
+    //             foreach ($portfolio->portfolio_images as $key => $pi) {
+    //                 @unlink(public_path('assets/front/img/user/portfolios/' . $pi->image));
+    //                 $pi->delete();
+    //             }
+
+    //             // Delete the main portfolio image
+    //             @unlink(public_path('assets/front/img/user/portfolios/' . $portfolio->image));
+
+    //             // Finally, delete the portfolio entry itself
+    //             $portfolio->delete();
+    //         }
+
+    //         Session::flash('success', 'Portfolios deleted successfully!');
+    //         return "success";
+    //     } catch (\Exception $e) {
+    //         // Log the exception with a detailed message and trace
+    //         Log::error('Error in bulkDelete method: ' . $e->getMessage());
+    //         Log::error($e->getTraceAsString());
+
+    //         // Optionally, return a response or redirect the user with an error message
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'Something went wrong while deleting portfolios.'
+    //         ], 500);
+    //     }
+    // }
+
 
     public function images($portid)
     {
