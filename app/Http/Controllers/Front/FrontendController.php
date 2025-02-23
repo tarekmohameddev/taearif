@@ -1046,6 +1046,12 @@ class FrontendController extends Controller
                     ['language_id', $userCurrentLang->id],
                 ])->orderBy('serial_number', 'ASC')->get();
 
+                $data['projects'] = Project::where('user_projects.user_id', $user->id)->leftJoin('user_project_contents', 'user_project_contents.project_id', 'user_projects.id')
+                    ->where('user_projects.featured', 1)
+
+                    ->where('user_project_contents.language_id', $userCurrentLang->id)
+                    ->select('user_projects.*', 'user_project_contents.slug', 'user_project_contents.title', 'user_project_contents.address')->inRandomOrder()->latest()->take(8)->get();
+                
                 return view('user-front.realestate.home.index-v2', $data);
             } elseif ($userBs->theme == 'home15') {
                 $data['heroStatic'] = User\HeroStatic::where('user_id', $user->id)

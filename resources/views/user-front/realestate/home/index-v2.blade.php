@@ -247,6 +247,113 @@
          </div>
       </div>
    </section>
+   <style>
+        .info-box {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        .info-box:hover {
+            transform: translateY(-5px);
+        }
+        .info-icon {
+            font-size: 1.5rem;
+            margin-left: 10px;
+            color: #002d72;  /* Primary blue color */
+        }
+        .title-wrapper {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .slide-in {
+            animation: slideFromLeft 0.5s ease-out forwards;
+        }
+        @keyframes slideFromLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        h4 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #002d72;  /* Primary blue color */
+        }
+    </style>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+      <div class="container py-5">
+        <div class="row align-items-center">
+            <!-- Image Column -->
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <img src="https://faisal-binsaedan.com/wp-content/uploads/2024/05/pic.svg" alt="Company Visual" class="img-fluid">
+            </div>
+            
+            <!-- Content Column -->
+            <div class="col-lg-6">
+                <!-- Identity Box -->
+                <div class="info-box slide-in">
+                    <div class="title-wrapper">
+                        <i class="bi bi-building info-icon"></i>
+                        <h4>هويتنا</h4>
+                    </div>
+                    <p class="mb-0">شركة عقارية سكنية وتجارية قائمة منذ 70 عاما تشيد مشاريعا بالابتكار والرؤية الحديثة واستنادا إلى القيم الراسخة للارتقاء بالمجال العقاري وتنفيذ مشاريع استثنائية.</p>
+                </div>
+
+                <!-- Mission Box -->
+                <div class="info-box slide-in" style="animation-delay: 0.5s;">
+                    <div class="title-wrapper">
+                        <i class="bi bi-rocket-takeoff info-icon"></i>
+                        <h4>مهمتنا</h4>
+                    </div>
+                    <p class="mb-0">إعادة تعريف المشهد العقاري للارتقاء بتجربة المعيشة والأفراد من خلال الدمج السلس لالتزامنا بالتميز والابتكار والاستدامة مع الهدف الأوسع المتمثل في المساهمة في التقدم العالمي.</p>
+                </div>
+
+                <!-- Values Box -->
+                <div class="info-box slide-in" style="animation-delay: 1s;">
+                    <div class="title-wrapper">
+                        <i class="bi bi-stars info-icon"></i>
+                        <h4>قيمنا</h4>
+                    </div>
+                    <p class="mb-0">النزاهة وبناء العلاقات على الشفافية والسلوك الأخلاقي والابتكار، والبحث باستمرار عن طرق بناء مساحات فريدة من نوعها.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if ($home_sections->counter_info_section == 1)
+        <div class="counter-area pt-100 pb-70">
+            <div class="container">
+                <div class="row gx-xl-5" data-aos="fade-up">
+                    @forelse ($counterInformations as $counter)
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card mb-30">
+                                <div class="d-flex align-items-center justify-content-center mb-10">
+                                    <div class="card-icon me-2 color-secondary"><i class="{{ $counter->icon }}"></i>
+                                    </div>
+                                    <h2 class="m-0 color-secondary"><span class="counter">{{ $counter->count }}</span>+
+                                    </h2>
+                                </div>
+                                <p class="card-text text-center">{{ $counter->title }}</p>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="col-12">
+                            <h3 class="text-center mt-20">
+                                {{ $keywords['No Counter Information Found'] ?? __('No Counter Information Found') }} </h3>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    @endif
 
    @if ($home_sections->category_section == 1)
       <section class="category pt-100 pb-70 bg-light">
@@ -300,39 +407,6 @@
       </section>
    @endif
 
-   @if ($home_sections->featured_properties_section == 1)
-      <section class="featured-product pt-100 pb-70">
-         <div class="container">
-            <div class="row">
-               <div class="col-12">
-                  <div class="section-title title-inline mb-40" data-aos="fade-up">
-                     <!-- <h2 class="title">{{ $home_text?->featured_property_title }}</h2> -->
-                     <h2 class="title">افضل العقارات</h2>
-                  </div>
-               </div>
-               <div class="col-12" data-aos="fade-up">
-                  <div class="swiper product-slider">
-                     <div class="swiper-wrapper">
-                        @forelse ($featured_properties as $property)
-                           <div class="swiper-slide">
-                              @include('user-front.realestate.partials.property')
-                           </div>
-                        @empty
-                           <div class=" p-3 text-center mb-30 w-100">
-                              <h3 class="mb-0">
-                                 {{ $keywords['No Featured Property Found'] ?? __('No Featured Property Found') }}
-                              </h3>
-                           </div>
-                        @endforelse
-                     </div>
-                     <!-- Slider pagination -->
-                     <div class="swiper-pagination position-static mb-30" id="product-slider-pagination"></div>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </section>
-   @endif
 
 
          <section class="video-banner with-radius pt-100 pb-70">
@@ -364,91 +438,72 @@
          </section>
 
 
-   @if ($home_sections->property_section == 1)
-      <section class="popular-product pt-100 pb-70">
-         <div class="container">
-            <div class="row">
-               <div class="col-12">
-                  <div class="section-title title-inline mb-40" data-aos="fade-up">
-                     <!-- <h2 class="title">{{ $home_text?->property_title }}</h2> -->
-                     <h2 class="title">كل العقارات<h2>
-                     <div class="tabs-navigation">
-                        <ul class="nav nav-tabs">
-                           <li class="nav-item">
-                              <button class="nav-link active btn-md rounded-pill" data-bs-toggle="tab"
-                                 data-bs-target="#forAll"
-                                 type="button">{{ $keywords['All Properties'] ?? __('All Properties') }}</button>
-                           </li>
-                           <li class="nav-item">
-                              <button class="nav-link btn-md rounded-pill" data-bs-toggle="tab"
-                                 data-bs-target="#forRent"
-                                 type="button">{{ $keywords['For Rent'] ?? __('For Rent') }}</button>
-                           </li>
-                           <li class="nav-item">
-                              <button class="nav-link btn-md rounded-pill" data-bs-toggle="tab"
-                                 data-bs-target="#forSell"
-                                 type="button">{{ $keywords['For Sale'] ?? __('For Sale') }}</button>
-                           </li>
-                        </ul>
-                     </div>
-                  </div>
-               </div>
-               <div class="col-12">
-                  <div class="tab-content" data-aos="fade-up">
-                     <div class="tab-pane fade show active" id="forAll">
-                        <div class="row">
-                           @forelse ($properties as $property)
-                              <div class="col-lg-4 col-xxl-3 col-md-6">
-                                 @include('user-front.realestate.partials.property')
-                              </div>
-                           @empty
-                              <div class="p-3 text-center mb-30">
-                                 <h3 class="mb-0">
-                                    {{ $keywords['No Properties Found'] ?? __('No Properties Found') }}</h3>
-                              </div>
-                           @endforelse
+         @if ($home_sections->project_section == 1)
+        <section class="projects-area pt-100 pb-70">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="section-title title-center mb-40" data-aos="fade-up">
+                            <span class="subtitle"></span>
+                            <h2 class="title mb-20">نبذة عن مشاريعنا</h2>
                         </div>
-                     </div>
-                     <div class="tab-pane fade" id="forRent">
+                    </div>
+                    <div class="col-12" data-aos="fade-up">
                         <div class="row">
-                           @forelse ($properties as $property)
-                              @if ($property->purpose == 'rent')
-                                 <!-- property component -->
-                                 <div class="col-lg-4 col-xxl-3 col-md-6">
-                                    @include('user-front.realestate.partials.property')
-                                 </div>
-                              @endif
-                           @empty
-                              <div class=" p-3 text-center mb-30">
-                                 <h3 class="mb-0">
-                                    {{ $keywords['No Properties Found'] ?? __('No Properties Found') }}</h3>
-                              </div>
-                           @endforelse
+                            @forelse ($projects as $project)
+                                <div class="col-lg-4 col-md-6 mb-30">
+                                    <a
+                                        href="{{ route('front.user.project.details', [getParam(), 'slug' => $project->slug]) }}">
+                                        <div class="card product-default">
+                                            <div class="card-img">
+                                                <img src="{{ asset('assets/img/project/featured/' . $project->featured_image) }}"
+                                                    alt="Product">
+                                                <span class="label">
+                                                    {{ $project->status == 1 ? $keywords['Complete'] ?? __('Complete') : $keywords['Under Construction'] ?? __('Under Construction') }}
+                                                </span>
+                                            </div>
+                                            <div class="card-text product-title text-center p-3">
+                                                <h3 class="card-title product-title color-white mb-1">
+                                                    {{ @$project->title }}
+
+                                                </h3>
+                                                <span class="location icon-start"><i
+                                                        class="fal fa-map-marker-alt"></i>{{ $project->address }}</span>
+                                                <span class="price">{{ formatNumber($project->min_price) }}
+                                                    {{ !empty($project->max_price) ? ' - ' . formatNumber($project->max_price) : '' }}</span>
+                                                @if ($project->user)
+                                                    <a class="color-medium" {{-- href="{{ route('frontend.agent.details', ['username' => $project->agent->username]) }}" --}} target="_self">
+                                                        <div class="user rounded-pill mt-10">
+                                                            <div
+                                                                class="user-img lazy-container ratio ratio-1-1 rounded-pill">
+
+                                                                <img class="lazyload"
+                                                                    data-src="{{asset('assets/img/user-profile.jpg') }}"
+                                                                    src="{{ asset('assets/img/user-profile.jpg') }}">
+
+                                                            </div>
+                                                            <div class="user-info">
+                                                                <span>{{ $project->user->username }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                            @empty
+                                <div class="p-3 text-center mb-30 w-100">
+                                    <h3 class="mb-0"> {{ $keywords['No Projects Found'] ?? __('No Projects Found') }}
+                                    </h3>
+                                </div>
+                            @endforelse
                         </div>
-                     </div>
-                     <div class="tab-pane fade" id="forSell">
-                        <div class="row">
-                           @forelse ($properties as $property)
-                              @if ($property->purpose == 'sale')
-                                 <!-- property component -->
-                                 <div class="col-lg-4 col-xxl-3 col-md-6">
-                                    @include('user-front.realestate.partials.property')
-                                 </div>
-                              @endif
-                           @empty
-                              <div class=" p-3 text-center mb-30">
-                                 <h3 class="mb-0">
-                                    {{ $keywords['No Properties Found'] ?? __('No Properties Found') }}</h3>
-                              </div>
-                           @endforelse
-                        </div>
-                     </div>
-                  </div>
-               </div>
+                    </div>
+                </div>
             </div>
-         </div>
-      </section>
-   @endif
+        </section>
+    @endif
 
    @if ($home_sections->work_process_section == 1)
       <section class="work-process pt-100 pb-70">
