@@ -30,6 +30,11 @@ class PaypalController extends Controller
     use MiscellaneousTrait;
     public function __construct()
     {
+        // If we're in the console, skip the PayPal config logic.
+        if (app()->runningInConsole()) {
+            return;
+        }
+
         $data = UserPaymentGeteway::whereKeyword('paypal')->where('user_id', getUser()->id)->first();
         $paydata = $data->convertAutoData();
 

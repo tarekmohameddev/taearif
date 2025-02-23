@@ -16,6 +16,10 @@ class PaystackController extends Controller
 
     public function __construct()
     {
+        // Skip everything if we're in Artisan / console.
+        if (app()->runningInConsole()) {
+            return;
+        }
         $user = getUser();
         $data = UserPaymentGeteway::query()
             ->where('keyword', 'paystack')

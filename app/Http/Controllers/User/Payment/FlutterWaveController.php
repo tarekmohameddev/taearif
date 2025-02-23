@@ -20,6 +20,9 @@ class FlutterWaveController extends Controller
 
     public function __construct()
     {
+        if (app()->runningInConsole()) {
+            return;
+        }
         $data = UserPaymentGeteway::whereKeyword('flutterwave')->where('user_id', getUser()->id)->first();
         $paydata = $data->convertAutoData();
         $this->public_key = $paydata['public_key'];

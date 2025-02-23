@@ -20,6 +20,9 @@ class MollieController extends Controller
     use MiscellaneousTrait;
     public function __construct()
     {
+        if (app()->runningInConsole()) {
+            return;
+        }
         $data = UserPaymentGeteway::whereKeyword('mollie')->where('user_id', getUser()->id)->first();
         $paydata = $data->convertAutoData();
         Config::set('mollie.key', $paydata['key']);

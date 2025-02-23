@@ -17,6 +17,10 @@ class FlutterwaveController extends Controller
     protected $key, $secret;
     public function __construct()
     {
+        // Skip everything if we're in Artisan / console.
+        if (app()->runningInConsole()) {
+            return;
+        }
         $user = getUser();
         $data = UserPaymentGeteway::query()
             ->where('keyword', 'flutterwave')
@@ -70,7 +74,7 @@ class FlutterwaveController extends Controller
         $notifyURL = route('course_enrolment.flutterwave.notify', getParam());
         $cancel_url = route('front.user.course_enrolment.cancel', [getParam(), 'id' => $courseId]);
         // // generate a payment reference
-        
+
         $paymentId =  uniqid();
         $curl = curl_init();
         $currency = $currencyInfo->base_currency_text;
@@ -176,7 +180,7 @@ class FlutterwaveController extends Controller
                     $request->session()->forget('arrData');
 
                     return redirect()->route('front.user.course_enrolment.complete', [getParam(), 'id' => $courseId]);
-                
+
             } else {
                 // remove all session data
                 $request->session()->forget('userId');
