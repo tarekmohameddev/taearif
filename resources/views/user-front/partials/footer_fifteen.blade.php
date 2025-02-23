@@ -1,7 +1,8 @@
 <!-- Footer-area start -->
 
-<footer class="footer-area border" style="background-color: transparent !important;">
-    @if (!empty($userFooterData->bg_image))
+<footer class="footer-area border">
+
+    @if (!empty($basicInfo->footer_bg_img))
         <!-- Background Image -->
         <img class="lazyload blur-up bg-img"
             src="{{ isset($userFooterData->bg_image) ? asset('assets/front/img/user/footer/' . $userFooterData->bg_image) : asset('assets/front/img/static/lawyer/footer-bg-1.jpg') }}">
@@ -29,8 +30,6 @@
                                                 class="{{ $socialMediaInfo->icon }}"></i></a>
                                     @endforeach
                                 </div>
-
-
                             @endif
 
                         </div>
@@ -39,7 +38,7 @@
                         <div class="footer-widget">
                             <h4>{{ $keywords['Useful Links'] ?? __('Useful Links') }}</h4>
                             @if (count($userFooterQuickLinks) == 0)
-                                <h6 class="">{{ $keywords['No Link Found'] ?? __('No Link Found')  }}</h6>
+                                <h6 class="">{{ $keywords['No Link Found'] ?? __('No Link Found') }}</h6>
                             @else
                                 <ul class="footer-links">
                                     @foreach ($userFooterQuickLinks as $quickLinkInfo)
@@ -66,8 +65,6 @@
                                     : [];
                             @endphp
                             <ul class="footer-links">
-
-
                                 @if (count($addresses) > 0)
                                     <li>
                                         <i class="fal fa-map-marker-alt"></i>
@@ -110,7 +107,9 @@
         <div class="copy-right-area border-top">
             <div class="container">
                 <div class="copy-right-content">
-                    <span> {!! replaceBaseUrl($userFooterData->copyright_text ?? null) !!} </span>
+                    <span>
+                        {!! @$footerInfo->copyright_text !!}
+                    </span>
                 </div>
             </div>
         </div>
@@ -119,5 +118,6 @@
 <!-- Go to Top -->
 <div class="go-top"><i class="fal fa-angle-double-up"></i></div>
 <!-- Go to Top -->
+
 
 <!-- Footer-area end-->

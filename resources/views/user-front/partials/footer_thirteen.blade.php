@@ -1,6 +1,5 @@
-<!-- Footer-area start -->
 
-<footer class="footer-area border" style="background-color: transparent !important;">
+<footer class="footer-area border">
     @if (!empty($userFooterData->bg_image))
         <!-- Background Image -->
         <img class="lazyload blur-up bg-img"
@@ -29,8 +28,6 @@
                                                 class="{{ $socialMediaInfo->icon }}"></i></a>
                                     @endforeach
                                 </div>
-
-
                             @endif
 
                         </div>
@@ -116,8 +113,5 @@
         </div>
     @endif
 </footer>
-<!-- Go to Top -->
 <div class="go-top"><i class="fal fa-angle-double-up"></i></div>
-<!-- Go to Top -->
 
-<!-- Footer-area end-->

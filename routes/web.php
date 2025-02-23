@@ -1128,6 +1128,7 @@ Route::domain($domain)->group(function () {
         Route::get('/package-list', 'User\BuyPlanController@index')->name('user.plan.extend.index');
         Route::get('/package/checkout/{package_id}', 'User\BuyPlanController@checkout')->name('user.plan.extend.checkout');
         Route::post('/package/checkout', 'User\UserCheckoutController@checkout')->name('user.plan.checkout');
+        
         //user footer route
         Route::get('/footer/text', 'User\FooterController@footerText')->name('user.footer.text');
         Route::post('/footer/update_footer_info/{language}', 'User\FooterController@updateFooterInfo')->name('user.footer.update_footer_info');
@@ -1664,6 +1665,7 @@ Route::domain($domain)->group(function () {
         Route::post('/payment/instructions', 'Front\FrontendController@paymentInstruction')->name('front.payment.instructions');
         Route::post('/contact/message', 'Front\FrontendController@contactMessage')->name('front.contact.message');
         Route::post('/admin/contact-msg', 'Front\FrontendController@adminContactMessage')->name('front.admin.contact.message');
+        Route::post('/realestate/deposit', 'Front\CustomerController@paydeposit')->name('user.pay.deposit');
 
         //checkout payment gateway routes
         Route::prefix('membership')->group(function () {
@@ -1897,6 +1899,15 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         Route::post('/signup-submit', 'Front\CustomerController@signupSubmit')->name('customer.signup.submit')->middleware('Demo');
         // signup verify route
         Route::get('/signup-verify/{token}', 'Front\CustomerController@signupVerify')->name('customer.signup.verify');
+
+
+        Route::post('/check-user', 'Front\CustomerController@check_user')->name('customer.checkuser');
+        Route::post('/send-otp', 'Front\CustomerController@send_otp')->name('customer.sendotp');
+        Route::post('/verify-otp', 'Front\CustomerController@verify_otp')->name('customer.verifyotp');
+        Route::post('/register-customer', 'Front\CustomerController@register_customer')->name('customer.registercustomer');
+        Route::post('/login-customer', 'Front\CustomerController@login_customer')->name('customer.logincustomer');
+        Route::post('/forgot-password-customer', 'Front\CustomerController@forgot_password_customer')->name('customer.forgotpasswordcustomer');
+       
 
         // Route::get('/customers', 'Front\CustomerController@crmDashboard')->name('crm.dashboard');
     });

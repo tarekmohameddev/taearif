@@ -695,3 +695,21 @@ if (!function_exists('paytabInfo')) {
         ];
     }
 }
+
+if (!function_exists('isMatchingRoute')) {
+    function isMatchingRoute($theme , $route) : bool
+    {
+        $routes = [
+            'front.user.detail.view',
+            'front.user.properties',
+            'front.user.projects',
+            'front.user.property.details',
+            'front.user.project.details',
+        ];
+        if (in_array($theme ,['home13','home14','home15']) &&  in_array($route ,$routes)){
+            return true;
+        }
+        return false;
+
+    }
+}

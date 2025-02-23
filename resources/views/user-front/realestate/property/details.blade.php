@@ -392,29 +392,31 @@
                              :propertyContent="$propertyContent" /> --}}
                              <div class="widget widget-form radius-md mb-30">
                           
-                             <form action="{{ route('front.user.property_contact', getParam()) }}" method="POST">
                                 @csrf
 
-                                <input type="hidden" name="user_id" value="{{ $user->id }}">
-                                <input type="hidden" name="property_id" value="{{ $propertyContent->propertyId }}">
-                              
-                                <button type="submit"
-                                    class="btn btn-md btn-primary w-100">{{ $keywords['Book a viewing'] ?? __('Book a viewing') }}</button>
-
-
-                            </form>
+              
                             </br>
-                            <form action="{{ route('front.user.property_contact', getParam()) }}" method="POST">
+                         
                                 @csrf
 
                                 <input type="hidden" name="user_id" value="{{ $user->id }}">
                                 <input type="hidden" name="property_id" value="{{ $propertyContent->propertyId }}">
                               
-                                <button type="submit"
-                                    class="btn btn-md btn-primary w-100">{{ $keywords['Buy Now'] ?? __('Buy Now') }}</button>
+                                
 
+                                @if (!Auth::guard('customer')->check())
+                                @includeIf('user-front.realestate.partials.header.login_or_reg_button')
+                                 @else
+                                     <!-- <button type="submit"
+                                    class="btn btn-md btn-primary w-100">{{ $keywords['Buy Now'] ?? __('Buy Now') }}</button> -->
+                                    @includeIf('user-front.realestate.partials.header.pay_deposit_button')
+                                 @endif
 
-                            </form>
+                                
+
+               
+                            
+                            
                         </div>
                         <div class="widget widget-recent radius-md mb-30 ">
                             <h3 class="title">
