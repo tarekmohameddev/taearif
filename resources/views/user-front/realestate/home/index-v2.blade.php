@@ -505,6 +505,46 @@
         </section>
     @endif
 
+
+    @if ($home_sections->property_section == 1)
+        <section class="product-area popular-product pb-70">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="section-title title-inline mb-10" data-aos="fade-up">
+                            <h2 class="title mb-20">العقارات المميزة</h2>
+                            <div class="slider-navigation mb-20">
+                                <button type="button" title="Slide prev" class="slider-btn product-slider-btn-prev">
+                                    <i class="fal fa-angle-left"></i>
+                                </button>
+                                <button type="button" title="Slide next" class="slider-btn product-slider-btn-next">
+                                    <i class="fal fa-angle-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12" data-aos="fade-up">
+                        <div class="swiper product-slider">
+                            <div class="swiper-wrapper">
+                                @forelse ($properties as $property)
+                                    <div class="swiper-slide">
+                                        @include('user-front.realestate.partials.property')
+                                    </div>
+                                @empty
+                                    <div class="p-3 text-center mb-30 w-100">
+                                        <h3 class="mb-0">
+                                            {{ $keywords['No Properties Found'] ?? __('No Properties Found') }}</h3>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
+   
+
    @if ($home_sections->work_process_section == 1)
       <section class="work-process pt-100 pb-70">
          <!-- Bg image -->
