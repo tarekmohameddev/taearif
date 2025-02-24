@@ -9,23 +9,7 @@
     </figure>
     <div class="product-details">
         <div class="d-flex align-items-center justify-content-between mb-10">
-            <div class="author  ">
 
-
-                @if ($property->user)
-                    <a class="color-medium" {{-- href="{{ route('frontend.vendor.details', ['username' => $property->vendor->username]) }}" --}} target="_self">
-
-                        <img class="blur-up ls-is-cached lazyloaded"
-                            data-src="{{ $property->user->photo ? asset('assets/front/img/user/' . $property->user->photo) : asset('assets/img/user-profile.jpg') }}"
-                            src="{{ $property->user->photo ? asset('assets/front/img/user/' . $property->user->photo) : asset('assets/img/user-profile.jpg') }}">
-
-
-
-                        <span>{{ $keywords['By'] ?? __('By') }} {{ $property->user->username }}</span>
-                @endif
-
-                </a>
-            </div>
 
             <span class="product-category text-sm @if (in_array($userBs->theme, ['home_five'])) text-dark @endif">
                 @if ($property->type == 'residential')

@@ -130,10 +130,7 @@ class Property extends Model
     {
         return $this->contents->first();
     }
-    public function getTitleAttribute()
-    {
-        return $this->contents->where('language_id', 1)->first()?->title ?? 'Untitled Property';
-    }
+
 
 
 }
