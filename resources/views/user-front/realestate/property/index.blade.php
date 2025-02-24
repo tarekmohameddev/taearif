@@ -635,7 +635,7 @@
                                 <button class="btn btn-sm btn-outline icon-end radius-sm mb-15" type="button"
                                     data-bs-toggle="offcanvas" data-bs-target="#widgetOffcanvas"
                                     aria-controls="widgetOffcanvas">
-                                    {{ $keywords['Filter'] ?? __('Filter') }} <i class="fal fa-filter"></i>
+                                    فلترة <i class="fal fa-filter"></i>
                                 </button>
                             </div>
                             <div class="col-sm-7">

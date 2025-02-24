@@ -15,7 +15,7 @@
                               <div class="navbar-brand">
                                   @if (!empty($userFooterData->logo))
                                       <a href="{{ route('front.user.detail.view', getParam()) }}">
-                                          <img 
+                                          <img style="max-height: 50px; width: auto;"
                                               src="{{ asset('assets/front/img/user/footer/' . $userFooterData->logo) }}">
                                       </a>
                                   @endif

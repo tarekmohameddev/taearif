@@ -87,7 +87,7 @@
             <button class="btn btn-light btn-lg deposit-btn px-5 py-3" 
                     data-bs-toggle="modal" 
                     data-bs-target="#depositModal">
-                دفع العربون
+                حجز الوحدة
             </button>
 
     <!-- Deposit Modal -->

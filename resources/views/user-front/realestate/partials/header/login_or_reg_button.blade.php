@@ -145,7 +145,7 @@
     
     <div class="container text-center">
         <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#authModal">
-            ابدأ الآن
+        حجز الوحدة
         </button>
     </div>
 

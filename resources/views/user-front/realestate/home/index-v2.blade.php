@@ -445,7 +445,7 @@
                     <div class="col-12">
                         <div class="section-title title-center mb-40" data-aos="fade-up">
                             <span class="subtitle"></span>
-                            <h2 class="title mb-20">نبذة عن مشاريعنا</h2>
+                            <h2 class="title mb-20">مشاريعنا</h2>
                         </div>
                     </div>
                     <div class="col-12" data-aos="fade-up">
@@ -469,8 +469,7 @@
                                                 </h3>
                                                 <span class="location icon-start"><i
                                                         class="fal fa-map-marker-alt"></i>{{ $project->address }}</span>
-                                                <span class="price">{{ formatNumber($project->min_price) }}
-                                                    {{ !empty($project->max_price) ? ' - ' . formatNumber($project->max_price) : '' }}</span>
+                                             
 
                                             </div>
                                         </div>
@@ -489,14 +488,13 @@
         </section>
     @endif
 
-
     @if ($home_sections->property_section == 1)
         <section class="product-area popular-product pb-70">
             <div class="container">
                 <div class="row">
                     <div class="col-12">
-                        <div class="section-title title-inline mb-10" data-aos="fade-up">
-                            <h2 class="title mb-20">العقارات المميزة</h2>
+                        <div class="section-title title-center mb-10" data-aos="fade-up">
+                            <h2 class="title mb-20">الوحدات</h2>
                             <div class="slider-navigation mb-20">
                                 <button type="button" title="Slide prev" class="slider-btn product-slider-btn-prev">
                                     <i class="fal fa-angle-left"></i>

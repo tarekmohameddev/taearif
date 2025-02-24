@@ -166,25 +166,7 @@
                                 </div>
 
 
-                                <a {{-- href="{{ route('frontend.agent.details', [getParam(), 'agentusername' => $user->username, 'admin' => 'true']) }}" --}}>
 
-                                    <div class="user mb-20">
-                                        <div class="user-img">
-                                            <div class="lazy-container ratio ratio-1-1 rounded-pill">
-                                                <img class="lazyload"
-                                                    src="{{ $user->photo ? asset('assets/front/img/user/' . $user->photo) : asset('assets/img/blank-user.jpg') }} "
-                                                    data-src=" {{ $user->photo ? asset('assets/front/img/user/' . $user->photo) : asset('assets/img/blank-user.jpg') }} ">
-
-                                            </div>
-                                        </div>
-                                        <div class="user-info">
-                                            <h5 class="m-0">
-                                                {{ $user->first_name . ' ' . $user->last_name }}
-                                            </h5>
-
-                                        </div>
-                                    </div>
-                                </a>
 
                                 <ul class="share-link list-unstyled mb-30">
                                     <li>
@@ -281,7 +263,7 @@
                         @endif
                         @if (!empty($propertyContent->floor_planning_image))
                             <div class="product-planning mb-40">
-                                <h3 class="mb-20">{{ $keywords['Floor Planning'] ?? __('Floor Planning') }}</h3>
+                                <h3 class="mb-20">{{ $keywords['Floor Planning property'] ?? __('Floor Planning property') }}</h3>
                                 <div class="lazy-container radius-lg ratio ratio-16-11 border">
                                     <img class="lazyload"
                                         src="{{ asset('assets/img/property/plannings/' . $propertyContent->floor_planning_image) }}"
@@ -291,7 +273,7 @@
                         @endif
                         @if (!empty($propertyContent->latitude) && !empty($propertyContent->longitude))
                             <div class="product-location mb-40">
-                                <h3 class="mb-20">{{ $keywords['Location'] ?? __('Location') }}</h3>
+                                <h3 class="mb-20">{{ $keywords['Location property'] ?? __('Location property') }}</h3>
                                 <div class="lazy-container radius-lg ratio ratio-21-9 border">
                                     <iframe class="lazyload"
                                         src="https://maps.google.com/maps?q={{ $propertyContent->latitude }},{{ $propertyContent->longitude }}&hl={{ $userCurrentLang->code }}&z=14&amp;output=embed"></iframe>
@@ -308,33 +290,7 @@
                 <div class="col-lg-3 col-xl-4">
                     <aside class="sidebar-widget-area mb-10" data-aos="fade-up">
                         <div class="widget widget-form radius-md mb-30">
-                            <div class="user mb-20">
-                                <div class="user-img">
-                                    <div class="lazy-container ratio ratio-1-1 rounded-pill">
 
-                                        <a {{-- href="{{ route('frontend.agent.details', [getParam(), 'agentusername' => $user->username, 'admin' => 'true']) }} --}}>
-
-                                            <img class="lazyload"
-                                                src="{{ $user->photo ? asset('assets/front/img/user/' . $user->photo) : asset('assets/img/blank-user.jpg') }} "
-                                                data-src=" {{ $user->photo ? asset('assets/front/img/user/' . $user->photo) : asset('assets/img/blank-user.jpg') }}">
-                                        </a>
-
-
-                                    </div>
-                                </div>
-                                <div class="user-info">
-                                    <h4 class="mb-0">
-                                        <a {{-- href="{{ route('frontend.agent.details', [getParam(), 'agentusername' => $user->username, 'admin' => 'true']) }}" --}}> {{ $user->first_name . ' ' . $user->last_name }}
-                                        </a>
-                                    </h4>
-                                    <a class="d-block" href="tel:{{ $user->phone }}">
-                                        {{ $user->phone }}
-                                    </a>
-                                    <a href="mailto:{{ $user->email }}">
-                                        {{ $user->email }}
-                                    </a>
-                                </div>
-                            </div>
 
                             <form action="{{ route('front.user.property_contact', getParam()) }}" method="POST">
                                 @csrf
