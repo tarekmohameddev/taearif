@@ -13,7 +13,7 @@
              <div class="logo">
                  @if (!empty($userBs->logo))
                      <a href="{{ route('front.user.detail.view', getParam()) }}">
-                         <img width="62" height="55" src="{{ asset('assets/front/img/user/' . $userBs->logo) }}">
+                         <img style="max-height: 50px; width: auto;" src="{{ asset('assets/front/img/user/' . $userBs->logo) }}">
                      </a>
                  @endif
              </div>

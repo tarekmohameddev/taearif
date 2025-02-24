@@ -154,11 +154,11 @@
                                                                 onchange="document.getElementById('statusForm{{ $project->id }}').submit();">
                                                                 <option value="1"
                                                                     {{ $project->complete_status == 1 ? 'selected' : '' }}>
-                                                                    {{ __('Complete') }}
+                                                                    بدء البيع
                                                                 </option>
                                                                 <option value="0"
                                                                     {{ $project->complete_status == 0 ? 'selected' : '' }}>
-                                                                    {{ __('Under Construction') }}
+                                                                    قريباً
                                                                 </option>
                                                             </select>
                                                         </form>

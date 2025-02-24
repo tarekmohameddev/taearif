@@ -459,7 +459,7 @@
                                                 <img src="{{ asset('assets/img/project/featured/' . $project->featured_image) }}"
                                                     alt="Product">
                                                 <span class="label">
-                                                    {{ $project->status == 1 ? $keywords['Complete'] ?? __('Complete') : $keywords['Under Construction'] ?? __('Under Construction') }}
+                                                    {{ $project->status == 1 ? $keywords['start selling'] ?? __('start selling') : $keywords['Under Construction'] ?? __('Under Construction') }}
                                                 </span>
                                             </div>
                                             <div class="card-text product-title text-center p-3">
@@ -471,23 +471,7 @@
                                                         class="fal fa-map-marker-alt"></i>{{ $project->address }}</span>
                                                 <span class="price">{{ formatNumber($project->min_price) }}
                                                     {{ !empty($project->max_price) ? ' - ' . formatNumber($project->max_price) : '' }}</span>
-                                                @if ($project->user)
-                                                    <a class="color-medium" {{-- href="{{ route('frontend.agent.details', ['username' => $project->agent->username]) }}" --}} target="_self">
-                                                        <div class="user rounded-pill mt-10">
-                                                            <div
-                                                                class="user-img lazy-container ratio ratio-1-1 rounded-pill">
 
-                                                                <img class="lazyload"
-                                                                    data-src="{{asset('assets/img/user-profile.jpg') }}"
-                                                                    src="{{ asset('assets/img/user-profile.jpg') }}">
-
-                                                            </div>
-                                                            <div class="user-info">
-                                                                <span>{{ $project->user->username }}</span>
-                                                            </div>
-                                                        </div>
-                                                    </a>
-                                                @endif
                                             </div>
                                         </div>
                                     </a>
