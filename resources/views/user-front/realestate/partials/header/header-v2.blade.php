@@ -31,7 +31,7 @@
                  <!-- Logo -->
                  @if (!empty($userBs->logo))
                      <a href="{{ route('front.user.detail.view', getParam()) }}" class="navbar-brand">
-                         <img width="62" height="55" src="{{ asset('assets/front/img/user/' . $userBs->logo) }}">
+                         <img style="max-height: 50px; width: auto;" src="{{ asset('assets/front/img/user/' . $userBs->logo) }}">
                      </a>
                  @endif
                  <!-- Navigation items -->
