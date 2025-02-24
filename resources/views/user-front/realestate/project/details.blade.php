@@ -170,7 +170,7 @@
                             <a class="btn btn-primary btn-md" href="#" data-bs-toggle="modal"
                                 data-bs-target="#socialMediaModal">
                                 <i class="far fa-share-alt"></i>
-                                <span>{{ $keywords['Share'] ?? __('Share') }} </span>
+                                <span>شارك</span>
                             </a>
 
                         </p>
@@ -316,7 +316,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <div class="">
-                        <h5 class="modal-title" id="exampleModalLongTitle"> {{ $keywords['Share On'] ?? __('Share On') }}
+                        <h5 class="modal-title" id="exampleModalLongTitle"> شارك
                         </h5>
                     </div>
                     <div class="">

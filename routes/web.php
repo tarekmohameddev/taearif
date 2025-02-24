@@ -2006,6 +2006,7 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
     });
     Route::post('/subscribe', 'User\SubscriberController@store')->name('front.user.subscriber');
     Route::get('/contact', 'Front\CustomerController@contact')->name('front.user.contact');
+    Route::get('/about-us', 'Front\CustomerController@about_us')->name('front.user.about_us');
     Route::post('/contact/message', 'Front\FrontendController@contactMessage')->name('front.contact.message')->middleware('Demo');
     Route::group(['middleware' => ['routeAccess:Team']], function () {
         Route::get('/team', 'Front\FrontendController@userTeam')->name('front.user.team');

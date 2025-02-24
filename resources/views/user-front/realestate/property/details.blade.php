@@ -174,7 +174,7 @@
                                             data-bs-target="#socialMediaModal">
                                             <i class="far fa-share-alt"></i>
                                         </a>
-                                        <span>{{ $keywords['Share'] ?? __('Share') }}</span>
+                                        <span>شارك</span>
 
                                     </li>
 

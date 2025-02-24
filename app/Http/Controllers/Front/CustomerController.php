@@ -299,6 +299,32 @@ class CustomerController extends Controller
         return view('user-front.contact', $data);
     }
 
+
+    public function about_us(Request $request, $domain)
+    {
+        $user = getUser();
+        $data['user'] = $user;
+        if (session()->has('user_lang')) {
+            $userCurrentLang = Language::where('code', session()->get('user_lang'))->where('user_id', $user->id)->first();
+            if (empty($userCurrentLang)) {
+                $userCurrentLang = Language::where('is_default', 1)->where('user_id', $user->id)->first();
+                session()->put('user_lang', $userCurrentLang->code);
+            }
+        } else {
+            $userCurrentLang = Language::where('is_default', 1)->where('user_id', $user->id)->first();
+        }
+
+        $data['contact'] = UserContact::where([
+            ['user_id', $data['user']->id],
+            ['language_id', $userCurrentLang->id]
+        ])->first();
+        $data['home_text'] = UserHomePageText::query()
+            ->where([
+                ['user_id', $data['user']->id],
+                ['language_id', $userCurrentLang->id]
+            ])->first();
+        return view('user-front.about_us', $data);
+    }
     public function check_user(Request $request)
     {
         log::info($request);
