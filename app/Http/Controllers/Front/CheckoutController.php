@@ -1008,221 +1008,542 @@ class CheckoutController extends Controller
                     }
                 }
 
-// --- Insert Home Page Texts ---
-$homePageTextsJson = <<<'JSON'
+                // --- Insert Home Page Texts ---
+                $homePageTextsJson = <<<'JSON'
+                [
+                {
+                    "about_image": "62381226ecd01.png",
+                    "about_image_two": null,
+                    "about_title": "حول رينجز",
+                    "about_subtitle": "25 عاما من الخبرة في الحلول القانونية",
+                    "about_content": "لكن لكي أفهم من أين وُلد كل هذا الخطأ ، سأفتح الأمر برمته في موقع تجول وآلام الناس المدح ، وسأشرح تلك الأشياء التي قالها مخترع الحقيقة والمهندس المعماري. من الحياة المباركة. فلا أحد يرفض المتعة نفسها لأنها متعة ، ولكن لأن الأشياء العظيمة تتبعها",
+                    "about_button_text": "يتعلم أكثر",
+                    "about_button_url": "http://example.com/",
+                    "about_video_image": null,
+                    "about_video_url": null,
+                    "skills_title": null,
+                    "skills_subtitle": null,
+                    "skills_content": null,
+                    "service_title": "خدمات الشركة",
+                    "service_subtitle": "نحن نقدم خدمة حصرية",
+                    "experience_title": null,
+                    "experience_subtitle": null,
+                    "portfolio_title": "حالات مميزة",
+                    "portfolio_subtitle": "نلقي نظرة على الحالات",
+                    "view_all_portfolio_text": "مشاهدة الكل",
+                    "testimonial_title": "شهاداتنا",
+                    "testimonial_subtitle": "يقول العملاء عنا",
+                    "testimonial_image": "622ded84e62f8.jpg",
+                    "blog_title": "أخبارنا ومدونتنا",
+                    "blog_subtitle": "كل واحد التحديثات",
+                    "view_all_blog_text": "مشاهدة الكل",
+                    "team_section_title": "أعضاء الفريق",
+                    "team_section_subtitle": "تعرف على خبرائنا المحترفين",
+                    "video_section_image": null,
+                    "video_section_url": null,
+                    "video_section_title": null,
+                    "video_section_subtitle": null,
+                    "video_section_text": null,
+                    "video_section_button_text": null,
+                    "video_section_button_url": null,
+                    "why_choose_us_section_image": "301b9239f5acc672e89ea19ccf4f7263207458394.jpg",
+                    "why_choose_us_section_image_two": null,
+                    "why_choose_us_section_title": "لماذا نحن الأفضل؟",
+                    "why_choose_us_section_subtitle": "لدينا أسباب كثيرة لاختيارنا",
+                    "why_choose_us_section_text": "لكنك ستفهم من أين يسعد كل هذا الخطأ المولود باتهام وألم أولئك الذين يمتدحونها ، وكل عمليات الاغتصاب التي هي من مخترع الحقيقة هذا وإن جاز التعبير.\r\nلكنك ستفهم من أين يسعد كل هذا الخطأ المولود بالاتهام والتصفيق",
+                    "why_choose_us_section_button_text": "خدماتنا",
+                    "why_choose_us_section_button_url": "http://example.com/",
+                    "why_choose_us_section_video_image": "d1d67774227ae9d427fd1d391b578eb76c7ac1412.jpg",
+                    "why_choose_us_section_video_url": "https://www.youtube.com/watch?v=pWOv9xcoMeY",
+                    "faq_section_image": "6195e2a1d0dce3.png",
+                    "faq_section_title": "التعليمات",
+                    "faq_section_subtitle": "أسئلة مكررة",
+                    "work_process_section_title": "كيف نعمل",
+                    "work_process_section_subtitle": "عملية العمل لدينا",
+                    "work_process_section_text": "",
+                    "work_process_section_img": "00733bb91bb288918e16a40dfc1516839e550f91.jpg",
+                    "work_process_section_video_img": null,
+                    "work_process_section_video_url": null,
+                    "quote_section_title": "إقتبس",
+                    "quote_section_subtitle": "ولكن لمعرفة من الذي ولد كل هذا الخطأ sitevoluac",
+                    "language_id": "",
+                    "user_id": "",
+                    "created_at": "2021-11-17 00:30:27",
+                    "updated_at": "2023-01-03 08:10:49",
+                    "counter_section_image": "622df3492b4f1.jpg",
+                    "work_process_btn_txt": "ابدأ مشروعًا",
+                    "work_process_btn_url": "http://example.com/",
+                    "contact_section_image": "63b41b3407c93.png",
+                    "contact_section_title": "Requst a Quote",
+                    "contact_section_subtitle": "Lorem ipsum dolor sit amet",
+                    "feature_item_title": null,
+                    "new_item_title": null,
+                    "newsletter_title": null,
+                    "newsletter_subtitle": null,
+                    "bestseller_item_title": null,
+                    "special_item_title": null,
+                    "flashsale_item_title": null,
+                    "toprated_item_title": null,
+                    "category_section_title": null,
+                    "category_section_subtitle": null,
+                    "rooms_section_title": null,
+                    "rooms_section_subtitle": null,
+                    "rooms_section_content": null,
+                    "featured_course_section_title": null,
+                    "newsletter_image": null,
+                    "featured_section_title": null,
+                    "featured_section_subtitle": null,
+                    "causes_section_title": null,
+                    "causes_section_subtitle": null,
+                    "about_snd_button_text": null,
+                    "about_snd_button_url": null,
+                    "skills_image": null,
+                    "job_education_title": null,
+                    "job_education_subtitle": null,
+                    "newsletter_snd_image": null,
+                    "donor_title": null,
+                    "years_of_expricence": null,
+                    "featured_property_title": null,
+                    "property_title": null,
+                    "city_title": null,
+                    "city_subtitle": null,
+                    "project_title": null,
+                    "project_subtitle": null,
+                    "testimonial_text": null
+                },
+                {
+                    "about_image": "62381226ecd01.png",
+                    "about_image_two": null,
+                    "about_title": "About Us",
+                    "about_subtitle": "Professional Business Guidance Agency",
+                    "about_content": "Sedut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam raperiaeaque ipsa quae ab illo inventore veritatis et quasi\n\nDoloremque laudantium, totam raperiaeaque ipsa quae ab illo inventore veritatis et quasi\n\n Business &amp; Consulting Agency\n Awards Winning Business Comapny\n Business &amp; Consulting Agency\n Awards Winning Business Comapny",
+                    "about_button_text": "Learn More",
+                    "about_button_url": "http://example.com/",
+                    "about_video_image": null,
+                    "about_video_url": null,
+                    "skills_title": null,
+                    "skills_subtitle": null,
+                    "skills_content": null,
+                    "service_title": "Our Services",
+                    "service_subtitle": "Lorem ipsum dolor sit amet consectetur e.",
+                    "experience_title": null,
+                    "experience_subtitle": null,
+                    "portfolio_title": "Featured Cases",
+                    "portfolio_subtitle": "Take a Look at the Cases",
+                    "view_all_portfolio_text": "View All",
+                    "testimonial_title": "Client’s Say",
+                    "testimonial_subtitle": "Lorem ipsum dolor sit",
+                    "testimonial_image": "6195e2885a64b.jpg",
+                    "blog_title": "Our News and Blog",
+                    "blog_subtitle": "Every Single Updates",
+                    "view_all_blog_text": "View All",
+                    "team_section_title": "Our Team",
+                    "team_section_subtitle": "Lorem ipsum dolor sit amet",
+                    "video_section_image": "4e075552eb76535027695b317dcc7cfed9e1e3cf.jpg",
+                    "video_section_url": "https://www.youtube.com/watch?v=IjlYXtI2-GU",
+                    "video_section_title": "Industrial Services That We Provide",
+                    "video_section_subtitle": null,
+                    "video_section_text": "Lorem ipsum dolor sit amet, consectetur adipi sicing Sed do eiusmod tempor incididunt labore et dolore magna aliqua. Ut enim ad minim veniam quis nostrud exercitation ullamco",
+                    "video_section_button_text": null,
+                    "video_section_button_url": null,
+                    "why_choose_us_section_image": "301b9239f5acc672e89ea9ccf4f7263207458394.jpg",
+                    "why_choose_us_section_image_two": null,
+                    "why_choose_us_section_title": "Why We Are Best ?",
+                    "why_choose_us_section_subtitle": "We Have Many Reasons to Choose Us",
+                    "why_choose_us_section_text": "Sedut perspiciatis unde omnis iste natus error sit voluptat em accusantium doloremque laudantium, totam raperiaeaque ipsa quae ab illo inventore veritatis et quasi.\r\nSedut perspiciatis unde omnis iste natus error sit voluptat em accusantium doloremque laudantium, totam raperiaeaque ipsa quae ab illo inventore veritatis et quasi",
+                    "why_choose_us_section_button_text": "Our Services",
+                    "why_choose_us_section_button_url": "http://example.com/",
+                    "why_choose_us_section_video_image": "d1d67774227ae9d427fdd391b578eb76c7ac1412.jpg",
+                    "why_choose_us_section_video_url": "https://www.youtube.com/watch?v=pWOv9xcoMeY",
+                    "faq_section_image": "6195e2ad0dce3.png",
+                    "faq_section_title": "FAQ",
+                    "faq_section_subtitle": "Frequently Asked Questions",
+                    "work_process_section_title": "25 Years Of Experience",
+                    "work_process_section_subtitle": "Best SEO Optimization Agency",
+                    "work_process_section_text": "Lorem ipsum dolor sit amet, consectetur adipisicing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis",
+                    "work_process_section_img": null,
+                    "work_process_section_video_img": null,
+                    "work_process_section_video_url": null,
+                    "quote_section_title": "Start Work With us",
+                    "quote_section_subtitle": "Lorem ipsum dolor sit amet",
+                    "language_id": "",
+                    "user_id": "",
+                    "created_at": "2021-11-17 00:30:27",
+                    "updated_at": "2024-11-03 20:14:04",
+                    "counter_section_image": "622f3061a2073.jpg",
+                    "work_process_btn_txt": "Learn More",
+                    "work_process_btn_url": "http://example.com/",
+                    "contact_section_image": "63b41b21c45a9.png",
+                    "contact_section_title": "Requst a Quote",
+                    "contact_section_subtitle": "Lorem ipsum dolor sit amet",
+                    "feature_item_title": null,
+                    "new_item_title": null,
+                    "newsletter_title": null,
+                    "newsletter_subtitle": null,
+                    "bestseller_item_title": null,
+                    "special_item_title": null,
+                    "flashsale_item_title": null,
+                    "toprated_item_title": null,
+                    "category_section_title": null,
+                    "category_section_subtitle": null,
+                    "rooms_section_title": null,
+                    "rooms_section_subtitle": null,
+                    "rooms_section_content": null,
+                    "featured_course_section_title": null,
+                    "newsletter_image": null,
+                    "featured_section_title": null,
+                    "featured_section_subtitle": null,
+                    "causes_section_title": null,
+                    "causes_section_subtitle": null,
+                    "about_snd_button_text": null,
+                    "about_snd_button_url": null,
+                    "skills_image": null,
+                    "job_education_title": null,
+                    "job_education_subtitle": null,
+                    "newsletter_snd_image": null,
+                    "donor_title": null,
+                    "years_of_expricence": null,
+                    "featured_property_title": null,
+                    "property_title": null,
+                    "city_title": null,
+                    "city_subtitle": null,
+                    "project_title": null,
+                    "project_subtitle": null,
+                    "testimonial_text": null
+                }
+                ]
+                JSON;
+
+                $homePageTextsArray = json_decode($homePageTextsJson, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    Log::error('JSON decode error for home page texts: ' . json_last_error_msg());
+                } else {
+                    foreach ($homePageTextsArray as $textData) {
+                        // Set the language and user IDs
+                        $textData['language_id'] = $defaultLanguage->id;
+                        $textData['user_id'] = $user->id;
+                        \App\Models\User\HomePageText::create($textData);
+                    }
+                }
+
+// --- Insert Hero Sliders ---
+$heroSlidersJson = <<<'JSON'
 [
   {
-    "about_image": "62381226ecd01.png",
-    "about_image_two": null,
-    "about_title": "حول رينجز",
-    "about_subtitle": "25 عاما من الخبرة في الحلول القانونية",
-    "about_content": "لكن لكي أفهم من أين وُلد كل هذا الخطأ ، سأفتح الأمر برمته في موقع تجول وآلام الناس المدح ، وسأشرح تلك الأشياء التي قالها مخترع الحقيقة والمهندس المعماري. من الحياة المباركة. فلا أحد يرفض المتعة نفسها لأنها متعة ، ولكن لأن الأشياء العظيمة تتبعها",
-    "about_button_text": "يتعلم أكثر",
-    "about_button_url": "http://example.com/",
-    "about_video_image": null,
-    "about_video_url": null,
-    "skills_title": null,
-    "skills_subtitle": null,
-    "skills_content": null,
-    "service_title": "خدمات الشركة",
-    "service_subtitle": "نحن نقدم خدمة حصرية",
-    "experience_title": null,
-    "experience_subtitle": null,
-    "portfolio_title": "حالات مميزة",
-    "portfolio_subtitle": "نلقي نظرة على الحالات",
-    "view_all_portfolio_text": "مشاهدة الكل",
-    "testimonial_title": "شهاداتنا",
-    "testimonial_subtitle": "يقول العملاء عنا",
-    "testimonial_image": "622ded84e62f8.jpg",
-    "blog_title": "أخبارنا ومدونتنا",
-    "blog_subtitle": "كل واحد التحديثات",
-    "view_all_blog_text": "مشاهدة الكل",
-    "team_section_title": "أعضاء الفريق",
-    "team_section_subtitle": "تعرف على خبرائنا المحترفين",
-    "video_section_image": null,
-    "video_section_url": null,
-    "video_section_title": null,
-    "video_section_subtitle": null,
-    "video_section_text": null,
-    "video_section_button_text": null,
-    "video_section_button_url": null,
-    "why_choose_us_section_image": "301b9239f5acc672e89ea19ccf4f7263207458394.jpg",
-    "why_choose_us_section_image_two": null,
-    "why_choose_us_section_title": "لماذا نحن الأفضل؟",
-    "why_choose_us_section_subtitle": "لدينا أسباب كثيرة لاختيارنا",
-    "why_choose_us_section_text": "لكنك ستفهم من أين يسعد كل هذا الخطأ المولود باتهام وألم أولئك الذين يمتدحونها ، وكل عمليات الاغتصاب التي هي من مخترع الحقيقة هذا وإن جاز التعبير.\r\nلكنك ستفهم من أين يسعد كل هذا الخطأ المولود بالاتهام والتصفيق",
-    "why_choose_us_section_button_text": "خدماتنا",
-    "why_choose_us_section_button_url": "http://example.com/",
-    "why_choose_us_section_video_image": "d1d67774227ae9d427fd1d391b578eb76c7ac1412.jpg",
-    "why_choose_us_section_video_url": "https://www.youtube.com/watch?v=pWOv9xcoMeY",
-    "faq_section_image": "6195e2a1d0dce3.png",
-    "faq_section_title": "التعليمات",
-    "faq_section_subtitle": "أسئلة مكررة",
-    "work_process_section_title": "كيف نعمل",
-    "work_process_section_subtitle": "عملية العمل لدينا",
-    "work_process_section_text": "",
-    "work_process_section_img": "00733bb91bb288918e16a40dfc1516839e550f91.jpg",
-    "work_process_section_video_img": null,
-    "work_process_section_video_url": null,
-    "quote_section_title": "إقتبس",
-    "quote_section_subtitle": "ولكن لمعرفة من الذي ولد كل هذا الخطأ sitevoluac",
     "language_id": "",
+    "img": "784ffa3036c249fd132041bf56701406720e3e23.jpg",
+    "title": "Corporate Law Firms",
+    "subtitle": "25 Years Of Experience In Law Solutiuons",
+    "btn_name": "Our Services",
+    "btn_url": "http://example.com/",
+    "serial_number": "2",
     "user_id": "",
-    "created_at": "2021-11-17 00:30:27",
-    "updated_at": "2023-01-03 08:10:49",
-    "counter_section_image": "622df3492b4f1.jpg",
-    "work_process_btn_txt": "ابدأ مشروعًا",
-    "work_process_btn_url": "http://example.com/",
-    "contact_section_image": "63b41b3407c93.png",
-    "contact_section_title": "Requst a Quote",
-    "contact_section_subtitle": "Lorem ipsum dolor sit amet",
-    "feature_item_title": null,
-    "new_item_title": null,
-    "newsletter_title": null,
-    "newsletter_subtitle": null,
-    "bestseller_item_title": null,
-    "special_item_title": null,
-    "flashsale_item_title": null,
-    "toprated_item_title": null,
-    "category_section_title": null,
-    "category_section_subtitle": null,
-    "rooms_section_title": null,
-    "rooms_section_subtitle": null,
-    "rooms_section_content": null,
-    "featured_course_section_title": null,
-    "newsletter_image": null,
-    "featured_section_title": null,
-    "featured_section_subtitle": null,
-    "causes_section_title": null,
-    "causes_section_subtitle": null,
-    "about_snd_button_text": null,
-    "about_snd_button_url": null,
-    "skills_image": null,
-    "job_education_title": null,
-    "job_education_subtitle": null,
-    "newsletter_snd_image": null,
-    "donor_title": null,
-    "years_of_expricence": null,
-    "featured_property_title": null,
-    "property_title": null,
-    "city_title": null,
-    "city_subtitle": null,
-    "project_title": null,
-    "project_subtitle": null,
-    "testimonial_text": null
+    "created_at": "2022-03-13 08:14:12",
+    "updated_at": "2022-03-13 08:14:46"
   },
   {
-    "about_image": "62381226ecd01.png",
-    "about_image_two": null,
-    "about_title": "About Us",
-    "about_subtitle": "Professional Business Guidance Agency",
-    "about_content": "Sedut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam raperiaeaque ipsa quae ab illo inventore veritatis et quasi\n\nDoloremque laudantium, totam raperiaeaque ipsa quae ab illo inventore veritatis et quasi\n\n Business &amp; Consulting Agency\n Awards Winning Business Comapny\n Business &amp; Consulting Agency\n Awards Winning Business Comapny",
-    "about_button_text": "Learn More",
-    "about_button_url": "http://example.com/",
-    "about_video_image": null,
-    "about_video_url": null,
-    "skills_title": null,
-    "skills_subtitle": null,
-    "skills_content": null,
-    "service_title": "Our Services",
-    "service_subtitle": "Lorem ipsum dolor sit amet consectetur e.",
-    "experience_title": null,
-    "experience_subtitle": null,
-    "portfolio_title": "Featured Cases",
-    "portfolio_subtitle": "Take a Look at the Cases",
-    "view_all_portfolio_text": "View All",
-    "testimonial_title": "Client’s Say",
-    "testimonial_subtitle": "Lorem ipsum dolor sit",
-    "testimonial_image": "6195e2885a64b.jpg",
-    "blog_title": "Our News and Blog",
-    "blog_subtitle": "Every Single Updates",
-    "view_all_blog_text": "View All",
-    "team_section_title": "Our Team",
-    "team_section_subtitle": "Lorem ipsum dolor sit amet",
-    "video_section_image": "4e075552eb76535027695b317dcc7cfed9e1e3cf.jpg",
-    "video_section_url": "https://www.youtube.com/watch?v=IjlYXtI2-GU",
-    "video_section_title": "Industrial Services That We Provide",
-    "video_section_subtitle": null,
-    "video_section_text": "Lorem ipsum dolor sit amet, consectetur adipi sicing Sed do eiusmod tempor incididunt labore et dolore magna aliqua. Ut enim ad minim veniam quis nostrud exercitation ullamco",
-    "video_section_button_text": null,
-    "video_section_button_url": null,
-    "why_choose_us_section_image": "301b9239f5acc672e89ea9ccf4f7263207458394.jpg",
-    "why_choose_us_section_image_two": null,
-    "why_choose_us_section_title": "Why We Are Best ?",
-    "why_choose_us_section_subtitle": "We Have Many Reasons to Choose Us",
-    "why_choose_us_section_text": "Sedut perspiciatis unde omnis iste natus error sit voluptat em accusantium doloremque laudantium, totam raperiaeaque ipsa quae ab illo inventore veritatis et quasi.\r\nSedut perspiciatis unde omnis iste natus error sit voluptat em accusantium doloremque laudantium, totam raperiaeaque ipsa quae ab illo inventore veritatis et quasi",
-    "why_choose_us_section_button_text": "Our Services",
-    "why_choose_us_section_button_url": "http://example.com/",
-    "why_choose_us_section_video_image": "d1d67774227ae9d427fdd391b578eb76c7ac1412.jpg",
-    "why_choose_us_section_video_url": "https://www.youtube.com/watch?v=pWOv9xcoMeY",
-    "faq_section_image": "6195e2ad0dce3.png",
-    "faq_section_title": "FAQ",
-    "faq_section_subtitle": "Frequently Asked Questions",
-    "work_process_section_title": "25 Years Of Experience",
-    "work_process_section_subtitle": "Best SEO Optimization Agency",
-    "work_process_section_text": "Lorem ipsum dolor sit amet, consectetur adipisicing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis",
-    "work_process_section_img": null,
-    "work_process_section_video_img": null,
-    "work_process_section_video_url": null,
-    "quote_section_title": "Start Work With us",
-    "quote_section_subtitle": "Lorem ipsum dolor sit amet",
     "language_id": "",
+    "img": "37db1e96370fe3a98b1814d4fb6922822419bf3a.jpg",
+    "title": "Corporate Law Firms",
+    "subtitle": "25 Years Of Experience In Law Solutiuons",
+    "btn_name": "Our Services",
+    "btn_url": "http://example.com/",
+    "serial_number": "3",
     "user_id": "",
-    "created_at": "2021-11-17 00:30:27",
-    "updated_at": "2024-11-03 20:14:04",
-    "counter_section_image": "622f3061a2073.jpg",
-    "work_process_btn_txt": "Learn More",
-    "work_process_btn_url": "http://example.com/",
-    "contact_section_image": "63b41b21c45a9.png",
-    "contact_section_title": "Requst a Quote",
-    "contact_section_subtitle": "Lorem ipsum dolor sit amet",
-    "feature_item_title": null,
-    "new_item_title": null,
-    "newsletter_title": null,
-    "newsletter_subtitle": null,
-    "bestseller_item_title": null,
-    "special_item_title": null,
-    "flashsale_item_title": null,
-    "toprated_item_title": null,
-    "category_section_title": null,
-    "category_section_subtitle": null,
-    "rooms_section_title": null,
-    "rooms_section_subtitle": null,
-    "rooms_section_content": null,
-    "featured_course_section_title": null,
-    "newsletter_image": null,
-    "featured_section_title": null,
-    "featured_section_subtitle": null,
-    "causes_section_title": null,
-    "causes_section_subtitle": null,
-    "about_snd_button_text": null,
-    "about_snd_button_url": null,
-    "skills_image": null,
-    "job_education_title": null,
-    "job_education_subtitle": null,
-    "newsletter_snd_image": null,
-    "donor_title": null,
-    "years_of_expricence": null,
-    "featured_property_title": null,
-    "property_title": null,
-    "city_title": null,
-    "city_subtitle": null,
-    "project_title": null,
-    "project_subtitle": null,
-    "testimonial_text": null
+    "created_at": "2022-03-13 08:14:12",
+    "updated_at": "2022-03-13 08:14:54"
+  },
+  {
+    "language_id": "",
+    "img": "9d5005c0ad6235fadbdec1e5f181c85f9cf51841.jpg",
+    "title": "شركات قانون الشركات",
+    "subtitle": "25 عاما من الخبرة في الحلول القانونية",
+    "btn_name": "خدماتنا",
+    "btn_url": "http://example.com/",
+    "serial_number": "1",
+    "user_id": "",
+    "created_at": "2022-03-13 08:14:12",
+    "updated_at": "2022-03-13 08:14:12"
+  },
+  {
+    "language_id": "",
+    "img": "784ffa3036c249fd132041bf56701406720e3e23.jpg",
+    "title": "شركات قانون الشركات",
+    "subtitle": "25 عاما من الخبرة في الحلول القانونية",
+    "btn_name": "خدماتنا",
+    "btn_url": "http://example.com/",
+    "serial_number": "2",
+    "user_id": "",
+    "created_at": "2022-03-13 08:14:12",
+    "updated_at": "2022-03-13 08:14:46"
+  },
+  {
+    "language_id": "",
+    "img": "37db1e96370fe3a98b1814d4fb6922822419bf3a.jpg",
+    "title": "شركات قانون الشركات",
+    "subtitle": "25 عاما من الخبرة في الحلول القانونية",
+    "btn_name": "خدماتنا",
+    "btn_url": "http://example.com/",
+    "serial_number": "3",
+    "user_id": "",
+    "created_at": "2022-03-13 08:14:12",
+    "updated_at": "2022-03-13 08:14:54"
   }
 ]
 JSON;
 
-$homePageTextsArray = json_decode($homePageTextsJson, true);
+$heroSlidersArray = json_decode($heroSlidersJson, true);
 if (json_last_error() !== JSON_ERROR_NONE) {
-    Log::error('JSON decode error for home page texts: ' . json_last_error_msg());
+    Log::error('JSON decode error for hero sliders: ' . json_last_error_msg());
 } else {
-    foreach ($homePageTextsArray as $textData) {
-        // Set the language and user IDs
-        $textData['language_id'] = $defaultLanguage->id;
-        $textData['user_id'] = $user->id;
-        \App\Models\User\HomePageText::create($textData);
+    foreach ($heroSlidersArray as $sliderData) {
+        // Set the correct language and user IDs
+        $sliderData['language_id'] = $defaultLanguage->id;
+        $sliderData['user_id'] = $user->id;
+        \App\Models\User\HeroSlider::create($sliderData);
+    }
+}
+
+// --- Insert Socials ---
+$socialsJson = <<<'JSON'
+[
+  {
+    "icon": "fab fa-facebook-f",
+    "url": "http://example.com/",
+    "serial_number": "1",
+    "user_id": "",
+    "created_at": "2021-11-17 06:34:10",
+    "updated_at": "2021-11-17 06:34:10"
+  },
+  {
+    "icon": "fab fa-twitter",
+    "url": "http://example.com/",
+    "serial_number": "2",
+    "user_id": "",
+    "created_at": "2021-11-17 06:34:18",
+    "updated_at": "2021-11-17 06:34:18"
+  },
+  {
+    "icon": "fab fa-linkedin-in",
+    "url": "http://example.com/",
+    "serial_number": "3",
+    "user_id": "",
+    "created_at": "2021-11-17 06:34:26",
+    "updated_at": "2021-11-17 06:34:26"
+  },
+  {
+    "icon": "fab fa-dribbble",
+    "url": "http://example.com/",
+    "serial_number": "4",
+    "user_id": "",
+    "created_at": "2021-11-17 06:34:48",
+    "updated_at": "2021-11-17 06:34:48"
+  },
+  {
+    "icon": "fab fa-behance",
+    "url": "http://example.com/",
+    "serial_number": "5",
+    "user_id": "",
+    "created_at": "2021-11-17 06:35:01",
+    "updated_at": "2021-11-17 06:35:01"
+  }
+]
+JSON;
+
+$socialsArray = json_decode($socialsJson, true);
+if (json_last_error() !== JSON_ERROR_NONE) {
+    Log::error('JSON decode error for socials: ' . json_last_error_msg());
+} else {
+    foreach ($socialsArray as $socialData) {
+        // Assign the current user's id to each record
+        $socialData['user_id'] = $user->id;
+        \App\Models\User\Social::create($socialData);
+    }
+}
+
+// --- Insert Testimonials ---
+$testimonialsJson = <<<'JSON'
+[
+  {
+    "image": "1637126679.jpg",
+    "name": "Marco Veratti",
+    "occupation": "CEO, Janex",
+    "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here'",
+    "serial_number": "1",
+    "lang_id": "",
+    "user_id": "",
+    "created_at": "2021-11-14 19:51:53",
+    "updated_at": "2021-11-16 19:24:39"
+  },
+  {
+    "image": "1637127234.jpg",
+    "name": "Nicolo Zaniolo",
+    "occupation": "CTO, WebTech",
+    "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here'",
+    "serial_number": "2",
+    "lang_id": "",
+    "user_id": "",
+    "created_at": "2021-11-14 19:51:53",
+    "updated_at": "2021-11-16 19:33:54"
+  },
+  {
+    "image": "1637127252.jpg",
+    "name": "Adress Pirlo",
+    "occupation": "Manager, Madchef",
+    "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here'",
+    "serial_number": "3",
+    "lang_id": "",
+    "user_id": "",
+    "created_at": "2021-11-14 19:51:53",
+    "updated_at": "2021-11-16 19:34:12"
+  },
+  {
+    "image": "1637126679.jpg",
+    "name": "ماركو فيراتي",
+    "occupation": "الرئيس التنفيذي ، جانكس",
+    "content": "هناك حقيقة مثبتة منذ زمن طويل وهي أن المحتوى المقروء لصفحة ما سيلهي القارئ عن التركيز على الشكل الخارجي للنص أو شكل توضع الفقرات في الصفحة التي يقرأها. الهدف من استخدام لوريم إيبسوم هو أنه يحتوي على توزيع طبيعي -إلى حد ما- للأحرف ، بدلاً من استخدام \"هنا يوجد محتوى نصي ، يوجد محتوى هنا\"",
+    "serial_number": "1",
+    "lang_id": "",
+    "user_id": "",
+    "created_at": "2021-11-14 19:51:53",
+    "updated_at": "2021-11-14 19:52:18"
+  },
+  {
+    "image": "1637127234.jpg",
+    "name": "نيكولو زانيولو",
+    "occupation": "CTO ، WebTech",
+    "content": "هناك حقيقة مثبتة منذ زمن طويل وهي أن المحتوى المقروء لصفحة ما سيلهي القارئ عن التركيز على الشكل الخارجي للنص أو شكل توضع الفقرات في الصفحة التي يقرأها. الهدف من استخدام لوريم إيبسوم هو أنه يحتوي على توزيع طبيعي -إلى حد ما- للأحرف ، بدلاً من استخدام \"هنا يوجد محتوى نصي ، يوجد محتوى هنا\"",
+    "serial_number": "2",
+    "lang_id": "",
+    "user_id": "",
+    "created_at": "2021-11-14 19:51:53",
+    "updated_at": "2021-11-14 19:54:27"
+  },
+  {
+    "image": "1637127252.jpg",
+    "name": "العنوان بيرلو",
+    "occupation": "مدير ، Madchef",
+    "content": "هناك حقيقة مثبتة منذ زمن طويل وهي أن المحتوى المقروء لصفحة ما سيلهي القارئ عن التركيز على الشكل الخارجي للنص أو شكل توضع الفقرات في الصفحة التي يقرأها. الهدف من استخدام لوريم إيبسوم هو أنه يحتوي على توزيع طبيعي -إلى حد ما- للأحرف ، بدلاً من استخدام \"هنا يوجد محتوى نصي ، يوجد محتوى هنا\"",
+    "serial_number": "3",
+    "lang_id": "",
+    "user_id": "",
+    "created_at": "2021-11-14 19:51:53",
+    "updated_at": "2021-11-14 19:54:38"
+  }
+]
+JSON;
+
+$testimonialsArray = json_decode($testimonialsJson, true);
+if (json_last_error() !== JSON_ERROR_NONE) {
+    Log::error('JSON decode error for testimonials: ' . json_last_error_msg());
+} else {
+    foreach ($testimonialsArray as $testimonialData) {
+        // Set the language and user IDs from your existing variables
+        $testimonialData['lang_id'] = $defaultLanguage->id;
+        $testimonialData['user_id'] = $user->id;
+        // Optionally remove timestamps if they're not in the fillable array
+        unset($testimonialData['created_at'], $testimonialData['updated_at']);
+        \App\Models\User\UserTestimonial::create($testimonialData);
+    }
+}
+
+// --- Insert Work Processes ---
+$workProcessJson = <<<'JSON'
+[
+    {
+        "icon": "far fa-bookmark",
+        "title": "Have A Coffee",
+        "text": "Doloremque laudantium totam raperiaeaqu ipsa quae ab illo inventore veritatis et quasi",
+        "serial_number": "1",
+        "user_id": "",
+        "language_id": "",
+        "created_at": "2021-11-16 19:09:36",
+        "updated_at": "2022-03-12 06:48:44"
+    },
+    {
+        "icon": "far fa-user",
+        "title": "Meet With Advisors",
+        "text": "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque",
+        "serial_number": "2",
+        "user_id": "",
+        "language_id": "",
+        "created_at": "2021-11-16 19:11:13",
+        "updated_at": "2021-11-16 19:11:13"
+    },
+    {
+        "icon": "fas fa-bullseye",
+        "title": "Achieve Your Goals",
+        "text": "Quis autem vel eum iure reprehenderit qui ieas voluptate velit esse quam nihil mole",
+        "serial_number": "3",
+        "user_id": "",
+        "language_id": "",
+        "created_at": "2021-11-16 19:12:07",
+        "updated_at": "2021-11-16 19:12:07"
+    },
+    {
+        "icon": "far fa-user",
+        "title": "Meet With Advisors",
+        "text": "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque",
+        "serial_number": "4",
+        "user_id": "",
+        "language_id": "",
+        "created_at": "2021-11-16 19:11:13",
+        "updated_at": "2021-11-16 19:11:13"
+    },
+    {
+        "icon": "fas fa-coffee",
+        "title": "تناول القهوة",
+        "text": "إن ألم أولئك الذين يثنون على كل شيء هو نفس الأشياء التي منه هو مخترع الحقيقة وإذا جاز التعبير.",
+        "serial_number": "1",
+        "user_id": "",
+        "language_id": "",
+        "created_at": "2021-11-16 19:09:36",
+        "updated_at": "2021-11-16 19:13:43"
+    },
+    {
+        "icon": "far fa-user",
+        "title": "لقاء مع المستشارين",
+        "text": "ولكن لكي نفهم من أين يولد كل هذا الخطأ ممن يتهمهم باللذة والألم",
+        "serial_number": "2",
+        "user_id": "",
+        "language_id": "",
+        "created_at": "2021-11-16 19:11:13",
+        "updated_at": "2021-11-16 19:11:13"
+    },
+    {
+        "icon": "fas fa-bullseye",
+        "title": "حقق اهدافك",
+        "text": "ولكن من يدين بحق من يريد أن تكون المتعة مجرد جماعية",
+        "serial_number": "3",
+        "user_id": "",
+        "language_id": "",
+        "created_at": "2021-11-16 19:12:07",
+        "updated_at": "2021-11-16 19:12:07"
+    },
+    {
+        "icon": "far fa-user",
+        "title": "لقاء مع المستشارين",
+        "text": "ولكن لكي نفهم من أين يولد كل هذا الخطأ ممن يتهمهم باللذة والألم",
+        "serial_number": "4",
+        "user_id": "",
+        "language_id": "",
+        "created_at": "2021-11-16 19:11:13",
+        "updated_at": "2021-11-16 19:11:13"
+    }
+]
+JSON;
+
+$workProcessArray = json_decode($workProcessJson, true);
+if (json_last_error() !== JSON_ERROR_NONE) {
+    Log::error('JSON decode error for work processes: ' . json_last_error_msg());
+} else {
+    foreach ($workProcessArray as $workProcessData) {
+        // Set the current language and user IDs
+        $workProcessData['language_id'] = $defaultLanguage->id;
+        $workProcessData['user_id'] = $user->id;
+        // Remove extra keys that are not fillable
+        unset($workProcessData['created_at'], $workProcessData['updated_at']);
+        \App\Models\User\WorkProcess::create($workProcessData);
     }
 }
 
