@@ -776,78 +776,78 @@ class CheckoutController extends Controller
                 //  insert into user_members table
                 $membersJson = <<<'JSON'
                 [
-                {
-                    "language_id": "",
-                    "user_id": "",
-                    "name": "Stuart Clark",
-                    "rank": "CEO, Rolan",
-                    "image": "77fd8c98cbac033eb9208e5d41671290e9ae65e6.jpg",
-                    "facebook": "http://example.com/",
-                    "twitter": "http://example.com/",
-                    "instagram": "http://example.com/",
-                    "linkedin": "http://example.com/",
-                    "featured": "1"
-                },
-                {
-                    "language_id": "",
-                    "user_id": "",
-                    "name": "Federico Cheisa",
-                    "rank": "Manager, Rolan",
-                    "image": "ce38744ba92b841ec371066096cfae32ac3fb433.jpg",
-                    "facebook": "http://example.com/",
-                    "twitter": "http://example.com/",
-                    "instagram": "http://example.com/",
-                    "linkedin": "http://example.com/",
-                    "featured": "1"
-                },
-                {
-                    "language_id": "",
-                    "user_id": "",
-                    "name": "Dani Olmo",
-                    "rank": "Developer, Rolan",
-                    "image": "189ff0cdf780a59aa414f4c5422075b884a5f67b.jpg",
-                    "facebook": "http://example.com/",
-                    "twitter": "http://example.com/",
-                    "instagram": "http://example.com/",
-                    "linkedin": "http://example.com/",
-                    "featured": "1"
-                },
-                {
-                    "language_id": "",
-                    "user_id": "",
-                    "name": "Thiago Silva",
-                    "rank": "Designer, Rolan",
-                    "image": "bd39661d73f980587b075d225a2ff5a3991c1964.jpg",
-                    "facebook": "http://example.com/",
-                    "twitter": "http://example.com/",
-                    "instagram": "http://example.com/",
-                    "linkedin": "http://example.com/",
-                    "featured": "1"
-                },
-                {
-                    "language_id": "",
-                    "user_id": "",
-                    "name": "Thiago Motta",
-                    "rank": "Team Leader, Rolan",
-                    "image": "716ece3ac2eefb7a7267c6489d6e99354e8f18c3.jpg",
-                    "facebook": "http://example.com/",
-                    "twitter": "http://example.com/",
-                    "instagram": "http://example.com/",
-                    "linkedin": "http://example.com/",
-                    "featured": "0"
-                },
-                {
-                    "language_id": "",
-                    "user_id": "",
-                    "name": "Chielini",
-                    "rank": "Developer, Rolan",
-                    "image": "54fab799139d4f815ff7601249f4bb81feb98d29.jpg",
-                    "facebook": "http://example.com/",
-                    "twitter": "http://example.com/",
-                    "instagram": "http://example.com/",
-                    "linkedin": "http://example.com/",
-                    "featured": "0"
-                }
+                    {
+                        "language_id": "",
+                        "user_id": "",
+                        "name": "Stuart Clark",
+                        "rank": "CEO, Rolan",
+                        "image": "77fd8c98cbac033eb9208e5d41671290e9ae65e6.jpg",
+                        "facebook": "http://example.com/",
+                        "twitter": "http://example.com/",
+                        "instagram": "http://example.com/",
+                        "linkedin": "http://example.com/",
+                        "featured": "1"
+                    },
+                    {
+                        "language_id": "",
+                        "user_id": "",
+                        "name": "Federico Cheisa",
+                        "rank": "Manager, Rolan",
+                        "image": "ce38744ba92b841ec371066096cfae32ac3fb433.jpg",
+                        "facebook": "http://example.com/",
+                        "twitter": "http://example.com/",
+                        "instagram": "http://example.com/",
+                        "linkedin": "http://example.com/",
+                        "featured": "1"
+                    },
+                    {
+                        "language_id": "",
+                        "user_id": "",
+                        "name": "Dani Olmo",
+                        "rank": "Developer, Rolan",
+                        "image": "189ff0cdf780a59aa414f4c5422075b884a5f67b.jpg",
+                        "facebook": "http://example.com/",
+                        "twitter": "http://example.com/",
+                        "instagram": "http://example.com/",
+                        "linkedin": "http://example.com/",
+                        "featured": "1"
+                    },
+                    {
+                        "language_id": "",
+                        "user_id": "",
+                        "name": "Thiago Silva",
+                        "rank": "Designer, Rolan",
+                        "image": "bd39661d73f980587b075d225a2ff5a3991c1964.jpg",
+                        "facebook": "http://example.com/",
+                        "twitter": "http://example.com/",
+                        "instagram": "http://example.com/",
+                        "linkedin": "http://example.com/",
+                        "featured": "1"
+                    },
+                    {
+                        "language_id": "",
+                        "user_id": "",
+                        "name": "Thiago Motta",
+                        "rank": "Team Leader, Rolan",
+                        "image": "716ece3ac2eefb7a7267c6489d6e99354e8f18c3.jpg",
+                        "facebook": "http://example.com/",
+                        "twitter": "http://example.com/",
+                        "instagram": "http://example.com/",
+                        "linkedin": "http://example.com/",
+                        "featured": "0"
+                    },
+                    {
+                        "language_id": "",
+                        "user_id": "",
+                        "name": "Chielini",
+                        "rank": "Developer, Rolan",
+                        "image": "54fab799139d4f815ff7601249f4bb81feb98d29.jpg",
+                        "facebook": "http://example.com/",
+                        "twitter": "http://example.com/",
+                        "instagram": "http://example.com/",
+                        "linkedin": "http://example.com/",
+                        "featured": "0"
+                    }
                 ]
                 JSON;
 
@@ -1226,327 +1226,326 @@ class CheckoutController extends Controller
                     }
                 }
 
-// --- Insert Hero Sliders ---
-$heroSlidersJson = <<<'JSON'
-[
-  {
-    "language_id": "",
-    "img": "784ffa3036c249fd132041bf56701406720e3e23.jpg",
-    "title": "Corporate Law Firms",
-    "subtitle": "25 Years Of Experience In Law Solutiuons",
-    "btn_name": "Our Services",
-    "btn_url": "http://example.com/",
-    "serial_number": "2",
-    "user_id": "",
-    "created_at": "2022-03-13 08:14:12",
-    "updated_at": "2022-03-13 08:14:46"
-  },
-  {
-    "language_id": "",
-    "img": "37db1e96370fe3a98b1814d4fb6922822419bf3a.jpg",
-    "title": "Corporate Law Firms",
-    "subtitle": "25 Years Of Experience In Law Solutiuons",
-    "btn_name": "Our Services",
-    "btn_url": "http://example.com/",
-    "serial_number": "3",
-    "user_id": "",
-    "created_at": "2022-03-13 08:14:12",
-    "updated_at": "2022-03-13 08:14:54"
-  },
-  {
-    "language_id": "",
-    "img": "9d5005c0ad6235fadbdec1e5f181c85f9cf51841.jpg",
-    "title": "شركات قانون الشركات",
-    "subtitle": "25 عاما من الخبرة في الحلول القانونية",
-    "btn_name": "خدماتنا",
-    "btn_url": "http://example.com/",
-    "serial_number": "1",
-    "user_id": "",
-    "created_at": "2022-03-13 08:14:12",
-    "updated_at": "2022-03-13 08:14:12"
-  },
-  {
-    "language_id": "",
-    "img": "784ffa3036c249fd132041bf56701406720e3e23.jpg",
-    "title": "شركات قانون الشركات",
-    "subtitle": "25 عاما من الخبرة في الحلول القانونية",
-    "btn_name": "خدماتنا",
-    "btn_url": "http://example.com/",
-    "serial_number": "2",
-    "user_id": "",
-    "created_at": "2022-03-13 08:14:12",
-    "updated_at": "2022-03-13 08:14:46"
-  },
-  {
-    "language_id": "",
-    "img": "37db1e96370fe3a98b1814d4fb6922822419bf3a.jpg",
-    "title": "شركات قانون الشركات",
-    "subtitle": "25 عاما من الخبرة في الحلول القانونية",
-    "btn_name": "خدماتنا",
-    "btn_url": "http://example.com/",
-    "serial_number": "3",
-    "user_id": "",
-    "created_at": "2022-03-13 08:14:12",
-    "updated_at": "2022-03-13 08:14:54"
-  }
-]
-JSON;
+                // --- Insert Hero Sliders ---
+                $heroSlidersJson = <<<'JSON'
+                [
+                {
+                    "language_id": "",
+                    "img": "784ffa3036c249fd132041bf56701406720e3e23.jpg",
+                    "title": "Corporate Law Firms",
+                    "subtitle": "25 Years Of Experience In Law Solutiuons",
+                    "btn_name": "Our Services",
+                    "btn_url": "http://example.com/",
+                    "serial_number": "2",
+                    "user_id": "",
+                    "created_at": "2022-03-13 08:14:12",
+                    "updated_at": "2022-03-13 08:14:46"
+                },
+                {
+                    "language_id": "",
+                    "img": "37db1e96370fe3a98b1814d4fb6922822419bf3a.jpg",
+                    "title": "Corporate Law Firms",
+                    "subtitle": "25 Years Of Experience In Law Solutiuons",
+                    "btn_name": "Our Services",
+                    "btn_url": "http://example.com/",
+                    "serial_number": "3",
+                    "user_id": "",
+                    "created_at": "2022-03-13 08:14:12",
+                    "updated_at": "2022-03-13 08:14:54"
+                },
+                {
+                    "language_id": "",
+                    "img": "9d5005c0ad6235fadbdec1e5f181c85f9cf51841.jpg",
+                    "title": "شركات قانون الشركات",
+                    "subtitle": "25 عاما من الخبرة في الحلول القانونية",
+                    "btn_name": "خدماتنا",
+                    "btn_url": "http://example.com/",
+                    "serial_number": "1",
+                    "user_id": "",
+                    "created_at": "2022-03-13 08:14:12",
+                    "updated_at": "2022-03-13 08:14:12"
+                },
+                {
+                    "language_id": "",
+                    "img": "784ffa3036c249fd132041bf56701406720e3e23.jpg",
+                    "title": "شركات قانون الشركات",
+                    "subtitle": "25 عاما من الخبرة في الحلول القانونية",
+                    "btn_name": "خدماتنا",
+                    "btn_url": "http://example.com/",
+                    "serial_number": "2",
+                    "user_id": "",
+                    "created_at": "2022-03-13 08:14:12",
+                    "updated_at": "2022-03-13 08:14:46"
+                },
+                {
+                    "language_id": "",
+                    "img": "37db1e96370fe3a98b1814d4fb6922822419bf3a.jpg",
+                    "title": "شركات قانون الشركات",
+                    "subtitle": "25 عاما من الخبرة في الحلول القانونية",
+                    "btn_name": "خدماتنا",
+                    "btn_url": "http://example.com/",
+                    "serial_number": "3",
+                    "user_id": "",
+                    "created_at": "2022-03-13 08:14:12",
+                    "updated_at": "2022-03-13 08:14:54"
+                }
+                ]
+                JSON;
 
-$heroSlidersArray = json_decode($heroSlidersJson, true);
-if (json_last_error() !== JSON_ERROR_NONE) {
-    Log::error('JSON decode error for hero sliders: ' . json_last_error_msg());
-} else {
-    foreach ($heroSlidersArray as $sliderData) {
-        // Set the correct language and user IDs
-        $sliderData['language_id'] = $defaultLanguage->id;
-        $sliderData['user_id'] = $user->id;
-        \App\Models\User\HeroSlider::create($sliderData);
-    }
-}
+                $heroSlidersArray = json_decode($heroSlidersJson, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    Log::error('JSON decode error for hero sliders: ' . json_last_error_msg());
+                } else {
+                    foreach ($heroSlidersArray as $sliderData) {
+                        // Set the correct language and user IDs
+                        $sliderData['language_id'] = $defaultLanguage->id;
+                        $sliderData['user_id'] = $user->id;
+                        \App\Models\User\HeroSlider::create($sliderData);
+                    }
+                }
 
-// --- Insert Socials ---
-$socialsJson = <<<'JSON'
-[
-  {
-    "icon": "fab fa-facebook-f",
-    "url": "http://example.com/",
-    "serial_number": "1",
-    "user_id": "",
-    "created_at": "2021-11-17 06:34:10",
-    "updated_at": "2021-11-17 06:34:10"
-  },
-  {
-    "icon": "fab fa-twitter",
-    "url": "http://example.com/",
-    "serial_number": "2",
-    "user_id": "",
-    "created_at": "2021-11-17 06:34:18",
-    "updated_at": "2021-11-17 06:34:18"
-  },
-  {
-    "icon": "fab fa-linkedin-in",
-    "url": "http://example.com/",
-    "serial_number": "3",
-    "user_id": "",
-    "created_at": "2021-11-17 06:34:26",
-    "updated_at": "2021-11-17 06:34:26"
-  },
-  {
-    "icon": "fab fa-dribbble",
-    "url": "http://example.com/",
-    "serial_number": "4",
-    "user_id": "",
-    "created_at": "2021-11-17 06:34:48",
-    "updated_at": "2021-11-17 06:34:48"
-  },
-  {
-    "icon": "fab fa-behance",
-    "url": "http://example.com/",
-    "serial_number": "5",
-    "user_id": "",
-    "created_at": "2021-11-17 06:35:01",
-    "updated_at": "2021-11-17 06:35:01"
-  }
-]
-JSON;
+                // --- Insert Socials ---
+                $socialsJson = <<<'JSON'
+                [
+                {
+                    "icon": "fab fa-facebook-f",
+                    "url": "http://example.com/",
+                    "serial_number": "1",
+                    "user_id": "",
+                    "created_at": "2021-11-17 06:34:10",
+                    "updated_at": "2021-11-17 06:34:10"
+                },
+                {
+                    "icon": "fab fa-twitter",
+                    "url": "http://example.com/",
+                    "serial_number": "2",
+                    "user_id": "",
+                    "created_at": "2021-11-17 06:34:18",
+                    "updated_at": "2021-11-17 06:34:18"
+                },
+                {
+                    "icon": "fab fa-linkedin-in",
+                    "url": "http://example.com/",
+                    "serial_number": "3",
+                    "user_id": "",
+                    "created_at": "2021-11-17 06:34:26",
+                    "updated_at": "2021-11-17 06:34:26"
+                },
+                {
+                    "icon": "fab fa-dribbble",
+                    "url": "http://example.com/",
+                    "serial_number": "4",
+                    "user_id": "",
+                    "created_at": "2021-11-17 06:34:48",
+                    "updated_at": "2021-11-17 06:34:48"
+                },
+                {
+                    "icon": "fab fa-behance",
+                    "url": "http://example.com/",
+                    "serial_number": "5",
+                    "user_id": "",
+                    "created_at": "2021-11-17 06:35:01",
+                    "updated_at": "2021-11-17 06:35:01"
+                }
+                ]
+                JSON;
 
-$socialsArray = json_decode($socialsJson, true);
-if (json_last_error() !== JSON_ERROR_NONE) {
-    Log::error('JSON decode error for socials: ' . json_last_error_msg());
-} else {
-    foreach ($socialsArray as $socialData) {
-        // Assign the current user's id to each record
-        $socialData['user_id'] = $user->id;
-        \App\Models\User\Social::create($socialData);
-    }
-}
+                $socialsArray = json_decode($socialsJson, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    Log::error('JSON decode error for socials: ' . json_last_error_msg());
+                } else {
+                    foreach ($socialsArray as $socialData) {
+                        // Assign the current user's id to each record
+                        $socialData['user_id'] = $user->id;
+                        \App\Models\User\Social::create($socialData);
+                    }
+                }
 
-// --- Insert Testimonials ---
-$testimonialsJson = <<<'JSON'
-[
-  {
-    "image": "1637126679.jpg",
-    "name": "Marco Veratti",
-    "occupation": "CEO, Janex",
-    "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here'",
-    "serial_number": "1",
-    "lang_id": "",
-    "user_id": "",
-    "created_at": "2021-11-14 19:51:53",
-    "updated_at": "2021-11-16 19:24:39"
-  },
-  {
-    "image": "1637127234.jpg",
-    "name": "Nicolo Zaniolo",
-    "occupation": "CTO, WebTech",
-    "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here'",
-    "serial_number": "2",
-    "lang_id": "",
-    "user_id": "",
-    "created_at": "2021-11-14 19:51:53",
-    "updated_at": "2021-11-16 19:33:54"
-  },
-  {
-    "image": "1637127252.jpg",
-    "name": "Adress Pirlo",
-    "occupation": "Manager, Madchef",
-    "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here'",
-    "serial_number": "3",
-    "lang_id": "",
-    "user_id": "",
-    "created_at": "2021-11-14 19:51:53",
-    "updated_at": "2021-11-16 19:34:12"
-  },
-  {
-    "image": "1637126679.jpg",
-    "name": "ماركو فيراتي",
-    "occupation": "الرئيس التنفيذي ، جانكس",
-    "content": "هناك حقيقة مثبتة منذ زمن طويل وهي أن المحتوى المقروء لصفحة ما سيلهي القارئ عن التركيز على الشكل الخارجي للنص أو شكل توضع الفقرات في الصفحة التي يقرأها. الهدف من استخدام لوريم إيبسوم هو أنه يحتوي على توزيع طبيعي -إلى حد ما- للأحرف ، بدلاً من استخدام \"هنا يوجد محتوى نصي ، يوجد محتوى هنا\"",
-    "serial_number": "1",
-    "lang_id": "",
-    "user_id": "",
-    "created_at": "2021-11-14 19:51:53",
-    "updated_at": "2021-11-14 19:52:18"
-  },
-  {
-    "image": "1637127234.jpg",
-    "name": "نيكولو زانيولو",
-    "occupation": "CTO ، WebTech",
-    "content": "هناك حقيقة مثبتة منذ زمن طويل وهي أن المحتوى المقروء لصفحة ما سيلهي القارئ عن التركيز على الشكل الخارجي للنص أو شكل توضع الفقرات في الصفحة التي يقرأها. الهدف من استخدام لوريم إيبسوم هو أنه يحتوي على توزيع طبيعي -إلى حد ما- للأحرف ، بدلاً من استخدام \"هنا يوجد محتوى نصي ، يوجد محتوى هنا\"",
-    "serial_number": "2",
-    "lang_id": "",
-    "user_id": "",
-    "created_at": "2021-11-14 19:51:53",
-    "updated_at": "2021-11-14 19:54:27"
-  },
-  {
-    "image": "1637127252.jpg",
-    "name": "العنوان بيرلو",
-    "occupation": "مدير ، Madchef",
-    "content": "هناك حقيقة مثبتة منذ زمن طويل وهي أن المحتوى المقروء لصفحة ما سيلهي القارئ عن التركيز على الشكل الخارجي للنص أو شكل توضع الفقرات في الصفحة التي يقرأها. الهدف من استخدام لوريم إيبسوم هو أنه يحتوي على توزيع طبيعي -إلى حد ما- للأحرف ، بدلاً من استخدام \"هنا يوجد محتوى نصي ، يوجد محتوى هنا\"",
-    "serial_number": "3",
-    "lang_id": "",
-    "user_id": "",
-    "created_at": "2021-11-14 19:51:53",
-    "updated_at": "2021-11-14 19:54:38"
-  }
-]
-JSON;
+                // --- Insert Testimonials ---
+                $testimonialsJson = <<<'JSON'
+                [
+                {
+                    "image": "1637126679.jpg",
+                    "name": "Marco Veratti",
+                    "occupation": "CEO, Janex",
+                    "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here'",
+                    "serial_number": "1",
+                    "lang_id": "",
+                    "user_id": "",
+                    "created_at": "2021-11-14 19:51:53",
+                    "updated_at": "2021-11-16 19:24:39"
+                },
+                {
+                    "image": "1637127234.jpg",
+                    "name": "Nicolo Zaniolo",
+                    "occupation": "CTO, WebTech",
+                    "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here'",
+                    "serial_number": "2",
+                    "lang_id": "",
+                    "user_id": "",
+                    "created_at": "2021-11-14 19:51:53",
+                    "updated_at": "2021-11-16 19:33:54"
+                },
+                {
+                    "image": "1637127252.jpg",
+                    "name": "Adress Pirlo",
+                    "occupation": "Manager, Madchef",
+                    "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here'",
+                    "serial_number": "3",
+                    "lang_id": "",
+                    "user_id": "",
+                    "created_at": "2021-11-14 19:51:53",
+                    "updated_at": "2021-11-16 19:34:12"
+                },
+                {
+                    "image": "1637126679.jpg",
+                    "name": "ماركو فيراتي",
+                    "occupation": "الرئيس التنفيذي ، جانكس",
+                    "content": "هناك حقيقة مثبتة منذ زمن طويل وهي أن المحتوى المقروء لصفحة ما سيلهي القارئ عن التركيز على الشكل الخارجي للنص أو شكل توضع الفقرات في الصفحة التي يقرأها. الهدف من استخدام لوريم إيبسوم هو أنه يحتوي على توزيع طبيعي -إلى حد ما- للأحرف ، بدلاً من استخدام \"هنا يوجد محتوى نصي ، يوجد محتوى هنا\"",
+                    "serial_number": "1",
+                    "lang_id": "",
+                    "user_id": "",
+                    "created_at": "2021-11-14 19:51:53",
+                    "updated_at": "2021-11-14 19:52:18"
+                },
+                {
+                    "image": "1637127234.jpg",
+                    "name": "نيكولو زانيولو",
+                    "occupation": "CTO ، WebTech",
+                    "content": "هناك حقيقة مثبتة منذ زمن طويل وهي أن المحتوى المقروء لصفحة ما سيلهي القارئ عن التركيز على الشكل الخارجي للنص أو شكل توضع الفقرات في الصفحة التي يقرأها. الهدف من استخدام لوريم إيبسوم هو أنه يحتوي على توزيع طبيعي -إلى حد ما- للأحرف ، بدلاً من استخدام \"هنا يوجد محتوى نصي ، يوجد محتوى هنا\"",
+                    "serial_number": "2",
+                    "lang_id": "",
+                    "user_id": "",
+                    "created_at": "2021-11-14 19:51:53",
+                    "updated_at": "2021-11-14 19:54:27"
+                },
+                {
+                    "image": "1637127252.jpg",
+                    "name": "العنوان بيرلو",
+                    "occupation": "مدير ، Madchef",
+                    "content": "هناك حقيقة مثبتة منذ زمن طويل وهي أن المحتوى المقروء لصفحة ما سيلهي القارئ عن التركيز على الشكل الخارجي للنص أو شكل توضع الفقرات في الصفحة التي يقرأها. الهدف من استخدام لوريم إيبسوم هو أنه يحتوي على توزيع طبيعي -إلى حد ما- للأحرف ، بدلاً من استخدام \"هنا يوجد محتوى نصي ، يوجد محتوى هنا\"",
+                    "serial_number": "3",
+                    "lang_id": "",
+                    "user_id": "",
+                    "created_at": "2021-11-14 19:51:53",
+                    "updated_at": "2021-11-14 19:54:38"
+                }
+                ]
+                JSON;
 
-$testimonialsArray = json_decode($testimonialsJson, true);
-if (json_last_error() !== JSON_ERROR_NONE) {
-    Log::error('JSON decode error for testimonials: ' . json_last_error_msg());
-} else {
-    foreach ($testimonialsArray as $testimonialData) {
-        // Set the language and user IDs from your existing variables
-        $testimonialData['lang_id'] = $defaultLanguage->id;
-        $testimonialData['user_id'] = $user->id;
-        // Optionally remove timestamps if they're not in the fillable array
-        unset($testimonialData['created_at'], $testimonialData['updated_at']);
-        \App\Models\User\UserTestimonial::create($testimonialData);
-    }
-}
+                $testimonialsArray = json_decode($testimonialsJson, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    Log::error('JSON decode error for testimonials: ' . json_last_error_msg());
+                } else {
+                    foreach ($testimonialsArray as $testimonialData) {
+                        // Set the language and user IDs from your existing variables
+                        $testimonialData['lang_id'] = $defaultLanguage->id;
+                        $testimonialData['user_id'] = $user->id;
+                        // Optionally remove timestamps if they're not in the fillable array
+                        unset($testimonialData['created_at'], $testimonialData['updated_at']);
+                        \App\Models\User\UserTestimonial::create($testimonialData);
+                    }
+                }
 
-// --- Insert Work Processes ---
-$workProcessJson = <<<'JSON'
-[
-    {
-        "icon": "far fa-bookmark",
-        "title": "Have A Coffee",
-        "text": "Doloremque laudantium totam raperiaeaqu ipsa quae ab illo inventore veritatis et quasi",
-        "serial_number": "1",
-        "user_id": "",
-        "language_id": "",
-        "created_at": "2021-11-16 19:09:36",
-        "updated_at": "2022-03-12 06:48:44"
-    },
-    {
-        "icon": "far fa-user",
-        "title": "Meet With Advisors",
-        "text": "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque",
-        "serial_number": "2",
-        "user_id": "",
-        "language_id": "",
-        "created_at": "2021-11-16 19:11:13",
-        "updated_at": "2021-11-16 19:11:13"
-    },
-    {
-        "icon": "fas fa-bullseye",
-        "title": "Achieve Your Goals",
-        "text": "Quis autem vel eum iure reprehenderit qui ieas voluptate velit esse quam nihil mole",
-        "serial_number": "3",
-        "user_id": "",
-        "language_id": "",
-        "created_at": "2021-11-16 19:12:07",
-        "updated_at": "2021-11-16 19:12:07"
-    },
-    {
-        "icon": "far fa-user",
-        "title": "Meet With Advisors",
-        "text": "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque",
-        "serial_number": "4",
-        "user_id": "",
-        "language_id": "",
-        "created_at": "2021-11-16 19:11:13",
-        "updated_at": "2021-11-16 19:11:13"
-    },
-    {
-        "icon": "fas fa-coffee",
-        "title": "تناول القهوة",
-        "text": "إن ألم أولئك الذين يثنون على كل شيء هو نفس الأشياء التي منه هو مخترع الحقيقة وإذا جاز التعبير.",
-        "serial_number": "1",
-        "user_id": "",
-        "language_id": "",
-        "created_at": "2021-11-16 19:09:36",
-        "updated_at": "2021-11-16 19:13:43"
-    },
-    {
-        "icon": "far fa-user",
-        "title": "لقاء مع المستشارين",
-        "text": "ولكن لكي نفهم من أين يولد كل هذا الخطأ ممن يتهمهم باللذة والألم",
-        "serial_number": "2",
-        "user_id": "",
-        "language_id": "",
-        "created_at": "2021-11-16 19:11:13",
-        "updated_at": "2021-11-16 19:11:13"
-    },
-    {
-        "icon": "fas fa-bullseye",
-        "title": "حقق اهدافك",
-        "text": "ولكن من يدين بحق من يريد أن تكون المتعة مجرد جماعية",
-        "serial_number": "3",
-        "user_id": "",
-        "language_id": "",
-        "created_at": "2021-11-16 19:12:07",
-        "updated_at": "2021-11-16 19:12:07"
-    },
-    {
-        "icon": "far fa-user",
-        "title": "لقاء مع المستشارين",
-        "text": "ولكن لكي نفهم من أين يولد كل هذا الخطأ ممن يتهمهم باللذة والألم",
-        "serial_number": "4",
-        "user_id": "",
-        "language_id": "",
-        "created_at": "2021-11-16 19:11:13",
-        "updated_at": "2021-11-16 19:11:13"
-    }
-]
-JSON;
+                // --- Insert Work Processes ---
+                $workProcessJson = <<<'JSON'
+                [
+                    {
+                        "icon": "far fa-bookmark",
+                        "title": "Have A Coffee",
+                        "text": "Doloremque laudantium totam raperiaeaqu ipsa quae ab illo inventore veritatis et quasi",
+                        "serial_number": "1",
+                        "user_id": "",
+                        "language_id": "",
+                        "created_at": "2021-11-16 19:09:36",
+                        "updated_at": "2022-03-12 06:48:44"
+                    },
+                    {
+                        "icon": "far fa-user",
+                        "title": "Meet With Advisors",
+                        "text": "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque",
+                        "serial_number": "2",
+                        "user_id": "",
+                        "language_id": "",
+                        "created_at": "2021-11-16 19:11:13",
+                        "updated_at": "2021-11-16 19:11:13"
+                    },
+                    {
+                        "icon": "fas fa-bullseye",
+                        "title": "Achieve Your Goals",
+                        "text": "Quis autem vel eum iure reprehenderit qui ieas voluptate velit esse quam nihil mole",
+                        "serial_number": "3",
+                        "user_id": "",
+                        "language_id": "",
+                        "created_at": "2021-11-16 19:12:07",
+                        "updated_at": "2021-11-16 19:12:07"
+                    },
+                    {
+                        "icon": "far fa-user",
+                        "title": "Meet With Advisors",
+                        "text": "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque",
+                        "serial_number": "4",
+                        "user_id": "",
+                        "language_id": "",
+                        "created_at": "2021-11-16 19:11:13",
+                        "updated_at": "2021-11-16 19:11:13"
+                    },
+                    {
+                        "icon": "fas fa-coffee",
+                        "title": "تناول القهوة",
+                        "text": "إن ألم أولئك الذين يثنون على كل شيء هو نفس الأشياء التي منه هو مخترع الحقيقة وإذا جاز التعبير.",
+                        "serial_number": "1",
+                        "user_id": "",
+                        "language_id": "",
+                        "created_at": "2021-11-16 19:09:36",
+                        "updated_at": "2021-11-16 19:13:43"
+                    },
+                    {
+                        "icon": "far fa-user",
+                        "title": "لقاء مع المستشارين",
+                        "text": "ولكن لكي نفهم من أين يولد كل هذا الخطأ ممن يتهمهم باللذة والألم",
+                        "serial_number": "2",
+                        "user_id": "",
+                        "language_id": "",
+                        "created_at": "2021-11-16 19:11:13",
+                        "updated_at": "2021-11-16 19:11:13"
+                    },
+                    {
+                        "icon": "fas fa-bullseye",
+                        "title": "حقق اهدافك",
+                        "text": "ولكن من يدين بحق من يريد أن تكون المتعة مجرد جماعية",
+                        "serial_number": "3",
+                        "user_id": "",
+                        "language_id": "",
+                        "created_at": "2021-11-16 19:12:07",
+                        "updated_at": "2021-11-16 19:12:07"
+                    },
+                    {
+                        "icon": "far fa-user",
+                        "title": "لقاء مع المستشارين",
+                        "text": "ولكن لكي نفهم من أين يولد كل هذا الخطأ ممن يتهمهم باللذة والألم",
+                        "serial_number": "4",
+                        "user_id": "",
+                        "language_id": "",
+                        "created_at": "2021-11-16 19:11:13",
+                        "updated_at": "2021-11-16 19:11:13"
+                    }
+                ]
+                JSON;
 
-$workProcessArray = json_decode($workProcessJson, true);
-if (json_last_error() !== JSON_ERROR_NONE) {
-    Log::error('JSON decode error for work processes: ' . json_last_error_msg());
-} else {
-    foreach ($workProcessArray as $workProcessData) {
-        // Set the current language and user IDs
-        $workProcessData['language_id'] = $defaultLanguage->id;
-        $workProcessData['user_id'] = $user->id;
-        // Remove extra keys that are not fillable
-        unset($workProcessData['created_at'], $workProcessData['updated_at']);
-        \App\Models\User\WorkProcess::create($workProcessData);
-    }
-}
-
+                $workProcessArray = json_decode($workProcessJson, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    Log::error('JSON decode error for work processes: ' . json_last_error_msg());
+                } else {
+                    foreach ($workProcessArray as $workProcessData) {
+                        // Set the current language and user IDs
+                        $workProcessData['language_id'] = $defaultLanguage->id;
+                        $workProcessData['user_id'] = $user->id;
+                        // Remove extra keys that are not fillable
+                        unset($workProcessData['created_at'], $workProcessData['updated_at']);
+                        \App\Models\User\WorkProcess::create($workProcessData);
+                    }
+                }
 
                 //
                 //

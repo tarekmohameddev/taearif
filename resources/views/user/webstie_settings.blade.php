@@ -31,40 +31,40 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
         <!-- Sidebar -->
         <nav class="w-15 bg-white p-4 d-flex flex-column border-right">
             <h4 class="h5 font-weight-bold text-primary d-flex align-items-center mb-4">
-                <i class="fas fa-cogs ml-2 mr-2"></i> Website Settings
+                <i class="fas fa-cogs ml-2 mr-2"></i>{{ __('Website Settings') }}
             </h4>
 
             <!-- Sidebar Menu -->
             <div class="nav flex-column">
                 <a href="#basic-settings" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="basic-settings">
-                    <i class="fas fa-sliders-h ml-2 mr-2"></i> Basic Settings
+                    <i class="fas fa-sliders-h ml-2 mr-2"></i>{{ __('Basic Settings') }}
                 </a>
                 <a href="#banner" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="banner">
-                    <i class="fas fa-image ml-2 mr-2"></i> Banner Section
+                    <i class="fas fa-image ml-2 mr-2"></i>{{ __('Banner Section') }}
                 </a>
                 <a href="#skills" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="skills">
-                    <i class="fas fa-tools ml-2 mr-2"></i> Skills Section
+                    <i class="fas fa-tools ml-2 mr-2"></i>{{ __('Skills Section') }}
                 </a>
                 <a href="#about" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="about">
-                    <i class="fas fa-building ml-2 mr-2"></i> About Company
+                    <i class="fas fa-building ml-2 mr-2"></i>{{ __('About Company') }}
                 </a>
                 <a href="#portfolio" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="portfolio">
-                    <i class="fas fa-briefcase ml-2 mr-2"></i> Portfolio
+                    <i class="fas fa-briefcase ml-2 mr-2"></i>{{ __('Portfolio') }}
                 </a>
                 <a href="#reviews" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="reviews">
-                    <i class="fas fa-star ml-2 mr-2"></i> Customer Reviews
+                    <i class="fas fa-star ml-2 mr-2"></i>{{ __('Customer Reviews') }}
                 </a>
                 <a href="#services" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="services">
-                    <i class="fas fa-concierge-bell ml-2 mr-2"></i> Services
+                    <i class="fas fa-concierge-bell ml-2 mr-2"></i>{{ __('Services') }}
                 </a>
                 <a href="#achievements" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="achievements">
-                    <i class="fas fa-trophy ml-2 mr-2"></i> Achievements
+                    <i class="fas fa-trophy ml-2 mr-2"></i>{{ __('Achievements') }}
                 </a>
                 <a href="#brands" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="brands">
-                    <i class="fas fa-tags ml-2 mr-2"></i> Brands
+                    <i class="fas fa-tags ml-2 mr-2"></i> {{ __('Brands') }}
                 </a>
                 <a href="#footer" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="footer">
-                    <i class="fas fa-shoe-prints ml-2 mr-2"></i> Footer
+                    <i class="fas fa-shoe-prints ml-2 mr-2"></i> {{ __('Footer') }}
                 </a>
             </div>
         </nav>
@@ -75,8 +75,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
             <!-- Basic Settings Section -->
             <div id="basic-settings" class="content-section ">
-                <h3 class="h4 font-weight-bold">Basic Settings</h3>
-                <p class="text-muted">Manage general website settings such as site name, logo, and favicon.</p>
+                <h3 class="h4 font-weight-bold">{{ __('Basic Settings') }}</h3>
+                <p class="text-muted">{{ __('Manage general website settings such as site name, logo, and favicon') }}.</p>
                 <!--  -->
                 <div class="row">
                     <div class="col-md-12">
@@ -125,14 +125,14 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                     </div>
 
                                     <!-- Logo Section -->
-                                    <!-- Logo Section -->
+                                    <!-- footerLogo Section -->
                                     <div class="row">
                                         <div class="col-lg-6 offset-lg-3">
                                             <div class="form-group">
                                                 <div class="col-12 mb-2">
                                                     <h3 class="section-title">{{ __('Website Logo') }}</h3>
                                                     <p class="section-description">
-                                                        {{ __('Upload your website logo here. The logo represents your brand and will appear on the website header, footer, and other sections.') }}
+                                                        {{ __('Upload your website logo here. The logo represents your brand and will appear on the website header, footer, and other sections') }}
                                                     </p>
                                                     <div class="form-group">
                                                         <div class="col-md-12 mb-3 preview-image">
@@ -219,7 +219,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                             <div class="col-12 mb-2">
                                                                 <h3 class="section-title">{{ __('Company Introduction (About Us)') }}</h3>
                                                                 <p class="section-description">
-                                                                    {{ __('This section contains text and an image about your company. You can control its content here.') }}
+                                                                    {{ __('This section contains text and an image about your company. You can control its content here') }}
                                                                 </p>
                                                             </div>
                                                             <div class="col-md-12 mb-3 preview-image showAboutImage">
@@ -316,8 +316,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
             <!-- Banner Section -->
             <div id="banner" class="content-section d-none">
-                <h3 class="h4 font-weight-bold">Banner Section</h3>
-                <p class="text-muted">Upload and configure homepage banners.</p>
+                <h3 class="h4 font-weight-bold">{{ __('Banner Section') }} </h3>
+                <p class="text-muted">{{ __('Upload and configure homepage banners') }}.</p>
                 <!--  -->
                 <!-- SLIDER -->
 
@@ -542,8 +542,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
             <!-- Skills Section -->
             <div id="skills" class="content-section d-none">
-                <h3 class="h4 font-weight-bold">Skills Section</h3>
-                <p class="text-muted">Update the skills displayed on the website.</p>
+                <h3 class="h4 font-weight-bold">{{ __('Skills Section') }}</h3>
+                <p class="text-muted">{{ __('Update the skills displayed on the website') }}.</p>
                 <!--  -->
                 <div class="row">
                     <div class="col-md-12">
@@ -649,8 +649,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
             <!-- About Company Section -->
             <div id="about" class="content-section d-none">
-                <h3 class="h4 font-weight-bold">About Company</h3>
-                <p class="text-muted">Provide information about your company.</p>
+                <h3 class="h4 font-weight-bold">{{ __('About Company') }} </h3>
+                <p class="text-muted">{{ __('Provide information about your company') }}.</p>
                 <!--  -->
                 <!-- Home Page About Section -->
                 <div class="row">
@@ -878,8 +878,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
             <!-- Portfolio Section -->
             <div id="portfolio" class="content-section d-none">
-                <h3 class="h4 font-weight-bold">Portfolio</h3>
-                <p class="text-muted">Manage projects and case studies in the portfolio section.</p>
+                <h3 class="h4 font-weight-bold">{{ __('Portfolio') }}</h3>
+                <p class="text-muted">{{ __('Manage projects and case studies in the portfolio section') }}.</p>
 
                 <!-- portfolio -->
 
@@ -1165,8 +1165,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
             <!-- Customer Reviews Section -->
             <div id="reviews" class="content-section d-none">
-                <h3 class="h4 font-weight-bold">Customer Reviews</h3>
-                <p class="text-muted">Manage customer testimonials and reviews.</p>
+                <h3 class="h4 font-weight-bold">{{ __('Customer Reviews') }} </h3>
+                <p class="text-muted">{{ __('Manage customer testimonials and reviews') }}.</p>
 
                 <!--  -->
                 <div class="row">
@@ -1385,8 +1385,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
             <!-- Services Section -->
             <div id="services" class="content-section d-none">
-                <h3 class="h4 font-weight-bold">Services</h3>
-                <p class="text-muted">Manage services offered by the company.</p>
+                <h3 class="h4 font-weight-bold">{{ __('Services') }}</h3>
+                <p class="text-muted">{{ __('Manage services offered by the company') }}.</p>
 
                 <!--  -->
                 <!-- service -->
@@ -1681,8 +1681,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
             <!-- Achievements Section -->
             <div id="achievements" class="content-section d-none">
-                <h3 class="h4 font-weight-bold">Achievements</h3>
-                <p class="text-muted">Showcase company awards and achievements.</p>
+                <h3 class="h4 font-weight-bold">{{ __('Achievements') }}</h3>
+                <p class="text-muted">{{ __('Showcase company awards and achievements') }}</p>
 
                 <!--  -->
                 <!-- Edit Achievement Modal -->
@@ -1805,8 +1805,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
             <!-- Brands Section -->
             <div id="brands" class="content-section d-none">
-                <h3 class="h4 font-weight-bold">Brands</h3>
-                <p class="text-muted">Manage brand logos displayed on the website.</p>
+                <h3 class="h4 font-weight-bold">{{ __('Brands') }}</h3>
+                <p class="text-muted">{{ __('Manage brand logos displayed on the website') }}</p>
                 <!--  -->
                 <a href="#" data-toggle="modal" data-target="#createModalBrand" class="btn btn-primary"><i class="fas fa-plus"></i>
                     @if ($userBs->theme == 'home_eleven')
@@ -1866,8 +1866,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
             <!-- Footer Section -->
             <div id="footer" class="content-section d-none">
-                <h3 class="h4 font-weight-bold">Footer</h3>
-                <p class="text-muted">Edit footer content and social media links.</p>
+                <h3 class="h4 font-weight-bold">{{ __('Footer') }}</h3>
+                <p class="text-muted">{{ __('Edit footer content and social media links') }}</p>
 
                 <!--  -->
                 <div class="row">
@@ -1911,26 +1911,26 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                             </div>
                                             @endif
                                             <div class="form-group">
-                                                <label for="">{{ __('Footer\'s Logo*') }}</label> <br>
+                                                <label for="">{{ __('Footer Logo*') }}</label> <br>
                                                 <div class="col-md-12 showImage mb-3">
                                                     <img src="{{ isset($information['footertext']) ? asset('assets/front/img/user/footer/' . $information['footertext']->logo) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
                                                 </div>
                                                 <input type="file" name="logo" id="logo" class=" d-none form-control image">
                                                 <p id="errlogo" class="em text-danger mt-2 mb-0"></p>
-                                                <button type="button" class="upload-btn" style="background-color: white; border: 2px dashed #8c9998; color: #0E9384; padding: 1rem; width: 30%; display: flex; flex-direction: column; align-items: center; cursor: pointer;" onclick="document.getElementById('logo').click()">
+                                                <button type="button" class="upload-btn" style="background-color: white; border: 2px dashed #8c9998; color: #0E9384; padding: 1rem; width: 50%; display: flex; flex-direction: column; align-items: center; cursor: pointer;" onclick="document.getElementById('logo').click()">
                                                     <i class="bi bi-upload mb-2"></i>
                                                     <span>{{ __('Upload Favicon') }}</span>
                                                 </button>
                                             </div>
                                             @if ($userBs->theme == 'home_six' || $userBs->theme == 'home13')
                                             <div class="form-group">
-                                                <label for="">{{ __('Footer\'s Background*') }}</label> <br>
+                                                <label for="">{{ __('Footer Background*') }}</label> <br>
                                                 <div class="col-md-12 showImage mb-3">
                                                     <img src="{{ isset($information['footertext']) ? asset('assets/front/img/user/footer/' . $information['footertext']->bg_image) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
                                                 </div>
                                                 <input type="file" id="bg_image" name="bg_image" class=" d-none form-control image">
                                                 <p id="errbg_image" class="em text-danger mt-2 mb-0"></p>
-                                                <button type="button" class="upload-btn" onclick="document.getElementById('bg_image').click()">
+                                                <button type="button" class="upload-btn" style="background-color: white; border: 2px dashed #8c9998; color: #0E9384; padding: 1rem; width: 50%; display: flex; flex-direction: column; align-items: center; cursor: pointer;" onclick="document.getElementById('bg_image').click()">
                                                     <i class="bi bi-upload mb-2"></i>
                                                     <span>{{ __('Upload Favicon') }}</span>
                                                 </button>
