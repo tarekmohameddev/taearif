@@ -1,6 +1,11 @@
 <!--====== Footer Part Start ======-->
 @php
-    Config::set('app.timezone', $userBs->timezoneinfo->timezone);
+    if (isset($userBs) && isset($userBs->timezoneinfo) && isset($userBs->timezoneinfo->timezone)) {
+        Config::set('app.timezone', $userBs->timezoneinfo->timezone);
+    } else {
+        Config::set('app.timezone', 'UTC'); // Fallback timezone
+    }
+
 @endphp
 @if (
     (isset($home_sections->top_footer_section) && $home_sections->top_footer_section == 1) ||

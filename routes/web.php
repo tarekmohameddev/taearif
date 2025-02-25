@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Sale;
+// use App\Models\Sale;
 use Admin\ItemOrderController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
