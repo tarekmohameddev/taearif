@@ -111,13 +111,14 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label>{{ __('Base Color') }}</label>
-                                                    <input type="text" class="form-control jscolor" name="base_color" value="{{ $information['basic_settings']->base_color }}">
+                                                    <input type="text" class="form-control jscolor" name="base_color" value="{{ $information['basic_settings']->base_color ?? '#6DB6A2' }}">
+
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label>{{ __('Secondary Color') }}</label>
-                                                    <input type="text" class="form-control jscolor" name="secondary_color" value="{{ $information['basic_settings']->secondary_color }}">
+                                                    <input type="text" class="form-control jscolor" name="secondary_color" value="{{ $information['basic_settings']->secondary_color ?? '#6DB6A2' }}">
                                                 </div>
                                             </div>
                                         </div>
@@ -242,7 +243,9 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                             <p id="errabout_title" class="mb-0 text-danger em"></p>
                                                         </div>
                                                     </div>
-                                                    @if ($userBs->theme === 'home_eleven')
+
+                                                    @if ((isset($userBs) && isset($userBs->theme) && $userBs->theme !== 'home_two') || (($userBs->theme ?? 'home_eleven') === 'home_eleven'))
+
                                                     <div class="col-lg-6 pl-0">
                                                         <div class="form-group">
                                                             <label>{{ __('Second Button Text') }}</label>

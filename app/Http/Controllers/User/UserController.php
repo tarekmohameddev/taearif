@@ -263,7 +263,12 @@ class UserController extends Controller
 
         $user = Auth::guard('web')->user();
         $bs = BasicSetting::where('user_id', Auth::guard('web')->user()->id)->first();
-        Config::set('app.timezone', $bs->timezoneinfo->timezone);
+        // Config::set('app.timezone', $bs->timezoneinfo->timezone);
+        if (!$bs || !$bs->timezoneinfo) {
+            Config::set('app.timezone', 'UTC'); // Set a default timezone
+        } else {
+            Config::set('app.timezone', $bs->timezoneinfo->timezone);
+        }
 
         $deLang = Language::where('user_id', Auth::guard('web')->user()->id)->where('is_default', 1)->firstOrFail();
         $data['user'] = $user;

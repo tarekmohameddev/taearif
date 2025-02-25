@@ -1,7 +1,11 @@
    <!--====== Start Footer ======-->
    @php
-       Config::set('app.timezone', $userBs->timezoneinfo->timezone);
-   @endphp
+    if ($userBs->timezoneinfo) {
+            Config::set('app.timezone', $userBs->timezoneinfo->timezone);
+        } else {
+            Config::set('app.timezone', 'UTC');
+        }
+@endphp
    <footer class="footer-area">
        <div data-bg="{{ isset($userFooterData->bg_image) ? asset('assets/front/img/user/footer/' . $userFooterData->bg_image) : asset('assets/front/img/static/lawyer/footer-bg-1.jpg') }}"
            class="footer-wrapper-one lazy position-relative bg_cover pb-30">

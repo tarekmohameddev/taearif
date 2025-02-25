@@ -4,7 +4,14 @@
     {{ $keywords['Home'] ?? 'Home' }}
 @endsection
 @php
+
+if ($userBs && $userBs->timezoneinfo && $userBs->timezoneinfo->timezone) {
     Config::set('app.timezone', $userBs->timezoneinfo->timezone);
+} else {
+    Config::set('app.timezone', 'UTC');
+}
+
+
 @endphp
 @section('meta-description', !empty($userSeo) ? $userSeo->home_meta_description : '')
 @section('meta-keywords', !empty($userSeo) ? $userSeo->home_meta_keywords : '')
@@ -55,7 +62,7 @@
                             <div class="col-lg-10">
                                 <div class="banner-content">
                                     <span class="promo-text" data-animation="fadeInDown" data-delay="0.8s">
-                                        business & consulting 
+                                        business & consulting
                                     </span>
                                     <h1 data-animation="fadeInUp" data-delay="1s">
                                         Making Difference, Grow Your Business With Modern Ideas

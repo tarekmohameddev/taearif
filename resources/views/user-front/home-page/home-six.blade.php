@@ -4,7 +4,12 @@
     {{ $keywords['Home'] ?? 'Home' }}
 @endsection
 @php
+
+    if ($userBs && $userBs->timezoneinfo && $userBs->timezoneinfo->timezone) {
     Config::set('app.timezone', $userBs->timezoneinfo->timezone);
+} else {
+    Config::set('app.timezone', 'UTC');
+}
 @endphp
 @section('meta-description', !empty($userSeo) ? $userSeo->home_meta_description : '')
 @section('meta-keywords', !empty($userSeo) ? $userSeo->home_meta_keywords : '')
@@ -429,7 +434,9 @@
                                     <div class="case-overlay">
                                         <div class="case-content">
                                             <h3 class="title"><a target="_blank"
-                                                    href="{{ route('front.user.portfolio.detail', [getParam(), $portfolio->slug, $portfolio->id]) }}">{{ strlen($portfolio->title) > 25 ? mb_substr($portfolio->title, 0, 25, 'UTF-8') . '...' : $portfolio->title }}</a>
+                                                    href="{{ route('front.user.portfolio.detail', [getParam(), $portfolio->slug, $portfolio->id]) }}">
+                                                    {{ strlen($portfolio->title) > 25 ? mb_substr($portfolio->title, 0, 25, 'UTF-8') . '...' : $portfolio->title }}
+                                                </a>
                                             </h3>
                                             <span class="tag">{{ $portfolio->bcategory->name }}</span>
                                         </div>

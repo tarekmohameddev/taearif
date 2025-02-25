@@ -2,46 +2,47 @@
 
 namespace App\Models;
 
+use App\Models\Timezone;
 use App\Models\User\Brand;
 use App\Models\User\Member;
-use App\Notifications\UserResetPassword;
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use App\Http\Controllers\Controller;
-use App\Models\User\CourseManagement\Coupon as CourseManagementCoupon;
-use App\Models\User\CourseManagement\Course;
-use App\Models\User\CourseManagement\CourseCategory;
-use App\Models\User\CourseManagement\Instructor\Instructor;
-use App\Models\User\CourseManagement\LessonComplete;
-use App\Models\User\CourseManagement\LessonContentComplete;
-use App\Models\User\DonationManagement\Donation;
-use App\Models\User\DonationManagement\DonationCategories;
-use App\Models\User\DonationManagement\DonationContent;
-use App\Models\User\DonationManagement\DonationDetail;
+use App\Models\User\UserItem;
 use App\Models\User\Education;
-use App\Models\User\HotelBooking\Coupon;
-use App\Models\User\HotelBooking\Room;
-use App\Models\User\HotelBooking\RoomAmenity;
-use App\Models\User\HotelBooking\RoomBooking;
-use App\Models\User\HotelBooking\RoomCategory;
-use App\Models\User\HotelBooking\RoomContent;
-use App\Models\User\HotelBooking\RoomReview;
-use App\Models\User\JobExperience;
+use App\Models\User\UserOrder;
+use App\Models\User\UserVcard;
 use App\Models\User\UserCoupon;
 use App\Models\User\UserFeature;
-use App\Models\User\UserItem;
-use App\Models\User\UserItemCategory;
-use App\Models\User\UserItemSubCategory;
+use App\Models\User\WorkProcess;
+use App\Models\User\JobExperience;
+use App\Http\Controllers\Controller;
 use App\Models\User\UserOfferBanner;
+use App\Models\User\UserShopSetting;
+use App\Models\User\UserItemCategory;
+use App\Models\User\HotelBooking\Room;
 use App\Models\User\UserOfflineGateway;
-use App\Models\User\UserOrder;
 use App\Models\User\UserPaymentGeteway;
 use App\Models\User\UserShippingCharge;
-use App\Models\User\UserShopSetting;
-use App\Models\User\UserVcard;
-use App\Models\User\WorkProcess;
+use App\Models\User\HotelBooking\Coupon;
+use App\Models\User\UserItemSubCategory;
+use App\Notifications\UserResetPassword;
+use Illuminate\Notifications\Notifiable;
+use App\Models\User\CourseManagement\Course;
+use App\Models\User\HotelBooking\RoomReview;
+use App\Models\User\HotelBooking\RoomAmenity;
+use App\Models\User\HotelBooking\RoomBooking;
+use App\Models\User\HotelBooking\RoomContent;
+use App\Models\User\HotelBooking\RoomCategory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\User\DonationManagement\Donation;
 use App\Models\User\RealestateManagement\Property;
+use App\Models\User\CourseManagement\CourseCategory;
+use App\Models\User\CourseManagement\LessonComplete;
+use App\Models\User\DonationManagement\DonationDetail;
+use App\Models\User\DonationManagement\DonationContent;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use App\Models\User\DonationManagement\DonationCategories;
+use App\Models\User\CourseManagement\Instructor\Instructor;
+use App\Models\User\CourseManagement\LessonContentComplete;
+use App\Models\User\CourseManagement\Coupon as CourseManagementCoupon;
 
 class User extends Authenticatable
 {
@@ -457,6 +458,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Booking::class, 'user_id');
     }
-
-
+    public function timezoneinfo()
+    {
+        return $this->hasOne(Timezone::class, 'user_id', 'id'); // Adjust as per your DB structure
+    }
+    public function userbasicsettings()
+    {
+        return $this->hasMany('App\Models\User\BasicSetting', 'user_id');
+    }
 }

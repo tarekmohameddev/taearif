@@ -51,8 +51,10 @@
                             </a>
                             <div class="project-desc portfolios-desc">
                                 <div class="div">
-                                    <h4><a
-                                            href="{{ route('front.user.portfolio.detail', [getParam(), $portfolio->slug, $portfolio->id]) }}">{{ strlen($portfolio->title) > 30 ? mb_substr($portfolio->title, 0, 30, 'UTF-8') . '...' : $portfolio->title }}</a>
+                                    <h4>
+                                        <a href="{{ route('front.user.portfolio.detail', [getParam(), $portfolio->slug, $portfolio->id]) }}">
+                                            {{ strlen($portfolio->title) > 30 ? mb_substr($portfolio->title, 0, 30, 'UTF-8') . '...' : $portfolio->title }}
+                                        </a>
                                     </h4>
                                     <p>{{ $portfolio->bcategory->name }}</p>
                                 </div>

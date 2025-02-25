@@ -24,6 +24,7 @@ use Illuminate\Support\ServiceProvider;
 use App\Http\Helpers\UserPermissionHelper;
 use App\Models\User\Language as UserLanguage;
 use App\Models\UserStep;
+use Illuminate\Support\Facades\Schema;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -137,7 +138,14 @@ class AppServiceProvider extends ServiceProvider
                 $userBs = BasicSetting::where('user_id', $user->id)->with('timezoneinfo')->first();
                 $userRoomSettings = DB::table('user_room_settings')->where('user_id', $user->id)->first();
 
-                Config::set('app.timezone', $userBs->timezoneinfo->timezone);
+                // Config::set('app.timezone', $userBs->timezoneinfo->timezone);
+
+                if ($userBs && $userBs->timezoneinfo && $userBs->timezoneinfo->timezone) {
+                    Config::set('app.timezone', $userBs->timezoneinfo->timezone);
+                } else {
+                    Config::set('app.timezone', 'UTC');
+                }
+
                 Config::set('captcha.sitekey', $userBs->google_recaptcha_site_key);
                 Config::set('captcha.secret', $userBs->google_recaptcha_secret_key);
 
@@ -223,6 +231,12 @@ class AppServiceProvider extends ServiceProvider
             View::share('langs', $langs);
             View::share('socials', $socials);
         }
+
+        // if (Schema::hasTable('basic_settings')) { // Avoid migration errors
+        //     $timezone = BasicSetting::first()?->timezone ?? 'UTC';
+        //     Config::set('app.timezone', $timezone);
+        //     date_default_timezone_set($timezone);
+        // }
 
 
         View::composer('user.layout', function ($view) {

@@ -220,7 +220,7 @@ class CustomerController extends Controller
             $mail->send();
             $request->session()->flash('success', 'A mail has been sent to your email address.');
         } catch (Exception $e) {
-            dd($e);
+            // dd($e);
             $request->session()->flash('error', 'Mail could not be sent!');
         }
         // store user email in session to use it later

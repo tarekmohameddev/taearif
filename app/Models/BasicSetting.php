@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Timezone;
 use Illuminate\Database\Eloquent\Model;
 
 class BasicSetting extends Model
@@ -50,4 +51,10 @@ class BasicSetting extends Model
     {
         return $this->belongsTo('App\Models\Language');
     }
+    public function timezoneinfo()
+    {
+        // return $this->belongsTo(Timezone::class,'timezone');
+        return $this->belongsTo(Timezone::class, 'timezone_id');
+    }
+
 }
