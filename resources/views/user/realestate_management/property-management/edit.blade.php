@@ -503,32 +503,28 @@
                                                             </div>
                                                         @endif
 
-                                                        @if ($propertySettings->property_state_status == 1)
-                                                            <div class="col-lg-3 state d-none"
-                                                                @if (is_null($peopertyContent->state_id)) style="display:none !important;" @else @endif>
-                                                                <div
-                                                                    class="form-group {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
+                                                        <div class="col-lg-3 state d-none"
+    @if (is_null(optional($peopertyContent)->state_id))
+        style="display:none !important;"
+    @endif
+>
+    <label>{{ __('State') }} *</label>
+    <select onchange="getCities(event)"
+            name="{{ $language->code }}_state_id"
+            class="form-control state_id states">
+        <option disabled>{{ __('Select State') }}</option>
 
-                                                                    <label>{{ __('State') }} *</label>
-                                                                    <select onchange="getCities(event)"
-                                                                        name="{{ $language->code }}_state_id"
-                                                                        class="form-control  state_id states">
-                                                                        <option disabled>{{ __('Select State') }}
-                                                                        </option>
-                                                                        @if ($peopertyContent->state_id)
-                                                                            @foreach ($language->propertyStates as $state)
-                                                                                <option value="{{ $state->id }}"
-                                                                                    {{ $peopertyContent->state_id == $state->id ? 'selected' : '' }}>
-                                                                                    {{ $state->name }}
-                                                                                </option>
-                                                                            @endforeach
-                                                                        @endif
+        @if (optional($peopertyContent)->state_id)
+            @foreach ($language->propertyStates as $state)
+                <option value="{{ $state->id }}"
+                        {{ optional($peopertyContent)->state_id == $state->id ? 'selected' : '' }}>
+                    {{ $state->name }}
+                </option>
+            @endforeach
+        @endif
+    </select>
+</div>
 
-
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-                                                        @endif
 
                                                         <div class="col-lg-3 city "
                                                             @if (empty($peopertyContent->city_id)) style="display:none;"@else style="display:block;" @endif>
@@ -541,7 +537,7 @@
                                                                     <option value="" disabled>
                                                                         {{ __('Select City') }}
                                                                     </option>
-                                                                    @if ($peopertyContent->city_id)
+                                                                    @if (! empty($peopertyContent) && $peopertyContent->city_id)
                                                                         @foreach ($language->propertyCities as $city)
                                                                             <option
                                                                                 value="{{ $peopertyContent->city_id }}"
@@ -820,7 +816,7 @@
 
 @section('scripts')
     {{-- // var storeUrl = "{{ route('user.property.imagesupdate', ['vendor_id' => $property->vendor_id]) }}";
-// var removeUrl = "{{ route('user.property.imagermv') }}"; --}}
+    // var removeUrl = "{{ route('user.property.imagermv') }}"; --}}
     <script>
         var labels = "{!! $labels !!}";
         var values = "{!! $values !!}";
@@ -831,57 +827,59 @@
     </script>
 
 
-    <script type="text/javascript" src="{{ asset('assets/tenant/js/admin-partial.js') }}"></script>
+    <!-- <script type="text/javascript" src="{{ asset('assets/tenant/js/admin-partial.js') }}"></script> -->
+    <script type="text/javascript" src="{{ asset('assets/user/js/cause.js') }}"></script>
+    <!-- D:\laragon\www\taearif\public\assets\user\js\cause.js -->
 
     <script type="text/javascript" src="{{ asset('assets/tenant/js/property-dropzone.js') }}"></script>
 
     <script type="text/javascript" src="{{ asset('assets/tenant/js/property.js') }}"></script>
 
+    <!-- google maps -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCshOz-S6yMXGEPwrhQf2T1XtS8oqZqR-c&callback=initMap"
+            async defer></script>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCshOz-S6yMXGEPwrhQf2T1XtS8oqZqR-c&callback=initMap"
-        async defer></script>
+    <script>
+    function initMap() {
+        // Convert the existing lat/lng from your Blade variables to floats.
+        // If they are null/empty, use a default location (e.g., 0,0 or some known location).
+        const existingLat = parseFloat("{{ $property->latitude ?? 0 }}");
+        const existingLng = parseFloat("{{ $property->longitude ?? 0 }}");
 
-<script>
-  function initMap() {
-    // Convert the existing lat/lng from your Blade variables to floats.
-    // If they are null/empty, use a default location (e.g., 0,0 or some known location).
-    const existingLat = parseFloat("{{ $property->latitude ?? 0 }}");
-    const existingLng = parseFloat("{{ $property->longitude ?? 0 }}");
+        // If your $property->latitude/$property->longitude might be null,
+        // you can do something like:
+        let lat = isNaN(existingLat) ? 40.7128 : existingLat;  // Default to NYC if not valid
+        let lng = isNaN(existingLng) ? -74.0060 : existingLng; // Default to NYC if not valid
 
-    // If your $property->latitude/$property->longitude might be null,
-    // you can do something like:
-    let lat = isNaN(existingLat) ? 40.7128 : existingLat;  // Default to NYC if not valid
-    let lng = isNaN(existingLng) ? -74.0060 : existingLng; // Default to NYC if not valid
+        // The initial position
+        const initPosition = { lat: lat, lng: lng };
 
-    // The initial position
-    const initPosition = { lat: lat, lng: lng };
+        // Create the map
+        const map = new google.maps.Map(document.getElementById("map"), {
+        center: initPosition,
+        zoom: 10, // adjust zoom level as desired
+        });
 
-    // Create the map
-    const map = new google.maps.Map(document.getElementById("map"), {
-      center: initPosition,
-      zoom: 10, // adjust zoom level as desired
-    });
+        // Create a draggable marker at the existing or default lat/lng
+        const marker = new google.maps.Marker({
+        position: initPosition,
+        map: map,
+        draggable: true,
+        });
 
-    // Create a draggable marker at the existing or default lat/lng
-    const marker = new google.maps.Marker({
-      position: initPosition,
-      map: map,
-      draggable: true,
-    });
+        // Update the input fields when the marker is dragged
+        google.maps.event.addListener(marker, 'dragend', function(event) {
+        document.getElementById('latitude').value = event.latLng.lat().toFixed(6);
+        document.getElementById('longitude').value = event.latLng.lng().toFixed(6);
+        });
 
-    // Update the input fields when the marker is dragged
-    google.maps.event.addListener(marker, 'dragend', function(event) {
-      document.getElementById('latitude').value = event.latLng.lat().toFixed(6);
-      document.getElementById('longitude').value = event.latLng.lng().toFixed(6);
-    });
-
-    // If the user clicks somewhere else on the map, move the marker there
-    google.maps.event.addListener(map, 'click', function(event) {
-      marker.setPosition(event.latLng);
-      document.getElementById('latitude').value = event.latLng.lat().toFixed(6);
-      document.getElementById('longitude').value = event.latLng.lng().toFixed(6);
-    });
-  }
-</script>
+        // If the user clicks somewhere else on the map, move the marker there
+        google.maps.event.addListener(map, 'click', function(event) {
+        marker.setPosition(event.latLng);
+        document.getElementById('latitude').value = event.latLng.lat().toFixed(6);
+        document.getElementById('longitude').value = event.latLng.lng().toFixed(6);
+        });
+    }
+    </script>
 
 @endsection
