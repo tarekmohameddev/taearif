@@ -37,13 +37,13 @@ class PropertyStoreRequest extends FormRequest
         $rules = [
             'slider_images' => 'required|array',
             'featured_image' => 'required|mimes:png,jpg,jpeg,svg,webp',
-            'floor_planning_image' => 'required|mimes:png,jpg,jpeg,svg,webp',
+            'floor_planning_image' => 'nullable|mimes:png,jpg,jpeg,svg,webp',
             'price' => 'nullable|numeric',
-            'beds' => 'required_if:type,residential',
-            'bath' => 'required_if:type,residential',
-            'purpose' => 'required',
-            'area' => 'required',
-            'status' => 'required',
+            'beds' => 'nullable',
+            'bath' => 'nullable',
+            'purpose' => 'nullable',
+            'area' => 'nullable',
+            'status' => 'nullable',
             'latitude' => ['required', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
             'longitude' => ['required', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/']
 
@@ -57,11 +57,12 @@ class PropertyStoreRequest extends FormRequest
         foreach ($languages as $language) {
             $rules[$language->code . '_category_id'] = 'required';
             $rules[$language->code . '_city_id'] = 'required';
-            $rules[$language->code . '_amenities'] = 'required';
+            $rules[$language->code . '_amenities'] = 'nullable';
             $rules[$language->code . '_title'] = 'required|max:255';
             $rules[$language->code . '_address'] = 'required';
             $rules[$language->code . '_description'] = 'required|min:15';
-            $rules[$language->code . '_label'] = 'array';
+            $rules[$language->code . '_label'] = 'nullable|array';
+            $rules[$language->code . '_value'] = 'nullable|array';
 
             if ($basicSettings->property_country_status == 1) {
                 $rules[$language->code . '_country_id'] =  'required';

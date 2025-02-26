@@ -262,8 +262,13 @@
     "Manage projects and case studies in the portfolio section": "إدارة المشاريع ودراسات الحالة في قسم المحفظة",
     "Manage customer testimonials and reviews": "إدارة شهادات ومراجعات العملاء",
     "Manage services offered by the company": "إدارة الخدمات التي تقدمها الشركة",
-
-
+    "Select a Purpose": "اختار غاية",
+    "Example: Spacious 2 Bedroom Apartment or Modern Office Space": "مثال: شقة فسيحة من غرفتين أو مكتب حديث في وسط المدينة",
+    "Full Property Address": "العنوان الكامل للعقار",
+    "Include street name city state province and ZIP postal code": "يشمل اسم الشارع، المدينة، المحافظة، والرمز البريدي",
+    "Property Title": "عنوان العقار",
+    "Enter the complete address": "العنوان الكامل للعقار",
+    "Enter a clear, concise property title": "أدخل عنوانًا واضحًا وموجزًا للعقار",
 
     "Credentials Do not Match": "لا تتطابق بيانات الاعتماد"
   }

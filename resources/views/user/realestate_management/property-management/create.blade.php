@@ -1,5 +1,11 @@
 @extends('user.layout')
-
+    <style>
+    #map {
+        width: 100%;
+        height: 250px;
+        max-width: 600px;
+    }
+    </style>
 @section('content')
 
     <div class="page-header">
@@ -143,6 +149,7 @@
                                                 <option selected disabled value="">
                                                     {{ __('Select Purpose') }}
                                                 </option>
+                                                <option value="0" selected></option>
                                                 <option value="rent">{{ __('Rent') }}</option>
                                                 <option value="sale">{{ __('Sale') }}</option>
                                             </select>
@@ -167,14 +174,14 @@
                                     @if (request('type') == 'residential')
                                         <div class="col-lg-3">
                                             <div class="form-group">
-                                                <label>{{ __('Beds') }} *</label>
+                                                <label>{{ __('Beds') }} </label>
                                                 <input type="text" class="form-control" name="beds"
                                                     placeholder="{{ __('Enter number of bed') }}">
                                             </div>
                                         </div>
                                         <div class="col-lg-3">
                                             <div class="form-group">
-                                                <label>{{ __('Baths') }} *</label>
+                                                <label>{{ __('Baths') }} </label>
                                                 <input type="text" class="form-control" name="bath"
                                                     placeholder="{{ __('Enter number of bath') }}">
                                             </div>
@@ -182,38 +189,43 @@
                                     @endif
                                     <div class="col-lg-3">
                                         <div class="form-group">
-                                            <label>{{ __('Area (sqft)') }} *</label>
+                                            <label>{{ __('Area (sqft)') }} </label>
                                             <input type="text" class="form-control" name="area"
                                                 placeholder="{{ __('Enter area (sqft)') }} ">
                                         </div>
                                     </div>
 
-                                    <div class="col-lg-3">
+                                    <div class="col-lg-3 d-none">
                                         <div class="form-group">
-                                            <label>{{ __('Status') }} *</label>
+                                            <label>{{ __('Status') }} </label>
                                             <select name="status" id="" class="form-control">
-                                                <option value="1">{{ __('Active') }}</option>
-                                                <option value="0">{{ __('Deactive') }}
+                                                <option value="1" selected>{{ __('Active') }}</option>
                                                 </option>
                                             </select>
                                         </div>
                                     </div>
 
-                                    <div class="col-lg-3">
+                                    <div class="col-lg-12 mb-3">
+
+                                    </div>
+                                    
+                                    <div class="col-lg-4">
                                         <div class="form-group">
-                                            <label>{{ __('Latitude') }} * </label>
-                                            <input type="text" class="form-control" name="latitude"
-                                                placeholder="{{ __('Enter Latitude') }}">
+                                            <label>Latitude</label>
+                                            <input type="text" class="form-control" id="latitude" name="latitude" placeholder="Latitude" readonly>
                                         </div>
+                                    </div>
+                                    <div class="col-lg-4">
+                                        <div class="form-group">
+                                            <label>Longitude</label>
+                                            <input type="text" class="form-control" id="longitude" name="longitude" placeholder="Longitude" readonly>
+                                        </div>
+                                    </div>
+                                    <!-- Map Container -->
+                                    <div class="col-lg-12 mb-3">
+                                        <div id="map"></div>
                                     </div>
 
-                                    <div class="col-lg-3">
-                                        <div class="form-group">
-                                            <label>{{ __('Longitude') }} * </label>
-                                            <input type="text" class="form-control" name="longitude"
-                                                placeholder="{{ __('Enter Longitude') }}">
-                                        </div>
-                                    </div>
                                 </div>
 
 
@@ -267,7 +279,7 @@
                                                             @php
 
                                                             @endphp
-                                                            <div class="col-lg-4">
+                                                            <div class="col-lg-4 country">
                                                                 <div
                                                                     class="form-group  {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
 
@@ -288,7 +300,7 @@
                                                             </div>
                                                         @endif
                                                         @if ($propertySettings->property_state_status == 1)
-                                                            <div class="col-lg-4 state">
+                                                            <div class="col-lg-4 state d-none ">
                                                                 <div
                                                                     class="form-group   {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
 
@@ -349,24 +361,43 @@
                                                         </div>
 
                                                         <div class="col-lg-12">
-                                                            <div
-                                                                class="form-group {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
-                                                                <label>{{ __('Title') . '*' }}</label>
-                                                                <input type="text" class="form-control"
-                                                                    name="{{ $language->code }}_title"
-                                                                    placeholder="{{ __('Enter Title') }}">
+                                                            <div class="row">
+                                                                {{-- Property Title Field --}}
+                                                                <div class="col-lg-12">
+                                                                    <div class="form-group {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
+                                                                        <label>
+                                                                            {{ $keywords['Property Title'] ?? __('Property Title') . '*' }}
+                                                                        </label>
+                                                                        <input
+                                                                            type="text"
+                                                                            class="form-control"
+                                                                            name="{{ $language->code }}_title"
+                                                                            placeholder="{{ $keywords['Enter a clear, concise property title'] ?? __('Enter a clear, concise property title') }}"
+                                                                        >
+                                                                        <small class="form-text text-muted">
+                                                                            {{ $keywords['property_title_hint'] ?? __('Example: Spacious 2 Bedroom Apartment or Modern Office Space') }}
+                                                                        </small>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div class="row">
+                                                        {{-- Property Address Field --}}
                                                         <div class="col-lg-12">
-                                                            <div
-                                                                class="form-group {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
-                                                                <label>{{ $keywords['Address'] ?? __('Address') . '*' }}</label>
-                                                                <input type="text"
+                                                            <div class="form-group {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
+                                                                <label>
+                                                                    {{ $keywords['Full Property Address'] ?? __('Full Property Address') . '*' }}
+                                                                </label>
+                                                                <input
+                                                                    type="text"
                                                                     name="{{ $language->code }}_address"
                                                                     class="form-control"
-                                                                    placeholder="{{ $keywords['Enter Address'] ?? __('Enter Address') }}">
+                                                                    placeholder="{{ $keywords['Enter the complete address'] ?? __('Enter the complete address') }}"
+                                                                >
+                                                                <small class="form-text text-muted">
+                                                                    {{ $keywords['address_hint'] ?? __('Include street name city state province and ZIP postal code') }}
+                                                                </small>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -380,7 +411,7 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="row">
+                                                    <div class="row d-none">
                                                         <div class="col-lg-12">
                                                             <div
                                                                 class="form-group {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
@@ -392,7 +423,7 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="row">
+                                                    <div class="row d-none">
                                                         <div class="col-lg-12">
                                                             <div
                                                                 class="form-group {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
@@ -541,4 +572,42 @@
     <script type="text/javascript" src="{{ asset('assets/tenant/js/property-dropzone.js') }}"></script>
     {{-- <script type="text/javascript" src="{{ asset('assets/tenant/js/admin-dropzone.js') }}"></script> --}}
     <script type="text/javascript" src="{{ asset('assets/tenant/js/property.js') }}"></script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCshOz-S6yMXGEPwrhQf2T1XtS8oqZqR-c&callback=initMap"
+        async defer></script>
+
+<script>
+  function initMap() {
+    // Default map center. Adjust to your desired default location.
+    const defaultLocation = { lat: 40.7128, lng: -74.0060 }; // New York
+
+    // Create the map
+    const map = new google.maps.Map(document.getElementById("map"), {
+      center: defaultLocation,
+      zoom: 8,
+    });
+
+    // Create a marker
+    const marker = new google.maps.Marker({
+      position: defaultLocation,
+      map: map,
+      draggable: true, // allow dragging
+    });
+
+    // Update lat/long on marker drag
+    google.maps.event.addListener(marker, 'dragend', function(event) {
+      document.getElementById('latitude').value = event.latLng.lat().toFixed(6);
+      document.getElementById('longitude').value = event.latLng.lng().toFixed(6);
+    });
+
+    // Update marker & lat/long on map click
+    google.maps.event.addListener(map, 'click', function(event) {
+      marker.setPosition(event.latLng);
+      document.getElementById('latitude').value = event.latLng.lat().toFixed(6);
+      document.getElementById('longitude').value = event.latLng.lng().toFixed(6);
+    });
+  }
+</script>
+
+
 @endsection

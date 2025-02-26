@@ -263,8 +263,9 @@ class PropertyController extends Controller
 
                 PropertyContent::storePropertyContent($user->id, $property->id, $contentRequest);
 
-                $label_datas = $request[$language->code . '_label'];
-                foreach ($label_datas as $key => $data) {
+                $label_datas = $request->input($language->code . '_label', []);
+                // $label_datas = $request[$language->code . '_label'];
+                foreach ($label_datas as $key => $data) { // line 267
                     if (!empty($request[$language->code . '_value'][$key])) {
 
                         $specificationData = [
@@ -383,20 +384,21 @@ class PropertyController extends Controller
                 $propertyContent->language_id = $language->id;
                 $propertyContent->property_id = $property->id;
 
-                $propertyContent->category_id = $request[$language->code . '_category_id'];
-                $propertyContent->country_id = $request[$language->code . '_country_id'];
-                $propertyContent->state_id = $request[$language->code . '_state_id'];
-                $propertyContent->city_id = $request[$language->code . '_city_id'];
-
-                $propertyContent->title = $request[$language->code . '_title'];
-                $propertyContent->slug = $request[$language->code . '_title'];
-                $propertyContent->address = $request[$language->code . '_address'];
-                $propertyContent->description = $request[$language->code . '_description'];
-                $propertyContent->meta_keyword = $request[$language->code . '_meta_keyword'];
-                $propertyContent->meta_description = $request[$language->code . '_meta_description'];
+                $propertyContent->category_id = $request->input($language->code . '_category_id', null);
+                $propertyContent->country_id = $request->input($language->code . '_country_id', null);
+                $propertyContent->state_id = $request->input($language->code . '_state_id', null);
+                $propertyContent->city_id = $request->input($language->code . '_city_id', null);
+                $propertyContent->title = $request->input($language->code . '_title', null);
+                $propertyContent->slug = $request->input($language->code . '_title', null);
+                $propertyContent->address = $request->input($language->code . '_address', null);
+                $propertyContent->description = $request->input($language->code . '_description', null);
+                $propertyContent->meta_keyword = $request->input($language->code . '_meta_keyword', null);
+                $propertyContent->meta_description = $request->input($language->code . '_meta_description', null);
                 $propertyContent->save();
 
-                $label_datas = $request[$language->code . '_label'];
+                $label_datas = $request->input($language->code . '_label', []);
+                $value_datas = $request->input($language->code . '_value', []);
+                // $label_datas = $request[$language->code . '_label'];
                 foreach ($label_datas as $key => $data) {
                     if (!empty($request[$language->code . '_value'][$key])) {
                         $property_specification = PropertySpecification::where([['property_id', $property->id], ['key', $key]])->first();
@@ -479,7 +481,7 @@ class PropertyController extends Controller
 
             $content->delete();
         }
-        // delete wishlists 
+        // delete wishlists
         $property->wishlists()->delete();
         $property->delete();
 

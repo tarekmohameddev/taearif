@@ -2386,7 +2386,15 @@
     "Upload your website logo here. The logo represents your brand and will appear on the website header, footer, and other sections": "قم برفع شعار موقع الويب الخاص بك هنا. يمثل الشعار علامتك التجارية وسيظهر في رأس الموقع وتذييله والأقسام الأخرى",
     "This section contains text and an image about your company. You can control its content here": "هذا القسم يحتوي على نص وصورة عن شركتك. ويمكنك التحكم بمحتواه هنا",
     "Second Button Text": "النص الزر الثاني",
-
+    "Select a Purpose": "اختار غاية",
+    "Property Title": "عنوان العقار",
+    "Example: Spacious 2 Bedroom Apartment or Modern Office Space": "مثال: شقة فسيحة من غرفتين أو مكتب حديث في وسط المدينة",
+    "Full Property Address": "العنوان الكامل للعقار",
+    "Include street name city state province and ZIP postal code": "يشمل اسم الشارع، المدينة، المحافظة، والرمز البريدي",
+    "Property Title": "عنوان العقار",
+    "Full Property Address": "العنوان الكامل للعقار",
+    "Enter a clear, concise property title": "أدخل عنوانًا واضحًا وموجزًا للعقار",
+    "Enter the complete address": "العنوان الكامل للعقار",
     "Site Settings":"إعدادات الموقع",
         "Website Name": "اسم الموقع",
         "This is the name of your website. It will appear in the header, footer, and browser tabs. Make it simple and memorable.": "هذا هو اسم موقعك الإلكتروني. سيظهر في الرأس والتذييل وعلامات تبويب المتصفح. اجعله بسيطًا وسهل التذكر.",
@@ -2415,5 +2423,6 @@
         "Sales": "مبيعات",
 
         "Set the primary and secondary colors for your website. These colors define your website’s style and should align with your brand identity.": "قم بتحديد الألوان الأساسية والثانوية لموقعك. هذه الألوان تحدد أسلوب موقعك ويجب أن تتماشى مع هوية علامتك التجارية."
+
 
 }

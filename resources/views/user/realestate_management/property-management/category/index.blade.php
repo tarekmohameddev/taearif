@@ -101,6 +101,7 @@
                                                 <th scope="col">
                                                     <input type="checkbox" class="bulk-check" data-val="all">
                                                 </th>
+                                                <th scope="col">{{ __('image') }}</th>
                                                 <th scope="col">{{ __('Type') }}</th>
                                                 <th scope="col">{{ __('Name') }}</th>
                                                 <th scope="col">{{ __('Featured') }}</th>
@@ -116,6 +117,10 @@
                                                     <td>
                                                         <input type="checkbox" class="bulk-check"
                                                             data-val="{{ $category->id }}">
+                                                    </td>
+                                                    <td>
+                                                        <img src="{{ asset('assets/img/property-category/' . $category->image) }}"
+                                                            alt="image" class="img-fluid" style="max-width: 80px">
                                                     </td>
                                                     <td>
                                                         {{ ucfirst($category->type) }}
