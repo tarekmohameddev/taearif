@@ -314,6 +314,14 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <!--  -->
             </div>
 
+            @if (
+                $userBs->theme == 'home_one' ||
+                $userBs->theme == 'home_two' ||
+                $userBs->theme == 'home_six' ||
+                $userBs->theme == 'home_seven' ||
+                $userBs->theme == 'home_eight' ||
+                $userBs->theme == 'home14' ||
+                $userBs->theme == 'home_nine')
             <!-- Banner Section -->
             <div id="banner" class="content-section d-none">
                 <h3 class="h4 font-weight-bold">{{ __('Banner Section') }} </h3>
@@ -538,6 +546,257 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <!--// end SLIDER  -->
                 <!--  -->
             </div>
+            @endif
+            @if (
+                    $userBs->theme == 'home_three' ||
+                    $userBs->theme == 'home_four' ||
+                    $userBs->theme == 'home_five' ||
+                    $userBs->theme == 'home_eleven' ||
+                    $userBs->theme == 'home_twelve' ||
+                    $userBs->theme == 'home13' ||
+                    $userBs->theme == 'home_ten')
+           <!-- Banner Section -->
+           <div id="banner" class="content-section d-none">
+                <h3 class="h4 font-weight-bold">{{ __('Banner Section') }} </h3>
+                <p class="text-muted">{{ __('Upload and configure homepage banners') }}.</p>
+                <!--  -->
+                <!-- SLIDER -->
+
+                <div class="row">
+                    <div class="col-md-12">
+
+                        <div class="card">
+
+                            <div class="card-body pt-5 pb-5">
+                                <div class="row">
+                                    <div class="col-lg-8 offset-lg-2">
+                                    <form id="staticVersionForm"
+                                        action="{{ route('user.home_page.hero.update_static_info', ['language' => request()->input('language')]) }}"
+                                        method="POST" enctype="multipart/form-data" onsubmit="return storeSectionBeforeSubmit(this)">
+                                            @csrf
+                                            <input type="hidden" id="lastSection" name="last_section" value="">
+
+                                            <div class="form-group">
+                                                <label for="">{{__('Language')}} **</label>
+                                                <select id="language" name="user_language_id" class="form-control">
+                                                    <option value="" selected disabled>{{__('Select a language')}}</option>
+                                                    @foreach ($userLanguages as $lang)
+                                                    <option value="{{$lang->id}}">{{$lang->name}}</option>
+                                                    @endforeach
+                                                </select>
+                                                <p id="erruser_language_id" class="mb-0 text-danger em"></p>
+                                            </div>
+                                            <!-- upload image sedtion -->
+                             
+                                            <div class="form-group">
+                                    <div class="col-12 mb-2">
+                                        <label for="">{{ __('Image*') }}</label>
+                                    </div>
+                                    <div class="col-md-12 showImage mb-3">
+                                        <img src="{{ isset($information['sliders_static']->img) ? asset('assets/front/img/hero_static/'.$information['sliders_static']->img) : asset('assets/admin/img/noimage.jpg') }}"
+                                            alt="..." class="img-thumbnail">
+                                    </div>
+                                    <input type="file" name="img" id="image" class="form-control image">
+                                    @if ($errors->has('img'))
+                                        <p class="mt-2 mb-0 text-danger">{{ $errors->first('img') }}</p>
+                                    @endif
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-lg-12">
+                                        <div class="form-group">
+                                            <label for="">
+                                                @if ($userBs->theme == 'home_twelve')
+                                                    {{ __('Name*') }}
+                                                @else
+                                                    {{ __('Title*') }}
+                                                @endif
+                                            </label>
+                                            <input type="text" class="form-control" name="title"
+                                                value="{{ $data->title ?? '' }}" placeholder="{{ __('Enter title') }}">
+                                            @if ($errors->has('title'))
+                                                <p class="mt-2 mb-0 text-danger">{{ $errors->first('title') }}</p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                                @if ($userBs->theme == 'home_twelve')
+                                    <div class="form-group">
+                                        <label for="">{{ __('Designation') }} </label>
+                                        <input type="text" class="form-control" name="designation"
+                                            value="{{ $data->designation ?? '' }}" data-role="tagsinput">
+                                        <small
+                                            class="text-warning">{{ __('Use comma (,) to seperate the designation.') }}</small>
+
+                                    </div>
+                                @endif
+                                @if ($userBs->theme !== 'home_twelve')
+                                    <div class="row">
+                                        <div class="col-lg-12">
+                                            <div class="form-group">
+                                                <label for="">{{ __('Subtitle*') }}</label>
+                                                <input type="text" class="form-control" name="subtitle"
+                                                    value="{{ $information['sliders_static']->title ?? '' }}"
+                                                    placeholder="{{ __('Enter subtitle') }}">
+                                                @if ($errors->has('subtitle'))
+                                                    <p class="mt-2 mb-0 text-danger">{{ $errors->first('subtitle') }}</p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                                @if ($userBs->theme == 'home_four' || $userBs->theme == 'home_five' || $userBs->theme == 'home_eleven')
+                                    <div class="row">
+                                        <div class="col-lg-12">
+                                            <div class="form-group">
+                                                <label for="">{{ __('Hero text*') }}</label>
+                                                <textarea class="form-control" name="hero_text" placeholder="{{ __('Enter text') }}">{{ $data->hero_text ?? '' }}</textarea>
+                                                @if ($errors->has('hero_text'))
+                                                    <p class="mt-2 mb-0 text-danger">{{ $errors->first('hero_text') }}
+                                                    </p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                                @if ($userBs->theme != 'home13')
+                                    <div class="row">
+                                        <div class="col-lg-12">
+                                            <div class="form-group">
+                                                <label for="btn_name">{{ __('Button Name') }}</label>
+                                                <input type="text" class="form-control" name="btn_name"
+                                                    value="{{ $data->btn_name ?? '' }}"
+                                                    placeholder="{{ __('Enter button name') }}">
+                                                @if ($errors->has('btn_name'))
+                                                    <p class="mt-2 mb-0 text-danger">{{ $errors->first('btn_name') }}</p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                                @if ($userBs->theme != 'home13')
+                                    <div class="form-group">
+                                        <label for="url">{{ __('Button URL') }}</label>
+                                        <input type="url" class="form-control ltr" name="btn_url"
+                                            value="{{ $data->btn_url ?? '' }}"
+                                            placeholder="{{ __('Enter button url') }}">
+                                        @if ($errors->has('btn_url'))
+                                            <p class="mt-2 mb-0 text-danger">{{ $errors->first('btn_url') }}</p>
+                                        @endif
+                                    </div>
+                                @endif
+                                @if ($userBs->theme == 'home_ten')
+                                    <div class="row">
+                                        <div class="col-lg-12">
+                                            <div class="form-group">
+                                                <label for="btn_name">{{ __('Secound Button Name') }}</label>
+                                                <input type="text" class="form-control" name="secound_btn_name"
+                                                    value="{{ $data->secound_btn_name ?? '' }}"
+                                                    placeholder="{{ __('Enter button name') }}">
+                                                @if ($errors->has('secound_btn_name'))
+                                                    <p class="mt-2 mb-0 text-danger">
+                                                        {{ $errors->first('secound_btn_name') }}</p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="url">{{ __('Secound Button URL') }}</label>
+                                        <input type="url" class="form-control ltr" name="secound_btn_url"
+                                            value="{{ $data->secound_btn_url ?? '' }}"
+                                            placeholder="{{ __('Enter button url') }}">
+                                        @if ($errors->has('secound_btn_url'))
+                                            <p class="mt-2 mb-0 text-danger">{{ $errors->first('secound_btn_url') }}
+                                            </p>
+                                        @endif
+                                    </div>
+                                @endif
+                                @if ($userBs->theme == 'home_eleven')
+                                    <div class="form-group">
+                                        <label for="btn_name">{{ __('Video Button Name') }}</label>
+                                        <input type="text" class="form-control" name="secound_btn_name"
+                                            value="{{ $data->secound_btn_name ?? '' }}"
+                                            placeholder="{{ __('Enter button name') }}">
+                                        @if ($errors->has('secound_btn_name'))
+                                            <p class="mt-2 mb-0 text-danger">
+                                                {{ $errors->first('secound_btn_name') }}</p>
+                                        @endif
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="url">{{ __('Video URL') }}</label>
+                                        <input type="url" class="form-control ltr" name="secound_btn_url"
+                                            value="{{ $data->secound_btn_url ?? '' }}"
+                                            placeholder="{{ __('Enter button url') }}">
+                                        @if ($errors->has('secound_btn_url'))
+                                            <p class="mt-2 mb-0 text-danger">{{ $errors->first('secound_btn_url') }}
+                                            </p>
+                                        @endif
+                                    </div>
+                                @endif
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="row">
+                                    <div class="col-12 text-center">
+                                        <button type="submit" form="staticVersionForm" class="btn btn-primary">
+                                            {{ __('Save') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <!-- Breadcrumb Section -->
+                                        <form action="{{ route('user.update_breadcrumb') }}" method="POST" enctype="multipart/form-data">
+                                            @csrf
+                                            <div class="settings-section">
+                                                <h3 class="section-title">{{ __('Breadcrumb Photo') }}</h3>
+                                                <p class="section-description">{{ __('Add an image that will appear as a background for the breadcrumb section, helping to enhance navigation visuals.') }}</p>
+                                                <div class="form-group">
+                                                    <div class="preview-image">
+                                                        <img src="{{ isset($information['home_setting']->breadcrumb) ? asset('assets/front/img/user/'.$information['home_setting']->breadcrumb) : asset('assets/admin/img/noimage.jpg') }}" alt="breadcrumb" class="img-thumbnail">
+                                                    </div>
+                                                    <input type="file" id="breadcrumb" name="breadcrumb" class="d-none" accept="image/*">
+                                                    <button type="button" class="upload-btn" style="background-color: white;
+                                                                        border: 2px dashed #8c9998;
+                                                                        color: #0E9384;
+                                                                        padding: 1rem;
+                                                                        width: 80%;
+                                                                        display: flex;
+                                                                        flex-direction: column;
+                                                                        align-items: center;
+                                                                        cursor: pointer;" onclick="document.getElementById('breadcrumb').click()">
+                                                        <i class="bi bi-upload mb-2"></i>
+                                                        <span>{{ __('Upload Breadcrumb Image') }}</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Submit Button -->
+                                            <div class="text-center">
+                                                <button type="submit" class="btn btn-success btn-lg">
+                                                    {{ __('Save') }}
+                                                </button>
+                                            </div>
+
+                                        </form>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--// end SLIDER  -->
+                <!--  -->
+            </div>
+            @endif
             <!--  -->
 
             <!-- Skills Section -->
@@ -737,21 +996,6 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         <p id="errabout_image" class="mb-0 text-danger em"></p>
                                                     </div>
                                                 </div>
-                                                @if ($userBs->theme == 'home13' || $userBs->theme == 'home15')
-                                                <div class="col-lg-6">
-                                                    <div class="form-group">
-                                                        <div class="col-12 mb-2">
-                                                            <label for="logo"><strong>{{ __('Image Two') }}</strong></label>
-                                                        </div>
-                                                        <div class="col-md-12 showAboutImage2 mb-3">
-                                                            <img src="{{ $information['home_setting']->about_image_two ? asset('assets/front/img/user/home_settings/' . $information['home_setting']->about_image_two) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="  img-fluid">
-                                                        </div>
-                                                        <input type="hidden" name="types[]" value="about_image_two">
-                                                        <input type="file" name="about_image_two" id="about_image2" class="form-control ltr">
-                                                        <p id="errabout_image_two" class="mb-0 text-danger em"></p>
-                                                    </div>
-                                                </div>
-                                                @endif
                                             </div>
                                             <div class="row">
                                                 <div class="col-lg-6 pr-0">
