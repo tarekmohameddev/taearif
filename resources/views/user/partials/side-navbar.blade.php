@@ -288,7 +288,7 @@
                         </a>
                     </li>
 
-                    <li class="nav-item">
+                    <li class="nav-item d-none">
                         <a href="{{ route('home-page-settings'). '?language=' . $default->code}}"
                            class="nav-link d-flex align-items-center {{ request()->path() == 'user/home-page-settings' ? 'active' : '' }}">
                            <i class="bi bi-gear"></i>
@@ -300,8 +300,8 @@
                         <a href="{{ route('webstie.settings'). '?language=' . $default->code}}"
                            class="nav-link d-flex align-items-center {{ request()->path() == 'user/webstie-settings' ? 'active' : '' }}">
                            <i class="bi bi-gear"></i>
-                            <span>الإعدادات</span>
-                        </a>
+                           <span>إعدادات المحتوى</span>
+                           </a>
                     </li>
 
                     <!-- Store Settings Dropdown -->
@@ -411,7 +411,7 @@
                     </li>
 
                     <!-- Content Management -->
-                    <li class="nav-section-title small text-muted px-2 py-2 mt-3">
+                    <li class="nav-section-title small text-muted px-2 py-2 mt-3 d-none">
                         إدارة المحتوى
                     </li>
                     @if (!empty($permissions) && in_array('Skill', $permissions))
@@ -640,7 +640,7 @@
                     </li>
                     </div>
                     <!-- Additional Features -->
-                    <li class="nav-section-title small text-muted px-2 py-2 mt-3">
+                    <li class="nav-section-title small text-muted px-2 py-2 mt-3 d-none">
                         مميزات اضافية
                         </li>
 
