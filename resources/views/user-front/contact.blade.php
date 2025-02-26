@@ -145,7 +145,7 @@
                                     @endif
                                 </div>
                                 <div class="col-12 text-center">
-                                    <button type="submit" class="main-btn template-btn @if ($userBs->theme == 'home_eleven') btn @endif">{{ $keywords['Send_Message'] ?? 'Send Message' }}</button>
+                                    <button type="submit" class="btn btn-primary @if ($userBs->theme == 'home_eleven') btn @endif">{{ $keywords['Send_Message'] ?? 'Send Message' }}</button>
                                 </div>
                             </div>
                         </form>
@@ -153,15 +153,7 @@
                 </div>
             </div>
         </div>
-
-        @if (!empty($contact->latitude) && !empty($contact->longitude))
-            <div class="container-fluid container-1600 mb-0">
-                <div class="contact-map">
-                    <iframe
-                        src="//www.google.com/maps?width=100%25&amp;height=600&amp;hl=en&amp;q={{ $contact->latitude ?? 36.7783 }},%20{{ $contact->longitude ?? 119.4179 }}+(My%20Business%20Name)&amp;t=&amp;z={{ $contact->map_zoom ?? 12 }}&amp;ie=UTF8&amp;iwloc=B&amp;output=embed"
-                        class="border-0" allowfullscreen="" aria-hidden="false" tabindex="0"></iframe>
-                </div>
-            </div>
-        @endif
+        </br>
     </section>
+ 
 @endsection

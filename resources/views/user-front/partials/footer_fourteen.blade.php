@@ -1,10 +1,10 @@
   <!-- Footer-area start -->
 
-  <footer class="footer-area border border-primary" style="background-color: transparent !important;">
+  <footer class="footer-area border border-primary">
       @if (!empty($userFooterData->bg_image))
           <!-- Background Image -->
           <img class="lazyload blur-up bg-img"
-              src="https://aqar-riyadh.site/website/images/footer-bg-3.png">
+              src="{{ isset($userFooterData->bg_image) ? asset('assets/front/img/user/footer/' . $userFooterData->bg_image) : asset('assets/front/img/static/lawyer/footer-bg-1.jpg') }}">
       @endif
       @if ($home_sections->top_footer_section == 1)
           <div class="footer-top">
@@ -15,7 +15,7 @@
                               <div class="navbar-brand">
                                   @if (!empty($userFooterData->logo))
                                       <a href="{{ route('front.user.detail.view', getParam()) }}">
-                                          <img style="max-height: 50px; width: auto;"
+                                          <img
                                               src="{{ asset('assets/front/img/user/footer/' . $userFooterData->logo) }}">
                                       </a>
                                   @endif

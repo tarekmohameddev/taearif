@@ -1,6 +1,6 @@
 <!-- Footer-area start -->
 
-<footer class="footer-area border">
+<footer class="footer-area border" style="background-color: transparent !important;">
 
     @if (!empty($basicInfo->footer_bg_img))
         <!-- Background Image -->

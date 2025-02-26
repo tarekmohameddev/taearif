@@ -29,6 +29,7 @@ use App\Models\User\CourseManagement\LessonQuiz;
 use App\Models\User\CourseManagement\Module;
 use App\Models\User\CourseManagement\QuizScore;
 use App\Models\User\UserShopSetting;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User\CustomerWishList;
@@ -44,6 +45,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
+use App\Http\Controllers\Payment\ArbController;
 
 class CustomerController extends Controller
 {
@@ -297,6 +299,131 @@ class CustomerController extends Controller
         return view('user-front.contact', $data);
     }
 
+
+    public function about_us(Request $request, $domain)
+    {
+        $user = getUser();
+        $data['user'] = $user;
+        if (session()->has('user_lang')) {
+            $userCurrentLang = Language::where('code', session()->get('user_lang'))->where('user_id', $user->id)->first();
+            if (empty($userCurrentLang)) {
+                $userCurrentLang = Language::where('is_default', 1)->where('user_id', $user->id)->first();
+                session()->put('user_lang', $userCurrentLang->code);
+            }
+        } else {
+            $userCurrentLang = Language::where('is_default', 1)->where('user_id', $user->id)->first();
+        }
+
+        $data['contact'] = UserContact::where([
+            ['user_id', $data['user']->id],
+            ['language_id', $userCurrentLang->id]
+        ])->first();
+        $data['home_text'] = UserHomePageText::query()
+            ->where([
+                ['user_id', $data['user']->id],
+                ['language_id', $userCurrentLang->id]
+            ])->first();
+        return view('user-front.about_us', $data);
+    }
+    public function check_user(Request $request)
+    {
+        log::info($request);
+        $request->validate([ 'identifier' => 'required' ]);
+        $exists = Customer::where('email', $request->identifier)->orWhere('contact_number', $request->identifier)->exists();
+        return response()->json([ 'exists' => $exists, 'message' => $exists ? 'User exists' : 'User not found' ]);
+    }
+
+    public function send_otp(Request $request)
+    {   
+        $request->validate([ 'identifier' => 'required' ]);
+        $otp = rand(100000, 999999);
+        DB::table('otp_verifications')->updateOrInsert(['identifier' => $request->identifier], ['otp' => $otp, 'otp_expires_at' => now()->addMinutes(120)],['user_id' => 174]);
+        // Send OTP via SMS or Email (Implement your provider here)
+        return response()->json([ 'success' => true, 'message' => 'OTP sent successfully' ]);
+    }
+
+    public function verify_otp(Request $request)
+    {
+
+        $request->validate([ 'identifier' => 'required', 'code' => 'required' ]);
+        $otpRecord = DB::table('otp_verifications')->where('identifier', $request->identifier)->first();
+        if ($otpRecord && $otpRecord->otp == $request->code) {
+            DB::table('otp_verifications')->where('identifier', $request->identifier)->delete();
+            return response()->json([ 'verified' => true, 'message' => 'OTP verified successfully' ]);
+        }
+        return response()->json([ 'verified' => false, 'message' => 'Invalid OTP' ]);
+    }
+
+    public function register_customer(Request $request)
+    {
+        $user = getUser();
+
+        $request->validate([
+            'name' => 'required',
+            'password' => 'required|min:6'
+        ]);
+        $isEmail = filter_var($request->identifier, FILTER_VALIDATE_EMAIL);
+
+        $email_customer = $request->identifier;
+        $phone_number = '';
+        if(!$isEmail){
+            $email_customer = Str::random(10) . '@tarief.com';
+            $phone_number = $email_customer;
+        }
+
+        $customer = new Customer;
+        $customer->username = $request->name;
+        $customer->email = $email_customer;
+        $customer->contact_number = $phone_number;
+        $customer->user_id = $user->id;
+        $customer->password = Hash::make($request->password);
+        // first, generate a random string
+        $randStr = Str::random(20);
+        // second, generate a token
+        $token = md5($randStr . $request->username . $request->email);
+        $customer->verification_token = $token;
+        $customer->save();
+
+        return response()->json([ 'token' => $token, 'user' => $customer, 'message' => 'User registered successfully' ]);
+    }
+
+    public function login_customer(Request $request)
+    {
+        $request->validate([
+            'email' => 'required',
+            'password' => 'required'
+        ]);
+        $credentials = $request->only('email', 'password', 'user_id');
+        if (Auth::guard('customer')->attempt($credentials)) {
+            $authUser = Auth::guard('customer')->user();
+            // first, check whether the user's email address verified or not
+            // second, check whether the user's account is active or not
+            if ($authUser->status == 0) {
+                return response()->json([ 'message' => 'Sorry, your account has been deactivated' ], 401);
+                // logout auth user as condition not satisfied
+                Auth::guard('customer')->logout();
+            }
+            // otherwise, redirect auth user to next url
+            return response()->json([ 'token' => 'dfdfds', 'user' => 'ddd', 'message' => 'Login successful' ]);     
+        } else {
+            return response()->json([ 'message' => 'Sorry, your account is not here' ], 401);
+        }
+
+
+    }
+
+    public function forgot_password_customer(Request $request)
+    {
+        $request->validate([ 'identifier' => 'required' ]);
+        $customer = Customer::where('email', $request->identifier)->orWhere('phone', $request->identifier)->first();
+        if ($customer) {
+            $newPassword = Str::random(8);
+            $customer->update([ 'password' => Hash::make($newPassword) ]);
+            // Send new password via SMS or Email (Implement your provider here)
+            return response()->json([ 'success' => true, 'message' => 'A new password has been sent to your contact' ]);
+        }
+        return response()->json([ 'success' => false, 'message' => 'User not found' ]);
+    }
 
     public function signupSubmit(Request $request, $domain)
     {
@@ -697,6 +824,32 @@ class CustomerController extends Controller
             'instructions' => $offline->instructions ?? '',
             'is_receipt' => $offline->is_receipt
         ]);
+    }
+
+    public function paydeposit(Request $request)
+    {
+        $title = 'Paying deposit';
+        $amount = '10';
+        $success_url = route('membership.arb.success');
+        $cancel_url = route('membership.arb.cancel');
+        $currentLang = session()->has('lang') ?
+            (Language::where('code', session()->get('lang'))->first())
+            : (Language::where('is_default', 1)->first());
+        $bs = $currentLang->basic_setting;
+        $be = $currentLang->basic_extended;
+
+        $arbPayment = new ArbController();
+        return $arbPayment->paymentProcess($request, $amount, $success_url, $cancel_url, $title, $be);
+
+        // $user = getUser();
+        // $offline = UserOfflineGateway::where('user_id', $user->id)->where('name', $request->name)
+        //     ->select('short_description', 'instructions', 'is_receipt')
+        //     ->first();
+        // return response()->json([
+        //     'description' => $offline->short_description,
+        //     'instructions' => $offline->instructions ?? '',
+        //     'is_receipt' => $offline->is_receipt
+        // ]);
     }
 
 

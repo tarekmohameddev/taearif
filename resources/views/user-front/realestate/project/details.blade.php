@@ -135,13 +135,7 @@
                         <p class="font-lg color-white mx-auto"> <span class="product-location icon-start"><i
                                     class="fal fa-map-marker-alt"></i>{{ $project->address }}</span>
                         </p>
-                        <p class="font-lg color-white mx-auto"> <span class="product-location icon-start"><i
-                                    class="fal fa-user"></i>
 
-                                {{ $project->user->username }}
-
-                            </span>
-                        </p>
                     </div>
                 </div>
             </div>
@@ -176,7 +170,7 @@
                             <a class="btn btn-primary btn-md" href="#" data-bs-toggle="modal"
                                 data-bs-target="#socialMediaModal">
                                 <i class="far fa-share-alt"></i>
-                                <span>{{ $keywords['Share'] ?? __('Share') }} </span>
+                                <span>شارك</span>
                             </a>
 
                         </p>
@@ -322,7 +316,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <div class="">
-                        <h5 class="modal-title" id="exampleModalLongTitle"> {{ $keywords['Share On'] ?? __('Share On') }}
+                        <h5 class="modal-title" id="exampleModalLongTitle"> شارك
                         </h5>
                     </div>
                     <div class="">

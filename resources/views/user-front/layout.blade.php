@@ -22,7 +22,13 @@
             }
         </style>
     @endif
-
+    @if ($userBs->theme == 'home13')
+        @includeIf('user-front.realestate.partials.styles.styles-v1')
+    @elseif($userBs->theme == 'home14')
+        @includeIf('user-front.realestate.partials.styles.styles-v2')
+    @elseif($userBs->theme == 'home15')
+        @includeIf('user-front.realestate.partials.styles.styles-v3')
+    @endif
     @if (!is_null($userBs->adsense_publisher_id))
         <!------google adsense----------->
         <script async
@@ -70,6 +76,12 @@
         @includeIf('user-front.partials.header_eleven')
     @elseif($userBs->theme === 'home_twelve')
         @includeIf('user-front.partials.header_twelve')
+    @elseif ($userBs->theme === 'home13')
+      @includeIf('user-front.realestate.partials.header.header-v1')
+    @elseif ($userBs->theme === 'home14')
+      @includeIf('user-front.realestate.partials.header.header-v2')
+    @elseif ($userBs->theme === 'home15')
+      @includeIf('user-front.realestate.partials.header.header-v3')
     @else
         @includeIf('user-front.partials.header')
     @endif
@@ -85,26 +97,7 @@
             $brBg = $userBs->breadcrumb ?? 'breadcrumb.jpg';
         @endphp
         <!--====== Breadcrumb part Start ======-->
-        <section class="breadcrumb-section bg-img-c lazy
-    @if ($userBs->theme === 'home_three') breadcrumb-3 @endif"
-            data-bg="{{ asset('assets/front/img/user/' . $brBg) }}">
-            <div class="container">
-                <div class="breadcrumb-text">
-                    <h1 class="page-title">@yield('page-name')</h1>
-                    <ul>
-                        <li>
-                            <a
-                                href="{{ route('front.user.detail.view', getParam()) }}">{{ $keywords['Home'] ?? 'Home' }}</a>
-                        </li>
-                        <li>@yield('br-name')</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="breadcrumb-shapes">
-                <div class="one"></div>
-                <div class="two"></div>
-            </div>
-        </section>
+
         <!--====== Breadcrumb part End ======-->
     @endif
     @yield('content')
@@ -130,6 +123,12 @@
         @includeIf('user-front.partials.footer_eleven')
     @elseif($userBs->theme == 'home_twelve')
         @includeIf('user-front.partials.footer_twelve')
+    @elseif($userBs->theme == 'home13')
+      @includeIf('user-front.realestate.partials.footer.footer-v1')
+    @elseif ($userBs->theme === 'home14')
+      @includeIf('user-front.realestate.partials.footer.footer-v2')
+    @elseif ($userBs->theme === 'home15')
+      @includeIf('user-front.realestate.partials.footer.footer-v3')
     @else
         @includeIf('user-front.partials.footer')
     @endif
@@ -210,6 +209,14 @@ const tokenInput = document.querySelector('input[name="_token"]');
       })
   });
 </script>
+
+    @if ($userBs->theme == 'home13')
+        @includeIf('user-front.realestate.partials.scripts.scripts-v1')
+    @elseif ($userBs->theme == 'home14')
+        @includeIf('user-front.realestate.partials.scripts.scripts-v2')
+    @elseif ($userBs->theme == 'home15')
+        @includeIf('user-front.realestate.partials.scripts.scripts-v3')
+    @endif
 
 </body>
 

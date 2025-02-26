@@ -209,7 +209,7 @@ class BasicController extends Controller
         if ($request->hasFile('website-logo')) {
             try {
                 // Delete old images if they exist.
-                $imageFields = ['logo', 'preloader', 'breadcrumb', 'favicon'];
+                $imageFields = ['logo', 'preloader', 'favicon'];
                 foreach ($imageFields as $field) {
                     if ($bss->$field) {
                         @unlink(public_path('assets/front/img/user/' . $bss->$field));

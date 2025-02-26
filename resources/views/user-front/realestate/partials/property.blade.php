@@ -9,23 +9,7 @@
     </figure>
     <div class="product-details">
         <div class="d-flex align-items-center justify-content-between mb-10">
-            <div class="author  ">
 
-
-                @if ($property->user)
-                    <a class="color-medium" {{-- href="{{ route('frontend.vendor.details', ['username' => $property->vendor->username]) }}" --}} target="_self">
-
-                        <img class="blur-up ls-is-cached lazyloaded"
-                            data-src="{{ $property->user->photo ? asset('assets/front/img/user/' . $property->user->photo) : asset('assets/img/user-profile.jpg') }}"
-                            src="{{ $property->user->photo ? asset('assets/front/img/user/' . $property->user->photo) : asset('assets/img/user-profile.jpg') }}">
-
-
-
-                        <span>{{ $keywords['By'] ?? __('By') }} {{ $property->user->username }}</span>
-                @endif
-
-                </a>
-            </div>
 
             <span class="product-category text-sm @if (in_array($userBs->theme, ['home_five'])) text-dark @endif">
                 @if ($property->type == 'residential')
@@ -42,13 +26,6 @@
             <a class="@if (in_array($userBs->theme, ['home_five'])) text-dark @endif"
                 href="{{ route('front.user.property.details', [getParam(), 'slug' => $property->slug ?? $property->propertyContent->slug]) }}">{{ $property->title ?? $property->propertyContent->title }}</a>
         </h3>
-
-        <span class="product-location icon-start @if (in_array($userBs->theme, ['home_five'])) text-dark @endif"> <i
-                class="fal fa-map-marker-alt"></i>
-            {{ $property->city_name }}
-            {{ $userBs->property_state_status == 1 && $property->state_name != null ? ', ' . $property->state_name : '' }}
-            {{ $userBs->property_country_status == 1 && $property->country_name != null ? ', ' . $property->country_name : '' }}
-        </span>
         <div class="product-price">
             <span class="new-price">{{ $keywords['Price'] ?? __('Price') }} ({{ $userBs->base_currency_text }}) :
                 {{ $property->price ? formatNumber($property->price) : $keywords['Negotiable'] ?? __('Negotiable') }}</span>
