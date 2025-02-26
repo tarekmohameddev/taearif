@@ -124,7 +124,7 @@
                                 </span>
                                 <span>
 
-                                    {{ $propertyContent->city??->name }}
+                                    {{ $propertyContent->city?->name }}
 
                                     {{ $userBs?->property_state_status == 1 && !is_null($propertyContent?->state) ? ', ' . $propertyContent?->state?->name : '' }}
                                     {{ $userBs?->property_country_status == 1 && !is_null($propertyContent?->country) ? ', ' . $propertyContent?->country->name : '' }}
@@ -424,16 +424,16 @@
                                     class="btn btn-md btn-primary w-100">{{ $keywords['Send message'] ?? __('Send message') }}</button>
                             </form>
                         </div>
-                                
+
                         {{-- <x-tenant.frontend.agentContact :agent="$agent" :agentContact='false' :user="$user"
                              :propertyContent="$propertyContent" /> --}}
                              <div class="widget widget-form radius-md mb-30">
-                          
+
                                 @csrf
 
-              
+
                             </br>
-                         
+
                                 @csrf
 
 
@@ -467,8 +467,8 @@
 
                                 <input type="hidden" name="user_id" value="{{ $user->id }}">
                                 <input type="hidden" name="property_id" value="{{ $propertyContent->propertyId }}">
-                              
-                                
+
+
 
                                 @if (!Auth::guard('customer')->check())
                                 @includeIf('user-front.realestate.partials.header.login_or_reg_button')
@@ -478,11 +478,11 @@
                                     @includeIf('user-front.realestate.partials.header.pay_deposit_button')
                                  @endif
 
-                                
 
-               
-                            
-                            
+
+
+
+
                         </div>
                         <div class="widget widget-recent radius-md mb-30 ">
                             <h3 class="title">
