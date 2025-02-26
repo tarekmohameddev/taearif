@@ -31,12 +31,14 @@ class PropertyUpdateRequest extends FormRequest
 
         $rules = [
             // 'featured_image' => 'required|mimes:png,jpg,jpeg,svg,webp',
-            // 'floor_planning_image' => 'required|mimes:png,jpg,jpeg,svg,webp', 
+            // 'floor_planning_image' => 'required|mimes:png,jpg,jpeg,svg,webp',
             'price' => 'nullable|numeric',
-            'beds' => 'required_if:type,residential',
-            'bath' => 'required_if:type,residential',
-            'purpose' => 'required',
-            'area' => 'required',
+            'beds' => 'nullable',
+            'bath' => 'nullable',
+            // 'beds' => 'required_if:type,residential',
+            // 'bath' => 'required_if:type,residential',
+            'purpose' => 'nullable',
+            'area' => 'nullable',
             'status' => 'required',
             // 'amenities' => 'required',
             // 'category_id' => 'required',
@@ -55,7 +57,7 @@ class PropertyUpdateRequest extends FormRequest
                 $rules[$language->code . '_country_id'] = 'required';
             }
 
-            $rules[$language->code . '_amenities'] = 'required';
+            $rules[$language->code . '_amenities'] = 'nullable';
             $rules[$language->code . '_category_id'] = 'required';
             $rules[$language->code . '_city_id'] = 'required';
 
@@ -63,7 +65,8 @@ class PropertyUpdateRequest extends FormRequest
             $rules[$language->code . '_address'] = 'required';
             $rules[$language->code . '_description'] = 'required|min:15';
 
-            $rules[$language->code . '_label'] = 'array';
+            $rules[$language->code . '_label'] = 'nullable|array';
+            $rules[$language->code . '_value'] = 'nullable|array';
         }
 
         return $rules;

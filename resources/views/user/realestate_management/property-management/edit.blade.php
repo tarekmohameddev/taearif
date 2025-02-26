@@ -28,6 +28,14 @@
             width: 30px;
         }
     </style>
+    <style>
+    #map {
+        width: 100%;
+        height: 250px;
+        max-width: 600px;
+    }
+    </style>
+
 @endsection
 @section('content')
     <div class="page-header">
@@ -314,16 +322,18 @@
                                             <label>{{ $keywords['Purpose'] ?? __('Purpose') }}*</label>
 
                                             <select name="purpose" class="form-control">
-                                                <option disabled>
-                                                    {{ $keywords['Select a Purpose'] ?? __('Select a Purpose') }} </option>
-                                                <option value="rent" @if ($property->purpose == 'rent') 'selected' @endif>
+                                                <option value="" {{ empty($property->purpose) ? 'selected' : '' }}>
+                                                    {{ $keywords['Select a Purpose'] ?? __('Select a Purpose') }}
+                                                </option>
+                                                <option value="rent" {{ $property->purpose == 'rent' ? 'selected' : '' }}>
                                                     {{ $keywords['Rent'] ?? __('Rent') }}
                                                 </option>
-                                                <option value="sale" @if ($property->purpose == 'sale') 'selected' @endif>
+                                                <option value="sale" {{ $property->purpose == 'sale' ? 'selected' : '' }}>
                                                     {{ $keywords['Sale'] ?? __('Sale') }}
                                                 </option>
                                             </select>
                                         </div>
+
 
                                     </div>
 
@@ -371,7 +381,7 @@
                                         </div>
                                     </div>
 
-                                    <div class="col-lg-3">
+                                    <div class="col-lg-3 d-none">
                                         <div class="form-group">
                                             <label>{{ __('Status') }} *</label>
                                             <select name="status" id="" class="form-control">
@@ -382,23 +392,35 @@
                                             </select>
                                         </div>
                                     </div>
-
-                                    <div class="col-lg-3">
-                                        <div class="form-group">
-                                            <label>{{ __('Latitude') }} *</label>
-                                            <input type="text" class="form-control" value="{{ $property->latitude }}"
-                                                name="latitude" placeholder="{{ __('Enter Latitude') }}">
-                                        </div>
+                                    <div class="col-lg-12 mb-3">
                                     </div>
 
-                                    <div class="col-lg-3">
-                                        <div class="form-group">
-                                            <label>{{ __('Longitude') }} *</label>
-                                            <input type="text" class="form-control"
-                                                value="{{ $property->longitude }}" name="longitude"
-                                                placeholder="{{ __('Enter Longitude') }}">
-                                        </div>
+        <!-- Latitude -->
+        <div class="col-lg-3">
+            <div class="form-group">
+                <label>{{ __('Latitude') }} *</label>
+                <input type="text" class="form-control" id="latitude" name="latitude"
+                       value="{{ $property->latitude }}"
+                       placeholder="{{ __('Enter Latitude') }}">
+            </div>
+        </div>
+
+        <!-- Longitude -->
+        <div class="col-lg-3">
+            <div class="form-group">
+                <label>{{ __('Longitude') }} *</label>
+                <input type="text" class="form-control" id="longitude" name="longitude"
+                       value="{{ $property->longitude }}"
+                       placeholder="{{ __('Enter Longitude') }}">
+            </div>
+        </div>
+
+                                    <!-- Map Container -->
+                                    <div class="col-lg-12 mb-3">
+                                        <div id="map" style="width: 100%; height: 400px;"></div>
                                     </div>
+
+
 
 
 
@@ -437,7 +459,7 @@
                                                                 ->where('status', 1)
                                                                 ->get();
                                                         @endphp
-                                                        <div class="col-lg-3">
+                                                        <div class="col-lg-3 ">
                                                             <div
                                                                 class="form-group {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
                                                                 <label>{{ __('Category') }} *</label>
@@ -458,9 +480,9 @@
                                                         </div>
 
                                                         @if ($propertySettings->property_country_status == 1)
-                                                            <div class="col-lg-3">
+                                                            <div class="col-lg-3 d-none">
                                                                 <div
-                                                                    class="form-group {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
+                                                                    class="form-group {{ $language->rtl == 1 ? 'rtl text-right' : '' }} ">
 
                                                                     <label>{{ __('Country') }} *</label>
                                                                     <select name="{{ $language->code }}_country_id"
@@ -482,8 +504,8 @@
                                                         @endif
 
                                                         @if ($propertySettings->property_state_status == 1)
-                                                            <div class="col-lg-3 state"
-                                                                @if (is_null($peopertyContent->state_id)) style="display:none !important;" @else style="display:block !important;" @endif>
+                                                            <div class="col-lg-3 state d-none"
+                                                                @if (is_null($peopertyContent->state_id)) style="display:none !important;" @else @endif>
                                                                 <div
                                                                     class="form-group {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
 
@@ -508,7 +530,7 @@
                                                             </div>
                                                         @endif
 
-                                                        <div class="col-lg-3 city"
+                                                        <div class="col-lg-3 city "
                                                             @if (empty($peopertyContent->city_id)) style="display:none;"@else style="display:block;" @endif>
                                                             <div
                                                                 class="form-group {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
@@ -534,7 +556,7 @@
                                                             </div>
                                                         </div>
 
-                                                        <div class="col-lg-3">
+                                                        <div class="col-lg-3 mt-4">
                                                             <div
                                                                 class="form-group {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
                                                                 <label for="">{{ __('Amenities') }}*</label>
@@ -551,7 +573,7 @@
 
                                                                     @foreach ($language->propertyAmenities as $amenity)
                                                                         <option value="{{ $amenity->id }}"
-                                                                            @foreach ($propertyAmenities as $propertyAmenity) 
+                                                                            @foreach ($propertyAmenities as $propertyAmenity)
                                                             {{ $propertyAmenity->amenity_id == $amenity->id ? 'selected' : '' }} @endforeach>
                                                                             {{ $amenity->name }}
                                                                         </option>
@@ -601,7 +623,7 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="row">
+                                                    <div class="row d-none">
                                                         <div class="col-lg-12">
                                                             <div
                                                                 class="form-group {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
@@ -615,7 +637,7 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="row">
+                                                    <div class="row d-none">
                                                         <div class="col-lg-12">
                                                             <div
                                                                 class="form-group {{ $language->rtl == 1 ? 'rtl text-right' : '' }}">
@@ -626,7 +648,7 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="row">
+                                                    <div class="row ">
                                                         <div class="col">
                                                             @php $currLang = $language; @endphp
 
@@ -797,7 +819,7 @@
 
 
 @section('scripts')
-    {{-- {{-- // var storeUrl = "{{ route('user.property.imagesupdate', ['vendor_id' => $property->vendor_id]) }}";
+    {{-- // var storeUrl = "{{ route('user.property.imagesupdate', ['vendor_id' => $property->vendor_id]) }}";
 // var removeUrl = "{{ route('user.property.imagermv') }}"; --}}
     <script>
         var labels = "{!! $labels !!}";
@@ -814,4 +836,52 @@
     <script type="text/javascript" src="{{ asset('assets/tenant/js/property-dropzone.js') }}"></script>
 
     <script type="text/javascript" src="{{ asset('assets/tenant/js/property.js') }}"></script>
+
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCshOz-S6yMXGEPwrhQf2T1XtS8oqZqR-c&callback=initMap"
+        async defer></script>
+
+<script>
+  function initMap() {
+    // Convert the existing lat/lng from your Blade variables to floats.
+    // If they are null/empty, use a default location (e.g., 0,0 or some known location).
+    const existingLat = parseFloat("{{ $property->latitude ?? 0 }}");
+    const existingLng = parseFloat("{{ $property->longitude ?? 0 }}");
+
+    // If your $property->latitude/$property->longitude might be null,
+    // you can do something like:
+    let lat = isNaN(existingLat) ? 40.7128 : existingLat;  // Default to NYC if not valid
+    let lng = isNaN(existingLng) ? -74.0060 : existingLng; // Default to NYC if not valid
+
+    // The initial position
+    const initPosition = { lat: lat, lng: lng };
+
+    // Create the map
+    const map = new google.maps.Map(document.getElementById("map"), {
+      center: initPosition,
+      zoom: 10, // adjust zoom level as desired
+    });
+
+    // Create a draggable marker at the existing or default lat/lng
+    const marker = new google.maps.Marker({
+      position: initPosition,
+      map: map,
+      draggable: true,
+    });
+
+    // Update the input fields when the marker is dragged
+    google.maps.event.addListener(marker, 'dragend', function(event) {
+      document.getElementById('latitude').value = event.latLng.lat().toFixed(6);
+      document.getElementById('longitude').value = event.latLng.lng().toFixed(6);
+    });
+
+    // If the user clicks somewhere else on the map, move the marker there
+    google.maps.event.addListener(map, 'click', function(event) {
+      marker.setPosition(event.latLng);
+      document.getElementById('latitude').value = event.latLng.lat().toFixed(6);
+      document.getElementById('longitude').value = event.latLng.lng().toFixed(6);
+    });
+  }
+</script>
+
 @endsection

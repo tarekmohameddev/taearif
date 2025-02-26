@@ -124,10 +124,10 @@
                                 </span>
                                 <span>
 
-                                    {{ $propertyContent->city->name }}
+                                    {{ $propertyContent->city??->name }}
 
-                                    {{ $userBs->property_state_status == 1 && !is_null($propertyContent->state) ? ', ' . $propertyContent->state->name : '' }}
-                                    {{ $userBs->property_country_status == 1 && !is_null($propertyContent->country) ? ', ' . $propertyContent->country->name : '' }}
+                                    {{ $userBs?->property_state_status == 1 && !is_null($propertyContent?->state) ? ', ' . $propertyContent?->state?->name : '' }}
+                                    {{ $userBs?->property_country_status == 1 && !is_null($propertyContent?->country) ? ', ' . $propertyContent?->country->name : '' }}
                                 </span>
                             </div>
                             <ul class="product-info p-0 list-unstyled d-flex align-items-center mt-10 mb-30">
