@@ -9,6 +9,7 @@ use App\Http\Controllers\ContractController;
 use App\Http\Controllers\CRM\SaleController;
 use App\Http\Controllers\CRM\SalesController;
 use App\Http\Controllers\CRM\BookingController;
+use App\Http\Controllers\User\RegionController;
 use App\Http\Controllers\CRM\ContractsController;
 use App\Http\Controllers\Front\CustomerController;
 use App\Http\Controllers\User\PortfolioController;
@@ -16,8 +17,8 @@ use App\Http\Controllers\CRM\CustcrmomerController;
 use App\Http\Controllers\CRM\ReservationController;
 use App\Http\Controllers\User\OnboardingController;
 use App\Http\Controllers\CRM\PaymentRecordController;
-use App\Http\Controllers\CRM\PaymentRecordsController;
 // CRM
+use App\Http\Controllers\CRM\PaymentRecordsController;
 use App\Http\Controllers\User\HotelBooking\RoomController;
 use User\CourseManagement\Instructor\InstructorController;
 use App\Http\Controllers\User\HotelBooking\RoomManagementController;
@@ -29,8 +30,8 @@ use App\Http\Controllers\User\RealestateManagement\ManageProperty\StateControlle
 use App\Http\Controllers\User\RealestateManagement\ManageProject\ProjectController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\AmenityController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryController;
-use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
 
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
 
@@ -869,6 +870,9 @@ Route::domain($domain)->group(function () {
                     Route::post('/delete-city', 'destroy')->name('user.property_management.delete_city');
                     Route::post('/bulk-delete-city', 'bulkDestroy')->name('user.property_management.bulk_delete_city');
                 });
+                // Region route
+                Route::get('/get-governorates/{region_id}', [RegionController::class, 'getGovernorates'])->name('get.governorates');
+
                 // properties route
                 Route::controller(PropertyController::class)->group(function () {
                     Route::get('/settings', 'settings')->name('user.property_management.settings');

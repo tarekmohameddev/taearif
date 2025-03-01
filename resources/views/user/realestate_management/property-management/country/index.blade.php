@@ -102,30 +102,30 @@
                                                     <input type="checkbox" class="bulk-check" data-val="all">
                                                 </th>
                                                 <th scope="col">{{ __('Name') }}</th>
-                                                <th scope="col"> {{ __('Serial Number') }} </th>
+                                                <th scope="col"> {{ __('Name') }}_english </th>
                                                 <th scope="col">{{ __('Actions') }}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach ($countries as $country)
+                                            @foreach ($regions as $region)
                                                 <tr>
                                                     <td>
                                                         <input type="checkbox" class="bulk-check"
-                                                            data-val="{{ $country->id }}">
+                                                            data-val="{{ $region->id }}">
                                                     </td>
                                                     <td>
-                                                        {{ strlen($country->name) > 50 ? mb_substr($country->name, 0, 50, 'UTF-8') . '...' : $country->name }}
+                                                        {{ strlen($region->name_ar) > 50 ? mb_substr($region->name_ar, 0, 50, 'UTF-8') . '...' : $region->name_ar }}
                                                     </td>
                                                     <td>
-                                                        {{ $country->serial_number }}
+                                                        {{ $region->name_en }}
                                                     </td>
 
                                                     <td>
                                                         <a class="btn btn-secondary btn-sm mr-1  mt-1 editBtn"
                                                             href="#" data-toggle="modal" data-target="#editModal"
-                                                            data-id="{{ $country->id }}"
-                                                            data-serial_number="{{ $country->serial_number }}"
-                                                            data-name="{{ $country->name }}">
+                                                            data-id="{{ $region->id }}"
+                                                            data-serial_number="{{ $region->name_en }}"
+                                                            data-name="{{ $region->name_ar }}">
                                                             <span class="btn-label">
                                                                 <i class="fas fa-edit"></i>
                                                             </span>
@@ -136,7 +136,7 @@
                                                             method="post">
                                                             @csrf
                                                             <input type="hidden" name="id"
-                                                                value="{{ $country->id }}">
+                                                                value="{{ $region->id }}">
 
                                                             <button type="submit"
                                                                 class="btn btn-danger  mt-1 btn-sm deleteBtn">

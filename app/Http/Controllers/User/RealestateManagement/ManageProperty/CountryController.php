@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
+use App\Models\User\Region;
 
 class CountryController extends Controller
 {
@@ -20,11 +21,12 @@ class CountryController extends Controller
         // first, get the language info from db
         $information['language'] = Language::where('code', $request->language)->first();
         $information['languages'] = Language::where('user_id', Auth::guard('web')->user()->id)->get();
+        $information['regions'] = Region::with('governorates')->get();
 
 
         $information['countries'] = Country::where('user_id', $userId)->orderBy('serial_number', 'asc')->get();
 
-
+        // dd($information);
         return view('user.realestate_management.property-management.country.index', $information);
     }
     public function getCountries($langId)

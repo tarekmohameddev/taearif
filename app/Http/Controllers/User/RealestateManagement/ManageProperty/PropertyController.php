@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Session;
+use App\Models\User\Region;
 
 class PropertyController extends Controller
 {
@@ -97,13 +98,21 @@ class PropertyController extends Controller
             abort(404);
         }
 
-        $information = [];
         $user  = Auth::guard('web')->user();
-        $information['lang'] = Language::where('code', $request->language)->where('user_id', $user->id)->first();
-        $information['languages'] = Language::where('user_id', $user->id)->get();
 
-        $information['propertySettings'] = BasicSetting::select('property_state_status', 'property_country_status')->first();
+        // $information = [];
+        // $information['lang'] = Language::where('code', $request->language)->where('user_id', $user->id)->first();
+        // $information['languages'] = Language::where('user_id', $user->id)->get();
+        // $information['propertySettings'] = BasicSetting::select('property_state_status', 'property_country_status')->first();
+        // $information['regions'] = Region::with('governorates')->get();
+        $information = [
+            'lang' => Language::where('code', $request->language)->where('user_id', $user->id)->first(),
+            'languages' => Language::where('user_id', $user->id)->get(),
+            'propertySettings' => BasicSetting::select('property_state_status', 'property_country_status')->first(),
+            'regions' => \App\Models\User\Region::with('governorates')->get(), // Fetch regions with governorates
+        ];
 
+        // dd($information['regions']);
         return view('user.realestate_management.property-management.create', $information);
     }
 
@@ -210,6 +219,7 @@ class PropertyController extends Controller
     public function store(PropertyStoreRequest $request)
     {
 
+        dd($request->all());
         DB::transaction(function () use ($request) {
             $user = Auth::guard('web')->user();
             $featuredImgURL = $request->featured_image;
