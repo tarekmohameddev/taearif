@@ -16,6 +16,7 @@
 /storage/framework/testing/*
 /storage/framework/views/*
 /storage/logs/*
+!/storage/app/sa_regions_and_governorates.json
 /public/assets/front/img/user/*
 # Environment files and backups
 .env
