@@ -25,12 +25,12 @@
                         <p id="Eerr_name" class="mt-2 mb-0 text-danger em"></p>
                     </div>
                     <div class="form-group">
-                        <label for="">{{ __('Serial Number') . '*' }}</label>
-                        <input type="number" id="in_serial_number" class="form-control ltr" name="serial_number"
-                            placeholder="Enter Serial Number">
+                        <label for="">{{ __('country name') . '*' }}</label>
+                        <input type="text" id="in_serial_number" class="form-control ltr" name="name_en"
+                            placeholder="Enter country name en">
                         <p id="Eerr_serial_number" class="mt-2 mb-0 text-danger em"></p>
                         <p class="text-warning mt-2 mb-0">
-                            <small>{{ __('The higher the serial number is, the later will be shown.') }}</small>
+                            
                         </p>
                     </div>
 

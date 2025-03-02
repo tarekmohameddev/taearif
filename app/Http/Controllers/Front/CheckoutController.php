@@ -583,9 +583,8 @@ class CheckoutController extends Controller
 
                 // --- Begin: Portfolio Category and Portfolio Records ---
                 // Retrieve the default language for the user
-                $defaultLanguage = User\Language::where('user_id', $user->id)
-                    ->where('is_default', 1)
-                    ->first();
+                $defaultLanguage = User\Language::where('user_id', $user->id)->where('is_default', 1)->first();
+                $secondLanguage = User\Language::where('user_id', $user->id)->where('is_default', 0)->first();
 
                 // Insert portfolio category
                 $portfolioCategoryJson = '{
@@ -1547,314 +1546,122 @@ class CheckoutController extends Controller
                     }
                 }
 
-                // --- Begin: Insert City Records into user_cities ---
-                $citiesJson = <<<'JSON'
+                // --- Begin: Insert Property Categories Records into user_property_categories ---
+                $propertyCategoriesJson = <<<'JSON'
                 [
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "تبوك",
-                    "slug": "tabuk",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "0",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:03"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "نعمي",
-                    "slug": "naami",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "1",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:11"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "الرياض",
-                    "slug": "riyadh",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "2",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:19"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "حميط",
-                    "slug": "humeit",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "3",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:27"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "الطائف",
-                    "slug": "taif",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "4",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:35"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "مكة المكرمة",
-                    "slug": "mecca",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "5",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:43"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "رجم الطيارة",
-                    "slug": "rajm-al-tayara",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "6",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:51"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "الثميد",
-                    "slug": "thumeid",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "7",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:59"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "عسيلة",
-                    "slug": "aseilah",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "8",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:67"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "حائل",
-                    "slug": "hail",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "9",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:75"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "بريدة",
-                    "slug": "buraidah",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "10",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:83"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "الهفوف",
-                    "slug": "hofuf",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "11",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:91"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "الدمام",
-                    "slug": "dammam",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "12",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:99"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "المدينة المنورة",
-                    "slug": "madinah",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "13",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:107"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "ابها",
-                    "slug": "abha",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "14",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:115"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "حالة عمار",
-                    "slug": "halat-ammar",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "15",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:123"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "جازان",
-                    "slug": "jazan",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "16",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:131"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "جدة",
-                    "slug": "jeddah",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "17",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:139"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "الشايب",
-                    "slug": "al-shayeb",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "18",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:147"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "الفوهة",
-                    "slug": "al-fowah",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "19",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:155"
-                },
-                {
-                    "user_id": "",
-                    "language_id": "",
-                    "country_id": "1",
-                    "state_id": "1",
-                    "name": "اللوز",
-                    "slug": "al-loz",
-                    "image": "67a0af666a6e4.jpg",
-                    "featured": "0",
-                    "status": "1",
-                    "serial_number": "20",
-                    "created_at": "2025-02-03 13:58:30",
-                    "updated_at": "2025-02-26 04:43:163"
-                }
+                    {
+                        "user_id": "",
+                        "language_id": "",
+                        "type": "residential",
+                        "name": "شقة",
+                        "slug": "شقة",
+                        "image": "67be66fe9fa44.jpg",
+                        "status": "1",
+                        "featured": "0",
+                        "serial_number": "0",
+                        "created_at": "2025-02-03 13:51:00",
+                        "updated_at": "2025-02-26 03:57:34"
+                    },
+                    {
+                        "user_id": "",
+                        "language_id": "",
+                        "type": "residential",
+                        "name": "دور",
+                        "slug": "دور",
+                        "image": "67a0add555128.jpg",
+                        "status": "1",
+                        "featured": "0",
+                        "serial_number": "1",
+                        "created_at": "2025-02-03 13:51:49",
+                        "updated_at": "2025-02-03 13:38:29"
+                    },
+                    {
+                        "user_id": "",
+                        "language_id": "",
+                        "type": "residential",
+                        "name": "فيلا",
+                        "slug": "فيلا",
+                        "image": "67a0adfc6b72b.jpg",
+                        "status": "1",
+                        "featured": "0",
+                        "serial_number": "2",
+                        "created_at": "2025-02-03 13:52:28",
+                        "updated_at": "2025-02-03 13:38:32"
+                    },
+                    {
+                        "user_id": "",
+                        "language_id": "",
+                        "type": "commercial",
+                        "name": "ارض",
+                        "slug": "ارض",
+                        "image": "67a0c6fc91f80.png",
+                        "status": "1",
+                        "featured": "1",
+                        "serial_number": "3",
+                        "created_at": "2025-02-03 13:39:08",
+                        "updated_at": "2025-02-03 13:39:21"
+                    },
+                    {
+                        "user_id": "",
+                        "language_id": "",
+                        "type": "residential",
+                        "name": "دوبلكس",
+                        "slug": "دوبلكس",
+                        "image": "67be671e3439b.jpg",
+                        "status": "1",
+                        "featured": "1",
+                        "serial_number": "4",
+                        "created_at": "2025-02-03 13:39:46",
+                        "updated_at": "2025-02-26 03:58:06"
+                    },
+                    {
+                        "user_id": "",
+                        "language_id": "",
+                        "type": "commercial",
+                        "name": "تاون هاوس",
+                        "slug": "تاون-هاوس",
+                        "image": "67a0c73cc5b90.png",
+                        "status": "1",
+                        "featured": "1",
+                        "serial_number": "5",
+                        "created_at": "2025-02-03 13:40:12",
+                        "updated_at": "2025-02-03 13:41:12"
+                    }
                 ]
                 JSON;
 
-                $citiesArray = json_decode($citiesJson, true);
-                foreach ($citiesArray as $cityData) {
-                    $cityData['user_id'] = $user->id;
-                    $cityData['language_id'] = $defaultLanguage->id;
+                $propertyCategoriesArray = json_decode($propertyCategoriesJson, true);
 
-                    \App\Models\User\RealestateManagement\City::create($cityData);
+                foreach ($propertyCategoriesArray as $catData) {
+                    // Insert category for Default Language (Arabic)
+                    \App\Models\User\RealestateManagement\Category::create([
+                        'user_id' => $user->id,
+                        'language_id' => $defaultLanguage->id,
+                        'type' => $catData['type'],
+                        'name' => $catData['name'], // Arabic Name
+                        'slug' => $catData['slug'], // Arabic Slug
+                        'image' => $catData['image'],
+                        'status' => $catData['status'],
+                        'featured' => $catData['featured'],
+                        'serial_number' => $catData['serial_number']
+                    ]);
+
+                    // Insert category for Secondary Language (English)
+                    \App\Models\User\RealestateManagement\Category::create([
+                        'user_id' => $user->id,
+                        'language_id' => $secondLanguage->id,
+                        'type' => $catData['type'],
+                        'name' => $catData['name'], // Keeping same name for now
+                        'slug' => $catData['slug'], // Keeping same slug for now
+                        'image' => $catData['image'],
+                        'status' => $catData['status'],
+                        'featured' => $catData['featured'],
+                        'serial_number' => $catData['serial_number']
+                    ]);
                 }
-                // --- End: Insert City Records into user_cities ---
+
+                // --- End: Insert Property Categories Records into user_property_categories ---
+
 
 
 

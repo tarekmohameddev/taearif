@@ -3,36 +3,42 @@
 namespace App\Http\Controllers\User;
 
 use App;
-use Validator;
-use Carbon\Carbon;
-use App\Models\User;
-use App\Models\Package;
+use App\Http\Controllers\Controller;
 use App\Models\Customer;
-use App\Models\UserStep;
 use App\Models\Membership;
+use App\Models\Package;
+use App\Models\User;
+use App\Models\User\BasicSetting;
 use App\Models\User\Brand;
-use App\Models\User\Skill;
-use Illuminate\Http\Request;
+use App\Models\User\CounterInformation;
 use App\Models\User\Follower;
-use App\Models\User\Language;
-use App\Models\User\Portfolio;
+use App\Models\User\FooterQuickLink;
 use App\Models\User\FooterText;
 use App\Models\User\HeroSlider;
+
 use App\Models\User\HeroStatic;
 use App\Models\User\UserService;
 use App\Models\User\BasicSetting;
+
 use App\Models\User\HomePageText;
-use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Controller;
-use App\Models\User\FooterQuickLink;
-use App\Models\User\UserTestimonial;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+use App\Models\User\Language;
+use App\Models\User\Menu;
+use App\Models\User\Page;
+use App\Models\User\Portfolio;
 use App\Models\User\PortfolioCategory;
+use App\Models\User\Skill;
+use App\Models\User\UserService;
+use App\Models\User\UserTestimonial;
+use App\Models\UserStep;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
-use App\Models\User\CounterInformation;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Session;
+use Validator;
 
 class UserController extends Controller
 {
@@ -140,6 +146,28 @@ class UserController extends Controller
             return redirect()->back()->with('error', 'Default language not found.');
         }
 
+        $data['lang_id'] = $lang->id;
+        $data['keywords'] = json_decode($lang->keywords, true);
+        $menu = Menu::where('language_id', $lang->id)->where('user_id', Auth::user()->id)->first();
+
+        $data['prevMenu'] = '';
+        if (!empty($menu)) {
+            $data['prevMenu'] = $menu->menus;
+        }
+        $prevMenu = '';
+        if (!empty($menu)) {
+            $prevMenu = $menu->menus; // Ensure `$prevMenu` is set correctly
+        }
+
+        // Define lang_id
+        $lang_id = $lang->id;
+
+        $data['apages'] = Page::where('language_id', $lang->id)->where('user_id', Auth::user()->id)->orderBy('id', 'DESC')->get();
+        $apages = Page::where('language_id', $lang->id)
+        ->where('user_id', Auth::user()->id)
+        ->orderBy('id', 'DESC')
+        ->get();
+    
         $information = [
             'footertext' => FooterText::where('language_id', $lang->id)
                 ->where('user_id', Auth::id())
@@ -189,10 +217,11 @@ class UserController extends Controller
             'services' => UserService::where('lang_id', $lang->id)
                 ->where('user_id', Auth::id())
                 ->orderBy('id', 'DESC')
-                ->get()
+                ->get(),
+                'apages' => $apages
         ];
 
-        return view('user.webstie_settings', compact('information'));
+        return view('user.webstie_settings', compact('information','data','apages', 'prevMenu', 'lang_id'));
     }
     //
 
