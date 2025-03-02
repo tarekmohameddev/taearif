@@ -6,38 +6,862 @@
         max-width: 600px;
     }
 </style>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #4169e1;
+            --primary-hover: #3a5ecc;
+            --secondary-color: #050e2d;
+        }
+        
+        body {
+            background: linear-gradient(to bottom, #f0f7ff, #ffffff);
+            min-height: 100vh;
+        }
+        
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+        
+        .form-label {
+            font-weight: 500;
+        }
+        
+        .required::after {
+            content: " *";
+            color: #dc3545;
+        }
+        
+        .image-preview-container {
+            position: relative;
+            display: inline-block;
+            margin: 10px;
+        }
+        
+        .image-preview {
+            width: 200px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .remove-image {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: rgba(220, 53, 69, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .image-preview-container:hover .remove-image {
+            opacity: 1;
+        }
+        
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .upload-area:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+        
+        .feature-badge {
+            background-color: #e9ecef;
+            color: #495057;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-left: 10px;
+            font-size: 0.875rem;
+        }
+        
+        .advantage-badge {
+            background-color: #e9ecef;
+            color: #495057;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-left: 10px;
+            margin-bottom: 10px;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .advantage-badge .remove-badge {
+            margin-right: 5px;
+            cursor: pointer;
+            color: #6c757d;
+        }
+        
+        .advantage-badge .remove-badge:hover {
+            color: #dc3545;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            border-color: #dee2e6 #dee2e6 #fff;
+            font-weight: 500;
+        }
+        
+        .nav-tabs .nav-link {
+            color: #6c757d;
+        }
+        
+        .form-floating > label {
+            right: 0;
+            left: auto;
+            padding-right: 0.75rem;
+        }
+        
+        .form-floating > .form-control {
+            padding-right: 0.75rem;
+        }
+        
+        .form-floating > .form-control-plaintext {
+            padding-right: 0.75rem;
+        }
+        
+        .form-floating > .form-select {
+            padding-right: 0.75rem;
+        }
+        
+        .input-group-text {
+            background-color: #f8f9fa;
+        }
+        
+        .map-placeholder {
+            height: 300px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            border: 1px solid #dee2e6;
+        }
+        
+        /* Enhanced form validation styles */
+        .was-validated .form-control:invalid,
+        .form-control.is-invalid {
+            border-color: #dc3545;
+            padding-left: calc(1.5em + 0.75rem);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: left calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+        
+        .was-validated .form-control:valid,
+        .form-control.is-valid {
+            border-color: #198754;
+            padding-left: calc(1.5em + 0.75rem);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: left calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+        
+        .invalid-feedback {
+            display: none;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875em;
+            color: #dc3545;
+        }
+        
+        .is-invalid ~ .invalid-feedback {
+            display: block;
+        }
+    </style>
 @section('content')
+    </br>
+            <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="text-center mb-4">
+                    <h1 class="fs-2 fw-bold mb-2">إضافة عقار جديد</h1>
+                    <p class="text-muted">أدخل تفاصيل العقار الجديد. سيظهر هذا في قائمة العقارات على موقعك.</p>
+                </div>
 
-<div class="page-header">
-    <h4 class="page-title">{{ __('Add Property') }}</h4>
-    <ul class="breadcrumbs">
-        <li class="nav-home">
-            <a href="{{ route('user-dashboard') }}">
-                <i class="flaticon-home"></i>
-            </a>
-        </li>
-        <li class="separator">
-            <i class="flaticon-right-arrow"></i>
-        </li>
-        <li class="nav-item">
-            <a href="#">{{ __('Real Estate Management') }}</a>
-        </li>
-        <li class="separator">
-            <i class="flaticon-right-arrow"></i>
-        </li>
-        <li class="nav-item">
-            <a href="#">{{ __('Manage Property') }}</a>
-        </li>
-        <li class="separator">
-            <i class="flaticon-right-arrow"></i>
-        </li>
-        <li class="nav-item">
-            <a href="#">{{ __('Add Property') }}</a>
-        </li>
-    </ul>
-</div>
+                <!-- Property Form -->
+                <form id="property-form" class="needs-validation" novalidate enctype="multipart/form-data">
+                    <!-- Tabs Navigation -->
+                    <ul class="nav nav-tabs mb-4" id="propertyTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="basic-info-tab" data-bs-toggle="tab" data-bs-target="#basic-info" type="button" role="tab" aria-controls="basic-info" aria-selected="true">المعلومات الأساسية</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="media-tab" data-bs-toggle="tab" data-bs-target="#media" type="button" role="tab" aria-controls="media" aria-selected="false">الوسائط</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="location-tab" data-bs-toggle="tab" data-bs-target="#location" type="button" role="tab" aria-controls="location" aria-selected="false">الموقع</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="features-tab" data-bs-toggle="tab" data-bs-target="#features" type="button" role="tab" aria-controls="features" aria-selected="false">الميزات والإضافات</button>
+                        </li>
+                    </ul>
 
-<div class="row">
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="propertyTabsContent">
+                        <!-- Basic Info Tab -->
+                        <div class="tab-pane fade show active" id="basic-info" role="tabpanel" aria-labelledby="basic-info-tab">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-white">
+                                    <h5 class="card-title mb-0">المعلومات الأساسية</h5>
+                                    <p class="card-text text-muted small mb-0">أدخل المعلومات الأساسية للعقار</p>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-4">
+                                        <label for="title" class="form-label required">اسم العقار</label>
+                                        <input type="text" class="form-control" id="title" name="title" placeholder="أدخل اسم العقار" required>
+                                        <div class="invalid-feedback">
+                                            يرجى إدخال اسم العقار
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label for="description" class="form-label required">وصف العقار</label>
+                                        <textarea class="form-control" id="description" name="description" rows="4" placeholder="أدخل وصفًا تفصيليًا للعقار" required></textarea>
+                                        <div class="invalid-feedback">
+                                            يرجى إدخال وصف العقار
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">الغرض</label>
+                                        <div class="d-flex gap-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="purpose" id="sale" value="sale" checked>
+                                                <label class="form-check-label" for="sale">
+                                                    للبيع
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="purpose" id="rent" value="rent">
+                                                <label class="form-check-label" for="rent">
+                                                    للإيجار
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label for="price" class="form-label required">السعر</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fa-solid fa-dollar-sign"></i></span>
+                                            <input type="number" class="form-control" id="price" name="price" placeholder="أدخل السعر" required>
+                                            <span class="input-group-text">ريال سعودي</span>
+                                            <div class="invalid-feedback">
+                                                يرجى إدخال سعر العقار
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-4">
+                                        <div class="col-md-4">
+                                            <label for="rooms" class="form-label">عدد الغرف</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="fa-solid fa-house"></i></span>
+                                                <input type="number" class="form-control" id="rooms" name="rooms" value="1" min="1">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="baths" class="form-label">عدد الحمامات</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="fa-solid fa-bath"></i></span>
+                                                <input type="number" class="form-control" id="baths" name="baths" value="1" min="1">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="area" class="form-label">المساحة (متر مربع)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="fa-solid fa-maximize"></i></span>
+                                                <input type="number" class="form-control" id="area" name="area" placeholder="أدخل المساحة">
+                                                <span class="input-group-text">م²</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label for="category" class="form-label required">الفئة</label>
+                                        <select class="form-select" id="category" name="category" required>
+                                            <option value="" selected disabled>اختر فئة العقار</option>
+                                            <option value="شقة">شقة</option>
+                                            <option value="فيلا">فيلا</option>
+                                            <option value="منزل">منزل</option>
+                                            <option value="مكتب">مكتب</option>
+                                            <option value="محل تجاري">محل تجاري</option>
+                                            <option value="أرض">أرض</option>
+                                            <option value="مزرعة">مزرعة</option>
+                                            <option value="شاليه">شاليه</option>
+                                            <option value="استوديو">استوديو</option>
+                                        </select>
+                                        <div class="invalid-feedback">
+                                            يرجى اختيار فئة العقار
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label for="city" class="form-label required">المدينة</label>
+                                        <select class="form-select" id="city" name="city" required>
+                                            <option value="" selected disabled>اختر المدينة</option>
+                                            <option value="الرياض">الرياض</option>
+                                            <option value="جدة">جدة</option>
+                                            <option value="مكة المكرمة">مكة المكرمة</option>
+                                            <option value="المدينة المنورة">المدينة المنورة</option>
+                                            <option value="الدمام">الدمام</option>
+                                            <option value="الخبر">الخبر</option>
+                                            <option value="تبوك">تبوك</option>
+                                            <option value="أبها">أبها</option>
+                                            <option value="بريدة">بريدة</option>
+                                        </select>
+                                        <div class="invalid-feedback">
+                                            يرجى اختيار المدينة
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Media Tab -->
+                        <div class="tab-pane fade" id="media" role="tabpanel" aria-labelledby="media-tab">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-white">
+                                    <h5 class="card-title mb-0">الوسائط</h5>
+                                    <p class="card-text text-muted small mb-0">قم بتحميل الصور ومخطط العقار والفيديو</p>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-4">
+                                        <label class="form-label">معرض الصور</label>
+                                        <div id="photo-gallery" class="d-flex flex-wrap mb-3">
+                                            <!-- Photos will be added here dynamically -->
+                                        </div>
+                                        <div class="upload-area" id="photo-upload-area">
+                                            <i class="fa-solid fa-camera fs-3 text-muted mb-2"></i>
+                                            <p class="mb-1">إضافة صور</p>
+                                            <p class="text-muted small">PNG، JPG حتى 5 ميجابايت</p>
+                                            
+                                        </div>
+                                        <input type="file" id="photo-input" name="photos[]" class="d-none" accept="image/*" multiple>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">الصورة المصغرة للعقار</label>
+                                        <div id="thumbnail-preview" class="text-center mb-3 d-none">
+                                            <div class="position-relative d-inline-block">
+                                                <img src="/placeholder.svg" alt="الصورة المصغرة" class="img-fluid rounded" style="max-height: 200px;">
+                                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-circle" id="remove-thumbnail">
+                                                    <i class="fa-solid fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="upload-area" id="thumbnail-upload-area">
+                                            <i class="fa-solid fa-image fs-3 text-muted mb-2"></i>
+                                            <p class="mb-1">تحميل الصورة المصغرة</p>
+                                            <p class="text-muted small">PNG، JPG حتى 1 ميجابايت</p>
+                                        </div>
+                                        <input type="file" id="thumbnail-input" name="thumbnail" class="d-none" accept="image/*">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">مخطط العقار</label>
+                                        <div id="property-plan-preview" class="text-center mb-3 d-none">
+                                            <div class="position-relative d-inline-block">
+                                                <img src="/placeholder.svg" alt="مخطط العقار" class="img-fluid rounded" style="max-height: 300px;">
+                                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-circle" id="remove-property-plan">
+                                                    <i class="fa-solid fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="upload-area" id="property-plan-upload-area">
+                                            <i class="fa-solid fa-file-lines fs-3 text-muted mb-2"></i>
+                                            <p class="mb-1">تحميل مخطط العقار</p>
+                                            <p class="text-muted small">PNG، JPG حتى 2 ميجابايت</p>
+                                        </div>
+                                        <input type="file" id="property-plan-input" name="propertyPlan" class="d-none" accept="image/*">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label for="video-link" class="form-label">رابط الفيديو</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fa-solid fa-video"></i></span>
+                                            <input type="text" class="form-control" id="video-link" name="videoLink" placeholder="أدخل رابط الفيديو (YouTube أو Vimeo)">
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">صورة مصغرة للفيديو</label>
+                                        <div id="video-thumbnail-preview" class="text-center mb-3 d-none">
+                                            <div class="position-relative d-inline-block">
+                                                <img src="/placeholder.svg" alt="صورة مصغرة للفيديو" class="img-fluid rounded" style="max-height: 200px;">
+                                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-circle" id="remove-video-thumbnail">
+                                                    <i class="fa-solid fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="upload-area" id="video-thumbnail-upload-area">
+                                            <i class="fa-solid fa-image fs-3 text-muted mb-2"></i>
+                                            <p class="mb-1">تحميل صورة مصغرة للفيديو</p>
+                                            <p class="text-muted small">PNG، JPG حتى 1 ميجابايت</p>
+                                        </div>
+                                        <input type="file" id="video-thumbnail-input" name="videoThumbnail" class="d-none" accept="image/*">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location Tab -->
+                        <div class="tab-pane fade" id="location" role="tabpanel" aria-labelledby="location-tab">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-white">
+                                    <h5 class="card-title mb-0">الموقع</h5>
+                                    <p class="card-text text-muted small mb-0">حدد موقع العقار على الخريطة وأدخل العنوان الكامل</p>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-4">
+                                        <label class="form-label">موقع العقار على الخريطة</label>
+                                        <div class="map-placeholder mb-3">
+                                            <p class="text-muted">هنا سيتم إدراج خريطة تفاعلية لتحديد موقع العقار</p>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="latitude" class="form-label">خط العرض</label>
+                                                <input type="number" class="form-control" id="latitude" name="latitude" placeholder="خط العرض" step="0.000001">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="longitude" class="form-label">خط الطول</label>
+                                                <input type="number" class="form-control" id="longitude" name="longitude" placeholder="خط الطول" step="0.000001">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label for="address" class="form-label required">العنوان الكامل</label>
+                                        <textarea class="form-control" id="address" name="address" rows="3" placeholder="أدخل العنوان الكامل للعقار" required></textarea>
+                                        <div class="invalid-feedback">
+                                            يرجى إدخال عنوان العقار
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Features Tab -->
+                        <div class="tab-pane fade" id="features" role="tabpanel" aria-labelledby="features-tab">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-white">
+                                    <h5 class="card-title mb-0">الميزات والإضافات</h5>
+                                    <p class="card-text text-muted small mb-0">أضف ميزات ومزايا إضافية للعقار</p>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-4">
+                                        <label class="form-label">المزايا</label>
+                                        <div id="advantages-container" class="d-flex flex-wrap mb-3">
+                                            <!-- Advantages will be added here dynamically -->
+                                        </div>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="new-advantage" placeholder="أضف ميزة جديدة">
+                                            <button class="btn btn-primary" type="button" id="add-advantage">إضافة</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label">ميزات إضافية</label>
+                                        <div id="features-container" class="mb-3">
+                                            <!-- Features will be added here dynamically -->
+                                        </div>
+                                        <div class="row g-2 align-items-end">
+                                            <div class="col-md-4">
+                                                <label for="feature-key" class="form-label">الميزة</label>
+                                                <input type="text" class="form-control" id="feature-key" placeholder="مثال: مساحة الحديقة">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="feature-value" class="form-label">القيمة</label>
+                                                <input type="text" class="form-control" id="feature-value" placeholder="مثال: 100 متر مربع">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <button class="btn btn-primary w-100" type="button" id="add-feature">إضافة</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="button" class="btn btn-outline-secondary" id="prevBtn">
+                            <i class="fa-solid fa-arrow-right me-2"></i>
+                            السابق
+                        </button>
+                        <button type="button" class="btn btn-primary" id="nextBtn">
+                            التالي
+                            <i class="fa-solid fa-arrow-left ms-2"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+   <script>
+        $(document).ready(function() {
+            // Form validation
+            (function() {
+                'use strict'
+
+                var forms = document.querySelectorAll('.needs-validation')
+
+                Array.prototype.slice.call(forms)
+                    .forEach(function(form) {
+                        form.addEventListener('submit', function(event) {
+                            if (!form.checkValidity()) {
+                                event.preventDefault()
+                                event.stopPropagation()
+                            }
+
+                            form.classList.add('was-validated')
+                        }, false)
+                    })
+            })()
+
+            // Form progress tracking
+            function updateFormProgress() {
+                const totalFields = 15;
+                let filledFields = 0;
+
+                if ($('#title').val()) filledFields++;
+                if ($('#description').val()) filledFields++;
+                if ($('#price').val()) filledFields++;
+                if ($('#area').val()) filledFields++;
+                if ($('#latitude').val() || $('#longitude').val()) filledFields++;
+                if ($('#category').val()) filledFields++;
+                if ($('#city').val()) filledFields++;
+                if ($('#address').val()) filledFields++;
+                if ($('#photo-gallery').children().length > 0) filledFields++;
+                if ($('#thumbnail-preview').hasClass('d-none') === false) filledFields++;
+                if ($('#property-plan-preview').hasClass('d-none') === false) filledFields++;
+                if ($('#video-link').val()) filledFields++;
+                if ($('#video-thumbnail-preview').hasClass('d-none') === false) filledFields++;
+                if ($('#advantages-container').children().length > 0) filledFields++;
+                if ($('#features-container').children().length > 0) filledFields++;
+
+                const progress = (filledFields / totalFields) * 100;
+                $('#form-progress').css('width', progress + '%').attr('aria-valuenow', progress);
+                $('#progress-percentage').text(Math.round(progress));
+            }
+
+            // Call updateFormProgress on input change
+            $('form :input').on('change', updateFormProgress);
+
+            // Photo gallery handling
+            $('#photo-upload-area').on('click', function() {
+                $('#photo-input').click();
+            });
+
+            $('#photo-input').on('change', function(e) {
+                handleFileSelect(e.target.files, $('#photo-gallery'), 'photos[]');
+            });
+
+            // Thumbnail handling
+            $('#thumbnail-upload-area').on('click', function() {
+                $('#thumbnail-input').click();
+            });
+
+            $('#thumbnail-input').on('change', function(e) {
+                handleFileSelect(e.target.files, $('#thumbnail-preview'), 'thumbnail', true);
+            });
+
+            // Property plan handling
+            $('#property-plan-upload-area').on('click', function() {
+                $('#property-plan-input').click();
+            });
+
+            $('#property-plan-input').on('change', function(e) {
+                handleFileSelect(e.target.files, $('#property-plan-preview'), 'propertyPlan', true);
+            });
+
+            // Video thumbnail handling
+            $('#video-thumbnail-upload-area').on('click', function() {
+                $('#video-thumbnail-input').click();
+            });
+
+            $('#video-thumbnail-input').on('change', function(e) {
+                handleFileSelect(e.target.files, $('#video-thumbnail-preview'), 'videoThumbnail', true);
+            });
+
+            function handleFileSelect(files, previewContainer, inputName, isSingle = false) {
+                if (files.length === 0) return;
+
+                if (isSingle) {
+                    const file = files[0];
+                    if (validateFile(file)) {
+                        displayPreview(file, previewContainer, inputName);
+                    }
+                } else {
+                    Array.from(files).forEach(file => {
+                        if (validateFile(file)) {
+                            displayPreview(file, previewContainer, inputName);
+                        }
+                    });
+                }
+                updateFormProgress();
+            }
+
+            function validateFile(file) {
+                const maxSize = 5 * 1024 * 1024; // 5MB
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+
+                if (file.size > maxSize) {
+                    alert('حجم الملف كبير جدًا. الحد الأقصى هو 5 ميجابايت.');
+                    return false;
+                }
+
+                if (!allowedTypes.includes(file.type)) {
+                    alert('نوع الملف غير مدعوم. يرجى استخدام JPEG أو PNG أو GIF.');
+                    return false;
+                }
+
+                return true;
+            }
+
+            function displayPreview(file, previewContainer, inputName) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imgElement = $('<img>').attr({
+                        src: e.target.result,
+                        class: 'img-fluid rounded',
+                        style: 'max-height: 200px; max-width: 200px;'
+                    });
+
+                    const removeButton = $('<button>')
+                        .addClass('btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-circle')
+                        .html('<i class="fa-solid fa-times"></i>')
+                        .on('click', function() {
+                            $(this).closest('.position-relative').remove();
+                            updateFormProgress();
+                        });
+
+                    const previewElement = $('<div>')
+                        .addClass('position-relative d-inline-block m-2')
+                        .append(imgElement)
+                        .append(removeButton);
+
+                    if (inputName === 'photos[]') {
+                        previewContainer.append(previewElement);
+                    } else {
+                        previewContainer.html(previewElement).removeClass('d-none');
+                        $(`#${inputName}-upload-area`).addClass('d-none');
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // Advantages handling
+            $('#add-advantage').on('click', function() {
+                const advantage = $('#new-advantage').val().trim();
+                if (advantage) {
+                    const advantageElement = $('<span class="advantage-badge me-2 mb-2">' + advantage + '<i class="remove-badge fa-solid fa-times ms-2"></i></span>');
+                    $('#advantages-container').append(advantageElement);
+                    $('#new-advantage').val('');
+                    updateFormProgress();
+                }
+            });
+
+            $(document).on('click', '.remove-badge', function() {
+                $(this).parent().remove();
+                updateFormProgress();
+            });
+
+            // Features handling
+            $('#add-feature').on('click', function() {
+                const key = $('#feature-key').val().trim();
+                const value = $('#feature-value').val().trim();
+                if (key && value) {
+                    const featureElement = $('<div class="feature-item"><span class="feature-badge">' + key + '</span><span>' + value + '</span><button type="button" class="btn btn-sm btn-outline-danger ms-auto remove-feature"><i class="fa-solid fa-times"></i></button></div>');
+                    $('#features-container').append(featureElement);
+                    $('#feature-key').val('');
+                    $('#feature-value').val('');
+                    updateFormProgress();
+                }
+            });
+
+            $(document).on('click', '.remove-feature', function() {
+                $(this).closest('.feature-item').remove();
+                updateFormProgress();
+            });
+
+            // Tab navigation
+            let currentTab = 0;
+            const tabs = ['basic-info', 'media', 'location', 'features'];
+
+            function showTab(n) {
+                $('.tab-pane').removeClass('show active');
+                $(`#${tabs[n]}`).addClass('show active');
+                $('.nav-link').removeClass('active');
+                $(`#${tabs[n]}-tab`).addClass('active');
+
+                if (n === 0) {
+                    $('#prevBtn').addClass('d-none');
+                } else {
+                    $('#prevBtn').removeClass('d-none');
+                }
+
+                if (n === tabs.length - 1) {
+                    $('#nextBtn').text('حفظ العقار');
+                    $('#nextBtn').append('<i class="fa-solid fa-check ms-2"></i>');
+                } else {
+                    $('#nextBtn').text('التالي');
+                    $('#nextBtn').append('<i class="fa-solid fa-arrow-left ms-2"></i>');
+                }
+            }
+
+            function nextPrev(n) {
+                if (n === 1 && !validateForm()) return false;
+                
+                currentTab += n;
+                
+                if (currentTab >= tabs.length) {
+                    $('#property-form').submit();
+                    return false;
+                }
+                
+                showTab(currentTab);
+            }
+
+            function validateForm() {
+                let valid = true;
+                const activeTab = $(`#${tabs[currentTab]}`);
+                const inputs = activeTab.find('input[required], select[required], textarea[required]');
+
+                inputs.each(function() {
+                    if (!this.validity.valid) {
+                        $(this).addClass('is-invalid');
+                        valid = false;
+                    } else {
+                        $(this).removeClass('is-invalid');
+                    }
+                });
+
+                if (valid) {
+                    $('.nav-link').eq(currentTab).addClass('text-success');
+                }
+
+                return valid;
+            }
+
+            $('#nextBtn').on('click', function() {
+                nextPrev(1);
+            });
+
+            $('#prevBtn').on('click', function() {
+                nextPrev(-1);
+            });
+
+            showTab(currentTab);
+
+            // Form submission
+            $('#property-form').on('submit', function(e) {
+                e.preventDefault();
+                if (validateForm()) {
+                    // Collect form data
+                    const formData = new FormData(this);
+                    
+                    // Add photo files
+                    $('#photo-input')[0].files.forEach((file, index) => {
+                        formData.append('photos[]', file);
+                    });
+
+                    // Add thumbnail file
+                    if ($('#thumbnail-input')[0].files[0]) {
+                        formData.append('thumbnail', $('#thumbnail-input')[0].files[0]);
+                    }
+
+                    // Add property plan file
+                    if ($('#property-plan-input')[0].files[0]) {
+                        formData.append('propertyPlan', $('#property-plan-input')[0].files[0]);
+                    }
+
+                    // Add video thumbnail file
+                    if ($('#video-thumbnail-input')[0].files[0]) {
+                        formData.append('videoThumbnail', $('#video-thumbnail-input')[0].files[0]);
+                    }
+
+                    // Add advantages
+                    const advantages = [];
+                    $('.advantage-badge').each(function() {
+                        advantages.push($(this).text().trim());
+                    });
+                    formData.append('advantages', JSON.stringify(advantages));
+
+                    // Add features
+                    const features = [];
+                    $('.feature-item').each(function() {
+                        const key = $(this).find('.feature-badge').text().trim();
+                        const value = $(this).find('span:not(.feature-badge)').text().trim();
+                        features.push({ key, value });
+                    });
+                    formData.append('features', JSON.stringify(features));
+
+                    // Send form data to server (replace with your actual API endpoint)
+                    $.ajax({
+                        url: '/api/properties',
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            alert('تم حفظ العقار بنجاح!');
+                            // Redirect to property list or property details page
+                            // window.location.href = '/properties';
+                        },
+                        error: function(xhr, status, error) {
+                            alert('حدث خطأ أثناء حفظ العقار. يرجى المحاولة مرة أخرى.');
+                            console.error(error);
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+
+<div class="row d-none">
     <div class="col-md-12">
         <div class="card">
             <div class="card-header">
@@ -457,6 +1281,7 @@ $values .= "<div class='$direction'><input type='text' name='$value_name' class=
 {{-- // var storeUrl = "{{ route('user.property.imagesstore') }}"; --}}
 {{-- var removeUrl = "{{ route('user.property.imagermv') }}"; --}}
 @section('scripts')
+
 <script>
     'use strict';
     var labels = "{!! $labels !!}";
