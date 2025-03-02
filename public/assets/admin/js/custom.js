@@ -406,6 +406,142 @@ $(function ($) {
   /* ***************************************************
   ==========Form Submit with AJAX Request Start==========
   ******************************************************/
+
+
+  // submitBtnQuick_links
+  $(document).on('click', '#submitBtnQuick_links', function (e) {
+    console.log('clicked2');
+    $(e.target).attr('disabled', true);
+
+    $(".request-loader").addClass("show");
+
+    let ajaxForm = document.getElementById('ajaxFormQuick_links');
+    let fd = new FormData(ajaxForm);
+    let url = $("#ajaxFormQuick_links").attr('action');
+    let method = $("#ajaxFormQuick_links").attr('method');
+
+    if ($("#ajaxFormQuick_links .summernote").length > 0) {
+        $("#ajaxFormQuick_links .summernote").each(function (i) {
+        let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
+
+        fd.delete($(this).attr('name'));
+        fd.append($(this).attr('name'), content);
+        });
+    }
+
+    $.ajax({
+        url: url,
+        method: method,
+        data: fd,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+        console.log(data, 'success', typeof data.error);
+        $(e.target).attr('disabled', false);
+        $(".request-loader").removeClass("show");
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        if (data == "warning") {
+            location.reload();
+        }
+        if (data == "success") {
+            location.reload();
+        }
+
+        // if error occurs
+        else if (typeof data.error != 'undefined') {
+            for (let x in data) {
+            if (x == 'error') {
+                continue;
+            }
+            document.getElementById('err' + x).innerHTML = data[x][0];
+            }
+        }
+        },
+        error: function (error) {
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        console.log(error.responseJSON.errors);
+        for (let x in error.responseJSON.errors) {
+            document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
+        }
+        $(".request-loader").removeClass("show");
+        $(e.target).attr('disabled', false);
+        }
+    });
+  });
+
+
+  // updateBtn_quick_links
+  $(document).on('click', '#updateBtn_quick_links', function (e) {
+    console.log('clicked2');
+    $(e.target).attr('disabled', true);
+
+    $(".request-loader").addClass("show");
+
+    let ajaxForm = document.getElementById('ajaxEditForm_quick_links');
+    let fd = new FormData(ajaxForm);
+    let url = $("#ajaxEditForm_quick_links").attr('action');
+    let method = $("#ajaxEditForm_quick_links").attr('method');
+
+    if ($("#ajaxEditForm_quick_links .summernote").length > 0) {
+        $("#ajaxEditForm_quick_links .summernote").each(function (i) {
+        let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
+
+        fd.delete($(this).attr('name'));
+        fd.append($(this).attr('name'), content);
+        });
+    }
+
+    $.ajax({
+        url: url,
+        method: method,
+        data: fd,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+        console.log(data, 'success', typeof data.error);
+        $(e.target).attr('disabled', false);
+        $(".request-loader").removeClass("show");
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        if (data == "warning") {
+            location.reload();
+        }
+        if (data == "success") {
+            location.reload();
+        }
+
+        // if error occurs
+        else if (typeof data.error != 'undefined') {
+            for (let x in data) {
+            if (x == 'error') {
+                continue;
+            }
+            document.getElementById('err' + x).innerHTML = data[x][0];
+            }
+        }
+        },
+        error: function (error) {
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        console.log(error.responseJSON.errors);
+        for (let x in error.responseJSON.errors) {
+            document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
+        }
+        $(".request-loader").removeClass("show");
+        $(e.target).attr('disabled', false);
+        }
+    });
+  });
   // submitBtnAbout
   $(document).on('click', '#submitBtnAbout', function (e) {
     console.log('clicked2');
