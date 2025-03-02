@@ -1,0 +1,650 @@
+{
+    "regions": [
+      {
+        "region_id": 1,
+        "name_en": "Riyadh",
+        "name_ar": "منطقة الرياض",
+        "governorates": [
+          {
+            "gov_id": 1,
+            "name_en": "Dawadmi",
+            "name_ar": "محافظة الدوادمي"
+          },
+          {
+            "gov_id": 2,
+            "name_en": "Afif",
+            "name_ar": "محافظة عفيف"
+          },
+          {
+            "gov_id": 3,
+            "name_en": "Al Aflaj",
+            "name_ar": "محافظة الأفلاج"
+          },
+          {
+            "gov_id": 4,
+            "name_en": "Al Ghat",
+            "name_ar": "محافظة الغاط"
+          },
+          {
+            "gov_id": 5,
+            "name_en": "Al Hariq",
+            "name_ar": "محافظة الحريق"
+          },
+          {
+            "gov_id": 6,
+            "name_en": "Hotat Bani Tamim",
+            "name_ar": "محافظة حوطة بني تميم"
+          },
+          {
+            "gov_id": 7,
+            "name_en": "Al Kharj",
+            "name_ar": "محافظة الخرج"
+          },
+          {
+            "gov_id": 8,
+            "name_en": "Al Majma'ah",
+            "name_ar": "محافظة المجمعة"
+          },
+          {
+            "gov_id": 9,
+            "name_en": "Al Muzahimiyah",
+            "name_ar": "محافظة المزاحمية"
+          },
+          {
+            "gov_id": 10,
+            "name_en": "Rumah",
+            "name_ar": "محافظة رماح"
+          },
+          {
+            "gov_id": 11,
+            "name_en": "Shaqra",
+            "name_ar": "محافظة شقراء"
+          },
+          {
+            "gov_id": 12,
+            "name_en": "Thadiq",
+            "name_ar": "محافظة ثادق"
+          },
+          {
+            "gov_id": 13,
+            "name_en": "Al Quway'iyah",
+            "name_ar": "محافظة القويعية"
+          },
+          {
+            "gov_id": 14,
+            "name_en": "Al Zulfi",
+            "name_ar": "محافظة الزلفي"
+          },
+          {
+            "gov_id": 15,
+            "name_en": "Huraimla",
+            "name_ar": "محافظة حريملاء"
+          },
+          {
+            "gov_id": 16,
+            "name_en": "Durma",
+            "name_ar": "محافظة ضرما"
+          },
+          {
+            "gov_id": 17,
+            "name_en": "Wadi ad-Dawasir",
+            "name_ar": "محافظة وادي الدواسر"
+          },
+          {
+            "gov_id": 18,
+            "name_en": "Al Sulayyil",
+            "name_ar": "محافظة السليل"
+          }
+        ]
+      },
+      {
+        "region_id": 2,
+        "name_en": "Makkah",
+        "name_ar": "منطقة مكة المكرمة",
+        "governorates": [
+          {
+            "gov_id": 1,
+            "name_en": "Jeddah",
+            "name_ar": "محافظة جدة"
+          },
+          {
+            "gov_id": 2,
+            "name_en": "Taif",
+            "name_ar": "محافظة الطائف"
+          },
+          {
+            "gov_id": 3,
+            "name_en": "Al Qunfudhah",
+            "name_ar": "محافظة القنفذة"
+          },
+          {
+            "gov_id": 4,
+            "name_en": "Al Laith",
+            "name_ar": "محافظة الليث"
+          },
+          {
+            "gov_id": 5,
+            "name_en": "Rabigh",
+            "name_ar": "محافظة رابغ"
+          },
+          {
+            "gov_id": 6,
+            "name_en": "Khulais",
+            "name_ar": "محافظة خليص"
+          },
+          {
+            "gov_id": 7,
+            "name_en": "Al Kamil",
+            "name_ar": "محافظة الكامل"
+          },
+          {
+            "gov_id": 8,
+            "name_en": "Adham",
+            "name_ar": "محافظة أضم"
+          },
+          {
+            "gov_id": 9,
+            "name_en": "Maysan",
+            "name_ar": "محافظة ميسان"
+          },
+          {
+            "gov_id": 10,
+            "name_en": "Bahra",
+            "name_ar": "محافظة بحرة"
+          },
+          {
+            "gov_id": 11,
+            "name_en": "Al Jumum",
+            "name_ar": "محافظة الجموم"
+          }
+        ]
+      },
+      {
+        "region_id": 3,
+        "name_en": "Al Madinah",
+        "name_ar": "منطقة المدينة المنورة",
+        "governorates": [
+          {
+            "gov_id": 1,
+            "name_en": "Al-Hanakia",
+            "name_ar": "محافظة الحناكية"
+          },
+          {
+            "gov_id": 2,
+            "name_en": "Al Ula",
+            "name_ar": "محافظة العلا"
+          },
+          {
+            "gov_id": 3,
+            "name_en": "Yanbu",
+            "name_ar": "محافظة ينبع"
+          },
+          {
+            "gov_id": 4,
+            "name_en": "Mahd adh Dhahab",
+            "name_ar": "محافظة مهد الذهب"
+          },
+          {
+            "gov_id": 5,
+            "name_en": "Badr",
+            "name_ar": "محافظة بدر"
+          },
+          {
+            "gov_id": 6,
+            "name_en": "Khyber",
+            "name_ar": "محافظة خيبر"
+          },
+          {
+            "gov_id": 7,
+            "name_en": "Al-'Is",
+            "name_ar": "محافظة العيص"
+          },
+          {
+            "gov_id": 8,
+            "name_en": "Wadi Al-Fara",
+            "name_ar": "محافظة وادي الفرع"
+          }
+        ]
+      },
+      {
+        "region_id": 4,
+        "name_en": "Al Qassim",
+        "name_ar": "منطقة القصيم",
+        "governorates": [
+          {
+            "gov_id": 1,
+            "name_en": "Buraidah",
+            "name_ar": "محافظة بريدة"
+          },
+          {
+            "gov_id": 2,
+            "name_en": "Unaizah",
+            "name_ar": "محافظة عنيزة"
+          },
+          {
+            "gov_id": 3,
+            "name_en": "Al Rass",
+            "name_ar": "محافظة الرس"
+          },
+          {
+            "gov_id": 4,
+            "name_en": "Al Mithnab",
+            "name_ar": "محافظة المذنب"
+          },
+          {
+            "gov_id": 5,
+            "name_en": "Al Bukayriyah",
+            "name_ar": "محافظة البكيرية"
+          },
+          {
+            "gov_id": 6,
+            "name_en": "Al Badayea",
+            "name_ar": "محافظة البدائع"
+          },
+          {
+            "gov_id": 7,
+            "name_en": "Riyadh Al Khabra",
+            "name_ar": "محافظة رياض الخبراء"
+          },
+          {
+            "gov_id": 8,
+            "name_en": "Al Nabhaniyah",
+            "name_ar": "محافظة النبهانية"
+          },
+          {
+            "gov_id": 9,
+            "name_en": "Uglat Asugour",
+            "name_ar": "محافظة عقلة الصقور"
+          },
+          {
+            "gov_id": 10,
+            "name_en": "Dhariya",
+            "name_ar": "محافظة ضرية"
+          },
+          {
+            "gov_id": 11,
+            "name_en": "Al Asyah",
+            "name_ar": "محافظة الأسياح"
+          },
+          {
+            "gov_id": 12,
+            "name_en": "Al Shimasiyah",
+            "name_ar": "محافظة الشماسية"
+          }
+        ]
+      },
+      {
+        "region_id": 5,
+        "name_en": "Eastern Province",
+        "name_ar": "المنطقة الشرقية",
+        "governorates": [
+          {
+            "gov_id": 1,
+            "name_en": "Al Ahsa",
+            "name_ar": "محافظة الأحساء"
+          },
+          {
+            "gov_id": 2,
+            "name_en": "Hafr Al Batin",
+            "name_ar": "محافظة حفر الباطن"
+          },
+          {
+            "gov_id": 3,
+            "name_en": "Al Qatif",
+            "name_ar": "محافظة القطيف"
+          },
+          {
+            "gov_id": 4,
+            "name_en": "Jubail",
+            "name_ar": "محافظة الجبيل"
+          },
+          {
+            "gov_id": 5,
+            "name_en": "Khafji",
+            "name_ar": "محافظة الخفجي"
+          },
+          {
+            "gov_id": 6,
+            "name_en": "Qaryat Al Ulya",
+            "name_ar": "محافظة قرية العليا"
+          },
+          {
+            "gov_id": 7,
+            "name_en": "Ras Tanura",
+            "name_ar": "محافظة رأس تنورة"
+          },
+          {
+            "gov_id": 8,
+            "name_en": "Al Nairyah",
+            "name_ar": "محافظة النعيرية"
+          },
+          {
+            "gov_id": 9,
+            "name_en": "Abqaiq",
+            "name_ar": "محافظة بقيق"
+          }
+        ]
+      },
+      {
+        "region_id": 6,
+        "name_en": "Asir",
+        "name_ar": "منطقة عسير",
+        "governorates": [
+          {
+            "gov_id": 1,
+            "name_en": "Khamis Mushayt",
+            "name_ar": "محافظة خميس مشيط"
+          },
+          {
+            "gov_id": 2,
+            "name_en": "Ahad Rafidah",
+            "name_ar": "محافظة أحد رفيدة"
+          },
+          {
+            "gov_id": 3,
+            "name_en": "Bisha",
+            "name_ar": "محافظة بيشة"
+          },
+          {
+            "gov_id": 4,
+            "name_en": "Mahayil",
+            "name_ar": "محافظة محايل"
+          },
+          {
+            "gov_id": 5,
+            "name_en": "Rijal Almaa",
+            "name_ar": "محافظة رجال ألمع"
+          },
+          {
+            "gov_id": 6,
+            "name_en": "Sarat Abidah",
+            "name_ar": "محافظة سراة عبيدة"
+          },
+          {
+            "gov_id": 7,
+            "name_en": "Dhahran Al Janub",
+            "name_ar": "محافظة ظهران الجنوب"
+          },
+          {
+            "gov_id": 8,
+            "name_en": "Tathlith",
+            "name_ar": "محافظة تثليث"
+          },
+          {
+            "gov_id": 9,
+            "name_en": "Al Majardah",
+            "name_ar": "محافظة المجاردة"
+          },
+          {
+            "gov_id": 10,
+            "name_en": "Al Harjah",
+            "name_ar": "محافظة الحرجة"
+          },
+          {
+            "gov_id": 11,
+            "name_en": "Bareq",
+            "name_ar": "محافظة بارق"
+          }
+        ]
+      },
+      {
+        "region_id": 7,
+        "name_en": "Tabuk",
+        "name_ar": "منطقة تبوك",
+        "governorates": [
+          {
+            "gov_id": 1,
+            "name_en": "Duba",
+            "name_ar": "محافظة ضباء"
+          },
+          {
+            "gov_id": 2,
+            "name_en": "Haql",
+            "name_ar": "محافظة حقل"
+          },
+          {
+            "gov_id": 3,
+            "name_en": "Al Wajh",
+            "name_ar": "محافظة الوجه"
+          },
+          {
+            "gov_id": 4,
+            "name_en": "Tayma",
+            "name_ar": "محافظة تيماء"
+          },
+          {
+            "gov_id": 5,
+            "name_en": "Umluj",
+            "name_ar": "محافظة أملج"
+          },
+          {
+            "gov_id": 6,
+            "name_en": "Al Bad'",
+            "name_ar": "محافظة البدع"
+          }
+        ]
+      },
+      {
+        "region_id": 8,
+        "name_en": "Hail",
+        "name_ar": "منطقة حائل",
+        "governorates": [
+          {
+            "gov_id": 1,
+            "name_en": "Baqa'a",
+            "name_ar": "محافظة بقعاء"
+          },
+          {
+            "gov_id": 2,
+            "name_en": "Al Ghazalah",
+            "name_ar": "محافظة الغزالة"
+          },
+          {
+            "gov_id": 3,
+            "name_en": "Ash Shinan",
+            "name_ar": "محافظة الشنان"
+          },
+          {
+            "gov_id": 4,
+            "name_en": "Al Hait",
+            "name_ar": "محافظة الحائط"
+          },
+          {
+            "gov_id": 5,
+            "name_en": "Al Shamli",
+            "name_ar": "محافظة الشملي"
+          }
+        ]
+      },
+      {
+        "region_id": 9,
+        "name_en": "Northern Borders",
+        "name_ar": "منطقة الحدود الشمالية",
+        "governorates": [
+          {
+            "gov_id": 1,
+            "name_en": "Rafha",
+            "name_ar": "محافظة رفحاء"
+          },
+          {
+            "gov_id": 2,
+            "name_en": "Turaif",
+            "name_ar": "محافظة طريف"
+          },
+          {
+            "gov_id": 3,
+            "name_en": "Al Uwayqilah",
+            "name_ar": "محافظة العويقيلة"
+          }
+        ]
+      },
+      {
+        "region_id": 10,
+        "name_en": "Jazan",
+        "name_ar": "منطقة جازان",
+        "governorates": [
+          {
+            "gov_id": 1,
+            "name_en": "Sabya",
+            "name_ar": "محافظة صبيا"
+          },
+          {
+            "gov_id": 2,
+            "name_en": "Abu Arish",
+            "name_ar": "محافظة أبو عريش"
+          },
+          {
+            "gov_id": 3,
+            "name_en": "Samtah",
+            "name_ar": "محافظة صامطة"
+          },
+          {
+            "gov_id": 4,
+            "name_en": "Ahad al Masarihah",
+            "name_ar": "محافظة أحد المسارحة"
+          },
+          {
+            "gov_id": 5,
+            "name_en": "Al Aridhah",
+            "name_ar": "محافظة العارضة"
+          },
+          {
+            "gov_id": 6,
+            "name_en": "Farasan",
+            "name_ar": "محافظة فرسان"
+          },
+          {
+            "gov_id": 7,
+            "name_en": "Dhamad",
+            "name_ar": "محافظة ضمد"
+          },
+          {
+            "gov_id": 8,
+            "name_en": "Baysh",
+            "name_ar": "محافظة بيش"
+          },
+          {
+            "gov_id": 9,
+            "name_en": "Al Darb",
+            "name_ar": "محافظة الدرب"
+          },
+          {
+            "gov_id": 10,
+            "name_en": "Al Tuwal",
+            "name_ar": "محافظة الطوال"
+          },
+          {
+            "gov_id": 11,
+            "name_en": "Harub",
+            "name_ar": "محافظة هروب"
+          },
+          {
+            "gov_id": 12,
+            "name_en": "Al Edabi",
+            "name_ar": "محافظة الداير بني مالك"
+          }
+        ]
+      },
+      {
+        "region_id": 11,
+        "name_en": "Najran",
+        "name_ar": "منطقة نجران",
+        "governorates": [
+          {
+            "gov_id": 1,
+            "name_en": "Sharurah",
+            "name_ar": "محافظة شرورة"
+          },
+          {
+            "gov_id": 2,
+            "name_en": "Yadamah",
+            "name_ar": "محافظة يدمة"
+          },
+          {
+            "gov_id": 3,
+            "name_en": "Thar",
+            "name_ar": "محافظة ثار"
+          },
+          {
+            "gov_id": 4,
+            "name_en": "Habuna",
+            "name_ar": "محافظة حبونا"
+          },
+          {
+            "gov_id": 5,
+            "name_en": "Badr Al Janub",
+            "name_ar": "محافظة بدر الجنوب"
+          },
+          {
+            "gov_id": 6,
+            "name_en": "Kharkhir",
+            "name_ar": "محافظة الخرخير"
+          }
+        ]
+      },
+      {
+        "region_id": 12,
+        "name_en": "Al Bahah",
+        "name_ar": "منطقة الباحة",
+        "governorates": [
+          {
+            "gov_id": 1,
+            "name_en": "Al Aqiq",
+            "name_ar": "محافظة العقيق"
+          },
+          {
+            "gov_id": 2,
+            "name_en": "Al Mandaq",
+            "name_ar": "محافظة المندق"
+          },
+          {
+            "gov_id": 3,
+            "name_en": "Al Makhwah",
+            "name_ar": "محافظة المخواة"
+          },
+          {
+            "gov_id": 4,
+            "name_en": "Qilwah",
+            "name_ar": "محافظة قلوة"
+          },
+          {
+            "gov_id": 5,
+            "name_en": "Al Qara",
+            "name_ar": "محافظة القرى"
+          },
+          {
+            "gov_id": 6,
+            "name_en": "Baljurashi",
+            "name_ar": "محافظة بلجرشي"
+          }
+        ]
+      },
+      {
+        "region_id": 13,
+        "name_en": "Al Jouf",
+        "name_ar": "منطقة الجوف",
+        "governorates": [
+          {
+            "gov_id": 1,
+            "name_en": "Sakaka",
+            "name_ar": "محافظة سكاكا"
+          },
+          {
+            "gov_id": 2,
+            "name_en": "Dumat Al-Jandal",
+            "name_ar": "محافظة دومة الجندل"
+          },
+          {
+            "gov_id": 3,
+            "name_en": "Qurayyat",
+            "name_ar": "محافظة القريات"
+          },
+          {
+            "gov_id": 4,
+            "name_en": "Tabarjal",
+            "name_ar": "محافظة طبرجل"
+          }
+        ]
+      }
+    ]
+  }
