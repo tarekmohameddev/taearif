@@ -15,6 +15,11 @@ use App\Models\User\Follower;
 use App\Models\User\FooterQuickLink;
 use App\Models\User\FooterText;
 use App\Models\User\HeroSlider;
+
+use App\Models\User\HeroStatic;
+use App\Models\User\UserService;
+use App\Models\User\BasicSetting;
+
 use App\Models\User\HomePageText;
 use App\Models\User\Language;
 use App\Models\User\Menu;
@@ -199,6 +204,7 @@ class UserController extends Controller
                 ->where('user_id', Auth::id())
                 ->orderBy('id', 'DESC')
                 ->get(),
+            'sliders_static' => HeroStatic::where('language_id', $lang->id)->first(),
             'testimonials' => UserTestimonial::where([
                 ['user_id', '=', Auth::id()],
                 ['lang_id', '=', $lang->id],
