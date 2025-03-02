@@ -29,8 +29,8 @@ class HeroStaticController extends Controller
     public function updateStaticInfo(Request $request, $language): RedirectResponse
     {
         $rules = [
-            'title' => 'required',
-            'subtitle' => 'sometimes|required',
+            'title' => 'sometimes',
+            'subtitle' => 'sometimes',
         ];
         $messages = [
             'img.required' => 'The image field is required',

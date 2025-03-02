@@ -609,7 +609,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                 @if ($userBs->theme == 'home_twelve')
                                                     {{ __('Name*') }}
                                                 @else
-                                                    {{ __('Title*') }}
+                                                    {{ __('Title of banner') }}
                                                 @endif
                                             </label>
                                             <input type="text" class="form-control" name="title"
