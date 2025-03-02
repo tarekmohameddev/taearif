@@ -11,15 +11,15 @@
         <section class="home-banner home-banner-1">
             <img class="lazyload bg-img" src="{{ asset('assets/front/img/hero_static/' . $heroStatic->img) }}">
             <div class="container">
-                <div class="row align-items-center">
-                    <div class="col-xxl-10">
-                        <div class="content mb-40" data-aos="fade-up">
+                <div class="row justify-content-center text-center align-items-center">
+                    <div class="col-xxl-5">
+                        <div class="content" data-aos="fade-up">
                             <h1 class="title">{{ $heroStatic?->title }}</h1>
-                            <p class="text">
+                            <p class="text text-white">
                                 {{ $heroStatic?->subtitle }}
                             </p>
                         </div>
-                        <div class="banner-filter-form" data-aos="fade-up">
+                        <div class="banner-filter-form d-none" data-aos="fade-up">
                             <ul class="nav nav-tabs">
                                 <li class="nav-item">
                                     <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#rent"
@@ -260,6 +260,44 @@
         </div>
     @endif
 
+    @if ($home_sections->intro_section == 1)
+        <section class="about-area pb-70 pt-30">
+            <div class="container">
+                <div class="row gx-xl-5">
+                    <div class="col-lg-6">
+                        <div class="img-content" data-aos="fade-up">
+
+                                @if (!empty($home_text->about_image))
+                                    <img class="lazyload blur-up"
+                                        data-src="{{ asset('assets/front/img/user/home_settings/' . $home_text->about_image) }}">
+                                @endif
+
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="content mb-30" data-aos="fade-up">
+                            <div class="content-title">
+                                <span class="subtitle"><span class="line"></span>
+                                    {{ $home_text?->about_title }}</span>
+                                <h2>{{ $home_text?->about_subtitle }}</h2>
+                            </div>
+                            <div class="text summernote-content">{!! $home_text?->about_content !!}</div>
+
+                            <div class="d-flex align-items-center flex-wrap gap-15">
+                                @if (!empty($home_text->about_button_url))
+                                    <a href="{{ $home_text->about_button_url }}"
+                                        class="btn btn-lg btn-primary bg-secondary">{{ $home_text->about_button_text }}</a>
+                                @endif
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+        </section>
+    @endif
+
 
     @if ($home_sections->featured_properties_section == 1)
         <section class="product-area featured-product pb-70">
@@ -295,141 +333,6 @@
     @endif
 
 
-    @if ($home_sections->intro_section == 1)
-        <section class="about-area pb-70 pt-30">
-            <div class="container">
-                <div class="row gx-xl-5">
-                    <div class="col-lg-6">
-                        <div class="img-content mb-30" data-aos="fade-up">
-                            <div class="image">
-                                @if (!empty($home_text->about_image))
-                                    <img class="lazyload blur-up"
-                                        data-src="{{ asset('assets/front/img/user/home_settings/' . $home_text->about_image) }}">
-                                @endif
-                                @if (!empty($home_text->about_image_two))
-                                    <img class="lazyload blur-up"
-                                        data-src="{{ asset('assets/front/img/user/home_settings/' . $home_text->about_image_two) }}">
-                                @endif
-                            </div>
-                            <div class="absolute-text bg-secondary">
-                                <div class="center-text">
-                                    <span class="h2 color-primary">{{ $home_text?->years_of_expricence }}+</span>
-                                    <span>{{ $keywords['Years'] ?? __('Years') }}</span>
-                                </div>
-                                <div id="curveText">
-                                    {{ $keywords['We are highly experience'] ?? __('We are highly experience') }}</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="content mb-30" data-aos="fade-up">
-                            <div class="content-title">
-                                <span class="subtitle"><span class="line"></span>
-                                    {{ $home_text?->about_title }}</span>
-                                <h2>{{ $home_text?->about_subtitle }}</h2>
-                            </div>
-                            <div class="text summernote-content">{!! $home_text?->about_content !!}</div>
-
-                            <div class="d-flex align-items-center flex-wrap gap-15">
-                                @if (!empty($home_text->about_button_url))
-                                    <a href="{{ $home_text->about_button_url }}"
-                                        class="btn btn-lg btn-primary bg-secondary">{{ $home_text->about_button_text }}</a>
-                                @endif
-
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            </div>
-        </section>
-    @endif
-
-
-    @if ($home_sections->property_section == 1)
-        <section class="product-area popular-product product-1 pb-70">
-            <div class="container">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="section-title title-inline mb-40" data-aos="fade-up">
-                            <h2 class="title">{{ $home_text?->property_title }}</h2>
-                            <div class="tabs-navigation">
-                                <ul class="nav nav-tabs">
-                                    <li class="nav-item">
-                                        <button class="nav-link active btn-md" data-bs-toggle="tab"
-                                            data-bs-target="#forAll"
-                                            type="button">{{ $keywords['All Properties'] ?? __('All Properties') }}</button>
-                                    </li>
-                                    <li class="nav-item">
-                                        <button class="nav-link btn-md" data-bs-toggle="tab" data-bs-target="#forRent"
-                                            type="button">{{ $keywords['For Rent'] ?? __('For Rent') }}</button>
-                                    </li>
-                                    <li class="nav-item">
-                                        <button class="nav-link btn-md" data-bs-toggle="tab" data-bs-target="#forSell"
-                                            type="button">{{ $keywords['For Sale'] ?? __('For Sale') }}</button>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <div class="tab-content" data-aos="fade-up">
-                            <div class="tab-pane fade show active" id="forAll">
-                                <div class="row">
-
-                                    @forelse ($properties as $property)
-                                        <div class="col-lg-4 col-xxl-3 col-md-6">
-                                            @include('user-front.realestate.partials.property')
-                                        </div>
-                                    @empty
-                                        <div class="p-3 text-center mb-30">
-                                            <h3 class="mb-0">
-                                                {{ $keywords['No Properties Found'] ?? __('No Properties Found') }}</h3>
-                                        </div>
-                                    @endforelse
-
-                                </div>
-                            </div>
-                            <div class="tab-pane fade" id="forRent">
-                                <div class="row">
-                                    @forelse ($properties as $property)
-                                        @if ($property->purpose == 'rent')
-                                            <div class="col-lg-4 col-xxl-3 col-md-6">
-                                                @include('user-front.realestate.partials.property')
-                                            </div>
-                                        @endif
-                                    @empty
-                                        <div class="p-3 text-center mb-30">
-                                            <h3 class="mb-0">
-                                                {{ $keywords['No Properties Found'] ?? __('No Properties Found') }}</h3>
-                                        </div>
-                                    @endforelse
-
-                                </div>
-                            </div>
-                            <div class="tab-pane fade" id="forSell">
-                                <div class="row">
-                                    @forelse ($properties as $property)
-                                        @if ($property->purpose == 'sale')
-                                            <div class="col-lg-4 col-xxl-3 col-md-6">
-                                                @include('user-front.realestate.partials.property')
-                                            </div>
-                                        @endif
-                                    @empty
-                                        <div class="p-3 text-center mb-30">
-                                            <h3 class="mb-0">
-                                                {{ $keywords['No Properties Found'] ?? __('No Properties Found') }}</h3>
-                                        </div>
-                                    @endforelse
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    @endif
-
 
     @if ($home_sections->why_choose_us_section == 1)
         <section class="choose-area pb-70">
@@ -440,7 +343,7 @@
                             <div class="img-1">
                                 @if (!empty($home_text?->why_choose_us_section_image))
                                     <img class="lazyload blur-up"
-                                        data-src="{{ asset('assets/front/img/user/home_settings/' . $home_text->why_choose_us_section_image) }} "
+                                        data-src="https://codecanyon8.kreativdev.com/estaty/assets/img/why-choose-us/65757ae71b9f0.jpg "
                                         alt="Image">
                                 @endif
                                 @if (!empty($home_text->why_choose_us_section_video_url))
@@ -453,7 +356,7 @@
                             <div class="img-2">
                                 @if (!empty($home_text->why_choose_us_section_image_two))
                                     <img class="lazyload blur-up"
-                                        data-src="  {{ asset('assets/front/img/user/home_settings/' . $home_text->why_choose_us_section_image_two) }} "
+                                        data-src="https://codecanyon8.kreativdev.com/estaty/assets/img/why-choose-us/65757ae71c078.jpg"
                                         alt="Image">
                                 @endif
                             </div>
@@ -474,150 +377,47 @@
         </section>
     @endif
 
-    {{-- @if ($secInfo->vendor_section_status == 1)
-    <section class="agent-area pb-70">
-                            <div class="container">
-                                <div class="row">
-                                    <div class="col-12">
-                                        <div class="section-title title-center mb-40" data-aos="fade-up">
-                                            <span class="subtitle">{{ $vendorInfo->title }}</span>
-                                            <h2 class="title">{{ $vendorInfo?->subtitle }}</h2>
-                                        </div>
-                                    </div>
-                                    <div class="col-12" data-aos="fade-up">
-                                        <div class="swiper agent-slider">
-                                            <div class="swiper-wrapper">
-                                                @forelse ($vendors as $vendor)
-    <div class="swiper-slide">
-                                                        <div class="agent-box radius-md mb-30">
-                                                            <div class="agent-img">
-                                                                <figure>
-                                                                    <a href="#" class="lazy-container ratio ratio-1-2">
-                                                                        <img class="lazyload"
-                                                                            data-src="{{ $vendor->photo ? asset('assets/admin/img/vendor-photo/' . $vendor->photo) : asset('assets/img/blank-user.jpg') }}">
-                                                                    </a>
-                                                                </figure>
-                                                                <div
-                                                                    class="agent-ratings d-flex align-items-center justify-content-between">
-                                                                    <div class="ratings">
-
-                                                                    </div>
-                                                                    <span class="label">{{ __('Real Estate') }}</span>
-                                                                </div>
-
-                                                            </div>
-                                                            <div class="agent-details text-center">
-                                                                @php
-                                                                    $vendor_info = App\Models\VendorInfo::where([
-                                                                        ['vendor_id', $vendor->vendorId],
-                                                                        ['language_id', $language->id],
-                                                                    ])
-                                                                        ->select('name')
-                                                                        ->first();
-                                                                    $agents = App\Models\Agent::where(
-                                                                        'vendor_id',
-                                                                        $vendor->vendorId,
-                                                                    )->get();
-
-                                                                @endphp
-                                                                <span class="color-primary font-sm">{{ count($vendor->properties) }}
-                                                                    {{ __('Properties') }}</span> |
-                                                                <span class="color-primary font-sm">{{ count($vendor->agents) }}
-                                                                    {{ __('Agents') }}</span> |
-                                                                <span class="color-primary font-sm">{{ count($vendor->projects) }}
-                                                                    {{ __('Projects') }}</span>
-
-
-                                                                <h4 class="agent-title"><a
-                                                                        href="{{ route('frontend.vendor.details', ['username' => $vendor->username]) }}">{{ @$vendor_info->name }}</a>
-                                                                </h4>
-                                                                <ul class="agent-info list-unstyled p-0">
-
-                                                                    @if ($vendor->show_phone_number == 1)
-    @if (!is_null($vendor->phone))
-    <li class="icon-start ">
-                                                                                <a href="tel:{{ $vendor->phone }}"> <i
-                                                                                        class="fal fa-phone-plus"></i>
-                                                                                    {{ $vendor->phone }}</a>
-                                                                            </li>
-    @endif
-    @endif
-
-                                                                    @if ($vendor->show_email_addresss == 1)
-    <li class="icon-start font-sm">
-                                                                            <a href="mailto:{{ $vendor->email }}"> <i
-                                                                                    class="fal fa-envelope"></i>
-                                                                                {{ $vendor->email }}</a>
-                                                                        </li>
-    @endif
-                                                                </ul>
-                                                                <a href="{{ route('frontend.vendor.details', ['username' => $vendor->username]) }}"
-                                                                    class="btn-text">{{ __('View Profile') }}</a>
-                                                            </div>
-                                                        </div>
-
-                                                    </div>
-                                @empty
-                                                    <div class="p-3 text-center mb-30 w-100">
-                                                        <h3 class="mb-0"> {{ __('No Vendors Found') }}</h3>
-                                                    </div>
-    @endforelse
-                                            </div>
-                                        </div>
-                                    </div>
-                                    @if (count($vendors) > 0)
-    <div class="text-center">
-                                            <a href="{{ route('frontend.vendors') }}"
-                                                class="btn btn-lg btn-primary bg-secondary mb-30">{{ $vendorInfo->btn_name }}</a>
-                                        </div>
-    @endif
-                                </div>
-                            </div>
-                        </section>
-    @endif --}}
-
-    @if ($home_sections->cities_section == 1)
-        <section class="gallery-area pt-100 pb-70">
-            <img class="lazyload bg-img" src="{{ asset('assets/front/images/245re4e1r53.png') }}">
+    @if ($home_sections->project_section == 1)
+        <section class="projects-area pt-100 pb-70">
             <div class="container">
                 <div class="row">
                     <div class="col-12">
-                        <div class="section-title title-inline mb-40" data-aos="fade-up">
-                            <div>
-                                <span class="subtitle"><span class="line"></span>
-                                    {{ $home_text?->city_title }}</span>
-                                <h2 class="title">{{ $home_text?->city_subtitle }}</h2>
-                            </div>
+                        <div class="section-title title-center mb-40" data-aos="fade-up">
+                            <span class="subtitle"></span>
+                            <h2 class="title mb-20">مشاريعنا</h2>
                         </div>
                     </div>
-                    <div class="col-12">
-                        <div class="row" data-aos="fade-up">
-                            @forelse ($cities as $city)
-                                <div class="col-lg-4 col-sm-6">
-                                    <div class="card radius-md mb-30">
-                                        <a href="#">
+                    <div class="col-12" data-aos="fade-up">
+                        <div class="row">
+                            @forelse ($projects as $project)
+                                <div class="col-lg-4 col-md-6 mb-30">
+                                    <a
+                                        href="{{ route('front.user.project.details', [getParam(), 'slug' => $project->slug]) }}">
+                                        <div class="card product-default">
                                             <div class="card-img">
-                                                <div class="lazy-container ratio ratio-16-11">
-                                                    <img class="lazyload blur-up"
-                                                        data-src="{{ asset('assets/img/property-city/' . $city->image) }}">
-                                                </div>
-                                            </div>
-                                            <div class="card-text text-center">
-                                                <h5 class="card-title color-white mb-0">{{ $city->name }}</h5>
-                                                <span class="font-sm color-white">{{ $city->propertyCount }}
-                                                    @if ($city->propertyCount > 0)
-                                                        {{ $keywords['Properties'] ?? __('Properties') }}
-                                                    @else
-                                                        {{ $keywords['Property'] ?? __('Property') }}
-                                                    @endif
+                                                <img src="{{ asset('assets/img/project/featured/' . $project->featured_image) }}"
+                                                    alt="Product">
+                                                <span class="label">
+                                                    {{ $project->status == 1 ? $keywords['start selling'] ?? __('start selling') : $keywords['Under Construction'] ?? __('Under Construction') }}
                                                 </span>
                                             </div>
-                                        </a>
-                                    </div>
+                                            <div class="card-text product-title text-center p-3">
+                                                <h3 class="card-title product-title color-white mb-1">
+                                                    {{ @$project->title }}
+
+                                                </h3>
+                                                <span class="location icon-start"><i
+                                                        class="fal fa-map-marker-alt"></i>{{ $project->address }}</span>
+                                             
+
+                                            </div>
+                                        </div>
+                                    </a>
                                 </div>
                             @empty
-                                <div class=" p-3 text-center mb-30 w-100">
-                                    <h3 class="mb-0"> {{ $keywords['No Cities Found'] ?? __('No Cities Found') }}</h3>
+                                <div class="p-3 text-center mb-30 w-100">
+                                    <h3 class="mb-0"> {{ $keywords['No Projects Found'] ?? __('No Projects Found') }}
+                                    </h3>
                                 </div>
                             @endforelse
                         </div>
@@ -631,7 +431,7 @@
         <section class="testimonial-area pt-100 pb-70">
             <div class="overlay-bg d-none d-lg-block">
                 <img class="lazyload blur-up"
-                    data-src="{{ asset('assets/front/img/user/home_settings/' . $home_text->testimonial_image) }}">
+                    data-src="https://codecanyon8.kreativdev.com/estaty/assets/front/images/gallery-bg.png">
             </div>
             <div class="container">
                 <div class="row align-items-center">
@@ -716,7 +516,7 @@
             <div class="container">
                 <div class="newsletter-inner px-4">
                     <img class="lazyload bg-img"
-                        src="{{ asset('assets/front/img/user/home_settings/' . $home_text->newsletter_image) }}">
+                        src="https://codecanyon8.kreativdev.com/estaty/assets/img/6577e0ff3ab05.jpg">
                     <div class="row justify-content-center text-center" data-aos="fade-up">
                         <div class="col-lg-6 col-xxl-5">
                             <div class="content mb-30">
