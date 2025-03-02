@@ -820,34 +820,10 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
             <!-- About Company Section -->
             <div id="about" class="content-section d-none">
-                <h3 class="h4 font-weight-bold">{{ __('About Company') }} </h3>123123
+                <h3 class="h4 font-weight-bold">{{ __('About Company') }} </h3>
                 <p class="text-muted">{{ __('Provide information about your company') }}.</p>
                 <!--  -->
                 <!-- Home Page About Section -->
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="min-vh-100 d-flex align-items-center justify-content-center pb-3">
-                            <div class="feature-card p-4 d-flex flex-column flex-md-row align-items-start gap-3 mx-auto w-100" style="">
-                                <div class="icon-container d-flex align-items-center justify-content-center flex-shrink-0 mb-3 mb-md-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-dark">
-                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                        <line x1="3" y1="9" x2="21" y2="9"></line>
-                                        <line x1="3" y1="15" x2="21" y2="15"></line>
-                                        <line x1="9" y1="3" x2="9" y2="21"></line>
-                                        <line x1="15" y1="3" x2="15" y2="21"></line>
-                                    </svg>
-                                </div>
-                                <div class="feature-card-text">
-                                    <h2 class="fs-4 fw-semibold mb-2"> {{ __('About Section')}}</h2>
-                                    <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
-                                        في الصفحة الرئيسية يوجد قسم عن الشركة, يحتوي على معلومات نصيه وصورة, يمكنك التحكم بالمحتوى الخاص به من هنا
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="row">
                     <div class="col-md-12">
                         <div class="card">
@@ -872,11 +848,9 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
                             <div class="card-body pt-5 pb-5">
                                 <div class="row">
-                                    <div class="col-lg-6 offset-lg-3">000
-                                        <form id="ajaxFormAbout" action="{{ route('user.home.page.update.about') }}"
-                                        method="POST"
-                                        enctype="multipart/form-data"
-                                        onsubmit="return storeSectionBeforeSubmit(this)">
+                                    <div class="col-lg-6 offset-lg-3">
+                                        <form id="ajaxFormAbout" action="{{ route('user.home.page.update.about') }}" method="POST"
+                                        enctype="multipart/form-data" onsubmit="return storeSectionBeforeSubmit(this)">
                                             @csrf
                                             <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -884,26 +858,36 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                             <input type="hidden" name="language_id" value="{{ $information['home_setting']->language_id }}">
 
                                             <div class="row">
-                                            <div class="col-lg-12">
-                                                        <div class="form-group">
-                                                            <div class="col-12 mb-2">
-                                                                <h3 class="section-title">{{ __('Company Introduction (About Us)') }}</h3>
-                                                                <p class="section-description">
-                                                                    {{ __('This section contains text and an image about your company. You can control its content here') }}
-                                                                </p>
-                                                            </div>
-                                                            <div class="col-md-12 mb-3 preview-image showAboutImage">
-                                                                <img src="{{ isset($information['home_setting']->about_image) ? asset('assets/front/img/user/home_settings/' . $information['home_setting']->about_image) : asset('assets/admin/img/noimage.jpg') }}" alt="about image" class="img-thumbnail">
-                                                            </div>
-                                                            <!-- Removed redundant hidden "types[]" inputs -->
-                                                            <input type="file" name="about_image" id="about_image" class="d-none form-control ltr">
-                                                            <button type="button" class="upload-btn" style="background-color: white; border: 2px dashed #8c9998; color: #0E9384; padding: 1rem; width: 80%; display: flex; flex-direction: column; align-items: center; cursor: pointer;" onclick="document.getElementById('about_image').click()">
-                                                                <i class="bi bi-upload mb-2"></i>
-                                                                <span>{{ __('Upload Image') }}</span>
-                                                            </button>
-                                                            <p id="errabout_image" class="mb-0 text-danger em"></p>
+                                                <div class="col-lg-12">
+                                                    <div class="form-group">
+                                                        <div class="col-12 mb-2">
+                                                            <h3 class="section-title">{{ __('Company Introduction (About Us)') }}</h3>
+                                                            <p class="section-description">
+                                                                {{ __('This section contains text and an image about your company. You can control its content here') }}
+                                                            </p>
                                                         </div>
+                                                        <div class="col-md-12 mb-3 preview-image showAboutImage">
+                                                            <img src="{{ isset($information['home_setting']->about_image) ? asset('assets/front/img/user/home_settings/' . $information['home_setting']->about_image) : asset('assets/admin/img/noimage.jpg') }}" alt="about image" class="img-thumbnail">
+                                                        </div>
+                                                        <!-- Removed redundant hidden "types[]" inputs -->
+                                                        <input type="file" name="about_image" id="about_image" class="d-none form-control ltr">
+                                                        <button type="button" class="upload-btn"
+                                                            style="background-color: white;
+                                                                    border: 2px dashed #8c9998;
+                                                                    color: #0E9384;
+                                                                    padding: 1rem; width: 80%;
+                                                                    display: flex;
+                                                                    flex-direction:
+                                                                    column; align-items:
+                                                                    center; cursor:
+                                                                    pointer;"
+                                                        onclick="document.getElementById('about_image').click()">
+                                                            <i class="bi bi-upload mb-2"></i>
+                                                            <span>{{ __('Upload Image') }}</span>
+                                                        </button>
+                                                        <p id="errabout_image" class="mb-0 text-danger em"></p>
                                                     </div>
+                                                </div>
 
                                                 @if ($userBs->theme == 'home13' || $userBs->theme == 'home15')
                                                 <div class="col-lg-6">
@@ -920,125 +904,129 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                     </div>
                                                 </div>
                                                 @endif
-                                                </div>
                                             </div>
-                                            <div class="row">
-                                                <div class="col-lg-6 pr-0">
-                                                    <div class="form-group">
-                                                        <label for="">{{ __('Title') }}</label>
-                                                        <input type="hidden" name="types[]" value="about_title">
-                                                        <input type="text" class="form-control" name="about_title" value="{{ $information['home_setting']->about_title }}">
-                                                        <p id="errabout_title" class="mb-0 text-danger em"></p>
-                                                    </div>
-                                                </div>
-                                                @if ($userBs->theme !== 'home_eleven')
-                                                <div class="col-lg-6 pl-0">
-                                                    <div class="form-group">
-                                                        <label for="">{{ __('Subtitle') }}</label>
-                                                        <input type="hidden" name="types[]" value="about_subtitle">
-                                                        <input type="text" class="form-control" name="about_subtitle" value="{{ $information['home_setting']->about_subtitle }}">
-                                                        <p id="errabout_subtitle" class="mb-0 text-danger em"></p>
-                                                    </div>
-                                                </div>
-                                                @endif
-                                            </div>
-                                            <div class="form-group">
-                                                <label for="">{{ __('Content') }}</label>
-                                                <input type="hidden" name="types[]" value="about_content">
-                                                <textarea class="form-control" name="about_content" rows="5">{{ $information['home_setting']->about_content }}</textarea>
-                                                <p id="errabout_content" class="mb-0 text-danger em"></p>
-                                            </div>
-                                            @if ($userBs->theme === 'home13')
-                                            <div class="row">
-                                                <div class="col-lg-12">
-                                                    <div class="form-group">
-                                                        <label for="">{{ __('Years Of Exprience') }}</label>
-                                                        <input type="hidden" name="types[]" value="years_of_expricence">
-                                                        <input type="number" class="form-control" name="years_of_expricence" value="{{ $information['home_setting']->years_of_expricence }}">
-                                                        <p id="erryears_of_expricence" class="mb-0 text-danger em"></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            @endif
-                                            @if (
-                                            (isset($userBs->theme) && !$userBs->theme === 'home_two') ||
-                                            $userBs->theme === 'home_eleven' ||
-                                            $userBs->theme === 'home15' ||
-                                            $userBs->theme === 'home13')
-                                            <div class="row">
-                                                <div class="col-lg-6 pr-0">
-                                                    <div class="form-group">
-                                                        <label for="">{{ __('Button Text') }}</label>
-                                                        <input type="hidden" name="types[]" value="about_button_text">
-                                                        <input type="text" class="form-control" name="about_button_text" value="{{ $information['home_setting']->about_button_text }}">
-                                                        <p id="errabout_button_text" class="mb-0 text-danger em"></p>
-                                                    </div>
-                                                </div>
-                                                <div class="col-lg-6 pl-0">
-                                                    <div class="form-group">
-                                                        <label for="">{{ __('Button URL') }}</label>
-                                                        <input type="hidden" name="types[]" value="about_button_url">
-                                                        <input type="text" class="form-control ltr" name="about_button_url" value="{{ $information['home_setting']->about_button_url }}">
-                                                        <p id="errabout_button_url" class="mb-0 text-danger em"></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            @endif
-                                            @if (isset($userBs->theme) && $userBs->theme === 'home_eleven')
-                                            <div class="row">
-                                                <div class="col-lg-6 pr-0">
-                                                    <div class="form-group">
-                                                        <label for="">{{ __('Secound Button Text') }}</label>
-                                                        <input type="hidden" name="types[]" value="about_snd_button_text">
-                                                        <input type="text" class="form-control" name="about_snd_button_text" value="{{ $information['home_setting']->about_snd_button_text }}">
-                                                        <p id="errabout_snd_button_text" class="mb-0 text-danger em"></p>
-                                                    </div>
-                                                </div>
-                                                <div class="col-lg-6 pl-0">
-                                                    <div class="form-group">
-                                                        <label for="">{{ __('Secound Button URL') }}</label>
-                                                        <input type="hidden" name="types[]" value="about_snd_button_url">
-                                                        <input type="text" class="form-control ltr" name="about_snd_button_url" value="{{ $information['home_setting']->about_snd_button_url }}">
-                                                        <p id="errabout_snd_button_url" class="mb-0 text-danger em"></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            @endif
-                                            @if (isset($userBs->theme) && $userBs->theme === 'home_two')
-                                            <div class="form-group">
-                                                <div class="col-12 mb-2">
-                                                    <label for="logo"><strong>{{ __('Video Background Image') }}</strong></label>
-                                                </div>
-                                                <div class="col-md-12 showAboutVideoImage mb-3">
-                                                    <img src="{{ $information['home_setting']->about_video_image ? asset('assets/front/img/user/home_settings/' . $information['home_setting']->about_video_image) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
-                                                </div>
-                                                <input type="hidden" name="types[]" value="about_video_image">
-                                                <input type="file" name="about_video_image" id="about_video_image" class="form-control ltr">
-                                                <p id="errabout_video_image" class="mb-0 text-danger em"></p>
-                                            </div>
-                                            @endif
-                                            @if ((isset($userBs->theme) && $userBs->theme === 'home_two') || $userBs->theme == 'home15')
-                                            <div class="form-group">
-                                                <label for="">{{ __('Video URL') }}</label>
-                                                <input type="hidden" name="types[]" value="about_video_url">
-                                                <input type="text" class="form-control ltr" name="about_video_url" value="{{ $information['home_setting']->about_video_url }}">
-                                                <p id="errabout_video_url" class="mb-0 text-danger em"></p>
-                                            </div>
-                                            @endif
-                                        </form>
                                     </div>
-                                </div>
-                        </div>
-
-                        <div class="card-footer">
-                            <div class="row">
-                                <div class="col-12 text-center">
-                                    <button type="submit" id="submitBtnAbout" class="btn btn-success">
-                                        {{ __('Update') }} - up
-                                    </button>
+                                    <div class="row">
+                                        <div class="col-lg-6 pr-0 ">
+                                            <div class="form-group">
+                                                <label for="">{{ __('Title') }}</label>
+                                                <input type="hidden" name="types[]" value="about_title">
+                                                <input type="text" class="form-control" name="about_title" value="{{ $information['home_setting']->about_title }}">
+                                                <p id="errabout_title" class="mb-0 text-danger em"></p>
+                                            </div>
+                                        </div>
+                                        @if ($userBs->theme !== 'home_eleven')
+                                        <div class="col-lg-6 pl-0 ">
+                                            <div class="form-group">
+                                                <label for="">{{ __('Subtitle') }}</label>
+                                                <input type="hidden" name="types[]" value="about_subtitle">
+                                                <input type="text" class="form-control" name="about_subtitle"
+                                                value="{{ $information['home_setting']->about_subtitle }}">
+                                                <p id="errabout_subtitle" class="mb-0 text-danger em"></p>
+                                            </div>
+                                        </div>
+                                        @endif
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="">{{ __('Content') }}</label>
+                                        <input type="hidden" name="types[]" value="about_content">
+                                        <textarea class="form-control" name="about_content" rows="5">{{ $information['home_setting']->about_content }}</textarea>
+                                        <p id="errabout_content" class="mb-0 text-danger em"></p>
+                                    </div>
+                                    @if ($userBs->theme === 'home13')
+                                    <div class="row">
+                                        <div class="col-lg-12">
+                                            <div class="form-group">
+                                                <label for="">{{ __('Years Of Exprience') }}</label>
+                                                <input type="hidden" name="types[]" value="years_of_expricence">
+                                                <input type="number" class="form-control" name="years_of_expricence" value="{{ $information['home_setting']->years_of_expricence }}">
+                                                <p id="erryears_of_expricence" class="mb-0 text-danger em"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endif
+                                    @if (
+                                    (isset($userBs->theme) && !$userBs->theme === 'home_two') ||
+                                    $userBs->theme === 'home_eleven' ||
+                                    $userBs->theme === 'home15' ||
+                                    $userBs->theme === 'home13')
+                                    <div class="row">
+                                        <div class="col-lg-6 pr-0">
+                                            <div class="form-group">
+                                                <label for="">{{ __('Button Text') }}</label>
+                                                <input type="hidden" name="types[]" value="about_button_text">
+                                                <input type="text" class="form-control" name="about_button_text" value="{{ $information['home_setting']->about_button_text }}">
+                                                <p id="errabout_button_text" class="mb-0 text-danger em"></p>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6 pl-0">
+                                            <div class="form-group">
+                                                <label for="">{{ __('Button URL') }}</label>
+                                                <input type="hidden" name="types[]" value="about_button_url">
+                                                <input type="text" class="form-control ltr" name="about_button_url" value="{{ $information['home_setting']->about_button_url }}">
+                                                <p id="errabout_button_url" class="mb-0 text-danger em"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endif
+                                    @if (isset($userBs->theme) && $userBs->theme === 'home_eleven')
+                                    <div class="row">
+                                        <div class="col-lg-6 pr-0">
+                                            <div class="form-group">
+                                                <label for="">{{ __('Secound Button Text') }}</label>
+                                                <input type="hidden" name="types[]" value="about_snd_button_text">
+                                                <input type="text" class="form-control" name="about_snd_button_text" value="{{ $information['home_setting']->about_snd_button_text }}">
+                                                <p id="errabout_snd_button_text" class="mb-0 text-danger em"></p>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6 pl-0">
+                                            <div class="form-group">
+                                                <label for="">{{ __('Secound Button URL') }}</label>
+                                                <input type="hidden" name="types[]" value="about_snd_button_url">
+                                                <input type="text" class="form-control ltr" name="about_snd_button_url" value="{{ $information['home_setting']->about_snd_button_url }}">
+                                                <p id="errabout_snd_button_url" class="mb-0 text-danger em"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endif
+                                    @if (isset($userBs->theme) && $userBs->theme === 'home_two')
+                                    <div class="form-group">
+                                        <div class="col-12 mb-2">
+                                            <label for="logo"><strong>{{ __('Video Background Image') }}</strong></label>
+                                        </div>
+                                        <div class="col-md-12 showAboutVideoImage mb-3">
+                                            <img src="{{ $information['home_setting']->about_video_image ? asset('assets/front/img/user/home_settings/' . $information['home_setting']->about_video_image) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
+                                        </div>
+                                        <input type="hidden" name="types[]" value="about_video_image">
+                                        <input type="file" name="about_video_image" id="about_video_image" class="form-control ltr">
+                                        <p id="errabout_video_image" class="mb-0 text-danger em"></p>
+                                    </div>
+                                    @endif
+                                    @if ((isset($userBs->theme) && $userBs->theme === 'home_two') || $userBs->theme == 'home15')
+                                    <div class="form-group">
+                                        <label for="">{{ __('Video URL') }}</label>
+                                        <input type="hidden" name="types[]" value="about_video_url">
+                                        <input type="text" class="form-control ltr" name="about_video_url" value="{{ $information['home_setting']->about_video_url }}">
+                                        <p id="errabout_video_url" class="mb-0 text-danger em"></p>
+                                    </div>
+                                    @endif
+                                    </form>
                                 </div>
                             </div>
+
+                            <div class="card-footer">
+                                <div class="row">
+                                    <div class="col-12 text-center">
+                                        <button type="submit" id="submitBtnAbout" class="btn btn-success">
+                                            {{ __('Update') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
+
+
                     </div>
                 </div>
             </div>
