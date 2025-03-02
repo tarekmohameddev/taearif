@@ -210,7 +210,7 @@
     </style>
 @section('content')
     </br>
-            <div class="row justify-content-center">
+    <div class="row justify-content-center">
             <div class="col-lg-10">
                 <div class="text-center mb-4">
                     <h1 class="fs-2 fw-bold mb-2">إضافة عقار جديد</h1>
@@ -218,7 +218,29 @@
                 </div>
 
                 <!-- Property Form -->
-                <form id="property-form" class="needs-validation" novalidate enctype="multipart/form-data">
+                <form id="property-form" class="needs-validation" novalidate enctype="multipart/form-data" action="{{ route('user.property_management.store_property') }}" method="POST">
+                    @csrf
+
+                <!-- Hidden fields for language code -->
+                <input type="hidden" name="language_code" value="ar">
+
+                <!-- Hidden fields for property status -->
+                <input type="hidden" name="status" value="1">
+
+                <!-- Hidden fields for country -->
+                <input type="hidden" name="ar_country_id" value="1"> <!-- Default to Saudi Arabia -->
+
+                <!-- Hidden fields for state -->
+                <input type="hidden" name="ar_state_id" value="1"> <!-- Default state -->
+
+                <!-- Hidden meta fields -->
+                <input type="hidden" name="ar_meta_keyword" value="">
+                <input type="hidden" name="ar_meta_description" value="">
+
+                <input type="hidden" name="type" value="commercial">
+
+                <input type="hidden" name="city_id" value="1">
+
                     <!-- Tabs Navigation -->
                     <ul class="nav nav-tabs mb-4" id="propertyTabs" role="tablist">
                         <li class="nav-item" role="presentation">
@@ -247,7 +269,7 @@
                                 <div class="card-body">
                                     <div class="mb-4">
                                         <label for="title" class="form-label required">اسم العقار</label>
-                                        <input type="text" class="form-control" id="title" name="title" placeholder="أدخل اسم العقار" required>
+                                        <input type="text" class="form-control" id="title" name="ar_title" placeholder="أدخل اسم العقار" required>
                                         <div class="invalid-feedback">
                                             يرجى إدخال اسم العقار
                                         </div>
@@ -255,7 +277,7 @@
 
                                     <div class="mb-4">
                                         <label for="description" class="form-label required">وصف العقار</label>
-                                        <textarea class="form-control" id="description" name="description" rows="4" placeholder="أدخل وصفًا تفصيليًا للعقار" required></textarea>
+                                        <textarea class="form-control" id="description" name="ar_description" rows="4" placeholder="أدخل وصفًا تفصيليًا للعقار" required></textarea>
                                         <div class="invalid-feedback">
                                             يرجى إدخال وصف العقار
                                         </div>
@@ -318,17 +340,17 @@
 
                                     <div class="mb-4">
                                         <label for="category" class="form-label required">الفئة</label>
-                                        <select class="form-select" id="category" name="category" required>
+                                        <select class="form-select" id="category" name="ar_category_id" required>
                                             <option value="" selected disabled>اختر فئة العقار</option>
-                                            <option value="شقة">شقة</option>
-                                            <option value="فيلا">فيلا</option>
-                                            <option value="منزل">منزل</option>
-                                            <option value="مكتب">مكتب</option>
-                                            <option value="محل تجاري">محل تجاري</option>
-                                            <option value="أرض">أرض</option>
-                                            <option value="مزرعة">مزرعة</option>
-                                            <option value="شاليه">شاليه</option>
-                                            <option value="استوديو">استوديو</option>
+                                            <option value="1">شقة</option>
+                                            <option value="2">فيلا</option>
+                                            <option value="3">منزل</option>
+                                            <option value="4">مكتب</option>
+                                            <option value="5">محل تجاري</option>
+                                            <option value="6">أرض</option>
+                                            <option value="7">مزرعة</option>
+                                            <option value="8">شاليه</option>
+                                            <option value="9">استوديو</option>
                                         </select>
                                         <div class="invalid-feedback">
                                             يرجى اختيار فئة العقار
@@ -337,17 +359,17 @@
 
                                     <div class="mb-4">
                                         <label for="city" class="form-label required">المدينة</label>
-                                        <select class="form-select" id="city" name="city" required>
+                                        <select class="form-select" id="city" name="ar_city_id" required>
                                             <option value="" selected disabled>اختر المدينة</option>
-                                            <option value="الرياض">الرياض</option>
-                                            <option value="جدة">جدة</option>
-                                            <option value="مكة المكرمة">مكة المكرمة</option>
-                                            <option value="المدينة المنورة">المدينة المنورة</option>
-                                            <option value="الدمام">الدمام</option>
-                                            <option value="الخبر">الخبر</option>
-                                            <option value="تبوك">تبوك</option>
-                                            <option value="أبها">أبها</option>
-                                            <option value="بريدة">بريدة</option>
+                                            <option value="1">الرياض</option>
+                                            <option value="2">جدة</option>
+                                            <option value="3">مكة المكرمة</option>
+                                            <option value="4">المدينة المنورة</option>
+                                            <option value="5">الدمام</option>
+                                            <option value="6">الخبر</option>
+                                            <option value="7">تبوك</option>
+                                            <option value="8">أبها</option>
+                                            <option value="9">بريدة</option>
                                         </select>
                                         <div class="invalid-feedback">
                                             يرجى اختيار المدينة
@@ -376,9 +398,9 @@
                                             <p class="text-muted small">PNG، JPG حتى 5 ميجابايت</p>
                                             
                                         </div>
-                                        <input type="file" id="photo-input" name="photos[]" class="d-none" accept="image/*" multiple>
+                                        
                                     </div>
-
+                                    <input type="file" id="photo-input" name="slider_images[]" class="d-none" accept="image/*" multiple>
                                     <div class="mb-4">
                                         <label class="form-label">الصورة المصغرة للعقار</label>
                                         <div id="thumbnail-preview" class="text-center mb-3 d-none">
@@ -394,7 +416,7 @@
                                             <p class="mb-1">تحميل الصورة المصغرة</p>
                                             <p class="text-muted small">PNG، JPG حتى 1 ميجابايت</p>
                                         </div>
-                                        <input type="file" id="thumbnail-input" name="thumbnail" class="d-none" accept="image/*">
+                                        <input type="file" id="thumbnail-input" name="featured_image" class="d-none" accept="image/*">
                                     </div>
 
                                     <div class="mb-4">
@@ -412,14 +434,14 @@
                                             <p class="mb-1">تحميل مخطط العقار</p>
                                             <p class="text-muted small">PNG، JPG حتى 2 ميجابايت</p>
                                         </div>
-                                        <input type="file" id="property-plan-input" name="propertyPlan" class="d-none" accept="image/*">
+                                        <input type="file" id="property-plan-input" name="floor_planning_image" class="d-none" accept="image/*">
                                     </div>
 
                                     <div class="mb-4">
                                         <label for="video-link" class="form-label">رابط الفيديو</label>
                                         <div class="input-group">
                                             <span class="input-group-text"><i class="fa-solid fa-video"></i></span>
-                                            <input type="text" class="form-control" id="video-link" name="videoLink" placeholder="أدخل رابط الفيديو (YouTube أو Vimeo)">
+                                            <input type="text" class="form-control" id="video-link" name="video_link" placeholder="أدخل رابط الفيديو (YouTube أو Vimeo)">
                                         </div>
                                     </div>
 
@@ -438,7 +460,7 @@
                                             <p class="mb-1">تحميل صورة مصغرة للفيديو</p>
                                             <p class="text-muted small">PNG، JPG حتى 1 ميجابايت</p>
                                         </div>
-                                        <input type="file" id="video-thumbnail-input" name="videoThumbnail" class="d-none" accept="image/*">
+                                        <input type="file" id="video-thumbnail-input" name="video_image" class="d-none" accept="image/*">
                                     </div>
                                 </div>
                             </div>
@@ -471,7 +493,7 @@
 
                                     <div class="mb-4">
                                         <label for="address" class="form-label required">العنوان الكامل</label>
-                                        <textarea class="form-control" id="address" name="address" rows="3" placeholder="أدخل العنوان الكامل للعقار" required></textarea>
+                                        <textarea class="form-control" id="address" name="ar_address" rows="3" placeholder="أدخل العنوان الكامل للعقار" required></textarea>
                                         <div class="invalid-feedback">
                                             يرجى إدخال عنوان العقار
                                         </div>
@@ -490,31 +512,31 @@
                                 <div class="card-body">
                                     <div class="mb-4">
                                         <label class="form-label">المزايا</label>
-                                        <div id="advantages-container" class="d-flex flex-wrap mb-3">
-                                            <!-- Advantages will be added here dynamically -->
+                                        <div id="amenities-container" class="d-flex flex-wrap mb-3">
+                                            <!-- Amenities will be added here dynamically -->
                                         </div>
                                         <div class="input-group">
-                                            <input type="text" class="form-control" id="new-advantage" placeholder="أضف ميزة جديدة">
-                                            <button class="btn btn-primary" type="button" id="add-advantage">إضافة</button>
+                                            <input type="text" class="form-control" id="new-amenity" placeholder="أضف ميزة جديدة">
+                                            <button class="btn btn-primary" type="button" id="add-amenity">إضافة</button>
                                         </div>
                                     </div>
 
                                     <div class="mb-4">
-                                        <label class="form-label">ميزات إضافية</label>
-                                        <div id="features-container" class="mb-3">
-                                            <!-- Features will be added here dynamically -->
+                                        <label class="form-label">المواصفات</label>
+                                        <div id="specifications-container" class="mb-3">
+                                            <!-- Specifications will be added here dynamically -->
                                         </div>
                                         <div class="row g-2 align-items-end">
                                             <div class="col-md-4">
-                                                <label for="feature-key" class="form-label">الميزة</label>
-                                                <input type="text" class="form-control" id="feature-key" placeholder="مثال: مساحة الحديقة">
+                                                <label for="specification-label" class="form-label">الميزة</label>
+                                                <input type="text" class="form-control" id="specification-label" placeholder="مثال: مساحة الحديقة">
                                             </div>
                                             <div class="col-md-4">
-                                                <label for="feature-value" class="form-label">القيمة</label>
-                                                <input type="text" class="form-control" id="feature-value" placeholder="مثال: 100 متر مربع">
+                                                <label for="specification-value" class="form-label">القيمة</label>
+                                                <input type="text" class="form-control" id="specification-value" placeholder="مثال: 100 متر مربع">
                                             </div>
                                             <div class="col-md-4">
-                                                <button class="btn btn-primary w-100" type="button" id="add-feature">إضافة</button>
+                                                <button class="btn btn-primary w-100" type="button" id="add-specification">إضافة</button>
                                             </div>
                                         </div>
                                     </div>
@@ -537,6 +559,384 @@
                 </form>
             </div>
         </div>
+        <input type="hidden" name="language_code" value="ar">
+
+<!-- Hidden fields for property status -->
+<input type="hidden" name="status" value="1">
+
+<!-- Hidden fields for country -->
+<input type="hidden" name="ar_country_id" value="1"> <!-- Default to Saudi Arabia -->
+
+<!-- Hidden fields for state -->
+<input type="hidden" name="ar_state_id" value="1"> <!-- Default state -->
+
+<!-- Hidden meta fields -->
+<input type="hidden" name="ar_meta_keyword" value="">
+<input type="hidden" name="ar_meta_description" value="">
+
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+   <script>
+  $(document).ready(() => {
+  // Form validation
+  ;(() => {
+    var forms = document.querySelectorAll(".needs-validation")
+
+    Array.prototype.slice.call(forms).forEach((form) => {
+      form.addEventListener(
+        "submit",
+        (event) => {
+          if (!form.checkValidity()) {
+            event.preventDefault()
+            event.stopPropagation()
+          }
+
+          form.classList.add("was-validated")
+        },
+        false,
+      )
+    })
+  })()
+
+  // Photo gallery handling
+  $("#photo-upload-area").on("click", () => {
+    $("#photo-input").click()
+  })
+
+  $("#photo-input").on("change", (e) => {
+    handleFileSelect(e.target.files, $("#photo-gallery"), "slider_images[]")
+  })
+
+  // Featured image handling
+  $("#thumbnail-upload-area").on("click", () => {
+    $("#thumbnail-input").click()
+  })
+
+  $("#thumbnail-input").on("change", (e) => {
+    handleFileSelect(e.target.files, $("#thumbnail-preview"), "featured_image", true)
+  })
+
+  // Floor planning image handling
+  $("#property-plan-upload-area").on("click", () => {
+    $("#property-plan-input").click()
+  })
+
+  $("#property-plan-input").on("change", (e) => {
+    handleFileSelect(e.target.files, $("#property-plan-preview"), "floor_planning_image", true)
+  })
+
+  // Video thumbnail handling
+  $("#video-thumbnail-upload-area").on("click", () => {
+    $("#video-thumbnail-input").click()
+  })
+
+  $("#video-thumbnail-input").on("change", (e) => {
+    handleFileSelect(e.target.files, $("#video-thumbnail-preview"), "video_image", true)
+  })
+
+  function handleFileSelect(files, previewContainer, inputName, isSingle = false) {
+    if (files.length === 0) return
+
+    if (isSingle) {
+      const file = files[0]
+      if (validateFile(file)) {
+        displayPreview(file, previewContainer, inputName)
+      }
+    } else {
+      Array.from(files).forEach((file) => {
+        if (validateFile(file)) {
+          displayPreview(file, previewContainer, inputName)
+        }
+      })
+    }
+  }
+
+  function validateFile(file) {
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif"]
+
+    if (file.size > maxSize) {
+      alert("حجم الملف كبير جدًا. الحد الأقصى هو 5 ميجابايت.")
+      return false
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      alert("نوع الملف غير مدعوم. يرجى استخدام JPEG أو PNG أو GIF.")
+      return false
+    }
+
+    return true
+  }
+
+  function displayPreview(file, previewContainer, inputName) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const imgElement = $("<img>").attr({
+        src: e.target.result,
+        class: "img-fluid rounded",
+        style: "max-height: 200px; max-width: 200px;",
+      })
+
+      const removeButton = $("<button>")
+        .addClass("btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-circle")
+        .html('<i class="fa-solid fa-times"></i>')
+        .on("click", function () {
+          $(this).closest(".position-relative").remove()
+        })
+
+      const previewElement = $("<div>")
+        .addClass("position-relative d-inline-block m-2")
+        .append(imgElement)
+        .append(removeButton)
+
+      if (inputName === "slider_images[]") {
+        previewContainer.append(previewElement)
+      } else {
+        previewContainer.html(previewElement).removeClass("d-none")
+        $(`#${inputName.replace("_", "-")}-upload-area`).addClass("d-none")
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Amenities handling
+  $("#add-amenity").on("click", () => {
+    const amenity = $("#new-amenity").val().trim()
+    if (amenity) {
+      const amenityCount = $(".amenity-badge").length
+      const amenityElement = $(
+        '<div class="amenity-item me-2 mb-2">' +
+          '<span class="amenity-badge">' +
+          amenity +
+          "</span>" +
+          '<input type="hidden" name="ar_amenities[]" value="' +
+          amenity +
+          '">' +
+          '<button type="button" class="btn btn-sm btn-outline-danger ms-2 remove-amenity">' +
+          '<i class="fa-solid fa-times"></i></button></div>',
+      )
+      $("#amenities-container").append(amenityElement)
+      $("#new-amenity").val("")
+    }
+  })
+
+  $(document).on("click", ".remove-amenity", function () {
+    $(this).closest(".amenity-item").remove()
+  })
+
+  // Specifications handling
+  $("#add-specification").on("click", () => {
+    const label = $("#specification-label").val().trim()
+    const value = $("#specification-value").val().trim()
+    if (label && value) {
+      const specCount = $(".specification-item").length
+      const specElement = $(
+        '<div class="specification-item d-flex align-items-center mb-2 p-2 border rounded">' +
+          '<span class="specification-label fw-bold me-2">' +
+          label +
+          ":</span>" +
+          '<span class="specification-value">' +
+          value +
+          "</span>" +
+          '<input type="hidden" name="ar_label[' +
+          specCount +
+          ']" value="' +
+          label +
+          '">' +
+          '<input type="hidden" name="ar_value[' +
+          specCount +
+          ']" value="' +
+          value +
+          '">' +
+          '<button type="button" class="btn btn-sm btn-outline-danger ms-auto remove-specification">' +
+          '<i class="fa-solid fa-times"></i></button></div>',
+      )
+      $("#specifications-container").append(specElement)
+      $("#specification-label").val("")
+      $("#specification-value").val("")
+    }
+  })
+
+  $(document).on("click", ".remove-specification", function () {
+    $(this).closest(".specification-item").remove()
+    // Reindex the specifications
+    $(".specification-item").each(function (index) {
+      $(this)
+        .find('input[name^="ar_label"]')
+        .attr("name", "ar_label[" + index + "]")
+      $(this)
+        .find('input[name^="ar_value"]')
+        .attr("name", "ar_value[" + index + "]")
+    })
+  })
+
+  // Tab navigation
+  let currentTab = 0
+  const tabs = ["basic-info", "media", "location", "features"]
+
+  function showTab(n) {
+    $(".tab-pane").removeClass("show active")
+    $(`#${tabs[n]}`).addClass("show active")
+    $(".nav-link").removeClass("active")
+    $(`#${tabs[n]}-tab`).addClass("active")
+
+    if (n === 0) {
+      $("#prevBtn").addClass("d-none")
+    } else {
+      $("#prevBtn").removeClass("d-none")
+    }
+
+    if (n === tabs.length - 1) {
+      $("#nextBtn").text("حفظ العقار")
+      $("#nextBtn").append('<i class="fa-solid fa-check ms-2"></i>')
+    } else {
+      $("#nextBtn").text("التالي")
+      $("#nextBtn").append('<i class="fa-solid fa-arrow-left ms-2"></i>')
+    }
+  }
+
+  function nextPrev(n) {
+    if (n === 1 && !validateForm()) return false
+
+    currentTab += n
+
+    if (currentTab >= tabs.length) {
+      $("#property-form").submit()
+      return false
+    }
+
+    showTab(currentTab)
+  }
+
+  function validateForm() {
+    let valid = true
+    const activeTab = $(`#${tabs[currentTab]}`)
+    const inputs = activeTab.find("input[required], select[required], textarea[required]")
+
+    inputs.each(function () {
+      if (!this.validity.valid) {
+        $(this).addClass("is-invalid")
+        valid = false
+      } else {
+        $(this).removeClass("is-invalid")
+      }
+    })
+
+    if (valid) {
+      $(".nav-link").eq(currentTab).addClass("text-success")
+    }
+
+    return valid
+  }
+
+  $("#nextBtn").on("click", () => {
+    nextPrev(1)
+  })
+
+  $("#prevBtn").on("click", () => {
+    nextPrev(-1)
+  })
+
+  showTab(currentTab)
+
+  // Form submission
+  $("#property-form").on("submit", function (e) {
+    e.preventDefault()
+    if (validateForm()) {
+      // Show loading indicator
+      const submitBtn = $("#nextBtn")
+      const originalText = submitBtn.html()
+      submitBtn.html(
+        '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> جاري الحفظ...',
+      )
+      submitBtn.prop("disabled", true)
+
+      // Collect form data
+      const formData = new FormData(this)
+
+      // Add required hidden fields for backend
+      formData.append("user_id", "{{ Auth::id() }}")
+
+      // Add property details
+      formData.append("purpose", $('input[name="purpose"]:checked').val())
+      formData.append("price", $("#price").val())
+      formData.append("rooms", $("#rooms").val())
+      formData.append("bathrooms", $("#baths").val())
+      formData.append("area", $("#area").val())
+      formData.append("latitude", $("#latitude").val())
+      formData.append("longitude", $("#longitude").val())
+      formData.append("video_link", $("#video-link").val())
+
+      // Send form data to server
+      $.ajax({
+        url: $(this).attr("action"),
+        type: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: {
+          "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
+        },
+        success: (response) => {
+          if (response.status === "success") {
+            // Show success message
+            Swal.fire({
+              title: "تم بنجاح!",
+              text: "تم حفظ العقار بنجاح",
+              icon: "success",
+              confirmButtonText: "حسناً",
+            }).then((result) => {
+              // Redirect to property list
+              window.location.href = '{{ route("user.property_management.create_property") }}'
+            })
+          } else {
+            // Show error message
+            Swal.fire({
+              title: "خطأ!",
+              text: "حدث خطأ أثناء حفظ العقار",
+              icon: "error",
+              confirmButtonText: "حسناً",
+            })
+            submitBtn.html(originalText)
+            submitBtn.prop("disabled", false)
+          }
+        },
+        error: (xhr, status, error) => {
+          // Handle validation errors
+          if (xhr.status === 422) {
+            const errors = xhr.responseJSON.errors
+            let errorMessage = '<ul class="text-start">'
+            for (const key in errors) {
+              errorMessage += `<li>${errors[key][0]}</li>`
+            }
+            errorMessage += "</ul>"
+
+            Swal.fire({
+              title: "خطأ في البيانات!",
+              html: errorMessage,
+              icon: "error",
+              confirmButtonText: "حسناً",
+            })
+          } else {
+            // Show general error message
+            Swal.fire({
+              title: "خطأ!",
+              text: "حدث خطأ أثناء حفظ العقار. يرجى المحاولة مرة أخرى.",
+              icon: "error",
+              confirmButtonText: "حسناً",
+            })
+          }
+          submitBtn.html(originalText)
+          submitBtn.prop("disabled", false)
+        },
+      })
+    }
+  })
+})
+
+
+    </script>
+
+
 
 
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -560,35 +960,6 @@
                         }, false)
                     })
             })()
-
-            // Form progress tracking
-            function updateFormProgress() {
-                const totalFields = 15;
-                let filledFields = 0;
-
-                if ($('#title').val()) filledFields++;
-                if ($('#description').val()) filledFields++;
-                if ($('#price').val()) filledFields++;
-                if ($('#area').val()) filledFields++;
-                if ($('#latitude').val() || $('#longitude').val()) filledFields++;
-                if ($('#category').val()) filledFields++;
-                if ($('#city').val()) filledFields++;
-                if ($('#address').val()) filledFields++;
-                if ($('#photo-gallery').children().length > 0) filledFields++;
-                if ($('#thumbnail-preview').hasClass('d-none') === false) filledFields++;
-                if ($('#property-plan-preview').hasClass('d-none') === false) filledFields++;
-                if ($('#video-link').val()) filledFields++;
-                if ($('#video-thumbnail-preview').hasClass('d-none') === false) filledFields++;
-                if ($('#advantages-container').children().length > 0) filledFields++;
-                if ($('#features-container').children().length > 0) filledFields++;
-
-                const progress = (filledFields / totalFields) * 100;
-                $('#form-progress').css('width', progress + '%').attr('aria-valuenow', progress);
-                $('#progress-percentage').text(Math.round(progress));
-            }
-
-            // Call updateFormProgress on input change
-            $('form :input').on('change', updateFormProgress);
 
             // Photo gallery handling
             $('#photo-upload-area').on('click', function() {
@@ -641,7 +1012,6 @@
                         }
                     });
                 }
-                updateFormProgress();
             }
 
             function validateFile(file) {
@@ -675,7 +1045,6 @@
                         .html('<i class="fa-solid fa-times"></i>')
                         .on('click', function() {
                             $(this).closest('.position-relative').remove();
-                            updateFormProgress();
                         });
 
                     const previewElement = $('<div>')
@@ -700,13 +1069,11 @@
                     const advantageElement = $('<span class="advantage-badge me-2 mb-2">' + advantage + '<i class="remove-badge fa-solid fa-times ms-2"></i></span>');
                     $('#advantages-container').append(advantageElement);
                     $('#new-advantage').val('');
-                    updateFormProgress();
                 }
             });
 
             $(document).on('click', '.remove-badge', function() {
                 $(this).parent().remove();
-                updateFormProgress();
             });
 
             // Features handling
@@ -718,13 +1085,12 @@
                     $('#features-container').append(featureElement);
                     $('#feature-key').val('');
                     $('#feature-value').val('');
-                    updateFormProgress();
+          
                 }
             });
 
             $(document).on('click', '.remove-feature', function() {
                 $(this).closest('.feature-item').remove();
-                updateFormProgress();
             });
 
             // Tab navigation
