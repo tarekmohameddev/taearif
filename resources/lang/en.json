@@ -2421,8 +2421,13 @@
         "Booking Management": "إدارة الحجز",
         "Customer Management": "إدارة العملاء",
         "Sales": "مبيعات",
-
-        "Set the primary and secondary colors for your website. These colors define your website’s style and should align with your brand identity.": "قم بتحديد الألوان الأساسية والثانوية لموقعك. هذه الألوان تحدد أسلوب موقعك ويجب أن تتماشى مع هوية علامتك التجارية."
-
-
+        "Enter number of bed": "أدخل عدد الأسرة",
+        "Enter number of bath": "أدخل عدد الحمامات",
+        "Enter area (sqft)": "أدخل المساحة (قدم مربع)",
+        "Region": "المنطقة",
+        "Governorate": "المحافظة",
+        "Select Governorate": "اختر المحافظة",
+        "Select Region": "اختر المنطقة",
+        "Set the primary and secondary colors for your website. These colors define your website’s style and should align with your brand identity.": "قم بتحديد الألوان الأساسية والثانوية لموقعك. هذه الألوان تحدد أسلوب موقعك ويجب أن تتماشى مع هوية علامتك التجارية.",
+        "Menu Builder": "منشئ القوائم"
 }

@@ -269,6 +269,13 @@
     "Property Title": "عنوان العقار",
     "Enter the complete address": "العنوان الكامل للعقار",
     "Enter a clear, concise property title": "أدخل عنوانًا واضحًا وموجزًا للعقار",
-
-    "Credentials Do not Match": "لا تتطابق بيانات الاعتماد"
+    "Credentials Do not Match": "لا تتطابق بيانات الاعتماد",
+    "Enter number of bed": "أدخل عدد الأسرة",
+    "Enter number of bath": "أدخل عدد الحمامات",
+    "Enter area (sqft)": "أدخل المساحة (قدم مربع)",
+    "Region": "المنطقة",
+    "Governorate": "المحافظة",
+    "Select Governorate": "اختر المحافظة",
+    "Select Region": "اختر المنطقة",
+    "Menu Builder": "منشئ القوائم"
   }
