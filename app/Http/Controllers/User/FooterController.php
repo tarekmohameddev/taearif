@@ -187,4 +187,73 @@ class FooterController extends Controller
 
         return redirect()->back();
     }
+
+    public function FooterInfo_QuickLink(Request $request){
+
+        // first, get the language info from db
+        $language = Language::where('code', $request->language)->where('user_id', Auth::id())->firstOrFail();
+
+        // then, get the footer quick link info of that language from db
+        $information['links'] = FooterQuickLink::where('language_id', $language->id)->where('user_id', Auth::id())->orderBy('id', 'desc')->get();
+
+
+        $information['userLanguages'] = Language::where('user_id', Auth::id())->get();
+
+    }
+
+    public function updateFooterInfo_QuickLink(Request $request, $language)
+    {
+
+        $lang = Language::where('code', $language)->where('user_id', Auth::id())->firstOrFail();
+        $data = FooterText::where('language_id', $lang->id)->where('user_id', Auth::id())->first();
+        if (is_null($data)) {
+            $data = new FooterText;
+        }
+        $rules = [
+            'about_company' => 'nullable',
+            'copyright_text' => 'nullable',
+        ];
+        $message = [
+            'about_company.required' => 'The about company field is required',
+            'copyright_text.required' => 'The copy right text field is required',
+            'logo.required' => 'The logo field is required'
+        ];
+        if (is_null($data)) {
+            $rules['logo'] = 'required|mimes:jpeg,jpg,png|max:1000';
+        } elseif (is_null($data->logo) && !$request->hasFile('logo')) {
+            $rules['logo'] = 'required|mimes:jpeg,jpg,png|max:1000';
+        }
+        $validator = Validator::make($request->all(), $rules, $message);
+        if ($validator->fails()) {
+            $validator->getMessageBag()->add('error', 'true');
+            return response()->json($validator->errors());
+        }
+        $request['image_name'] = $data->logo;
+        if ($request->hasFile('logo')) {
+            $request['image_name'] = Uploader::update_picture('assets/front/img/user/footer/', $request->file('logo'), $data->logo);
+        }
+        if ($request->hasFile('bg_image')) {
+            $request['bg_img_name'] = Uploader::update_picture('assets/front/img/user/footer/', $request->file('bg_image'), $data->bg_image);
+        }
+        $data->language_id =  $lang->id;
+        $data->copyright_text =  clean($request->copyright_text);
+        $data->logo =  $request->image_name;
+        if ($request->color) {
+
+            $data->footer_color =  $request->color;
+        }
+        $data->bg_image =  $request->bg_img_name;
+        $data->user_id = Auth::id();
+        $data->about_company = clean($request->about_company);
+        $data->newsletter_text = clean($request->newsletter_text);
+        $data->save();
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['footer' => true]
+        );
+
+        $request->session()->flash('success', 'Footer text info updated successfully!');
+        return 'success';
+    }
 }

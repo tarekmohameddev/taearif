@@ -3,38 +3,39 @@
 namespace App\Http\Controllers\User;
 
 use App;
-use App\Http\Controllers\Controller;
-use App\Models\Customer;
-use App\Models\Membership;
-use App\Models\Package;
+use Validator;
+use Carbon\Carbon;
 use App\Models\User;
-use App\Models\User\BasicSetting;
+use App\Models\Package;
+use App\Models\Customer;
+use App\Models\UserStep;
+use App\Models\User\Menu;
+use App\Models\User\Page;
+use App\Models\Membership;
 use App\Models\User\Brand;
-use App\Models\User\CounterInformation;
+use App\Models\User\Skill;
+use App\Models\User\Social;
+use Illuminate\Http\Request;
 use App\Models\User\Follower;
-use App\Models\User\FooterQuickLink;
+use App\Models\User\Language;
+use App\Models\User\Portfolio;
 use App\Models\User\FooterText;
 use App\Models\User\HeroSlider;
 use App\Models\User\HeroStatic;
-use App\Models\User\HomePageText;
-use App\Models\User\Language;
-use App\Models\User\Menu;
-use App\Models\User\Page;
-use App\Models\User\Portfolio;
-use App\Models\User\PortfolioCategory;
-use App\Models\User\Skill;
 use App\Models\User\UserService;
-use App\Models\User\UserTestimonial;
-use App\Models\UserStep;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Hash;
+use App\Models\User\BasicSetting;
+use App\Models\User\HomePageText;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Response;
+use App\Http\Controllers\Controller;
+use App\Models\User\FooterQuickLink;
+use App\Models\User\UserTestimonial;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User\PortfolioCategory;
+use Illuminate\Support\Facades\Config;
+use App\Models\User\CounterInformation;
 use Illuminate\Support\Facades\Session;
-use Validator;
+use Illuminate\Support\Facades\Response;
 
 class UserController extends Controller
 {
@@ -168,6 +169,9 @@ class UserController extends Controller
             'footertext' => FooterText::where('language_id', $lang->id)
                 ->where('user_id', Auth::id())
                 ->first(),
+            'socials' => Social::where('user_id', Auth::id())
+            ->orderBy('id', 'DESC')
+            ->get(),
             'brands' => Brand::where('user_id', Auth::id())
                 ->orderBy('id', 'desc')
                 ->get(),

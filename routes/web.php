@@ -1135,10 +1135,11 @@ Route::domain($domain)->group(function () {
         Route::get('/package-list', 'User\BuyPlanController@index')->name('user.plan.extend.index');
         Route::get('/package/checkout/{package_id}', 'User\BuyPlanController@checkout')->name('user.plan.extend.checkout');
         Route::post('/package/checkout', 'User\UserCheckoutController@checkout')->name('user.plan.checkout');
-        
+
         //user footer route
         Route::get('/footer/text', 'User\FooterController@footerText')->name('user.footer.text');
         Route::post('/footer/update_footer_info/{language}', 'User\FooterController@updateFooterInfo')->name('user.footer.update_footer_info');
+        Route::post('/footer/update_footer_info_quicklink/{language}', 'User\FooterController@updateFooterInfo_QuickLink')->name('user.footer.update_footer_info_quicklink');
         Route::get('/footer/quick_links', 'User\FooterController@quickLinks')->name('user.footer.quick_links');
         Route::post('/footer/store_quick_link', 'User\FooterController@storeQuickLink')->name('user.footer.store_quick_link');
         Route::post('/footer/update_quick_link', 'User\FooterController@updateQuickLink')->name('user.footer.update_quick_link');
@@ -1914,7 +1915,7 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         Route::post('/register-customer', 'Front\CustomerController@register_customer')->name('customer.registercustomer');
         Route::post('/login-customer', 'Front\CustomerController@login_customer')->name('customer.logincustomer');
         Route::post('/forgot-password-customer', 'Front\CustomerController@forgot_password_customer')->name('customer.forgotpasswordcustomer');
-       
+
 
         // Route::get('/customers', 'Front\CustomerController@crmDashboard')->name('crm.dashboard');
     });
