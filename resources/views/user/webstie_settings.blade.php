@@ -210,7 +210,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                         </div>
                                     </div>
 
-                                    
+
                                     <div class="text-center">
                                         <button type="submit" class="btn btn-success btn-lg">
                                             {{ __('Save All Settings') }}
@@ -499,7 +499,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                 <p id="erruser_language_id" class="mb-0 text-danger em"></p>
                                             </div>
                                             <!-- upload image sedtion -->
-                             
+
                                             <div class="form-group">
                                     <div class="col-12 mb-2">
                                         <label for="">{{ __('Image*') }}</label>
@@ -1028,22 +1028,22 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                         </form>
                                     </div>
                                 </div>
-                            </div>
+                        </div>
 
-                            <div class="card-footer">
-                                <div class="row">
-                                    <div class="col-12 text-center">
-                                        <button type="submit" id="submitBtnAbout" class="btn btn-success">
-                                            {{ __('Update') }} - up
-                                        </button>
-                                    </div>
+                        <div class="card-footer">
+                            <div class="row">
+                                <div class="col-12 text-center">
+                                    <button type="submit" id="submitBtnAbout" class="btn btn-success">
+                                        {{ __('Update') }} - up
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!--  -->
             </div>
+            <!--  -->
+
 
             <!-- Portfolio Section -->
             <div id="portfolio" class="content-section d-none">
@@ -1084,11 +1084,11 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                     <div class="col-lg-3 offset-lg-3">
                                         @if (!is_null($userDefaultLang))
                                             @if (!empty($userLanguages))
-                                                <select name="userLanguage" class="form-control" 
+                                                <select name="userLanguage" class="form-control"
                                                     onchange="window.location='{{ url()->current() . '?language=' }}' + this.value;">
                                                     <option value="" selected disabled>{{ __('Select a Language') }}</option>
                                                     @foreach ($userLanguages as $lang)
-                                                        <option value="{{ $lang->code }}" 
+                                                        <option value="{{ $lang->code }}"
                                                             {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
                                                             {{ $lang->name }}
                                                         </option>
@@ -1190,7 +1190,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                         </div>
 
                     </div>
-                                            </div>
+                </div>
 
                 <div class="row">
                     <div class="col-md-12">
@@ -1203,11 +1203,11 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                     <div class="col-lg-3">
                                         @if (!is_null($userDefaultLang))
                                             @if (!empty($userLanguages))
-                                                <select name="userLanguage" class="form-control" 
+                                                <select name="userLanguage" class="form-control"
                                                     onchange="window.location='{{ url()->current() . '?language=' }}' + this.value;">
                                                     <option value="" selected disabled>{{ __('Select a Language') }}</option>
                                                     @foreach ($userLanguages as $lang)
-                                                        <option value="{{ $lang->code }}" 
+                                                        <option value="{{ $lang->code }}"
                                                             {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
                                                             {{ $lang->name }}
                                                         </option>
@@ -2456,7 +2456,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 </div>
             </div>
             <!--  -->
-                
+
             </div>
             <!--// menu-builder Section -->
 
