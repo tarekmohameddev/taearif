@@ -219,7 +219,7 @@ class PropertyController extends Controller
     public function store(PropertyStoreRequest $request)
     {
 
-        dd($request->all());
+      //  dd($request->all());
         DB::transaction(function () use ($request) {
             $user = Auth::guard('web')->user();
             $featuredImgURL = $request->featured_image;

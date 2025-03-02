@@ -441,7 +441,7 @@
                                         <label for="video-link" class="form-label">رابط الفيديو</label>
                                         <div class="input-group">
                                             <span class="input-group-text"><i class="fa-solid fa-video"></i></span>
-                                            <input type="text" class="form-control" id="video-link" name="video_link" placeholder="أدخل رابط الفيديو (YouTube أو Vimeo)">
+                                            <input type="text" class="form-control" id="video-link" name="video_url" placeholder="أدخل رابط الفيديو (YouTube أو Vimeo)">
                                         </div>
                                     </div>
 
@@ -599,7 +599,7 @@
 
   // Photo gallery handling
   $("#photo-upload-area").on("click", () => {
-    $("#photo-input").click()
+   // $("#photo-input").click()
   })
 
   $("#photo-input").on("change", (e) => {
@@ -608,7 +608,7 @@
 
   // Featured image handling
   $("#thumbnail-upload-area").on("click", () => {
-    $("#thumbnail-input").click()
+   // $("#thumbnail-input").click()
   })
 
   $("#thumbnail-input").on("change", (e) => {
@@ -617,7 +617,7 @@
 
   // Floor planning image handling
   $("#property-plan-upload-area").on("click", () => {
-    $("#property-plan-input").click()
+   // $("#property-plan-input").click()
   })
 
   $("#property-plan-input").on("change", (e) => {
@@ -879,15 +879,7 @@
         success: (response) => {
           if (response.status === "success") {
             // Show success message
-            Swal.fire({
-              title: "تم بنجاح!",
-              text: "تم حفظ العقار بنجاح",
-              icon: "success",
-              confirmButtonText: "حسناً",
-            }).then((result) => {
-              // Redirect to property list
-              window.location.href = '{{ route("user.property_management.create_property") }}'
-            })
+            window.location.href = '{{ route("user.property_management.properties") }}'
           } else {
             // Show error message
             Swal.fire({
@@ -1277,7 +1269,7 @@
                                     </div>
 
                                     <div class="mt-3">
-                                        <input type="file" class="form-control " id="image" name="featured_image">
+                                        <input type="file" class="form-control " id="image" name="featured_imagex">
                                     </div>
                                     <p id="errfeatured_image" class=" mb-0 text-danger em"></p>
                                 </div>
