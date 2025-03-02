@@ -492,6 +492,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                             <!-- upload image sedtion -->
 
                                             <div class="form-group">
+
                                                 <div class="col-12 mb-2">
                                                     <label for="">{{ __('Image*') }}</label>
                                                 </div>
@@ -501,6 +502,28 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                 <input type="file" name="img" id="image" class="form-control image">
                                                 @if ($errors->has('img'))
                                                 <p class="mt-2 mb-0 text-danger">{{ $errors->first('img') }}</p>
+
+                                    <div class="col-12 mb-2">
+                                        <label for="">{{ __('Image*') }}</label>
+                                    </div>
+                                    <div class="col-md-12 showImage mb-3">
+                                        <img src="{{ isset($information['sliders_static']->img) ? asset('assets/front/img/hero_static/'.$information['sliders_static']->img) : asset('assets/admin/img/noimage.jpg') }}"
+                                            alt="..." class="img-thumbnail">
+                                    </div>
+                                    <input type="file" name="img" id="image" class="form-control image">
+                                    @if ($errors->has('img'))
+                                        <p class="mt-2 mb-0 text-danger">{{ $errors->first('img') }}</p>
+                                    @endif
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-lg-12">
+                                        <div class="form-group">
+                                            <label for="">
+                                                @if ($userBs->theme == 'home_twelve')
+                                                    {{ __('Name*') }}
+                                                @else
+                                                    {{ __('Title of banner') }}
                                                 @endif
                                             </div>
 
@@ -744,8 +767,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         <th scope="col">{{ __('Actions') }}</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody>
-                                                    @foreach ($information['skills'] as $key => $skill)
+                                                <tbody>                                                    @foreach ($information['skills'] as $key => $skill)
                                                     <tr>
                                                         <td>
                                                             <input type="checkbox" class="bulk-check" data-val="{{ $skill->id }}">

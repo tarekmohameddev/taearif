@@ -532,7 +532,7 @@
                                         placeholder="{{ $keywords['Enter Your Email'] ?? __('Enter Your Email') }}"
                                         type="email" name="email_id" required>
                                     <button class="btn btn-lg btn-primary" type="submit">
-                                        {{ $keywords['Start Now'] ?? __('Start Now') }}</button>
+                                       كٌن على تواصل</button>
                                 </div>
                             </form>
                         </div>
