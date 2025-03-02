@@ -87,7 +87,10 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
                             <div class="card-body ">
 
-                                <form id="mySettingsForm" action="{{ route('user.general_settings.update_all',['language' => request()->input('language')]) }}" method="POST" enctype="multipart/form-data" onsubmit="return storeSectionBeforeSubmit(this)">
+                                <form id="mySettingsForm" action="{{ route('user.general_settings.update_all',['language' => request()->input('language')]) }}"
+                                method="POST"
+                                enctype="multipart/form-data"
+                                onsubmit="return storeSectionBeforeSubmit(this)">
                                     @csrf
                                     <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -224,13 +227,13 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             </div>
 
             @if (
-            $userBs->theme == 'home_one' ||
-            $userBs->theme == 'home_two' ||
-            $userBs->theme == 'home_six' ||
-            $userBs->theme == 'home_seven' ||
-            $userBs->theme == 'home_eight' ||
-            $userBs->theme == 'home14' ||
-            $userBs->theme == 'home_nine')
+                $userBs->theme == 'home_one' ||
+                $userBs->theme == 'home_two' ||
+                $userBs->theme == 'home_six' ||
+                $userBs->theme == 'home_seven' ||
+                $userBs->theme == 'home_eight' ||
+                $userBs->theme == 'home14' ||
+                $userBs->theme == 'home_nine')
             <!-- Banner Section -->
             <div id="banner" class="content-section d-none">
                 <h3 class="h4 font-weight-bold">{{ __('Banner Section') }} </h3>
@@ -289,7 +292,11 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                             <div class="card-body pt-5 pb-5">
                                 <div class="row">
                                     <div class="col-lg-8 offset-lg-2">
-                                        <form id="sliderVersionForm" action="{{ route('user.home_page.hero.store_slider_info') }}" method="POST" enctype="multipart/form-data" onsubmit="return storeSectionBeforeSubmit(this)">
+                                        <form id="sliderVersionForm"
+                                        action="{{ route('user.home_page.hero.store_slider_info') }}"
+                                        method="POST"
+                                        enctype="multipart/form-data"
+                                        onsubmit="return storeSectionBeforeSubmit(this)">
                                             @csrf
                                             <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -453,15 +460,15 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             </div>
             @endif
             @if (
-            $userBs->theme == 'home_three' ||
-            $userBs->theme == 'home_four' ||
-            $userBs->theme == 'home_five' ||
-            $userBs->theme == 'home_eleven' ||
-            $userBs->theme == 'home_twelve' ||
-            $userBs->theme == 'home13' ||
-            $userBs->theme == 'home_ten')
-            <!-- Banner Section -->
-            <div id="banner" class="content-section d-none">
+                    $userBs->theme == 'home_three' ||
+                    $userBs->theme == 'home_four' ||
+                    $userBs->theme == 'home_five' ||
+                    $userBs->theme == 'home_eleven' ||
+                    $userBs->theme == 'home_twelve' ||
+                    $userBs->theme == 'home13' ||
+                    $userBs->theme == 'home_ten')
+           <!-- Banner Section -->
+           <div id="banner" class="content-section d-none">
                 <h3 class="h4 font-weight-bold">{{ __('Banner Section') }} </h3>
                 <p class="text-muted">{{ __('Upload and configure homepage banners') }}.</p>
                 <!--  -->
@@ -475,7 +482,9 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                             <div class="card-body pt-5 pb-5">
                                 <div class="row">
                                     <div class="col-lg-8 offset-lg-2">
-                                        <form id="staticVersionForm" action="{{ route('user.home_page.hero.update_static_info', ['language' => request()->input('language')]) }}" method="POST" enctype="multipart/form-data" onsubmit="return storeSectionBeforeSubmit(this)">
+                                    <form id="staticVersionForm"
+                                        action="{{ route('user.home_page.hero.update_static_info', ['language' => request()->input('language')]) }}"
+                                        method="POST" enctype="multipart/form-data" onsubmit="return storeSectionBeforeSubmit(this)">
                                             @csrf
                                             <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -492,17 +501,6 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                             <!-- upload image sedtion -->
 
                                             <div class="form-group">
-
-                                                <div class="col-12 mb-2">
-                                                    <label for="">{{ __('Image*') }}</label>
-                                                </div>
-                                                <div class="col-md-12 showImage mb-3">
-                                                    <img src="{{ isset($information['sliders_static']->img) ? asset('assets/front/img/hero_static/'.$information['sliders_static']->img) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
-                                                </div>
-                                                <input type="file" name="img" id="image" class="form-control image">
-                                                @if ($errors->has('img'))
-                                                <p class="mt-2 mb-0 text-danger">{{ $errors->first('img') }}</p>
-
                                     <div class="col-12 mb-2">
                                         <label for="">{{ __('Image*') }}</label>
                                     </div>
@@ -525,124 +523,128 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                 @else
                                                     {{ __('Title of banner') }}
                                                 @endif
-                                            </div>
+                                            </label>
+                                            <input type="text" class="form-control" name="title"
+                                                value="{{ $data->title ?? '' }}" placeholder="{{ __('Enter title') }}">
+                                            @if ($errors->has('title'))
+                                                <p class="mt-2 mb-0 text-danger">{{ $errors->first('title') }}</p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                                @if ($userBs->theme == 'home_twelve')
+                                    <div class="form-group">
+                                        <label for="">{{ __('Designation') }} </label>
+                                        <input type="text" class="form-control" name="designation"
+                                            value="{{ $data->designation ?? '' }}" data-role="tagsinput">
+                                        <small
+                                            class="text-warning">{{ __('Use comma (,) to seperate the designation.') }}</small>
 
-                                            <div class="row">
-                                                <div class="col-lg-12">
-                                                    <div class="form-group">
-                                                        <label for="">
-                                                            @if ($userBs->theme == 'home_twelve')
-                                                            {{ __('Name*') }}
-                                                            @else
-                                                            {{ __('Title*') }}
-                                                            @endif
-                                                        </label>
-                                                        <input type="text" class="form-control" name="title" value="{{ $data->title ?? '' }}" placeholder="{{ __('Enter title') }}">
-                                                        @if ($errors->has('title'))
-                                                        <p class="mt-2 mb-0 text-danger">{{ $errors->first('title') }}</p>
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            @if ($userBs->theme == 'home_twelve')
+                                    </div>
+                                @endif
+                                @if ($userBs->theme !== 'home_twelve')
+                                    <div class="row">
+                                        <div class="col-lg-12">
                                             <div class="form-group">
-                                                <label for="">{{ __('Designation') }} </label>
-                                                <input type="text" class="form-control" name="designation" value="{{ $data->designation ?? '' }}" data-role="tagsinput">
-                                                <small class="text-warning">{{ __('Use comma (,) to seperate the designation.') }}</small>
-
-                                            </div>
-                                            @endif
-                                            @if ($userBs->theme !== 'home_twelve')
-                                            <div class="row">
-                                                <div class="col-lg-12">
-                                                    <div class="form-group">
-                                                        <label for="">{{ __('Subtitle*') }}</label>
-                                                        <input type="text" class="form-control" name="subtitle" value="{{ $information['sliders_static']->title ?? '' }}" placeholder="{{ __('Enter subtitle') }}">
-                                                        @if ($errors->has('subtitle'))
-                                                        <p class="mt-2 mb-0 text-danger">{{ $errors->first('subtitle') }}</p>
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            @endif
-                                            @if ($userBs->theme == 'home_four' || $userBs->theme == 'home_five' || $userBs->theme == 'home_eleven')
-                                            <div class="row">
-                                                <div class="col-lg-12">
-                                                    <div class="form-group">
-                                                        <label for="">{{ __('Hero text*') }}</label>
-                                                        <textarea class="form-control" name="hero_text" placeholder="{{ __('Enter text') }}">{{ $data->hero_text ?? '' }}</textarea>
-                                                        @if ($errors->has('hero_text'))
-                                                        <p class="mt-2 mb-0 text-danger">{{ $errors->first('hero_text') }}
-                                                        </p>
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            @endif
-                                            @if ($userBs->theme != 'home13')
-                                            <div class="row">
-                                                <div class="col-lg-12">
-                                                    <div class="form-group">
-                                                        <label for="btn_name">{{ __('Button Name') }}</label>
-                                                        <input type="text" class="form-control" name="btn_name" value="{{ $data->btn_name ?? '' }}" placeholder="{{ __('Enter button name') }}">
-                                                        @if ($errors->has('btn_name'))
-                                                        <p class="mt-2 mb-0 text-danger">{{ $errors->first('btn_name') }}</p>
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            @endif
-                                            @if ($userBs->theme != 'home13')
-                                            <div class="form-group">
-                                                <label for="url">{{ __('Button URL') }}</label>
-                                                <input type="url" class="form-control ltr" name="btn_url" value="{{ $data->btn_url ?? '' }}" placeholder="{{ __('Enter button url') }}">
-                                                @if ($errors->has('btn_url'))
-                                                <p class="mt-2 mb-0 text-danger">{{ $errors->first('btn_url') }}</p>
+                                                <label for="">{{ __('Subtitle*') }}</label>
+                                                <input type="text" class="form-control" name="subtitle"
+                                                    value="{{ $information['sliders_static']->title ?? '' }}"
+                                                    placeholder="{{ __('Enter subtitle') }}">
+                                                @if ($errors->has('subtitle'))
+                                                    <p class="mt-2 mb-0 text-danger">{{ $errors->first('subtitle') }}</p>
                                                 @endif
                                             </div>
-                                            @endif
-                                            @if ($userBs->theme == 'home_ten')
-                                            <div class="row">
-                                                <div class="col-lg-12">
-                                                    <div class="form-group">
-                                                        <label for="btn_name">{{ __('Secound Button Name') }}</label>
-                                                        <input type="text" class="form-control" name="secound_btn_name" value="{{ $data->secound_btn_name ?? '' }}" placeholder="{{ __('Enter button name') }}">
-                                                        @if ($errors->has('secound_btn_name'))
-                                                        <p class="mt-2 mb-0 text-danger">
-                                                            {{ $errors->first('secound_btn_name') }}
-                                                        </p>
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                                @if ($userBs->theme == 'home_four' || $userBs->theme == 'home_five' || $userBs->theme == 'home_eleven')
+                                    <div class="row">
+                                        <div class="col-lg-12">
                                             <div class="form-group">
-                                                <label for="url">{{ __('Secound Button URL') }}</label>
-                                                <input type="url" class="form-control ltr" name="secound_btn_url" value="{{ $data->secound_btn_url ?? '' }}" placeholder="{{ __('Enter button url') }}">
-                                                @if ($errors->has('secound_btn_url'))
-                                                <p class="mt-2 mb-0 text-danger">{{ $errors->first('secound_btn_url') }}
-                                                </p>
+                                                <label for="">{{ __('Hero text*') }}</label>
+                                                <textarea class="form-control" name="hero_text" placeholder="{{ __('Enter text') }}">{{ $data->hero_text ?? '' }}</textarea>
+                                                @if ($errors->has('hero_text'))
+                                                    <p class="mt-2 mb-0 text-danger">{{ $errors->first('hero_text') }}
+                                                    </p>
                                                 @endif
                                             </div>
-                                            @endif
-                                            @if ($userBs->theme == 'home_eleven')
+                                        </div>
+                                    </div>
+                                @endif
+                                @if ($userBs->theme != 'home13')
+                                    <div class="row">
+                                        <div class="col-lg-12">
                                             <div class="form-group">
-                                                <label for="btn_name">{{ __('Video Button Name') }}</label>
-                                                <input type="text" class="form-control" name="secound_btn_name" value="{{ $data->secound_btn_name ?? '' }}" placeholder="{{ __('Enter button name') }}">
+                                                <label for="btn_name">{{ __('Button Name') }}</label>
+                                                <input type="text" class="form-control" name="btn_name"
+                                                    value="{{ $data->btn_name ?? '' }}"
+                                                    placeholder="{{ __('Enter button name') }}">
+                                                @if ($errors->has('btn_name'))
+                                                    <p class="mt-2 mb-0 text-danger">{{ $errors->first('btn_name') }}</p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                                @if ($userBs->theme != 'home13')
+                                    <div class="form-group">
+                                        <label for="url">{{ __('Button URL') }}</label>
+                                        <input type="url" class="form-control ltr" name="btn_url"
+                                            value="{{ $data->btn_url ?? '' }}"
+                                            placeholder="{{ __('Enter button url') }}">
+                                        @if ($errors->has('btn_url'))
+                                            <p class="mt-2 mb-0 text-danger">{{ $errors->first('btn_url') }}</p>
+                                        @endif
+                                    </div>
+                                @endif
+                                @if ($userBs->theme == 'home_ten')
+                                    <div class="row">
+                                        <div class="col-lg-12">
+                                            <div class="form-group">
+                                                <label for="btn_name">{{ __('Secound Button Name') }}</label>
+                                                <input type="text" class="form-control" name="secound_btn_name"
+                                                    value="{{ $data->secound_btn_name ?? '' }}"
+                                                    placeholder="{{ __('Enter button name') }}">
                                                 @if ($errors->has('secound_btn_name'))
-                                                <p class="mt-2 mb-0 text-danger">
-                                                    {{ $errors->first('secound_btn_name') }}
-                                                </p>
+                                                    <p class="mt-2 mb-0 text-danger">
+                                                        {{ $errors->first('secound_btn_name') }}</p>
                                                 @endif
                                             </div>
-                                            <div class="form-group">
-                                                <label for="url">{{ __('Video URL') }}</label>
-                                                <input type="url" class="form-control ltr" name="secound_btn_url" value="{{ $data->secound_btn_url ?? '' }}" placeholder="{{ __('Enter button url') }}">
-                                                @if ($errors->has('secound_btn_url'))
-                                                <p class="mt-2 mb-0 text-danger">{{ $errors->first('secound_btn_url') }}
-                                                </p>
-                                                @endif
-                                            </div>
-                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="url">{{ __('Secound Button URL') }}</label>
+                                        <input type="url" class="form-control ltr" name="secound_btn_url"
+                                            value="{{ $data->secound_btn_url ?? '' }}"
+                                            placeholder="{{ __('Enter button url') }}">
+                                        @if ($errors->has('secound_btn_url'))
+                                            <p class="mt-2 mb-0 text-danger">{{ $errors->first('secound_btn_url') }}
+                                            </p>
+                                        @endif
+                                    </div>
+                                @endif
+                                @if ($userBs->theme == 'home_eleven')
+                                    <div class="form-group">
+                                        <label for="btn_name">{{ __('Video Button Name') }}</label>
+                                        <input type="text" class="form-control" name="secound_btn_name"
+                                            value="{{ $data->secound_btn_name ?? '' }}"
+                                            placeholder="{{ __('Enter button name') }}">
+                                        @if ($errors->has('secound_btn_name'))
+                                            <p class="mt-2 mb-0 text-danger">
+                                                {{ $errors->first('secound_btn_name') }}</p>
+                                        @endif
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="url">{{ __('Video URL') }}</label>
+                                        <input type="url" class="form-control ltr" name="secound_btn_url"
+                                            value="{{ $data->secound_btn_url ?? '' }}"
+                                            placeholder="{{ __('Enter button url') }}">
+                                        @if ($errors->has('secound_btn_url'))
+                                            <p class="mt-2 mb-0 text-danger">{{ $errors->first('secound_btn_url') }}
+                                            </p>
+                                        @endif
+                                    </div>
+                                @endif
                                         </form>
                                     </div>
                                 </div>
@@ -767,7 +769,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         <th scope="col">{{ __('Actions') }}</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody>                                                    @foreach ($information['skills'] as $key => $skill)
+                                                <tbody>
+                                                    @foreach ($information['skills'] as $key => $skill)
                                                     <tr>
                                                         <td>
                                                             <input type="checkbox" class="bulk-check" data-val="{{ $skill->id }}">
@@ -1040,23 +1043,23 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <div class="row">
                     <div class="col-md-12">
                         <div class="min-vh-100 d-flex align-items-center justify-content-center pb-3">
-                            <div class="feature-card p-4 d-flex flex-column flex-md-row align-items-start gap-3 mx-auto w-100" style="">
-                                <div class="icon-container d-flex align-items-center justify-content-center flex-shrink-0 mb-3 mb-md-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-dark">
-                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                        <line x1="3" y1="9" x2="21" y2="9"></line>
-                                        <line x1="3" y1="15" x2="21" y2="15"></line>
-                                        <line x1="9" y1="3" x2="9" y2="21"></line>
-                                        <line x1="15" y1="3" x2="15" y2="21"></line>
-                                    </svg>
-                                </div>
-                                <div class="feature-card-text">
-                                    <h2 class="fs-4 fw-semibold mb-2">{{ __('Portfolios') }}</h2>
-                                    <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
+                                <div class="feature-card p-4 d-flex flex-column flex-md-row align-items-start gap-3 mx-auto w-100" style="">
+                                    <div class="icon-container d-flex align-items-center justify-content-center flex-shrink-0 mb-3 mb-md-0">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-dark">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="3" y1="9" x2="21" y2="9"></line>
+                                            <line x1="3" y1="15" x2="21" y2="15"></line>
+                                            <line x1="9" y1="3" x2="9" y2="21"></line>
+                                            <line x1="15" y1="3" x2="15" y2="21"></line>
+                                        </svg>
+                                    </div>
+                                    <div class="feature-card-text">
+                                        <h2 class="fs-4 fw-semibold mb-2">{{ __('Portfolios') }}</h2>
+                                        <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
                                         شارك معرض اعمالك مع العملاء
-                                    </p>
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1068,16 +1071,18 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                 <div class="row">
                                     <div class="col-lg-3 offset-lg-3">
                                         @if (!is_null($userDefaultLang))
-                                        @if (!empty($userLanguages))
-                                        <select name="userLanguage" class="form-control" onchange="window.location='{{ url()->current() . '?language=' }}' + this.value;">
-                                            <option value="" selected disabled>{{ __('Select a Language') }}</option>
-                                            @foreach ($userLanguages as $lang)
-                                            <option value="{{ $lang->code }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
-                                                {{ $lang->name }}
-                                            </option>
-                                            @endforeach
-                                        </select>
-                                        @endif
+                                            @if (!empty($userLanguages))
+                                                <select name="userLanguage" class="form-control"
+                                                    onchange="window.location='{{ url()->current() . '?language=' }}' + this.value;">
+                                                    <option value="" selected disabled>{{ __('Select a Language') }}</option>
+                                                    @foreach ($userLanguages as $lang)
+                                                        <option value="{{ $lang->code }}"
+                                                            {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
+                                                            {{ $lang->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            @endif
                                         @endif
                                     </div>
                                 </div>
@@ -1085,7 +1090,10 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-lg-8 offset-lg-2">
-                                        <form id="ajaxForm" action="{{ route('user.home.page.text.update') }}" method="post" enctype="multipart/form-data" onsubmit="return storeSectionBeforeSubmit(this)">
+                                        <form id="ajaxForm" action="{{ route('user.home.page.text.update') }}"
+                                        method="post"
+                                        enctype="multipart/form-data"
+                                        onsubmit="return storeSectionBeforeSubmit(this)">
                                             @csrf
                                             <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -1094,51 +1102,63 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
 
                                             @if (
-                                            !empty($permissions) &&
-                                            in_array('Portfolio', $permissions) &&
-                                            ($userBs->theme == 'home_one' ||
-                                            $userBs->theme == 'home_two' ||
-                                            $userBs->theme == 'home_four' ||
-                                            $userBs->theme == 'home_five' ||
-                                            $userBs->theme == 'home_six' ||
-                                            $userBs->theme == 'home_seven' ||
-                                            $userBs->theme == 'home_twelve' ||
-                                            $userBs->theme == 'home_three'))
-                                            <div class="row">
-                                                <div class="col-12">
-                                                    <div class="row">
-                                                        <div class="col-lg-6 pr-0">
-                                                            <div class="form-group">
-                                                                <label for="">{{ __('Portfolio Section Title') }}</label>
-                                                                <input type="hidden" name="types[]" value="portfolio_title">
-                                                                <input type="text" class="form-control" name="portfolio_title" placeholder="{{ __('Enter portfolio title') }}" value="{{  $information['home_setting']->portfolio_title }}">
-                                                                <p id="errportfolio_title" class="mb-0 text-danger em"></p>
+                                                !empty($permissions) &&
+                                                    in_array('Portfolio', $permissions) &&
+                                                    ($userBs->theme == 'home_one' ||
+                                                        $userBs->theme == 'home_two' ||
+                                                        $userBs->theme == 'home_four' ||
+                                                        $userBs->theme == 'home_five' ||
+                                                        $userBs->theme == 'home_six' ||
+                                                        $userBs->theme == 'home_seven' ||
+                                                        $userBs->theme == 'home_twelve' ||
+                                                        $userBs->theme == 'home_three'))
+                                                <div class="row">
+                                                    <div class="col-12">
+                                                        <div class="row">
+                                                            <div class="col-lg-6 pr-0">
+                                                                <div class="form-group">
+                                                                    <label for="">{{ __('Portfolio Section Title') }}</label>
+                                                                    <input type="hidden" name="types[]" value="portfolio_title">
+                                                                    <input type="text" class="form-control" name="portfolio_title"
+                                                                        placeholder="{{ __('Enter portfolio title') }}"
+                                                                        value="{{  $information['home_setting']->portfolio_title }}">
+                                                                    <p id="errportfolio_title" class="mb-0 text-danger em"></p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-lg-6 pl-0">
+                                                                <div class="form-group">
+                                                                    <label
+                                                                        for="">{{ __('Portfolio Section Subtitle') }}</label>
+                                                                    <input type="hidden" name="types[]" value="portfolio_subtitle">
+                                                                    <input type="text" class="form-control"
+                                                                        name="portfolio_subtitle"
+                                                                        placeholder="{{ __('Enter Portfolio Subtitle') }}"
+                                                                        value="{{  $information['home_setting']->portfolio_subtitle }}">
+                                                                    <p id="errportfolio_subtitle" class="mb-0 text-danger em"></p>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        <div class="col-lg-6 pl-0">
-                                                            <div class="form-group">
-                                                                <label for="">{{ __('Portfolio Section Subtitle') }}</label>
-                                                                <input type="hidden" name="types[]" value="portfolio_subtitle">
-                                                                <input type="text" class="form-control" name="portfolio_subtitle" placeholder="{{ __('Enter Portfolio Subtitle') }}" value="{{  $information['home_setting']->portfolio_subtitle }}">
-                                                                <p id="errportfolio_subtitle" class="mb-0 text-danger em"></p>
+                                                        @if (isset($userBs->theme) && ($userBs->theme === 'home_two' || $userBs->theme === 'home_three'))
+                                                            <div class="row">
+                                                                <div class="col-lg-6 pr-0">
+                                                                    <div class="form-group">
+                                                                        <label
+                                                                            for="">{{ __('View All Portfolio Text') }}</label>
+                                                                        <input type="hidden" name="types[]"
+                                                                            value="view_all_portfolio_text">
+                                                                        <input type="text" class="form-control"
+                                                                            name="view_all_portfolio_text"
+                                                                            placeholder="{{ __('Enter view all portfolio text') }}"
+                                                                            value="{{  $information['home_setting']->view_all_portfolio_text }}">
+                                                                        <p id="errview_all_portfolio_text"
+                                                                            class="mb-0 text-danger em">
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                        </div>
+                                                        @endif
                                                     </div>
-                                                    @if (isset($userBs->theme) && ($userBs->theme === 'home_two' || $userBs->theme === 'home_three'))
-                                                    <div class="row">
-                                                        <div class="col-lg-6 pr-0">
-                                                            <div class="form-group">
-                                                                <label for="">{{ __('View All Portfolio Text') }}</label>
-                                                                <input type="hidden" name="types[]" value="view_all_portfolio_text">
-                                                                <input type="text" class="form-control" name="view_all_portfolio_text" placeholder="{{ __('Enter view all portfolio text') }}" value="{{  $information['home_setting']->view_all_portfolio_text }}">
-                                                                <p id="errview_all_portfolio_text" class="mb-0 text-danger em">
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    @endif
                                                 </div>
-                                            </div>
                                             @endif
 
                                         </form>
@@ -1149,7 +1169,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                 <div class="form">
                                     <div class="form-group from-show-notify row">
                                         <div class="col-12 text-center">
-                                            <button type="submit" id="submitBtn" class="btn btn-success">{{ __('Update') }}</button>
+                                            <button type="submit" id="submitBtn"
+                                                class="btn btn-success">{{ __('Update') }}</button>
                                         </div>
                                     </div>
                                 </div>
@@ -1169,23 +1190,30 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                     </div>
                                     <div class="col-lg-3">
                                         @if (!is_null($userDefaultLang))
-                                        @if (!empty($userLanguages))
-                                        <select name="userLanguage" class="form-control" onchange="window.location='{{ url()->current() . '?language=' }}' + this.value;">
-                                            <option value="" selected disabled>{{ __('Select a Language') }}</option>
-                                            @foreach ($userLanguages as $lang)
-                                            <option value="{{ $lang->code }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
-                                                {{ $lang->name }}
-                                            </option>
-                                            @endforeach
-                                        </select>
-                                        @endif
+                                            @if (!empty($userLanguages))
+                                                <select name="userLanguage" class="form-control"
+                                                    onchange="window.location='{{ url()->current() . '?language=' }}' + this.value;">
+                                                    <option value="" selected disabled>{{ __('Select a Language') }}</option>
+                                                    @foreach ($userLanguages as $lang)
+                                                        <option value="{{ $lang->code }}"
+                                                            {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
+                                                            {{ $lang->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            @endif
                                         @endif
                                     </div>
                                     <div class="col-lg-4 offset-lg-1 mt-2 mt-lg-0">
                                         @if (!is_null($userDefaultLang))
-                                        <a href="#" class="btn btn-primary float-right btn-sm" data-toggle="modal" data-target="#createModalportfolio"><i class="fas fa-plus"></i> {{ __('Add Portfolio') }}</a>
-                                        <a class="btn btn-success float-right btn-sm mr-2" href="{{ route('user.portfolio.category.index') }}"><i class="fas fa-hands"></i> {{ __('Add categore') }}</a>
-                                        <button class="btn btn-danger float-right btn-sm mr-2 d-none bulk-delete" data-href="{{ route('user.portfolio.bulk.delete') }}"><i class="flaticon-interface-5"></i> {{ __('Delete') }}</button>
+                                            <a href="#" class="btn btn-primary float-right btn-sm" data-toggle="modal"
+                                                data-target="#createModalportfolio"><i class="fas fa-plus"></i> {{ __('Add Portfolio') }}</a>
+                                                <a class="btn btn-success float-right btn-sm mr-2"
+                                                href="{{ route('user.portfolio.category.index') }}"><i
+                                                    class="fas fa-hands"></i> {{ __('Add categore') }}</a>
+                                            <button class="btn btn-danger float-right btn-sm mr-2 d-none bulk-delete"
+                                                data-href="{{ route('user.portfolio.bulk.delete') }}"><i
+                                                    class="flaticon-interface-5"></i> {{ __('Delete') }}</button>
                                         @endif
                                     </div>
                                 </div>
@@ -1194,77 +1222,94 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                 <div class="row">
                                     <div class="col-lg-12">
                                         @if (is_null($userDefaultLang))
-                                        <h3 class="text-center">{{ __('NO LANGUAGE FOUND') }}</h3>
+                                            <h3 class="text-center">{{ __('NO LANGUAGE FOUND') }}</h3>
                                         @else
-                                        @if (count($information['portfolios']) == 0)
-                                        <h3 class="text-center">{{ __('NO PORTFOLIO FOUND') }}</h3>
-                                        @else
-                                        <div class="table-responsive">
-                                            <table class="table table-striped mt-3" id="basic-datatables">
-                                                <thead>
-                                                    <tr>
-                                                        <th scope="col">
-                                                            <input type="checkbox" class="bulk-check" data-val="all">
-                                                        </th>
-                                                        <th scope="col">{{ __('Image') }}</th>
-                                                        <th scope="col">{{ __('Title') }}</th>
-                                                        <th scope="col">{{ __('Category') }}</th>
-                                                        @if ($userBs->theme != 'home_ten')
-                                                        <th scope="col">{{ __('Featured') }}</th>
-                                                        @endif
-                                                        <th scope="col">{{ __('Serial Number') }}</th>
-                                                        <th scope="col">{{ __('Actions') }}</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach ($information['portfolios'] as $key => $portfolio)
-                                                    <tr>
-                                                        <td>
-                                                            <input type="checkbox" class="bulk-check" data-val="{{ $portfolio->id }}">
-                                                        </td>
-                                                        <td><img src="{{ asset('assets/front/img/user/portfolios/' . $portfolio->image) }}" alt="" width="80"></td>
-                                                        <td>{{ strlen($portfolio->title) > 30 ? mb_substr($portfolio->title, 0, 30, 'UTF-8') . '...' : $portfolio->title }}
-                                                        </td>
-                                                        <td>{{ $portfolio->bcategory->name }}</td>
-                                                        @if ($userBs->theme != 'home_ten')
-                                                        <td>
-                                                            <form id="featureForm{{ $portfolio->id }}" class="d-inline-block" action="{{ route('user.portfolio.featured') }}" method="post" onsubmit="return storeSectionBeforeSubmit(this)">
-                                                                @csrf
-                                                                <input type="hidden" id="lastSection" name="last_section" value="">
+                                            @if (count($information['portfolios']) == 0)
+                                                <h3 class="text-center">{{ __('NO PORTFOLIO FOUND') }}</h3>
+                                            @else
+                                                <div class="table-responsive">
+                                                    <table class="table table-striped mt-3" id="basic-datatables">
+                                                        <thead>
+                                                            <tr>
+                                                                <th scope="col">
+                                                                    <input type="checkbox" class="bulk-check" data-val="all">
+                                                                </th>
+                                                                <th scope="col">{{ __('Image') }}</th>
+                                                                <th scope="col">{{ __('Title') }}</th>
+                                                                <th scope="col">{{ __('Category') }}</th>
+                                                                @if ($userBs->theme != 'home_ten')
+                                                                    <th scope="col">{{ __('Featured') }}</th>
+                                                                @endif
+                                                                <th scope="col">{{ __('Serial Number') }}</th>
+                                                                <th scope="col">{{ __('Actions') }}</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach ($information['portfolios'] as $key => $portfolio)
+                                                                <tr>
+                                                                    <td>
+                                                                        <input type="checkbox" class="bulk-check"
+                                                                            data-val="{{ $portfolio->id }}">
+                                                                    </td>
+                                                                    <td><img src="{{ asset('assets/front/img/user/portfolios/' . $portfolio->image) }}"
+                                                                            alt="" width="80"></td>
+                                                                    <td>{{ strlen($portfolio->title) > 30 ? mb_substr($portfolio->title, 0, 30, 'UTF-8') . '...' : $portfolio->title }}
+                                                                    </td>
+                                                                    <td>{{ $portfolio->bcategory->name }}</td>
+                                                                    @if ($userBs->theme != 'home_ten')
+                                                                        <td>
+                                                                            <form id="featureForm{{ $portfolio->id }}"
+                                                                                class="d-inline-block"
+                                                                                action="{{ route('user.portfolio.featured') }}"
+                                                                                method="post"
+                                                                                onsubmit="return storeSectionBeforeSubmit(this)">
+                                                                                @csrf
+                                                                                <input type="hidden" id="lastSection" name="last_section" value="">
 
-                                                                <input type="hidden" name="portfolio_id" value="{{ $portfolio->id }}">
-                                                                <select class="form-control {{ $portfolio->featured == 1 ? 'bg-success' : 'bg-danger' }}" name="featured" onchange="document.getElementById('featureForm{{ $portfolio->id }}').submit();">
-                                                                    <option value="1" {{ $portfolio->featured == 1 ? 'selected' : '' }}>
-                                                                        {{ __('Yes') }}
-                                                                    </option>
-                                                                    <option value="0" {{ $portfolio->featured == 0 ? 'selected' : '' }}>
-                                                                        {{ __('No') }}
-                                                                    </option>
-                                                                </select>
-                                                            </form>
+                                                                                <input type="hidden" name="portfolio_id"
+                                                                                    value="{{ $portfolio->id }}">
+                                                                                <select
+                                                                                    class="form-control {{ $portfolio->featured == 1 ? 'bg-success' : 'bg-danger' }}"
+                                                                                    name="featured"
+                                                                                    onchange="document.getElementById('featureForm{{ $portfolio->id }}').submit();">
+                                                                                    <option value="1"
+                                                                                        {{ $portfolio->featured == 1 ? 'selected' : '' }}>
+                                                                                        {{ __('Yes') }}
+                                                                                    </option>
+                                                                                    <option value="0"
+                                                                                        {{ $portfolio->featured == 0 ? 'selected' : '' }}>
+                                                                                        {{ __('No') }}
+                                                                                    </option>
+                                                                                </select>
+                                                                            </form>
 
 
-                                                        </td>
-                                                        @endif
-                                                        <td>{{ $portfolio->serial_number }}</td>
-                                                        <td>
-                                                            <a class="btn btn-secondary btn-sm" href="{{ route('user.portfolio.edit', $portfolio->id) . '?language=' . $portfolio->language->code }}">
-                                                                <i class="fas fa-edit"></i>
-                                                            </a>
-                                                            <form class="deleteform d-inline-block" action="{{ route('user.portfolio.delete') }}" method="post">
-                                                                @csrf
-                                                                <input type="hidden" name="id" value="{{ $portfolio->id }}">
-                                                                <button type="submit" class="btn btn-danger btn-sm deletebtn">
-                                                                    <i class="fas fa-trash"></i>
-                                                                </button>
-                                                            </form>
-                                                        </td>
-                                                    </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        @endif
+                                                                        </td>
+                                                                    @endif
+                                                                    <td>{{ $portfolio->serial_number }}</td>
+                                                                    <td>
+                                                                        <a class="btn btn-secondary btn-sm"
+                                                                            href="{{ route('user.portfolio.edit', $portfolio->id) . '?language=' . $portfolio->language->code }}">
+                                                                            <i class="fas fa-edit"></i>
+                                                                        </a>
+                                                                        <form class="deleteform d-inline-block"
+                                                                            action="{{ route('user.portfolio.delete') }}"
+                                                                            method="post">
+                                                                            @csrf
+                                                                            <input type="hidden" name="id"
+                                                                                value="{{ $portfolio->id }}">
+                                                                            <button type="submit"
+                                                                                class="btn btn-danger btn-sm deletebtn">
+                                                                                <i class="fas fa-trash"></i>
+                                                                            </button>
+                                                                        </form>
+                                                                    </td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            @endif
                                         @endif
                                     </div>
                                 </div>
@@ -1308,7 +1353,11 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-lg-8 offset-lg-2">
-                                        <form id="ajaxFormTestimonialupdate" action="{{ route('user.home.page.text.update') }}" method="post" enctype="multipart/form-data" onsubmit="return storeSectionBeforeSubmit(this)">
+                                        <form id="ajaxFormTestimonialupdate"
+                                        action="{{ route('user.home.page.text.update') }}"
+                                        method="post"
+                                        enctype="multipart/form-data"
+                                        onsubmit="return storeSectionBeforeSubmit(this)">
                                             @csrf
                                             <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -1523,8 +1572,46 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                         </div>
                     </div>
                 </div>
+                <style>
+                    .feature-card {
+                        background-color: #ffffff;
+                        border-radius: 0.5rem;
+                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                        transition: box-shadow 0.2s;
+                    }
 
+                    .feature-card:hover {
+                        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                    }
 
+                    .icon-container {
+                        width: 3.5rem;
+                        height: 3.5rem;
+                        background-color: #f8f9fa;
+                        border: 1px solid #e9ecef;
+                        border-radius: 0.5rem;
+                    }
+
+                    .icon-container svg {
+                        width: 2rem;
+                        height: 2rem;
+                    }
+
+                    .feature-card-text {
+                        white-space: normal !important;
+                    }
+
+                    .feature-card-text h2,
+                    .feature-card-text p {
+                        white-space: normal !important;
+                    }
+
+                    @media (min-width: 768px) {
+                        .feature-card-text {
+                            max-width: 75%;
+                        }
+                    }
+                </style>
                 <div class="row">
                     <div class="col-md-12">
                         <div class="card">
@@ -1550,7 +1637,10 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-lg-8 offset-lg-2">
-                                        <form id="ajaxFormservice" action="{{ route('user.home.page.text.update') }}" method="post" enctype="multipart/form-data" onsubmit="return storeSectionBeforeSubmit(this)">
+                                        <form id="ajaxFormservice"
+                                        action="{{ route('user.home.page.text.update') }}"
+                                        method="post" enctype="multipart/form-data"
+                                        onsubmit="return storeSectionBeforeSubmit(this)">
                                             @csrf
                                             <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -1692,7 +1782,10 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_ten' || $userBs->theme == 'home_eleven')
                                                         @else
                                                         <td>
-                                                            <form id="featureForm{{ $service->id }}" class="d-inline-block" action="{{ route('user.service.feature') }}" method="post" onsubmit="return storeSectionBeforeSubmit(this)">
+                                                            <form id="featureForm{{ $service->id }}" class="d-inline-block"
+                                                            action="{{ route('user.service.feature') }}"
+                                                            method="post"
+                                                            onsubmit="return storeSectionBeforeSubmit(this)">
                                                                 @csrf
                                                                 <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -1930,7 +2023,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <!--  -->
             </div>
 
-            <!-- Footer Section -->
+        <!-- Footer Section -->
             <div id="footer" class="content-section d-none">
                 <h3 class="h4 font-weight-bold">{{ __('Footer') }}</h3>
                 <p class="text-muted">{{ __('Edit footer content and social media links') }}</p>
@@ -1961,7 +2054,11 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                             <div class="card-body pt-5 pb-5">
                                 <div class="row">
                                     <div class="col-lg-6 offset-lg-3">
-                                        <form id="ajaxFormFooter" action="{{ route('user.footer.update_footer_info_quicklink', ['language' => request()->input('language')]) }}" method="post" enctype="multipart/form-data" onsubmit="return storeSectionBeforeSubmit(this)">
+                                        <form id="ajaxFormFooter"
+                                        action="{{ route('user.footer.update_footer_info_quicklink', ['language' => request()->input('language')]) }}"
+                                        method="post"
+                                        enctype="multipart/form-data"
+                                        onsubmit="return storeSectionBeforeSubmit(this)">
                                             @csrf
                                             <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -2040,526 +2137,552 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <!--  -->
                 <div class="row">
                     <div class="col-md-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="row">
+                    <div class="card">
+                        <div class="card-header">
+                        <div class="row">
 
-                                    <div class="col-lg-4 offset-lg-1 mt-2 mt-lg-0">
-                                        <a href="#" class="btn btn-sm btn-primary float-lg-right float-left" data-toggle="modal" data-target="#createModalQuick_links"><i class="fas fa-plus"></i> {{ __('Add') }}</a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-lg-12">
-                                        @if (count($information['footer_quick_links']) == 0)
-                                        <h3 class="text-center">{{ __('NO QUICK LINK FOUND!') }}</h3>
-                                        @else
-                                        <div class="table-responsive">
-                                            <table class="table table-striped mt-3">
-                                                <thead>
-                                                    <tr>
-                                                        <th scope="col">{{ __('#') }}</th>
-                                                        <th scope="col">{{ __('Title') }}</th>
-                                                        <th scope="col">{{ __('URL') }}</th>
-                                                        <th scope="col">{{ __('Serial Number') }}</th>
-                                                        <th scope="col">{{ __('Actions') }}</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach ($information['footer_quick_links'] as $link)
-                                                    <tr>
-                                                        <td>{{ $loop->iteration }}</td>
-                                                        <td>{{ $link->title }}</td>
-                                                        <td>{{ $link->url }}</td>
-                                                        <td>{{ $link->serial_number }}</td>
-                                                        <td>
-                                                            <a class="edit-btn btn btn-secondary btn-sm mr-1" href="#" data-toggle="modal" data-target="#editModalquick_links" data-id="{{ $link->id }}" data-title="{{ $link->title }}" data-url="{{ $link->url }}" data-serial_number="{{ $link->serial_number }}">
-                                                                <span class="btn-label">
-                                                                    <i class="fas fa-edit"></i>
-                                                                </span>
-                                                                {{ __('Edit') }}
-                                                            </a>
-
-                                                            <form class="deleteform d-inline-block" action="{{ route('user.footer.delete_quick_link') }}" method="post">
-                                                                @csrf
-                                                                <input type="hidden" name="link_id" value="{{ $link->id }}">
-                                                                <button type="submit" class="btn btn-danger btn-sm deletebtn">
-                                                                    <span class="btn-label">
-                                                                        <i class="fas fa-trash"></i>
-                                                                    </span>
-                                                                    {{ __('Delete') }}
-                                                                </button>
-                                                            </form>
-                                                        </td>
-                                                    </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        @endif
-                                    </div>
-                                </div>
+                        <div class="col-lg-4 offset-lg-1 mt-2 mt-lg-0">
+                            <a
+                                href="#"
+                                class="btn btn-sm btn-primary float-lg-right float-left"
+                                data-toggle="modal"
+                                data-target="#createModalQuick_links"
+                            ><i class="fas fa-plus"></i> {{ __('Add') }}</a>
                             </div>
                         </div>
+                        </div>
+
+                        <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-12">
+                            @if (count($information['footer_quick_links']) == 0)
+                                <h3 class="text-center">{{ __('NO QUICK LINK FOUND!') }}</h3>
+                            @else
+                                <div class="table-responsive">
+                                <table class="table table-striped mt-3">
+                                    <thead>
+                                    <tr>
+                                        <th scope="col">{{ __('#') }}</th>
+                                        <th scope="col">{{ __('Title') }}</th>
+                                        <th scope="col">{{ __('URL') }}</th>
+                                        <th scope="col">{{ __('Serial Number') }}</th>
+                                        <th scope="col">{{ __('Actions') }}</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach ($information['footer_quick_links'] as $link)
+                                        <tr>
+                                        <td>{{ $loop->iteration }}</td>
+                                        <td>{{ $link->title }}</td>
+                                        <td>{{ $link->url }}</td>
+                                        <td>{{ $link->serial_number }}</td>
+                                        <td>
+                                            <a
+                                            class="edit-btn btn btn-secondary btn-sm mr-1"
+                                            href="#"
+                                            data-toggle="modal"
+                                            data-target="#editModalquick_links"
+                                            data-id="{{ $link->id }}"
+                                            data-title="{{ $link->title }}"
+                                            data-url="{{ $link->url }}"
+                                            data-serial_number="{{ $link->serial_number }}"
+                                            >
+                                            <span class="btn-label">
+                                                <i class="fas fa-edit"></i>
+                                            </span>
+                                            {{ __('Edit') }}
+                                            </a>
+
+                                            <form
+                                            class="deleteform d-inline-block"
+                                            action="{{ route('user.footer.delete_quick_link') }}"
+                                            method="post"
+                                            >
+                                            @csrf
+                                            <input type="hidden" name="link_id" value="{{ $link->id }}">
+                                            <button type="submit" class="btn btn-danger btn-sm deletebtn">
+                                                <span class="btn-label">
+                                                <i class="fas fa-trash"></i>
+                                                </span>
+                                                {{ __('Delete') }}
+                                            </button>
+                                            </form>
+                                        </td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                                </div>
+                            @endif
+                            </div>
+                        </div>
+                        </div>
+                    </div>
                     </div>
                 </div>
                 <!--  -->
 
                 <!--  -->
                 <div class="row">
-                    <div class="col-md-12">
-                        <div class="min-vh-100 d-flex align-items-center justify-content-center pb-3">
-                            <div class="feature-card p-4 d-flex flex-column flex-md-row align-items-start gap-3 mx-auto w-100" style="">
-                                <div class="icon-container d-flex align-items-center justify-content-center flex-shrink-0 mb-3 mb-md-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-dark">
-                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                        <line x1="3" y1="9" x2="21" y2="9"></line>
-                                        <line x1="3" y1="15" x2="21" y2="15"></line>
-                                        <line x1="9" y1="3" x2="9" y2="21"></line>
-                                        <line x1="15" y1="3" x2="15" y2="21"></line>
-                                    </svg>
+<div class="col-md-12">
+<div class="min-vh-100 d-flex align-items-center justify-content-center pb-3">
+        <div class="feature-card p-4 d-flex flex-column flex-md-row align-items-start gap-3 mx-auto w-100" style="">
+            <div class="icon-container d-flex align-items-center justify-content-center flex-shrink-0 mb-3 mb-md-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-dark">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="3" y1="15" x2="21" y2="15"></line>
+                    <line x1="9" y1="3" x2="9" y2="21"></line>
+                    <line x1="15" y1="3" x2="15" y2="21"></line>
+                </svg>
+            </div>
+            <div class="feature-card-text">
+                <h2 class="fs-4 fw-semibold mb-2">{{ __('Social Links') }}</h2>
+                <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
+                  تعديل روابط الاجتماعية الخاصه بشركتك من هنا
+                </p>
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <form id="socialForm" action="{{ route('user.social.store') }}" method="post">
+                    <div class="card-header">
+                        <div class="card-title">{{ __('Add Social Link') }}</div>
+                    </div>
+                    <div class="card-body pt-5 pb-5">
+                        <div class="row">
+                            <div class="col-lg-12">
+                                @csrf
+                                <div class="form-group">
+                                    <label for="">{{ __('Social Icon') }} **</label>
+                                    <div class="btn-group d-block">
+                                        <button type="button" class="btn btn-primary iconpicker-component"><i
+                                                class="fa fa-fw fa-heart"></i></button>
+                                        <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle"
+                                            data-selected="fa-car" data-toggle="dropdown">
+                                        </button>
+                                        <div class="dropdown-menu"></div>
+                                    </div>
+                                    <input id="inputIcon" type="hidden" name="icon" value="">
+                                    @if ($errors->has('icon'))
+                                        <p class="mb-0 text-danger">{{ $errors->first('icon') }}</p>
+                                    @endif
+                                    <div class="mt-2">
+                                        <small>{{ __('NB: click on the dropdown icon to select a social link icon.') }}</small>
+                                    </div>
                                 </div>
-                                <div class="feature-card-text">
-                                    <h2 class="fs-4 fw-semibold mb-2">{{ __('Social Links') }}</h2>
-                                    <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
-                                        تعديل روابط الاجتماعية الخاصه بشركتك من هنا
+                                <div class="form-group">
+                                    <label for="">{{ __('URL') }} **</label>
+                                    <input type="text" class="form-control" name="url" value=""
+                                        placeholder="Enter URL of social media account">
+                                    @if ($errors->has('url'))
+                                        <p class="mb-0 text-danger">{{ $errors->first('url') }}</p>
+                                    @endif
+                                </div>
+                                <div class="form-group">
+                                    <label for="">{{ __('Serial Number') }} **</label>
+                                    <input type="number" class="form-control ltr" name="serial_number" value=""
+                                        placeholder="Enter Serial Number">
+                                    <p id="errserial_number" class="mb-0 text-danger em"></p>
+                                    <p class="text-warning">
+                                        <small>{{ __('The higher the serial number is, the later the social link will be shown.') }}</small>
                                     </p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                    <div class="card-footer pt-3">
+                        <div class="form">
+                            <div class="form-group from-show-notify row">
+                                <div class="col-lg-3 col-md-3 col-sm-12">
 
-                <div class="row">
-                    <div class="col-lg-12">
-                        <div class="card">
-                            <form id="socialForm" action="{{ route('user.social.store') }}" method="post">
-                                <div class="card-header">
-                                    <div class="card-title">{{ __('Add Social Link') }}</div>
                                 </div>
-                                <div class="card-body pt-5 pb-5">
-                                    <div class="row">
-                                        <div class="col-lg-12">
-                                            @csrf
-                                            <div class="form-group">
-                                                <label for="">{{ __('Social Icon') }} **</label>
-                                                <div class="btn-group d-block">
-                                                    <button type="button" class="btn btn-primary iconpicker-component"><i class="fa fa-fw fa-heart"></i></button>
-                                                    <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle" data-selected="fa-car" data-toggle="dropdown">
-                                                    </button>
-                                                    <div class="dropdown-menu"></div>
-                                                </div>
-                                                <input id="inputIcon" type="hidden" name="icon" value="">
-                                                @if ($errors->has('icon'))
-                                                <p class="mb-0 text-danger">{{ $errors->first('icon') }}</p>
-                                                @endif
-                                                <div class="mt-2">
-                                                    <small>{{ __('NB: click on the dropdown icon to select a social link icon.') }}</small>
-                                                </div>
-                                            </div>
-                                            <div class="form-group">
-                                                <label for="">{{ __('URL') }} **</label>
-                                                <input type="text" class="form-control" name="url" value="" placeholder="Enter URL of social media account">
-                                                @if ($errors->has('url'))
-                                                <p class="mb-0 text-danger">{{ $errors->first('url') }}</p>
-                                                @endif
-                                            </div>
-                                            <div class="form-group">
-                                                <label for="">{{ __('Serial Number') }} **</label>
-                                                <input type="number" class="form-control ltr" name="serial_number" value="" placeholder="Enter Serial Number">
-                                                <p id="errserial_number" class="mb-0 text-danger em"></p>
-                                                <p class="text-warning">
-                                                    <small>{{ __('The higher the serial number is, the later the social link will be shown.') }}</small>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card-footer pt-3">
-                                    <div class="form">
-                                        <div class="form-group from-show-notify row">
-                                            <div class="col-lg-3 col-md-3 col-sm-12">
-
-                                            </div>
-                                            <div class="col-12 text-center">
-                                                <button type="submit" id="displayNotif" class="btn btn-success">{{ __('Submit') }}</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    <div class="col-lg-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="card-title">{{ __('Social Links') }}</div>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-lg-12">
-                                        @if (count($information['socials']) == 0)
-                                        <h2 class="text-center">{{ __('NO LINK ADDED') }}</h2>
-                                        @else
-                                        <div class="table-responsive">
-                                            <table class="table table-striped mt-3">
-                                                <thead>
-                                                    <tr>
-                                                        <th scope="col">#</th>
-                                                        <th scope="col">{{ __('Icon') }}</th>
-                                                        <th scope="col">{{ __('URL') }}</th>
-                                                        <th scope="col">{{ __('Serial Number') }}</th>
-                                                        <th scope="col">{{ __('Actions') }}</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach ($information['socials'] as $key => $social)
-                                                    <tr>
-                                                        <td>{{ $loop->iteration }}</td>
-                                                        <td><i class="{{ $social->icon }}"></i></td>
-                                                        <td>{{ $social->url }}</td>
-                                                        <td>{{ $social->serial_number }}</td>
-                                                        <td>
-                                                            <a class="btn btn-secondary btn-sm" href="{{ route('user.social.edit', $social->id) }}">
-                                                                <i class="fas fa-edit"></i>
-                                                            </a>
-                                                            <form class="d-inline-block deleteform" action="{{ route('user.social.delete') }}" method="post">
-                                                                @csrf
-                                                                <input type="hidden" name="socialid" value="{{ $social->id }}">
-                                                                <button type="submit" class="btn btn-danger btn-sm deletebtn">
-                                                                    <i class="fas fa-trash"></i>
-                                                                </button>
-                                                            </form>
-                                                        </td>
-                                                    </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        @endif
-                                    </div>
+                                <div class="col-12 text-center">
+                                    <button type="submit" id="displayNotif"
+                                        class="btn btn-success">{{ __('Submit') }}</button>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </form>
+            </div>
+        </div>
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">{{ __('Social Links') }}</div>
                 </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            @if (count($information['socials']) == 0)
+                                <h2 class="text-center">{{ __('NO LINK ADDED') }}</h2>
+                            @else
+                                <div class="table-responsive">
+                                    <table class="table table-striped mt-3">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">#</th>
+                                                <th scope="col">{{ __('Icon') }}</th>
+                                                <th scope="col">{{ __('URL') }}</th>
+                                                <th scope="col">{{ __('Serial Number') }}</th>
+                                                <th scope="col">{{ __('Actions') }}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($information['socials'] as $key => $social)
+                                                <tr>
+                                                    <td>{{ $loop->iteration }}</td>
+                                                    <td><i class="{{ $social->icon }}"></i></td>
+                                                    <td>{{ $social->url }}</td>
+                                                    <td>{{ $social->serial_number }}</td>
+                                                    <td>
+                                                        <a class="btn btn-secondary btn-sm"
+                                                            href="{{ route('user.social.edit', $social->id) }}">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <form class="d-inline-block deleteform"
+                                                            action="{{ route('user.social.delete') }}" method="post">
+                                                            @csrf
+                                                            <input type="hidden" name="socialid"
+                                                                value="{{ $social->id }}">
+                                                            <button type="submit" class="btn btn-danger btn-sm deletebtn">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
                 <!--  -->
 
             </div>
-            <!--// Footer Section -->
+        <!--// Footer Section -->
 
             <!-- menu-builder Section -->
             <div id="menubuilder" class="content-section d-none">
                 <h3 class="h4 font-weight-bold">{{ __('menu biulder') }}</h3>
                 <p class="text-muted">{{ __('Edit menu biulder  content ') }}</p>
 
-                <!--  -->
+            <!--  -->
 
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="min-vh-100 d-flex align-items-center justify-content-center pb-3">
-                            <div class="feature-card p-4 d-flex flex-column flex-md-row align-items-start gap-3 mx-auto w-100" style="">
-                                <div class="icon-container d-flex align-items-center justify-content-center flex-shrink-0 mb-3 mb-md-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-dark">
-                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                        <line x1="3" y1="9" x2="21" y2="9"></line>
-                                        <line x1="3" y1="15" x2="21" y2="15"></line>
-                                        <line x1="9" y1="3" x2="9" y2="21"></line>
-                                        <line x1="15" y1="3" x2="15" y2="21"></line>
-                                    </svg>
-                                </div>
-                                <div class="feature-card-text">
-                                    <h2 class="fs-4 fw-semibold mb-2">{{ __('Menu Builder') }}</h2>
-                                    <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
-                                        يمكنك تعديل القوائم في موقعك من هنا
-                                    </p>
-                                </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="min-vh-100 d-flex align-items-center justify-content-center pb-3">
+                        <div class="feature-card p-4 d-flex flex-column flex-md-row align-items-start gap-3 mx-auto w-100" style="">
+                            <div class="icon-container d-flex align-items-center justify-content-center flex-shrink-0 mb-3 mb-md-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-dark">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                                    <line x1="3" y1="15" x2="21" y2="15"></line>
+                                    <line x1="9" y1="3" x2="9" y2="21"></line>
+                                    <line x1="15" y1="3" x2="15" y2="21"></line>
+                                </svg>
+                            </div>
+                            <div class="feature-card-text">
+                                <h2 class="fs-4 fw-semibold mb-2">{{ __('Menu Builder') }}</h2>
+                                <p class="text-muted mb-0" style="font-size: 15px; line-height: 1.6;">
+                                    يمكنك تعديل القوائم في موقعك من هنا
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="card">
-                            <div class="card-header d-none">
-                                <div class="row">
-                                    <div class="col-lg-2">
-                                        @if (!is_null($userDefaultLang))
-                                        @if (!empty($userLanguages))
-                                        <select name="userLanguage" class="form-control" onchange="window.location='{{ url()->current() . '?language=' }}'+this.value">
-                                            <option value="" selected disabled>{{ __('Select a Language') }}</option>
-                                            @foreach ($userLanguages as $lang)
-                                            <option value="{{ $lang->code }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
-                                                {{ $lang->name }}
-                                            </option>
-                                            @endforeach
-                                        </select>
-                                        @endif
-                                        @endif
-                                    </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header d-none">
+                            <div class="row">
+                                <div class="col-lg-2">
+                                    @if (!is_null($userDefaultLang))
+                                    @if (!empty($userLanguages))
+                                    <select name="userLanguage" class="form-control" onchange="window.location='{{ url()->current() . '?language=' }}'+this.value">
+                                        <option value="" selected disabled>{{ __('Select a Language') }}</option>
+                                        @foreach ($userLanguages as $lang)
+                                        <option value="{{ $lang->code }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>
+                                            {{ $lang->name }}
+                                        </option>
+                                        @endforeach
+                                    </select>
+                                    @endif
+                                    @endif
                                 </div>
                             </div>
-                            <div class="card-body pt-5 pb-5">
-                                <div class="row no-gutters">
-                                    <div class="col-lg-4">
-                                        <div class="card border-primary mb-3">
-                                            <div class="card-header bg-primary text-white">{{ __('Pre-built Menus') }}</div>
-                                            <div class="card-body">
-                                                <ul class="list-group">
-                                                    <li class="list-group-item">
-                                                        @if ($userBs->theme == 'home_twelve')
-                                                        <i class="fas fa-home"></i>
-                                                        @endif
-                                                        {{ $keywords['Home'] ?? 'Home' }} <a data-text="{{ $keywords['Home'] ?? 'Home' }}" data-type="home" @if ($userBs->theme == 'home_twelve') data-icon="fas fa-home" @endif
-                                                            class="addToMenus btn btn-primary btn-sm float-right"
-                                                            href="">{{ __('Add to Menus') }}</a>
-                                                    </li>
-
-                                                    @if (!empty($permissions) && in_array('Service', $permissions))
-                                                    <li class="list-group-item">
-                                                        @if ($userBs->theme == 'home_twelve')
-                                                        <i class="fas fa-hands"></i>
-                                                        @endif
-                                                        {{ $keywords['Services'] ?? 'Services' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hands" @endif
-                                                            data-text="{{ $keywords['Services'] ?? 'Services' }}"
-                                                            data-type="services"
-                                                            class="addToMenus btn btn-primary btn-sm float-right"
-                                                            href="">{{ __('Add to Menus') }}</a>
-                                                    </li>
-                                                    @endif
-                                                    @if (!empty($permissions) && in_array('Hotel Booking', $permissions))
-                                                    <li class="list-group-item">
-                                                        @if ($userBs->theme == 'home_twelve')
-                                                        <i class="fas fa-hotel"></i>
-                                                        @endif
-                                                        {{ $keywords['Rooms'] ?? 'Rooms' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hotel" @endif
-                                                            data-text="{{ $keywords['Rooms'] ?? 'Rooms' }}" data-type="rooms"
-                                                            class="addToMenus btn btn-primary btn-sm float-right"
-                                                            href="">{{ __('Add to Menus') }}</a>
-                                                    </li>
-                                                    @endif
-                                                    @if (!empty($permissions) && in_array('Course Management', $permissions))
-                                                    <li class="list-group-item">
-                                                        @if ($userBs->theme == 'home_twelve')
-                                                        <i class="fas fa-play"></i>
-                                                        @endif
-                                                        {{ $keywords['Courses'] ?? 'Courses' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-play" @endif
-                                                            data-text="{{ $keywords['Courses'] ?? 'Courses' }}" data-type="courses"
-                                                            class="addToMenus btn btn-primary btn-sm float-right"
-                                                            href="">{{ __('Add to Menus') }}</a>
-                                                    </li>
-                                                    @endif
-                                                    @if (!empty($permissions) && in_array('Donation Management', $permissions))
-                                                    <li class="list-group-item">
-                                                        @if ($userBs->theme == 'home_twelve')
-                                                        <i class="fas fa-hand-holding-usd"></i>
-                                                        @endif
-                                                        {{ $keywords['Causes'] ?? 'Causes' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hand-holding-usd" @endif
-                                                            data-text="{{ $keywords['Causes'] ?? 'Causes' }}" data-type="causes"
-                                                            class="addToMenus btn btn-primary btn-sm float-right"
-                                                            href="">{{ __('Add to Menus') }}</a>
-                                                    </li>
-                                                    @endif
-                                                    @if (!empty($permissions) && in_array('Blog', $permissions))
-                                                    <li class="list-group-item">
-                                                        @if ($userBs->theme == 'home_twelve')
-                                                        <i class="fas fa-blog"></i>
-                                                        @endif
-                                                        {{ $keywords['Blog'] ?? 'Blog' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-blog" @endif
-                                                            data-text="{{ $keywords['Blog'] ?? 'Blog' }}" data-type="blog"
-                                                            class="addToMenus btn btn-primary btn-sm float-right"
-                                                            href="">{{ __('Add to Menus') }}</a>
-                                                    </li>
-                                                    @endif
-
-                                                    @if (!empty($permissions) && in_array('Portfolio', $permissions))
-                                                    <li class="list-group-item">{{ $keywords['Portfolios'] ?? 'Portfolios' }} <a data-text="{{ $keywords['Portfolios'] ?? 'Portfolios' }}" data-type="portfolios" class="addToMenus btn btn-primary btn-sm float-right" href="">{{ __('Add to Menus') }}</a></li>
-                                                    @endif
-
-                                                    <li class="list-group-item">
-                                                        @if ($userBs->theme == 'home_twelve')
-                                                        <i class="fas fa-chalkboard-teacher"></i>
-                                                        @endif
-                                                        {{ $keywords['Contact'] ?? 'Contact' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-chalkboard-teacher" @endif
-                                                            data-text="{{ $keywords['Contact'] ?? 'Contact' }}" data-type="contact"
-                                                            class="addToMenus btn btn-primary btn-sm float-right"
-                                                            href="">{{ __('Add to Menus') }}</a>
-                                                    </li>
-
-                                                    @if (!empty($permissions) && in_array('Team', $permissions))
-                                                    <li class="list-group-item">
-                                                        @if ($userBs->theme == 'home_twelve')
-                                                        <i class="fas fa-user-friends"></i>
-                                                        @endif
-                                                        {{ $keywords['Team'] ?? 'Team' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-friends" @endif
-                                                            data-text="{{ $keywords['Team'] ?? 'Team' }}" data-type="team"
-                                                            class="addToMenus btn btn-primary btn-sm float-right"
-                                                            href="">{{ __('Add to Menus') }}</a>
-                                                    </li>
-                                                    @endif
-
-                                                    @if (!empty($permissions) && in_array('Career', $permissions))
-                                                    <li class="list-group-item">
-                                                        @if ($userBs->theme == 'home_twelve')
-                                                        <i class="fas fa-user-md"></i>
-                                                        @endif
-                                                        {{ $keywords['Career'] ?? 'Career' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-md" @endif
-                                                            data-text="{{ $keywords['Career'] ?? 'Career' }}" data-type="career"
-                                                            class="addToMenus btn btn-primary btn-sm float-right"
-                                                            href="">{{ __('Add to Menus') }}</a>
-                                                    </li>
-                                                    @endif
-
-                                                    <li class="list-group-item">
-                                                        @if ($userBs->theme == 'home_twelve')
-                                                        <i class="far fa-question-circle"></i>
-                                                        @endif
-                                                        {{ $keywords['FAQ'] ?? 'FAQ' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-question-circle" @endif
-                                                            data-text="{{ $keywords['FAQ'] ?? 'FAQ' }}" data-type="faq"
-                                                            class="addToMenus btn btn-primary btn-sm float-right"
-                                                            href="">{{ __('Add to Menus') }}</a>
-                                                    </li>
-                                                    @if (!empty($permissions) && in_array('Ecommerce', $permissions))
-                                                    <li class="list-group-item">
-                                                        @if ($userBs->theme == 'home_twelve')
-                                                        <i class="far fa-store-alt"></i>
-                                                        @endif
-                                                        {{ $keywords['Shop'] ?? 'Shop' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-store-alt" @endif
-                                                            data-text="{{ $keywords['Shop'] ?? 'Shop' }}" data-type="shop"
-                                                            class="addToMenus btn btn-primary btn-sm float-right"
-                                                            href="">{{ __('Add to Menus') }}</a>
-                                                    </li>
-                                                    <li class="list-group-item">
-                                                        @if ($userBs->theme == 'home_twelve')
-                                                        <i class="far fa-cart-plus"></i>
-                                                        @endif
-                                                        {{ $keywords['Cart'] ?? 'Cart' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
-                                                            data-text="{{ $keywords['Cart'] ?? 'Cart' }}" data-type="cart"
-                                                            class="addToMenus btn btn-primary btn-sm float-right"
-                                                            href="">{{ __('Add to Menus') }}</a>
-                                                    </li>
-                                                    <li class="list-group-item">
-                                                        @if ($userBs->theme == 'home_twelve')
-                                                        <i class="far fa-cart-plus"></i>
-                                                        @endif
-                                                        {{ $keywords['Checkout'] ?? 'Checkout' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
-                                                            data-text="{{ $keywords['Checkout'] ?? 'Checkout' }}"
-                                                            data-type="checkout"
-                                                            class="addToMenus btn btn-primary btn-sm float-right"
-                                                            href="">{{ __('Add to Menus') }}</a>
-                                                    </li>
-                                                    @endif
-                                                    @if (!empty($permissions) && in_array('Custom Page', $permissions))
-                                                    @foreach ($apages as $apage)
-                                                    <li class="list-group-item">
-                                                        {{ $apage->name }} <span class="badge badge-primary"> {{ __('Custom Page') }}</span>
-                                                        <a data-text="{{ $apage->name }}" data-type="{{ $apage->id }}" data-custom="yes" class="addToMenus btn btn-primary btn-sm float-right" href="">{{ __('Add to Menus') }}</a>
-                                                    </li>
-                                                    @endforeach
-                                                    @endif
-
-
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-4">
-                                        <div class="card border-primary mb-3">
-                                            <div class="card-header bg-primary text-white">{{ __('Add / Edit Menu') }}</div>
-                                            <div class="card-body">
-                                                <form id="frmEdit" class="form-horizontal">
-                                                    <input class="item-menu" type="hidden" name="type" value="">
+                        </div>
+                        <div class="card-body pt-5 pb-5">
+                            <div class="row no-gutters">
+                                <div class="col-lg-4">
+                                    <div class="card border-primary mb-3">
+                                        <div class="card-header bg-primary text-white">{{ __('Pre-built Menus') }}</div>
+                                        <div class="card-body">
+                                            <ul class="list-group">
+                                                <li class="list-group-item">
                                                     @if ($userBs->theme == 'home_twelve')
-                                                    <div class="form-group">
-                                                        <label for="">{{ __('Icon*') }}</label>
-                                                        <div class="btn-group d-block">
-                                                            <button type="button" class="btn btn-primary iconpicker-component">
-                                                                <i class="fas fa heart"></i>
-                                                            </button>
-                                                            <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle" data-selected="fa-car" data-toggle="dropdown"></button>
-                                                            <div class="dropdown-menu"></div>
-                                                        </div>
-
-                                                        <input type="hidden" id="inputIcon" class="item-menu" name="icon">
-
-                                                        <div class="text-warning mt-2">
-                                                            <small>{{ __('Click on the dropdown icon to select a icon.') }}</small>
-                                                        </div>
-                                                    </div>
+                                                    <i class="fas fa-home"></i>
                                                     @endif
-                                                    <div id="withUrl">
+                                                    {{ $keywords['Home'] ?? 'Home' }} <a data-text="{{ $keywords['Home'] ?? 'Home' }}" data-type="home" @if ($userBs->theme == 'home_twelve') data-icon="fas fa-home" @endif
+                                                        class="addToMenus btn btn-primary btn-sm float-right"
+                                                        href="">{{ __('Add to Menus') }}</a>
+                                                </li>
 
-                                                        <div class="form-group">
-                                                            <label for="text">{{ __('Text') }}</label>
-                                                            <input type="text" class="form-control item-menu" name="text" placeholder="{{ __('Text') }}">
-                                                        </div>
-                                                        <div class="form-group">
-                                                            <label for="href">{{ __('URL') }}</label>
-                                                            <input type="text" class="form-control item-menu" name="href" placeholder="{{ __('URL') }}">
-                                                        </div>
-                                                        <div class="form-group">
-                                                            <label for="target">{{ __('Target') }}</label>
-                                                            <select name="target" id="target" class="form-control item-menu">
-                                                                <option value="_self">{{ __('Self') }}</option>
-                                                                <option value="_blank">{{ __('Blank') }}</option>
-                                                                <option value="_top">{{ __('Top') }}</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
+                                                @if (!empty($permissions) && in_array('Service', $permissions))
+                                                <li class="list-group-item">
+                                                    @if ($userBs->theme == 'home_twelve')
+                                                    <i class="fas fa-hands"></i>
+                                                    @endif
+                                                    {{ $keywords['Services'] ?? 'Services' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hands" @endif
+                                                        data-text="{{ $keywords['Services'] ?? 'Services' }}"
+                                                        data-type="services"
+                                                        class="addToMenus btn btn-primary btn-sm float-right"
+                                                        href="">{{ __('Add to Menus') }}</a>
+                                                </li>
+                                                @endif
+                                                @if (!empty($permissions) && in_array('Hotel Booking', $permissions))
+                                                <li class="list-group-item">
+                                                    @if ($userBs->theme == 'home_twelve')
+                                                    <i class="fas fa-hotel"></i>
+                                                    @endif
+                                                    {{ $keywords['Rooms'] ?? 'Rooms' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hotel" @endif
+                                                        data-text="{{ $keywords['Rooms'] ?? 'Rooms' }}" data-type="rooms"
+                                                        class="addToMenus btn btn-primary btn-sm float-right"
+                                                        href="">{{ __('Add to Menus') }}</a>
+                                                </li>
+                                                @endif
+                                                @if (!empty($permissions) && in_array('Course Management', $permissions))
+                                                <li class="list-group-item">
+                                                    @if ($userBs->theme == 'home_twelve')
+                                                    <i class="fas fa-play"></i>
+                                                    @endif
+                                                    {{ $keywords['Courses'] ?? 'Courses' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-play" @endif
+                                                        data-text="{{ $keywords['Courses'] ?? 'Courses' }}" data-type="courses"
+                                                        class="addToMenus btn btn-primary btn-sm float-right"
+                                                        href="">{{ __('Add to Menus') }}</a>
+                                                </li>
+                                                @endif
+                                                @if (!empty($permissions) && in_array('Donation Management', $permissions))
+                                                <li class="list-group-item">
+                                                    @if ($userBs->theme == 'home_twelve')
+                                                    <i class="fas fa-hand-holding-usd"></i>
+                                                    @endif
+                                                    {{ $keywords['Causes'] ?? 'Causes' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hand-holding-usd" @endif
+                                                        data-text="{{ $keywords['Causes'] ?? 'Causes' }}" data-type="causes"
+                                                        class="addToMenus btn btn-primary btn-sm float-right"
+                                                        href="">{{ __('Add to Menus') }}</a>
+                                                </li>
+                                                @endif
+                                                @if (!empty($permissions) && in_array('Blog', $permissions))
+                                                <li class="list-group-item">
+                                                    @if ($userBs->theme == 'home_twelve')
+                                                    <i class="fas fa-blog"></i>
+                                                    @endif
+                                                    {{ $keywords['Blog'] ?? 'Blog' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-blog" @endif
+                                                        data-text="{{ $keywords['Blog'] ?? 'Blog' }}" data-type="blog"
+                                                        class="addToMenus btn btn-primary btn-sm float-right"
+                                                        href="">{{ __('Add to Menus') }}</a>
+                                                </li>
+                                                @endif
 
-                                                    <div id="withoutUrl" style="display: none;">
-                                                        <div class="form-group">
-                                                            <label for="text">{{ __('Text') }}</label>
-                                                            <input type="text" class="form-control item-menu" name="text" placeholder="{{ __('Text') }}">
-                                                        </div>
-                                                        <div class="form-group">
-                                                            <label for="href">{{ __('URL') }}</label>
-                                                            <input type="text" class="form-control item-menu" name="href" placeholder="{{ __('URL') }}">
-                                                        </div>
-                                                        <div class="form-group">
-                                                            <label for="target">{{ __('Target') }}</label>
-                                                            <select name="target" class="form-control item-menu">
-                                                                <option value="_self">{{ __('Self') }}</option>
-                                                                <option value="_blank">{{ __('Blank') }}</option>
-                                                                <option value="_top">{{ __('Top') }}</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                            <div class="card-footer">
-                                                <button type="button" id="btnUpdate" class="btn btn-primary" disabled><i class="fas fa-sync-alt"></i> {{ __('Update') }}</button>
-                                                <button type="button" id="btnAdd" class="btn btn-success"><i class="fas fa-plus"></i> {{ __('Add') }}</button>
-                                            </div>
+                                                @if (!empty($permissions) && in_array('Portfolio', $permissions))
+                                                <li class="list-group-item">{{ $keywords['Portfolios'] ?? 'Portfolios' }} <a data-text="{{ $keywords['Portfolios'] ?? 'Portfolios' }}" data-type="portfolios" class="addToMenus btn btn-primary btn-sm float-right" href="">{{ __('Add to Menus') }}</a></li>
+                                                @endif
+
+                                                <li class="list-group-item">
+                                                    @if ($userBs->theme == 'home_twelve')
+                                                    <i class="fas fa-chalkboard-teacher"></i>
+                                                    @endif
+                                                    {{ $keywords['Contact'] ?? 'Contact' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-chalkboard-teacher" @endif
+                                                        data-text="{{ $keywords['Contact'] ?? 'Contact' }}" data-type="contact"
+                                                        class="addToMenus btn btn-primary btn-sm float-right"
+                                                        href="">{{ __('Add to Menus') }}</a>
+                                                </li>
+
+                                                @if (!empty($permissions) && in_array('Team', $permissions))
+                                                <li class="list-group-item">
+                                                    @if ($userBs->theme == 'home_twelve')
+                                                    <i class="fas fa-user-friends"></i>
+                                                    @endif
+                                                    {{ $keywords['Team'] ?? 'Team' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-friends" @endif
+                                                        data-text="{{ $keywords['Team'] ?? 'Team' }}" data-type="team"
+                                                        class="addToMenus btn btn-primary btn-sm float-right"
+                                                        href="">{{ __('Add to Menus') }}</a>
+                                                </li>
+                                                @endif
+
+                                                @if (!empty($permissions) && in_array('Career', $permissions))
+                                                <li class="list-group-item">
+                                                    @if ($userBs->theme == 'home_twelve')
+                                                    <i class="fas fa-user-md"></i>
+                                                    @endif
+                                                    {{ $keywords['Career'] ?? 'Career' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-md" @endif
+                                                        data-text="{{ $keywords['Career'] ?? 'Career' }}" data-type="career"
+                                                        class="addToMenus btn btn-primary btn-sm float-right"
+                                                        href="">{{ __('Add to Menus') }}</a>
+                                                </li>
+                                                @endif
+
+                                                <li class="list-group-item">
+                                                    @if ($userBs->theme == 'home_twelve')
+                                                    <i class="far fa-question-circle"></i>
+                                                    @endif
+                                                    {{ $keywords['FAQ'] ?? 'FAQ' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-question-circle" @endif
+                                                        data-text="{{ $keywords['FAQ'] ?? 'FAQ' }}" data-type="faq"
+                                                        class="addToMenus btn btn-primary btn-sm float-right"
+                                                        href="">{{ __('Add to Menus') }}</a>
+                                                </li>
+                                                @if (!empty($permissions) && in_array('Ecommerce', $permissions))
+                                                <li class="list-group-item">
+                                                    @if ($userBs->theme == 'home_twelve')
+                                                    <i class="far fa-store-alt"></i>
+                                                    @endif
+                                                    {{ $keywords['Shop'] ?? 'Shop' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-store-alt" @endif
+                                                        data-text="{{ $keywords['Shop'] ?? 'Shop' }}" data-type="shop"
+                                                        class="addToMenus btn btn-primary btn-sm float-right"
+                                                        href="">{{ __('Add to Menus') }}</a>
+                                                </li>
+                                                <li class="list-group-item">
+                                                    @if ($userBs->theme == 'home_twelve')
+                                                    <i class="far fa-cart-plus"></i>
+                                                    @endif
+                                                    {{ $keywords['Cart'] ?? 'Cart' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
+                                                        data-text="{{ $keywords['Cart'] ?? 'Cart' }}" data-type="cart"
+                                                        class="addToMenus btn btn-primary btn-sm float-right"
+                                                        href="">{{ __('Add to Menus') }}</a>
+                                                </li>
+                                                <li class="list-group-item">
+                                                    @if ($userBs->theme == 'home_twelve')
+                                                    <i class="far fa-cart-plus"></i>
+                                                    @endif
+                                                    {{ $keywords['Checkout'] ?? 'Checkout' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
+                                                        data-text="{{ $keywords['Checkout'] ?? 'Checkout' }}"
+                                                        data-type="checkout"
+                                                        class="addToMenus btn btn-primary btn-sm float-right"
+                                                        href="">{{ __('Add to Menus') }}</a>
+                                                </li>
+                                                @endif
+                                                @if (!empty($permissions) && in_array('Custom Page', $permissions))
+                                                @foreach ($apages as $apage)
+                                                <li class="list-group-item">
+                                                    {{ $apage->name }} <span class="badge badge-primary"> {{ __('Custom Page') }}</span>
+                                                    <a data-text="{{ $apage->name }}" data-type="{{ $apage->id }}" data-custom="yes" class="addToMenus btn btn-primary btn-sm float-right" href="">{{ __('Add to Menus') }}</a>
+                                                </li>
+                                                @endforeach
+                                                @endif
+
+
+                                            </ul>
                                         </div>
                                     </div>
-                                    <div class="col-lg-4">
-                                        <div class="card mb-3">
-                                            <div class="card-header bg-primary text-white">{{ __('Website Menus') }}</div>
-                                            <div class="card-body">
-                                                <ul id="myEditor" class="sortableLists list-group">
-                                                </ul>
-                                            </div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <div class="card border-primary mb-3">
+                                        <div class="card-header bg-primary text-white">{{ __('Add / Edit Menu') }}</div>
+                                        <div class="card-body">
+                                            <form id="frmEdit" class="form-horizontal">
+                                                <input class="item-menu" type="hidden" name="type" value="">
+                                                @if ($userBs->theme == 'home_twelve')
+                                                <div class="form-group">
+                                                    <label for="">{{ __('Icon*') }}</label>
+                                                    <div class="btn-group d-block">
+                                                        <button type="button" class="btn btn-primary iconpicker-component">
+                                                            <i class="fas fa heart"></i>
+                                                        </button>
+                                                        <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle" data-selected="fa-car" data-toggle="dropdown"></button>
+                                                        <div class="dropdown-menu"></div>
+                                                    </div>
+
+                                                    <input type="hidden" id="inputIcon" class="item-menu" name="icon">
+
+                                                    <div class="text-warning mt-2">
+                                                        <small>{{ __('Click on the dropdown icon to select a icon.') }}</small>
+                                                    </div>
+                                                </div>
+                                                @endif
+                                                <div id="withUrl">
+
+                                                    <div class="form-group">
+                                                        <label for="text">{{ __('Text') }}</label>
+                                                        <input type="text" class="form-control item-menu" name="text" placeholder="{{ __('Text') }}">
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="href">{{ __('URL') }}</label>
+                                                        <input type="text" class="form-control item-menu" name="href" placeholder="{{ __('URL') }}">
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="target">{{ __('Target') }}</label>
+                                                        <select name="target" id="target" class="form-control item-menu">
+                                                            <option value="_self">{{ __('Self') }}</option>
+                                                            <option value="_blank">{{ __('Blank') }}</option>
+                                                            <option value="_top">{{ __('Top') }}</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div id="withoutUrl" style="display: none;">
+                                                    <div class="form-group">
+                                                        <label for="text">{{ __('Text') }}</label>
+                                                        <input type="text" class="form-control item-menu" name="text" placeholder="{{ __('Text') }}">
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="href">{{ __('URL') }}</label>
+                                                        <input type="text" class="form-control item-menu" name="href" placeholder="{{ __('URL') }}">
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="target">{{ __('Target') }}</label>
+                                                        <select name="target" class="form-control item-menu">
+                                                            <option value="_self">{{ __('Self') }}</option>
+                                                            <option value="_blank">{{ __('Blank') }}</option>
+                                                            <option value="_top">{{ __('Top') }}</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                        <div class="card-footer">
+                                            <button type="button" id="btnUpdate" class="btn btn-primary" disabled><i class="fas fa-sync-alt"></i> {{ __('Update') }}</button>
+                                            <button type="button" id="btnAdd" class="btn btn-success"><i class="fas fa-plus"></i> {{ __('Add') }}</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <div class="card mb-3">
+                                        <div class="card-header bg-primary text-white">{{ __('Website Menus') }}</div>
+                                        <div class="card-body">
+                                            <ul id="myEditor" class="sortableLists list-group">
+                                            </ul>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="card-footer pt-3">
-                                <div class="form">
-                                    <div class="form-group from-show-notify row">
-                                        <div class="col-12 text-center">
-                                            <button id="btnOutput" class="btn btn-success">{{ __('Update Menu') }}</button>
-                                        </div>
+                        </div>
+                        <div class="card-footer pt-3">
+                            <div class="form">
+                                <div class="form-group from-show-notify row">
+                                    <div class="col-12 text-center">
+                                        <button id="btnOutput" class="btn btn-success">{{ __('Update Menu') }}</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!--  -->
+            </div>
+            <!--  -->
 
             </div>
             <!--// menu-builder Section -->
@@ -2570,7 +2693,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
 
     <!-- Create Portfolio Modal -->
-    <div class="modal fade" id="createModalportfolio" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal fade" id="createModalportfolio" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+        aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -2584,7 +2708,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     {{-- Slider images upload start --}}
                     <div class="px-2">
                         <label for="" class="mb-2"><strong>{{ __('Slider Images') }} **</strong></label>
-                        <form action="{{ route('user.portfolio.sliderstore') }}" id="my-dropzone" enctype="multipart/form-data" class="dropzone create">
+                        <form action="{{ route('user.portfolio.sliderstore') }}" id="my-dropzone"
+                            enctype="multipart/form-data" class="dropzone create">
                             @csrf
                         </form>
                         <p class="text-warning">{{ __('Only png, jpg, jpeg images are allowed') }}</p>
@@ -2592,7 +2717,12 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     </div>
                     {{-- Slider images upload end --}}
 
-                    <form id="ajaxFormPortfolio" enctype="multipart/form-data" class="modal-form" action="{{ route('user.portfolio.store') }}" method="POST" onsubmit="return storeSectionBeforeSubmit(this)">
+                    <form id="ajaxFormPortfolio"
+                    enctype="multipart/form-data"
+                    class="modal-form"
+                    action="{{ route('user.portfolio.store') }}"
+                    method="POST"
+                    onsubmit="return storeSectionBeforeSubmit(this)">
                         @csrf
                         <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -2605,7 +2735,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                         <label for="image"><strong>{{ __('Thumbnail') }} **</strong></label>
                                     </div>
                                     <div class="col-md-12 showImage mb-3">
-                                        <img src="{{ asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
+                                        <img src="{{ asset('assets/admin/img/noimage.jpg') }}" alt="..."
+                                            class="img-thumbnail">
                                     </div>
                                     <input type="file" name="image" id="image" class="form-control">
                                     <p id="errimage" class="mb-0 text-danger em"></p>
@@ -2620,7 +2751,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                     <select id="language" name="user_language_id" class="form-control">
                                         <option value="" selected disabled>{{ __('Select a language') }}</option>
                                         @foreach ($userLanguages as $lang)
-                                        <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                            <option value="{{ $lang->id }}">{{ $lang->name }}</option>
                                         @endforeach
                                     </select>
                                     <p id="erruser_language_id" class="mb-0 text-danger em"></p>
@@ -2707,15 +2838,16 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                         </div>
 
                         @if ($userBs->theme != 'home_ten')
-                        <div class="form-group">
-                            <label for="featured" class="my-label mr-3">{{ __('Featured') }}</label>
-                            <input id="featured" type="checkbox" name="featured" value="1">
-                            <p id="errfeatured" class="mb-0 text-danger em"></p>
-                        </div>
+                            <div class="form-group">
+                                <label for="featured" class="my-label mr-3">{{ __('Featured') }}</label>
+                                <input id="featured" type="checkbox" name="featured" value="1">
+                                <p id="errfeatured" class="mb-0 text-danger em"></p>
+                            </div>
                         @endif
                         <div class="form-group">
                             <label for="">{{ __('Meta Keywords') }}</label>
-                            <input type="text" class="form-control" name="meta_keywords" value="" data-role="tagsinput">
+                            <input type="text" class="form-control" name="meta_keywords" value=""
+                                data-role="tagsinput">
                         </div>
                         <div class="form-group">
                             <label for="">{{ __('Meta Description') }}</label>
@@ -2743,7 +2875,11 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form id="ajaxFormPortfolioCategory" class="modal-form create" action="{{ route('user.portfolio.category.store') }}" method="POST" onsubmit="return storeSectionBeforeSubmit(this)">
+                    <form id="ajaxFormPortfolioCategory"
+                    class="modal-form create"
+                    action="{{ route('user.portfolio.category.store') }}"
+                    method="POST"
+                    onsubmit="return storeSectionBeforeSubmit(this)">
                         @csrf
                         <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -2800,7 +2936,10 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form id="ajaxEditForm" action="{{ route('user.portfolio.category.update') }}" method="POST" onsubmit="return storeSectionBeforeSubmit(this)">
+                    <form id="ajaxEditForm"
+                    action="{{ route('user.portfolio.category.update') }}"
+                    method="POST"
+                    onsubmit="return storeSectionBeforeSubmit(this)">
                         @csrf
                         <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -2849,7 +2988,12 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form id="ajaxFormServices" enctype="multipart/form-data" class="modal-form" action="{{ route('user.service.store') }}" method="POST" onsubmit="return storeSectionBeforeSubmit(this)">
+                    <form id="ajaxFormServices"
+                    enctype="multipart/form-data"
+                    class="modal-form"
+                    action="{{ route('user.service.store') }}"
+                    method="POST"
+                    onsubmit="return storeSectionBeforeSubmit(this)">
                         @csrf
                         <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -2971,7 +3115,12 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form id="ajaxFormAchievement" enctype="multipart/form-data" class="modal-form" action="{{ route('user.counter-information.store') }}" method="POST" onsubmit="return storeSectionBeforeSubmit(this)">
+                    <form id="ajaxFormAchievement"
+                    enctype="multipart/form-data"
+                    class="modal-form"
+                    action="{{ route('user.counter-information.store') }}"
+                    method="POST"
+                    onsubmit="return storeSectionBeforeSubmit(this)">
                         @csrf
                         <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -3053,7 +3202,12 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 </div>
                 <div class="modal-body">
                     <!-- Testimonial -->
-                    <form id="ajaxFormTestimonial" enctype="multipart/form-data" class="modal-form" action="{{ route('user.testimonial.store') }}" method="POST" onsubmit="return storeSectionBeforeSubmit(this)">
+                    <form id="ajaxFormTestimonial"
+                    enctype="multipart/form-data"
+                    class="modal-form"
+                    action="{{ route('user.testimonial.store') }}"
+                    method="POST"
+                    onsubmit="return storeSectionBeforeSubmit(this)">
                         @csrf
                         <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -3132,7 +3286,12 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 </div>
                 <div class="modal-body">
                     <!-- skills -->
-                    <form id="ajaxFormSkill" enctype="multipart/form-data" class="modal-form" action="{{ route('user.skill.store') }}" method="POST" onsubmit="return storeSectionBeforeSubmit(this)">
+                    <form id="ajaxFormSkill"
+                    enctype="multipart/form-data"
+                    class="modal-form"
+                    action="{{ route('user.skill.store') }}"
+                    method="POST"
+                    onsubmit="return storeSectionBeforeSubmit(this)">
                         @csrf
                         <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -3227,7 +3386,12 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 </div>
 
                 <div class="modal-body">
-                    <form id="ajaxFormBrand" class="modal-form" action="{{ route('user.home_page.brand_section.store_brand') }}" method="POST" enctype="multipart/form-data" onsubmit="return storeSectionBeforeSubmit(this)">
+                    <form id="ajaxFormBrand"
+                    class="modal-form"
+                    action="{{ route('user.home_page.brand_section.store_brand') }}"
+                    method="POST"
+                    enctype="multipart/form-data"
+                    onsubmit="return storeSectionBeforeSubmit(this)">
                         @csrf
                         <input type="hidden" id="lastSection" name="last_section" value="">
 
@@ -3277,109 +3441,163 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
     <!--  -->
 
     <!-- create Quick_links Modal -->
-    <div class="modal fade" id="createModalQuick_links" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div
+    class="modal fade"
+    id="createModalQuick_links"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="exampleModalCenterTitle"
+    aria-hidden="true"
+    >
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLongTitle">{{ __('Add Quick Links') }}</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLongTitle">{{ __('Add Quick Links') }}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form
+                id="ajaxFormQuick_links"
+                class="modal-form"
+                action="{{ route('user.footer.store_quick_link') }}"
+                method="post"
+                >
+                @csrf
+                <div class="form-group">
+                    <label for="">{{__('Language')}} **</label>
+                    <select id="language" name="user_language_id" class="form-control">
+                        <option value="" selected disabled>{{__('Select a language')}}</option>
+                        @foreach ($userLanguages as $lang)
+                        <option value="{{$lang->id}}">{{$lang->name}}</option>
+                        @endforeach
+                    </select>
+                    <p id="erruser_language_id" class="mb-0 text-danger em"></p>
+                </div>
+                <div class="form-group">
+                    <label for="">{{ __('Title*') }}</label>
+                    <input
+                    type="text"
+                    class="form-control"
+                    name="title"
+                    placeholder="{{__('Enter Quick Link Title')}}"
+                    >
+                    <p id="errtitle" class="mt-1 mb-0 text-danger em"></p>
                 </div>
 
-                <div class="modal-body">
-                    <form id="ajaxFormQuick_links" class="modal-form" action="{{ route('user.footer.store_quick_link') }}" method="post">
-                        @csrf
-                        <div class="form-group">
-                            <label for="">{{__('Language')}} **</label>
-                            <select id="language" name="user_language_id" class="form-control">
-                                <option value="" selected disabled>{{__('Select a language')}}</option>
-                                @foreach ($userLanguages as $lang)
-                                <option value="{{$lang->id}}">{{$lang->name}}</option>
-                                @endforeach
-                            </select>
-                            <p id="erruser_language_id" class="mb-0 text-danger em"></p>
-                        </div>
-                        <div class="form-group">
-                            <label for="">{{ __('Title*') }}</label>
-                            <input type="text" class="form-control" name="title" placeholder="{{__('Enter Quick Link Title')}}">
-                            <p id="errtitle" class="mt-1 mb-0 text-danger em"></p>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="">{{ __('URL*') }}</label>
-                            <input type="url" class="form-control ltr" name="url" placeholder="{{__('Enter Quick Link URL')}}">
-                            <p id="errurl" class="mt-1 mb-0 text-danger em"></p>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="">{{ __('Serial Number*') }}</label>
-                            <input type="number" class="form-control ltr" name="serial_number" placeholder="{{__('Enter Serial Number')}}">
-                            <p id="errserial_number" class="mt-1 mb-0 text-danger em"></p>
-                            <p class="text-warning mt-2">
-                                <small>{{ __('The higher the serial number is, the later the quick link will be shown.') }}</small>
-                            </p>
-                        </div>
-                    </form>
+                <div class="form-group">
+                    <label for="">{{ __('URL*') }}</label>
+                    <input
+                    type="url"
+                    class="form-control ltr"
+                    name="url"
+                    placeholder="{{__('Enter Quick Link URL')}}"
+                    >
+                    <p id="errurl" class="mt-1 mb-0 text-danger em"></p>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                        {{ __('Close') }}
-                    </button>
-                    <button id="submitBtnQuick_links" type="button" class="btn btn-primary">
-                        {{ __('Save') }}
-                    </button>
+                <div class="form-group">
+                    <label for="">{{ __('Serial Number*') }}</label>
+                    <input
+                    type="number"
+                    class="form-control ltr"
+                    name="serial_number"
+                    placeholder="{{__('Enter Serial Number')}}"
+                    >
+                    <p id="errserial_number" class="mt-1 mb-0 text-danger em"></p>
+                    <p class="text-warning mt-2">
+                    <small>{{ __('The higher the serial number is, the later the quick link will be shown.') }}</small>
+                    </p>
                 </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                {{ __('Close') }}
+                </button>
+                <button id="submitBtnQuick_links" type="button" class="btn btn-primary">
+                {{ __('Save') }}
+                </button>
+            </div>
             </div>
         </div>
     </div>
 
     <!--  -->
-    <div class="modal fade" id="editModalquick_links" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div
+    class="modal fade"
+    id="editModalquick_links"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="exampleModalCenterTitle"
+    aria-hidden="true"
+    >
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="exampleModalLongTitle">{{ __('Edit Quick Links') }}</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
+                    <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
 
                 <div class="modal-body">
-                    <form id="ajaxEditForm_quick_links" class="modal-form" action="{{ route('user.footer.update_quick_link') }}" method="post">
-                        @csrf
-                        <input type="hidden" id="in_id" name="link_id">
+                    <form
+                    id="ajaxEditForm_quick_links"
+                    class="modal-form"
+                    action="{{ route('user.footer.update_quick_link') }}"
+                    method="post"
+                    >
+                    @csrf
+                    <input type="hidden" id="in_id" name="link_id">
 
-                        <div class="form-group">
-                            <label for="">{{ __('Title*') }}</label>
-                            <input type="text" id="in_title" class="form-control" name="title">
-                            <p id="eerrtitle" class="mt-1 mb-0 text-danger em"></p>
-                        </div>
+                    <div class="form-group">
+                        <label for="">{{ __('Title*') }}</label>
+                        <input
+                        type="text"
+                        id="in_title"
+                        class="form-control"
+                        name="title"
+                        >
+                        <p id="eerrtitle" class="mt-1 mb-0 text-danger em"></p>
+                    </div>
 
-                        <div class="form-group">
-                            <label for="">{{ __('URL*') }}</label>
-                            <input type="url" id="in_url" class="form-control ltr" name="url">
-                            <p id="eerrurl" class="mt-1 mb-0 text-danger em"></p>
-                        </div>
+                    <div class="form-group">
+                        <label for="">{{ __('URL*') }}</label>
+                        <input
+                        type="url"
+                        id="in_url"
+                        class="form-control ltr"
+                        name="url"
+                        >
+                        <p id="eerrurl" class="mt-1 mb-0 text-danger em"></p>
+                    </div>
 
-                        <div class="form-group">
-                            <label for="">{{ __('Serial Number*') }}</label>
-                            <input type="number" id="in_serial_number" class="form-control ltr" name="serial_number">
-                            <p id="eerrserial_number" class="mt-1 mb-0 text-danger em"></p>
-                            <p class="text-warning mt-2">
-                                <small>{{ __('The higher the serial number is, the later the quick link will be shown.') }}</small>
-                            </p>
-                        </div>
+                    <div class="form-group">
+                        <label for="">{{ __('Serial Number*') }}</label>
+                        <input
+                        type="number"
+                        id="in_serial_number"
+                        class="form-control ltr"
+                        name="serial_number"
+                        >
+                        <p id="eerrserial_number" class="mt-1 mb-0 text-danger em"></p>
+                        <p class="text-warning mt-2">
+                        <small>{{ __('The higher the serial number is, the later the quick link will be shown.') }}</small>
+                        </p>
+                    </div>
                     </form>
                 </div>
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                        {{ __('Close') }}
+                    {{ __('Close') }}
                     </button>
                     <button id="updateBtn_quick_links" type="button" class="btn btn-primary">
-                        {{ __('Update') }}
+                    {{ __('Update') }}
                     </button>
                 </div>
             </div>
@@ -3393,82 +3611,80 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
     @include('user.home.brand_section.edit')
 
 
-    <!--  -->
-    <script>
-        (function() {
-            let lastSection = sessionStorage.getItem("lastSection");
+<!--  -->
+<script>
+    (function () {
+        let lastSection = sessionStorage.getItem("lastSection");
 
-            if (lastSection) {
-                document.querySelectorAll(".content-section").forEach(section => section.classList.add("d-none"));
-                document.querySelectorAll(".menu-item").forEach(item => item.classList.remove("text-primary", "bg-light", "active-item"));
+        if (lastSection) {
+            document.querySelectorAll(".content-section").forEach(section => section.classList.add("d-none"));
+            document.querySelectorAll(".menu-item").forEach(item => item.classList.remove("text-primary", "bg-light", "active-item"));
 
-                let sectionElement = document.getElementById(lastSection);
-                let navItem = document.querySelector(`.menu-item[data-target="${lastSection}"]`);
+            let sectionElement = document.getElementById(lastSection);
+            let navItem = document.querySelector(`.menu-item[data-target="${lastSection}"]`);
 
-                if (sectionElement && navItem) {
-                    sectionElement.classList.remove("d-none");
-                    navItem.classList.add("text-primary", "bg-light", "active-item");
+            if (sectionElement && navItem) {
+                sectionElement.classList.remove("d-none");
+                navItem.classList.add("text-primary", "bg-light", "active-item");
 
-                    // Ensure hover effects apply dynamically
-                    navItem.addEventListener("mouseover", function() {
-                        navItem.classList.add("hover-effect");
-                    });
-                    navItem.addEventListener("mouseout", function() {
-                        navItem.classList.remove("hover-effect");
-                    });
-                }
+                // Ensure hover effects apply dynamically
+                navItem.addEventListener("mouseover", function () {
+                    navItem.classList.add("hover-effect");
+                });
+                navItem.addEventListener("mouseout", function () {
+                    navItem.classList.remove("hover-effect");
+                });
             }
-        })();
+        }
+    })();
 
-        document.addEventListener("DOMContentLoaded", function() {
-            let lastSection = sessionStorage.getItem("lastSection");
+    document.addEventListener("DOMContentLoaded", function () {
+        let lastSection = sessionStorage.getItem("lastSection");
 
-            if (lastSection) {
-                let sectionElement = document.getElementById(lastSection);
-                if (sectionElement) {
-                    sectionElement.scrollIntoView({
-                        behavior: "smooth"
-                    });
-                    sessionStorage.removeItem("lastSection");
-                }
+        if (lastSection) {
+            let sectionElement = document.getElementById(lastSection);
+            if (sectionElement) {
+                sectionElement.scrollIntoView({ behavior: "smooth" });
+                sessionStorage.removeItem("lastSection");
             }
+        }
 
-            document.querySelectorAll(".menu-item").forEach(item => {
-                item.addEventListener("click", function(e) {
-                    let sectionId = e.currentTarget.getAttribute("data-target");
-                    if (sectionId) {
-                        sessionStorage.setItem("lastSection", sectionId);
-                    }
+        document.querySelectorAll(".menu-item").forEach(item => {
+            item.addEventListener("click", function (e) {
+                let sectionId = e.currentTarget.getAttribute("data-target");
+                if (sectionId) {
+                    sessionStorage.setItem("lastSection", sectionId);
+                }
 
-                    document.querySelectorAll(".menu-item").forEach(nav => nav.classList.remove("text-primary", "bg-light", "active-item"));
-                    e.currentTarget.classList.add("text-primary", "bg-light", "active-item");
+                document.querySelectorAll(".menu-item").forEach(nav => nav.classList.remove("text-primary", "bg-light", "active-item"));
+                e.currentTarget.classList.add("text-primary", "bg-light", "active-item");
 
-                    // Reapply hover effect for active menu items
-                    e.currentTarget.addEventListener("mouseover", function() {
-                        e.currentTarget.classList.add("hover-effect");
-                    });
-                    e.currentTarget.addEventListener("mouseout", function() {
-                        e.currentTarget.classList.remove("hover-effect");
-                    });
+                // Reapply hover effect for active menu items
+                e.currentTarget.addEventListener("mouseover", function () {
+                    e.currentTarget.classList.add("hover-effect");
+                });
+                e.currentTarget.addEventListener("mouseout", function () {
+                    e.currentTarget.classList.remove("hover-effect");
                 });
             });
         });
+    });
 
-        function storeSectionBeforeSubmit(form) {
-            let activeSection = document.querySelector('.content-section:not(.d-none)');
-            if (activeSection) {
-                let sectionId = activeSection.id;
-                sessionStorage.setItem("lastSection", sectionId);
-                form.action += "#" + sectionId;
-            }
-            return true;
+    function storeSectionBeforeSubmit(form) {
+        let activeSection = document.querySelector('.content-section:not(.d-none)');
+        if (activeSection) {
+            let sectionId = activeSection.id;
+            sessionStorage.setItem("lastSection", sectionId);
+            form.action += "#" + sectionId;
         }
-    </script>
+        return true;
+    }
+</script>
 
 
 
 
-    <!--  -->
+<!--  -->
 </body>
 
 <!--  -->
@@ -3709,13 +3925,11 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
         return true;
     }
 
-    window.onload = function() {
+    window.onload = function () {
         if (window.location.hash) {
             let targetSection = document.querySelector(window.location.hash);
             if (targetSection) {
-                targetSection.scrollIntoView({
-                    behavior: "smooth"
-                });
+                targetSection.scrollIntoView({ behavior: "smooth" });
             }
         }
     };
@@ -3723,28 +3937,24 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
 <!-- menu -->
 <script type="text/javascript" src="{{ asset('assets/admin/js/plugin/jquery-menu-editor/jquery-menu-editor.js') }}">
-</script>
-<script>
-    "use strict";
-    var prevMenus = @php echo json_encode($prevMenu) @endphp;
-    var langid = {
-        {
-            $lang_id
-        }
-    };
-    var menuUpdate = "{{ route('user.menu_builder.update') }}";
-</script>
-<script type="text/javascript" src="{{ asset('assets/admin/js/menu-builder.js') }}"></script>
-<script>
-    (function($) {
+    </script>
+    <script>
+        "use strict";
+        var prevMenus = @php echo json_encode($prevMenu) @endphp;
+        var langid = {{ $lang_id }};
+        var menuUpdate = "{{ route('user.menu_builder.update') }}";
+    </script>
+    <script type="text/javascript" src="{{ asset('assets/admin/js/menu-builder.js') }}"></script>
+    <script>
+        (function($) {
 
-        $('.btnEdit').on('click', function() {
-            setTimeout(() => {
-                $(".iconpicker-component i").removeClass();
-                $('.iconpicker-component i').addClass($('#inputIcon').val())
-            }, 10);
+            $('.btnEdit').on('click', function() {
+                setTimeout(() => {
+                    $(".iconpicker-component i").removeClass();
+                    $('.iconpicker-component i').addClass($('#inputIcon').val())
+                }, 10);
 
-        });
-    })(jQuery);
+            });
+        })(jQuery);
 </script>
 @endsection
