@@ -477,7 +477,7 @@
                                     <div class="mb-4">
                                         <label class="form-label">موقع العقار على الخريطة</label>
                                         <div class="map-placeholder mb-3">
-                                            <p class="text-muted">هنا سيتم إدراج خريطة تفاعلية لتحديد موقع العقار</p>
+                                              <div id="map"></div>
                                         </div>
                                         <div class="row">
                                             <div class="col-md-6 mb-3">
@@ -561,18 +561,18 @@
         </div>
         <input type="hidden" name="language_code" value="ar">
 
-<!-- Hidden fields for property status -->
-<input type="hidden" name="status" value="1">
+        <!-- Hidden fields for property status -->
+        <input type="hidden" name="status" value="1">
 
-<!-- Hidden fields for country -->
-<input type="hidden" name="ar_country_id" value="1"> <!-- Default to Saudi Arabia -->
+        <!-- Hidden fields for country -->
+        <input type="hidden" name="ar_country_id" value="1"> <!-- Default to Saudi Arabia -->
 
-<!-- Hidden fields for state -->
-<input type="hidden" name="ar_state_id" value="1"> <!-- Default state -->
+        <!-- Hidden fields for state -->
+        <input type="hidden" name="ar_state_id" value="1"> <!-- Default state -->
 
-<!-- Hidden meta fields -->
-<input type="hidden" name="ar_meta_keyword" value="">
-<input type="hidden" name="ar_meta_description" value="">
+        <!-- Hidden meta fields -->
+        <input type="hidden" name="ar_meta_keyword" value="">
+        <input type="hidden" name="ar_meta_description" value="">
 
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
    <script>
@@ -603,6 +603,7 @@
   })
 
   $("#photo-input").on("change", (e) => {
+  console.log('haay');
     handleFileSelect(e.target.files, $("#photo-gallery"), "slider_images[]")
   })
 
@@ -626,7 +627,7 @@
 
   // Video thumbnail handling
   $("#video-thumbnail-upload-area").on("click", () => {
-    $("#video-thumbnail-input").click()
+    //$("#video-thumbnail-input").click()
   })
 
   $("#video-thumbnail-input").on("change", (e) => {
@@ -639,15 +640,21 @@
     if (isSingle) {
       const file = files[0]
       if (validateFile(file)) {
+        console.log('imherer');
         displayPreview(file, previewContainer, inputName)
       }
     } else {
       Array.from(files).forEach((file) => {
+        console.log('out there');
         if (validateFile(file)) {
+            console.log('hereeee');
           displayPreview(file, previewContainer, inputName)
         }
+        
       })
     }
+
+    console.log('from here');
   }
 
   function validateFile(file) {
@@ -689,8 +696,10 @@
         .append(removeButton)
 
       if (inputName === "slider_images[]") {
-        previewContainer.append(previewElement)
+         console.log('from here inside1');
+       // previewContainer.append(previewElement)
       } else {
+        console.log('from here inside 2');
         previewContainer.html(previewElement).removeClass("d-none")
         $(`#${inputName.replace("_", "-")}-upload-area`).addClass("d-none")
       }
