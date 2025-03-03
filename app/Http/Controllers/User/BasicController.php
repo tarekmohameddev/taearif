@@ -1110,12 +1110,14 @@ class BasicController extends Controller
         if ($userBs->theme == 'home_nine') {
             $information['chooseUsItems'] = DB::table('user_choose_us_items')->where('user_id', Auth::guard('web')->user()->id)->where('language_id', $language->id)->orderBy('serial_number')->get();
         }
+
         return view("user.home.why_choose_us_section", $information);
     }
 
     public function updateWhyChooseUsSection(Request $request, $language)
     {
-        // dd($request->all());
+        // dd($request->all(), $request->file('why_choose_us_section_image'));
+
         $rules = [
             'why_choose_us_section_title' => 'nullable|max:255',
             'why_choose_us_section_subtitle' => 'nullable|max:255',
@@ -1128,7 +1130,7 @@ class BasicController extends Controller
             'why_choose_us_section_subtitle.max' => 'The subtitle field can contain maximum 255 characters',
             'why_choose_us_section_button_text.max' => 'The button name field can contain maximum 255 characters',
             'why_choose_us_section_button_url.max' => 'The button url field can contain maximum 255 characters',
-            'why_choose_us_section_image.max' => 'The image field is required',
+            // 'why_choose_us_section_image.max' => 'The image field is required',
             'why_choose_us_section_video_image.max' => 'The video section image field is required',
             'why_choose_us_section_video_url.max' => 'The video section url field can contain maximum 255 characters'
         ];
@@ -1145,7 +1147,6 @@ class BasicController extends Controller
             $rules['why_choose_us_section_image_two'] = 'nullable|mimes:jpeg,jpg,png';
         }
 
-        $rules['why_choose_us_section_image_two'] = 'nullable|mimes:jpeg,jpg,png';
 
         if (empty($data->why_choose_us_section_video_image) && !$request->hasFile('why_choose_us_section_video_image') && $userBs->theme === 'home_three') {
             $rules['why_choose_us_section_video_image'] = 'nullable|mimes:jpeg,jpg,png';
@@ -1154,9 +1155,13 @@ class BasicController extends Controller
         if ($request->hasFile('why_choose_us_section_image')) {
             $request['image_name'] = Uploader::update_picture('assets/front/img/user/home_settings/', $request->file('why_choose_us_section_image'), $data->why_choose_us_section_image);
         }
+
         if ($request->hasFile('why_choose_us_section_image_two')) {
             $request['image_name2'] = Uploader::update_picture('assets/front/img/user/home_settings/', $request->file('why_choose_us_section_image_two'), $data->why_choose_us_section_image_two);
+        } else {
+            $request['image_name2'] = $data->why_choose_us_section_image_two;
         }
+
 
         if ($userBs->theme === 'home_three') {
             $rules['why_choose_us_section_video_url'] = 'nullable';

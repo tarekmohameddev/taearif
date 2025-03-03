@@ -25,6 +25,7 @@ use App\Models\User\HeroStatic;
 use App\Models\User\UserService;
 use App\Models\User\BasicSetting;
 use App\Models\User\HomePageText;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\User\FooterQuickLink;
@@ -91,6 +92,7 @@ class UserController extends Controller
         ->get();
 
         $information = [
+
             'footertext' => FooterText::where('language_id', $lang->id)
                 ->where('user_id', Auth::id())
                 ->first(),
