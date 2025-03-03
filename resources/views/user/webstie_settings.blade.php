@@ -939,7 +939,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                             <div class="form-group">
                                                 <label for="">{{ __('Years Of Exprience') }}</label>
                                                 <input type="hidden" name="types[]" value="years_of_expricence">
-                                                <input type="number" class="form-control" name="years_of_expricence" value="{{ $information['home_setting']->years_of_expricence }}">
+                                                <input type="number" class="form-control" name="years_of_expricence" value="{{ $information['home_setting']->years_of_expricence }}" min="0">
                                                 <p id="erryears_of_expricence" class="mb-0 text-danger em"></p>
                                             </div>
                                         </div>

@@ -978,6 +978,7 @@ class BasicController extends Controller
             'about_snd_button_text' => 'nullable|max:50',
             'about_button_url' => 'nullable|max:255',
             'about_snd_button_url' => 'nullable|max:255',
+            'years_of_expricence' => 'nullable|integer|min:0',
         ];
         $messages = [
             'about_button_text.max' => 'Button text field can contain maximum 50 characters',
@@ -987,12 +988,20 @@ class BasicController extends Controller
         ];
         $request->validate($rules, $messages);
         $homeText = HomePageText::query()->where('language_id', $request->language_id)->where('user_id', Auth::guard('web')->user()->id)->firstOrFail();
+
         foreach ($request->types as $key => $type) {
             if ($type == 'about_image' || $type == 'about_image_two' || $type == 'about_video_url' || $type == 'about_video_image') {
                 continue;
             }
-            $homeText->$type = Purifier::clean($request[$type]);
+
+            if ($type == 'years_of_expricence') {
+                $homeText->$type = ($request[$type] === '' || $request[$type] === null) ? null : (int) $request[$type];
+            } else {
+                $homeText->$type = Purifier::clean($request[$type]);
+            }
         }
+
+
         if ($request->hasFile('about_image')) {
             $aboutImage = uniqid() . '.' . $request->file('about_image')->getClientOriginalExtension();
             $request->file('about_image')->move(public_path('assets/front/img/user/home_settings/'), $aboutImage);
