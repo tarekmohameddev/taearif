@@ -25,6 +25,7 @@ use App\Models\User\HeroStatic;
 use App\Models\User\UserService;
 use App\Models\User\BasicSetting;
 use App\Models\User\HomePageText;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\User\FooterQuickLink;
@@ -43,83 +44,8 @@ class UserController extends Controller
     {
         $this->middleware('auth');
     }
+
     // webstie_settings
-    // public function webstie_settings(Request $request)
-    // {
-    //     // $language = Language::where('user_id', Auth::guard('web')->user()->id)->where('code', $request->language)->firstOrFail();
-    //     if ($request->has('language')) {
-    //         $lang = Language::where([
-    //             ['code', $request->language],
-    //             ['user_id', Auth::id()]
-    //         ])->first();
-    //         Session::put('currentLangCode', $request->language);
-    //     } else {
-    //         $lang = Language::where([
-    //             ['is_default', 1],
-    //             ['user_id', Auth::id()]
-    //         ])
-    //             ->first();
-    //         Session::put('currentLangCode', $lang->code);
-    //     }
-
-    //     if (!$lang) {
-    //         return redirect()->back()->with('error', 'Default language not found.');
-    //     }
-
-    //     // Collect all necessary information
-    //     $information = [
-
-    //         'footertext' => FooterText::where('language_id', $lang->id)
-    //             ->where('user_id', Auth::id())
-    //             ->first(),
-
-    //         'brands' => Brand::where('user_id', Auth::id())
-    //             ->orderBy('id', 'desc')
-    //             ->get(),
-
-    //         'footer_quick_links' => FooterQuickLink::where('user_id', Auth::id())
-    //             ->get(),
-
-    //         'basic_settings' => BasicSetting::where('user_id', Auth::id())
-    //             ->first(),
-
-    //         'counterInformations' => CounterInformation::where('language_id', $lang->id)
-    //             ->where('user_id', Auth::id())
-    //             ->orderBy('id', 'DESC')
-    //             ->get(),
-
-    //         'skills' => Skill::where('language_id', $lang->id)
-    //             ->where('user_id', Auth::id())
-    //             ->orderBy('id', 'DESC')
-    //             ->get(),
-    //         'portfolios' => Portfolio::where('language_id', $lang->id)
-    //             ->where('user_id', Auth::id())
-    //             ->orderBy('id', 'DESC')
-    //             ->get(),
-    //         'sliders' => HeroSlider::where('language_id', $lang->id)
-    //             ->where('user_id', Auth::id())
-    //             ->orderBy('id', 'DESC')
-    //             ->get(),
-
-    //         'home_setting' => HomePageText::firstOrCreate(
-    //             ['user_id' => Auth::id(), 'language_id' => $lang->id],
-    //             []
-    //         ),
-
-    //         'services' => UserService::where('lang_id', $lang->id)
-    //             ->where('user_id', Auth::id())
-    //             ->orderBy('id', 'DESC')
-    //             ->get()
-
-    //     ];
-    //     // dd($language );
-    //     // dd($lang->id );
-    //     // dd($information['home_setting'] );
-
-    //     return view('user.webstie_settings', compact('information',));
-    // }
-
-    //
     public function webstie_settings(Request $request)
     {
         $lang = Language::where('user_id', Auth::id())->first();
@@ -166,6 +92,7 @@ class UserController extends Controller
         ->get();
 
         $information = [
+
             'footertext' => FooterText::where('language_id', $lang->id)
                 ->where('user_id', Auth::id())
                 ->first(),
