@@ -37,6 +37,8 @@ use Illuminate\Support\Facades\Config;
 use App\Models\User\CounterInformation;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Response;
+use App\Models\User\RealestateManagement\Amenity;
+use App\Models\User\RealestateManagement\Category;
 
 class UserController extends Controller
 {
@@ -92,60 +94,23 @@ class UserController extends Controller
         ->get();
 
         $information = [
-
-            'footertext' => FooterText::where('language_id', $lang->id)
-                ->where('user_id', Auth::id())
-                ->first(),
-            'socials' => Social::where('user_id', Auth::id())
-            ->orderBy('id', 'DESC')
-            ->get(),
-            'brands' => Brand::where('user_id', Auth::id())
-                ->orderBy('id', 'desc')
-                ->get(),
-            'footer_quick_links' => FooterQuickLink::where('user_id', Auth::id())
-                ->get(),
-            'basic_settings' => BasicSetting::where('user_id', Auth::id())
-                ->first(),
-            'counterInformations' => CounterInformation::where('language_id', $lang->id)
-                ->where('user_id', Auth::id())
-                ->orderBy('id', 'DESC')
-                ->get(),
-            'skills' => Skill::where('language_id', $lang->id)
-                ->where('user_id', Auth::id())
-                ->orderBy('id', 'DESC')
-                ->get(),
-            'portfolios' => Portfolio::where([
-                ['language_id', '=', $lang->id],
-                ['user_id', '=', Auth::id()],
-            ])
-                ->orderBy('id', 'DESC')
-                ->get(),
-            'categories' => PortfolioCategory::where([
-                ['language_id', '=', $lang->id],
-                ['user_id', '=', Auth::id()],
-                ['status', '=', 1]
-            ])
-                ->orderBy('serial_number', 'ASC')
-                ->get(),
-            'sliders' => HeroSlider::where('language_id', $lang->id)
-                ->where('user_id', Auth::id())
-                ->orderBy('id', 'DESC')
-                ->get(),
+            'amenities'=> Amenity::where('user_id', Auth::id())->orderBy('serial_number', 'ASC')->get(),
+            'footertext' => FooterText::where('language_id', $lang->id)->where('user_id', Auth::id())->first(),
+            'property_categories'=> Category::where('user_id', Auth::id())->orderBy('serial_number', 'asc')->get(),
+            'socials' => Social::where('user_id', Auth::id())->orderBy('id', 'DESC')->get(),
+            'brands' => Brand::where('user_id', Auth::id())->orderBy('id', 'desc')->get(),
+            'footer_quick_links' => FooterQuickLink::where('user_id', Auth::id())->get(),
+            'basic_settings' => BasicSetting::where('user_id', Auth::id())->first(),
+            'counterInformations' => CounterInformation::where('language_id', $lang->id)->where('user_id', Auth::id())->orderBy('id', 'DESC')->get(),
+            'skills' => Skill::where('language_id', $lang->id)->where('user_id', Auth::id())->orderBy('id', 'DESC')->get(),
+            'portfolios' => Portfolio::where([['language_id', '=', $lang->id],['user_id', '=', Auth::id()],])->orderBy('id', 'DESC')->get(),
+            'categories' => PortfolioCategory::where([['language_id', '=', $lang->id],['user_id', '=', Auth::id()],['status', '=', 1]])->orderBy('serial_number', 'ASC')->get(),
+            'sliders' => HeroSlider::where('language_id', $lang->id)->where('user_id', Auth::id())->orderBy('id', 'DESC')->get(),
             'sliders_static' => HeroStatic::where('language_id', $lang->id)->first(),
-            'testimonials' => UserTestimonial::where([
-                ['user_id', '=', Auth::id()],
-                ['lang_id', '=', $lang->id],
-            ])->orderBy('id', 'DESC')
-                ->get(),
-            'home_setting' => HomePageText::firstOrCreate(
-                ['user_id' => Auth::id(), 'language_id' => $lang->id],
-                []
-            ),
-            'services' => UserService::where('lang_id', $lang->id)
-                ->where('user_id', Auth::id())
-                ->orderBy('id', 'DESC')
-                ->get(),
-                'apages' => $apages
+            'testimonials' => UserTestimonial::where([['user_id', '=', Auth::id()],['lang_id', '=', $lang->id],])->orderBy('id', 'DESC')->get(),
+            'home_setting' => HomePageText::firstOrCreate(['user_id' => Auth::id(), 'language_id' => $lang->id],[]),
+            'services' => UserService::where('lang_id', $lang->id)->where('user_id', Auth::id())->orderBy('id', 'DESC')->get(),
+            'apages' => $apages
         ];
 
         return view('user.webstie_settings', compact('information','data','apages', 'prevMenu', 'lang_id'));

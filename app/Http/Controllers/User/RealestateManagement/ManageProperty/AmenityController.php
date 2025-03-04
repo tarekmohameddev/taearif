@@ -35,6 +35,7 @@ class AmenityController extends Controller
 
     public function store(Request $request)
     {
+        // dd($request->all());
         $rules = [
             'icon' => 'required',
             'user_language_id' => 'required|numeric',
