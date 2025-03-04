@@ -92,48 +92,48 @@
                                     </a>
                                     <div class="collapse {{ request()->routeIs($propertyRoutes) ? 'show' : '' }}" id="propertyManage">
                                         <ul class="nav nav-collapse subnav">
-                                            <li class="{{ request()->routeIs('user.property_management.settings') ? 'active' : '' }}">
+                                            <li class="d-none {{ request()->routeIs('user.property_management.settings') ? 'active' : '' }}">
                                                 <a href="{{ route('user.property_management.settings') }}">
                                                     <span class="sub-item">{{ __('Settings') }}</span>
                                                 </a>
                                             </li>
-                                            <li class="{{ request()->routeIs('user.property_management.categories') ? 'active' : '' }}">
+                                            <li class="d-none {{ request()->routeIs('user.property_management.categories') ? 'active' : '' }}">
                                                 <a href="{{ route('user.property_management.categories') }}">
-                                                    <span class="sub-item">{{ __('Categories') }}</span>
+                                                    <span class="sub-item">{{ __('Categories') }}</span> move to menu
                                                 </a>
                                             </li>
-                                            <li class="{{ request()->routeIs('user.property_management.amenities') ? 'active' : '' }}">
+                                            <li class="d-none {{ request()->routeIs('user.property_management.amenities') ? 'active' : '' }}">
                                                 <a href="{{ route('user.property_management.amenities') }}">
-                                                    <span class="sub-item">{{ __('Amenities') }}</span>
+                                                    <span class="sub-item">{{ __('Amenities') }}</span> move to menu
                                                 </a>
                                             </li>
                                             @if ($userBs->property_country_status == 1)
-                                                <li class="{{ request()->routeIs('user.property_management.countries') ? 'active' : '' }}">
+                                                <li class="d-none {{ request()->routeIs('user.property_management.countries') ? 'active' : '' }}">
                                                     <a href="{{ route('user.property_management.countries') }}">
                                                         <span class="sub-item">{{ __('Country') }}</span>
                                                     </a>
                                                 </li>
                                             @endif
                                             @if ($userBs->property_state_status == 1)
-                                                <li class="{{ request()->routeIs('user.property_management.states') ? 'active' : '' }}">
+                                                <li class="d-none {{ request()->routeIs('user.property_management.states') ? 'active' : '' }}">
                                                     <a href="{{ route('user.property_management.states') . '?language=' . $default->code }}">
                                                         <span class="sub-item">{{ __('States') }}</span>
                                                     </a>
                                                 </li>
                                             @endif
-                                            <li class="{{ request()->routeIs('user.property_management.cities') ? 'active' : '' }}">
+                                            <li class="d-none {{ request()->routeIs('user.property_management.cities') ? 'active' : '' }}">
                                                 <a href="{{ route('user.property_management.cities') }}">
                                                     <span class="sub-item">{{ __('Cities') }}</span>
                                                 </a>
                                             </li>
-                                            <li class="{{ (request()->routeIs('user.property_management.type') || request()->routeIs('user.property_management.create_property')) ? 'active' : '' }}">
-                                                <a href="{{ route('user.property_management.type') }}">
-                                                    <span class="sub-item">{{ __('Add Property') }}</span>
+                                            <li class="{{ (request()->routeIs('user.project_management.projects') || request()->routeIs('user.property_management.edit')) ? 'active' : '' }}">
+                                                <a href="{{ route('user.project_management.projects') }}">
+                                                    <span class="sub-item">{{ __('projects') }}</span>
                                                 </a>
                                             </li>
-                                            <li class="{{ (request()->routeIs('user.property_management.properties') || request()->routeIs('user.property_management.edit')) ? 'active' : '' }}">
+                                            <li class=" {{ (request()->routeIs('user.property_management.properties') || request()->routeIs('user.property_management.edit')) ? 'active' : '' }}">
                                                 <a href="{{ route('user.property_management.properties') }}">
-                                                    <span class="sub-item">{{ __('All Properties') }}</span>
+                                                    <span class="sub-item">{{ __('units') }}</span>
                                                 </a>
                                             </li>
 
@@ -142,7 +142,7 @@
                                 </li>
 
                                 <!-- Manage Project Submenu -->
-                                <li class="submenu {{ request()->routeIs($projectRoutes) ? 'selected' : '' }}">
+                                <li class=" d-none submenu {{ request()->routeIs($projectRoutes) ? 'selected' : '' }}">
                                     <a data-toggle="collapse" href="#projectManage" aria-expanded="{{ request()->routeIs($projectRoutes) ? 'true' : 'false' }}">
                                         <span class="sub-item">{{ __('Manage Project') }}</span>
                                         <span class="caret"></span>
@@ -216,21 +216,6 @@
                                                     <span class="sub-item">{{ __('Property Bookings') }}</span>
                                                 </a>
                                             </li>
-
-                                        </ul>
-                                    </div>
-
-                                </li>
-
-                                <!-- Payment Management -->
-                                <li class="nav-item {{ request()->routeIs('user.payment_management*') ? 'active' : '' }}">
-                                    <a data-toggle="collapse" href="#payment_manage">
-                                        <p>{{ __('إدارة الدفعات') }}</p>
-                                        <span class="caret"></span>
-                                    </a>
-
-                                    <div class="collapse {{ request()->routeIs('user.payment_management*') ? 'show' : '' }}" id="payment_manage">
-                                        <ul class="nav nav-collapse">
                                             <li class="{{ request()->routeIs('user.payment_management.index') ? 'active' : '' }}">
                                                 <a href="#">
                                                     <span class="sub-item">{{ __('عرض الدفعات') }}</span>
@@ -246,6 +231,22 @@
                                                     <span class="sub-item">{{ __('الدفعات المكتملة') }}</span>
                                                 </a>
                                             </li>
+
+                                        </ul>
+                                    </div>
+
+                                </li>
+
+                                <!-- Payment Management -->
+                                <li class=" d-none nav-item {{ request()->routeIs('user.payment_management*') ? 'active' : '' }}">
+                                    <a data-toggle="collapse" href="#payment_manage">
+                                        <p>{{ __('إدارة الدفعات') }}</p>
+                                        <span class="caret"></span>
+                                    </a>
+
+                                    <div class="collapse {{ request()->routeIs('user.payment_management*') ? 'show' : '' }}" id="payment_manage">
+                                        <ul class="nav nav-collapse">
+
                                         </ul>
                                     </div>
                                 </li>

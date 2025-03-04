@@ -88,7 +88,7 @@
     <!------google adsense----------->
     @endif
 
-    <script type="text/javascript">
+<script type="text/javascript">
     (function(c,l,a,r,i,t,y){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
         t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
@@ -186,7 +186,7 @@
     <script src="{{ asset('assets/frontend/js/jquery.magnific-popup.min.js') }}"></script>
     <!-- Swiper Slider JS -->
     <script src="{{ asset('assets/frontend/js/swiper-bundle.min.js') }}"></script>
- 
+
     <!-- Lazysizes -->
     <script src="{{ asset('assets/frontend/js/lazysizes.min.js') }}"></script>
     <!-- SVG loader -->
