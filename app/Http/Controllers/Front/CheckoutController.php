@@ -467,20 +467,20 @@ class CheckoutController extends Controller
                     $lang = new User\Language;
                     $lang->name = $deLang->name;
                     $lang->code = $deLang->code;
-                    $lang->is_default = 0;
+                    $lang->is_default = 1;
                     $lang->rtl = $deLang->rtl;
                     $lang->user_id = $user->id;
                     $lang->keywords = $deLang->keywords;
                     $lang->save();
 
-                    $lang_ar = new User\Language;
-                    $lang_ar->name = $deLang_arabic->name;
-                    $lang_ar->code = $deLang_arabic->code;
-                    $lang_ar->is_default = 1;
-                    $lang_ar->rtl = $deLang_arabic->rtl;
-                    $lang_ar->user_id = $user->id;
-                    $lang_ar->keywords = $deLang_arabic->keywords;
-                    $lang_ar->save();
+                    // $lang_ar = new User\Language;
+                    // $lang_ar->name = $deLang_arabic->name;
+                    // $lang_ar->code = $deLang_arabic->code;
+                    // $lang_ar->is_default = 1;
+                    // $lang_ar->rtl = $deLang_arabic->rtl;
+                    // $lang_ar->user_id = $user->id;
+                    // $lang_ar->keywords = $deLang_arabic->keywords;
+                    // $lang_ar->save();
 
                     $htext = new HomePageText;
                     $htext->language_id = $lang->id;
@@ -493,11 +493,11 @@ class CheckoutController extends Controller
                     $umenu->menus = $menus;
                     $umenu->save();
 
-                    $umenu = new Menu();
-                    $umenu->language_id = $lang_ar->id;
-                    $umenu->user_id = $user->id;
-                    $umenu->menus = $menus_arabic;
-                    $umenu->save();
+                    // $umenu = new Menu();
+                    // $umenu->language_id = $lang_ar->id;
+                    // $umenu->user_id = $user->id;
+                    // $umenu->menus = $menus_arabic;
+                    // $umenu->save();
                 }
 
                 // --- Begin: Basic Settings Record ---
