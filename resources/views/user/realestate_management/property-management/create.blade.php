@@ -408,10 +408,10 @@
                                     </div>
                                     <input type="file" id="photo-input" name="slider_images[]" class="d-none" accept="image/*" multiple>
                                     <div class="mb-4">
-                                        <label class="form-label">الصورة المصغرة للعقار</label>
+                                        <label class="form-label">صورة الغلاف للعقار</label>
                                         <div id="thumbnail-preview" class="text-center mb-3 d-none">
                                             <div class="position-relative d-inline-block">
-                                                <img src="/placeholder.svg" alt="الصورة المصغرة" class="img-fluid rounded" style="max-height: 200px;">
+                                                <img src="/placeholder.svg" alt="صورة الغلاف" class="img-fluid rounded" style="max-height: 200px;">
                                                 <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 rounded-circle" id="remove-thumbnail">
                                                     <i class="fa-solid fa-times"></i>
                                                 </button>
@@ -419,7 +419,7 @@
                                         </div>
                                         <div class="upload-area" id="thumbnail-upload-area">
                                             <i class="fa-solid fa-image fs-3 text-muted mb-2"></i>
-                                            <p class="mb-1">تحميل الصورة المصغرة</p>
+                                            <p class="mb-1">تحميل صورة الغلاف</p>
                                             <p class="text-muted small">PNG، JPG حتى 1 ميجابايت</p>
                                         </div>
                                         <input type="file" id="thumbnail-input" name="featured_image" class="d-none" accept="image/*">

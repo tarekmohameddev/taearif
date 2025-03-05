@@ -178,7 +178,7 @@
               <div class="card">
                 <div class="card-header">
                   <h5 class="card-title mb-0">الوسائط</h5>
-                  <p class="card-text small text-secondary">قم بتحميل الصور ومخطط الطابق والصورة المصغرة للمشروع</p>
+                  <p class="card-text small text-secondary">قم بتحميل الصور ومخطط الطابق وصورة الغلاف للمشروع</p>
                 </div>
                 <div class="card-body">
                   <div class="mb-4">
@@ -210,11 +210,11 @@
                   </div>
 
                   <div class="mb-4">
-                    <label class="form-label fw-medium fs-5">الصورة المصغرة للمشروع</label>
+                    <label class="form-label fw-medium fs-5">صورة الغلاف للمشروع</label>
                     <div id="thumbnail-container">
                       <div id="thumbnail-preview" class="mb-3" style="display: none;">
                         <div class="position-relative">
-                          <img src="/placeholder.svg" alt="الصورة المصغرة" class="img-fluid rounded">
+                          <img src="/placeholder.svg" alt="صورة الغلاف" class="img-fluid rounded">
                           <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" id="remove-thumbnail">
                             <i class="fa-solid fa-xmark"></i>
                           </button>
@@ -222,7 +222,7 @@
                       </div>
                       <label for="thumbnail-upload" class="upload-box d-block">
                         <i class="fa-solid fa-image fs-4 text-secondary mb-2"></i>
-                        <p class="mb-1 text-primary">تحميل الصورة المصغرة</p>
+                        <p class="mb-1 text-primary">تحميل صورة الغلاف</p>
                         <small class="text-secondary">PNG، JPG حتى 1 ميجابايت</small>
                       </label>
                       <input type="file" id="thumbnail-upload" name="featured_image" class="hidden-file-input" accept="image/*">
