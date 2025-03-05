@@ -322,7 +322,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
                                             <div class="form-group">
                                                 <label for="">{{__('Language')}} **</label>
-                                                <select id="language" name="user_language_id" class="form-control">
+                                                <select id="language" name="user_language_id" class="form-control d-none">
                                                     <option value="" selected disabled>{{__('Select a language')}}</option>
                                                     @foreach ($userLanguages as $lang)
                                                     <option value="{{$lang->id}}">{{$lang->name}}</option>
@@ -760,7 +760,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         <th scope="col">{{ __('Icon') }}</th>
                                                         @endif
                                                         <th scope="col">{{ __('Title') }}</th>
-                                                        <th scope="col">{{ __('Language') }}</th>
+                                                        <th scope="col d-none">{{ __('Language') }}</th>
                                                         <th scope="col">{{ __('Percentage') }}</th>
                                                         <th scope="col">{{ __('Actions') }}</th>
                                                     </tr>
@@ -1680,7 +1680,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         <th scope="col">{{ __('Icon') }}</th>
                                                         @endif
                                                         <th scope="col">{{ __('Name') }}</th>
-                                                        <th scope="col">{{ __('Language') }}</th>
+                                                        <th scope="col d-none">{{ __('Language') }}</th>
                                                         @if ($userBs->theme == 'home_ten' || $userBs->theme == 'home_eleven')
                                                         @else
                                                         <th scope="col">{{ __('Featured') }}</th>
@@ -2815,7 +2815,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                             </div>
                                             @if (!is_null($userDefaultLang))
                                             @if (!empty($userLanguages))
-                                            <div class="form-group">
+                                            <div class="form-group d-none">
                                                 <label for="">{{ __('Language') }} **</label>
                                                 <select name="language_id" class="form-control">
                                                     <option value="" selected disabled>{{ __('Select a Language') }}
@@ -3399,12 +3399,12 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
                         <div class="row">
                             <div class="col-lg-6">
-                                <div class="form-group">
+                                <div class="form-group d-none">
                                     <label for="">{{ __('Language') }} **</label>
-                                    <select id="language" name="user_language_id" class="form-control">
+                                    <select id="language" name="user_language_id" class="form-control d-none">
                                         <option value="" selected disabled>{{ __('Select a language') }}</option>
                                         @foreach ($userLanguages as $lang)
-                                        <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                        <option value="{{ $lang->id }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>{{ $lang->name }}</option>
                                         @endforeach
                                     </select>
                                     <p id="erruser_language_id" class="mb-0 text-danger em"></p>
@@ -3531,12 +3531,12 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                         @csrf
                         <input type="hidden" id="lastSection" name="last_section" value="">
 
-                        <div class="form-group">
+                        <div class="form-group d-none">
                             <label for="">{{ __('Language') }} **</label>
-                            <select name="user_language_id" class="form-control">
+                            <select name="user_language_id" class="form-control d-none">
                                 <option value="" selected disabled>{{ __('Select a language') }}</option>
                                 @foreach ($userLanguages as $lang)
-                                <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                <option value="{{ $lang->id }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>{{ $lang->name }}</option>
                                 @endforeach
                             </select>
                             <p id="erruser_language_id" class="mb-0 text-danger em"></p>
@@ -3651,12 +3651,12 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                 </div>
                             </div>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group d-none">
                             <label for="">{{ __('Language') }} **</label>
-                            <select name="user_language_id" class="form-control">
+                            <select name="user_language_id" class="form-control d-none">
                                 <option value="" selected disabled>{{ __('Select a language') }}</option>
                                 @foreach ($userLanguages as $lang)
-                                <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                <option value="{{ $lang->id }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>{{ $lang->name }}</option>
                                 @endforeach
                             </select>
                             <p id="erruser_language_id" class="mb-0 text-danger em"></p>
@@ -3759,14 +3759,14 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                         @csrf
                         <input type="hidden" id="lastSection" name="last_section" value="">
 
-                        <div class="form-group">
+                        <div class="form-group d-none">
                             <label for="">{{ __('Language') }} **</label>
-                            <select id="language" name="user_language_id" class="form-control">
+                            <select id="language" name="user_language_id" class="form-control d-none">
                                 <option value="" selected disabled>
                                     {{ __('Select a language') }}
                                 </option>
                                 @foreach ($userLanguages as $lang)
-                                <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                <option value="{{ $lang->id }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>{{ $lang->name }}</option>
                                 @endforeach
                             </select>
                             <p id="erruser_language_id" class="mb-0 text-danger em"></p>
@@ -3857,12 +3857,12 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                             </div>
                         </div>
                         @endif
-                        <div class="form-group">
+                        <div class="form-group d-none">
                             <label for="">{{ __('Language') }} **</label>
-                            <select name="user_language_id" class="form-control">
+                            <select name="user_language_id" class="form-control d-none">
                                 <option value="" selected disabled>{{ __('Select a language') }}</option>
                                 @foreach ($userLanguages as $lang)
-                                <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                <option value="{{ $lang->id }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>{{ $lang->name }}</option>
                                 @endforeach
                             </select>
                             <p id="erruser_language_id" class="mb-0 text-danger em"></p>
@@ -3920,12 +3920,12 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                         @csrf
                         <input type="hidden" id="lastSection" name="last_section" value="">
 
-                        <div class="form-group">
+                        <div class="form-group d-none">
                             <label for="">{{ __('Language') }} **</label>
-                            <select id="language" name="user_language_id" class="form-control">
+                            <select id="language" name="user_language_id" class="form-control d-none">
                                 <option value="" selected disabled>{{ __('Select a language') }}</option>
                                 @foreach ($userLanguages as $lang)
-                                <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                <option value="{{ $lang->id }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>{{ $lang->name }}</option>
                                 @endforeach
                             </select>
                             <p id="erruser_language_id" class="mb-0 text-danger em"></p>
@@ -4076,7 +4076,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                         @csrf
                         <div class="form-group">
                             <label for="">{{__('Language')}} **</label>
-                            <select id="language" name="user_language_id" class="form-control">
+                            <select id="language" name="user_language_id" class="form-control d-none">
                                 <option value="" selected disabled>{{__('Select a language')}}</option>
                                 @foreach ($userLanguages as $lang)
                                 <option value="{{$lang->id}}">{{$lang->name}}</option>
@@ -4209,12 +4209,12 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                         </div>
 
 
-                        <div class="form-group">
+                        <div class="form-group d-none">
                             <label for="">{{ __('Language') }} *</label>
-                            <select id="language" name="user_language_id" class="form-control">
+                            <select id="language" name="user_language_id" class="form-control d-none">
                                 <option selected disabled>{{ __('Select a language') }}</option>
                                 @foreach ($userLanguages as $lang)
-                                    <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                    <option value="{{ $lang->id }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>{{ $lang->name }}</option>
                                 @endforeach
                             </select>
                             <p id="erruser_language_id" class="mb-0 text-danger em"></p>
@@ -4329,12 +4329,12 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                             <p id="editErr_image" class=" mb-0 text-danger em"></p>
                         </div>
 
-                        {{-- <div class="form-group">
+                        {{-- <div class="form-group d-none">
                             <label for="">{{ __('Language') . '*' }}</label>
                             <select name="language" id="in_language" class="form-control language">
                                 <option selected disabled>{{ __('Select Language') }}</option>
                                 @foreach ($languages as $lang)
-                                    <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                    <option value="{{ $lang->id }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>{{ $lang->name }}</option>
                                 @endforeach
                             </select>
                             <p id="editErr_language" class="mt-2 mb-0 text-danger em"></p>
@@ -4418,23 +4418,23 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                 <small>{{ $keywords['Click on the dropdown icon to select a icon'] ?? __('Click on the dropdown icon to select a icon.') }}</small>
                             </div>
                         </div>
-                        {{-- <div class="form-group">
+                        {{-- <div class="form-group d-none">
                             <label for="">{{ __('Language') . '*' }}</label>
                             <select name="language" id="" class="form-control">
                                 <option selected disabled>{{ __('Select Language') }}</option>
                                 @foreach ($languages as $lang)
-                                    <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                    <option value="{{ $lang->id }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>{{ $lang->name }}</option>
                                 @endforeach
                             </select>
                             <p id="errlanguage" class="mt-2 mb-0 text-danger em"></p>
                         </div> --}}
 
-                        <div class="form-group">
+                        <div class="form-group d-none" >
                             <label for="">{{ __('Language') }} *</label>
-                            <select id="language" name="user_language_id" class="form-control">
+                            <select id="language" name="user_language_id" class="form-control d-none">
                                 <option selected disabled>{{ __('Select a language') }}</option>
                                 @foreach ($userLanguages as $lang)
-                                    <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                    <option value="{{ $lang->id }}" {{ $lang->code == request()->input('language') ? 'selected' : '' }}>{{ $lang->name }}</option>
                                 @endforeach
                             </select>
                             <p id="erruser_language_id" class="mb-0 text-danger em"></p>
@@ -4991,6 +4991,10 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
         });
     })(jQuery);
 </script>
-
+<script>
+    document.querySelectorAll("select[name='userLanguage']").forEach(select => {
+    select.style.setProperty("display", "none", "important");
+});
+</script>
 
 @endsection
