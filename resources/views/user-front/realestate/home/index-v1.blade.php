@@ -257,6 +257,7 @@
                     @endforelse
                 </div>
             </div>
+
         </div>
     @endif
 
@@ -264,7 +265,7 @@
         <section class="about-area pb-70 pt-30">
             <div class="container">
                 <div class="row gx-xl-5">
-                    <div class="col-lg-6">
+                    <div class="col-lg-6"> about-areaabout-area
                         <div class="img-content" data-aos="fade-up">
 
                                 @if (!empty($home_text->about_image))
@@ -298,6 +299,64 @@
         </section>
     @endif
 
+
+    <!-- skills -->
+
+    <section class="skills-area pb-70 pt-70">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 text-center">
+                <div class="section-title title-inline mb-50" data-aos="fade-up">
+                    <h2 class="title">{{ $home_text?->skill_title }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4" data-aos="fade-up">
+            @forelse ($skills as $skill)
+                <div class="col-lg-3 col-md-6">
+                    <div class="card skill text-center p-4 shadow-sm border-0">
+                        <div class="card-body">
+                            <!-- Skill Icon -->
+                            <div class="skill-icon mb-3 d-flex justify-content-center align-items-center"
+                                 style="width: 60px; height: 60px; border-radius: 50%; background: #f8f9fa;">
+                                <i class="{{ $skill->icon }}" style="font-size: 24px; color: {{ $skill->color ? '#' . $skill->color : '#007bff' }};"></i>
+                            </div>
+
+                            <!-- Skill Title -->
+                            <h4 class="card-title mb-3" style="font-weight: 600; font-size: 1.2rem;">
+                                {{ $skill->title }}
+                            </h4>
+
+                            <!-- Progress Bar -->
+                            <div class="progress" style="height: 8px; border-radius: 10px; background: #e9ecef;">
+                                <div class="progress-bar" role="progressbar"
+                                     style="width: {{ $skill->percentage }}%;
+                                            background-color: {{ $skill->color ? '#' . $skill->color : 'var(--bs-primary)' }};
+                                            border-radius: 10px;"
+                                     aria-valuenow="{{ $skill->percentage }}"
+                                     aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+
+                            <!-- Percentage Value -->
+                            <span class="mt-2 d-block" style="font-size: 0.9rem; font-weight: 500; color: #555;">
+                                {{ $skill->percentage }}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="col-12">
+                    <h3 class="text-center mt-20">{{ $keywords['No Skill Found'] ?? __('No Skill Found') }}</h3>
+                </div>
+            @endforelse
+        </div>
+    </div>
+</section>
+
+
+    <!--// skills -->
 
     @if ($home_sections->featured_properties_section == 1)
         <section class="product-area featured-product pb-70">
@@ -408,7 +467,7 @@
                                                 </h3>
                                                 <span class="location icon-start"><i
                                                         class="fal fa-map-marker-alt"></i>{{ $project->address }}</span>
-                                             
+
 
                                             </div>
                                         </div>
@@ -464,9 +523,13 @@
                                         <div class="slider-item">
                                             <div class="client-img">
                                                 <div class="lazy-container ratio ratio-1-1">
+
                                                     @if (is_null($testimonial->image))
-                                                        <img data-src="{{ asset('assets/img/profile.jpg') }}"
-                                                            class="lazyload">
+                                                        @if ($testimonial->gender === 'female')
+                                                            <img data-src="{{ asset('assets/img/female-profile.jpg') }}" class="lazyload">
+                                                        @else
+                                                            <img data-src="{{ asset('assets/img/profile.jpg') }}" class="lazyload">
+                                                        @endif
                                                     @else
                                                         <img class="lazyload"
                                                             data-src="{{ asset('assets/front/img/user/testimonials/' . $testimonial->image) }}">

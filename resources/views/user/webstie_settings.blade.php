@@ -45,10 +45,16 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     <i class="fas fa-image ml-2 mr-2"></i>
                     {{ __('Banner Section') }}
                 </a>
+
+                {{-- @if ($userBs->theme != 'home13') --}}
+
                 <a href="skills" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="skills">
                     <i class="fas fa-tools ml-2 mr-2"></i>
                     {{ __('Skills Section') }}
                 </a>
+                {{-- @endif --}}
+
+
                 <a href="about" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="about">
                     <i class="fas fa-building ml-2 mr-2"></i>
                     {{ __('About Company') }}
@@ -882,7 +888,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                     </div>
                                                 </div>
 
-                                                @if ($userBs->theme == 'home13' || $userBs->theme == 'home15')
+                                                @if ($userBs->theme == 'home15' || ($userBs->theme != 'home13' && $userBs->theme != 'home15'))
                                                 <div class="col-lg-6">
                                                     <div class="form-group">
                                                         <div class="col-12 mb-2">
@@ -925,7 +931,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                         <textarea class="form-control" name="about_content" rows="5">{{ $information['home_setting']->about_content }}</textarea>
                                         <p id="errabout_content" class="mb-0 text-danger em"></p>
                                     </div>
-                                    @if ($userBs->theme === 'home13')
+                                    @if ($userBs->theme != 'home13')
                                     <div class="row">
                                         <div class="col-lg-12">
                                             <div class="form-group">
@@ -1428,6 +1434,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme !== 'home_nine')
                                                         <th scope="col">{{ __('Image') }}</th>
                                                         @endif
+                                                        <th scope="col">{{ __('Gender') }}</th>
                                                         <th scope="col">{{ __('Name') }}</th>
                                                         <th scope="col">{{ __('Publish Date') }}</th>
                                                         <th scope="col">{{ __('Serial Number') }}</th>
@@ -1441,8 +1448,11 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                             <input type="checkbox" class="bulk-check" data-val="{{ $testimonial->id }}">
                                                         </td>
                                                         @if ($userBs->theme !== 'home_nine')
-                                                        <td><img src="{{ asset('assets/front/img/user/testimonials/' . $testimonial->image) }}" alt="" width="80"></td>
+                                                        <td>
+                                                            <img src="{{ asset('assets/front/img/user/testimonials/' . ($testimonial->image ?: 'noimage.jpg')) }}" alt="" width="70">
+                                                        </td>
                                                         @endif
+                                                        <td>{{ $testimonial->gender }}</td>
                                                         <td>{{ strlen($testimonial->name) > 30 ? mb_substr($testimonial->name, 0, 30, 'UTF-8') . '...' : $testimonial->name }}
                                                         </td>
                                                         <td>
@@ -3891,6 +3901,21 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                             <p id="errserial_number" class="mb-0 text-danger em"></p>
                             <p class="text-warning mb-0">
                                 <small>{{ __('The higher the serial number is, the later the blog will be shown.') }}</small>
+                            </p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="">{{ __('Gender') }} </label>
+
+                            <select name="gender" id="gender" class="form-control">
+                                <option disabled>{{ __('Select gender') }}</option>
+                                <option value="male">{{ __('male') }}</option>
+                                <option value="female">{{ __('female') }}</option>
+                            </select>
+
+                            <p id="errsgender" class="mb-0 text-danger em"></p>
+                            <p class="text-warning mb-0">
+                                <small>{{ __('can choose the gender of the customer') }}</small>
                             </p>
                         </div>
                     </form>

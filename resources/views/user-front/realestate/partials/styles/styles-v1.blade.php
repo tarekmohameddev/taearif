@@ -16,6 +16,9 @@
 <link rel="stylesheet" href="{{ asset('/assets/front/user/realestate/css/style.css') }}">
 <link rel="stylesheet" href="{{ asset('/assets/front/user/realestate/css/responsive.css') }}">
 <link rel="stylesheet" href="{{ asset('/assets/front/user/realestate/css/summernote-content.css') }}">
+
+<link rel="stylesheet" href="{{ asset('/assets/front/user/realestate/css/home13/style.css') }}">
+
 @if ($userCurrentLang->rtl == 1)
     <link rel="stylesheet" href="{{ asset('/assets/front/user/realestate/css/rtl.css') }}">
     {{-- <link rel="stylesheet" href="{{ asset('/assets/front/user/realestate/css/rtl-responsive.css') }}"> --}}

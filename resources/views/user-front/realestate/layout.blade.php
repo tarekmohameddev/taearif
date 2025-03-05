@@ -61,6 +61,7 @@
     {{-- include styles --}}
     @if ($userBs->theme == 'home13')
         @includeIf('user-front.realestate.partials.styles.styles-v1')
+        @includeIf('user-front.realestate.partials.styles.styles-v1')
     @elseif($userBs->theme == 'home14')
         @includeIf('user-front.realestate.partials.styles.styles-v2')
         @includeIf('user-front.realestate.partials.styles.styles-v1')

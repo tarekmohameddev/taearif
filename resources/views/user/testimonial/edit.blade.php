@@ -83,6 +83,16 @@
                                         value="{{ $testimonial->name }}">
                                     <p id="errname" class="mb-0 text-danger em"></p>
                                 </div>
+                                <div class="form-group">
+                                    <label for="">{{ __('gender') }} </label>
+                                        <select name="gender" id="gender" class="form-control">
+                                            <option disabled {{ !old('gender', $testimonial->gender ?? '') ? 'selected' : '' }}>{{ __('Select gender') }}</option>
+                                            <option value="male" {{ old('gender', $testimonial->gender ?? '') === 'male' ? 'selected' : '' }}>{{ __('male') }}</option>
+                                            <option value="female" {{ old('gender', $testimonial->gender ?? '') === 'female' ? 'selected' : '' }}>{{ __('female') }}</option>
+                                        </select>
+
+                                    <p id="errgender" class="mb-0 text-danger em"></p>
+                                </div>
                                 @if ($userBs->theme !== 'home_nine')
                                     <div class="form-group">
                                         <label for="">{{ __('Occupation') }}</label>
