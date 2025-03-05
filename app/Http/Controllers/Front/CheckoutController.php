@@ -1647,17 +1647,17 @@ class CheckoutController extends Controller
                     ]);
 
                     // Insert category for Secondary Language (English)
-                    \App\Models\User\RealestateManagement\Category::create([
-                        'user_id' => $user->id,
-                        'language_id' => $secondLanguage->id,
-                        'type' => $catData['type'],
-                        'name' => $catData['name'], // Keeping same name for now
-                        'slug' => $catData['slug'], // Keeping same slug for now
-                        'image' => $catData['image'],
-                        'status' => $catData['status'],
-                        'featured' => $catData['featured'],
-                        'serial_number' => $catData['serial_number']
-                    ]);
+                    // \App\Models\User\RealestateManagement\Category::create([
+                    //     'user_id' => $user->id,
+                    //     'language_id' => $secondLanguage->id,
+                    //     'type' => $catData['type'],
+                    //     'name' => $catData['name'], // Keeping same name for now
+                    //     'slug' => $catData['slug'], // Keeping same slug for now
+                    //     'image' => $catData['image'],
+                    //     'status' => $catData['status'],
+                    //     'featured' => $catData['featured'],
+                    //     'serial_number' => $catData['serial_number']
+                    // ]);
                 }
 
                 // --- End: Insert Property Categories Records into user_property_categories ---
