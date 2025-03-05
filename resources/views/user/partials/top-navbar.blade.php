@@ -85,25 +85,44 @@
                 </li>
 
                 <!-- Language Dropdown -->
-                @php
-                    $currentLang = request()->get('language', 'en');
-                @endphp
+@php
+    use Illuminate\Support\Facades\Auth;
+    use App\Models\User\Language;
 
-                <li class="nav-item dropdown submenu">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-globe"></i>
-                        {{-- Display the active language --}}
-                        {{ $currentLang === 'ar' ? 'العربية' : 'English' }}
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
-                        <li>
-                            <a class="dropdown-item" href="{{ request()->fullUrlWithQuery(['language' => 'en']) }}">English</a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="{{ request()->fullUrlWithQuery(['language' => 'ar']) }}">العربية</a>
-                        </li>
-                    </ul>
-                </li>
+    // Get default language from the database
+    $defaultLanguage = Language::where('is_default', 1)->first();
+
+    // Get all languages for the authenticated user
+    $userLanguages = Language::where('user_id', Auth::id())->get();
+
+    // Get the currently selected language from the query string or fallback to the default
+    $selectedLanguage = Language::where('code', request()->get('language', $defaultLanguage->code ?? 'en'))->first();
+
+    // Ensure a valid language ID is always available
+    $selectedLanguageId = $selectedLanguage ? $selectedLanguage->id : ($defaultLanguage ? $defaultLanguage->id : null);
+@endphp
+
+<!-- Language Dropdown in Navbar -->
+<li class="nav-item dropdown submenu">
+    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-globe"></i>
+        {{ $selectedLanguage->name ?? 'English' }}
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
+        @foreach($userLanguages as $lang)
+            <li>
+                <a class="dropdown-item lang-switch"
+                   data-lang="{{ $lang->code }}"
+                   data-lang-id="{{ $lang->id }}"
+                   href="{{ request()->fullUrlWithQuery(['language' => $lang->code]) }}">
+                    {{ $lang->name }}
+                </a>
+            </li>
+        @endforeach
+    </ul>
+</li>
+
+
                 <!--// Language Dropdown -->
 
             </ul>

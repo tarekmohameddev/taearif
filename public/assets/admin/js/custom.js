@@ -408,6 +408,73 @@ $(function ($) {
   ******************************************************/
 
 
+  // submitBtn_item_add
+  $(document).on('click', '#submitBtn_item_add', function (e) {
+    console.log('clicked2');
+    $(e.target).attr('disabled', true);
+
+    $(".request-loader").addClass("show");
+
+    let ajaxForm = document.getElementById('whyChooseUsSecForm_item_add');
+    let fd = new FormData(ajaxForm);
+    let url = $("#whyChooseUsSecForm_item_add").attr('action');
+    let method = $("#whyChooseUsSecForm_item_add").attr('method');
+
+    if ($("#whyChooseUsSecForm_item_add .summernote").length > 0) {
+        $("#whyChooseUsSecForm_item_add .summernote").each(function (i) {
+        let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
+
+        fd.delete($(this).attr('name'));
+        fd.append($(this).attr('name'), content);
+        });
+    }
+
+    $.ajax({
+        url: url,
+        method: method,
+        data: fd,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+        console.log(data, 'success', typeof data.error);
+        $(e.target).attr('disabled', false);
+        $(".request-loader").removeClass("show");
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        if (data == "warning") {
+            location.reload();
+        }
+        if (data == "success") {
+            location.reload();
+        }
+
+        // if error occurs
+        else if (typeof data.error != 'undefined') {
+            for (let x in data) {
+            if (x == 'error') {
+                continue;
+            }
+            document.getElementById('err' + x).innerHTML = data[x][0];
+            }
+        }
+        },
+        error: function (error) {
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        console.log(error.responseJSON.errors);
+        for (let x in error.responseJSON.errors) {
+            document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
+        }
+        $(".request-loader").removeClass("show");
+        $(e.target).attr('disabled', false);
+        }
+    });
+  });
+
   // updateBtnbrand
   $(document).on('click', '#updateBtnbrand', function (e) {
     console.log('clicked2');
@@ -421,7 +488,7 @@ $(function ($) {
     let method = $("#ajaxEditFormbrand").attr('method');
 
     if ($("#ajaxEditFormbrand .summernote").length > 0) {
-        $("#ajaxEditFormPropertyAmenity .summernote").each(function (i) {
+        $("#ajaxEditFormbrand .summernote").each(function (i) {
         let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
 
         fd.delete($(this).attr('name'));
