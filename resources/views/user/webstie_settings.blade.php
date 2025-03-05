@@ -45,10 +45,16 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     <i class="fas fa-image ml-2 mr-2"></i>
                     {{ __('Banner Section') }}
                 </a>
+
+                {{-- @if ($userBs->theme != 'home13') --}}
+
                 <a href="skills" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="skills">
                     <i class="fas fa-tools ml-2 mr-2"></i>
                     {{ __('Skills Section') }}
                 </a>
+                {{-- @endif --}}
+
+
                 <a href="about" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="about">
                     <i class="fas fa-building ml-2 mr-2"></i>
                     {{ __('About Company') }}
@@ -882,7 +888,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                     </div>
                                                 </div>
 
-                                                @if ($userBs->theme == 'home13' || $userBs->theme == 'home15')
+                                                @if ($userBs->theme == 'home15' || ($userBs->theme != 'home13' && $userBs->theme != 'home15'))
                                                 <div class="col-lg-6">
                                                     <div class="form-group">
                                                         <div class="col-12 mb-2">
@@ -925,7 +931,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                         <textarea class="form-control" name="about_content" rows="5">{{ $information['home_setting']->about_content }}</textarea>
                                         <p id="errabout_content" class="mb-0 text-danger em"></p>
                                     </div>
-                                    @if ($userBs->theme === 'home13')
+                                    @if ($userBs->theme != 'home13')
                                     <div class="row">
                                         <div class="col-lg-12">
                                             <div class="form-group">
