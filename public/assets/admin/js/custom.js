@@ -408,6 +408,408 @@ $(function ($) {
   ******************************************************/
 
 
+  // submitBtn_item_add
+  $(document).on('click', '#submitBtn_item_add', function (e) {
+    console.log('clicked2');
+    $(e.target).attr('disabled', true);
+
+    $(".request-loader").addClass("show");
+
+    let ajaxForm = document.getElementById('whyChooseUsSecForm_item_add');
+    let fd = new FormData(ajaxForm);
+    let url = $("#whyChooseUsSecForm_item_add").attr('action');
+    let method = $("#whyChooseUsSecForm_item_add").attr('method');
+
+    if ($("#whyChooseUsSecForm_item_add .summernote").length > 0) {
+        $("#whyChooseUsSecForm_item_add .summernote").each(function (i) {
+        let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
+
+        fd.delete($(this).attr('name'));
+        fd.append($(this).attr('name'), content);
+        });
+    }
+
+    $.ajax({
+        url: url,
+        method: method,
+        data: fd,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+        console.log(data, 'success', typeof data.error);
+        $(e.target).attr('disabled', false);
+        $(".request-loader").removeClass("show");
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        if (data == "warning") {
+            location.reload();
+        }
+        if (data == "success") {
+            location.reload();
+        }
+
+        // if error occurs
+        else if (typeof data.error != 'undefined') {
+            for (let x in data) {
+            if (x == 'error') {
+                continue;
+            }
+            document.getElementById('err' + x).innerHTML = data[x][0];
+            }
+        }
+        },
+        error: function (error) {
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        console.log(error.responseJSON.errors);
+        for (let x in error.responseJSON.errors) {
+            document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
+        }
+        $(".request-loader").removeClass("show");
+        $(e.target).attr('disabled', false);
+        }
+    });
+  });
+
+  // updateBtnbrand
+  $(document).on('click', '#updateBtnbrand', function (e) {
+    console.log('clicked2');
+    $(e.target).attr('disabled', true);
+
+    $(".request-loader").addClass("show");
+
+    let ajaxForm = document.getElementById('ajaxEditFormbrand');
+    let fd = new FormData(ajaxForm);
+    let url = $("#ajaxEditFormbrand").attr('action');
+    let method = $("#ajaxEditFormbrand").attr('method');
+
+    if ($("#ajaxEditFormbrand .summernote").length > 0) {
+        $("#ajaxEditFormbrand .summernote").each(function (i) {
+        let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
+
+        fd.delete($(this).attr('name'));
+        fd.append($(this).attr('name'), content);
+        });
+    }
+
+    $.ajax({
+        url: url,
+        method: method,
+        data: fd,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+        console.log(data, 'success', typeof data.error);
+        $(e.target).attr('disabled', false);
+        $(".request-loader").removeClass("show");
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        if (data == "warning") {
+            location.reload();
+        }
+        if (data == "success") {
+            location.reload();
+        }
+
+        // if error occurs
+        else if (typeof data.error != 'undefined') {
+            for (let x in data) {
+            if (x == 'error') {
+                continue;
+            }
+            document.getElementById('err' + x).innerHTML = data[x][0];
+            }
+        }
+        },
+        error: function (error) {
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        console.log(error.responseJSON.errors);
+        for (let x in error.responseJSON.errors) {
+            document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
+        }
+        $(".request-loader").removeClass("show");
+        $(e.target).attr('disabled', false);
+        }
+    });
+  });
+
+  // updateBtnPropertyAmenity
+  $(document).on('click', '#updateBtnPropertyAmenity', function (e) {
+    console.log('clicked2');
+    $(e.target).attr('disabled', true);
+
+    $(".request-loader").addClass("show");
+
+    let ajaxForm = document.getElementById('ajaxEditFormPropertyAmenity');
+    let fd = new FormData(ajaxForm);
+    let url = $("#ajaxEditFormPropertyAmenity").attr('action');
+    let method = $("#ajaxEditFormPropertyAmenity").attr('method');
+
+    if ($("#ajaxEditFormPropertyAmenity .summernote").length > 0) {
+        $("#ajaxEditFormPropertyAmenity .summernote").each(function (i) {
+        let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
+
+        fd.delete($(this).attr('name'));
+        fd.append($(this).attr('name'), content);
+        });
+    }
+
+    $.ajax({
+        url: url,
+        method: method,
+        data: fd,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+        console.log(data, 'success', typeof data.error);
+        $(e.target).attr('disabled', false);
+        $(".request-loader").removeClass("show");
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        if (data == "warning") {
+            location.reload();
+        }
+        if (data == "success") {
+            location.reload();
+        }
+
+        // if error occurs
+        else if (typeof data.error != 'undefined') {
+            for (let x in data) {
+            if (x == 'error') {
+                continue;
+            }
+            document.getElementById('err' + x).innerHTML = data[x][0];
+            }
+        }
+        },
+        error: function (error) {
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        console.log(error.responseJSON.errors);
+        for (let x in error.responseJSON.errors) {
+            document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
+        }
+        $(".request-loader").removeClass("show");
+        $(e.target).attr('disabled', false);
+        }
+    });
+  });
+
+  // submitBtnPropertyAmenity
+  $(document).on('click', '#submitBtnPropertyAmenity', function (e) {
+    console.log('clicked2');
+    $(e.target).attr('disabled', true);
+
+    $(".request-loader").addClass("show");
+
+    let ajaxForm = document.getElementById('ajaxFormPropertyAmenity');
+    let fd = new FormData(ajaxForm);
+    let url = $("#ajaxFormPropertyAmenity").attr('action');
+    let method = $("#ajaxFormPropertyAmenity").attr('method');
+
+    if ($("#ajaxFormPropertyAmenity .summernote").length > 0) {
+        $("#ajaxFormPropertyAmenity .summernote").each(function (i) {
+        let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
+
+        fd.delete($(this).attr('name'));
+        fd.append($(this).attr('name'), content);
+        });
+    }
+
+    $.ajax({
+        url: url,
+        method: method,
+        data: fd,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+        console.log(data, 'success', typeof data.error);
+        $(e.target).attr('disabled', false);
+        $(".request-loader").removeClass("show");
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        if (data == "warning") {
+            location.reload();
+        }
+        if (data == "success") {
+            location.reload();
+        }
+
+        // if error occurs
+        else if (typeof data.error != 'undefined') {
+            for (let x in data) {
+            if (x == 'error') {
+                continue;
+            }
+            document.getElementById('err' + x).innerHTML = data[x][0];
+            }
+        }
+        },
+        error: function (error) {
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        console.log(error.responseJSON.errors);
+        for (let x in error.responseJSON.errors) {
+            document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
+        }
+        $(".request-loader").removeClass("show");
+        $(e.target).attr('disabled', false);
+        }
+    });
+  });
+
+  // updateBtnPropertyCategory
+  $(document).on('click', '#updateBtnPropertyCategory', function (e) {
+    console.log('clicked2');
+    $(e.target).attr('disabled', true);
+
+    $(".request-loader").addClass("show");
+
+    let ajaxForm = document.getElementById('ajaxEditFormPropertyCategory');
+    let fd = new FormData(ajaxForm);
+    let url = $("#ajaxEditFormPropertyCategory").attr('action');
+    let method = $("#ajaxEditFormPropertyCategory").attr('method');
+
+    if ($("#ajaxEditFormPropertyCategory .summernote").length > 0) {
+        $("#ajaxEditFormPropertyCategory .summernote").each(function (i) {
+        let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
+
+        fd.delete($(this).attr('name'));
+        fd.append($(this).attr('name'), content);
+        });
+    }
+
+    $.ajax({
+        url: url,
+        method: method,
+        data: fd,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+        console.log(data, 'success', typeof data.error);
+        $(e.target).attr('disabled', false);
+        $(".request-loader").removeClass("show");
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        if (data == "warning") {
+            location.reload();
+        }
+        if (data == "success") {
+            location.reload();
+        }
+
+        // if error occurs
+        else if (typeof data.error != 'undefined') {
+            for (let x in data) {
+            if (x == 'error') {
+                continue;
+            }
+            document.getElementById('err' + x).innerHTML = data[x][0];
+            }
+        }
+        },
+        error: function (error) {
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        console.log(error.responseJSON.errors);
+        for (let x in error.responseJSON.errors) {
+            document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
+        }
+        $(".request-loader").removeClass("show");
+        $(e.target).attr('disabled', false);
+        }
+    });
+  });
+
+  // submitBtnPropertyCategory
+  $(document).on('click', '#submitBtnPropertyCategory', function (e) {
+    console.log('clicked2');
+    $(e.target).attr('disabled', true);
+
+    $(".request-loader").addClass("show");
+
+    let ajaxForm = document.getElementById('ajaxFormPropertyCategory');
+    let fd = new FormData(ajaxForm);
+    let url = $("#ajaxFormPropertyCategory").attr('action');
+    let method = $("#ajaxFormPropertyCategory").attr('method');
+
+    if ($("#ajaxFormPropertyCategory .summernote").length > 0) {
+        $("#ajaxFormPropertyCategory .summernote").each(function (i) {
+        let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
+
+        fd.delete($(this).attr('name'));
+        fd.append($(this).attr('name'), content);
+        });
+    }
+
+    $.ajax({
+        url: url,
+        method: method,
+        data: fd,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+        console.log(data, 'success', typeof data.error);
+        $(e.target).attr('disabled', false);
+        $(".request-loader").removeClass("show");
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        if (data == "warning") {
+            location.reload();
+        }
+        if (data == "success") {
+            location.reload();
+        }
+
+        // if error occurs
+        else if (typeof data.error != 'undefined') {
+            for (let x in data) {
+            if (x == 'error') {
+                continue;
+            }
+            document.getElementById('err' + x).innerHTML = data[x][0];
+            }
+        }
+        },
+        error: function (error) {
+
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        console.log(error.responseJSON.errors);
+        for (let x in error.responseJSON.errors) {
+            document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
+        }
+        $(".request-loader").removeClass("show");
+        $(e.target).attr('disabled', false);
+        }
+    });
+  });
+
   // submitBtnQuick_links
   $(document).on('click', '#submitBtnQuick_links', function (e) {
     console.log('clicked2');
@@ -474,7 +876,6 @@ $(function ($) {
         }
     });
   });
-
 
   // updateBtn_quick_links
   $(document).on('click', '#updateBtn_quick_links', function (e) {

@@ -35,56 +35,68 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             </h4>
 
             <!-- Sidebar Menu -->
+
             <div class="nav flex-column">
-                <a href="#basic-settings" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="basic-settings">
+                <a href="basic-settings" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="basic-settings">
                     <i class="fas fa-sliders-h ml-2 mr-2"></i>
                     {{ __('Basic Settings') }}
                 </a>
-                <a href="#banner" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="banner">
+                <a href="banner" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="banner">
                     <i class="fas fa-image ml-2 mr-2"></i>
                     {{ __('Banner Section') }}
                 </a>
-                <a href="#skills" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="skills">
+                <a href="skills" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="skills">
                     <i class="fas fa-tools ml-2 mr-2"></i>
                     {{ __('Skills Section') }}
                 </a>
-                <a href="#about" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="about">
+                <a href="about" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="about">
                     <i class="fas fa-building ml-2 mr-2"></i>
                     {{ __('About Company') }}
                 </a>
-                <a href="#portfolio" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="portfolio">
+                <a href="portfolio" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="portfolio">
                     <i class="fas fa-briefcase ml-2 mr-2"></i>
                     {{ __('Portfolio') }}
                 </a>
-                <a href="#reviews" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="reviews">
+                <a href="reviews" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="reviews">
                     <i class="fas fa-star ml-2 mr-2"></i>
                     {{ __('Customer Reviews') }}
                 </a>
-                <a href="#services" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="services">
+                <a href="services" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="services">
                     <i class="fas fa-concierge-bell ml-2 mr-2"></i>
                     {{ __('Services') }}
                 </a>
-                <a href="#achievements" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="achievements">
+                <a href="achievements" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="achievements">
                     <i class="fas fa-trophy ml-2 mr-2"></i>
                     {{ __('Achievements') }}
                 </a>
-                <a href="#brands" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="brands">
+                <a href="brands" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="brands">
                     <i class="fas fa-tags ml-2 mr-2"></i>
                     {{ __('Brands') }}
                 </a>
-                <a href="#footer" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="footer">
+                <a href="footer" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="footer">
                     <i class="fas fa-shoe-prints ml-2 mr-2"></i>
                     {{ __('Footer') }}
                 </a>
-                <a href="#menubuilder" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="menubuilder">
+                <a href="menubuilder" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="menubuilder">
                     <i class="fas fa-shoe-prints ml-2 mr-2"></i>
                     {{ __('Menu Builder') }}
                 </a>
-                <a href="#whyChooseUs" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="whyChooseUs">
+                <a href="whyChooseUs" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="whyChooseUs">
                     <i class="fas fa-shoe-prints ml-2 mr-2"></i>
                     {{ __('Why Choose Us Section') }}
                 </a>
+                <a href="property_categories" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="property_categories">
+                    <i class="fas fa-list-alt ml-2 mr-2"></i>
+                    {{ __('property_categories') }}
+                </a>
+                <a href="property_amenity" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="property_amenity">
+                    <i class="fas fa-list-alt ml-2 mr-2"></i>
+                    {{ __('property_amenity') }}
+                </a>
+
             </div>
+
+            <!--// Sidebar Menu -->
         </nav>
 
         <!-- Main Content -->
@@ -495,15 +507,9 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                             <input type="hidden" id="lastSection" name="last_section" value="">
 
                                             <div class="form-group">
-                                                <label for="">{{__('Language')}} **</label>
-                                                <select id="language" name="user_language_id" class="form-control">
-                                                    <option value="" selected disabled>{{__('Select a language')}}</option>
-                                                    @foreach ($userLanguages as $lang)
-                                                    <option value="{{$lang->id}}">{{$lang->name}}</option>
-                                                    @endforeach
-                                                </select>
-                                                <p id="erruser_language_id" class="mb-0 text-danger em"></p>
+                                                <input type="hidden" id="user_language_id" name="user_language_id" value="{{ request()->get('language', 'en') }}">
                                             </div>
+
                                             <!-- upload image sedtion -->
 
                                             <div class="form-group">
@@ -1911,7 +1917,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                         </div>
 
                                         <div class="card-footer text-center">
-                                            <a class="edit-btn btn btn-secondary btn-sm mr-2" href="#" data-toggle="modal" data-target="#createModalBrand" data-id="{{ $brand->id }}" data-brandimg="{{ asset('assets/front/img/user/brands/' . $brand->brand_img) }}" data-brand_url="{{ $brand->brand_url }}" data-serial_number="{{ $brand->serial_number }}">
+                                            <a class="edit-btn btn btn-secondary btn-sm mr-2" href="#" data-toggle="modal" data-target="#editModalbrand" data-idbrand="{{ $brand->id }}" data-brandimg="{{ asset('assets/front/img/user/brands/' . $brand->brand_img) }}" data-brand_url="{{ $brand->brand_url }}" data-serial_number="{{ $brand->serial_number }}">
                                                 <span class="btn-label">
                                                     <i class="fas fa-edit"></i>
                                                 </span>
@@ -2085,7 +2091,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         <td>{{ $link->url }}</td>
                                                         <td>{{ $link->serial_number }}</td>
                                                         <td>
-                                                            <a class="edit-btn btn btn-secondary btn-sm mr-1" href="#" data-toggle="modal" data-target="#editModalquick_links" data-id="{{ $link->id }}" data-title="{{ $link->title }}" data-url="{{ $link->url }}" data-serial_number="{{ $link->serial_number }}">
+                                                            <a class="edit-btn btn btn-secondary btn-sm mr-1" href="#" data-toggle="modal" data-target="#editModalquick_links" data-idlink="{{ $link->id }}" data-title="{{ $link->title }}" data-url="{{ $link->url }}" data-serial_number="{{ $link->serial_number }}">
                                                                 <span class="btn-label">
                                                                     <i class="fas fa-edit"></i>
                                                                 </span>
@@ -2323,7 +2329,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-home"></i>
                                                         @endif
-                                                        {{ $keywords['Home'] ?? 'Home' }} <a data-text="{{ $keywords['Home'] ?? 'Home' }}" data-type="home" @if ($userBs->theme == 'home_twelve') data-icon="fas fa-home" @endif
+                                                        <span>{{ $keywords['Home'] ?? 'Home' }}</span><br>
+                                                        <a data-text="{{ $keywords['Home'] ?? 'Home' }}" data-type="home" @if ($userBs->theme == 'home_twelve') data-icon="fas fa-home" @endif
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
                                                     </li>
@@ -2333,7 +2340,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-hands"></i>
                                                         @endif
-                                                        {{ $keywords['Services'] ?? 'Services' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hands" @endif
+                                                        <span>{{ $keywords['Services'] ?? 'Services' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hands" @endif
                                                             data-text="{{ $keywords['Services'] ?? 'Services' }}"
                                                             data-type="services"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
@@ -2345,7 +2353,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-hotel"></i>
                                                         @endif
-                                                        {{ $keywords['Rooms'] ?? 'Rooms' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hotel" @endif
+                                                        <span>{{ $keywords['Rooms'] ?? 'Rooms' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hotel" @endif
                                                             data-text="{{ $keywords['Rooms'] ?? 'Rooms' }}" data-type="rooms"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2356,7 +2365,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-play"></i>
                                                         @endif
-                                                        {{ $keywords['Courses'] ?? 'Courses' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-play" @endif
+                                                        <span>{{ $keywords['Courses'] ?? 'Courses' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-play" @endif
                                                             data-text="{{ $keywords['Courses'] ?? 'Courses' }}" data-type="courses"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2367,7 +2377,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-hand-holding-usd"></i>
                                                         @endif
-                                                        {{ $keywords['Causes'] ?? 'Causes' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hand-holding-usd" @endif
+                                                        <span>{{ $keywords['Causes'] ?? 'Causes' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hand-holding-usd" @endif
                                                             data-text="{{ $keywords['Causes'] ?? 'Causes' }}" data-type="causes"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2378,7 +2389,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-blog"></i>
                                                         @endif
-                                                        {{ $keywords['Blog'] ?? 'Blog' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-blog" @endif
+                                                        <span>{{ $keywords['Blog'] ?? 'Blog' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-blog" @endif
                                                             data-text="{{ $keywords['Blog'] ?? 'Blog' }}" data-type="blog"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2386,14 +2398,17 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                     @endif
 
                                                     @if (!empty($permissions) && in_array('Portfolio', $permissions))
-                                                    <li class="list-group-item">{{ $keywords['Portfolios'] ?? 'Portfolios' }} <a data-text="{{ $keywords['Portfolios'] ?? 'Portfolios' }}" data-type="portfolios" class="addToMenus btn btn-primary btn-sm float-right" href="">{{ __('Add to Menus') }}</a></li>
+                                                    <li class="list-group-item">
+                                                        <span>{{ $keywords['Portfolios'] ?? 'Portfolios' }}</span><br>
+                                                        <a data-text="{{ $keywords['Portfolios'] ?? 'Portfolios' }}" data-type="portfolios" class="addToMenus btn btn-primary btn-sm float-right" href="">{{ __('Add to Menus') }}</a></li>
                                                     @endif
 
                                                     <li class="list-group-item">
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-chalkboard-teacher"></i>
                                                         @endif
-                                                        {{ $keywords['Contact'] ?? 'Contact' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-chalkboard-teacher" @endif
+                                                        <span>{{ $keywords['Contact'] ?? 'Contact' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-chalkboard-teacher" @endif
                                                             data-text="{{ $keywords['Contact'] ?? 'Contact' }}" data-type="contact"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2404,7 +2419,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-user-friends"></i>
                                                         @endif
-                                                        {{ $keywords['Team'] ?? 'Team' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-friends" @endif
+                                                        <span>{{ $keywords['Team'] ?? 'Team' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-friends" @endif
                                                             data-text="{{ $keywords['Team'] ?? 'Team' }}" data-type="team"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2416,7 +2432,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-user-md"></i>
                                                         @endif
-                                                        {{ $keywords['Career'] ?? 'Career' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-md" @endif
+                                                        <span>{{ $keywords['Career'] ?? 'Career' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-md" @endif
                                                             data-text="{{ $keywords['Career'] ?? 'Career' }}" data-type="career"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2427,7 +2444,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="far fa-question-circle"></i>
                                                         @endif
-                                                        {{ $keywords['FAQ'] ?? 'FAQ' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-question-circle" @endif
+                                                        <span>{{ $keywords['FAQ'] ?? 'FAQ' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-question-circle" @endif
                                                             data-text="{{ $keywords['FAQ'] ?? 'FAQ' }}" data-type="faq"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2437,7 +2455,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="far fa-store-alt"></i>
                                                         @endif
-                                                        {{ $keywords['Shop'] ?? 'Shop' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-store-alt" @endif
+                                                        <span>{{ $keywords['Shop'] ?? 'Shop' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-store-alt" @endif
                                                             data-text="{{ $keywords['Shop'] ?? 'Shop' }}" data-type="shop"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2446,7 +2465,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="far fa-cart-plus"></i>
                                                         @endif
-                                                        {{ $keywords['Cart'] ?? 'Cart' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
+                                                        <span>{{ $keywords['Cart'] ?? 'Cart' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
                                                             data-text="{{ $keywords['Cart'] ?? 'Cart' }}" data-type="cart"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2455,7 +2475,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="far fa-cart-plus"></i>
                                                         @endif
-                                                        {{ $keywords['Checkout'] ?? 'Checkout' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
+                                                        <span>{{ $keywords['Checkout'] ?? 'Checkout' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
                                                             data-text="{{ $keywords['Checkout'] ?? 'Checkout' }}"
                                                             data-type="checkout"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
@@ -2574,7 +2595,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             </div>
             <!--// menu-builder Section -->
 
-            <!--  -->
+            <!-- whyChooseUs -->
             <div id="whyChooseUs" class="content-section d-none">
                 <h3 class="h4 font-weight-bold">{{ __('WhyChooseUs') }}</h3>
                 <p class="text-muted"> {{__('Why Choose Us')}}</p>
@@ -2770,7 +2791,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <div class="row">
                     <div class="col-lg-5">
                         <div class="card">
-                            <form id="ajaxForm" action="{{ route('user.home_page.why_choose_us_item_add') }}" method="post">
+                            <form id="whyChooseUsSecForm_item_add" action="{{ route('user.home_page.why_choose_us_item_add') }}" method="post">
                                 <div class="card-header">
                                     <div class="card-title">{{ __('Add Why Chose Us Item ') }}</div>
                                 </div>
@@ -2837,7 +2858,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
                                             </div>
                                             <div class="col-12 text-center">
-                                                <button type="submit" id="submitBtn" class="btn btn-success">
+                                                <button type="submit" id="submitBtn_item_add" class="btn btn-success">
                                                     {{ __('Submit') }}</button>
                                             </div>
                                         </div>
@@ -2882,7 +2903,13 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         </td>
                                                         <td>{{ $chooseUsItem->serial_number }}</td>
                                                         <td>
-                                                            <a class="btn btn-secondary btn-sm  editbtn" href="#" data-toggle="modal" data-target="#editModal" data-id="{{ $chooseUsItem->id }}" {{-- data-language="{{ $chooseUsItem->question }}" --}} data-icon="{{ $chooseUsItem->icon }}" data-title="{{ $chooseUsItem->title }}" data-content="{{ $chooseUsItem->content }}" data-serial_number="{{ $chooseUsItem->serial_number }}">
+                                                            <a class="btn btn-secondary btn-sm  editbtn" href="#" data-toggle="modal" data-target="#editModal"
+                                                            data-id="{{ $chooseUsItem->id }}"
+                                                            {{-- data-language="{{ $chooseUsItem->question }}" --}}
+                                                            data-iconchooseusitem="{{ $chooseUsItem->icon }}"
+                                                            data-title="{{ $chooseUsItem->title }}"
+                                                            data-content="{{ $chooseUsItem->content }}"
+                                                            data-serial_number="{{ $chooseUsItem->serial_number }}">
                                                                 <i class="fas fa-edit"></i>
                                                             </a>
                                                             <form class="d-inline-block deleteform" action="{{ route('user.home_page.why_choose_us_item_delete') }}" method="post">
@@ -2929,7 +2956,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                             </button>
                                             <div class="dropdown-menu"></div>
                                         </div>
-                                        <input id="inputIcon2" type="hidden" name="icon" value="" class="in_icon">
+                                        <input id="inputIcon2" type="hidden"name="iconchooseusitem" value=""
+                                        class="in_iconchooseusitem">
                                         <p id="eerricon" class="mb-0 text-danger em"></p>
                                         <div class="mt-2">
                                             <small>{{ __('NB: click on the dropdown icon to select a social link icon.') }}</small>
@@ -2972,8 +3000,353 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 @endif
                 <!--  -->
             </div>
-            <!--  -->
+            <!--//whyChooseUs  -->
 
+            <!-- property_categories -->
+            <div id="property_categories" class="content-section d-none">
+                <h3 class="h4 font-weight-bold">{{ __('property_categories') }}</h3>
+                <p class="text-muted"> {{__('Categories')}}</p>
+
+                <!--  -->
+                <div class="page-header">
+                    <h4 class="page-title">{{ __('Categories') }}</h4>
+                    <ul class="breadcrumbs">
+                        <li class="nav-home">
+                            <a href="{{ route('user-dashboard') }}">
+                                <i class="flaticon-home"></i>
+                            </a>
+                        </li>
+                        <li class="separator">
+                            <i class="flaticon-right-arrow"></i>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#">{{ __('Real Estate Management') }}</a>
+                        </li>
+                        <li class="separator">
+                            <i class="flaticon-right-arrow"></i>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#">{{ __('Manage Property') }}</a>
+                        </li>
+                        <li class="separator">
+                            <i class="flaticon-right-arrow"></i>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#">{{ __('Categories') }}</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="row">
+                                    <div class="col-lg-4">
+                                        <div class="card-title d-inline-block">
+                                            {{ __('Property Categories') }}</div>
+                                    </div>
+
+                                    <div class="col-lg-3">
+                                        @includeIf('user.partials.languages')
+                                    </div>
+
+                                    <div class="col-lg-4 offset-lg-1 mt-2 mt-lg-0">
+                                        <a href="#" data-toggle="modal" data-target="#createModalPropertyCategory"
+                                            class="btn btn-primary btn-sm float-lg-right float-left"><i class="fas fa-plus"></i>
+                                            {{ __('Add') }}</a>
+
+                                        <button class="btn btn-danger btn-sm float-right mr-2 d-none bulk-delete"
+                                            data-href="{{ route('user.property_management.bulk_delete_category') }}">
+                                            <i class="flaticon-interface-5"></i> {{ __('Delete') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-lg-12">
+                                        @if (count($information["property_categories"]) == 0)
+                                            <h3 class="text-center mt-2">
+                                                {{ __('NO PROPERTY CATEGORY FOUND') }}</h3>
+                                        @else
+                                            <div class="table-responsive">
+                                                <table class="table table-striped mt-3" id="basic-datatables">
+                                                    <thead>
+                                                        <tr>
+                                                            <th scope="col">
+                                                                <input type="checkbox" class="bulk-check" data-val="all">
+                                                            </th>
+                                                            <th scope="col">{{ __('image') }}</th>
+                                                            <th scope="col">{{ __('Type') }}</th>
+                                                            <th scope="col">{{ __('Name') }}</th>
+                                                            <th scope="col">{{ __('Featured') }}</th>
+                                                            <th scope="col">{{ __('Status') }}</th>
+                                                            <th scope="col">{{ __('Serial Number') }}
+                                                            </th>
+                                                            <th scope="col">{{ __('Actions') }}</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach ($information["property_categories"] as $category)
+                                                            <tr>
+                                                                <td>
+                                                                    <input type="checkbox" class="bulk-check"
+                                                                        data-val="{{ $category->id }}">
+                                                                </td>
+                                                                <td>
+                                                                    <img src="{{ asset('assets/img/property-category/' . $category->image) }}"
+                                                                        alt="image" class="img-fluid" style="max-width: 80px">
+                                                                </td>
+                                                                <td>
+                                                                    {{ ucfirst($category->type) }}
+                                                                </td>
+                                                                <td>
+                                                                    {{ strlen($category->name) > 50 ? mb_substr($content->name, 0, 50, 'UTF-8') . '...' : $category->name }}
+                                                                </td>
+                                                                <td>
+
+                                                                    <form id="featureForm{{ $category->id }}" class="d-inline-block"
+                                                                        action="{{ route('user.property_management.update_category_featured') }}"
+                                                                        method="post">
+                                                                        @csrf
+                                                                        <input type="hidden" name="categoryId"
+                                                                            value="{{ $category->id }}">
+
+                                                                        <select
+                                                                            class="form-control {{ $category->featured == 1 ? 'bg-success' : 'bg-danger' }} form-control-sm"
+                                                                            name="featured"
+                                                                            onchange="document.getElementById('featureForm{{ $category->id }}').submit();">
+                                                                            <option value="1"
+                                                                                {{ $category->featured == 1 ? 'selected' : '' }}>
+                                                                                {{ __('Yes') }}
+                                                                            </option>
+                                                                            <option value="0"
+                                                                                {{ $category->featured == 0 ? 'selected' : '' }}>
+                                                                                {{ __('No') }}
+                                                                            </option>
+                                                                        </select>
+                                                                    </form>
+
+                                                                </td>
+                                                                <td>
+                                                                    @if ($category->status == 1)
+                                                                        <h2 class="d-inline-block"><span
+                                                                                class="badge badge-success">{{ __('Active') }}</span>
+                                                                        </h2>
+                                                                    @else
+                                                                        <h2 class="d-inline-block"><span
+                                                                                class="badge badge-danger">{{ __('Deactive') }}</span>
+                                                                        </h2>
+                                                                    @endif
+                                                                </td>
+                                                                <td>{{ $category->serial_number }}</td>
+                                                                <td>
+                                                                    <a class="btn btn-secondary btn-sm mr-1  mt-1 editBtn"
+                                                                        href="#" data-toggle="modal" data-target="#editModalPropertyCategory"
+
+                                                                        data-name="{{ $category->name }}"
+                                                                        data-idcat="{{ $category->id }}"
+                                                                        data-status="{{ $category->status }}" {{-- data-type="{{ $category->type }}" --}}
+                                                                        data-image="{{ asset('assets/img/property-category/' . $category->image) }}"
+                                                                        data-serial_number="{{ $category->serial_number }}">
+                                                                        <span class="btn-label">
+                                                                            <i class="fas fa-edit"></i>
+                                                                        </span>
+                                                                    </a>
+
+                                                                    <form class="deleteForm d-inline-block"
+                                                                        action="{{ route('user.property_management.delete_category') }}"
+                                                                        method="post">
+                                                                        @csrf
+                                                                        <input type="hidden" name="id"
+                                                                            value="{{ $category->id }}">
+
+                                                                        <button type="submit"
+                                                                            class="btn btn-danger  mt-1 btn-sm deleteBtn">
+                                                                            <span class="btn-label">
+                                                                                <i class="fas fa-trash"></i>
+                                                                            </span>
+                                                                        </button>
+                                                                    </form>
+
+                                                                </td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-footer"></div>
+                        </div>
+                    </div>
+                </div>
+                <!--  -->
+            </div>
+            <!--//property_categories  -->
+
+            <!-- property_amenity -->
+            <div id="property_amenity" class="content-section d-none">
+                <h3 class="h4 font-weight-bold">{{ __('property_amenity') }}</h3>
+                <p class="text-muted"> {{__('property_amenity')}}</p>
+
+                <!--  -->
+                <div class="page-header">
+                    <h4 class="page-title">{{ __('Amenities') }}</h4>
+                    <ul class="breadcrumbs">
+                        <li class="nav-home">
+                            <a href="{{ route('user-dashboard') }}">
+                                <i class="flaticon-home"></i>
+                            </a>
+                        </li>
+                        <li class="separator">
+                            <i class="flaticon-right-arrow"></i>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#">{{ __('Real Estate Management') }}</a>
+                        </li>
+                        <li class="separator">
+                            <i class="flaticon-right-arrow"></i>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#">{{ __('Manage Property') }}</a>
+                        </li>
+                        <li class="separator">
+                            <i class="flaticon-right-arrow"></i>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#">{{ __('Amenities') }}</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="row">
+                                    <div class="col-lg-4">
+                                        <div class="card-title d-inline-block">{{ __('Amenities') }}</div>
+                                    </div>
+
+                                    <div class="col-lg-3">
+                                        @includeIf('user.partials.languages')
+                                    </div>
+
+                                    <div class="col-lg-4 offset-lg-1 mt-2 mt-lg-0">
+                                        <a href="#" data-toggle="modal" data-target="#createModalPropertyAmenity"
+                                            class="btn btn-primary btn-sm float-lg-right float-left"><i class="fas fa-plus"></i>
+                                            {{ __('Add') }}</a>
+
+                                        <button class="btn btn-danger btn-sm float-right mr-2 d-none bulk-delete"
+                                            data-href="{{ route('user.property_management.bulk_delete_amenity') }}">
+                                            <i class="flaticon-interface-5"></i> {{ __('Delete') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-lg-12">
+
+
+                                        @if (count($information['amenities']) > 0)
+                                            <div class="table-responsive">
+                                                <table class="table table-striped mt-3" id="basic-datatables">
+                                                    <thead>
+                                                        <tr>
+                                                            <th scope="col">
+                                                                <input type="checkbox" class="bulk-check" data-val="all">
+                                                            </th>
+                                                            <th scope="col">{{ __('Icon') }}</th>
+                                                            <th scope="col">{{ __('Name') }}</th>
+                                                            <th scope="col">{{ __('Status') }}</th>
+                                                            <th scope="col"> {{ __('Serial Number') }} </th>
+                                                            <th scope="col">{{ __('Actions') }}</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach ($information['amenities'] as $amenity)
+                                                            <tr>
+                                                                <td>
+                                                                    <input type="checkbox" class="bulk-check"
+                                                                        data-val="{{ $amenity->id }}">
+                                                                </td>
+                                                                <td>
+                                                                    <i class="{{ $amenity->icon }}"></i>
+                                                                </td>
+                                                                <td>
+                                                                    {{ strlen($amenity->name) > 50 ? mb_substr($amenity->name, 0, 50, 'UTF-8') . '...' : $amenity->name }}
+                                                                </td>
+                                                                <td>
+                                                                    @if ($amenity->status == 1)
+                                                                        <h2 class="d-inline-block"><span
+                                                                                class="badge badge-success">{{ __('Active') }}</span>
+                                                                        </h2>
+                                                                    @else
+                                                                        <h2 class="d-inline-block"><span
+                                                                                class="badge badge-danger">{{ __('Deactive') }}</span>
+                                                                        </h2>
+                                                                    @endif
+                                                                </td>
+                                                                <td>{{ $amenity->serial_number }}</td>
+                                                                <td>
+                                                                    <a class="btn btn-secondary btn-sm mr-1 mt-1 editBtn" href="#"
+                                                                        data-toggle="modal" data-target="#editModalPropertyAmenity"
+                                                                        data-name="{{ $amenity->name }}"
+                                                                        data-ididamenity="{{ $amenity->id }}"
+                                                                        data-iconamenity="{{ $amenity->icon }}"
+                                                                        data-status="{{ $amenity->status }}"
+                                                                        data-serial_number="{{ $amenity->serial_number }}">
+                                                                        <span class="btn-label">
+                                                                            <i class="fas fa-edit"></i>
+                                                                        </span>
+                                                                    </a>
+
+
+
+                                                                    <form class="deleteForm d-inline-block"
+                                                                        action="{{ route('user.property_management.delete_amenity') }}"
+                                                                        method="post">
+                                                                        @csrf
+                                                                        <input type="hidden" name="id"
+                                                                            value="{{ $amenity->id }}">
+
+                                                                        <button type="submit"
+                                                                            class="btn btn-danger  mt-1 btn-sm deleteBtn">
+                                                                            <span class="btn-label">
+                                                                                <i class="fas fa-trash"></i>
+                                                                            </span>
+                                                                        </button>
+                                                                    </form>
+
+                                                                </td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        @else
+                                            <h3 class="text-center mt-2">{{ __('NO AMENITY FOUND') }}
+                                            </h3>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-footer"></div>
+                        </div>
+                    </div>
+                </div>
+                <!--  -->
+            </div>
+            <!--//property_amenity  -->
 
         </main>
     </div>
@@ -3760,7 +4133,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <div class="modal-body">
                     <form id="ajaxEditForm_quick_links" class="modal-form" action="{{ route('user.footer.update_quick_link') }}" method="post">
                         @csrf
-                        <input type="hidden" id="in_id" name="link_id">
+                        <input type="hidden" id="in_idlink" name="link_id">
 
                         <div class="form-group">
                             <label for="">{{ __('Title*') }}</label>
@@ -3800,8 +4173,469 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
     <!--  -->
 
+    <!-- create PropertyCategory Modal -->
+    <div class="modal fade" id="createModalPropertyCategory" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLongTitle">
+                        {{ __('Add Property Category') }}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <form id="ajaxFormPropertyCategory" class="modal-form create"
+                        action="{{ route('user.property_management.store_category') }}" method="post"
+                        enctype="multipart/form-data">
+                        @csrf
+
+                        <div class="form-group">
+                            <label for="">{{ __('Image') . '*' }}</label>
+                            <br>
+                            <div class="showImage">
+                                <img src="{{ asset('assets/front/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
+                            </div>
+
+                            <div class="mt-3">
+
+                                <input type="file" class="form-control image" id="image" name="image">
+
+                            </div>
+
+                            <p id="errimage" class=" mb-0 text-danger em"></p>
+                        </div>
+
+
+                        <div class="form-group">
+                            <label for="">{{ __('Language') }} *</label>
+                            <select id="language" name="user_language_id" class="form-control">
+                                <option selected disabled>{{ __('Select a language') }}</option>
+                                @foreach ($userLanguages as $lang)
+                                    <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                @endforeach
+                            </select>
+                            <p id="erruser_language_id" class="mb-0 text-danger em"></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="">{{ __('Type') . '*' }}</label>
+
+                            <select name="type" class="form-control">
+                                <option selected disabled>{{ __('Select a Type') }}</option>
+                                <option value="residential">{{ __('Residential') }}</option>
+                                <option value="commercial">{{ __('Commercial') }}</option>
+
+                            </select>
+                            <p id="errtype" class="mt-2 mb-0 text-danger em"></p>
+                        </div>
+
+
+                        <div class="form-group {{ $lang->direction == 1 ? 'rtl text-right' : '' }}">
+                            <label for="">{{ __('Name') . '*' }}</label>
+                            <input type="text" class="form-control" name="name"
+                                placeholder="{{ __('Enter category name') }}">
+                            <p id="errname" class="mt-2 mb-0 text-danger em"></p>
+                        </div>
+
+
+                        <div class="form-group">
+                            <label for="">{{ __('Status') . '*' }}</label>
+                            <select name="status" class="form-control">
+                                <option selected disabled>{{ __('Select Status') }}</option>
+                                <option value="1">{{ __('Active') }}</option>
+                                <option value="0">{{ __('Deactive') }}</option>
+                            </select>
+                            <p id="errstatus" class="mt-2 mb-0 text-danger em"></p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="">{{ __('Serial Number') . '*' }}</label>
+                            <input type="number" class="form-control ltr" name="serial_number"
+                                placeholder="{{ __('Enter serial number') }}">
+                            <p id="errserial_number" class="mt-2 mb-0 text-danger em"></p>
+                            <p class="text-warning mt-2 mb-0">
+                                <small>{{ __('The higher the serial number is,the later will be shown.') }}</small>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                        {{ __('Close') }}
+                    </button>
+                    <button id="submitBtnPropertyCategory" type="button" class="btn btn-primary btn-sm">
+                        {{ __('Save') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--  -->
+
+    <!-- edit PropertyCategory Modal -->
+    <div class="modal fade" id="editModalPropertyCategory" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLongTitle">
+                        {{ $keywords['Edit Property Category'] ?? __('Edit Property Category') }}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <form id="ajaxEditFormPropertyCategory" class="modal-form"
+                        action="{{ route('user.property_management.update_category') }}" method="post"
+                        enctype="multipart/form-data">
+                        @csrf
+                        <input type="hidden" id="in_idcat" name="id">
+                        {{-- <div class="form-group">
+                            <label for="">{{ $keywords['Image'] ?? __('Image') . '*' }}</label>
+                            <br>
+                            <div class="thumb-preview">
+                                <img src="{{ asset('assets/img/noimage.jpg') }}" id="in_image" alt="..."
+                                    class="uploaded-img in_image">
+                            </div>
+
+                            <div class="mt-3">
+                                <div role="button" class="btn btn-primary btn-sm upload-btn">
+                                    {{ $keywords['Choose Image'] ?? __('Choose Image') }}
+                                    <input type="file" class="img-input" name="image">
+                                </div>
+                            </div>
+
+                            <p id="editErr_image" class="mb-0 text-danger em"></p>
+                        </div> --}}
+
+                        <div class="form-group">
+                            <label for="">{{ __('Image') }}</label>
+                            <br>
+                            <div class="showImage">
+                                <img src="{{ asset('assets/front/img/noimage.jpg') }}" alt="..."
+                                    class="img-thumbnail category-img">
+                            </div>
+
+                            <div class="mt-3">
+
+                                <input type="file" class="form-control image" id="image" name="image">
+
+                            </div>
+
+                            <p id="editErr_image" class=" mb-0 text-danger em"></p>
+                        </div>
+
+                        {{-- <div class="form-group">
+                            <label for="">{{ __('Language') . '*' }}</label>
+                            <select name="language" id="in_language" class="form-control language">
+                                <option selected disabled>{{ __('Select Language') }}</option>
+                                @foreach ($languages as $lang)
+                                    <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                @endforeach
+                            </select>
+                            <p id="editErr_language" class="mt-2 mb-0 text-danger em"></p>
+                        </div> --}}
+
+
+                        <div class="form-group  ">
+                            <label for="">{{ __('Name') . '*' }}
+
+                            </label>
+                            <input type="text" id="in_name" class="form-control" name="name"
+                                placeholder="{{ __('Enter category name') }}">
+                            <p id="editErr_name" class="mt-2 mb-0 text-danger em"></p>
+                        </div>
+
+
+                        <div class="form-group">
+                            <label for="">{{ __('Status') . '*' }}</label>
+                            <select name="status" id="in_status" class="form-control">
+                                <option disabled>{{ __('Select Status') }}</option>
+                                <option value="1">{{ __('Active') }}</option>
+                                <option value="0">{{ __('Deactive') }}</option>
+                            </select>
+                            <p id="editErr_status" class="mt-2 mb-0 text-danger em"></p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="">{{ __('Serial Number') . '*' }}</label>
+                            <input type="number" id="in_serial_number" class="form-control ltr" name="serial_number"
+                                placeholder="{{ __('Enter Serial Number') }}">
+                            <p id="editErr_serial_number" class="mt-2 mb-0 text-danger em"></p>
+                            <p class="text-warning mt-2 mb-0">
+                                <small>{{ __('The higher the serial number is, the later will be shown.') }}</small>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                        {{ __('Close') }}
+                    </button>
+                    <button id="updateBtnPropertyCategory" type="button" class="btn btn-primary btn-sm">
+                        {{ __('Update') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--  -->
+
+    <!-- create PropertyAmenity Modal -->
+    <div class="modal fade" id="createModalPropertyAmenity" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLongTitle">
+                        {{ __('Add Property Amenity') }}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <form id="ajaxFormPropertyAmenity" class="modal-form create"
+                        action="{{ route('user.property_management.store_amenity') }}" method="post">
+                        @csrf
+                        <div class="form-group">
+                            <label for="">{{ __('Icon') . '*' }}</label>
+                            <div class="btn-group d-block">
+                                <button type="button" class="btn btn-primary iconpicker-component"><i
+                                        class="{{ $counterInformation->icon ?? 'fa fa-fw fa-heart' }}"></i></button>
+                                <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle"
+                                    data-selected="fa-car" data-toggle="dropdown"></button>
+                                <div class="dropdown-menu"></div>
+                            </div>
+                            <input type="hidden" id="inputIcon" name="icon">
+                            <p id="erricon" class="mt-1 mb-0 text-danger em"></p>
+                            <div class="text-warning mt-2">
+                                <small>{{ $keywords['Click on the dropdown icon to select a icon'] ?? __('Click on the dropdown icon to select a icon.') }}</small>
+                            </div>
+                        </div>
+                        {{-- <div class="form-group">
+                            <label for="">{{ __('Language') . '*' }}</label>
+                            <select name="language" id="" class="form-control">
+                                <option selected disabled>{{ __('Select Language') }}</option>
+                                @foreach ($languages as $lang)
+                                    <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                @endforeach
+                            </select>
+                            <p id="errlanguage" class="mt-2 mb-0 text-danger em"></p>
+                        </div> --}}
+
+                        <div class="form-group">
+                            <label for="">{{ __('Language') }} *</label>
+                            <select id="language" name="user_language_id" class="form-control">
+                                <option selected disabled>{{ __('Select a language') }}</option>
+                                @foreach ($userLanguages as $lang)
+                                    <option value="{{ $lang->id }}">{{ $lang->name }}</option>
+                                @endforeach
+                            </select>
+                            <p id="erruser_language_id" class="mb-0 text-danger em"></p>
+                        </div>
+
+                        <div class="form-group  ">
+                            <label for="">{{ __('Name') . '*' }}
+
+                            </label>
+                            <input type="text" class="form-control" name="name"
+                                placeholder="{{ __('Enter amenity name') }}">
+                            <p id="errname" class="mt-2 mb-0 text-danger em"></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="">{{ __('Status') . '*' }}</label>
+                            <select name="status" class="form-control">
+                                <option selected disabled>{{ __('Select Status') }}</option>
+                                <option value="1">{{ __('Active') }}</option>
+                                <option value="0">{{ __('Deactive') }}</option>
+                            </select>
+                            <p id="errstatus" class="mt-2 mb-0 text-danger em"></p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="">{{ __('Serial Number') . '*' }}</label>
+                            <input type="number" class="form-control " name="serial_number"
+                                placeholder="{{ __('Enter serial number') }}">
+                            <p id="errserial_number" class="mt-2 mb-0 text-danger em"></p>
+                            <p class="text-warning mt-2 mb-0">
+                                <small>{{ __('The higher the serial number is, the later will be shown.') }}</small>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                        {{ __('Close') }}
+                    </button>
+                    <button id="submitBtnPropertyAmenity" type="button" class="btn btn-primary btn-sm">
+                        {{ __('Save') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--  -->
+
+    <!-- edit PropertyAmenity Modal -->
+    <div class="modal fade" id="editModalPropertyAmenity" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLongTitle">{{ __('Edit Amenity') }}000</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <form id="ajaxEditFormPropertyAmenity" class="modal-form"
+                        action="{{ route('user.property_management.update_amenity') }}" method="post">
+                        @csrf
+                        <input type="hidden" id="in_ididamenity" name="id">
+                        <div class="form-group">
+                            <label for="">{{ __('Icon') }}</label>
+                            <div class="btn-group d-block">
+                                <button type="button" class="btn btn-primary iconpicker-component iconpicker-upd"><i
+                                        class="fa fa-fw fa-heart"></i></button>
+                                <button type="button" class="icp icp-dd2  btn btn-primary dropdown-toggle"
+                                    data-selected="fa-car" data-toggle="dropdown"></button>
+                                <div class="dropdown-menu"></div>
+                            </div>
+                            <input type="hidden" id="in_iconamenity" name="icon">
+                            <p id="Eerr_icon" class="mt-1 mb-0 text-danger em"></p>
+                            <div class="text-warning mt-2">
+                                <small>{{ __('Click on the dropdown icon to select a icon.') }}</small>
+                            </div>
+                        </div>
+
+
+                        <div class="form-group ">
+                            <label for="">{{ __('Name') . '*' }}
+
+                            </label>
+                            <input type="text" id="in_name" class="form-control" name="name"
+                                placeholder="{{ __('Enter amenity name') }}">
+                            <p id="Eerr_name" class="mt-2 mb-0 text-danger em"></p>
+                        </div>
+
+
+                        <div class="form-group">
+                            <label for="">{{ __('Status') . '*' }}</label>
+                            <select name="status" id="in_status" class="form-control">
+                                <option disabled>{{ __('Select Status') }}</option>
+                                <option value="1">{{ __('Active') }}</option>
+                                <option value="0">{{ __('Deactive') }}</option>
+                            </select>
+                            <p id="Eerr_status" class="mt-2 mb-0 text-danger em"></p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="">{{ __('Serial Number') . '*' }}</label>
+                            <input type="number" id="in_serial_number" class="form-control ltr" name="serial_number"
+                                placeholder="Enter Serial Number">
+                            <p id="Eerr_serial_number" class="mt-2 mb-0 text-danger em"></p>
+                            <p class="text-warning mt-2 mb-0">
+                                <small>{{ __('The higher the serial number is, the later will be shown.') }}</small>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                        {{ __('Close') }}
+                    </button>
+                    <button id="updateBtnPropertyAmenity" type="button" class="btn btn-primary btn-sm">
+                        {{ __('Update') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--  -->
+
+    <!-- edit brand Modal -->
     {{-- edit modal --}}
-    @include('user.home.brand_section.edit')
+    {{-- @include('user.home.brand_section.edit') --}}
+
+    <div class="modal fade" id="editModalbrand" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+
+                    <h5 class="modal-title" id="exampleModalLongTitle">
+                        @if ($userBs->theme == 'home_eleven')
+                            {{ __('Edit Donor') }}
+                        @else
+                            {{ __('Edit Brand') }}
+                        @endif
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <form id="ajaxEditFormbrand" class="modal-form"
+                        action="{{ route('user.home_page.brand_section.update_brand') }}" method="POST"
+                        enctype="multipart/form-data">
+                        @csrf
+                        <input type="hidden" id="in_idbrand" name="brand_id">
+                        <div class="form-group">
+                            <div class="col-12 mb-2">
+                                <label for="image"><strong>{{ __('Background Image') }}</strong></label>
+                            </div>
+                            <div class="col-md-12 showEditImage mb-3">
+                                <img src="" alt="..." class="brand-img img-thumbnail">
+                            </div>
+                            <input type="file" name="brand_img" id="edit_image" class="form-control image">
+                            <p id="eerrbrand_img" class="mb-0 text-danger em"></p>
+                        </div>
+
+                        <div class="form-group">
+                            @if ($userBs->theme == 'home_eleven')
+                                <label for="">{{ __('Donor\'s URL*') }}</label>
+                            @else
+                                <label for="">{{ __('Brand\'s URL*') }}</label>
+                            @endif
+                            <input type="url" id="in_brand_url" class="form-control ltr" name="brand_url"
+                                placeholder="{{ __('Enter Brand URL') }}">
+                            <p id="eerrbrand_url" class="mt-2 mb-0 text-danger em"></p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="">{{ __('Serial Number*') }}</label>
+                            <input type="number" id="in_serial_number" class="form-control ltr" name="serial_number"
+                                placeholder="{{ __('Enter Serial Number') }}">
+                            <p id="eerrserial_number" class="mt-2 mb-0 text-danger em"></p>
+                            <p class="text-warning mt-2">
+                                <small>{{ __('The higher the serial number is, the later the brand will be shown.') }}</small>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        {{ __('Close') }}
+                    </button>
+                    <button id="updateBtnbrand" type="button" class="btn btn-primary">
+                        {{ __('Update') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--  -->
 
 
     <!--  -->
@@ -4139,11 +4973,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 <script>
     "use strict";
     var prevMenus = @php echo json_encode($prevMenu) @endphp;
-    var langid = {
-        {
-            $lang_id
-        }
-    };
+    var langid = {{$lang_id}};
     var menuUpdate = "{{ route('user.menu_builder.update') }}";
 </script>
 
@@ -4161,4 +4991,6 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
         });
     })(jQuery);
 </script>
+
+
 @endsection

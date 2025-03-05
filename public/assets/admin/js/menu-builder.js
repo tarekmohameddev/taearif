@@ -97,4 +97,18 @@ function enableWithoutUrl() {
 
 
     });
+    // when menu is chosen from readymade menus list
+    $(".addToMenus").on('click', function (e) {
+        e.preventDefault();
+        disableWithUrl();
+        $("input[name='icon']").val($(this).data('iconmenu'));
+        $("input[name='type']").val($(this).data('type'));
+        $("#withoutUrl input[name='text']").val($(this).data('text'));
+        $("#withoutUrl input[name='target']").val('_self');
+        editor.add();
+        enableWithUrl();
+
+
+
+    });
 })(jQuery);

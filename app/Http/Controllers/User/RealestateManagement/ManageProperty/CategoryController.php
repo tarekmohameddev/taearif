@@ -99,6 +99,7 @@ class CategoryController extends Controller
     }
     public function update(Request $request)
     {
+        // dd($request->all());
         $rules = [
             'status' => 'required|numeric',
             'name' => 'required',
