@@ -507,15 +507,9 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                             <input type="hidden" id="lastSection" name="last_section" value="">
 
                                             <div class="form-group">
-                                                <label for="">{{__('Language')}} **</label>
-                                                <select id="language" name="user_language_id" class="form-control">
-                                                    <option value="" selected disabled>{{__('Select a language')}}</option>
-                                                    @foreach ($userLanguages as $lang)
-                                                    <option value="{{$lang->id}}">{{$lang->name}}</option>
-                                                    @endforeach
-                                                </select>
-                                                <p id="erruser_language_id" class="mb-0 text-danger em"></p>
+                                                <input type="hidden" id="user_language_id" name="user_language_id" value="{{ request()->get('language', 'en') }}">
                                             </div>
+
                                             <!-- upload image sedtion -->
 
                                             <div class="form-group">
@@ -2335,7 +2329,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-home"></i>
                                                         @endif
-                                                        {{ $keywords['Home'] ?? 'Home' }} <a data-text="{{ $keywords['Home'] ?? 'Home' }}" data-type="home" @if ($userBs->theme == 'home_twelve') data-icon="fas fa-home" @endif
+                                                        <span>{{ $keywords['Home'] ?? 'Home' }}</span><br>
+                                                        <a data-text="{{ $keywords['Home'] ?? 'Home' }}" data-type="home" @if ($userBs->theme == 'home_twelve') data-icon="fas fa-home" @endif
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
                                                     </li>
@@ -2345,7 +2340,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-hands"></i>
                                                         @endif
-                                                        {{ $keywords['Services'] ?? 'Services' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hands" @endif
+                                                        <span>{{ $keywords['Services'] ?? 'Services' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hands" @endif
                                                             data-text="{{ $keywords['Services'] ?? 'Services' }}"
                                                             data-type="services"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
@@ -2357,7 +2353,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-hotel"></i>
                                                         @endif
-                                                        {{ $keywords['Rooms'] ?? 'Rooms' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hotel" @endif
+                                                        <span>{{ $keywords['Rooms'] ?? 'Rooms' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hotel" @endif
                                                             data-text="{{ $keywords['Rooms'] ?? 'Rooms' }}" data-type="rooms"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2368,7 +2365,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-play"></i>
                                                         @endif
-                                                        {{ $keywords['Courses'] ?? 'Courses' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-play" @endif
+                                                        <span>{{ $keywords['Courses'] ?? 'Courses' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-play" @endif
                                                             data-text="{{ $keywords['Courses'] ?? 'Courses' }}" data-type="courses"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2379,7 +2377,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-hand-holding-usd"></i>
                                                         @endif
-                                                        {{ $keywords['Causes'] ?? 'Causes' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hand-holding-usd" @endif
+                                                        <span>{{ $keywords['Causes'] ?? 'Causes' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-hand-holding-usd" @endif
                                                             data-text="{{ $keywords['Causes'] ?? 'Causes' }}" data-type="causes"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2390,7 +2389,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-blog"></i>
                                                         @endif
-                                                        {{ $keywords['Blog'] ?? 'Blog' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-blog" @endif
+                                                        <span>{{ $keywords['Blog'] ?? 'Blog' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-blog" @endif
                                                             data-text="{{ $keywords['Blog'] ?? 'Blog' }}" data-type="blog"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2398,14 +2398,17 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                     @endif
 
                                                     @if (!empty($permissions) && in_array('Portfolio', $permissions))
-                                                    <li class="list-group-item">{{ $keywords['Portfolios'] ?? 'Portfolios' }} <a data-text="{{ $keywords['Portfolios'] ?? 'Portfolios' }}" data-type="portfolios" class="addToMenus btn btn-primary btn-sm float-right" href="">{{ __('Add to Menus') }}</a></li>
+                                                    <li class="list-group-item">
+                                                        <span>{{ $keywords['Portfolios'] ?? 'Portfolios' }}</span><br>
+                                                        <a data-text="{{ $keywords['Portfolios'] ?? 'Portfolios' }}" data-type="portfolios" class="addToMenus btn btn-primary btn-sm float-right" href="">{{ __('Add to Menus') }}</a></li>
                                                     @endif
 
                                                     <li class="list-group-item">
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-chalkboard-teacher"></i>
                                                         @endif
-                                                        {{ $keywords['Contact'] ?? 'Contact' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-chalkboard-teacher" @endif
+                                                        <span>{{ $keywords['Contact'] ?? 'Contact' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-chalkboard-teacher" @endif
                                                             data-text="{{ $keywords['Contact'] ?? 'Contact' }}" data-type="contact"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2416,7 +2419,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-user-friends"></i>
                                                         @endif
-                                                        {{ $keywords['Team'] ?? 'Team' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-friends" @endif
+                                                        <span>{{ $keywords['Team'] ?? 'Team' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-friends" @endif
                                                             data-text="{{ $keywords['Team'] ?? 'Team' }}" data-type="team"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2428,7 +2432,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="fas fa-user-md"></i>
                                                         @endif
-                                                        {{ $keywords['Career'] ?? 'Career' }} <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-md" @endif
+                                                        <span>{{ $keywords['Career'] ?? 'Career' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="fas fa-user-md" @endif
                                                             data-text="{{ $keywords['Career'] ?? 'Career' }}" data-type="career"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2439,7 +2444,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="far fa-question-circle"></i>
                                                         @endif
-                                                        {{ $keywords['FAQ'] ?? 'FAQ' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-question-circle" @endif
+                                                        <span>{{ $keywords['FAQ'] ?? 'FAQ' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-question-circle" @endif
                                                             data-text="{{ $keywords['FAQ'] ?? 'FAQ' }}" data-type="faq"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2449,7 +2455,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="far fa-store-alt"></i>
                                                         @endif
-                                                        {{ $keywords['Shop'] ?? 'Shop' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-store-alt" @endif
+                                                        <span>{{ $keywords['Shop'] ?? 'Shop' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-store-alt" @endif
                                                             data-text="{{ $keywords['Shop'] ?? 'Shop' }}" data-type="shop"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2458,7 +2465,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="far fa-cart-plus"></i>
                                                         @endif
-                                                        {{ $keywords['Cart'] ?? 'Cart' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
+                                                        <span>{{ $keywords['Cart'] ?? 'Cart' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
                                                             data-text="{{ $keywords['Cart'] ?? 'Cart' }}" data-type="cart"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -2467,7 +2475,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         @if ($userBs->theme == 'home_twelve')
                                                         <i class="far fa-cart-plus"></i>
                                                         @endif
-                                                        {{ $keywords['Checkout'] ?? 'Checkout' }} <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
+                                                        <span>{{ $keywords['Checkout'] ?? 'Checkout' }}</span><br>
+                                                        <a @if ($userBs->theme == 'home_twelve') data-icon="far fa-cart-plus" @endif
                                                             data-text="{{ $keywords['Checkout'] ?? 'Checkout' }}"
                                                             data-type="checkout"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
@@ -2782,7 +2791,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <div class="row">
                     <div class="col-lg-5">
                         <div class="card">
-                            <form id="ajaxForm" action="{{ route('user.home_page.why_choose_us_item_add') }}" method="post">
+                            <form id="whyChooseUsSecForm_item_add" action="{{ route('user.home_page.why_choose_us_item_add') }}" method="post">
                                 <div class="card-header">
                                     <div class="card-title">{{ __('Add Why Chose Us Item ') }}</div>
                                 </div>
@@ -2849,7 +2858,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
                                             </div>
                                             <div class="col-12 text-center">
-                                                <button type="submit" id="submitBtn" class="btn btn-success">
+                                                <button type="submit" id="submitBtn_item_add" class="btn btn-success">
                                                     {{ __('Submit') }}</button>
                                             </div>
                                         </div>
@@ -2894,7 +2903,13 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         </td>
                                                         <td>{{ $chooseUsItem->serial_number }}</td>
                                                         <td>
-                                                            <a class="btn btn-secondary btn-sm  editbtn" href="#" data-toggle="modal" data-target="#editModal" data-id="{{ $chooseUsItem->id }}" {{-- data-language="{{ $chooseUsItem->question }}" --}} data-icon="{{ $chooseUsItem->icon }}" data-title="{{ $chooseUsItem->title }}" data-content="{{ $chooseUsItem->content }}" data-serial_number="{{ $chooseUsItem->serial_number }}">
+                                                            <a class="btn btn-secondary btn-sm  editbtn" href="#" data-toggle="modal" data-target="#editModal"
+                                                            data-id="{{ $chooseUsItem->id }}"
+                                                            {{-- data-language="{{ $chooseUsItem->question }}" --}}
+                                                            data-iconchooseusitem="{{ $chooseUsItem->icon }}"
+                                                            data-title="{{ $chooseUsItem->title }}"
+                                                            data-content="{{ $chooseUsItem->content }}"
+                                                            data-serial_number="{{ $chooseUsItem->serial_number }}">
                                                                 <i class="fas fa-edit"></i>
                                                             </a>
                                                             <form class="d-inline-block deleteform" action="{{ route('user.home_page.why_choose_us_item_delete') }}" method="post">
@@ -2941,7 +2956,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                             </button>
                                             <div class="dropdown-menu"></div>
                                         </div>
-                                        <input id="inputIcon2" type="hidden" name="icon" value="" class="in_icon">
+                                        <input id="inputIcon2" type="hidden"name="iconchooseusitem" value=""
+                                        class="in_iconchooseusitem">
                                         <p id="eerricon" class="mb-0 text-danger em"></p>
                                         <div class="mt-2">
                                             <small>{{ __('NB: click on the dropdown icon to select a social link icon.') }}</small>
@@ -3285,7 +3301,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                                         data-toggle="modal" data-target="#editModalPropertyAmenity"
                                                                         data-name="{{ $amenity->name }}"
                                                                         data-ididamenity="{{ $amenity->id }}"
-                                                                        data-icon="{{ $amenity->icon }}"
+                                                                        data-iconamenity="{{ $amenity->icon }}"
                                                                         data-status="{{ $amenity->status }}"
                                                                         data-serial_number="{{ $amenity->serial_number }}">
                                                                         <span class="btn-label">
@@ -4493,7 +4509,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                     data-selected="fa-car" data-toggle="dropdown"></button>
                                 <div class="dropdown-menu"></div>
                             </div>
-                            <input type="hidden" id="in_icon" name="icon">
+                            <input type="hidden" id="in_iconamenity" name="icon">
                             <p id="Eerr_icon" class="mt-1 mb-0 text-danger em"></p>
                             <div class="text-warning mt-2">
                                 <small>{{ __('Click on the dropdown icon to select a icon.') }}</small>
@@ -4975,4 +4991,6 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
         });
     })(jQuery);
 </script>
+
+
 @endsection

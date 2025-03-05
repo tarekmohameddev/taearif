@@ -1116,8 +1116,7 @@ class BasicController extends Controller
 
     public function updateWhyChooseUsSection(Request $request, $language)
     {
-        // dd($request->all(), $request->file('why_choose_us_section_image'));
-
+        // dd($request->all());
         $rules = [
             'why_choose_us_section_title' => 'nullable|max:255',
             'why_choose_us_section_subtitle' => 'nullable|max:255',
@@ -1190,9 +1189,10 @@ class BasicController extends Controller
     }
     public function whyChooseUsItemStore(Request $request)
     {
+        Log::info($request->all());
         $request->validate([
             'language_id' => 'required',
-            'icon' => 'required',
+            // 'icon' => 'required',
             'title' => 'required',
             'content' => 'required',
             'serial_number' => 'required'
@@ -1216,7 +1216,7 @@ class BasicController extends Controller
     public function whyChooseUsItemUpdate(Request $request)
     {
         $request->validate([
-            'icon' => 'required',
+            // 'icon' => 'required',
             'title' => 'required',
             'content' => 'required',
             'serial_number' => 'required'
