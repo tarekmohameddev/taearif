@@ -66,14 +66,18 @@ class ProjectStoreRequest extends FormRequest
 
         foreach ($languages as $language) {
 
-            $message[$language->code . '_title.required'] = 'The title field is required for ' . $language->name . ' language.';
-            $message[$language->code . '_address.required'] = 'The address field is required for ' . $language->name . ' language.';
-            $message[$language->code . '_description.required'] = 'The description field is required for ' . $language->name . ' language.';
-            $message[$language->code . '_description.min'] = 'The description  must be at least :min characters for ' . $language->name . ' language.';
-            $message[$language->code . '_label.max'] = 'Additional Features for ' . $language->name . ' language shall not exceed :max for this user.';
+            $message[$language->code . '_title.required'] = 'حقل اسم المشروع مطلوب';
+            $message[$language->code . '_address.required'] = 'حقل العنوان مطلوب';
+            $message[$language->code . '_description.required'] = 'حقل الوصف مطلوب';
+            $message[$language->code . '_description.min'] = 'الوصف يجب على الاقل ان يكون :min حرف  ';
+            $message[$language->code . '_label.max'] = 'المميزات الاضافية يجيب ان لا تتعدى :max ';
         }
         $message['min_price.required'] = 'The minimum price field is required.';
         $message['max_price.numeric'] = 'The maximum price must be numeric.';
+        $message['floor_plan_images.required'] = 'صورة المخطط مطلوبة';
+        $message['gallery_images.required'] = 'صور المشروع مطلوبين';
+        $message['featured_image.required'] = 'صورة الغلاف مطلوبة';
+        $message['floor_plan_images.required'] = 'صورة المخطط مطلوبة';
 
         return $message;
     }

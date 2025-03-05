@@ -4,7 +4,7 @@ $(document).ready(function () {
 
   $('.js-example-basic-single3').select2();
   $('.js-example-basic-multiple').select2({
-    placeholder: 'Selcet Amenities',
+    placeholder: 'قم بتحديد الميزات',
   });
 
   $(".country").on('change', function (e) {

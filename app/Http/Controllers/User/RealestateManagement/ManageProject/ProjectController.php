@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Log;
 
 class ProjectController extends Controller
 {
@@ -247,7 +248,8 @@ class ProjectController extends Controller
                 ProjectContent::storeProjectContent($userId,  $requstData);
 
 
-                $label_datas = $request[$language->code . '_label'];
+                $label_datas = $request[$language->code . '_label'] ?? [];
+              
                 foreach ($label_datas as $key => $data) {
                     if (!empty($request[$language->code . '_value'][$key])) {
 

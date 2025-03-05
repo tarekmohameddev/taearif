@@ -217,6 +217,12 @@
                     <p class="text-muted">أدخل تفاصيل العقار الجديد. سيظهر هذا في قائمة العقارات على موقعك.</p>
                 </div>
 
+
+                <div class="alert alert-danger pb-1 " style="display: none;" id="propertyErrors">
+                            <button type="button" class="close" data-dismiss="alert">×</button>
+                            <ul></ul>
+                 </div>
+
                 <!-- Property Form -->
                 <form id="property-form" class="needs-validation" novalidate enctype="multipart/form-data" action="{{ route('user.property_management.store_property') }}" method="POST">
                     @csrf
@@ -482,11 +488,11 @@
                                         <div class="row">
                                             <div class="col-md-6 mb-3">
                                                 <label for="latitude" class="form-label">خط العرض</label>
-                                                <input type="number" class="form-control" id="latitude" name="latitude" placeholder="خط العرض" step="0.000001">
+                                                <input type="number" class="form-control" id="latitude" name="latitude" placeholder="خط العرض" step="0.000001" required>
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label for="longitude" class="form-label">خط الطول</label>
-                                                <input type="number" class="form-control" id="longitude" name="longitude" placeholder="خط الطول" step="0.000001">
+                                                <input type="number" class="form-control" id="longitude" name="longitude" placeholder="خط الطول" step="0.000001" required>
                                             </div>
                                         </div>
                                     </div>
@@ -515,10 +521,21 @@
                                         <div id="amenities-container" class="d-flex flex-wrap mb-3">
                                             <!-- Amenities will be added here dynamically -->
                                         </div>
-                                        <div class="input-group">
+                                        <div class="input-group d-none">
                                             <input type="text" class="form-control" id="new-amenity" placeholder="أضف ميزة جديدة">
                                             <button class="btn btn-primary" type="button" id="add-amenity">إضافة</button>
                                         </div>
+                                        @foreach ($languages as $language)
+                                        <select name="{{ $language->code }}_amenities[]"
+                                                                    class="form-control js-example-basic-multiple"
+                                                                    multiple>
+                                                                    <option value="" se></option>
+                                                                    @foreach ($language->propertyAmenities as $amenity)
+                                                                        <option value="{{ $amenity->id }}">
+                                                                            {{ $amenity->name }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                        @endforeach
                                     </div>
 
                                     <div class="mb-4">
@@ -906,13 +923,25 @@
           // Handle validation errors
           if (xhr.status === 422) {
             const errors = xhr.responseJSON.errors
-            let errorMessage = '<ul class="text-start">'
+            let errorMessage = '<ul>'
             for (const key in errors) {
-              errorMessage += `<li>${errors[key][0]}</li>`
+              errorMessage += `<li> ${errors[key][0]} </li>`
             }
             errorMessage += "</ul>"
 
-            alert('خطئ في البيانات'+ errorMessage);
+
+
+            $('#propertyErrors ul').html(errorMessage);
+            $('#propertyErrors').show();
+
+            $('.request-loader').removeClass('show');
+
+            $('html, body').animate({
+            scrollTop: $('#propertyErrors').offset().top - 100
+            }, 1000);
+
+
+            alert('خطئ في البيانات');
           } else {
             // Show general error message
             alert('حدث خطأ أثناء حفظ العقار. يرجى المحاولة مرة أخرى.');
@@ -1609,7 +1638,7 @@
 @endsection
 
 @php
-// $languages = App\Models\Language::get();
+ $languages = App\Models\Language::get();
 $labels = '';
 $values = '';
 

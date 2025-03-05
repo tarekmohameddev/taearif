@@ -142,8 +142,7 @@
                   <input type="hidden" id="min_price" name="min_price" value="5">
                   <input type="hidden" id="max_price" name="max_price" value="50">
 
-                  <input type="hidden" id="ar_label" name="ar_label[]" value="{{ null }}">
-                  <input type="hidden" id="ar_value" name="ar_value[]" value="{{ null }}">
+
 
 
                   <div class="mb-4">
@@ -405,11 +404,33 @@ $(document).ready(() => {
   // Next button click handler
   $("#next-button").on("click", () => {
     if (currentTabIndex < tabs.length - 1) {
+      if ( !validateForm()) return false
       currentTabIndex++
       $(`#${tabs[currentTabIndex]}-tab`).tab("show")
       updateTabNavigation()
     }
   })
+
+  function validateForm() {
+                let valid = true;
+                const activeTab = $(`#${tabs[currentTabIndex]}`);
+                const inputs = activeTab.find('input[required], select[required], textarea[required]');
+
+                inputs.each(function() {
+                    if (!this.validity.valid) {
+                        $(this).addClass('is-invalid');
+                        valid = false;
+                    } else {
+                        $(this).removeClass('is-invalid');
+                    }
+                });
+
+                if (valid) {
+                    $('.nav-link').eq(currentTabIndex).addClass('text-success');
+                }
+
+                return valid;
+            }
 
   // Back button click handler
   $("#back-button").on("click", () => {
@@ -632,8 +653,6 @@ $(document).ready(() => {
     formData.append("status", $('input[name="status"]:checked').val())
     formData.append("min_price", $("#min_price").val())
     formData.append("max_price", $("#max_price").val())
-    formData.append("ar_value", $("#ar_value").val())
-    formData.append("ar_label", $("#ar_label").val())
     formData.append("featured", $("#featured").is(":checked") ? 1 : 0)
 
     // Add featured image (thumbnail)
@@ -676,7 +695,7 @@ $(document).ready(() => {
           // Show success message
           alert("تم حفظ المشروع بنجاح!")
           // Redirect to projects list
-          window.location.href = "/user/realestate-management/projects"
+          window.location.href = "/user/realestate/manage-project/projects"
         } else {
           alert("حدث خطأ أثناء حفظ المشروع. يرجى المحاولة مرة أخرى.")
         }
@@ -685,13 +704,24 @@ $(document).ready(() => {
         // Handle validation errors
         if (xhr.status === 422) {
           const errors = xhr.responseJSON.errors
-          let errorMessage = "يرجى تصحيح الأخطاء التالية:\n"
+          let errorMessage = "<ul>"
 
           for (const field in errors) {
-            errorMessage += `- ${errors[field][0]}\n`
+            errorMessage += `<li> ${errors[field][0]} </li>`
           }
 
-          alert(errorMessage)
+          errorMessage += "</ul>"
+
+          $('#propertyErrors ul').html(errorMessage);
+            $('#propertyErrors').show();
+
+            $('.request-loader').removeClass('show');
+
+            $('html, body').animate({
+            scrollTop: $('#propertyErrors').offset().top - 100
+            }, 1000);
+
+            alert("حدث خطأ أثناء حفظ المشروع. يرجى المحاولة مرة أخرى.")
         } else {
           alert("حدث خطأ أثناء حفظ المشروع. يرجى المحاولة مرة أخرى.")
         }

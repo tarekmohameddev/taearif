@@ -83,22 +83,24 @@ class PropertyStoreRequest extends FormRequest
         $languages = Language::where('user_id', $this->userId)->get();
 
         foreach ($languages as $language) {
-            $message[$language->code . '_category_id.required'] = 'The category field is required ' . $language->name . ' language.';
-            $message[$language->code . '_city_id.required'] = 'The city field is required ' . $language->name . ' language.';
-            $message[$language->code . '_country_id.required'] = 'The country field is required ' . $language->name . ' language.';
-            $message[$language->code . '_amenities.required'] = 'The category field is required ' . $language->name . ' language.';
-            $message[$language->code . '_title.required'] = 'The title field is required for ' . $language->name . ' language.';
-            $message[$language->code . '_address.required'] = 'The address field is required for ' . $language->name . ' language.';
-            $message[$language->code . '_description.required'] = 'The description field is required for ' . $language->name . ' language.';
-            $message[$language->code . '_description.min'] = 'The description  must be at least :min characters for ' . $language->name . ' language.';
-            $message[$language->code . '_label.max'] = 'Additional Features for ' . $language->name . ' language shall not exceed :max.';
+            $message[$language->code . '_category_id.required'] = 'حقل الفئات مطلوب ';
+            $message[$language->code . '_city_id.required'] = 'المدينة مطلوبة';
+            $message[$language->code . '_country_id.required'] = 'The country field is required ';
+            $message[$language->code . '_amenities.required'] = 'حقل الفئات مطلوب ';
+            $message[$language->code . '_latitude.required'] = 'حقل خط العرض مطلوب';
+            $message[$language->code . '_longitude.required'] = 'حقل خط الطول مطلوب';
+            $message[$language->code . '_title.required'] = 'العنوان مطلوب ';
+            $message[$language->code . '_address.required'] = 'العنوان مطلوب ';
+            $message[$language->code . '_description.required'] = 'حقل الوصف مطلوب';
+            $message[$language->code . '_description.min'] = 'حقل الوصف يجب ان يكون على الاقل  :min حرف  ';
+            $message[$language->code . '_label.max'] = 'عدد الحقول الاضافية يجب ان لا يتخطى ' . $language->name . ' :max.';
         }
 
         $message['beds.required_if'] = 'The beds field is required.';
         $message['bath.required_if'] = 'The bath field is required.';
-        $message['slider_images.required'] = 'The gallery image field is required.';
+        $message['slider_images.required'] = 'صور المعرض مطلوبة';
 
-        $message['featured_image.required'] = 'The thumbnail image field is required.';
+        $message['featured_image.required'] = 'صورة الغلاف مطلوبة';
         return $message;
     }
 }
