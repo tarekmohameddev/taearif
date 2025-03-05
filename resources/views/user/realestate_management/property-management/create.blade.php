@@ -902,6 +902,7 @@
           }
         },
         error: (xhr, status, error) => {
+            submitBtn.prop("disabled", false)
           // Handle validation errors
           if (xhr.status === 422) {
             const errors = xhr.responseJSON.errors
@@ -911,20 +912,10 @@
             }
             errorMessage += "</ul>"
 
-            Swal.fire({
-              title: "خطأ في البيانات!",
-              html: errorMessage,
-              icon: "error",
-              confirmButtonText: "حسناً",
-            })
+            alert('خطئ في البيانات'+ errorMessage);
           } else {
             // Show general error message
-            Swal.fire({
-              title: "خطأ!",
-              text: "حدث خطأ أثناء حفظ العقار. يرجى المحاولة مرة أخرى.",
-              icon: "error",
-              confirmButtonText: "حسناً",
-            })
+            alert('حدث خطأ أثناء حفظ العقار. يرجى المحاولة مرة أخرى.');
           }
           submitBtn.html(originalText)
           submitBtn.prop("disabled", false)
@@ -1396,10 +1387,7 @@
                                     <input type="text" class="form-control" id="longitude" name="longitude" placeholder="Longitude" readonly>
                                 </div>
                             </div>
-                            <!-- Map Container -->
-                            <div class="col-lg-12 mb-3">
-                                <div id="map"></div>
-                            </div>
+
 
                         </div>
 
@@ -1672,8 +1660,7 @@ $values .= "<div class='$direction'><input type='text' name='$value_name' class=
     function initMap() {
         // Default map center. Adjust to your desired default location.
         const defaultLocation = {
-            lat: 40.7128,
-            lng: -74.0060
+            lat: 24.7136, lng: 46.6753
         }; // New York
 
         // Create the map

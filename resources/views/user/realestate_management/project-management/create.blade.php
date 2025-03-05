@@ -1,5 +1,11 @@
 @extends('user.layout')
-
+<style>
+    #map {
+        width: 100%;
+        height: 250px;
+        max-width: 600px;
+    }
+</style>
 @section('content')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <style>
@@ -159,7 +165,7 @@
                   </div>
 
                   <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="featured" name="is_featured">
+                    <input style="left: auto !important;" class="form-check-input" type="checkbox" id="featured" name="is_featured">
                     <label class="form-check-label fw-medium fs-5" for="featured">
                       عرض في الصفحة الرئيسية
                     </label>
@@ -178,9 +184,9 @@
                 <div class="card-body">
                   <div class="mb-4">
                     <label class="form-label fw-medium fs-5">معرض الصور</label>
-                    <div class="row" id="photo-gallery">
+                    <div id="photo-gallery">
                       <div id="photo-previews" class="row"></div>
-                      <div class="col-md-4 mb-3">
+                      <div class="col-12">
                         <label for="photo-upload" class="upload-box d-block">
                           <i class="fa-solid fa-camera fs-4 text-secondary mb-2"></i>
                           <p class="mb-1 text-primary">إضافة صور</p>
@@ -238,7 +244,7 @@
                   <div class="mb-4">
                     <label class="form-label fw-medium fs-5">موقع المشروع على الخريطة</label>
                     <div class="border rounded p-5 d-flex justify-content-center align-items-center bg-light mb-3">
-                      <p class="text-secondary">هنا سيتم إدراج خريطة تفاعلية لتحديد موقع المشروع</p>
+                       <div id="map"></div>
                     </div>
                     <div class="row">
                       <div class="col-md-6 mb-3">
@@ -306,7 +312,7 @@
                     </div>
                 </div>
 
-                <div class="card-footer">
+                <div class="card-footer s-none">
                     <div class="row">
                         <div class="col-12 text-center">
                             <button type="submit" id="projectSubmit" class="btn btn-success">
@@ -318,6 +324,9 @@
             </div>
         </div>
     </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 @endsection
 
 @php
@@ -342,6 +351,7 @@
             "' class='form-control' placeholder='$labels_placeholder'></div>";
         $values .= "<div class='$direction'><input type='text' name='$value_name' class='form-control' placeholder='$values_placeholder'></div>";
     }
+
 @endphp
 
 @section('scripts')
@@ -357,11 +367,10 @@
         var floorPlanRemoveUrl = "{{ route('user.project.floor_plan_imagermv') }}"; --}}
 
     <script type="text/javascript" src="{{ asset('assets/tenant/js/admin-partial.js') }}"></script>
-    <script type="text/javascript" src="{{ asset('assets/tenant/js/project-dropzone.js') }}"></script>
-    {{-- <script type="text/javascript" src="{{ asset('assets/tenant/js/property.js') }}"></script> --}}
+   
+    <script type="text/javascript" src="{{ asset('assets/tenant/js/property.js') }}"></script>
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  
   <script>
 $(document).ready(() => {
   // Form data object that will match the backend structure
@@ -693,4 +702,43 @@ $(document).ready(() => {
 
 
   </script>
+
+
+<script>
+    function initMap() {
+        // Default map center. Adjust to your desired default location.
+        const defaultLocation = {
+            lat: 24.7136, lng: 46.6753
+        }; // New York
+
+        // Create the map
+        const map = new google.maps.Map(document.getElementById("map"), {
+            center: defaultLocation,
+            zoom: 8,
+        });
+
+        // Create a marker
+        const marker = new google.maps.Marker({
+            position: defaultLocation,
+            map: map,
+            draggable: true, // allow dragging
+        });
+
+        // Update lat/long on marker drag
+        google.maps.event.addListener(marker, 'dragend', function(event) {
+            document.getElementById('latitude').value = event.latLng.lat().toFixed(6);
+            document.getElementById('longitude').value = event.latLng.lng().toFixed(6);
+        });
+
+        // Update marker & lat/long on map click
+        google.maps.event.addListener(map, 'click', function(event) {
+            marker.setPosition(event.latLng);
+            document.getElementById('latitude').value = event.latLng.lat().toFixed(6);
+            document.getElementById('longitude').value = event.latLng.lng().toFixed(6);
+        });
+    }
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCshOz-S6yMXGEPwrhQf2T1XtS8oqZqR-c&callback=initMap" async defer></script>
+
 @endsection
