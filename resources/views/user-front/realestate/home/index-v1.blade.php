@@ -523,9 +523,13 @@
                                         <div class="slider-item">
                                             <div class="client-img">
                                                 <div class="lazy-container ratio ratio-1-1">
+
                                                     @if (is_null($testimonial->image))
-                                                        <img data-src="{{ asset('assets/img/profile.jpg') }}"
-                                                            class="lazyload">
+                                                        @if ($testimonial->gender === 'female')
+                                                            <img data-src="{{ asset('assets/img/female-profile.jpg') }}" class="lazyload">
+                                                        @else
+                                                            <img data-src="{{ asset('assets/img/profile.jpg') }}" class="lazyload">
+                                                        @endif
                                                     @else
                                                         <img class="lazyload"
                                                             data-src="{{ asset('assets/front/img/user/testimonials/' . $testimonial->image) }}">

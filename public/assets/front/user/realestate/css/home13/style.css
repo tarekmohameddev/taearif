@@ -1,0 +1,24 @@
+
+
+.skills-area {
+    background-color: #f9f9f9;
+    padding: 70px 0;
+}
+
+.skill .progress {
+    position: relative;
+}
+
+.skill .progress-bar {
+    transition: width 1s ease-in-out;
+}
+
+.skill .progress-value {
+    position: absolute;
+    right: 10px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: white;
+}
+
+

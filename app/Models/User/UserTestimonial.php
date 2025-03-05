@@ -14,6 +14,7 @@ class UserTestimonial extends Model
         'content',
         'serial_number',
         'user_id',
+        'gender',
         'lang_id'
     ];
     public function language() {
