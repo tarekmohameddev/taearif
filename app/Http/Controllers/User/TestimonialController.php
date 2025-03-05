@@ -53,7 +53,7 @@ class TestimonialController extends Controller
         ])
             ->orderBy('id', 'DESC')
             ->get();
-        
+
         return view('user.testimonial.index', $data);
     }
 
@@ -72,7 +72,6 @@ class TestimonialController extends Controller
             'user_language_id.required' => 'The Language field is required',
             'content.required' => 'The content field is required',
             'serial_number.required' => 'The serial number field is required',
-            'image.required' => 'The image field is required',
         ];
         $userBs = BasicSetting::where('user_id', Auth::id())->select('theme')->first();
         $rules = [
@@ -80,11 +79,12 @@ class TestimonialController extends Controller
             'user_language_id' => 'required',
             'content' => 'required',
             'serial_number' => 'required|integer',
+            'gender' => 'nullable',
 
         ];
         if ($userBs->theme != 'home_nine') {
             $rules += [
-                'image' => 'required|mimes:jpg,jpeg,png'
+                'image' => 'mimes:jpg,jpeg,png'
             ];
         } else {
             $rules += [
@@ -98,6 +98,7 @@ class TestimonialController extends Controller
         }
         $input = $request->all();
         $input['user_id'] = Auth::id();
+        $input['gender'] = $request->gender?? null;
 
         if ($request->hasFile('image')) {
             $filename = time() . '.' . $img->getClientOriginalExtension();
@@ -154,20 +155,22 @@ class TestimonialController extends Controller
             'name.required' => 'The title field is required',
             'content.required' => 'The content field is required',
             'serial_number.required' => 'The serial number field is required',
-            'image.required' => 'The image field is required',
+
         ];
 
         $rules = [
             'name' => 'required|max:255',
             'content' => 'required',
             'serial_number' => 'required|integer',
+            'serial_number' => 'nullable',
+            'gender' => 'nullable',
 
         ];
         $userBs = BasicSetting::where('user_id', Auth::id())->select('theme')->first();
         $service = UserTestimonial::where('user_id', Auth::user()->id)->where('id', $request->id)->firstOrFail();
         if ($userBs->theme != 'home_nine' && empty($service->image)) {
             $rules += [
-                'image' => 'required|mimes:jpg,jpeg,png'
+                'image' => 'nullable|mimes:jpg,jpeg,png'
             ];
         }
 
@@ -179,6 +182,7 @@ class TestimonialController extends Controller
         }
         $input = $request->all();
         $input['user_id'] = Auth::id();
+        $input['gender'] = $request->gender ?? $service->gender;
 
         if ($request->hasFile('image')) {
             $filename = time() . '.' . $img->getClientOriginalExtension();
