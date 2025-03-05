@@ -138,18 +138,24 @@
                                     </span>
                                 </div>
                                 <ul class="product-info p-0 list-unstyled d-flex align-items-center mt-10 mb-30">
+
+                                @if ($propertyContent->area)
                                     <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
                                         title="{{ __('Area') }}">
                                         <i class="fal fa-vector-square"></i>
                                         <span>{{ $propertyContent->area }} {{ $keywords['Sqft'] ?? __('Sqft') }}</span>
                                     </li>
-                                    @if ($propertyContent->type == 'residential')
+                                @endif 
+                                    @if ($propertyContent->beds)
                                         <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
                                             title="{{ $keywords['Beds'] ?? __('Beds') }}">
                                             <i class="fal fa-bed"></i>
                                             <span>{{ $propertyContent->beds }}
                                                 {{ $keywords['Beds'] ?? __('Beds') }}</span>
                                         </li>
+
+                                    @endif  
+                                    @if ($propertyContent->bath) 
                                         <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
                                             title="{{ $keywords['Baths'] ?? __('Baths') }}">
                                             <i class="fal fa-bath"></i>
@@ -160,11 +166,13 @@
                                 </ul>
                             </div>
                             <div class="col-md-4">
+                                
+                            @if ($propertyContent->price)
                                 <div class="product-price mb-10">
                                     <span class="new-price">{{ ($keywords['Price'] ?? __('Price')) . ':' }}
                                         {{ $propertyContent->price ? $propertyContent->price : $keywords['Negotiable'] ?? __('Negotiable') }}</span>
                                 </div>
-
+                            @endif
 
                                 <a class="d-none" {{-- href="{{ route('frontend.agent.details', [getParam(), 'agentusername' => $user->username, 'admin' => 'true']) }}" --}}>
 

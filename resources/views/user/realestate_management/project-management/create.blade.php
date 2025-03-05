@@ -9,6 +9,21 @@
 @section('content')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <style>
+
+        
+
+
+        
+        .form-label {
+            font-weight: 500;
+        }
+        
+        .required::after {
+            content: " *";
+            color: #dc3545;
+        }
+        
+        
     .image-preview {
       position: relative;
       height: 150px;
@@ -72,14 +87,16 @@
   </style>
 
 
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title d-inline-block">{{ __('Add Project') }}</div>
+
+   
+        
+<div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="text-center mb-4">
+                    <h1 class="fs-2 fw-bold mb-2">إضافة مشروع جديد</h1>
+                    <p class="text-muted">إضف تفاصيل مشروعك.</p>
                 </div>
 
-                <div class="card-body">
                     <div class="row">
                         <div class="col-lg-10 offset-lg-1">
                             <div class="alert alert-danger pb-1  " id="propertyErrors" style="display: none">
@@ -309,20 +326,10 @@
         </form>
                         </div>
                     </div>
-                </div>
 
-                <div class="card-footer s-none">
-                    <div class="row">
-                        <div class="col-12 text-center">
-                            <button type="submit" id="projectSubmit" class="btn btn-success">
-                                {{ __('Save') }}
-                            </button>
-                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                    </div>
+   
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -642,9 +649,18 @@ $(document).ready(() => {
   // Form submission
   $("#project-form").on("submit", (e) => {
     e.preventDefault()
+    if (validateForm()) {
 
+      const submitBtn = $("#save-button")
+      const originalText = submitBtn.html()
+      submitBtn.html(
+        '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> جاري الحفظ...',
+      )
+      submitBtn.prop("disabled", true)
     // Create FormData object to send to the server
     const formData = new FormData()
+
+
 
     // Add basic info
     formData.append("ar_title", $("#title").val())
@@ -699,8 +715,12 @@ $(document).ready(() => {
         } else {
           alert("حدث خطأ أثناء حفظ المشروع. يرجى المحاولة مرة أخرى.")
         }
+        submitBtn.html(originalText);
+        submitBtn.prop("disabled", false);
       },
       error: (xhr) => {
+        submitBtn.html(originalText);
+        submitBtn.prop("disabled", false);
         // Handle validation errors
         if (xhr.status === 422) {
           const errors = xhr.responseJSON.errors
@@ -727,6 +747,7 @@ $(document).ready(() => {
         }
       },
     })
+  }
   })
 })
 

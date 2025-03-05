@@ -308,10 +308,11 @@
                                     </div>
 
                                     <div class="mb-4">
-                                        <label for="price" class="form-label required">السعر</label>
+                                        <label for="price" class="form-label">السعر</label>
                                         <div class="input-group">
-                                            <span class="input-group-text"><i class="fa-solid fa-dollar-sign"></i></span>
-                                            <input type="number" class="form-control" id="price" name="price" placeholder="أدخل السعر" required>
+                                            <span class="input-group-text"><img src="https://f.nooncdn.com/s/app/com/noon/icons/sar_symbol-v1.svg" alt="SAR Symbol" width="16" height="16">
+                                            </span>
+                                            <input type="number" class="form-control" id="price" name="price" placeholder="أدخل السعر">
                                             <span class="input-group-text">ريال سعودي</span>
                                             <div class="invalid-feedback">
                                                 يرجى إدخال سعر العقار
@@ -381,7 +382,15 @@
                                             يرجى اختيار المدينة
                                         </div>
                                     </div>
+                                    <div class="mb-4 d-none">
+                                    <div class="form-check form-switch">
+                                    <input style="left: auto !important;" class="form-check-input" type="checkbox" id="featured" name="is_featured">
+                                    <label class="form-check-label fw-medium fs-5" for="featured">
+                                    عرض في الصفحة الرئيسية
+                                    </label>
                                 </div>
+                                </div>
+                          </div>
                             </div>
                         </div>
 
@@ -885,8 +894,8 @@
       // Add property details
       formData.append("purpose", $('input[name="purpose"]:checked').val())
       formData.append("price", $("#price").val())
-      formData.append("rooms", $("#rooms").val())
-      formData.append("bathrooms", $("#baths").val())
+      formData.append("beds", $("#rooms").val())
+      formData.append("bath", $("#baths").val())
       formData.append("area", $("#area").val())
       formData.append("latitude", $("#latitude").val())
       formData.append("longitude", $("#longitude").val())
