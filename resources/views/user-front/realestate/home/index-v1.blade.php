@@ -527,8 +527,8 @@
                                                         <img data-src="{{ asset('assets/img/profile.jpg') }}"
                                                             class="lazyload">
                                                     @else
-                                                    <img data-src="{{ asset('assets/img/profile.jpg') }}"
-                                                            class="lazyload">
+                                                        <img class="lazyload"
+                                                            data-src="{{ asset('assets/front/img/user/testimonials/' . $testimonial->image) }}">
                                                     @endif
 
 
