@@ -236,33 +236,33 @@
 
 
     @if ($home_sections->counter_info_section == 1)
-    @if(count($counterInformations) > 0)
-        <div class="counter-area pt-100 pb-70">
-            <div class="container">
-                <div class="row gx-xl-5" data-aos="fade-up">
-                    @forelse ($counterInformations as $counter)
-                        <div class="col-sm-6 col-lg-3">
-                            <div class="card mb-30">
-                                <div class="d-flex align-items-center justify-content-center mb-10">
-                                    <div class="card-icon me-2 color-secondary"><i class="{{ $counter->icon }}"></i>
+        @if(count($counterInformations) > 0)
+            <div class="counter-area pt-100 pb-70">
+                <div class="container">
+                    <div class="row gx-xl-5" data-aos="fade-up">
+                        @forelse ($counterInformations as $counter)
+                            <div class="col-sm-6 col-lg-3">
+                                <div class="card mb-30">
+                                    <div class="d-flex align-items-center justify-content-center mb-10">
+                                        <div class="card-icon me-2 color-secondary"><i class="{{ $counter->icon }}"></i>
+                                        </div>
+                                        <h2 class="m-0 color-secondary"><span class="counter">{{ $counter->count }}</span>+
+                                        </h2>
                                     </div>
-                                    <h2 class="m-0 color-secondary"><span class="counter">{{ $counter->count }}</span>+
-                                    </h2>
+                                    <p class="card-text text-center">{{ $counter->title }}</p>
                                 </div>
-                                <p class="card-text text-center">{{ $counter->title }}</p>
                             </div>
-                        </div>
-                    @empty
-                        <!-- <div class="col-12">
-                            <h3 class="text-center mt-20">
-                                {{ $keywords['No Counter Information Found'] ?? __('No Counter Information Found') }} </h3>
-                        </div> -->
-                    @endforelse
+                        @empty
+                            <!-- <div class="col-12">
+                                <h3 class="text-center mt-20">
+                                    {{ $keywords['No Counter Information Found'] ?? __('No Counter Information Found') }} </h3>
+                            </div> -->
+                        @endforelse
+                    </div>
                 </div>
-            </div>
 
-        </div>
-    @endif
+            </div>
+        @endif
     @endif
 
 
@@ -364,288 +364,291 @@
     <!--// skills -->
 
     @if ($home_sections->featured_properties_section == 1)
-    @if(count($featured_properties) > 0)
-        <section class="product-area featured-product pb-70">
-            <div class="container">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="section-title title-inline mb-40" data-aos="fade-up">
-                            <h2 class="title">{{ $home_text?->featured_property_title }}</h2>
-                        </div>
-                    </div>
-                    <div class="col-12" data-aos="fade-up">
-                        <div class="swiper product-slider">
-                            <div class="swiper-wrapper">
-                                @forelse ($featured_properties as $property)
-                                    <div class="swiper-slide">
-                                        @include('user-front.realestate.partials.property')
-                                    </div>
-                                @empty
-                                    <!-- <div class=" p-3 text-center mb-30 w-100">
-                                        <h3 class="mb-0">
-                                            {{ $keywords['No Featured Property Found'] ?? __('No Featured Property Found') }}
-                                        </h3>
-                                    </div> -->
-                                @endforelse
+        @if(count($featured_properties) > 0)
+            <section class="product-area featured-product pb-70">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="section-title title-inline mb-40" data-aos="fade-up">
+                                <h2 class="title">{{ $home_text?->featured_property_title }}</h2>
                             </div>
-                            <!-- Slider pagination -->
-                            <div class="swiper-pagination position-static mb-30" id="product-slider-pagination"></div>
+                        </div>
+                        <div class="col-12" data-aos="fade-up">
+                            <div class="swiper product-slider">
+                                <div class="swiper-wrapper">
+                                    @forelse ($featured_properties as $property)
+                                        <div class="swiper-slide">
+                                            @include('user-front.realestate.partials.property')
+                                        </div>
+                                    @empty
+                                        <!-- <div class=" p-3 text-center mb-30 w-100">
+                                            <h3 class="mb-0">
+                                                {{ $keywords['No Featured Property Found'] ?? __('No Featured Property Found') }}
+                                            </h3>
+                                        </div> -->
+                                    @endforelse
+                                </div>
+                                <!-- Slider pagination -->
+                                <div class="swiper-pagination position-static mb-30" id="product-slider-pagination"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
-    @endif
+            </section>
+        @endif
     @endif
 
 
     @if ($home_sections->why_choose_us_section == 1)
-    @if (!empty($home_text?->why_choose_us_section_image))
-        <section class="choose-area pb-70">
-            <div class="container">
-                <div class="row gx-xl-5">
-                    <div class="col-lg-7">
-                        <div class="img-content mb-30 image-right" data-aos="fade-up">
-                            <div class="img-1">
-                                @if (!empty($home_text?->why_choose_us_section_image))
-                                    <img class="lazyload blur-up"
-                                        data-src="https://codecanyon8.kreativdev.com/estaty/assets/img/why-choose-us/65757ae71b9f0.jpg "
-                                        alt="Image">
-                                @endif
-                                @if (!empty($home_text->why_choose_us_section_video_url))
-                                    <a href="{{ $home_text->why_choose_us_section_video_url }}"
-                                        class="video-btn youtube-popup p-absolute">
-                                        <i class="fas fa-play"></i>
-                                    </a>
-                                @endif
-                            </div>
-                            <div class="img-2">
-                                @if (!empty($home_text->why_choose_us_section_image_two))
-                                    <img class="lazyload blur-up"
-                                        data-src="https://codecanyon8.kreativdev.com/estaty/assets/img/why-choose-us/65757ae71c078.jpg"
-                                        alt="Image">
-                                @endif
+        @if (!empty($home_text?->why_choose_us_section_image))
+            <section class="choose-area pb-70">
+                <div class="container">
+                    <div class="row gx-xl-5">
+                        <div class="col-lg-7">
+                            <div class="img-content mb-30 image-right" data-aos="fade-up">
+                                <div class="img-1">
+                                    @if (!empty($home_text?->why_choose_us_section_image))
+                                        <img class="lazyload blur-up"
+                                            data-src="https://codecanyon8.kreativdev.com/estaty/assets/img/why-choose-us/65757ae71b9f0.jpg "
+                                            alt="Image">
+                                    @endif
+                                    @if (!empty($home_text->why_choose_us_section_video_url))
+                                        <a href="{{ $home_text->why_choose_us_section_video_url }}"
+                                            class="video-btn youtube-popup p-absolute">
+                                            <i class="fas fa-play"></i>
+                                        </a>
+                                    @endif
+                                </div>
+                                <div class="img-2">
+                                    @if (!empty($home_text->why_choose_us_section_image_two))
+                                        <img class="lazyload blur-up"
+                                            data-src="https://codecanyon8.kreativdev.com/estaty/assets/img/why-choose-us/65757ae71c078.jpg"
+                                            alt="Image">
+                                    @endif
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-lg-5 order-lg-first">
-                        <div class="content" data-aos="fade-up">
-                            <div class="content-title">
-                                <span class="subtitle"><span
-                                        class="line"></span>{{ $home_text?->why_choose_us_section_title }}</span>
-                                <h2>{{ $home_text?->why_choose_us_section_subtitle }}</h2>
+                        <div class="col-lg-5 order-lg-first">
+                            <div class="content" data-aos="fade-up">
+                                <div class="content-title">
+                                    <span class="subtitle"><span
+                                            class="line"></span>{{ $home_text?->why_choose_us_section_title }}</span>
+                                    <h2>{{ $home_text?->why_choose_us_section_subtitle }}</h2>
+                                </div>
+                                <div class="text">{!! $home_text->why_choose_us_section_text !!}</div>
                             </div>
-                            <div class="text">{!! $home_text->why_choose_us_section_text !!}</div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
-    @endif
+            </section>
+        @endif
     @endif
 
     @if ($home_sections->project_section == 1)
-    @if(count($projects) > 0)
-        <section class="projects-area pt-100 pb-70">
-            <div class="container">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="section-title title-center mb-40" data-aos="fade-up">
-                            <span class="subtitle"></span>
-                            <h2 class="title mb-20">مشاريعنا</h2>
-                        </div>
-                    </div>
-                    <div class="col-12" data-aos="fade-up">
-                        <div class="row">
-                            @forelse ($projects as $project)
-                                <div class="col-lg-4 col-md-6 mb-30">
-                                    <a
-                                        href="{{ route('front.user.project.details', [getParam(), 'slug' => $project->slug]) }}">
-                                        <div class="card product-default">
-                                            <div class="card-img">
-                                                <img src="{{ asset('assets/img/project/featured/' . $project->featured_image) }}"
-                                                    alt="Product">
-                                                <span class="label">
-                                                    {{ $project->complete_status == 1 ?  __('start selling') :  __('Under Construction') }}
-                                                </span>
-                                            </div>
-                                            <div class="card-text product-title text-center p-3">
-                                                <h3 class="card-title product-title color-white mb-1">
-                                                    {{ @$project->title }}
-
-                                                </h3>
-                                                <span class="location icon-start"><i
-                                                        class="fal fa-map-marker-alt"></i>{{ $project->address }}</span>
-
-
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-                            @empty
-                                <!-- <div class="p-3 text-center mb-30 w-100">
-                                    <h3 class="mb-0"> {{ $keywords['No Projects Found'] ?? __('No Projects Found') }}
-                                    </h3>
-                                </div> -->
-                            @endforelse
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    @endif
-    @endif
-
-    @if ($home_sections->testimonials_section == 1)
-    @if(count($testimonials) > 0)
-        <section class="testimonial-area pt-100 pb-70">
-            <div class="overlay-bg d-none d-lg-block">
-                <img class="lazyload blur-up"
-                    data-src="https://codecanyon8.kreativdev.com/estaty/assets/front/images/gallery-bg.png">
-            </div>
-            <div class="container">
-                <div class="row align-items-center">
-                    <div class="col-lg-4">
-                        <div class="content mb-30" data-aos="fade-up">
-                            <div class="content-title">
-                                <span class="subtitle"><span
-                                        class="line"></span>{{ $home_text?->testimonial_title }}</span>
-                                <h2 class="title">
-                                    {{ $home_text?->testimonial_subtitle }}</h2>
-                            </div>
-                            <p class="text mb-30">
-                                {{ $home_text?->testimonial_text }}</p>
-
-                            <div class="slider-navigation scroll-animate">
-                                <button type="button" title="Slide prev" class="slider-btn slider-btn-prev">
-                                    <i class="fal fa-angle-left"></i>
-                                </button>
-                                <button type="button" title="Slide next" class="slider-btn slider-btn-next">
-                                    <i class="fal fa-angle-right"></i>
-                                </button>
+        @if(count($projects) > 0)
+            <section class="projects-area pt-100 pb-70">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="section-title title-center mb-40" data-aos="fade-up">
+                                <span class="subtitle"></span>
+                                <h2 class="title mb-20">مشاريعنا</h2>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-lg-8" data-aos="fade-up">
-                        <div class="swiper" id="testimonial-slider-1">
-                            <div class="swiper-wrapper">
-                                @forelse ($testimonials as $testimonial)
-                                    <div class="swiper-slide pb-30" data-aos="fade-up">
-                                        <div class="slider-item">
-                                            <div class="client-img">
-                                                <div class="lazy-container ratio ratio-1-1">
+                        <div class="col-12" data-aos="fade-up">
+                            <div class="row">
+                                @forelse ($projects as $project)
+                                    <div class="col-lg-4 col-md-6 mb-30">
+                                        <a
+                                            href="{{ route('front.user.project.details', [getParam(), 'slug' => $project->slug]) }}">
+                                            <div class="card product-default">
+                                                <div class="card-img">
+                                                    <img src="{{ asset('assets/img/project/featured/' . $project->featured_image) }}"
+                                                        alt="Product">
+                                                    <span class="label">
+                                                        {{ $project->complete_status == 1 ?  __('start selling') :  __('Under Construction') }}
+                                                    </span>
+                                                </div>
+                                                <div class="card-text product-title text-center p-3">
+                                                    <h3 class="card-title product-title color-white mb-1">
+                                                        {{ @$project->title }}
 
-                                                    @if (is_null($testimonial->image))
-                                                        @if ($testimonial->gender === 'female')
-                                                            <img data-src="{{ asset('assets/img/female-profile.jpg') }}" class="lazyload">
-                                                        @else
-                                                            <img data-src="{{ asset('assets/img/profile.jpg') }}" class="lazyload">
-                                                        @endif
-                                                    @else
-                                                        <img class="lazyload"
-                                                            data-src="{{ asset('assets/front/img/user/testimonials/' . $testimonial->image) }}">
-                                                    @endif
+                                                    </h3>
+                                                    <span class="location icon-start"><i
+                                                            class="fal fa-map-marker-alt"></i>{{ $project->address }}</span>
 
 
                                                 </div>
                                             </div>
-                                            <div class="client-content mt-30">
-                                                <div class="quote">
-                                                    <p class="text">{{ $testimonial->content }}</p>
-                                                </div>
-                                                <div
-                                                    class="client-info d-flex flex-wrap gap-10 align-items-center justify-content-between">
-                                                    <div class="content">
-                                                        <h6 class="name">{{ $testimonial->name }}</h6>
-                                                        <span class="designation">{{ $testimonial->occupation }}</span>
-                                                    </div>
-                                                    {{-- <div class="ratings">
-
-                                                        <div class="rate">
-                                                            <div class="rating-icon"
-                                                                style="width: {{ $testimonial->rating * 20 }}%"></div>
-                                                        </div>
-                                                        <span class="ratings-total">({{ $testimonial->rating }}) </span>
-                                                    </div> --}}
-                                                </div>
-                                            </div>
-                                        </div>
+                                        </a>
                                     </div>
                                 @empty
-                                    <!-- <div class="bg-light p-3 text-center mb-30 w-100">
-                                        <h3 class="mb-0">
-                                            {{ $keywords['No Testimonials Found'] ?? __('No Testimonials Found') }}</h3>
+                                    <!-- <div class="p-3 text-center mb-30 w-100">
+                                        <h3 class="mb-0"> {{ $keywords['No Projects Found'] ?? __('No Projects Found') }}
+                                        </h3>
                                     </div> -->
                                 @endforelse
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        @endif
     @endif
 
-    @if ($home_sections->brand_section == 1)
-        <div class="sponsor ptb-100" data-aos="fade-up">
-            <div class="container">
-            <div class="row">
-                <div class="col-12">
-                    <div class="swiper sponsor-slider">
-                        <div class="swiper-wrapper">
-                        @forelse ($brands as $brand)
-                            <div class="swiper-slide">
-                                <div class="item-single d-flex justify-content-center">
-                                    <div class="sponsor-img">
-                                    <a href="{{ $brand->brand_url }}" target="_blank">
-                                        <img src="{{ asset('assets/front/img/user/brands/' . $brand->brand_img) }} ">
-                                    </a>
+    @if ($home_sections->testimonials_section == 1)
+
+        @if(count($testimonials) > 0)
+            <section class="testimonial-area pt-100 pb-70">
+                <div class="overlay-bg d-none d-lg-block">
+                    <img class="lazyload blur-up"
+                        data-src="https://codecanyon8.kreativdev.com/estaty/assets/front/images/gallery-bg.png">
+                </div>
+                <div class="container">
+                    <div class="row align-items-center">
+                        <div class="col-lg-4">
+                            <div class="content mb-30" data-aos="fade-up">
+                                <div class="content-title">
+                                    <span class="subtitle"><span
+                                            class="line"></span>{{ $home_text?->testimonial_title }}</span>
+                                    <h2 class="title">
+                                        {{ $home_text?->testimonial_subtitle }}</h2>
+                                </div>
+                                <p class="text mb-30">
+                                    {{ $home_text?->testimonial_text }}</p>
+
+                                <div class="slider-navigation scroll-animate">
+                                    <button type="button" title="Slide prev" class="slider-btn slider-btn-prev">
+                                        <i class="fal fa-angle-left"></i>
+                                    </button>
+                                    <button type="button" title="Slide next" class="slider-btn slider-btn-next">
+                                        <i class="fal fa-angle-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-8" data-aos="fade-up">
+                            <div class="swiper" id="testimonial-slider-1">
+                                <div class="swiper-wrapper">
+                                    @forelse ($testimonials as $testimonial)
+                                        <div class="swiper-slide pb-30" data-aos="fade-up">
+                                            <div class="slider-item">
+                                                <div class="client-img">
+                                                    <div class="lazy-container ratio ratio-1-1">
+
+                                                        @if (is_null($testimonial->image))
+                                                            @if ($testimonial->gender === 'female')
+                                                                <img data-src="{{ asset('assets/img/female-profile.jpg') }}" class="lazyload">
+                                                            @else
+                                                                <img data-src="{{ asset('assets/img/profile.jpg') }}" class="lazyload">
+                                                            @endif
+                                                        @else
+                                                            <img class="lazyload"
+                                                                data-src="{{ asset('assets/front/img/user/testimonials/' . $testimonial->image) }}">
+                                                        @endif
+
+
+                                                    </div>
+                                                </div>
+                                                <div class="client-content mt-30">
+                                                    <div class="quote">
+                                                        <p class="text">{{ $testimonial->content }}</p>
+                                                    </div>
+                                                    <div
+                                                        class="client-info d-flex flex-wrap gap-10 align-items-center justify-content-between">
+                                                        <div class="content">
+                                                            <h6 class="name">{{ $testimonial->name }}</h6>
+                                                            <span class="designation">{{ $testimonial->occupation }}</span>
+                                                        </div>
+                                                        {{-- <div class="ratings">
+
+                                                            <div class="rate">
+                                                                <div class="rating-icon"
+                                                                    style="width: {{ $testimonial->rating * 20 }}%"></div>
+                                                            </div>
+                                                            <span class="ratings-total">({{ $testimonial->rating }}) </span>
+                                                        </div> --}}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <!-- <div class="bg-light p-3 text-center mb-30 w-100">
+                                            <h3 class="mb-0">
+                                                {{ $keywords['No Testimonials Found'] ?? __('No Testimonials Found') }}</h3>
+                                        </div> -->
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        @if ($home_sections->brand_section == 1)
+            <div class="sponsor ptb-100" data-aos="fade-up">
+                <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="swiper sponsor-slider">
+                            <div class="swiper-wrapper">
+                            @forelse ($brands as $brand)
+                                <div class="swiper-slide">
+                                    <div class="item-single d-flex justify-content-center">
+                                        <div class="sponsor-img">
+                                        <a href="{{ $brand->brand_url }}" target="_blank">
+                                            <img src="{{ asset('assets/front/img/user/brands/' . $brand->brand_img) }} ">
+                                        </a>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        @empty
-                            <div class="p-3 text-center mb-30 w-100">
-                                <h3 class="mb-0">{{ $keywords['No Brands Found'] ?? __('No Brands Found') }}
-                                </h3>
-                            </div>
-                        @endforelse
-                        </div>
-                        <!-- Slider pagination -->
-                        <div class="swiper-pagination position-static mt-30" id="sponsor-slider-pagination"></div>
-                    </div>
-                </div>
-            </div>
-            </div>
-        </div>
-    @endif
-
-    @if ($home_sections->newsletter_section == 1)
-        <section class="newsletter-area pb-100" data-aos="fade-up">
-            <div class="container">
-                <div class="newsletter-inner px-4">
-                    <img class="lazyload bg-img"
-                        src="https://codecanyon8.kreativdev.com/estaty/assets/img/6577e0ff3ab05.jpg">
-                    <div class="row justify-content-center text-center" data-aos="fade-up">
-                        <div class="col-lg-6 col-xxl-5">
-                            <div class="content mb-30">
-                                <span
-                                    class="subtitle color-white mb-10 d-block">{{ $home_text?->newsletter_title }}</span>
-                                <h2 class="color-white">{{ $home_text?->newsletter_subtitle }}</h2>
-                            </div>
-                            <form id="newsletterForm" class="subscription-form newsletter-form"
-                                action="{{ route('front.user.subscriber', getParam()) }}" method="POST">
-                                @csrf
-                                <div class="input-group radius-md">
-                                    <input class="form-control"
-                                        placeholder="{{ $keywords['Enter Your Email'] ?? __('Enter Your Email') }}"
-                                        type="email" name="email_id" required>
-                                    <button class="btn btn-lg btn-primary" type="submit">
-                                       كٌن على تواصل</button>
+                            @empty
+                                <div class="p-3 text-center mb-30 w-100">
+                                    <h3 class="mb-0">{{ $keywords['No Brands Found'] ?? __('No Brands Found') }}
+                                    </h3>
                                 </div>
-                            </form>
+                            @endforelse
+                            </div>
+                            <!-- Slider pagination -->
+                            <div class="swiper-pagination position-static mt-30" id="sponsor-slider-pagination"></div>
                         </div>
                     </div>
                 </div>
+                </div>
             </div>
-        </section>
+        @endif
+
+        @if ($home_sections->newsletter_section == 1)
+            <section class="newsletter-area pb-100" data-aos="fade-up">
+                <div class="container">
+                    <div class="newsletter-inner px-4">
+                        <img class="lazyload bg-img"
+                            src="https://codecanyon8.kreativdev.com/estaty/assets/img/6577e0ff3ab05.jpg">
+                        <div class="row justify-content-center text-center" data-aos="fade-up">
+                            <div class="col-lg-6 col-xxl-5">
+                                <div class="content mb-30">
+                                    <span
+                                        class="subtitle color-white mb-10 d-block">{{ $home_text?->newsletter_title }}</span>
+                                    <h2 class="color-white">{{ $home_text?->newsletter_subtitle }}</h2>
+                                </div>
+                                <form id="newsletterForm" class="subscription-form newsletter-form"
+                                    action="{{ route('front.user.subscriber', getParam()) }}" method="POST">
+                                    @csrf
+                                    <div class="input-group radius-md">
+                                        <input class="form-control"
+                                            placeholder="{{ $keywords['Enter Your Email'] ?? __('Enter Your Email') }}"
+                                            type="email" name="email_id" required>
+                                        <button class="btn btn-lg btn-primary" type="submit">
+                                        كٌن على تواصل</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
     @endif
 @endsection
