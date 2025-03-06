@@ -265,11 +265,11 @@
                     <div class="row">
                       <div class="col-md-6 mb-3">
                         <label for="latitude" class="form-label">خط العرض</label>
-                        <input type="number" class="form-control" id="latitude" name="latitude" placeholder="خط العرض" step="0.000001">
+                        <input type="txt" class="form-control" id="latitude" name="latitude" placeholder="خط العرض">
                       </div>
                       <div class="col-md-6 mb-3">
                         <label for="longitude" class="form-label">خط الطول</label>
-                        <input type="number" class="form-control" id="longitude" name="longitude" placeholder="خط الطول" step="0.000001">
+                        <input type="txt" class="form-control" id="longitude" name="longitude" placeholder="خط الطول">
                       </div>
                     </div>
                   </div>
@@ -760,7 +760,7 @@ $(document).ready(() => {
         // Default map center. Adjust to your desired default location.
         const defaultLocation = {
             lat: 24.7136, lng: 46.6753
-        }; // New York
+        }; 
 
         // Create the map
         const map = new google.maps.Map(document.getElementById("map"), {
@@ -775,22 +775,25 @@ $(document).ready(() => {
             draggable: true, // allow dragging
         });
 
-    // Update lat/long on marker drag
-    google.maps.event.addListener(marker, 'dragend', function(event) {
-        // Force English locale for numbers
-        document.getElementById('latitude').value = event.latLng.lat().toFixed(6).toLocaleString('en-US');
-        document.getElementById('longitude').value = event.latLng.lng().toFixed(6).toLocaleString('en-US');
-    });
+        function updateLatLng(latLng) {
+            document.getElementById('latitude').value = latLng.lat().toLocaleString('en-US', { useGrouping: false, minimumFractionDigits: 6 });
+            document.getElementById('longitude').value = latLng.lng().toLocaleString('en-US', { useGrouping: false, minimumFractionDigits: 6 });
+            console.log(latLng.lng().toLocaleString('en-US', { useGrouping: false, minimumFractionDigits: 6 }));
+        }
 
-    // Update marker & lat/long on map click
-    google.maps.event.addListener(map, 'click', function(event) {
-        marker.setPosition(event.latLng);
-        // Force English locale for numbers
-        document.getElementById('latitude').value = event.latLng.lat().toFixed(6).toLocaleString('en-US');
-        document.getElementById('longitude').value = event.latLng.lng().toFixed(6).toLocaleString('en-US');
-    });
+        // Update lat/long on marker drag
+        google.maps.event.addListener(marker, 'dragend', function(event) {
+            updateLatLng(event.latLng);
+        });
+
+        // Update marker & lat/long on map click
+        google.maps.event.addListener(map, 'click', function(event) {
+            marker.setPosition(event.latLng);
+            updateLatLng(event.latLng);
+        });
     }
 </script>
+
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCshOz-S6yMXGEPwrhQf2T1XtS8oqZqR-c&callback=initMap" async defer></script>
 

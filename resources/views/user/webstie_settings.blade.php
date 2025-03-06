@@ -2493,6 +2493,22 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
                                                     </li>
+
+                                                    <li class="list-group-item">
+                                                        <span>المشاريع</span><br>
+                                                        <a 
+                                                            data-text="المشاريع" data-type="projects"
+                                                            class="addToMenus btn btn-primary btn-sm float-right"
+                                                            href="">{{ __('Add to Menus') }}</a>
+                                                    </li>
+                                                    <li class="list-group-item">
+                                                        <span>الوحدات</span><br>
+                                                        <a 
+                                                            data-text="الوحدات" data-type="properties"
+                                                            class="addToMenus btn btn-primary btn-sm float-right"
+                                                            href="">{{ __('Add to Menus') }}</a>
+                                                    </li>
+                                                    
                                                     @endif
                                                     @if (!empty($permissions) && in_array('Custom Page', $permissions))
                                                     @foreach ($apages as $apage)
