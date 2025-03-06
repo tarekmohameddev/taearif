@@ -26,4 +26,4 @@ yarn-error.log*
 .idea/*
 # Composer dependencies (optional if you don’t want to include vendor files)
 /vendor/
-
+/public/*

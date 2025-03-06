@@ -366,8 +366,6 @@ class CheckoutController extends Controller
                     {"text":"FAQ","href":"","icon":"empty","target":"_self","title":"","type":"faq"}
                 ]},
                 {"text":"Services","href":"","icon":"empty","target":"_self","title":"","type":"services"},
-                {"text":"Portfolios","href":"","icon":"empty","target":"_self","title":"","type":"portfolios"},
-                {"type":"shop","text":"Shop","href":"","target":"_self"},
                 {"text":"Blog","href":"","icon":"empty","target":"_self","title":"","type":"blog"},
                 {"text":"Contact","href":"","icon":"empty","target":"_self","title":"","type":"contact"}
             ]';
@@ -380,8 +378,6 @@ class CheckoutController extends Controller
                     {"text":"FAQ","href":"","icon":"empty","target":"_self","title":"","type":"faq"}
                 ]},
                 {"text":"Services","href":"","icon":"empty","target":"_self","title":"","type":"services"},
-                {"text":"Portfolios","href":"","icon":"empty","target":"_self","title":"","type":"portfolios"},
-                {"type":"shop","text":"Shop","href":"","target":"_self"},
                 {"text":"Blog","href":"","icon":"empty","target":"_self","title":"","type":"blog"},
                 {"text":"Contact","href":"","icon":"empty","target":"_self","title":"","type":"contact"}
             ]';
@@ -401,7 +397,7 @@ class CheckoutController extends Controller
                         }
                     }
                 }
-                if (in_array($menu, ['Services', 'Portfolios', 'Shop', 'Blog', 'Contact']) && array_key_exists($menu, $deLanguageNames)) {
+                if (in_array($menu, ['Services','Blog', 'Contact']) && array_key_exists($menu, $deLanguageNames)) {
                     $menus[$key]['text'] = $deLanguageNames[$menu];
                 }
             }
@@ -421,7 +417,7 @@ class CheckoutController extends Controller
                         }
                     }
                 }
-                if (in_array($menu, ['Services', 'Portfolios', 'Shop', 'Blog', 'Contact']) && array_key_exists($menu, $deLanguageNames_arabic)) {
+                if (in_array($menu, ['Services','Blog', 'Contact']) && array_key_exists($menu, $deLanguageNames_arabic)) {
                     $menus_arabic[$key]['text'] = $deLanguageNames_arabic[$menu];
                 }
             }

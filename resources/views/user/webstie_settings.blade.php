@@ -674,7 +674,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                 <p class="section-description">{{ __('Add an image that will appear as a background for the breadcrumb section, helping to enhance navigation visuals.') }}</p>
                                                 <div class="form-group">
                                                     <div class="preview-image">
-                                                        <img src="{{ isset($information['home_setting']->breadcrumb) ? asset('assets/front/img/user/'.$information['home_setting']->breadcrumb) : asset('assets/admin/img/noimage.jpg') }}" alt="breadcrumb" class="img-thumbnail">
+                                                        <img src="{{ isset($information['basic_settings']->breadcrumb) ? asset('assets/front/img/user/'.$information['basic_settings']->breadcrumb) : asset('assets/admin/img/noimage.jpg') }}" alt="breadcrumb" class="img-thumbnail">
                                                     </div>
                                                     <input type="file" id="breadcrumb" name="breadcrumb" class="d-none" accept="image/*">
                                                     <button type="button" class="upload-btn" style="background-color: white;
