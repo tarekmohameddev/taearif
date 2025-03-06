@@ -27,5 +27,10 @@ return new class extends Migration
     public function down()
     {
         //
+        Schema::table('user_testimonials', function (Blueprint $table) {
+            $table->string('image')->nullable(false)->change();
+            $table->string('occupation')->nullable(false)->change();
+        });
+
     }
 };

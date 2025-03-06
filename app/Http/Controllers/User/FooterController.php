@@ -203,57 +203,54 @@ class FooterController extends Controller
 
     public function updateFooterInfo_QuickLink(Request $request, $language)
     {
-
+        \Log::info($request->all());
         $lang = Language::where('code', $language)->where('user_id', Auth::id())->firstOrFail();
-        $data = FooterText::where('language_id', $lang->id)->where('user_id', Auth::id())->first();
-        if (is_null($data)) {
-            $data = new FooterText;
-        }
+        $data = FooterText::firstOrNew(['language_id' => $lang->id, 'user_id' => Auth::id()]);
+
         $rules = [
             'about_company' => 'nullable',
             'copyright_text' => 'nullable',
         ];
-        $message = [
-            'about_company.required' => 'The about company field is required',
-            'copyright_text.required' => 'The copy right text field is required',
-            'logo.required' => 'The logo field is required'
-        ];
-        if (is_null($data)) {
-            $rules['logo'] = 'required|mimes:jpeg,jpg,png|max:1000';
-        } elseif (is_null($data->logo) && !$request->hasFile('logo')) {
-            $rules['logo'] = 'required|mimes:jpeg,jpg,png|max:1000';
-        }
-        $validator = Validator::make($request->all(), $rules, $message);
-        if ($validator->fails()) {
-            $validator->getMessageBag()->add('error', 'true');
-            return response()->json($validator->errors());
-        }
-        $request['image_name'] = $data->logo;
-        if ($request->hasFile('logo')) {
-            $request['image_name'] = Uploader::update_picture('assets/front/img/user/footer/', $request->file('logo'), $data->logo);
-        }
-        if ($request->hasFile('bg_image')) {
-            $request['bg_img_name'] = Uploader::update_picture('assets/front/img/user/footer/', $request->file('bg_image'), $data->bg_image);
-        }
-        $data->language_id =  $lang->id;
-        $data->copyright_text =  clean($request->copyright_text);
-        $data->logo =  $request->image_name;
-        if ($request->color) {
 
-            $data->footer_color =  $request->color;
+        if (!$data->logo) {
+            $rules['footer_logo'] = 'required|mimes:jpeg,jpg,png|max:1000';
         }
-        $data->bg_image =  $request->bg_img_name;
-        $data->user_id = Auth::id();
+
+        $messages = [
+            'footer_logo.required' => 'The footer logo field is required'
+        ];
+
+        $validator = Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => true,
+                'messages' => $validator->errors()
+            ]);
+        }
+
+        // Map 'footer_logo' to 'logo' before storing in the database
+        if ($request->hasFile('footer_logo')) {
+            $data->logo = Uploader::update_picture('assets/front/img/user/footer/', $request->file('footer_logo'), $data->logo);
+        }
+
+        if ($request->hasFile('bg_image')) {
+            $data->bg_image = Uploader::update_picture('assets/front/img/user/footer/', $request->file('bg_image'), $data->bg_image);
+        }
+
+        $data->copyright_text = clean($request->copyright_text);
         $data->about_company = clean($request->about_company);
         $data->newsletter_text = clean($request->newsletter_text);
+        if ($request->color) {
+            $data->footer_color = $request->color;
+        }
         $data->save();
 
-        UserStep::updateOrCreate(
-            ['user_id' => Auth::guard('web')->user()->id],
-            ['footer' => true]
-        );
+        UserStep::updateOrCreate(['user_id' => Auth::id()], ['footer' => true]);
 
         $request->session()->flash('success', 'Footer text info updated successfully!');
         return 'success';
     }
+
+
 }

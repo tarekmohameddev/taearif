@@ -295,7 +295,7 @@
             <div class="col-lg-6 mb-4 mb-lg-0">
                 <img src="https://faisal-binsaedan.com/wp-content/uploads/2024/05/pic.svg" alt="Company Visual" class="img-fluid">
             </div>
-            
+
             <!-- Content Column -->
             <div class="col-lg-6">
                 <!-- Identity Box -->
@@ -425,13 +425,13 @@
                      </div>
                   </div>
                   <div class="col-lg-7">
-                   
+
                         <div class="d-flex align-items-center justify-content-center h-100 mb-30" data-aos="fade-up">
                            <a href="#" class="video-btn youtube-popup">
                               <i class="fas fa-play"></i>
                            </a>
                         </div>
-                    
+
                   </div>
                </div>
             </div>
@@ -469,7 +469,7 @@
                                                 </h3>
                                                 <span class="location icon-start"><i
                                                         class="fal fa-map-marker-alt"></i>{{ $project->address }}</span>
-                                             
+
 
                                             </div>
                                         </div>
@@ -525,7 +525,7 @@
             </div>
         </section>
     @endif
-   
+
 
    @if ($home_sections->work_process_section == 1)
       <section class="work-process pt-100 pb-70">

@@ -1,11 +1,15 @@
 <!-- Footer-area start -->
 
+
 <footer class="footer-area border" style="background-color: transparent !important;">
+
     @if (!empty($userFooterData->bg_image))
         <!-- Background Image -->
         <img class="lazyload blur-up bg-img"
-            src="https://codecanyon8.kreativdev.com/estaty/assets/img/6572f1d3ead31.png">
+            src="{{ asset('assets/front/img/user/footer/' . $userFooterData->bg_image) }}"
+            alt="Footer Background">
     @endif
+
     @if ($home_sections->top_footer_section == 1)
         <div class="footer-top">
             <div class="container">

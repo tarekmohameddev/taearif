@@ -129,28 +129,28 @@
                                     </div>
                                 @endif
                                 <div class="form-group">
-                                    <div class="d-flext">
+                                    <div class="d-flex">
                                         <label class="mr-3">{{ __('Detail Page') }}</label>
                                         <div class="radio mr-3">
                                             <label><input class="mr-1" type="radio" name="detail_page"
                                                     value="1"
-                                                    {{ $service->detail_page == 1 ? 'checked' : '' }}>Enable</label>
+                                                    {{ $service->detail_page == 1 ? 'checked' : '' }}>{{ __('Enable') }}</label>
                                         </div>
                                         <div class="radio">
                                             <label><input class="mr-1" type="radio" name="detail_page"
                                                     value="0"
-                                                    {{ $service->detail_page == 0 ? 'checked' : '' }}>Disable</label>
+                                                    {{ $service->detail_page == 0 ? 'checked' : '' }}>{{ __('Disable') }}</label>
                                         </div>
                                     </div>
                                     <p id="errdetail_page" class="mb-0 text-danger em"></p>
                                 </div>
-                                <div class="form-group">
+                                <div class="form-group  d-none">
                                     <label for="">{{ __('Meta Keywords') }}</label>
                                     <input type="text" class="form-control" name="meta_keywords"
                                         value="{{ $service->meta_keywords }}" data-role="tagsinput">
                                     <p id="errmeta_keywords" class="mb-0 text-danger em"></p>
                                 </div>
-                                <div class="form-group">
+                                <div class="form-group  d-none">
                                     <label for="">{{ __('Meta Description') }}</label>
                                     <textarea type="text" class="form-control" name="meta_description" rows="5">{{ $service->meta_description }}</textarea>
                                     <p id="errmeta_description" class="mb-0 text-danger em"></p>
