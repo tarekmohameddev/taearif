@@ -233,7 +233,10 @@
         </section>
     @endif
 
+
+   
     @if ($home_sections->counter_info_section == 1)
+    @if(count($counterInformations) > 0)
         <div class="counter-area pt-100 pb-70">
             <div class="container">
                 <div class="row gx-xl-5" data-aos="fade-up">
@@ -250,16 +253,18 @@
                             </div>
                         </div>
                     @empty
-                        <div class="col-12">
+                        <!-- <div class="col-12">
                             <h3 class="text-center mt-20">
                                 {{ $keywords['No Counter Information Found'] ?? __('No Counter Information Found') }} </h3>
-                        </div>
+                        </div> -->
                     @endforelse
                 </div>
             </div>
 
         </div>
     @endif
+    @endif
+
 
     @if ($home_sections->intro_section == 1)
         <section class="about-area pb-70 pt-30">
@@ -301,63 +306,65 @@
 
 
     <!-- skills -->
+    @if(count($skills) > 0)
+    <section class="skills-area pb-70 pt-70">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 text-center">
+                <div class="section-title title-inline mb-50" data-aos="fade-up">
+                    <h2 class="title">{{ $home_text?->skill_title }}</h2>
+                </div>
+            </div>
+        </div>
 
-        <section class="skills-area pb-70 pt-70">
-            <div class="container">
-                <div class="row justify-content-center">
-                    <div class="col-12 text-center">
-                        <div class="section-title title-inline mb-50" data-aos="fade-up">
-                            <h2 class="title">{{ $home_text?->skill_title }}</h2>
+        <div class="row g-4" data-aos="fade-up">
+            @forelse ($skills as $skill)
+                <div class="col-lg-3 col-md-6">
+                    <div class="card skill text-center p-4 shadow-sm border-0">
+                        <div class="card-body">
+                            <!-- Skill Icon -->
+                            <div class="skill-icon mb-3 d-flex justify-content-center align-items-center"
+                                 style="width: 60px; height: 60px; border-radius: 50%; background: #f8f9fa;">
+                                <i class="{{ $skill->icon }}" style="font-size: 24px; color: {{ $skill->color ? '#' . $skill->color : '#007bff' }};"></i>
+                            </div>
+
+                            <!-- Skill Title -->
+                            <h4 class="card-title mb-3" style="font-weight: 600; font-size: 1.2rem;">
+                                {{ $skill->title }}
+                            </h4>
+
+                            <!-- Progress Bar -->
+                            <div class="progress" style="height: 8px; border-radius: 10px; background: #e9ecef;">
+                                <div class="progress-bar" role="progressbar"
+                                     style="width: {{ $skill->percentage }}%;
+                                            background-color: {{ $skill->color ? '#' . $skill->color : 'var(--bs-primary)' }};
+                                            border-radius: 10px;"
+                                     aria-valuenow="{{ $skill->percentage }}"
+                                     aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+
+                            <!-- Percentage Value -->
+                            <span class="mt-2 d-block" style="font-size: 0.9rem; font-weight: 500; color: #555;">
+                                {{ $skill->percentage }}%
+                            </span>
                         </div>
                     </div>
                 </div>
-
-                <div class="row g-4" data-aos="fade-up">
-                    @forelse ($skills as $skill)
-                        <div class="col-lg-3 col-md-6">
-                            <div class="card skill text-center p-4 shadow-sm border-0">
-                                <div class="card-body">
-                                    <!-- Skill Icon -->
-                                    <div class="skill-icon mb-3 d-flex justify-content-center align-items-center"
-                                        style="width: 60px; height: 60px; border-radius: 50%; background: #f8f9fa;">
-                                        <i class="{{ $skill->icon }}" style="font-size: 24px; color: {{ $skill->color ? '#' . $skill->color : '#007bff' }};"></i>
-                                    </div>
-
-                                    <!-- Skill Title -->
-                                    <h4 class="card-title mb-3" style="font-weight: 600; font-size: 1.2rem;">
-                                        {{ $skill->title }}
-                                    </h4>
-
-                                    <!-- Progress Bar -->
-                                    <div class="progress" style="height: 8px; border-radius: 10px; background: #e9ecef;">
-                                        <div class="progress-bar" role="progressbar"
-                                            style="width: {{ $skill->percentage }}%;
-                                                    background-color: {{ $skill->color ? '#' . $skill->color : 'var(--bs-primary)' }};
-                                                    border-radius: 10px;"
-                                            aria-valuenow="{{ $skill->percentage }}"
-                                            aria-valuemin="0" aria-valuemax="100">
-                                        </div>
-                                    </div>
-
-                                    <!-- Percentage Value -->
-                                    <span class="mt-2 d-block" style="font-size: 0.9rem; font-weight: 500; color: #555;">
-                                        {{ $skill->percentage }}%
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    @empty
-                        <div class="col-12">
-                            <h3 class="text-center mt-20">{{ $keywords['No Skill Found'] ?? __('No Skill Found') }}</h3>
-                        </div>
-                    @endforelse
-                </div>
-            </div>
-        </section>
+            @empty
+                <!-- <div class="col-12">
+                    <h3 class="text-center mt-20">{{ $keywords['No Skill Found'] ?? __('No Skill Found') }}</h3>
+                </div> -->
+            @endforelse
+        </div>
+    </div>
+</section>
+@endif
 
     <!--// skills -->
 
     @if ($home_sections->featured_properties_section == 1)
+    @if(count($featured_properties) > 0)
         <section class="product-area featured-product pb-70">
             <div class="container">
                 <div class="row">
@@ -374,11 +381,11 @@
                                         @include('user-front.realestate.partials.property')
                                     </div>
                                 @empty
-                                    <div class=" p-3 text-center mb-30 w-100">
+                                    <!-- <div class=" p-3 text-center mb-30 w-100">
                                         <h3 class="mb-0">
                                             {{ $keywords['No Featured Property Found'] ?? __('No Featured Property Found') }}
                                         </h3>
-                                    </div>
+                                    </div> -->
                                 @endforelse
                             </div>
                             <!-- Slider pagination -->
@@ -389,8 +396,11 @@
             </div>
         </section>
     @endif
+    @endif
+
 
     @if ($home_sections->why_choose_us_section == 1)
+    @if (!empty($home_text?->why_choose_us_section_image))
         <section class="choose-area pb-70">
             <div class="container">
                 <div class="row gx-xl-5">
@@ -432,8 +442,10 @@
             </div>
         </section>
     @endif
-
+    @endif
+    
     @if ($home_sections->project_section == 1)
+    @if(count($projects) > 0)
         <section class="projects-area pt-100 pb-70">
             <div class="container">
                 <div class="row">
@@ -471,10 +483,10 @@
                                     </a>
                                 </div>
                             @empty
-                                <div class="p-3 text-center mb-30 w-100">
+                                <!-- <div class="p-3 text-center mb-30 w-100">
                                     <h3 class="mb-0"> {{ $keywords['No Projects Found'] ?? __('No Projects Found') }}
                                     </h3>
-                                </div>
+                                </div> -->
                             @endforelse
                         </div>
                     </div>
@@ -482,8 +494,10 @@
             </div>
         </section>
     @endif
+    @endif
 
     @if ($home_sections->testimonials_section == 1)
+    @if(count($testimonials) > 0)
         <section class="testimonial-area pt-100 pb-70">
             <div class="overlay-bg d-none d-lg-block">
                 <img class="lazyload blur-up"
@@ -558,10 +572,10 @@
                                         </div>
                                     </div>
                                 @empty
-                                    <div class="bg-light p-3 text-center mb-30 w-100">
+                                    <!-- <div class="bg-light p-3 text-center mb-30 w-100">
                                         <h3 class="mb-0">
                                             {{ $keywords['No Testimonials Found'] ?? __('No Testimonials Found') }}</h3>
-                                    </div>
+                                    </div> -->
                                 @endforelse
                             </div>
                         </div>
@@ -570,38 +584,6 @@
             </div>
         </section>
     @endif
-
-    @if ($home_sections->brand_section == 1)
-        <div class="sponsor ptb-100" data-aos="fade-up">
-            <div class="container">
-            <div class="row">
-                <div class="col-12">
-                    <div class="swiper sponsor-slider">
-                        <div class="swiper-wrapper">
-                        @forelse ($brands as $brand)
-                            <div class="swiper-slide">
-                                <div class="item-single d-flex justify-content-center">
-                                    <div class="sponsor-img">
-                                    <a href="{{ $brand->brand_url }}" target="_blank">
-                                        <img src="{{ asset('assets/front/img/user/brands/' . $brand->brand_img) }} ">
-                                    </a>
-                                    </div>
-                                </div>
-                            </div>
-                        @empty
-                            <div class="p-3 text-center mb-30 w-100">
-                                <h3 class="mb-0">{{ $keywords['No Brands Found'] ?? __('No Brands Found') }}
-                                </h3>
-                            </div>
-                        @endforelse
-                        </div>
-                        <!-- Slider pagination -->
-                        <div class="swiper-pagination position-static mt-30" id="sponsor-slider-pagination"></div>
-                    </div>
-                </div>
-            </div>
-            </div>
-        </div>
     @endif
 
     @if ($home_sections->newsletter_section == 1)
@@ -634,5 +616,4 @@
             </div>
         </section>
     @endif
-
 @endsection

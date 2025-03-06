@@ -232,6 +232,7 @@
     @endif
 
     @if ($home_sections->brand_section == 1)
+    @if(count($brands) > 0)
         <div class="sponsor ptb-100" data-aos="fade-up">
             <div class="container">
                 <div class="row">
@@ -263,8 +264,10 @@
             </div>
         </div>
     @endif
+    @endif
 
     @if ($home_sections->category_section == 1)
+    @if(count($property_categories) > 0)
         <section class="category category-2 pb-100">
             <div class="container">
                 <div class="row">
@@ -313,8 +316,10 @@
             </div>
         </section>
     @endif
+    @endif
 
     @if ($home_sections->property_section == 1)
+    @if(count($properties) > 0)
         <section class="product-area popular-product pb-70">
             <div class="container">
                 <div class="row">
@@ -351,6 +356,8 @@
             </div>
         </section>
     @endif
+    @endif
+
 
     @if ($home_sections->intro_section == 1)
         <section class="about-area about-2 pb-70">
@@ -422,6 +429,7 @@
     @endif
 
     @if ($home_sections->work_process_section == 1)
+    @if(count($work_processes) > 0)
         <section class="work-process work-process-2 pb-70">
             <div class="container">
                 <div class="row">
@@ -461,8 +469,11 @@
             </div>
         </section>
     @endif
+    @endif
+
 
     @if ($home_sections->counter_info_section == 1)
+    @if(count($counterInformations) > 0)
         <div class="counter-area with-radius border pt-100 pb-70">
             <img class="lazyload bg-img blur-up" src="{{ asset('assets/front/images/2567u56gy855.png') }}"
                 alt="Image">
@@ -489,8 +500,11 @@
             </div>
         </div>
     @endif
+    @endif
+
 
     @if ($home_sections->project_section == 1)
+    @if(count($projects) > 0)
         <section class="projects-area pt-100 pb-70">
             <div class="container">
                 <div class="row">
@@ -556,8 +570,11 @@
             </div>
         </section>
     @endif
+    @endif
+
 
     @if ($home_sections->testimonials_section == 1)
+    @if(count($testimonials) > 0)
         <section class="testimonial-area testimonial-3 pb-100">
             <div class="container">
                 <div class="row align-items-center">
@@ -635,4 +652,6 @@
             </div>
         </section>
     @endif
+    @endif
+    
 @endsection

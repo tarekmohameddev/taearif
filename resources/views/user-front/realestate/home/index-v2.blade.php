@@ -18,6 +18,8 @@
 
 
 @section('content')
+
+@if(count($sliderInfos) > 0)
    <section class="home-banner home-banner-2">
       <div class="container">
          <div class="swiper home-slider" id="home-slider-1">
@@ -247,6 +249,7 @@
          </div>
       </div>
    </section>
+   @endif
    <style>
         .info-box {
             background: #f8f9fa;
@@ -329,6 +332,7 @@
     </div>
 
     @if ($home_sections->counter_info_section == 1)
+    @if(count($counterInformations) > 0)
         <div class="counter-area pt-100 pb-70">
             <div class="container">
                 <div class="row gx-xl-5" data-aos="fade-up">
@@ -345,17 +349,19 @@
                             </div>
                         </div>
                     @empty
-                        <div class="col-12">
+                        <!-- <div class="col-12">
                             <h3 class="text-center mt-20">
                                 {{ $keywords['No Counter Information Found'] ?? __('No Counter Information Found') }} </h3>
-                        </div>
+                        </div> -->
                     @endforelse
                 </div>
             </div>
         </div>
     @endif
+    @endif
 
    @if ($home_sections->category_section == 1)
+   @if(count($property_categories) > 0)
       <section class="category pt-100 pb-70 bg-light">
          <div class="container">
             <div class="row">
@@ -406,7 +412,7 @@
          </div>
       </section>
    @endif
-
+   @endif
 
 
          <section class="video-banner with-radius pt-100 pb-70">
@@ -439,6 +445,7 @@
 
 
          @if ($home_sections->project_section == 1)
+         @if(count($projects) > 0)
         <section class="projects-area pt-100 pb-70">
             <div class="container">
                 <div class="row">
@@ -487,8 +494,11 @@
             </div>
         </section>
     @endif
+    @endif
+
 
     @if ($home_sections->property_section == 1)
+    @if(count($properties) > 0)
         <section class="product-area popular-product pb-70">
             <div class="container">
                 <div class="row">
@@ -513,10 +523,10 @@
                                         @include('user-front.realestate.partials.property')
                                     </div>
                                 @empty
-                                    <div class="p-3 text-center mb-30 w-100">
+                                    <!-- <div class="p-3 text-center mb-30 w-100">
                                         <h3 class="mb-0">
                                             {{ $keywords['No Properties Found'] ?? __('No Properties Found') }}</h3>
-                                    </div>
+                                    </div> -->
                                 @endforelse
                             </div>
                         </div>
@@ -525,9 +535,10 @@
             </div>
         </section>
     @endif
-
+    @endif
 
    @if ($home_sections->work_process_section == 1)
+   @if(count($work_processes) > 0)
       <section class="work-process pt-100 pb-70">
          <!-- Bg image -->
          <img class="lazyload bg-img" src="https://codecanyon8.kreativdev.com/estaty/assets/front/images/work-process-bg.png">
@@ -565,16 +576,17 @@
                            </div>
                         </div>
                      @empty
-                        <div class="p-3 text-center mb-30 w-100">
+                        <!-- <div class="p-3 text-center mb-30 w-100">
                            <h3 class="mb-0">
                               {{ $keywords['No Work Process Found'] ?? __('No Work Process Found') }}</h3>
-                        </div>
+                        </div> -->
                      @endforelse
                   </div>
                </div>
             </div>
          </div>
       </section>
+   @endif
    @endif
 
    {{-- @if ($home_sections->pricing_section == 1)
@@ -1139,6 +1151,7 @@
     @endif --}}
 
    @if ($home_sections->testimonials_section == 1)
+   @if(count($testimonials) > 0)
       <section class="testimonial-area testimonial-2 with-radius pt-100 pb-70">
          <!-- Bg image -->
          @if ($home_text->testimonial_image)
@@ -1213,8 +1226,11 @@
          </div>
       </section>
    @endif
+   @endif
+
 
    @if ($home_sections->brand_section == 1)
+   @if(count($brands) > 0)
       <div class="sponsor ptb-100" data-aos="fade-up">
          <div class="container">
             <div class="row">
@@ -1245,5 +1261,6 @@
             </div>
          </div>
       </div>
+   @endif
    @endif
 @endsection
