@@ -100,7 +100,7 @@
                     <div class="row">
                         <div class="col-lg-10 offset-lg-1">
                             <div class="alert alert-danger pb-1  " id="propertyErrors" style="display: none">
-                                <button type="button" class="close" data-dismiss="alert">×</button>
+                                <button type="button" class="close d-none" data-dismiss="alert">×</button>
                                 <ul></ul>
                             </div>
                             <div class="row">
@@ -775,18 +775,20 @@ $(document).ready(() => {
             draggable: true, // allow dragging
         });
 
-        // Update lat/long on marker drag
-        google.maps.event.addListener(marker, 'dragend', function(event) {
-            document.getElementById('latitude').value = event.latLng.lat().toFixed(6);
-            document.getElementById('longitude').value = event.latLng.lng().toFixed(6);
-        });
+    // Update lat/long on marker drag
+    google.maps.event.addListener(marker, 'dragend', function(event) {
+        // Force English locale for numbers
+        document.getElementById('latitude').value = event.latLng.lat().toFixed(6).toLocaleString('en-US');
+        document.getElementById('longitude').value = event.latLng.lng().toFixed(6).toLocaleString('en-US');
+    });
 
-        // Update marker & lat/long on map click
-        google.maps.event.addListener(map, 'click', function(event) {
-            marker.setPosition(event.latLng);
-            document.getElementById('latitude').value = event.latLng.lat().toFixed(6);
-            document.getElementById('longitude').value = event.latLng.lng().toFixed(6);
-        });
+    // Update marker & lat/long on map click
+    google.maps.event.addListener(map, 'click', function(event) {
+        marker.setPosition(event.latLng);
+        // Force English locale for numbers
+        document.getElementById('latitude').value = event.latLng.lat().toFixed(6).toLocaleString('en-US');
+        document.getElementById('longitude').value = event.latLng.lng().toFixed(6).toLocaleString('en-US');
+    });
     }
 </script>
 
