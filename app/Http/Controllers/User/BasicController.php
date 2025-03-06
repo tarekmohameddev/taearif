@@ -246,7 +246,6 @@ class BasicController extends Controller
                 $tempFooterText->user_id = $user->id;
                 $tempFooterText->save();
             } catch (\Exception $e) {
-                \Log::error("File upload failed: " . $e->getMessage());
                 Session::flash('error', 'File upload failed. Please try again.');
                 return back();
             }
@@ -290,7 +289,6 @@ class BasicController extends Controller
                 $aboutVideoImageFilename = uniqid() . '.' . $file->getClientOriginalExtension();
                 $file->move(public_path('assets/front/img/user/home_settings/'), $aboutVideoImageFilename);
             } catch (\Exception $e) {
-                \Log::error("About video image upload failed: " . $e->getMessage());
             }
         }
 
@@ -617,57 +615,58 @@ class BasicController extends Controller
         return view('user.settings.breadcrumb', $data);
     }
 
+
     public function updateBreadcrumb(Request $request)
     {
-        $img = $request->file('breadcrumb');
-        $allowedExts = array('jpg', 'png', 'jpeg');
+
+        $userId = Auth::guard('web')->user()->id;
 
         $rules = [
-            'breadcrumb' => [
-                function ($attribute, $value, $fail) use ($img, $allowedExts) {
-                    if (!empty($img)) {
-                        $ext = $img->getClientOriginalExtension();
-                        if (!in_array($ext, $allowedExts)) {
-                            return $fail("Only png, jpg, jpeg image is allowed");
-                        }
-                    }
-                },
-            ],
+            'breadcrumb' => 'mimes:jpg,jpeg,png',
         ];
 
         $validator = Validator::make($request->all(), $rules);
+
         if ($validator->fails()) {
-            $validator->getMessageBag()->add('error', 'true');
-            return response()->json(['errors' => $validator->errors(), 'id' => 'favicon']);
+            return response()->json([
+                'errors' => $validator->errors(),
+                'id' => 'breadcrumb'
+            ]);
         }
 
         if ($request->hasFile('breadcrumb')) {
+            $img = $request->file('breadcrumb');
             $filename = uniqid() . '.' . $img->getClientOriginalExtension();
-            $img->move(public_path('assets/front/img/user/'), $filename);
-            $bss = BasicSetting::where('user_id', Auth::guard('web')->user()->id)->first();
-            if (!is_null($bss)) {
-                if ($bss->favicon) {
-                    @unlink(public_path('assets/front/img/user/' . $bss->breadcrumb));
+            $uploadPath = public_path('assets/front/img/user/');
+
+            $img->move($uploadPath, $filename);
+
+            $bss = BasicSetting::where('user_id', $userId)->first();
+
+            if ($bss) {
+                // Delete old file if exists
+                if (!empty($bss->breadcrumb) && file_exists($uploadPath . $bss->breadcrumb)) {
+                    unlink($uploadPath . $bss->breadcrumb);
                 }
                 $bss->breadcrumb = $filename;
-                $bss->user_id = Auth::guard('web')->user()->id;
                 $bss->save();
             } else {
-                $bs = new BasicSetting();
-                $bs->breadcrumb = $filename;
-                $bs->user_id = Auth::guard('web')->user()->id;
-                $bs->save();
+                BasicSetting::updateOrCreate([
+                    'user_id' => $userId,
+                    'breadcrumb' => $filename
+                ]);
             }
         }
-        Session::flash('success', 'Breadcrumb update successfully.');
 
+        // Update User Step
         UserStep::updateOrCreate(
-            ['user_id' => Auth::guard('web')->user()->id],
+            ['user_id' => $userId],
             ['sub_pages_upper_image' => true]
         );
 
-        return back();
+        return redirect()->back()->with('success', 'Breadcrumb updated successfully.');
     }
+
 
     public function preloader(Request $request)
     {

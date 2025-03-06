@@ -265,7 +265,7 @@
         <section class="about-area pb-70 pt-30">
             <div class="container">
                 <div class="row gx-xl-5">
-                    <div class="col-lg-6"> about-areaabout-area
+                    <div class="col-lg-6">
                         <div class="img-content" data-aos="fade-up">
 
                                 @if (!empty($home_text->about_image))
