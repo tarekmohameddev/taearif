@@ -22,6 +22,7 @@ use App\Models\User\Portfolio;
 use App\Models\User\FooterText;
 use App\Models\User\HeroSlider;
 use App\Models\User\HeroStatic;
+use App\Models\User\UserContact;
 use App\Models\User\UserService;
 use App\Models\User\BasicSetting;
 use App\Models\User\HomePageText;
@@ -47,7 +48,7 @@ class UserController extends Controller
         $this->middleware('auth');
     }
 
-    // webstie_settings
+    // webstie settings
     public function webstie_settings(Request $request)
     {
         $lang = Language::where('user_id', Auth::id())->first();
@@ -92,8 +93,10 @@ class UserController extends Controller
         ->where('user_id', Auth::user()->id)
         ->orderBy('id', 'DESC')
         ->get();
+        // $information['contact'] = UserContact::where('language_id', $lang->id)->where('user_id', Auth::user()->id)->first();
 
         $information = [
+            'contact'=> UserContact::where('language_id', $lang->id)->where('user_id', Auth::user()->id)->first(),
             'amenities'=> Amenity::where('user_id', Auth::id())->orderBy('serial_number', 'ASC')->get(),
             'footertext' => FooterText::where('language_id', $lang->id)->where('user_id', Auth::id())->first(),
             'property_categories'=> Category::where('user_id', Auth::id())->orderBy('serial_number', 'asc')->get(),
@@ -112,7 +115,7 @@ class UserController extends Controller
             'services' => UserService::where('lang_id', $lang->id)->where('user_id', Auth::id())->orderBy('id', 'DESC')->get(),
             'apages' => $apages
         ];
-
+// dd($information['contact']->contact_form_image);
         return view('user.webstie_settings', compact('information','data','apages', 'prevMenu', 'lang_id'));
     }
     //

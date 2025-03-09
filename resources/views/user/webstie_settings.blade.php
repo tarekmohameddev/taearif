@@ -99,6 +99,10 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     <i class="fas fa-list-alt ml-2 mr-2"></i>
                     {{ __('property_amenity') }}
                 </a>
+                <a href="contact" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="contact">
+                    <i class="fas fa-list-alt ml-2 mr-2"></i>
+                    {{ __('contact') }}
+                </a>
 
             </div>
 
@@ -429,7 +433,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                 <div class="row">
                                     <div class="col-12 text-center">
                                         <button type="submit" form="sliderVersionForm" class="btn btn-primary">
-                                            {{ __('Save') }}
+                                            {{ __('Save') }}Breadcrumb Photo
                                         </button>
                                     </div>
                                 </div>
@@ -493,13 +497,11 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             $userBs->theme == 'home_twelve' ||
             $userBs->theme == 'home13' ||
             $userBs->theme == 'home_ten')
-            <!-- Banner Section -->
+            <!-- Banner Section Banner Section-->
             <div id="banner" class="content-section d-none">
                 <h3 class="h4 font-weight-bold">{{ __('Banner Section') }} </h3>
                 <p class="text-muted">{{ __('Upload and configure homepage banners') }}.</p>
                 <!--  -->
-                <!-- SLIDER -->
-
                 <div class="row">
                     <div class="col-md-12">
 
@@ -525,7 +527,19 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                 <div class="col-md-12 showImage mb-3">
                                                     <img src="{{ isset($information['sliders_static']->img) ? asset('assets/front/img/hero_static/'.$information['sliders_static']->img) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
                                                 </div>
-                                                <input type="file" name="img" id="image" class="form-control image">
+                                                <input type="file" name="img" id="image" class="form-control image d-none">
+                                                <button type="button" class="col-md-12 upload-btn"
+                                                                            style="background-color: white;
+                                                                            border: 2px dashed #8c9998;
+                                                                            color: #0E9384;
+                                                                            padding: 1rem;
+                                                                            width: 100%;
+                                                                            display: flex;
+                                                                            flex-direction: column;
+                                                                            align-items: center;
+                                                                            cursor: pointer;" onclick="document.getElementById('image').click()">
+                                                    <i class="bi bi-upload mb-2"></i>
+                                                    <span>{{ __('Upload Image') }}</span>
                                                 @if ($errors->has('img'))
                                                 <p class="mt-2 mb-0 text-danger">{{ $errors->first('img') }}</p>
                                                 @endif
@@ -541,7 +555,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                             {{ __('Title of banner') }}
                                                             @endif
                                                         </label>
-                                                        <input type="text" class="form-control" name="title" value="{{ $data->title ?? '' }}" placeholder="{{ __('Enter title') }}">
+                                                        <input type="text" class="form-control" name="title" value="{{ $information['sliders_static']->title ?? '' }}" placeholder="{{ __('Enter title') }}">
                                                         @if ($errors->has('title'))
                                                         <p class="mt-2 mb-0 text-danger">{{ $errors->first('title') }}</p>
                                                         @endif
@@ -556,12 +570,12 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
                                             </div>
                                             @endif
-                                            @if ($userBs->theme !== 'home_twelve')
+                                            @if ($userBs->theme !== 'home_twelve') <!-- //for all themes except home_twelve -->
                                             <div class="row">
                                                 <div class="col-lg-12">
                                                     <div class="form-group">
                                                         <label for="">{{ __('Subtitle*') }}</label>
-                                                        <input type="text" class="form-control" name="subtitle" value="{{ $information['sliders_static']->title ?? '' }}" placeholder="{{ __('Enter subtitle') }}">
+                                                        <input type="text" class="form-control" name="subtitle" value="{{ $information['sliders_static']->subtitle ?? '' }}" placeholder="{{ __('Enter subtitle') }}">
                                                         @if ($errors->has('subtitle'))
                                                         <p class="mt-2 mb-0 text-danger">{{ $errors->first('subtitle') }}</p>
                                                         @endif
@@ -707,7 +721,6 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                         </div>
                     </div>
                 </div>
-                <!--// end SLIDER  -->
                 <!--  -->
             </div>
             @endif
@@ -762,7 +775,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         <th scope="col">
                                                             <input type="checkbox" class="bulk-check" data-val="all">
                                                         </th>
-                                                        @if ($userBs->theme !== 'home_twelve')
+                                                        @if ($userBs->theme !== 'home_twelve') <!-- //for all themes except home_twelve -->
                                                         <th scope="col">{{ __('Icon') }}</th>
                                                         @endif
                                                         <th scope="col">{{ __('Title') }}</th>
@@ -777,7 +790,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                         <td>
                                                             <input type="checkbox" class="bulk-check" data-val="{{ $skill->id }}">
                                                         </td>
-                                                        @if ($userBs->theme !== 'home_twelve')
+                                                        @if ($userBs->theme !== 'home_twelve') <!-- //for all themes except home_twelve -->
                                                         <td><i class="{{ $skill->icon ?? 'fa fa-fw fa-heart' }}"></i>
                                                         </td>
                                                         @endif
@@ -2496,14 +2509,14 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                     @endif
                                                     <li class="list-group-item">
                                                         <span>المشاريع</span><br>
-                                                        <a 
+                                                        <a
                                                             data-text="المشاريع" data-type="projects"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
                                                     </li>
                                                     <li class="list-group-item">
                                                         <span>الوحدات</span><br>
-                                                        <a 
+                                                        <a
                                                             data-text="الوحدات" data-type="properties"
                                                             class="addToMenus btn btn-primary btn-sm float-right"
                                                             href="">{{ __('Add to Menus') }}</a>
@@ -3373,6 +3386,170 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             </div>
             <!--//property_amenity  -->
 
+            <!-- contact -->
+            <div id="contact" class="content-section d-none">
+                <h3 class="h4 font-weight-bold">{{ __('contact') }}</h3>
+                <p class="text-muted"> {{__('contact')}}</p>
+
+                <!--  -->
+                <div class="page-header">
+                    <h4 class="page-title">{{ __('Contact Page') }}</h4>
+                    <ul class="breadcrumbs">
+                        <li class="nav-home">
+                            <a href="{{route('user-dashboard')}}">
+                                <i class="flaticon-home"></i>
+                            </a>
+                        </li>
+                        <li class="separator">
+                            <i class="flaticon-right-arrow"></i>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#">{{ __('Contact Page') }}</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="row">
+                                    <div class="col-lg-10">
+                                        <div class="card-title">{{ __('Update Contact') }}</div>
+                                    </div>
+
+                                    <div class="col-lg-2">
+                                        @if(!is_null($userDefaultLang))
+                                            @if (!empty($userLanguages))
+                                                <select name="userLanguage" class="form-control" onchange="window.location='{{url()->current() . '?language='}}'+this.value">
+                                                    <option value="" selected disabled>{{__('Select a Language')}}</option>
+                                                    @foreach ($userLanguages as $lang)
+                                                        <option value="{{$lang->code}}" {{$lang->code == request()->input('language') ? 'selected' : ''}}>{{$lang->name}}</option>
+                                                    @endforeach
+                                                </select>
+                                            @endif
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-body pt-5 pb-5">
+                                <div class="row">
+                                    <div class="col-lg-6 offset-lg-3">
+                                        <form
+                                            id="contactSecForm"
+                                            action="{{ route('user.contact.update', ['language' => request()->input('language')]) }}"
+                                            method="POST"
+                                            enctype="multipart/form-data"
+                                        >
+                                            @csrf
+                                            <div class="row">
+                                                <div class="col-lg-12">
+                                                    <div class="form-group">
+                                                        <div class="col-12 mb-2">
+                                                            <label for="image"><strong>{{__('Contact Form Image')}}</strong></label>
+                                                        </div>
+                                                        <div class="col-md-12 showImage mb-3">
+                                                            <img
+                                                                src="{{ isset($information['contact']->contact_form_image) ? asset('assets/front/img/user/'.$information['contact']->contact_form_image) : asset('assets/admin/img/noimage.jpg')}}"
+                                                                alt="..." class="img-thumbnail">
+                                                        </div>
+                                                        <input type="file" name="contact_form_image" id="image"
+                                                            class="form-control">
+                                                        @if ($errors->has('contact_form_image'))
+                                                            <p class="mt-2 mb-0 text-danger">{{ $errors->first('contact_form_image') }}</p>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="">{{ __('Form Title') }}</label>
+                                                <input type="text" class="form-control" name="contact_form_title"
+                                                    value="{{  $information['contact']->contact_form_title ?? '' }}" placeholder="Enter title">
+                                                @if ($errors->has('contact_form_title'))
+                                                    <p class="mt-2 mb-0 text-danger">{{ $errors->first('contact_form_title') }}</p>
+                                                @endif
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="">{{ __('Form Subtitle') }}</label>
+                                                <input type="text" class="form-control" name="contact_form_subtitle"
+                                                    value="{{  $information['contact']->contact_form_subtitle ?? '' }}" placeholder="Enter Subtitle">
+                                                @if ($errors->has('contact_form_subtitle'))
+                                                    <p class="mt-2 mb-0 text-danger">{{ $errors->first('contact_form_subtitle') }}</p>
+                                                @endif
+                                            </div>
+                                            <div class="form-group">
+                                                <label>{{__('Address')}}</label>
+                                                <textarea class="form-control" name="contact_addresses" rows="3">{{$information['contact']->contact_addresses ?? null}}</textarea>
+                                                <p class="mb-0 text-warning">{{__('Use newline to seperate multiple addresses.')}}</p>
+                                                @if ($errors->has('contact_addresses'))
+                                                    <p class="mb-0 text-danger">{{$errors->first('contact_addresses')}}</p>
+                                                @endif
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label>{{__('Phone')}}</label>
+                                                <input class="form-control" name="contact_numbers" data-role="tagsinput" value="{{$information['contact']->contact_numbers ?? null}}" />
+                                                <p class="mb-0 text-warning">{{__('Use comma (,) to seperate multiple contact numbers.')}}</p>
+                                                @if ($errors->has('contact_numbers'))
+                                                    <p class="mb-0 text-danger">{{$errors->first('contact_numbers')}}</p>
+                                                @endif
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label>{{__('Email')}}</label>
+                                                <input class="form-control ltr" name="contact_mails" data-role="tagsinput" value="{{$information['contact']->contact_mails ?? null}}" >
+                                                <p class="mb-0 text-warning">{{__('Use comma (,) to seperate multiple contact mails.')}}</p>
+                                                @if ($errors->has('contact_mails'))
+                                                    <p class="mb-0 text-danger">{{$errors->first('contact_mails')}}</p>
+                                                @endif
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label>{{__('Latitude')}} </label>
+                                                <input class="form-control" name="latitude" value="{{$information['contact']->latitude ?? null}}">
+                                                @if ($errors->has('latitude'))
+                                                    <p class="mb-0 text-danger">{{$errors->first('latitude')}}</p>
+                                                @endif
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label>{{__('Longitude')}}</label>
+                                                <input class="form-control" name="longitude" value="{{$information['contact']->longitude ?? null}}">
+                                                @if ($errors->has('longitude'))
+                                                    <p class="mb-0 text-danger">{{$errors->first('longitude')}}</p>
+                                                @endif
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label>{{__('Map Zoom')}}</label>
+                                                <input class="form-control" name="map_zoom" value="{{$information['contact']->map_zoom ?? 12}}">
+                                                @if ($errors->has('map_zoom'))
+                                                    <p class="mb-0 text-danger">{{$errors->first('map_zoom')}}</p>
+                                                @endif
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-footer">
+                                <div class="row">
+                                    <div class="col-12 text-center">
+                                        <button type="submit" form="contactSecForm" class="btn btn-success">
+                                            {{ __('Update') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--  -->
+            </div>
+            <!--//contact  -->
+
         </main>
     </div>
 
@@ -3539,6 +3716,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             </div>
         </div>
     </div>
+    <!--  -->
 
 
     <!-- Create portfolio Category Modal -->
@@ -3597,6 +3775,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             </div>
         </div>
     </div>
+    <!--  -->
 
     <!-- Edit portfolio Modal -->
     <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
@@ -3645,7 +3824,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             </div>
         </div>
     </div>
-
+    <!--  -->
 
     <!-- Create Service Modal -->
     <div class="modal fade" id="createServiceModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
@@ -3771,7 +3950,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             </div>
         </div>
     </div>
-
+    <!--  -->
 
     <!-- Create Achievement Modal -->
     <div class="modal fade" id="createAchievementModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
@@ -3975,7 +4154,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                             </select>
                             <p id="erruser_language_id" class="mb-0 text-danger em"></p>
                         </div>
-                        @if ($userBs->theme !== 'home_twelve')
+                        @if ($userBs->theme !== 'home_twelve') <!-- //for all themes except home_twelve -->
                         <div class="form-group">
                             <label for="">{{ __('Icon*') }}</label>
                             <div class="btn-group d-block">

@@ -78,7 +78,7 @@
                  </div>
                  <div class="more-option mobile-item">
 
-                     <div class="item">
+                     <div class="item d-none">
                          <div class="language">
                              <form action="{{ route('changeUserLanguage', getParam()) }}" id="userLangForms">
                                  @csrf

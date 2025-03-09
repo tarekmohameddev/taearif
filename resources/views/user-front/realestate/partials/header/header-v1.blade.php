@@ -77,7 +77,7 @@
                     </ul>
                 </div>
                 <div class="more-option mobile-item">
-                    <div class="item">
+                    <div class="item d-none">
                         <div class="language">
 
                             <form action="{{ route('changeUserLanguage', getParam()) }}" id="userLangForms">
@@ -95,7 +95,7 @@
                         </div>
                     </div>
                     <div class="item">
-                        <div class="dropdown"> 
+                        <div class="dropdown">
                             <button class="btn btn-primary btn-sm dropdown-toggle" type="button"
                                 data-bs-toggle="dropdown" aria-expanded="false">
                                 @if (!Auth::guard('customer')->check())
