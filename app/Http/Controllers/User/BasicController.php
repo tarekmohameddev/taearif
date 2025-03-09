@@ -1179,11 +1179,12 @@ class BasicController extends Controller
             'why_choose_us_section_video_url' => (strpos($request->why_choose_us_section_video_url, "&") != false) ? substr($request->why_choose_us_section_video_url, 0, strpos($request->why_choose_us_section_video_url, "&")) : $request->why_choose_us_section_video_url,
         ]);
         $request->session()->flash('success', 'Why choose us section updated successfully!');
-        $steps = UserStep::firstOrCreate(
+
+        UserStep::updateOrCreate(
             ['user_id' => Auth::guard('web')->user()->id],
-            ['logo_uploaded' => false, 'favicon_uploaded' => false, 'website_named' => false, 'homepage_updated' => false] // Default values if record doesn't exist
+            ['user_whychooseus' => true]
         );
-        $steps->update(['homepage_updated' => true]);
+
         return redirect()->back();
     }
     public function whyChooseUsItemStore(Request $request)
@@ -1228,6 +1229,12 @@ class BasicController extends Controller
                 'user_id' => Auth::guard('web')->user()->id
             ]);
             session()->flash('success', 'Why choose us item update successfully!');
+
+            UserStep::updateOrCreate(
+                ['user_id' => Auth::guard('web')->user()->id],
+                ['user_whychooseus' => true]
+            );
+
             return 'success';
         } catch (\Exception $e) {
             session()->flash('warning', $e->getMessage());

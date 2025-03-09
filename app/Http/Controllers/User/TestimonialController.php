@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Http\Controllers\Controller;
-use App\Models\User\BasicSetting;
-use App\Models\User\Language;
-use App\Models\User\UserTestimonial;
-use App\Models\User\HomePageText;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
 use Purifier;
 use Validator;
+use App\Models\UserStep;
+use Illuminate\Http\Request;
+use App\Models\User\Language;
+use App\Models\User\BasicSetting;
+use App\Models\User\HomePageText;
+use App\Http\Controllers\Controller;
+use App\Models\User\UserTestimonial;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class TestimonialController extends Controller
 {
@@ -196,6 +197,11 @@ class TestimonialController extends Controller
         $input['content'] = Purifier::clean($request->content);
         $service->update($input);
         Session::flash('success', 'Testimonial updated successfully!');
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['user_testimonial' => true]
+        );
         return "success";
     }
 

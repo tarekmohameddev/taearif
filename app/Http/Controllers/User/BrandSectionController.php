@@ -73,6 +73,10 @@ class BrandSectionController extends Controller
             'brand_img' => $request->image_name
         ]);
         $request->session()->flash('success', 'Brand info updated successfully!');
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['user_Brand' => true]
+        );
         return 'success';
     }
 

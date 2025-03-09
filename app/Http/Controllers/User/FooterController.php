@@ -203,7 +203,7 @@ class FooterController extends Controller
 
     public function updateFooterInfo_QuickLink(Request $request, $language)
     {
-        \Log::info($request->all());
+        // \Log::info($request->all());
         $lang = Language::where('code', $language)->where('user_id', Auth::id())->firstOrFail();
         $data = FooterText::firstOrNew(['language_id' => $lang->id, 'user_id' => Auth::id()]);
 

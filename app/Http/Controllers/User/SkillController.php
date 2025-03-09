@@ -51,7 +51,7 @@ class SkillController extends Controller
      */
     public function store(Request $request)
     {
-        log::info($request->all());
+        // log::info($request->all());
         // dd($request->all());
         $messages = [
             'user_language_id.required' => 'The language field is required',
@@ -81,6 +81,11 @@ class SkillController extends Controller
 
         $skill = new Skill;
         $skill->create($input);
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['user_skill' => true]
+        );
 
         Session::flash('success', 'Skill added successfully!');
         return "success";
@@ -126,6 +131,10 @@ class SkillController extends Controller
         $input['slug'] = $slug;
         $input['user_id'] = Auth::id();
         $skill->update($input);
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['user_skill' => true]
+        );
         Session::flash('success', 'Skill updated successfully!');
         return "success";
     }

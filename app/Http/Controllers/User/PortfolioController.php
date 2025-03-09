@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User;
 
 use Purifier;
 use Validator;
+use App\Models\UserStep;
 use Illuminate\Http\Request;
 use App\Models\User\Language;
 use App\Http\Helpers\Uploader;
@@ -306,6 +307,12 @@ class PortfolioController extends Controller
         $input['content'] = Purifier::clean($request->content);
         $portfolio->update($input);
         Session::flash('success', 'Portfolio updated successfully!');
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['user_portfolio' => true]
+        );
+
         return "success";
     }
 
@@ -358,52 +365,6 @@ class PortfolioController extends Controller
         Session::flash('success', 'Portfolios deleted successfully!');
         return "success";
     }
-    // public function bulkDelete(Request $request)
-    // {
-    //     try {
-    //         // Log the incoming request data
-    //         // Log::info('Bulk Delete Request:', $request->all());
-
-    //         $ids = $request->ids;
-
-    //         foreach ($ids as $id) {
-    //             Log::info($id);
-    //             // This could throw a ModelNotFoundException if the portfolio doesn't exist
-    //             $portfolio = Portfolio::where('user_id', Auth::user()->id)
-    //                 ->where('id', $id)
-    //                 ->firstOrFail();
-
-    //             // Log the portfolio information
-    //             Log::info('Deleting portfolio:', $portfolio->toArray());
-
-    //             // Delete each portfolio image
-    //             foreach ($portfolio->portfolio_images as $key => $pi) {
-    //                 @unlink(public_path('assets/front/img/user/portfolios/' . $pi->image));
-    //                 $pi->delete();
-    //             }
-
-    //             // Delete the main portfolio image
-    //             @unlink(public_path('assets/front/img/user/portfolios/' . $portfolio->image));
-
-    //             // Finally, delete the portfolio entry itself
-    //             $portfolio->delete();
-    //         }
-
-    //         Session::flash('success', 'Portfolios deleted successfully!');
-    //         return "success";
-    //     } catch (\Exception $e) {
-    //         // Log the exception with a detailed message and trace
-    //         Log::error('Error in bulkDelete method: ' . $e->getMessage());
-    //         Log::error($e->getTraceAsString());
-
-    //         // Optionally, return a response or redirect the user with an error message
-    //         return response()->json([
-    //             'status' => 'error',
-    //             'message' => 'Something went wrong while deleting portfolios.'
-    //         ], 500);
-    //     }
-    // }
-
 
     public function images($portid)
     {

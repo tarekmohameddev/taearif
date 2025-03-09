@@ -24,6 +24,15 @@ class UserStep extends Model
         'menu_builder',
         'services',
         'footer',
+        'user_contact',
+        'user_hero_static',
+        'user_skill',
+        'user_portfolio',
+        'user_testimonial',
+        'user_counterInformation',
+        'user_Brand',
+        'user_social',
+        'user_whychooseus',
     ];
 
     // Define relationships, if needed

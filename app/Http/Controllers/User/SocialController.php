@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Http\Controllers\Controller;
+use App\Models\UserStep;
 use App\Models\User\Social;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
@@ -33,6 +34,11 @@ class SocialController extends Controller
         $social->user_id = Auth::id();
         $social->save();
 
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['user_social' => true]
+        );
+
         Session::flash('success', 'New link added successfully!');
         return back();
     }
@@ -57,6 +63,11 @@ class SocialController extends Controller
         $social->serial_number = $request->serial_number;
         $social->user_id = Auth::id();
         $social->save();
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['user_social' => true]
+        );
 
         Session::flash('success', 'Social link updated successfully!');
         return back();

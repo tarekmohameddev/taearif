@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Http\Controllers\Controller;
-use App\Http\Helpers\Uploader;
-use App\Models\User\BasicSetting;
-use App\Models\User\HeroStatic;
-use App\Models\User\Language;
-use Illuminate\Http\RedirectResponse;
+use App\Models\UserStep;
 use Illuminate\Http\Request;
+use App\Models\User\Language;
+use App\Http\Helpers\Uploader;
+use App\Models\User\HeroStatic;
+use App\Models\User\BasicSetting;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Validator;
 
 class HeroStaticController extends Controller
@@ -36,10 +37,10 @@ class HeroStaticController extends Controller
             'img.required' => 'The image field is required',
             'title.required' => 'The title field is required.',
             'subtitle.required' => 'The subtitle field is required.',
-            
+
         ];
 
-  
+
 
         $lang = Language::where('code', $language)->where('user_id', Auth::id())->first();
         $data = HeroStatic::where('language_id', $lang->id)->where('user_id', Auth::id())->first();
@@ -78,6 +79,11 @@ class HeroStaticController extends Controller
                 ]
             );
         }
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['user_hero_static' => true]
+        );
         session()->flash('success', 'Static info updated successfully!');
         return redirect()->back();
     }

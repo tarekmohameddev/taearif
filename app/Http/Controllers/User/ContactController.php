@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Http\Controllers\Controller;
-use App\Http\Helpers\Uploader;
-use App\Models\User\Language;
-use App\Models\User\UserContact;
 use Auth;
-use Illuminate\Support\Facades\Validator;
+use App\Models\UserStep;
 use Illuminate\Http\Request;
+use App\Models\User\Language;
+use App\Http\Helpers\Uploader;
+use App\Models\User\UserContact;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Validator;
 
 class ContactController extends Controller
 {
@@ -73,6 +74,12 @@ class ContactController extends Controller
         $data->longitude = $request->longitude;
         $data->map_zoom = $request->map_zoom ? $request->map_zoom : 0;
         $data->save();
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['user_contact' => true]
+        );
+
         $request->session()->flash('success', 'Contact section updated successfully!');
         return back();
     }

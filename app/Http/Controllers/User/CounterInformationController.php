@@ -2,19 +2,21 @@
 
 namespace App\Http\Controllers\User;
 
+use App\Models\UserStep;
 use App\Models\User\Brand;
 use App\Models\User\Skill;
 use Illuminate\Http\Request;
 use App\Models\User\Language;
 use App\Models\User\UserService;
 use App\Models\User\HomePageText;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User\CounterInformation;
+
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 
-use Illuminate\Support\Facades\Log;
 class CounterInformationController extends Controller
 {
     public function index(Request $request)
@@ -113,6 +115,12 @@ class CounterInformationController extends Controller
         $counterInformation = new CounterInformation;
         $counterInformation->create($input);
         Session::flash('success', 'Counter Information added successfully!');
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['user_counterInformation' => true]
+        );
+
         return "success";
     }
 
@@ -155,6 +163,11 @@ class CounterInformationController extends Controller
         $input['icon'] = $request->icon === null ? $counterInformation->icon : $request->icon;
         $counterInformation->update($input);
         Session::flash('success', 'Counter Information updated successfully!');
+
+        UserStep::updateOrCreate(
+            ['user_id' => Auth::guard('web')->user()->id],
+            ['user_counterInformation' => true]
+        );
         return "success";
     }
 
