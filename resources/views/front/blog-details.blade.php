@@ -23,6 +23,32 @@
 
 @section('content')
 
+<style>
+.summernote-content * {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.summernote-content a {
+  color: blue !important;       
+  text-decoration: underline !important;
+  cursor: pointer;
+  margin: 0 !important; /* Reset any external margin */
+  padding: 0 !important; /* Reset any external padding */
+}
+
+.summernote-content a:visited {
+  color: purple !important;
+}
+
+.summernote-content a:hover,
+.summernote-content a:active {
+  color: darkblue !important;
+  text-decoration: underline !important;
+}
+</style>
+
+
     <!--====== BLOG DETAILS PART START ======-->
 
     <div class="blog-details-area pt-120 pb-90">
