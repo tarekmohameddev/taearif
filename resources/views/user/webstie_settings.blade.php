@@ -118,6 +118,18 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <h3 class="h4 font-weight-bold">{{ __('Basic Settings') }}</h3>
                 <p class="text-muted">{{ __('Manage general website settings such as site name, logo, and favicon') }}.</p>
                 <!--  -->
+                <div class="form-check form-switch">
+                    <input style="left: auto !important;"
+                        class="form-check-input"
+                        type="checkbox"
+                        id="intro_section"
+                        name="intro_section"
+                        @checked(optional($information['home_sections'])->intro_section)>
+                    <label class="form-check-label fw-medium fs-5" for="intro_section">
+                        عرض في الصفحة الرئيسية
+                    </label>
+                </div>
+
                 <div class="row">
                     <div class="col-md-12">
                         <div class="card">
@@ -731,6 +743,18 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <h3 class="h4 font-weight-bold">{{ __('Skills Section') }}</h3>
                 <p class="text-muted">{{ __('Update the skills displayed on the website') }}.</p>
                 <!--  -->
+                <div class="form-check form-switch">
+                    <input style="left: auto !important;"
+                        class="form-check-input"
+                        type="checkbox"
+                        id="skills_section"
+                        name="skills_section"
+                        @checked(optional($information['home_sections'])->skills_section)>
+                    <label class="form-check-label fw-medium fs-5" for="skills_section">
+                        عرض في الصفحة الرئيسية
+                    </label>
+                </div>
+
                 <div class="row">
                     <div class="col-md-12">
                         <div class="card">
@@ -1295,6 +1319,17 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <h3 class="h4 font-weight-bold">{{ __('Customer Reviews') }} </h3>
                 <p class="text-muted">{{ __('Manage customer testimonials and reviews') }}.</p>
 
+                <div class="form-check form-switch">
+                    <input style="left: auto !important;"
+                        class="form-check-input"
+                        type="checkbox"
+                        id="testimonials_section"
+                        name="testimonials_section"
+                        @checked(optional($information['home_sections'])->testimonials_section)>
+                    <label class="form-check-label fw-medium fs-5" for="testimonials_section">
+                        عرض في الصفحة الرئيسية
+                    </label>
+                </div>
                 <!--  -->
                 <div class="row">
                     <div class="col-md-12">
@@ -1790,6 +1825,18 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <h3 class="h4 font-weight-bold">{{ __('Achievements') }}</h3>
                 <p class="text-muted">{{ __('Showcase company awards and achievements') }}</p>
 
+                <div class="form-check form-switch">
+                    <input style="left: auto !important;"
+                        class="form-check-input"
+                        type="checkbox"
+                        id="counter_info_section"
+                        name="counter_info_section"
+                        @checked(optional($information['home_sections'])->counter_info_section)>
+                    <label class="form-check-label fw-medium fs-5" for="counter_info_section">
+                        عرض في الصفحة الرئيسية
+                    </label>
+                </div>
+
                 <!--  -->
                 <!-- Edit Achievement Modal -->
                 <div class="row">
@@ -1913,6 +1960,18 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             <div id="brands" class="content-section d-none">
                 <h3 class="h4 font-weight-bold">{{ __('Brands') }}</h3>
                 <p class="text-muted">{{ __('Manage brand logos displayed on the website') }}</p>
+
+                <div class="form-check form-switch">
+                    <input style="left: auto !important;"
+                        class="form-check-input"
+                        type="checkbox"
+                        id="brand_section"
+                        name="brand_section"
+                        @checked(optional($information['home_sections'])->brand_section)>
+                    <label class="form-check-label fw-medium fs-5" for="brand_section">
+                        عرض في الصفحة الرئيسية
+                    </label>
+                </div>
                 <!--  -->
                 <a href="#" data-toggle="modal" data-target="#createModalBrand" class="btn btn-primary"><i class="fas fa-plus"></i>
                     @if ($userBs->theme == 'home_eleven')
@@ -1974,6 +2033,18 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             <div id="footer" class="content-section d-none">
                 <h3 class="h4 font-weight-bold">{{ __('Footer') }}</h3>
                 <p class="text-muted">{{ __('Edit footer content and social media links') }}</p>
+
+                <div class="form-check form-switch">
+                    <input style="left: auto !important;"
+                        class="form-check-input"
+                        type="checkbox"
+                        id="newsletter_section"
+                        name="newsletter_section"
+                        @checked(optional($information['home_sections'])->newsletter_section)>
+                    <label class="form-check-label fw-medium fs-5" for="newsletter_section">
+                        عرض في الصفحة الرئيسية
+                    </label>
+                </div>
 
                 <!--  -->
                 <div class="row">
@@ -2638,6 +2709,18 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                 <h3 class="h4 font-weight-bold">{{ __('WhyChooseUs') }}</h3>
                 <p class="text-muted"> {{__('Why Choose Us')}}</p>
 
+
+                <div class="form-check form-switch">
+                    <input style="left: auto !important;"
+                        class="form-check-input"
+                        type="checkbox"
+                        id="why_choose_us_section"
+                        name="why_choose_us_section"
+                        @checked(optional($information['home_sections'])->why_choose_us_section)>
+                    <label class="form-check-label fw-medium fs-5" for="why_choose_us_section">
+                        عرض في الصفحة الرئيسية
+                    </label>
+                </div>
                 <!--  -->
                 <div class="row">
                     <div class="col-md-12">
@@ -3044,6 +3127,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             <div id="property_categories" class="content-section d-none">
                 <h3 class="h4 font-weight-bold">{{ __('property_categories') }}</h3>
                 <p class="text-muted"> {{__('Categories')}}</p>
+
+
 
                 <!--  -->
                 <div class="page-header">
@@ -5217,8 +5302,33 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 </script>
 <script>
     document.querySelectorAll("select[name='userLanguage']").forEach(select => {
-    select.style.setProperty("display", "none", "important");
-});
+        select.style.setProperty("display", "none", "important");
+    });
+</script>
+
+<script>
+    $(document).ready(function () {
+        $(".form-check-input").on("change", function () {
+            let sectionName = $(this).attr("name"); // Get the section name dynamically
+            let isChecked = $(this).prop("checked") ? 1 : 0; // Convert to 1 or 0
+
+            $.ajax({
+                url: "{{ route('update.home_setting') }}", // Laravel route
+                type: "POST",
+                data: {
+                    _token: "{{ csrf_token() }}", // CSRF protection
+                    section_name: sectionName,  // The section that changed
+                    section_value: isChecked    // New value (1 or 0)
+                },
+                success: function (response) {
+                    console.log("Updated successfully!", response);
+                },
+                error: function (xhr) {
+                    console.error("Error updating:", xhr);
+                }
+            });
+        });
+    });
 </script>
 
 @endsection

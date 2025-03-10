@@ -22,6 +22,7 @@ use App\Models\User\Portfolio;
 use App\Models\User\FooterText;
 use App\Models\User\HeroSlider;
 use App\Models\User\HeroStatic;
+use App\Models\User\HomeSection;
 use App\Models\User\UserContact;
 use App\Models\User\UserService;
 use App\Models\User\BasicSetting;
@@ -94,8 +95,9 @@ class UserController extends Controller
         ->orderBy('id', 'DESC')
         ->get();
         // $information['contact'] = UserContact::where('language_id', $lang->id)->where('user_id', Auth::user()->id)->first();
-
+        // $data['home_sections'] = User\HomeSection::where('user_id', $user->id)->first();
         $information = [
+            'home_sections' => User\HomeSection::where('user_id', Auth::id())->first(),
             'contact'=> UserContact::where('language_id', $lang->id)->where('user_id', Auth::user()->id)->first(),
             'amenities'=> Amenity::where('user_id', Auth::id())->orderBy('serial_number', 'ASC')->get(),
             'footertext' => FooterText::where('language_id', $lang->id)->where('user_id', Auth::id())->first(),
@@ -115,9 +117,43 @@ class UserController extends Controller
             'services' => UserService::where('lang_id', $lang->id)->where('user_id', Auth::id())->orderBy('id', 'DESC')->get(),
             'apages' => $apages
         ];
-// dd($information['contact']->contact_form_image);
+// dd($information['home_sections']);
         return view('user.webstie_settings', compact('information','data','apages', 'prevMenu', 'lang_id'));
     }
+
+    //
+    public function updateHomeSetting(Request $request)
+    {
+
+        $homeSection = HomeSection::where('user_id', Auth::id())->first();
+
+        if (!$homeSection) {
+            return response()->json(['success' => false, 'message' => 'User home section not found.'], 404);
+        }
+
+        $validSections = [
+            'counter_info_section',
+            'intro_section',
+            'featured_properties_section',
+            'why_choose_us_section',
+            'project_section',
+            'testimonials_section',
+            'brand_section',
+            'newsletter_section'
+        ];
+
+        if (!in_array($request->section_name, $validSections)) {
+            return response()->json(['success' => false, 'message' => 'Invalid section name.'], 400);
+        }
+
+        $homeSection->update([
+            $request->section_name => $request->section_value
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Updated successfully!']);
+    }
+
+
     //
 
     public function userban(Request $request)

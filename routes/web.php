@@ -217,6 +217,11 @@ Route::domain($domain)->group(function () {
     Route::get('/contractsign', [ContractController::class, 'contractsign'])->name('contractsign');
 
     Route::group(['prefix' => 'user', 'middleware' => ['auth', 'userstatus', 'Demo']], function () {
+
+        // update-home-settings
+        Route::post('/update-home-setting',  'User\UserController@updateHomeSetting')->name('update.home_setting');
+
+
         // real estate management
         Route::resource('contracts', ContractController::class);
         Route::post('/contracts/{contract}/sign', [ContractController::class, 'sign'])->name('contracts.sign');
