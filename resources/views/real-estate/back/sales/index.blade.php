@@ -1,21 +1,21 @@
 @extends('user.layout')
 
 @section('content')
-<h1>Sales</h1>
-    <a href="{{ route('crm.sales.create') }}" class="btn btn-primary mb-3">Create New Sale</a>
+<h1>{{ __('Sales') }}</h1>
+    <a href="{{ route('crm.sales.create') }}" class="btn btn-primary mb-3">{{ __('Create New Sale') }}</a>
 
 <div class="container">
     <div class="row">
         <table class="table">
             <thead>
                 <tr>
-                    <th>Property title </th>
-                    <th class="d-none">User</th>
-                    <th>Contract</th>
-                    <th>Sale Price</th>
-                    <th>Sale Date</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th>{{ __('Property title') }}</th>
+                    <th class="d-none">{{ __('User') }}</th>
+                    <th>{{ __('Contract') }}</th>
+                    <th>{{ __('Sale Price') }}</th>
+                    <th>{{ __('Date') }}</th>
+                    <th>{{ __('Status') }}</th>
+                    <th>{{ __('Actions') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -28,11 +28,11 @@
                         <td>{{ \Carbon\Carbon::parse($sale->sale_date)->format('Y-m-d') }}</td>
                         <td>{{ ucfirst($sale->status) }}</td>
                         <td>
-                            <a href="{{ route('crm.sales.edit', $sale->id) }}" class="btn btn-sm btn-warning">Edit</a>
+                            <a href="{{ route('crm.sales.edit', $sale->id) }}" class="btn btn-sm btn-warning">{{ __('Edit') }}</a>
                             <form action="{{ route('crm.sales.destroy', $sale->id) }}" method="POST" style="display:inline;">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">{{ __('Delete') }}</button>
                             </form>
                         </td>
                     </tr>

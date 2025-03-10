@@ -1,21 +1,21 @@
 @extends('user.layout')
 
 @section('content')
-<h1>Customers</h1>
-    <a href="{{route('crm.customers.create')}}" class="btn btn-primary mb-3">Create New Customer</a>
+<h1>{{ __('Customers') }}</h1>
+    <a href="{{route('crm.customers.create')}}" class="btn btn-primary mb-3">{{ __('Create New Customer') }}</a>
 
 <div class="contaner">
     <div class="row">
         <table class="table">
             <thead>
                 <tr>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Username</th>
-                    <th>Email</th>
-                    <th>Contact Number</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th>{{ __('First Name') }} </th>
+                    <th>{{ __('Last Name') }} </th>
+                    <th>{{ __('Username') }}</th>
+                    <th>{{ __('Email') }}</th>
+                    <th>{{ __('Contact Number') }} </th>
+                    <th>{{ __('Status') }}</th>
+                    <th>{{ __('Actions') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -28,11 +28,11 @@
                         <td>{{ $customer->contact_number }}</td>
                         <td>{{ $customer->status ? 'Active' : 'Inactive' }}</td>
                         <td>
-                            <a href="{{route('crm.customers.edit',$customer->id)}}" class="btn btn-sm btn-warning">Edit</a>
+                            <a href="{{route('crm.customers.edit',$customer->id)}}" class="btn btn-sm btn-warning">{{ __('Edit') }}</a>
                             <form action="{{route('crm.customers.delete',$customer->id)}}" method="get" style="display:inline;">
 
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">{{ __('Delete') }}</button>
                             </form>
                         </td>
                     </tr>

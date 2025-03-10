@@ -20,13 +20,13 @@
 
 
 
-    <h2>Create New Customer</h2>
+    <h2>{{ __('Create New Customer') }}</h2>
     <form action="{{ route('crm.customers.store',$user) }}" method="POST">
         @csrf
 
         <!-- First Name -->
         <div class="mb-3">
-            <label for="first_name" class="form-label">First Name</label>
+            <label for="first_name" class="form-label">{{ __('First Name') }}</label>
             <input type="text" class="form-control" id="first_name" name="first_name" value="{{ old('first_name') }}" required>
             @error('first_name')
                 <span class="text-danger">{{ $message }}</span>
@@ -35,7 +35,7 @@
 
         <!-- Last Name -->
         <div class="mb-3">
-            <label for="last_name" class="form-label">Last Name</label>
+            <label for="last_name" class="form-label"> {{ __('Last Name') }}</label>
             <input type="text" class="form-control" id="last_name" name="last_name" value="{{ old('last_name') }}" required>
             @error('last_name')
                 <span class="text-danger">{{ $message }}</span>
@@ -43,7 +43,7 @@
         </div>
         <!-- username -->
         <div class="mb-3">
-            <label for="last_name" class="form-label">username</label>
+            <label for="last_name" class="form-label">{{ __('username') }}</label>
             <input type="text" class="form-control" id="username" name="username" value="{{ old('username') }}" required>
             @error('username')
                 <span class="text-danger">{{ $message }}</span>
@@ -52,7 +52,7 @@
 
         <!-- Email -->
         <div class="mb-3">
-            <label for="email" class="form-label">Email</label>
+            <label for="email" class="form-label">{{ __('Email') }}</label>
             <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}" required>
             @error('email')
                 <span class="text-danger">{{ $message }}</span>
@@ -61,7 +61,7 @@
 
         <!-- Phone -->
         <div class="mb-3">
-            <label for="contact_number" class="form-label">Phone</label>
+            <label for="contact_number" class="form-label">{{ __('Phone') }}</label>
             <input type="text" class="form-control" id="contact_number" name="contact_number" value="{{ old('contact_number') }}" required>
             @error('contact_number')
                 <span class="text-danger">{{ $message }}</span>
@@ -70,7 +70,7 @@
 
         <!-- Address -->
         <div class="mb-3">
-            <label for="address" class="form-label">Address</label>
+            <label for="address" class="form-label">{{ __('Address') }}</label>
             <input type="text" class="form-control" id="address" name="address" value="{{ old('address') }}">
             @error('address')
                 <span class="text-danger">{{ $message }}</span>
@@ -78,16 +78,16 @@
         </div>
 
         <div class="mb-3">
-            <label for="Password"  class="form-label">{{ $keywords['Password'] ?? 'Password' }} **</label>
-            <input type="password" class="form-control" placeholder="{{ $keywords['Enter_Password'] ?? 'Enter_Password' }}"  name="password"
+            <label for="Password"  class="form-label">{{ __($keywords['Password'] ?? 'Password') }} **</label>
+            <input type="password" class="form-control" placeholder="{{ __($keywords['Enter_Password'] ?? 'Enter_Password') }}"  name="{{ __('password') }}"
                 value="{{ old('password') }}">
             @error('password')
                 <p class="text-danger">{{ $message }}</p>
             @enderror
         </div>
         <div class="mb-3">
-            <label for="Confirm_Password"  class="form-label">{{ $keywords['Confirm_Password'] ?? 'Confirm Password' }} **</label>
-            <input type="password" class="form-control" placeholder="{{ $keywords['Enter_Password_Again'] ?? 'Enter Password Again' }}"
+            <label for="Confirm_Password"  class="form-label">{{ __($keywords['Confirm_Password'] ?? 'Confirm Password') }} **</label>
+            <input type="password" class="form-control" placeholder="{{ __($keywords['Enter_Password_Again'] ?? 'Enter Password Again') }}"
                 name="password_confirmation" value="{{ old('password_confirmation') }}">
             @error('password_confirmation')
                 <p class="text-danger">{{ $message }}</p>
@@ -95,10 +95,10 @@
         </div>
         <!-- Status -->
         <div class="mb-3">
-            <label for="status" class="form-label">Status</label>
+            <label for="status" class="form-label"></label>
             <select class="form-control" id="status" name="status">
-                <option value="1" selected>Active</option>
-                <option value="0">Inactive</option>
+                <option value="1" selected>{{ __('Active') }}</option>
+                <option value="0">{{ __('Inactive') }}</option>
             </select>
             @error('status')
                 <span class="text-danger">{{ $message }}</span>
@@ -106,6 +106,6 @@
         </div>
 
         <!-- Submit Button -->
-        <button type="submit" class="btn btn-primary">Create Customer</button>
+        <button type="submit" class="btn btn-primary">{{ __('Create Customer') }}</button>
     </form>
 @endsection
