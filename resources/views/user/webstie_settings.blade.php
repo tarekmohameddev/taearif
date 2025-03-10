@@ -37,25 +37,23 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             <!-- Sidebar Menu -->
 
             <div class="nav flex-column">
-                <a href="basic-settings" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="basic-settings">
+                <a href="#basic-settings" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="basic-settings">
                     <i class="fas fa-sliders-h ml-2 mr-2"></i>
                     {{ __('Basic Settings') }}
                 </a>
-                <a href="banner" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="banner">
+                <a href="#banner" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="banner">
                     <i class="fas fa-image ml-2 mr-2"></i>
                     {{ __('Banner Section') }}
                 </a>
 
                 {{-- @if ($userBs->theme != 'home13') --}}
-
-                <a href="skills" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="skills">
+                <a href="#skills" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="skills">
                     <i class="fas fa-tools ml-2 mr-2"></i>
                     {{ __('Skills Section') }}
                 </a>
                 {{-- @endif --}}
 
-
-                <a href="about" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="about">
+                <a href="#about" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="about">
                     <i class="fas fa-building ml-2 mr-2"></i>
                     {{ __('About Company') }}
                 </a>
@@ -63,45 +61,45 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                     <i class="fas fa-briefcase ml-2 mr-2"></i>
                     {{ __('Portfolio') }}
                 </a>
-                <a href="reviews" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="reviews">
+                <a href="#reviews" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="reviews">
                     <i class="fas fa-star ml-2 mr-2"></i>
                     {{ __('Customer Reviews') }}
                 </a>
-                <a href="services" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="services">
+                <a href="#services" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="services">
                     <i class="fas fa-concierge-bell ml-2 mr-2"></i>
                     {{ __('Services') }}
                 </a>
-                <a href="achievements" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="achievements">
+                <a href="#achievements" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="achievements">
                     <i class="fas fa-trophy ml-2 mr-2"></i>
                     {{ __('Achievements') }}
                 </a>
-                <a href="brands" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="brands">
+                <a href="#brands" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="brands">
                     <i class="fas fa-tags ml-2 mr-2"></i>
                     {{ __('Brands') }}
                 </a>
-                <a href="footer" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="footer">
+                <a href="#footer" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="footer">
                     <i class="fas fa-shoe-prints ml-2 mr-2"></i>
                     {{ __('Footer') }}
                 </a>
-                <a href="menubuilder" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="menubuilder">
+                <a href="#menubuilder" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="menubuilder">
                     <i class="fas fa-shoe-prints ml-2 mr-2"></i>
                     {{ __('Menu Builder') }}
                 </a>
-                <a href="whyChooseUs" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="whyChooseUs">
+                <a href="#whyChooseUs" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="whyChooseUs">
                     <i class="fas fa-shoe-prints ml-2 mr-2"></i>
                     {{ __('Why Choose Us Section') }}
                 </a>
-                <a href="property_categories" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="property_categories">
+                <a href="#property_categories" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="property_categories">
                     <i class="fas fa-list-alt ml-2 mr-2"></i>
                     {{ __('property_categories') }}
                 </a>
-                <a href="property_amenity" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="property_amenity">
+                <a href="#property_amenity" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="property_amenity">
                     <i class="fas fa-list-alt ml-2 mr-2"></i>
                     {{ __('property_amenity') }}
                 </a>
-                <a href="contact" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="contact">
+                <a href="#contact" class="nav-link d-flex align-items-center text-dark mb-2 menu-item" data-target="contacts">
                     <i class="fas fa-list-alt ml-2 mr-2"></i>
-                    {{ __('contact') }}
+                    {{ __('contacts') }}
                 </a>
 
             </div>
@@ -2363,8 +2361,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
 
             <!-- menu-builder Section -->
             <div id="menubuilder" class="content-section d-none">
-                <h3 class="h4 font-weight-bold">{{ __('menu biulder') }}</h3>
-                <p class="text-muted">{{ __('Edit menu biulder  content ') }}</p>
+                <h3 class="h4 font-weight-bold">{{ __('menu builder ') }}</h3>
+                <p class="text-muted">{{ __('Edit menu builder   content ') }}</p>
 
                 <!--  -->
 
@@ -2953,17 +2951,17 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                             @endif
                                             <div class="form-group">
                                                 <label for="">{{ __('Title') }} **</label>
-                                                <input type="text" class="form-control" name="title" value="{{ old('title') }}" placeholder="Enter title">
+                                                <input type="text" class="form-control" name="title" value="{{ old('title') }}" placeholder="{{ __('Enter title') }}">
                                                 <p id="errtitle" class="mb-0 text-danger em"></p>
                                             </div>
                                             <div class="form-group">
                                                 <label for="">{{ __('Content') }} **</label>
-                                                <textarea name="content" id="" class="form-control" rows="4" placeholder="Enter content">{{ old('content') }}</textarea>
+                                                <textarea name="content" id="" class="form-control" rows="4" placeholder="{{ __('Enter content') }}">{{ old('content') }}</textarea>
                                                 <p id="errcontent" class="mb-0 text-danger em"></p>
                                             </div>
                                             <div class="form-group">
                                                 <label for="">{{ __('Serial Number') }} **</label>
-                                                <input type="number" class="form-control ltr" name="serial_number" value="{{ old('serial_number') }}" placeholder="Enter Serial Number">
+                                                <input type="number" class="form-control ltr" name="serial_number" value="{{ old('serial_number') }}" placeholder="{{ __('Enter Serial Number') }} ">
                                                 <p id="errserial_number" class="mb-0 text-danger em"></p>
                                                 <p class="text-warning">
                                                     <small>{{ __('The higher the serial number is, the later the social link will be shown.') }}</small>
@@ -3471,8 +3469,8 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             </div>
             <!--//property_amenity  -->
 
-            <!-- contact -->
-            <div id="contact" class="content-section d-none">
+            <!-- contacts -->
+            <div id="contacts" class="content-section d-none">
                 <h3 class="h4 font-weight-bold">{{ __('contact') }}</h3>
                 <p class="text-muted"> {{__('contact')}}</p>
 
@@ -3550,7 +3548,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                             <div class="form-group">
                                                 <label for="">{{ __('Form Title') }}</label>
                                                 <input type="text" class="form-control" name="contact_form_title"
-                                                    value="{{  $information['contact']->contact_form_title ?? '' }}" placeholder="Enter title">
+                                                    value="{{  $information['contact']->contact_form_title ?? '' }}" placeholder="{{ __('Enter title') }} ">
                                                 @if ($errors->has('contact_form_title'))
                                                     <p class="mt-2 mb-0 text-danger">{{ $errors->first('contact_form_title') }}</p>
                                                 @endif
@@ -4189,7 +4187,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                         </div>
 
                         <div class="form-group">
-                            <label for="">{{ __('Gender') }} </label>
+                            <label for="">{{ __('gender') }} </label>
 
                             <select name="gender" id="gender" class="form-control">
                                 <option disabled>{{ __('Select gender') }}</option>
