@@ -117,7 +117,7 @@ class UserController extends Controller
             'services' => UserService::where('lang_id', $lang->id)->where('user_id', Auth::id())->orderBy('id', 'DESC')->get(),
             'apages' => $apages
         ];
-// dd($information['home_sections']);
+        // dd($information['home_sections']);
         return view('user.webstie_settings', compact('information','data','apages', 'prevMenu', 'lang_id'));
     }
 
@@ -152,8 +152,6 @@ class UserController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Updated successfully!']);
     }
-
-
     //
 
     public function userban(Request $request)

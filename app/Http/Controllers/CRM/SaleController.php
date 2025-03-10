@@ -43,7 +43,7 @@ class SaleController extends Controller
         $contracts = Contract::all();
         $categories = Category::all();
         $cities = City::all();
-// dd($cities);
+    // dd($cities);
         return view('real-estate.back.sales.create', compact('users', 'properties', 'contracts', 'categories' , 'cities'));
     }
 

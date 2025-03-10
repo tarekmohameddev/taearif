@@ -116,8 +116,6 @@ class BasicController extends Controller
     }
 
     //
-
-
 	public function updateAllSettings(Request $request, $language)
     {
         // dd($request->all());
@@ -444,10 +442,7 @@ class BasicController extends Controller
         Session::flash('success', 'Settings updated successfully.');
         return back();
     }
-
-
     //
-
 
     public function updateInfo(Request $request)
     {
