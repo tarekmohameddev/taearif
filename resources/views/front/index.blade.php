@@ -284,12 +284,45 @@
     <header class="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div class="container flex h-16 items-center justify-between">
             <div class="flex items-center gap-2 font-bold text-xl">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 transition-transform duration-300 hover:rotate-12">
-                    <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/>
-                    <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/>
-                    <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>
-                </svg>
-                <span class="bg-clip-text text-transparent bg-gradient-to-l from-gray-700 to-black">تعاريف</span>
+              
+                <svg version="1.0" width="150" height="100" xmlns="http://www.w3.org/2000/svg"
+ width="565.000000pt" height="162.000000pt" viewBox="0 0 565.000000 162.000000"
+ preserveAspectRatio="xMidYMid meet">
+
+<g transform="translate(0.000000,162.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M4182 1488 c-17 -17 -17 -1279 0 -1296 9 -9 128 -12 473 -12 l460 0
+188 188 187 187 0 457 c0 402 -2 458 -16 472 -14 14 -86 16 -648 16 -478 0
+-635 -3 -644 -12z m1030 -265 c17 -15 18 -37 18 -270 l0 -253 -112 0 c-150 0
+-148 2 -148 -147 l0 -113 -140 0 -140 0 0 110 c0 97 -2 112 -20 130 -18 18
+-33 20 -130 20 l-110 0 0 260 c0 236 2 260 18 269 10 7 152 11 381 11 325 0
+366 -2 383 -17z"/>
+<path d="M837 1274 c-4 -4 -7 -43 -7 -86 l0 -78 95 0 96 0 -3 83 -3 82 -85 3
+c-47 1 -89 0 -93 -4z"/>
+<path d="M2150 934 l0 -345 73 -90 72 -89 625 2 c613 3 626 3 670 24 55 26
+103 76 125 128 9 22 19 82 22 133 l6 93 -82 0 -81 0 0 -55 c0 -121 -36 -145
+-218 -145 l-129 0 -5 109 c-4 92 -8 117 -32 164 -30 63 -69 100 -136 131 -37
+17 -65 21 -160 21 -140 0 -195 -14 -255 -67 -55 -48 -85 -123 -85 -210 0 -60
+2 -64 42 -105 l42 -43 -167 0 -167 0 0 345 0 345 -80 0 -80 0 0 -346z m875
+-110 c39 -26 55 -71 55 -159 l0 -75 -190 0 -190 0 0 63 c0 110 28 166 96 187
+48 16 196 5 229 -16z"/>
+<path d="M3330 1010 l0 -80 90 0 90 0 0 80 0 80 -90 0 -90 0 0 -80z"/>
+<path d="M3550 1010 l0 -80 95 0 95 0 0 80 0 80 -95 0 -95 0 0 -80z"/>
+<path d="M780 1007 c-101 -28 -157 -87 -185 -192 -26 -100 -22 -123 32 -177
+l47 -48 -307 0 -307 0 0 -90 0 -91 773 3 c858 3 810 -1 886 71 51 49 72 105
+78 213 l6 94 -82 0 -81 0 0 -55 c0 -31 -7 -69 -15 -85 -27 -51 -58 -60 -218
+-60 l-144 0 -6 98 c-7 127 -32 196 -93 252 -25 23 -62 49 -82 57 -49 21 -240
+28 -302 10z m232 -167 c20 -6 48 -24 62 -41 24 -28 26 -39 26 -120 l0 -89
+-185 0 -185 0 0 75 c0 112 25 159 93 175 48 12 147 11 189 0z"/>
+<path d="M1880 565 c0 -148 -4 -233 -12 -249 -17 -38 -56 -59 -122 -65 l-59
+-6 -33 -73 -33 -72 103 0 c136 0 193 17 256 78 73 71 80 106 80 384 l0 228
+-90 0 -90 0 0 -225z"/>
+<path d="M1160 180 l0 -80 90 0 90 0 0 80 0 80 -90 0 -90 0 0 -80z"/>
+<path d="M1380 180 l0 -80 95 0 95 0 0 80 0 80 -95 0 -95 0 0 -80z"/>
+</g>
+</svg>
+
+
             </div>
             <nav class="hidden md:flex items-center gap-6">
                 <a href="#" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
@@ -297,9 +330,6 @@
                 </a>
                 <a href="/blog" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
                     المدونة
-                </a>
-                <a href="#pricing" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
-                    الأسعار
                 </a>
                 <a href="/contact" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
                     تواصل معنا
@@ -310,7 +340,7 @@
                     تسجيل الدخول
                 </button>
                 <a href="/registration/step-1/trial/16" class="h-9 px-4 py-2 rounded-md bg-primary text-primary-foreground transition-all duration-300 hover:scale-105">
-                   ابدأ لمدة 7 ايام 
+                   ابدأ 7 ايام مجاناً 
                 </a>
                 <button class="md:hidden h-10 w-10 p-2.5 rounded-md transition-transform duration-300 menu-button">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
@@ -363,7 +393,7 @@
                     تسجيل الدخول
                 </button>
                 <a href="/registration/step-1/trial/16" class="w-full h-10 px-4 py-2 rounded-md bg-primary text-primary-foreground transition-all duration-300 mobile-menu-link">
-                    ابدأ لمدة 7 ايام
+                    ابدأ 7 ايام مجاناً
                 </a>
             </div>
         </div>
@@ -381,13 +411,14 @@
             <div class="container px-4 md:px-6 relative z-10">
                 <!-- Badge -->
                 <div class="flex justify-center mb-8 animate-fade-in">
-                    <div class="inline-flex items-center rounded-full border border-black/20 bg-white/50 backdrop-blur-sm px-4 py-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5 mr-1 text-yellow-500">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                        </svg>
-                        <span class="text-sm">أطلقنا للتو ميزات جديدة - تعرف عليها الآن</span>
-                    </div>
-                </div>
+    <div class="inline-flex items-center rounded-full border border-black/20 bg-white/50 backdrop-blur-sm px-4 py-1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5 mr-1 text-yellow-500">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span class="text-sm">أطلقنا للتو ميزات جديدة - تعرف عليها الآن</span>
+        <a href="https://taearif.com/blog-details/%D8%A7%D9%86%D8%B7%D9%84%D9%82-%D9%81%D9%8A-%D8%B9%D8%A7%D9%84%D9%85-%D8%A7%D9%84%D8%AA%D8%B3%D9%88%D9%8A%D9%82-%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A-%D8%A7%D9%84%D8%AD%D8%B1-%D9%88%D8%A7%D8%B9%D8%B1%D9%81-%D9%83%D9%8A%D9%81%D9%8A%D8%A9-%D8%A7%D9%86%D8%B4%D8%A7%D8%A1-%D9%85%D9%88%D9%82%D8%B9-%D8%A7%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A-%D9%85%D8%AC%D8%A7%D9%86%D9%8A/97" class="mr-2 text-sm text-blue-600 hover:text-blue-800 hover:underline">اقرأ المزيد</a>
+    </div>
+</div>
 
                 <!-- Main Hero Content -->
                 <div class="flex flex-col items-center text-center space-y-4 animate-fade-in">
@@ -399,13 +430,13 @@
                     </p>
                     <div class="flex flex-col sm:flex-row gap-3 mt-2">
                         <a href="/registration/step-1/trial/16" class="px-8 py-3 rounded-md bg-black text-white hover:bg-gray-800 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
-                            ابدأ لمدة 7 ايام
+                            ابني موقعك الان مجاناً
                         </a>
                         <button class="px-8 py-3 rounded-md border border-black text-black hover:bg-black hover:text-white transition-all duration-300">
                             عرض توضيحي
                         </button>
                     </div>
-                    <p class="text-sm text-muted-foreground mt-2">لا حاجة لبطاقة ائتمان • إلغاء الاشتراك في أي وقت</p>
+                    <p class="text-sm text-muted-foreground mt-2">✔️ لا حاجة  لأي خبرة في البرمجة والتصميم  ✔️ دعم فني مميز  ✔️ ميزانية بسيطة</p>
                 </div>
 
                 <!-- Dashboard Preview -->
@@ -437,7 +468,7 @@
                                 </svg>
                             </div>
                             <h3 class="font-medium">سهولة الاستخدام</h3>
-                            <p class="text-sm text-muted-foreground">واجهة بديهية تمكنك من إنشاء موقعك بسرعة وسهولة</p>
+                            <p class="text-sm text-muted-foreground">لوحة تحكم سهله تمكنك من إنشاء موقعك بسرعة وسهولة</p>
                         </div>
                     </div>
                     <div class="bg-white/50 backdrop-blur-sm border border-black/10 hover:border-black/30 transition-all duration-300 rounded-lg">
@@ -450,7 +481,7 @@
                                 </svg>
                             </div>
                             <h3 class="font-medium">قوالب احترافية</h3>
-                            <p class="text-sm text-muted-foreground">مئات القوالب الجاهزة المصممة بأعلى معايير الجودة</p>
+                            <p class="text-sm text-muted-foreground">العديد من القوالب الجاهزة المصممة بأعلى معايير الجودة</p>
                         </div>
                     </div>
                     <div class="bg-white/50 backdrop-blur-sm border border-black/10 hover:border-black/30 transition-all duration-300 rounded-lg">
@@ -466,16 +497,6 @@
                     </div>
                 </div>
 
-                <!-- Trusted By Section -->
-                <div class="mt-16 text-center animate-fade-in">
-                    <p class="text-sm text-muted-foreground mb-6">يثق بنا آلاف العملاء حول العالم</p>
-                    <div class="flex flex-wrap justify-center items-center gap-8">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1200px-Google_2015_logo.svg.png" alt="شعار جوجل" class="h-6 object-contain opacity-50">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Slack_Technologies_Logo.svg/2560px-Slack_Technologies_Logo.svg.png" alt="شعار سلاك" class="h-6 object-contain opacity-50">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Microsoft_logo_%282012%29.svg/2560px-Microsoft_logo_%282012%29.svg.png" alt="شعار مايكروسوفت" class="h-6 object-contain opacity-50">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/2560px-Amazon_logo.svg.png" alt="شعار أمازون" class="h-6 object-contain opacity-50">
-                    </div>
-                </div>
             </div>
         </section>
 
@@ -541,20 +562,7 @@
                                     </p>
                                 </div>
                             </li>
-                            <li class="flex items-start gap-3 sm:gap-4 hover-lift">
-                                <div class="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-black text-white">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 sm:h-5 sm:w-5">
-                                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                                    </svg>
-                                </div>
-                                <div class="grid gap-1">
-                                    <h3 class="text-lg sm:text-xl font-bold">نظام متكامل لإدارة العقارات</h3>
-                                    <p class="text-muted-foreground text-sm sm:text-base">
-                                        أدوات متخصصة لعرض وإدارة العقارات بطريقة احترافية
-                                    </p>
-                                </div>
-                            </li>
+
                             <li class="flex items-start gap-3 sm:gap-4 hover-lift">
                                 <div class="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-black text-white">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 sm:h-5 sm:w-5">
@@ -652,7 +660,7 @@
                             قسم العقارات
                         </div>
                         <h2 class="text-2xl sm:text-3xl font-bold tracking-tighter md:text-4xl/tight bg-clip-text text-transparent bg-gradient-to-l from-gray-700 to-black">
-                            نظام متكامل لإدارة العقارات
+                            موقع متكامل لإدارة العقارات
                         </h2>
                         <p class="max-w-[900px] text-muted-foreground text-sm sm:text-base md:text-xl/relaxed">
                             أدوات متخصصة لعرض وإدارة العقارات بطريقة احترافية تناسب شركات العقارات والوسطاء العقاريين
@@ -669,7 +677,7 @@
                                     <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                                 </svg>
                             </div>
-                            <h3 class="text-lg sm:text-xl font-bold">نظام متكامل</h3>
+                            <h3 class="text-lg sm:text-xl font-bold">موقع متكامل</h3>
                             <p class="text-muted-foreground text-sm sm:text-base">
                                 إدارة كاملة لجميع العقارات والمعاملات العقارية
                             </p>
@@ -996,7 +1004,7 @@
                     </div>
                     <div class="flex flex-col sm:flex-row gap-2">
                         <a href="/registration/step-1/trial/16" class="px-4 sm:px-8 py-3 rounded-md bg-white text-black hover:bg-gray-200 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-white/20">
-                            ابدأ لمدة 7 ايام
+                            احصل على موقعك الان
                         </a>
                         <a href="https://wa.me/201155522984" class="px-4 sm:px-8 py-3 rounded-md border border-white text-white hover:bg-white hover:text-black transition-all duration-300">
                             تواصل مع فريق التصميم
@@ -1020,12 +1028,42 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
                 <div class="space-y-4">
                     <div class="flex items-center gap-2 font-bold text-xl">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 transition-transform duration-300 hover:rotate-12">
-                            <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/>
-                            <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/>
-                            <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>
-                        </svg>
-                        <span class="bg-clip-text text-transparent bg-gradient-to-l from-gray-700 to-black">تعاريف</span>
+                    <svg version="1.0" width="150" height="100" xmlns="http://www.w3.org/2000/svg"
+ width="565.000000pt" height="162.000000pt" viewBox="0 0 565.000000 162.000000"
+ preserveAspectRatio="xMidYMid meet">
+
+<g transform="translate(0.000000,162.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M4182 1488 c-17 -17 -17 -1279 0 -1296 9 -9 128 -12 473 -12 l460 0
+188 188 187 187 0 457 c0 402 -2 458 -16 472 -14 14 -86 16 -648 16 -478 0
+-635 -3 -644 -12z m1030 -265 c17 -15 18 -37 18 -270 l0 -253 -112 0 c-150 0
+-148 2 -148 -147 l0 -113 -140 0 -140 0 0 110 c0 97 -2 112 -20 130 -18 18
+-33 20 -130 20 l-110 0 0 260 c0 236 2 260 18 269 10 7 152 11 381 11 325 0
+366 -2 383 -17z"/>
+<path d="M837 1274 c-4 -4 -7 -43 -7 -86 l0 -78 95 0 96 0 -3 83 -3 82 -85 3
+c-47 1 -89 0 -93 -4z"/>
+<path d="M2150 934 l0 -345 73 -90 72 -89 625 2 c613 3 626 3 670 24 55 26
+103 76 125 128 9 22 19 82 22 133 l6 93 -82 0 -81 0 0 -55 c0 -121 -36 -145
+-218 -145 l-129 0 -5 109 c-4 92 -8 117 -32 164 -30 63 -69 100 -136 131 -37
+17 -65 21 -160 21 -140 0 -195 -14 -255 -67 -55 -48 -85 -123 -85 -210 0 -60
+2 -64 42 -105 l42 -43 -167 0 -167 0 0 345 0 345 -80 0 -80 0 0 -346z m875
+-110 c39 -26 55 -71 55 -159 l0 -75 -190 0 -190 0 0 63 c0 110 28 166 96 187
+48 16 196 5 229 -16z"/>
+<path d="M3330 1010 l0 -80 90 0 90 0 0 80 0 80 -90 0 -90 0 0 -80z"/>
+<path d="M3550 1010 l0 -80 95 0 95 0 0 80 0 80 -95 0 -95 0 0 -80z"/>
+<path d="M780 1007 c-101 -28 -157 -87 -185 -192 -26 -100 -22 -123 32 -177
+l47 -48 -307 0 -307 0 0 -90 0 -91 773 3 c858 3 810 -1 886 71 51 49 72 105
+78 213 l6 94 -82 0 -81 0 0 -55 c0 -31 -7 -69 -15 -85 -27 -51 -58 -60 -218
+-60 l-144 0 -6 98 c-7 127 -32 196 -93 252 -25 23 -62 49 -82 57 -49 21 -240
+28 -302 10z m232 -167 c20 -6 48 -24 62 -41 24 -28 26 -39 26 -120 l0 -89
+-185 0 -185 0 0 75 c0 112 25 159 93 175 48 12 147 11 189 0z"/>
+<path d="M1880 565 c0 -148 -4 -233 -12 -249 -17 -38 -56 -59 -122 -65 l-59
+-6 -33 -73 -33 -72 103 0 c136 0 193 17 256 78 73 71 80 106 80 384 l0 228
+-90 0 -90 0 0 -225z"/>
+<path d="M1160 180 l0 -80 90 0 90 0 0 80 0 80 -90 0 -90 0 0 -80z"/>
+<path d="M1380 180 l0 -80 95 0 95 0 0 80 0 80 -95 0 -95 0 0 -80z"/>
+</g>
+</svg>
                     </div>
                     <p class="text-muted-foreground text-sm sm:text-base">
                         منصة بناء مواقع إلكترونية بدون برمجة، مع دعم كامل باللغة العربية

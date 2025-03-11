@@ -390,7 +390,7 @@
                         <div class="mb-3">
                             <label for="fullName" class="form-label required">الاسم الكامل</label>
                             <input type="text" class="form-control" id="fullName" placeholder="أدخل اسمك الكامل" required>
-                            <div class="form-text">سيتم عرض هذا الاسم على موقعك.</div>
+                            <div class="form-text">اسمك الشخصي.</div>
                         </div>
                         
                         <div class="mb-3">
