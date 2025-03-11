@@ -2125,6 +2125,30 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                 <p id="errcopyright_text" class="em text-danger mb-0"></p>
                                             </div>
 
+                                            <div class="form-group">
+                                                <label for="">{{ __('useful_footer_links') }}</label>
+                                                <input
+                                                class="form-control"
+                                                id="input_useful_footer_links"
+                                                type="text"
+                                                name="useful_footer_links"
+                                                value="{{ old('useful_footer_links', $information['home_setting']->useful_footer_links ?? '') }}"
+                                                placeholder="{{ __('useful_footer_links') }}">
+                                                <p id="erruseful_footer_links" class="em text-danger mt-2 mb-0"></p>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="">{{ __('contact_us_footer_links') }}</label>
+                                                <input
+                                                class="form-control"
+                                                id="input_contact_us_footer_links"
+                                                type="text"
+                                                name="contact_us_footer_links"
+                                                value="{{ old('contact_us_footer_links', $information['home_setting']->contact_us_footer_links ?? '') }}"
+                                                placeholder="{{ __('contact_us_footer_links') }}">
+                                                <p id="errcontact_us_footer_links" class="em text-danger mt-2 mb-0"></p>
+                                            </div>
+
                                             <!-- footer_quick_links -->
 
                                             <!--// footer_quick_links -->
@@ -4289,11 +4313,13 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                 </div>
                             </div>
                         </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
+                            <button id="submitBtnSkill" type="submit" class="btn btn-primary">{{ __('Submit') }}</button>
+                        </div>
+
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
-                    <button id="submitBtnSkill" type="button" class="btn btn-primary">{{ __('Submit') }}</button>
                 </div>
             </div>
         </div>
@@ -5327,6 +5353,21 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             });
         });
     });
+</script>
+
+<script>
+
+$(document).ready(function () {
+    $('.icp-dd').iconpicker();
+
+    $('.icp-dd').on('iconpickerSelected', function (event) {
+        console.log('Icon selected:', event.iconpickerValue); // Debugging
+        $('#inputIcon').val(event.iconpickerValue);
+        console.log('Hidden input updated:', $('#inputIcon').val()); // Debugging  updates
+    });
+});
+
+
 </script>
 
 @endsection

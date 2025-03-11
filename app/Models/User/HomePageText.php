@@ -105,6 +105,8 @@ class HomePageText extends Model
         'about_content',
         'about_button_text',
         'about_button_url',
+        'useful_footer_links',
+        'contact_us_footer_links',
 
     ];
     public function language()

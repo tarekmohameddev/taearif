@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Front;
 
 use App\Constants\Constant;
 use Config;
-use User\HomePageText;
 use App\Models\Customer;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -334,7 +333,7 @@ class CustomerController extends Controller
     }
 
     public function send_otp(Request $request)
-    {   
+    {
         $request->validate([ 'identifier' => 'required' ]);
         $otp = rand(100000, 999999);
         DB::table('otp_verifications')->updateOrInsert(['identifier' => $request->identifier], ['otp' => $otp, 'otp_expires_at' => now()->addMinutes(120)],['user_id' => 174]);
@@ -404,7 +403,7 @@ class CustomerController extends Controller
                 Auth::guard('customer')->logout();
             }
             // otherwise, redirect auth user to next url
-            return response()->json([ 'token' => 'dfdfds', 'user' => 'ddd', 'message' => 'Login successful' ]);     
+            return response()->json([ 'token' => 'dfdfds', 'user' => 'ddd', 'message' => 'Login successful' ]);
         } else {
             return response()->json([ 'message' => 'Sorry, your account is not here' ], 401);
         }
