@@ -41,6 +41,9 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Response;
 use App\Models\User\RealestateManagement\Amenity;
 use App\Models\User\RealestateManagement\Category;
+use App\Http\Helpers\UserPermissionHelper;
+use App\Models\OfflineGateway;
+use App\Models\PaymentGateway;
 
 class UserController extends Controller
 {
@@ -305,10 +308,78 @@ class UserController extends Controller
 
         // $data['steps'] = $progressSteps;
 
+        $package_id = 16;
+        $pendingMemb = \App\Models\Membership::query()
+        ->where([['user_id', '=', Auth::id()], ['status', 0]])
+        ->whereYear('start_date', '<>', '9999')
+        ->orderBy('id', 'DESC')
+        ->first();
+           $pendingPackage = isset($pendingMemb) ? \App\Models\Package::query()->findOrFail($pendingMemb->package_id) : null;
+         $package = \App\Http\Helpers\UserPermissionHelper::currentPackagePermission($user->id);
+
+      if (is_null($package)){
+        
+        $packageCount = Membership::query()->where([
+            ['user_id', Auth::id()],
+            ['expire_date', '>=', Carbon::now()->toDateString()]
+        ])->whereYear('start_date', '<>', '9999')->where('status', '<>', 2)->count();
+
+        $hasPendingMemb = UserPermissionHelper::hasPendingMembership(Auth::id());
 
 
+        if ($hasPendingMemb) {
+            Session::flash('warning', 'You already have a Pending Membership Request.');
+            return back();
+        }
+        if ($packageCount >= 2) {
+            Session::flash('warning', 'You have another package to activate after the current package expires. You cannot purchase / extend any package, until the next package is activated');
+            return back();
+        }
 
-        return view('user.dashboard', $data);
+        if (session()->has('lang')) {
+            $currentLang = Language::where('code', session()
+                ->get('lang'))
+                ->first();
+        } else {
+            $currentLang = Language::where('is_default', 1)
+                ->first();
+        }
+        $be = $currentLang->basic_extended;
+        $online = PaymentGateway::query()->where('status', 1)->get();
+        $offline = OfflineGateway::where('status', 1)->get();
+        $data['offline'] = $offline;
+        $data['payment_methods'] = $online->merge($offline);
+        $data['package'] = Package::query()->findOrFail($package_id);
+        $data['membership'] = Membership::query()->where([
+            ['user_id', Auth::id()],
+            ['expire_date', '>=', \Carbon\Carbon::now()->format('Y-m-d')]
+        ])->where('status', '<>', 2)->whereYear('start_date', '<>', '9999')
+            ->latest()
+            ->first();
+        $data['previousPackage'] = null;
+        if (!is_null($data['membership'])) {
+            $data['previousPackage'] = Package::query()
+                ->where('id', $data['membership']->package_id)
+                ->first();
+        }
+        $stripe = PaymentGateway::where('keyword', 'stripe')->where('status', 1)->first();
+        // $stripe_info = json_decode($stripe->information, true);
+        // $data['stripe_key'] = $stripe_info['key'];
+
+        if (is_null($stripe)) {
+            $data['stripe_key'] = null;
+        } else {
+            $stripe_info = json_decode($stripe->information, true);
+            $data['stripe_key'] = $stripe_info['key'];
+        }
+        $data['bex'] = $be;
+
+        return view('user.expired', $data);
+          }else{
+            return view('user.dashboard', $data);
+         }
+        
+        
     }
 
     public function registerUsers()
