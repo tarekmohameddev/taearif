@@ -41,7 +41,10 @@
                     </div>
                     <div class="col-lg-3 col-xl-2 col-sm-6">
                         <div class="footer-widget">
-                            <h4>{{ $keywords['Useful Links'] ?? __('Useful Links') }}</h4>
+                        @if(!empty($home_text->useful_footer_links))
+                        <h4>{{ $home_text->useful_footer_links }}</h4>
+                        @endif
+
                             @if (count($userFooterQuickLinks) == 0)
                                 <h6 class="">{{ $keywords['No Link Found'] ?? __('No Link Found')  }}</h6>
                             @else
@@ -57,7 +60,12 @@
                     </div>
                     <div class="col-lg-4 col-xl-3 col-sm-6">
                         <div class="footer-widget">
-                            <h4>{{ $keywords['Contact Us'] ?? __('Contact Us') }}</h4>
+                        @if(!empty($home_text->contact_us_footer_links))
+                        <h4>
+                        {{ $home_text->contact_us_footer_links }}
+                        </h4>
+                        @endif
+
                             @php
                                 $phone_numbers = !empty($userContact->contact_numbers)
                                     ? explode(',', $userContact->contact_numbers)

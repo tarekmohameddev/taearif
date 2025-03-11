@@ -2125,6 +2125,30 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                 <p id="errcopyright_text" class="em text-danger mb-0"></p>
                                             </div>
 
+                                            <div class="form-group">
+                                                <label for="">{{ __('useful_footer_links') }}</label>
+                                                <input
+                                                class="form-control"
+                                                id="input_useful_footer_links"
+                                                type="text"
+                                                name="useful_footer_links"
+                                                value="{{ old('useful_footer_links', $information['home_setting']->useful_footer_links ?? '') }}"
+                                                placeholder="{{ __('useful_footer_links') }}">
+                                                <p id="erruseful_footer_links" class="em text-danger mt-2 mb-0"></p>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="">{{ __('contact_us_footer_links') }}</label>
+                                                <input
+                                                class="form-control"
+                                                id="input_contact_us_footer_links"
+                                                type="text"
+                                                name="contact_us_footer_links"
+                                                value="{{ old('contact_us_footer_links', $information['home_setting']->contact_us_footer_links ?? '') }}"
+                                                placeholder="{{ __('contact_us_footer_links') }}">
+                                                <p id="errcontact_us_footer_links" class="em text-danger mt-2 mb-0"></p>
+                                            </div>
+
                                             <!-- footer_quick_links -->
 
                                             <!--// footer_quick_links -->

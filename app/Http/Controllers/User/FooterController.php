@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\User\Language;
 use App\Http\Helpers\Uploader;
 use App\Models\User\FooterText;
+use App\Models\User\HomePageText;
 use App\Http\Controllers\Controller;
 use App\Models\User\FooterQuickLink;
 use Illuminate\Support\Facades\Auth;
@@ -203,13 +204,16 @@ class FooterController extends Controller
 
     public function updateFooterInfo_QuickLink(Request $request, $language)
     {
-        // \Log::info($request->all());
+
         $lang = Language::where('code', $language)->where('user_id', Auth::id())->firstOrFail();
         $data = FooterText::firstOrNew(['language_id' => $lang->id, 'user_id' => Auth::id()]);
+        $homePageText = HomePageText::where('user_id', Auth::id())->firstOrNew();
 
         $rules = [
             'about_company' => 'nullable',
             'copyright_text' => 'nullable',
+            'useful_footer_links' => 'nullable|string|max:100',
+            'contact_us_footer_links' => 'nullable|string|max:100',
         ];
 
         if (!$data->logo) {
@@ -245,6 +249,11 @@ class FooterController extends Controller
             $data->footer_color = $request->color;
         }
         $data->save();
+        // Update HomePageText
+        $homePageText->user_id = Auth::id();
+        $homePageText->useful_footer_links = clean($request->useful_footer_links);
+        $homePageText->contact_us_footer_links = clean($request->contact_us_footer_links);
+        $homePageText->save();
 
         UserStep::updateOrCreate(['user_id' => Auth::id()], ['footer' => true]);
 

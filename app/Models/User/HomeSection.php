@@ -53,6 +53,8 @@ class HomeSection extends Model
         "property_section",
         "project_section",
         "cities_section",
+        "useful_links_section",
+        "contact_us_section",
     ];
 
 }
