@@ -4313,11 +4313,13 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                 </div>
                             </div>
                         </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
+                            <button id="submitBtnSkill" type="submit" class="btn btn-primary">{{ __('Submit') }}</button>
+                        </div>
+
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
-                    <button id="submitBtnSkill" type="button" class="btn btn-primary">{{ __('Submit') }}</button>
                 </div>
             </div>
         </div>
@@ -5351,6 +5353,21 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
             });
         });
     });
+</script>
+
+<script>
+
+$(document).ready(function () {
+    $('.icp-dd').iconpicker();
+
+    $('.icp-dd').on('iconpickerSelected', function (event) {
+        console.log('Icon selected:', event.iconpickerValue); // Debugging
+        $('#inputIcon').val(event.iconpickerValue);
+        console.log('Hidden input updated:', $('#inputIcon').val()); // Debugging  updates
+    });
+});
+
+
 </script>
 
 @endsection

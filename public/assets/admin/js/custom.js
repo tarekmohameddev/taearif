@@ -1612,72 +1612,72 @@ $(function ($) {
       }
     });
   });
+
     //  submitBtnSkill
-  $(document).on('click', '#submitBtnSkill', function (e) {
-    console.log('clicked2');
-    $(e.target).attr('disabled', true);
 
-    $(".request-loader").addClass("show");
+    $(document).on('click', '#submitBtnSkill', function (e) {
+        console.log('clicked2');
+        e.preventDefault();
+        $(e.target).attr('disabled', true);
+        $(".request-loader").addClass("show");
 
-    let ajaxForm = document.getElementById('ajaxFormSkill');
-    let fd = new FormData(ajaxForm);
-    let url = $("#ajaxFormSkill").attr('action');
-    let method = $("#ajaxFormSkill").attr('method');
-
-    if ($("#ajaxFormSkill .summernote").length > 0) {
-      $("#ajaxFormSkill .summernote").each(function (i) {
-        let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
-
-        fd.delete($(this).attr('name'));
-        fd.append($(this).attr('name'), content);
-      });
-    }
-
-    $.ajax({
-      url: url,
-      method: method,
-      data: fd,
-      contentType: false,
-      processData: false,
-      success: function (data) {
-        console.log(data, 'errrer', typeof data.error);
-        $(e.target).attr('disabled', false);
-        $(".request-loader").removeClass("show");
-
-        $(".em").each(function () {
-          $(this).html('');
-        })
-        if (data == "warning") {
-          location.reload();
+        let ajaxForm = document.getElementById('ajaxFormSkill');
+        let fd = new FormData(ajaxForm);
+        let url = $("#ajaxFormSkill").attr('action');
+        let method = $("#ajaxFormSkill").attr('method');
+        // the icon value is set
+        let selectedIcon = $('#inputIcon').val().trim();
+        if (!selectedIcon) {
+            alert(" Please select an icon before submitting.");
+            $(e.target).attr('disabled', false);
+            $(".request-loader").removeClass("show");
+            return;
         }
-        if (data == "success") {
-          location.reload();
+        fd.set('icon', selectedIcon);
+
+        if ($("#ajaxFormSkill .summernote").length > 0) {
+            $("#ajaxFormSkill .summernote").each(function () {
+                let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
+                fd.delete($(this).attr('name'));
+                fd.append($(this).attr('name'), content);
+            });
         }
 
-        // if error occurs
-        else if (typeof data.error != 'undefined') {
-          for (let x in data) {
-            if (x == 'error') {
-              continue;
+        $.ajax({
+            url: url,
+            method: method,
+            data: fd,
+            contentType: false,
+            processData: false,
+            success: function (data) {
+                $(e.target).attr('disabled', false);
+                $(".request-loader").removeClass("show");
+
+                $(".em").each(function () {
+                    $(this).html('');
+                });
+
+                if (data === "warning" || data === "success") {
+                    location.reload();
+                } else if (typeof data.error !== 'undefined') {
+                    for (let x in data) {
+                        if (x === 'error') continue;
+                        document.getElementById('err' + x).innerHTML = data[x][0];
+                    }
+                }
+            },
+            error: function (error) {
+                $(".em").each(function () {
+                    $(this).html('');
+                });
+                for (let x in error.responseJSON.errors) {
+                    document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
+                }
+                $(".request-loader").removeClass("show");
+                $(e.target).attr('disabled', false);
             }
-            document.getElementById('err' + x).innerHTML = data[x][0];
-          }
-        }
-      },
-      error: function (error) {
-
-        $(".em").each(function () {
-          $(this).html('');
-        })
-        console.log(error.responseJSON.errors);
-        for (let x in error.responseJSON.errors) {
-          document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
-        }
-        $(".request-loader").removeClass("show");
-        $(e.target).attr('disabled', false);
-      }
+        });
     });
-  });
 
     // submitBtn original
   $(document).on('click', '#submitBtn', function (e) {

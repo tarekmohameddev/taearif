@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Http\Controllers\Controller;
-use App\Models\User\Language;
+use Validator;
+use App\Models\UserStep;
 use App\Models\User\Skill;
 use Illuminate\Http\Request;
+use App\Models\User\Language;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
-use Validator;
 
-use Illuminate\Support\Facades\Log;
 class SkillController extends Controller
 {
     /**
@@ -51,8 +53,7 @@ class SkillController extends Controller
      */
     public function store(Request $request)
     {
-        // log::info($request->all());
-        // dd($request->all());
+
         $messages = [
             'user_language_id.required' => 'The language field is required',
             'title.required' => 'The title field is required',
