@@ -610,71 +610,139 @@ $(function ($) {
   });
 
   // submitBtnPropertyAmenity
-  $(document).on('click', '#submitBtnPropertyAmenity', function (e) {
-    console.log('clicked2');
-    $(e.target).attr('disabled', true);
+//   $(document).on('click', '#submitBtnPropertyAmenity', function (e) {
+//     console.log('clicked2');
+//     $(e.target).attr('disabled', true);
 
-    $(".request-loader").addClass("show");
+//     $(".request-loader").addClass("show");
 
-    let ajaxForm = document.getElementById('ajaxFormPropertyAmenity');
-    let fd = new FormData(ajaxForm);
-    let url = $("#ajaxFormPropertyAmenity").attr('action');
-    let method = $("#ajaxFormPropertyAmenity").attr('method');
+//     let ajaxForm = document.getElementById('ajaxFormPropertyAmenity');
+//     let fd = new FormData(ajaxForm);
+//     let url = $("#ajaxFormPropertyAmenity").attr('action');
+//     let method = $("#ajaxFormPropertyAmenity").attr('method');
 
-    if ($("#ajaxFormPropertyAmenity .summernote").length > 0) {
-        $("#ajaxFormPropertyAmenity .summernote").each(function (i) {
-        let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
+//     if ($("#ajaxFormPropertyAmenity .summernote").length > 0) {
+//         $("#ajaxFormPropertyAmenity .summernote").each(function (i) {
+//         let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
 
-        fd.delete($(this).attr('name'));
-        fd.append($(this).attr('name'), content);
+//         fd.delete($(this).attr('name'));
+//         fd.append($(this).attr('name'), content);
+//         });
+//     }
+
+//     $.ajax({
+//         url: url,
+//         method: method,
+//         data: fd,
+//         contentType: false,
+//         processData: false,
+//         success: function (data) {
+//         console.log(data, 'success', typeof data.error);
+//         $(e.target).attr('disabled', false);
+//         $(".request-loader").removeClass("show");
+
+//         $(".em").each(function () {
+//             $(this).html('');
+//         })
+//         if (data == "warning") {
+//             location.reload();
+//         }
+//         if (data == "success") {
+//             location.reload();
+//         }
+
+//         // if error occurs
+//         else if (typeof data.error != 'undefined') {
+//             for (let x in data) {
+//             if (x == 'error') {
+//                 continue;
+//             }
+//             document.getElementById('err' + x).innerHTML = data[x][0];
+//             }
+//         }
+//         },
+//         error: function (error) {
+
+//         $(".em").each(function () {
+//             $(this).html('');
+//         })
+//         console.log(error.responseJSON.errors);
+//         for (let x in error.responseJSON.errors) {
+//             document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
+//         }
+//         $(".request-loader").removeClass("show");
+//         $(e.target).attr('disabled', false);
+//         }
+//     });
+//   });
+
+      //  submitBtnPropertyAmenity
+
+      $(document).on('click', '#submitBtnPropertyAmenity', function (e) {
+        console.log('clicked2');
+        e.preventDefault();
+        $(e.target).attr('disabled', true);
+        $(".request-loader").addClass("show");
+
+        let ajaxForm = document.getElementById('ajaxFormPropertyAmenity');
+        let fd = new FormData(ajaxForm);
+        let url = $("#ajaxFormPropertyAmenity").attr('action');
+        let method = $("#ajaxFormPropertyAmenity").attr('method');
+        // the icon value is set
+        let selectedIcon = $('#inputIcon').val().trim();
+        if (!selectedIcon) {
+            alert(" Please select an icon before submitting.");
+            $(e.target).attr('disabled', false);
+            $(".request-loader").removeClass("show");
+            return;
+        }
+        fd.set('icon', selectedIcon);
+
+        if ($("#ajaxFormPropertyAmenity .summernote").length > 0) {
+            $("#ajaxFormPropertyAmenity .summernote").each(function () {
+                let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
+                fd.delete($(this).attr('name'));
+                fd.append($(this).attr('name'), content);
+            });
+        }
+
+        $.ajax({
+            url: url,
+            method: method,
+            data: fd,
+            contentType: false,
+            processData: false,
+            success: function (data) {
+                $(e.target).attr('disabled', false);
+                $(".request-loader").removeClass("show");
+
+                $(".em").each(function () {
+                    $(this).html('');
+                });
+
+                if (data === "warning" || data === "success") {
+                    location.reload();
+                } else if (typeof data.error !== 'undefined') {
+                    for (let x in data) {
+                        if (x === 'error') continue;
+                        document.getElementById('err' + x).innerHTML = data[x][0];
+                    }
+                }
+            },
+            error: function (error) {
+                $(".em").each(function () {
+                    $(this).html('');
+                });
+                for (let x in error.responseJSON.errors) {
+                    document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
+                }
+                $(".request-loader").removeClass("show");
+                $(e.target).attr('disabled', false);
+            }
         });
-    }
-
-    $.ajax({
-        url: url,
-        method: method,
-        data: fd,
-        contentType: false,
-        processData: false,
-        success: function (data) {
-        console.log(data, 'success', typeof data.error);
-        $(e.target).attr('disabled', false);
-        $(".request-loader").removeClass("show");
-
-        $(".em").each(function () {
-            $(this).html('');
-        })
-        if (data == "warning") {
-            location.reload();
-        }
-        if (data == "success") {
-            location.reload();
-        }
-
-        // if error occurs
-        else if (typeof data.error != 'undefined') {
-            for (let x in data) {
-            if (x == 'error') {
-                continue;
-            }
-            document.getElementById('err' + x).innerHTML = data[x][0];
-            }
-        }
-        },
-        error: function (error) {
-
-        $(".em").each(function () {
-            $(this).html('');
-        })
-        console.log(error.responseJSON.errors);
-        for (let x in error.responseJSON.errors) {
-            document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
-        }
-        $(".request-loader").removeClass("show");
-        $(e.target).attr('disabled', false);
-        }
     });
-  });
+
+
 
   // updateBtnPropertyCategory
   $(document).on('click', '#updateBtnPropertyCategory', function (e) {
@@ -1079,69 +1147,69 @@ $(function ($) {
 
   // submitBtnFooter Footer
   $(document).on('click', '#submitBtnFooter', function (e) {
-  console.log('clicked2');
-  $(e.target).attr('disabled', true);
+    console.log('clicked2');
+    $(e.target).attr('disabled', true);
 
-  $(".request-loader").addClass("show");
+    $(".request-loader").addClass("show");
 
-  let ajaxForm = document.getElementById('ajaxFormFooter');
-  let fd = new FormData(ajaxForm);
-  let url = $("#ajaxFormFooter").attr('action');
-  let method = $("#ajaxFormFooter").attr('method');
+    let ajaxForm = document.getElementById('ajaxFormFooter');
+    let fd = new FormData(ajaxForm);
+    let url = $("#ajaxFormFooter").attr('action');
+    let method = $("#ajaxFormFooter").attr('method');
 
-  if ($("#ajaxFormFooter .summernote").length > 0) {
-      $("#ajaxFormFooter .summernote").each(function (i) {
-      let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
+    if ($("#ajaxFormFooter .summernote").length > 0) {
+        $("#ajaxFormFooter .summernote").each(function (i) {
+        let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
 
-      fd.delete($(this).attr('name'));
-      fd.append($(this).attr('name'), content);
-      });
-  }
+        fd.delete($(this).attr('name'));
+        fd.append($(this).attr('name'), content);
+        });
+    }
 
-  $.ajax({
-      url: url,
-      method: method,
-      data: fd,
-      contentType: false,
-      processData: false,
-      success: function (data) {
-      console.log(data, 'success', typeof data.error);
-      $(e.target).attr('disabled', false);
-      $(".request-loader").removeClass("show");
+    $.ajax({
+        url: url,
+        method: method,
+        data: fd,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+        console.log(data, 'success', typeof data.error);
+        $(e.target).attr('disabled', false);
+        $(".request-loader").removeClass("show");
 
-      $(".em").each(function () {
-          $(this).html('');
-      })
-      if (data == "warning") {
-          location.reload();
-      }
-      if (data == "success") {
-          location.reload();
-      }
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        if (data == "warning") {
+            location.reload();
+        }
+        if (data == "success") {
+            location.reload();
+        }
 
-      // if error occurs
-      else if (typeof data.error != 'undefined') {
-          for (let x in data) {
-          if (x == 'error') {
-              continue;
-          }
-          document.getElementById('err' + x).innerHTML = data[x][0];
-          }
-      }
-      },
-      error: function (error) {
+        // if error occurs
+        else if (typeof data.error != 'undefined') {
+            for (let x in data) {
+            if (x == 'error') {
+                continue;
+            }
+            document.getElementById('err' + x).innerHTML = data[x][0];
+            }
+        }
+        },
+        error: function (error) {
 
-      $(".em").each(function () {
-          $(this).html('');
-      })
-      console.log(error.responseJSON.errors);
-      for (let x in error.responseJSON.errors) {
-          document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
-      }
-      $(".request-loader").removeClass("show");
-      $(e.target).attr('disabled', false);
-      }
-  });
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        console.log(error.responseJSON.errors);
+        for (let x in error.responseJSON.errors) {
+            document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
+        }
+        $(".request-loader").removeClass("show");
+        $(e.target).attr('disabled', false);
+        }
+    });
   });
 
   //  submitBtnPortfolio
@@ -1414,69 +1482,69 @@ $(function ($) {
 
   //  submitBtnBrand
   $(document).on('click', '#submitBtnBrand', function (e) {
-  console.log('submitBtnBrand');
-  $(e.target).attr('disabled', true);
+    console.log('submitBtnBrand');
+    $(e.target).attr('disabled', true);
 
-  $(".request-loader").addClass("show");
+    $(".request-loader").addClass("show");
 
-  let ajaxForm = document.getElementById('ajaxFormBrand');
-  let fd = new FormData(ajaxForm);
-  let url = $("#ajaxFormBrand").attr('action');
-  let method = $("#ajaxFormBrand").attr('method');
+    let ajaxForm = document.getElementById('ajaxFormBrand');
+    let fd = new FormData(ajaxForm);
+    let url = $("#ajaxFormBrand").attr('action');
+    let method = $("#ajaxFormBrand").attr('method');
 
-  if ($("#ajaxFormBrand .summernote").length > 0) {
-      $("#ajaxFormBrand .summernote").each(function (i) {
-      let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
+    if ($("#ajaxFormBrand .summernote").length > 0) {
+        $("#ajaxFormBrand .summernote").each(function (i) {
+        let content = $(this).summernote('isEmpty') ? '' : $(this).summernote('code');
 
-      fd.delete($(this).attr('name'));
-      fd.append($(this).attr('name'), content);
-      });
-  }
+        fd.delete($(this).attr('name'));
+        fd.append($(this).attr('name'), content);
+        });
+    }
 
-  $.ajax({
-      url: url,
-      method: method,
-      data: fd,
-      contentType: false,
-      processData: false,
-      success: function (data) {
-      console.log(data, 'success', typeof data.error);
-      $(e.target).attr('disabled', false);
-      $(".request-loader").removeClass("show");
+    $.ajax({
+        url: url,
+        method: method,
+        data: fd,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+        console.log(data, 'success', typeof data.error);
+        $(e.target).attr('disabled', false);
+        $(".request-loader").removeClass("show");
 
-      $(".em").each(function () {
-          $(this).html('');
-      })
-      if (data == "warning") {
-          location.reload();
-      }
-      if (data == "success") {
-          location.reload();
-      }
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        if (data == "warning") {
+            location.reload();
+        }
+        if (data == "success") {
+            location.reload();
+        }
 
-      // if error occurs
-      else if (typeof data.error != 'undefined') {
-          for (let x in data) {
-          if (x == 'error') {
-              continue;
-          }
-          document.getElementById('err' + x).innerHTML = data[x][0];
-          }
-      }
-      },
-      error: function (error) {
+        // if error occurs
+        else if (typeof data.error != 'undefined') {
+            for (let x in data) {
+            if (x == 'error') {
+                continue;
+            }
+            document.getElementById('err' + x).innerHTML = data[x][0];
+            }
+        }
+        },
+        error: function (error) {
 
-      $(".em").each(function () {
-          $(this).html('');
-      })
-      console.log(error.responseJSON.errors);
-      for (let x in error.responseJSON.errors) {
-          document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
-      }
-      $(".request-loader").removeClass("show");
-      $(e.target).attr('disabled', false);
-      }
-  });
+        $(".em").each(function () {
+            $(this).html('');
+        })
+        console.log(error.responseJSON.errors);
+        for (let x in error.responseJSON.errors) {
+            document.getElementById('err' + x).innerHTML = error.responseJSON.errors[x][0];
+        }
+        $(".request-loader").removeClass("show");
+        $(e.target).attr('disabled', false);
+        }
+    });
   });
 
   //  submitBtnTestimonialUpdate

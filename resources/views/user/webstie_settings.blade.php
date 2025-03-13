@@ -2809,15 +2809,18 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                                 <div class="col-md-12 showImage mb-3">
                                                     <img src="{{ isset($information['home_setting']->why_choose_us_section_image) ? asset('assets/front/img/user/home_settings/' . $information['home_setting']->why_choose_us_section_image) : asset('assets/admin/img/noimage.jpg') }}" alt="..." class="img-thumbnail">
                                                 </div>
-                                                <input type="file" name="why_choose_us_section_image" id="image" class=" d-none form-control image">
+
+                                                <input type="file" name="why_choose_us_section_image" id="why_choose_us_section_image" class=" d-none form-control image">
                                                 <button type="button" class="upload-btn"
                                                 style="background-color: white; border: 2px dashed #8c9998; color: #0E9384; padding: 1rem; width: 50%; display: flex; flex-direction: column; align-items: center; cursor: pointer;"
-                                                onclick="document.getElementById('image').click()">
+                                                onclick="document.getElementById('why_choose_us_section_image').click()">
                                                     <i class="bi bi-upload mb-2"></i>
                                                     <span>{{ __('Background Image') }}</span>
                                                 </button>
                                                 <p id="error_why_choose_us_section_image" class="mb-0 text-danger em"></p>
+
                                             </div>
+
                                             @if ($userBs->theme == 'home13')
                                             <div class="form-group">
                                                 <div class="col-12 mb-2">
@@ -4800,10 +4803,7 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                                 <small>{{ __('The higher the serial number is, the later will be shown.') }}</small>
                             </p>
                         </div>
-                    </form>
-                </div>
-
-                <div class="modal-footer">
+                        <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
                         {{ __('Close') }}
                     </button>
@@ -4811,6 +4811,11 @@ Config::set('app.timezone', $userBs->timezoneinfo->timezone??'');
                         {{ __('Save') }}
                     </button>
                 </div>
+
+                    </form>
+                </div>
+
+
             </div>
         </div>
     </div>

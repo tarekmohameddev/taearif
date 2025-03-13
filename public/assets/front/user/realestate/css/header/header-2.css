@@ -20,7 +20,7 @@
     .header-area.header-2:not(.header-static, .is-sticky) .header-top span {
         color: var(--text-white);
     }
-
+    /* remove fixed white color of menu bar ->>  */
     .header-area.header-2:not(.header-static, .is-sticky) :is(.nav-link:not(:is(.active, .menu-dropdown .nav-link)), .wishlist-btn, .nice-select, .nice-select::after) {
         color: var(--color-white);
         font-weight: var(--font-medium);
