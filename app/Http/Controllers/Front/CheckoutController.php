@@ -499,13 +499,14 @@ class CheckoutController extends Controller
                 // --- Begin: Basic Settings Record ---
                 // Basic Settings Json
                 $basicSettingsJson = '{
-                    "favicon": "64b21ddeeebea.jpg",
-                    "breadcrumb": "6727bcb973b51.png",
-                    "logo": "6727bcb973b51.png",
-                    "preloader": "622df7be5831b.png",
-                    "base_color": "6DB6A2",
-                    "theme": "home_six",
-                    "email": null,
+                    "favicon": "https://taearif.com/assets/front/img/user/67c6ef042c39b.jpeg",
+                    "breadcrumb": "https://codecanyon8.kreativdev.com/estaty/assets/img/hero/static/6574372e0ad77.jpg",
+                    "logo": "https://taearif.com/assets/front/img/user/67c6ef042c39b.jpeg",
+                    "preloader": "https://taearif.com/assets/front/img/user/67c6ef042c39b.jpeg",
+                    "base_color": "0003FF",
+                    "secondary_color": "00F5E5",
+                    "theme": "home13",
+                    // "email": "F.a.t-550@hotmail.com",
                     "from_name": null,
                     "is_quote": "1",
                     "qr_image": "6727bead51be1.png",
@@ -524,7 +525,7 @@ class CheckoutController extends Controller
                     "qr_inserted_image_x": "50",
                     "qr_inserted_image_y": "50",
                     "qr_type": "default",
-                    "qr_url": "https://taearif.com/rangs",
+                    "qr_url": "https:\/\/taearif.com\/rangs",
                     "whatsapp_status": "0",
                     "whatsapp_number": null,
                     "whatsapp_header_title": null,
@@ -539,13 +540,12 @@ class CheckoutController extends Controller
                     "tawkto_status": "0",
                     "tawkto_direct_chat_link": null,
                     "custom_css": null,
-                    "website_title": null,
+                    "website_title": "شركة ليرا العقارية",
                     "base_currency_symbol": "$",
                     "base_currency_symbol_position": "left",
                     "base_currency_text": "USD",
                     "base_currency_rate": null,
                     "base_currency_text_position": null,
-                    "secondary_color": "222F5A",
                     "is_recaptcha": "0",
                     "google_recaptcha_site_key": null,
                     "google_recaptcha_secret_key": null,
@@ -560,8 +560,8 @@ class CheckoutController extends Controller
                     "cookie_alert_button_text": null,
                     "property_country_status": "1",
                     "property_state_status": "1",
-                    "short_description": null,
-                    "industry_type": null
+                    "short_description": "شركة ليرا هي شركة عقارية مبتكرة ومتخصصة في تقديم خدمات العقارات بجودة عالية وحلول مهنية. تتميز الشركة بتقديم مجموعة واسعة من العقارات سواء كانت سكنية أو تجارية، وتهدف إلى تلبية احتياجات عملائها من خلال توفير خيارات متنوعة تناسب كافة الأذواق والميزانيات.",
+                    "industry_type": "Real Estate Company"
                 }';
 
                 $basicSettingsArray = json_decode($basicSettingsJson, true);
@@ -1061,10 +1061,6 @@ class CheckoutController extends Controller
                     "work_process_section_video_url": null,
                     "quote_section_title": "إقتبس",
                     "quote_section_subtitle": "ولكن لمعرفة من الذي ولد كل هذا الخطأ sitevoluac",
-                    "language_id": "",
-                    "user_id": "",
-                    "created_at": "2021-11-17 00:30:27",
-                    "updated_at": "2023-01-03 08:10:49",
                     "counter_section_image": "622df3492b4f1.jpg",
                     "work_process_btn_txt": "ابدأ مشروعًا",
                     "work_process_btn_url": "http://example.com/",

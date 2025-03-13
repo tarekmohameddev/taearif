@@ -1108,71 +1108,87 @@ class BasicController extends Controller
         return view("user.home.why_choose_us_section", $information);
     }
 
+    //
+
     public function updateWhyChooseUsSection(Request $request, $language)
     {
-        // dd($request->all());
+        \Log::info('Request data:', $request->all());
+
         $rules = [
             'why_choose_us_section_title' => 'nullable|max:255',
             'why_choose_us_section_subtitle' => 'nullable|max:255',
             'why_choose_us_section_text' => 'nullable',
             'why_choose_us_section_button_text' => 'nullable|max:255',
-            'why_choose_us_section_button_url' => 'nullable|max:255'
+            'why_choose_us_section_button_url' => 'nullable|max:255',
+            'why_choose_us_section_image' => 'nullable|mimes:jpeg,jpg,png',
+            'why_choose_us_section_image_two' => 'nullable|mimes:jpeg,jpg,png',
         ];
+
         $messages = [
             'why_choose_us_section_title.max' => 'The title field can contain maximum 255 characters',
             'why_choose_us_section_subtitle.max' => 'The subtitle field can contain maximum 255 characters',
             'why_choose_us_section_button_text.max' => 'The button name field can contain maximum 255 characters',
             'why_choose_us_section_button_url.max' => 'The button url field can contain maximum 255 characters',
-            // 'why_choose_us_section_image.max' => 'The image field is required',
-            'why_choose_us_section_video_image.max' => 'The video section image field is required',
-            'why_choose_us_section_video_url.max' => 'The video section url field can contain maximum 255 characters'
         ];
 
-        $lang = Language::where('code', $language)->where('user_id', Auth::guard('web')->user()->id)->first();
-        $userBs = BasicSetting::where('user_id', Auth::guard('web')->user()->id)->first();
-        $data = HomePageText::where('language_id', $lang->id)->where('user_id', Auth::guard('web')->user()->id)->first();
-        $request['video_image_name'] = $data->why_choose_us_section_video_image;
-        $request['image_name'] = $data->why_choose_us_section_image;
-        $request['image_name2'] = $data->why_choose_us_section_image_two;
+        $lang = Language::where('code', $language)->where('user_id', Auth::guard('web')->user()->id)->firstOrFail();
+        $userBs = BasicSetting::where('user_id', Auth::guard('web')->user()->id)->firstOrFail();
+        $data = HomePageText::where('language_id', $lang->id)->where('user_id', Auth::guard('web')->user()->id)->firstOrFail();
 
-        if (empty($data->why_choose_us_section_image) && !$request->hasFile('why_choose_us_section_image')) {
-            $rules['why_choose_us_section_image'] = 'nullable|mimes:jpeg,jpg,png';
-            $rules['why_choose_us_section_image_two'] = 'nullable|mimes:jpeg,jpg,png';
-        }
-
-
-        if (empty($data->why_choose_us_section_video_image) && !$request->hasFile('why_choose_us_section_video_image') && $userBs->theme === 'home_three') {
+        if ($userBs->theme === 'home_three') {
+            $rules['why_choose_us_section_video_url'] = 'nullable|max:255';
             $rules['why_choose_us_section_video_image'] = 'nullable|mimes:jpeg,jpg,png';
         }
 
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), $rules, $messages);
+        if ($validator->fails()) {
+            \Log::info('Validation failed:', $validator->errors()->toArray());
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        $image_name = $data->why_choose_us_section_image;
+        $image_name2 = $data->why_choose_us_section_image_two;
+        $video_image_name = $data->why_choose_us_section_video_image;
+
         if ($request->hasFile('why_choose_us_section_image')) {
-            $request['image_name'] = Uploader::update_picture('assets/front/img/user/home_settings/', $request->file('why_choose_us_section_image'), $data->why_choose_us_section_image);
+            $image_name = Uploader::update_picture('assets/front/img/user/home_settings/', $request->file('why_choose_us_section_image'), $data->why_choose_us_section_image);
+            \Log::info('Image 1 updated:', ['name' => $image_name]);
+        } else {
+            \Log::info('No file uploaded for why_choose_us_section_image');
         }
 
         if ($request->hasFile('why_choose_us_section_image_two')) {
-            $request['image_name2'] = Uploader::update_picture('assets/front/img/user/home_settings/', $request->file('why_choose_us_section_image_two'), $data->why_choose_us_section_image_two);
+            $image_name2 = Uploader::update_picture('assets/front/img/user/home_settings/', $request->file('why_choose_us_section_image_two'), $data->why_choose_us_section_image_two);
+            \Log::info('Image 2 updated:', ['name' => $image_name2]);
         } else {
-            $request['image_name2'] = $data->why_choose_us_section_image_two;
+            \Log::info('No file uploaded for why_choose_us_section_image_two');
         }
 
+        if ($userBs->theme === 'home_three' && $request->hasFile('why_choose_us_section_video_image')) {
+            $video_image_name = Uploader::update_picture('assets/front/img/user/home_settings/', $request->file('why_choose_us_section_video_image'), $data->why_choose_us_section_video_image);
+            \Log::info('Video image updated:', ['name' => $video_image_name]);
+        }
 
-        if ($userBs->theme === 'home_three') {
-            $rules['why_choose_us_section_video_url'] = 'nullable';
-            if ($request->hasFile('why_choose_us_section_video_image')) {
-                $request['video_image_name'] = Uploader::update_picture('assets/front/img/user/home_settings/', $request->file('why_choose_us_section_video_image'), $data->why_choose_us_section_video_image);
-            }
-        }
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), $rules, $messages);
-        if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator);
-        }
-        $data->update($request->except(['why_choose_us_section_image', 'why_choose_us_section_image_two', 'why_choose_us_section_text', 'why_choose_us_section_video_image', 'why_choose_us_section_video_url']) + [
-            'why_choose_us_section_image' => $request->image_name,
-            'why_choose_us_section_image_two' => $request->image_name2,
-            'why_choose_us_section_video_image' => $request->video_image_name,
+        $updateData = [
+            'why_choose_us_section_title' => $request->why_choose_us_section_title,
+            'why_choose_us_section_subtitle' => $request->why_choose_us_section_subtitle,
             'why_choose_us_section_text' => clean($request->why_choose_us_section_text),
-            'why_choose_us_section_video_url' => (strpos($request->why_choose_us_section_video_url, "&") != false) ? substr($request->why_choose_us_section_video_url, 0, strpos($request->why_choose_us_section_video_url, "&")) : $request->why_choose_us_section_video_url,
-        ]);
+            'why_choose_us_section_button_text' => $request->why_choose_us_section_button_text,
+            'why_choose_us_section_button_url' => $request->why_choose_us_section_button_url,
+            'why_choose_us_section_image' => $image_name,
+            'why_choose_us_section_image_two' => $image_name2,
+            'why_choose_us_section_video_image' => $video_image_name,
+            'why_choose_us_section_video_url' => $request->why_choose_us_section_video_url
+                ? (strpos($request->why_choose_us_section_video_url, "&") !== false
+                    ? substr($request->why_choose_us_section_video_url, 0, strpos($request->why_choose_us_section_video_url, "&"))
+                    : $request->why_choose_us_section_video_url)
+                : null,
+        ];
+
+        \Log::info('Data to update:', $updateData);
+
+        $data->update($updateData);
+
         $request->session()->flash('success', 'Why choose us section updated successfully!');
 
         UserStep::updateOrCreate(
@@ -1180,8 +1196,12 @@ class BasicController extends Controller
             ['user_whychooseus' => true]
         );
 
+        \Log::info('Updated data:', $data->toArray());
+
         return redirect()->back();
     }
+
+    //
     public function whyChooseUsItemStore(Request $request)
     {
         Log::info($request->all());

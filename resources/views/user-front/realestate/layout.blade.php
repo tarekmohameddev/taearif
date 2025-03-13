@@ -99,6 +99,7 @@
     <div class="request-loader">
         <img src="{{ asset('assets\front\user\realestate\images\loaders.gif') }}">
     </div>
+
     {{-- preloader end --}}
     @if ($userBs->theme == 'home13')
         @includeIf('user-front.realestate.partials.header.header-v1')
