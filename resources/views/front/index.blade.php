@@ -325,16 +325,39 @@ l47 -48 -307 0 -307 0 0 -90 0 -91 773 3 c858 3 810 -1 886 71 51 49 72 105
 
             </div>
             <nav class="hidden md:flex items-center gap-6">
-                <a href="#" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
-                    الرئيسية
-                </a>
-                <a href="/blog" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
-                    المدونة
-                </a>
-                <a href="/contact" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
-                    تواصل معنا
-                </a>
-            </nav>
+    <a href="#" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
+        الرئيسية
+    </a>
+    <div class="relative group">
+        <a href="#services" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full flex items-center gap-1">
+            الخدمات
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+        </a>
+        <div class="absolute top-full right-0 bg-white shadow-lg rounded-md p-4 min-w-[250px] hidden group-hover:block z-10">
+            <div class="flex flex-col gap-2 text-right">
+                <a href="/p/خدمات-الاستضافة" class="text-sm py-1 hover:text-primary transition-colors">خدمات الاستضافة</a>
+                <a href="/p/إدارة-النطاقات" class="text-sm py-1 hover:text-primary transition-colors">إدارة النطاقات</a>
+                <a href="/p/دعم-متعدد-اللغات" class="text-sm py-1 hover:text-primary transition-colors">دعم-متعدد اللغات</a>
+                <a href="/p/أدوات-تحسين-محركات-البحث-(seo)" class="text-sm py-1 hover:text-primary transition-colors">أدوات تحسين محركات البحث (seo)</a>
+                <a href="/p/تحسين-للجوال" class="text-sm py-1 hover:text-primary transition-colors">تحسين للجوال</a>
+                <a href="/p/مكتبة-القوالب" class="text-sm py-1 hover:text-primary transition-colors">مكتبة القوالب</a>
+                <a href="/p/تعديل-المحتوى" class="text-sm py-1 hover:text-primary transition-colors">تعديل المحتوى</a>
+                <a href="/p/إنشاء-مواقع-مخصصة" class="text-sm py-1 hover:text-primary transition-colors">إنشاء مواقع مخصصة</a>
+                <a href="/p/بطاقات-للموظفين-vcard" class="text-sm py-1 hover:text-primary transition-colors">بطاقات للموظفين vcard</a>
+            </div>
+        </div>
+    </div>
+    <a href="/blog" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
+        المدونة
+    </a>
+    <a href="/contact" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
+        تواصل معنا
+    </a>
+</nav>
+
+
             <div class="flex items-center gap-2 sm:gap-4">
                 <button class="hidden sm:inline-flex h-9 px-4 py-2 rounded-md border border-input bg-background hover:bg-primary hover:text-primary-foreground transition-all duration-300">
                     تسجيل الدخول
@@ -375,19 +398,38 @@ l47 -48 -307 0 -307 0 0 -90 0 -91 773 3 c858 3 810 -1 886 71 51 49 72 105
                 </button>
             </div>
             <nav class="flex flex-col gap-6 text-right">
-                <a href="#" class="text-lg font-medium py-3 border-b border-gray-100 mobile-menu-link">
-                    الرئيسية
-                </a>
-                <a href="#features" class="text-lg font-medium py-3 border-b border-gray-100 mobile-menu-link">
-                    المميزات
-                </a>
-                <a href="#faq" class="text-lg font-medium py-3 border-b border-gray-100 mobile-menu-link">
-                    الأسئلة الشائعة
-                </a>
-                <a href="#contact" class="text-lg font-medium py-3 border-b border-gray-100 mobile-menu-link">
-                    تواصل معنا
-                </a>
-            </nav>
+    <a href="#" class="text-lg font-medium py-3 border-b border-gray-100 mobile-menu-link">
+        الرئيسية
+    </a>
+    <div class="relative">
+    <a href="javascript:void(0)" class="text-lg font-medium py-3 border-b border-gray-100 mobile-menu-link services-toggle flex justify-between items-center">
+        الخدمات
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </a>
+    <div class="submenu hidden flex flex-col pr-4 mt-1 mb-2">
+        <a href="/p/خدمات-الاستضافة" class="text-base py-2 mobile-submenu-link">خدمات الاستضافة</a>
+        <a href="/p/إدارة-النطاقات" class="text-base py-2 mobile-submenu-link">إدارة النطاقات</a>
+        <a href="/p/دعم-متعدد-اللغات" class="text-base py-2 mobile-submenu-link">دعم متعدد اللغات</a>
+        <a href="/p/أدوات-تحسين-محركات-البحث-(seo)" class="text-base py-2 mobile-submenu-link">أدوات تحسين محركات البحث (seo)</a>
+        <a href="/p/تحسين-للجوال" class="text-base py-2 mobile-submenu-link">تحسين للجوال</a>
+        <a href="/p/مكتبة-القوالب" class="text-base py-2 mobile-submenu-link">مكتبة القوالب</a>
+        <a href="/p/تعديل-المحتوى" class="text-base py-2 mobile-submenu-link">تعديل المحتوى</a>
+        <a href="/p/إنشاء-مواقع-مخصصة" class="text-base py-2 mobile-submenu-link">إنشاء مواقع مخصصة</a>
+        <a href="/p/بطاقات-للموظفين-vcard" class="text-base py-2 mobile-submenu-link">بطاقات للموظفين vcard</a>
+    </div>
+</div>
+    <a href="#features" class="text-lg font-medium py-3 border-b border-gray-100 mobile-menu-link">
+        المميزات
+    </a>
+    <a href="#faq" class="text-lg font-medium py-3 border-b border-gray-100 mobile-menu-link">
+        الأسئلة الشائعة
+    </a>
+    <a href="#contact" class="text-lg font-medium py-3 border-b border-gray-100 mobile-menu-link">
+        تواصل معنا
+    </a>
+</nav>
             <div class="mt-auto flex flex-col gap-4">
                 <button class="w-full h-10 px-4 py-2 rounded-md border border-input bg-background transition-all duration-300 hover:bg-primary hover:text-primary-foreground mobile-menu-link">
                     تسجيل الدخول
@@ -1251,5 +1293,29 @@ l47 -48 -307 0 -307 0 0 -90 0 -91 773 3 c858 3 810 -1 886 71 51 49 72 105
             };
         });
     </script>
+    <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Find the services menu item by looking for the one with SVG
+    const menuItems = document.querySelectorAll('.mobile-menu-link');
+    
+    menuItems.forEach(item => {
+      if (item.querySelector('svg')) {
+        item.addEventListener('click', function(e) {
+          e.preventDefault();
+          const submenu = item.parentElement.querySelector('.submenu');
+          if (submenu) {
+            submenu.classList.toggle('hidden');
+            const arrow = item.querySelector('svg');
+            if (arrow) {
+              arrow.classList.toggle('rotate-180');
+            }
+          }
+        });
+      }
+    });
+  });
+
+
+</script>
 </body>
 </html>
