@@ -48,138 +48,122 @@ class OnboardingController extends Controller
      */
     public function store(Request $request)
     {
-        // dd($request->all());
         $request->validate([
-            // 'website_title' => 'required|string|max:255',
-            // 'industry_type' => 'required|string',
-            // 'short_description' => 'nullable|string|max:255',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'favicon' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:512',
             'base_color' => 'required|string|max:7',
             'secondary_color' => 'required|string|max:7',
             'website_field' => 'required|string',
         ]);
+
         $user = Auth::user();
         $lang = Language::where([['user_id', Auth::id()], ['is_default', 1]])->first();
-
         $bss = BasicSetting::firstOrNew(['user_id' => $user->id]);
-        // if ($request->has('website_title')) {
-            // // $bss->website_title = $request->website_title;
-        // }
 
-        if ($request->has('base_color')) {
-            $bss->base_color = $request->base_color;
-        }
-        if ($request->has('secondary_color')) {
-            $bss->secondary_color = $request->secondary_color;
-        }
+        $bss->base_color = $request->base_color;
+        $bss->secondary_color = $request->secondary_color;
 
-        if ($request->has('website_field')) {
-            $templateMapping = [
-                'real-estate' => 'home13',
-                'lawyer' => 'home_seven',
-                'personal' => 'home_two'
-            ];
-
-            if (array_key_exists($request->website_field, $templateMapping)) {
-                $bss->theme = $templateMapping[$request->website_field];
-            }
+        $templateMapping = [
+            'real-estate' => 'home13',
+            'lawyer' => 'home_seven',
+            'personal' => 'home_two'
+        ];
+        if (array_key_exists($request->website_field, $templateMapping)) {
+            $bss->theme = $templateMapping[$request->website_field];
         }
 
-        //
-        // **Create or Update the Menu if website_field is 'real-estate'**
-        if ($request->website_field == 'real-estate') {
-            $this->updateUserMenu($user->id, $lang->id);
-            $this->updateUserBasicSettings($user->id);
-            $this->updateUserHeroStatic($user->id, $lang->id);
-            $this->updateUserHomePageText($user->id, $lang->id);
-            $this->updateUserFooterText($user->id, $lang->id);
-            $this->updateUserCounterInformation($user->id, $lang->id);
-            $this->updateUserBrands($user->id, $lang->id);
-            $this->updateUserSkills($user->id, $lang->id);
-            $this->updateUserAmenities($user->id, $lang->id);
-        }
-        //
+        // Variables to store uploaded filenames
+        $logoFilename = null;
+        $faviconFilename = null;
 
-        // if ($request->has('industry_type')) {
-            // // $bss->industry_type = $request->industry_type;
-        // }
-        // if ($request->has('short_description')) {
-        //     $bss->short_description = $request->short_description;
-        // }
-
-        // main "logo" upload.
-        if ($request->hasFile('logo')) {
+        // Handle favicon upload (used as logo if no separate logo is provided)
+        if ($request->hasFile('favicon')) {
             try {
-                // Delete old images if they exist.
-                $imageFields = ['logo', 'preloader', 'breadcrumb', 'favicon'];
-                foreach ($imageFields as $field) {
-                    if ($bss->$field) {
-                        @unlink(public_path('assets/front/img/user/' . $bss->$field));
+                if ($bss->favicon && file_exists(public_path('assets/front/img/user/' . $bss->favicon))) {
+                    @unlink(public_path('assets/front/img/user/' . $bss->favicon));
+                }
+                $faviconFile = $request->file('favicon');
+                $faviconFilename = 'favicon_' . uniqid() . '.' . $faviconFile->getClientOriginalExtension();
+
+                // Upload to user folder (for header)
+                $faviconFile->move(public_path('assets/front/img/user/'), $faviconFilename);
+                $bss->favicon = $faviconFilename; // Save only filename
+
+                // If no logo is uploaded, use favicon as logo
+                if (!$request->hasFile('logo')) {
+                    $logoFilename = $faviconFilename;
+                    // Copy to footer folder
+                    if (!file_exists(public_path('assets/front/img/user/footer'))) {
+                        mkdir(public_path('assets/front/img/user/footer'), 0755, true);
                     }
+                    copy(
+                        public_path('assets/front/img/user/' . $faviconFilename),
+                        public_path('assets/front/img/user/footer/' . $faviconFilename)
+                    );
                 }
-
-                $file = $request->file('logo');
-                $filename = uniqid() . '.' . $file->getClientOriginalExtension();
-                $file->move(public_path('assets/front/img/user/'), $filename);
-
-                // Set the same filename for all the related fields.
-                foreach ($imageFields as $field) {
-                    $bss->$field = $filename;
-                }
-
-                // Copy logo file to footer folder.
-                $sourcePath = public_path('assets/front/img/user/' . $filename);
-                $destinationPath = public_path('assets/front/img/user/footer/' . $filename);
-                if (!file_exists(public_path('assets/front/img/user/footer/'))) {
-                    mkdir(public_path('assets/front/img/user/footer/'), 0775, true);
-                }
-                copy($sourcePath, $destinationPath);
-
-
-                $tempFooterText = FooterText::where('language_id', $lang->id)->where('user_id', $user->id)->first();
-                if (!$tempFooterText) {
-                    $tempFooterText = new FooterText;
-                }
-                $tempFooterText->logo = $filename;
-                $tempFooterText->bg_image = $filename;
-                $tempFooterText->language_id = $lang->id;
-                $tempFooterText->user_id = $user->id;
-                $tempFooterText->save();
             } catch (\Exception $e) {
-                \Log::error("File upload failed: " . $e->getMessage());
-                Session::flash('error', 'File upload failed. Please try again.');
+                \Log::error("Favicon upload failed: " . $e->getMessage());
+                Session::flash('error', 'Favicon upload failed. Please try again.');
                 return back();
             }
         }
 
+        // Handle logo upload (overrides favicon if provided)
+        if ($request->hasFile('logo')) {
+            try {
+                if ($bss->logo && file_exists(public_path('assets/front/img/user/' . $bss->logo))) {
+                    @unlink(public_path('assets/front/img/user/' . $bss->logo));
+                }
+                $logoFile = $request->file('logo');
+                $logoFilename = 'logo_' . uniqid() . '.' . $logoFile->getClientOriginalExtension();
+
+                // Upload to user folder (for header)
+                $logoFile->move(public_path('assets/front/img/user/'), $logoFilename);
+                $bss->logo = $logoFilename; // Save only filename
+
+                // Copy to footer folder (for footer)
+                if (!file_exists(public_path('assets/front/img/user/footer'))) {
+                    mkdir(public_path('assets/front/img/user/footer'), 0755, true);
+                }
+                copy(
+                    public_path('assets/front/img/user/' . $logoFilename),
+                    public_path('assets/front/img/user/footer/' . $logoFilename)
+                );
+            } catch (\Exception $e) {
+                \Log::error("Logo upload failed: " . $e->getMessage());
+                Session::flash('error', 'Logo upload failed. Please try again.');
+                return back();
+            }
+        }
+
+        // Save BasicSetting before calling updateUserFooterText
         $bss->save();
 
 
-        // Use LogoService to update logo and favicon
-        $uploadedFiles = LogoService::updateLogoAndFavicon($request, $user);
-
-        // If the logo and favicon were updated successfully, assign them to the user
-        if ($uploadedFiles) {
-            $user->update([
-                'logo' => $uploadedFiles['logo'],
-                'favicon' => $uploadedFiles['favicon']
-            ]);
+        // Real-estate updates, passing the logo filename
+        if ($request->website_field == 'real-estate') {
+            $this->updateUserMenu($user->id, $lang->id);
+            $this->updateUserBasicSettings($user->id,$user->username);
+            $this->updateUserHeroStatic($user->id, $lang->id ,$user->username);
+            $this->updateUserHomePageText($user->id, $lang->id);
+            $this->updateUserFooterText($user->id, $lang->id, $logoFilename);
+            $this->updateUserCounterInformation($user->id, $lang->id);
+            $this->updateUserBrands($user->id, $lang->id);
+            $this->updateUserSkills($user->id, $lang->id, $request->secondary_color);
+            $this->updateUserAmenities($user->id, $lang->id);
         }
-        // $data = HeroStatic::where('language_id', $lang->id)->where('user_id', Auth::id())->first();
 
-        // Update or Create User Details in BasicSetting
+        // log::info($user->username);
+        // Update additional BasicSetting fields
         BasicSetting::updateOrCreate(
             ['user_id' => $user->id],
             [
-                'company_name' => $request->company_name,
+                'company_name' => $user->username,
                 'industry_type' => $request->industry_type,
-                // 'short_description' => $request->short_description,
-                'primary_color' => $request->primary_color
+                'primary_color' => $request->secondary_color
             ]
         );
 
-        // Redirect to Step 2
         return redirect()->route('onboarding.showStep2')->with('success', 'تم حفظ البيانات بنجاح!');
     }
 
@@ -187,7 +171,7 @@ class OnboardingController extends Controller
     {
         $realEstateMenu = [
             ["text" => "الصفحة الرئيسية", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "home"],
-            ["text" => "نبذة عنا", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "about us"],
+            ["text" => "نبذة عنا", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "about-us"],
             ["text" => "المشاريع", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "projects"],
             ["text" => "العقارات", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "properties"],
             ["text" => "اتصل بنا", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "contact"]
@@ -208,15 +192,15 @@ class OnboardingController extends Controller
             ]);
         }
     }
-    private function updateUserBasicSettings($userId)
+
+    // "logo": "https://taearif.com/assets/front/img/user/67c6ef042c39b.jpeg",
+    // "favicon": "https://taearif.com/assets/front/img/user/67c6ef042c39b.jpeg",
+    private function updateUserBasicSettings($userId ,$website_title)
     {
         $basicSettingsJson = '{
-            "favicon": "https://taearif.com/assets/front/img/user/67c6ef042c39b.jpeg",
             "breadcrumb": "https://codecanyon8.kreativdev.com/estaty/assets/img/hero/static/6574372e0ad77.jpg",
-            "logo": "https://taearif.com/assets/front/img/user/67c6ef042c39b.jpeg",
             "preloader": "67c6ef042c39b.jpeg",
-            "base_color": "0003FF",
-            "secondary_color": "00F5E5",
+            "website_title" : "'.$website_title.'",
             "theme": "home13",
             "from_name": null,
             "is_quote": "1",
@@ -235,7 +219,7 @@ class OnboardingController extends Controller
             "qr_inserted_image_x": "50",
             "qr_inserted_image_y": "50",
             "qr_type": "default",
-            "qr_url": "https://taearif.com/lira",
+            "qr_url": "https://taearif.com/",
             "whatsapp_status": "0",
             "whatsapp_number": null,
             "whatsapp_header_title": null,
@@ -250,7 +234,6 @@ class OnboardingController extends Controller
             "tawkto_status": "0",
             "tawkto_direct_chat_link": null,
             "custom_css": null,
-            "website_title": "شركة ليرا العقارية",
             "base_currency_symbol": "$",
             "base_currency_symbol_position": "left",
             "base_currency_text": "USD",
@@ -270,7 +253,7 @@ class OnboardingController extends Controller
             "cookie_alert_button_text": null,
             "property_country_status": "1",
             "property_state_status": "1",
-            "short_description": "شركة ليرا هي شركة عقارية مبتكرة ومتخصصة في تقديم خدمات العقارات بجودة عالية وحلول مهنية.",
+            "short_description": "شركة  هي شركة عقارية مبتكرة ومتخصصة في تقديم خدمات العقارات بجودة عالية وحلول مهنية.",
             "industry_type": "Real Estate Company"
         }';
 
@@ -287,11 +270,11 @@ class OnboardingController extends Controller
             BasicSetting::create($basicSettingsArray);
         }
     }
-    private function updateUserHeroStatic($userId, $languageId)
+    private function updateUserHeroStatic($userId, $languageId,$title)
     {
         $heroStaticJson = '{
             "img": "663e29ef26870d10bd72a4e9d24b908ff34e5a49.jpg",
-            "title": "عنوان رئيسي",
+            "title": "' . $title . '",
             "subtitle": "نبذة تعريفية",
             "btn_name": null,
             "btn_url": null,
@@ -331,7 +314,7 @@ class OnboardingController extends Controller
             "why_choose_us_section_subtitle": "لدينا أسباب كثيرة لاختيارنا",
             "why_choose_us_section_video_image": "d1d67774227ae9d427fd1d391b578eb76c7ac1412.jpg",
             "why_choose_us_section_button_url": "http://taearif.com/",
-            "why_choose_us_section_video_url": "https://taearif.com/lira",
+            "why_choose_us_section_video_url": "https://taearif.com/",
             "why_choose_us_section_title": "لماذا أخترتنا",
             "why_choose_us_section_image_two": "779b32869d807d0b5287d561a4f8f62c65811059.jpg",
             "why_choose_us_section_image": "8334abcb1b2c7634fd7f72fe50d8f711d8dcc5a1.jpg",
@@ -342,7 +325,7 @@ class OnboardingController extends Controller
             "about_subtitle": "نوفّر لك وجهتك المفضلة دائمًا",
             "about_content": "ن ينتقد شخص ما أراد أن يشعر بالسعادة التي لا تشوبها عواقب أليمةلا يوجد منفذ إضافي. عصر ن ينتقد شخص ما أراد أن يشعر بالسعادة التي لا تشوبها عواقب أليمة يستخدم معرف الحمية الغذائية والنقل في. رضا العميل بنسبة 100% نحن دائما نشعر بالقلق إزاء لدينا المشروع والعميل رضا العميل بنسبة 100% نحن دائما نشعر بالقلق إزاء لدينا المشروع والعميل ",
             "about_button_text": "معلومات عنا",
-            "about_button_url": "https://taearif.com/lira",
+            "about_button_url": "https://taearif.com/",
             "skills_title": "عنوان قسم المهارات",
             "skills_subtitle": "عنوان قسم المهارات",
             "skills_content": "عنوان قسم المهارات",
@@ -367,78 +350,97 @@ class OnboardingController extends Controller
             "work_process_section_subtitle": "عملية العمل لدينا",
             "work_process_section_img": "00733bb91bb288918e16a40dfc1516839e550f91.jpg",
             "quote_section_title": "إقتبس",
-            "quote_section_subtitle": "ولكن لمعرفة من الذي ولد كل هذا الخطأ sitevoluac",
+            "quote_section_subtitle": "ولكن لمعرفة من الذي ولد كل هذا الخطأ ",
             "counter_section_image": "622df3492b4f1.jpg",
             "work_process_btn_txt": "ابدأ مشروعًا",
             "work_process_btn_url": "http://example.com/",
             "contact_section_title": "ابدأ مشروعًا",
-            "contact_section_subtitle": "ابدأ مشروعًا",
-            "useful_footer_links": "روابط مفيدة",
-            "contact_us_footer_links": "اتصل بنا"
+            "contact_section_subtitle": "ابدأ مشروعًا"
         }';
 
+        // Validate JSON
         $homePageTextArray = json_decode($homePageTextJson, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Log::error('JSON decode failed in updateUserHomePageText: ' . json_last_error_msg());
+            return false;
+        }
 
+        // Validate user and language
         $user = User::find($userId);
         if (!$user) {
-            return;
+            Log::warning("User not found in updateUserHomePageText: {$userId}");
+            return false;
         }
 
         $language = Language::find($languageId);
         if (!$language) {
-            return;
+            Log::warning("Language not found in updateUserHomePageText: {$languageId}");
+            return false;
         }
 
         $homePageTextArray['user_id'] = $userId;
         $homePageTextArray['language_id'] = $languageId;
 
+        try {
+            // Delete existing records to prevent duplicates
+            HomePageText::where([
+                'language_id' => $languageId
+            ])->delete();
 
-        $existingHomePageText = HomePageText::where(['user_id' => $userId, 'language_id' => $languageId])->first();
-
-        if ($existingHomePageText) {
-
-            $existingHomePageText->update($homePageTextArray);
-            Log::info('HomePageText Updated');
-        } else {
-
+            // Insert
             HomePageText::create($homePageTextArray);
-            Log::info('HomePageText Created');
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error("Failed to process HomePageText for user {$userId}, language {$languageId}: " . $e->getMessage());
+            return false;
         }
     }
-    private function updateUserFooterText($userId, $languageId)
-    {
-        $footerTextJson = '{
-            "logo": "aea91d2ec33e99dbc171fc5b6de369b77b0e57f6.png",
-            "about_company": "قوة الاختيار غير مقيدة وعندما لا شيء يمنعنا من ذلك. ",
-            "copyright_text": "<p>حقوق النشر © 2023. جميع الحقوق محفوظة Synopharm<br \/><\/p>",
-            "newsletter_text": "قوة الاختيار غير مقيدة وعندما لا شيء يمنعنا من ذلك. ",
-            "bg_image": "629946900c7edbf11b02a301001c6b36432d7876.png",
-            "footer_color": "001B61"
-        }';
 
-        $footerTextArray = json_decode($footerTextJson, true);
+    private function updateUserFooterText($userId, $languageId, $logoFilename = null)
+    {
+        $basicSetting = BasicSetting::where('user_id', $userId)->first();
+        // Strip any existing full URL to filename if necessary
+        $existingLogo = $basicSetting->logo ? basename($basicSetting->logo) : 'default_logo.png';
+        $logoValue = $logoFilename ?? $existingLogo;
+
+
+
+        $footerTextArray = [
+            'logo' => $logoValue, // Store only filename
+            'about_company' => 'قوة الاختيار غير مقيدة وعندما لا شيء يمنعنا من ذلك.',
+            'copyright_text' => '<p>حقوق النشر © 2025. جميع الحقوق محفوظة <br /></p>',
+            'newsletter_text' => 'قوة الاختيار غير مقيدة وعندما لا شيء يمنعنا من ذلك.',
+            'bg_image' => '629946900c7edbf11b02a301001c6b36432d7876.png',
+            'user_id' => $userId,
+            'language_id' => $languageId,
+        ];
+
+
 
         $user = User::find($userId);
         if (!$user) {
+            \Log::warning("User not found for ID: $userId");
             return;
         }
 
         $language = Language::find($languageId);
         if (!$language) {
+            \Log::warning("Language not found for ID: $languageId");
             return;
         }
-
-        $footerTextArray['user_id'] = $userId;
-        $footerTextArray['language_id'] = $languageId;
 
         $existingFooterText = FooterText::where(['user_id' => $userId, 'language_id' => $languageId])->first();
 
         if ($existingFooterText) {
             $existingFooterText->update($footerTextArray);
+
         } else {
             FooterText::create($footerTextArray);
+
         }
     }
+
     private function updateUserCounterInformation($userId, $languageId)
     {
         $counterInformationJson = '[
@@ -556,7 +558,7 @@ class OnboardingController extends Controller
             }
         }
     }
-    private function updateUserSkills($userId, $languageId)
+    private function updateUserSkills($userId, $languageId,$secondary_color)
     {
         $skillsJson = '[
             {
@@ -564,7 +566,7 @@ class OnboardingController extends Controller
                 "title": "Business Strategy",
                 "slug": "business-strategy",
                 "percentage": "90",
-                "color": "FF4A17",
+                "color": "' . $secondary_color . '",
                 "serial_number": "1"
             },
             {
@@ -572,7 +574,7 @@ class OnboardingController extends Controller
                 "title": "Financial Planing",
                 "slug": "financial-planing",
                 "percentage": "75",
-                "color": "FF4A17",
+                "color": "' . $secondary_color . '",
                 "serial_number": "2"
             },
             {
@@ -580,7 +582,7 @@ class OnboardingController extends Controller
                 "title": "Marketing Startegy",
                 "slug": "marketing-startegy",
                 "percentage": "85",
-                "color": "FF4A17",
+                "color": "' . $secondary_color . '",
                 "serial_number": "3"
             },
             {
@@ -588,7 +590,7 @@ class OnboardingController extends Controller
                 "title": "Relationship Buildup",
                 "slug": "relationship-buildup",
                 "percentage": "80",
-                "color": "FF4A17",
+                "color": "' . $secondary_color . '",
                 "serial_number": "4"
             }
         ]';
