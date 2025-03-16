@@ -43,9 +43,11 @@ use App\Models\User\DonationManagement\DonationCategories;
 use App\Models\User\CourseManagement\Instructor\Instructor;
 use App\Models\User\CourseManagement\LessonContentComplete;
 use App\Models\User\CourseManagement\Coupon as CourseManagementCoupon;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
+    use HasApiTokens;
     use Notifiable;
 
     /**
