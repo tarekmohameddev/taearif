@@ -23,6 +23,7 @@
         <link rel="stylesheet" href="{{ asset('assets/front/user/realestate/css/vendors/leaflet.css') }} ">
         <link rel="stylesheet" href="{{ asset('assets/front/user/realestate/css/vendors/aos.min.css') }} ">
         <link rel="stylesheet" href="{{ asset('assets/front/user/realestate/css/partials.css') }}">
+    
         @if ($userCurrentLang->rtl == 1)
             <link rel="stylesheet" href="{{ asset('assets/front/user/realestate/css/rtl.css') }}">
         @endif
@@ -35,7 +36,8 @@
         <script src="{{ asset('assets/front/user/realestate/js/vendors/lazysizes.min.js') }}"></script>
         <script src="{{ asset('assets/front/user/realestate/js/vendors/nouislider.min.js') }}"></script>
         <script src="{{ asset('/assets/front/user/realestate/js/vendors/imagesloaded.pkgd.js') }}"></script>
-
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         <script>
             'use strict';
 
@@ -216,6 +218,7 @@
 
 
 @section('content')
+
     <!-- Map Start-->
     <div class="map-area border-top header-next pt-30">
         <!-- Background Image -->
@@ -226,13 +229,242 @@
         </div>
     </div>
     <!-- Map End-->
+    <style>
+    body {
+      text-align: right;
+      direction: rtl;
+    }
+    .property-type {
+      min-width: 80px;
+      text-align: center;
+      cursor: pointer;
+      padding: 10px 5px;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .property-type:hover {
+      color: #0d6efd;
+    }
+    .property-type.active {
+      font-weight: bold;
+      color: #0d6efd;
+    }
+    .property-type.active.all-type {
+      position: relative;
+    }
+    .property-type.active.all-type:after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: 25%;
+      width: 50%;
+      height: 2px;
+      background-color: #000;
+    }
+    .property-icon {
+      width: 32px;
+      height: 32px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .property-title {
+      font-size: 14px;
+      display: block;
+      margin-top: 4px;
+    }
+    .property-types-container {
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+    .property-types-container::-webkit-scrollbar {
+      height: 4px;
+    }
+    .property-types-container::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+    }
+    .dropdown-toggle::after {
+      margin-right: 0.5em;
+      margin-left: 0;
+    }
+    .dropdown-menu {
+      text-align: right;
+    }
+    .dropdown-item {
+      text-align: right;
+    }
+    /* Fix for Bootstrap RTL dropdown arrows */
+    .dropdown-toggle:after {
+      margin-right: 0.255em;
+      margin-left: 0;
+    }
+  </style>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <div class="container-fluid p-0">
+    <!-- Property Type Icons -->
+    <div class="border-bottom">
+      <div class="container">
+        <div class="property-types-container py-3">
+        <div class="d-inline-flex">
+  <div class="property-type" onclick="updateURL('category=building');" data-type="building">
+    <div class="property-icon"><i class="fa-solid fa-building fa-lg"></i></div>
+    <span class="property-title">مبنى</span>
+  </div>
+  <div class="property-type" onclick="updateURL('category=showroom');" data-type="showroom">
+    <div class="property-icon"><i class="fa-solid fa-store fa-lg"></i></div>
+    <span class="property-title">معرض</span>
+  </div>
+  <div class="property-type" onclick="updateURL('category=resort');" data-type="resort">
+    <div class="property-icon"><i class="fa-solid fa-umbrella-beach fa-lg"></i></div>
+    <span class="property-title">منتجع</span>
+  </div>
+  <div class="property-type" onclick="updateURL('category=office');" data-type="office">
+    <div class="property-icon"><i class="fa-solid fa-briefcase fa-lg"></i></div>
+    <span class="property-title">مكتب</span>
+  </div>
+  <div class="property-type" onclick="updateURL('category=commercial');" data-type="commercial">
+    <div class="property-icon"><i class="fa-solid fa-shop fa-lg"></i></div>
+    <span class="property-title">محل تجاري</span>
+  </div>
+  <div class="property-type" onclick="updateURL('category=rest-house');" data-type="rest-house">
+    <div class="property-icon"><i class="fa-solid fa-house fa-lg"></i></div>
+    <span class="property-title">استراحة</span>
+  </div>
+  <div class="property-type" onclick="updateURL('category=farm');" data-type="farm">
+    <div class="property-icon"><i class="fa-solid fa-tractor fa-lg"></i></div>
+    <span class="property-title">مزرعة</span>
+  </div>
+  <div class="property-type" onclick="updateURL('category=palace');" data-type="palace">
+    <div class="property-icon"><i class="fa-solid fa-landmark fa-lg"></i></div>
+    <span class="property-title">قصر</span>
+  </div>
+  <div class="property-type" onclick="updateURL('category=land');" data-type="land">
+    <div class="property-icon"><i class="fa-solid fa-mountain fa-lg"></i></div>
+    <span class="property-title">أرض</span>
+  </div>
+  <div class="property-type" onclick="updateURL('category=apartment-building');" data-type="apartment-building">
+    <div class="property-icon"><i class="fa-solid fa-building-user fa-lg"></i></div>
+    <span class="property-title">شقة في عمارة</span>
+  </div>
+  <div class="property-type" onclick="updateURL('category=apartment-tower');" data-type="apartment-tower">
+    <div class="property-icon"><i class="fa-solid fa-city fa-lg"></i></div>
+    <span class="property-title">شقة في برج</span>
+  </div>
+  <div class="property-type" onclick="updateURL('category=villa');" data-type="villa">
+    <div class="property-icon"><i class="fa-solid fa-house-chimney fa-lg"></i></div>
+    <span class="property-title">فيلا</span>
+  </div>
+  <div class="property-type all-type active" onclick="updateURL('category=all');" data-type="all">
+    <div class="property-icon"><i class="fa-solid fa-list fa-lg"></i></div>
+    <span class="property-title">الكل</span>
+  </div>
+</div>
+        </div>
+      </div>
+    </div>
+<script>
 
+  function setActiveCategory(category) {
+    const url = new URL(window.location);
+    url.searchParams.set('category', category.split('=')[1]); // Update category in URL
+    window.history.pushState({}, '', url); // Change URL without reloading
+    
+
+    document.querySelectorAll('.property-type').forEach(item => {
+      item.classList.remove('active');
+      if (item.getAttribute('data-type') === category.split('=')[1]) {
+        item.classList.add('active');
+      }
+    });
+  }
+</script>
+    <!-- Filter Dropdowns -->
+    <div class="container py-4">
+      <div class="row g-3">
+        <div class="col-md-6 col-lg-3">
+          <div class="dropdown w-100">
+          <div id="type" class="collapse show">
+                                        <div class="accordion-body">
+                                            <select name="type" id="" class="form_control form-select mb-20"
+                                                onchange="updateURL('type='+$(this).val())">
+                                                <option selected disabled>
+                                                نوع العقار</option>
+                                                <option value="all"
+                                                    {{ request()->filled('type') && request()->input('type') == 'all' ? 'selected' : '' }}>
+                                                    {{ $keywords['All'] ?? __('All') }}</option>
+                                                <option value="residential"
+                                                    {{ request()->filled('type') && request()->input('type') == 'residential' ? 'selected' : '' }}>
+                                                    {{ $keywords['Residential'] ?? __('Residential') }}</option>
+                                                <option value="commercial"
+                                                    {{ request()->filled('type') && request()->input('type') == 'commercial' ? 'selected' : '' }}>
+                                                    {{ $keywords['Commercial'] ?? __('Commercial') }}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                        
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="dropdown w-100">
+          <div id="purpose"  aria-labelledby="propertyTypeDropdown"  class="collapse show">
+                                            <div class="accordion-body">
+                                                <!-- Add class .list-dropdown form dropdown-menu -->
+                                                <select name="purpose" onchange="updateURL('purpose='+$(this).val())"
+                                                    id="" class="form_control form-select mb-20">
+                                                    <option selected disabled>
+                                                     الرغبة
+                                                    </option>
+                                                    <option value="all"
+                                                        {{ request()->filled('purpose') && request()->input('purpose') == 'all' ? 'selected' : '' }}>
+                                                        {{ $keywords['All'] ?? __('All') }}
+                                                    </option>
+                                                    <option value="rent"
+                                                        {{ request()->filled('purpose') && request()->input('purpose') == 'rent' ? 'selected' : '' }}>
+                                                        {{ $keywords['Rent'] ?? __('Rent') }}
+                                                    </option>
+                                                    <option value="sale"
+                                                        {{ request()->filled('purpose') && request()->input('purpose') == 'sale' ? 'selected' : '' }}>
+                                                        بيع
+                                                    </option>
+                                                </select>
+                                            </div>
+           </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="dropdown w-100">
+          <select name="city_id" id=""
+                                                        class="form_control form-select  city_id"
+                                                        onchange="updateURL('city='+$(this).val())">
+                                                        <option>
+                                                          المدينة
+                                                        </option>
+                                                     
+                                                            @foreach ($all_cities as $city)
+                                                                <option data-id="{{ $city->id }}"
+                                                                    value="{{ $city->name }}">
+                                                                    {{ $city->name }}
+                                                                </option>
+                                                            @endforeach
+                                                       
+                                                    </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
     <!-- Listing Start -->
     <div class="listing-grid pt-40 pb-70">
+
         <div class="container">
             <div class="row gx-xl-5">
-
-                <div class="col-xl-3">
+                <div class="col-xl-3 d-none">
                     <div class="widget-offcanvas offcanvas-xl offcanvas-start" tabindex="-1" id="widgetOffcanvas"
                         aria-labelledby="widgetOffcanvas">
                         <div class="offcanvas-header px-20">
@@ -629,7 +861,7 @@
                     </div>
                 </div>
                 <div class="col-xl-9">
-                    <div class="product-sort-area mb-10" data-aos="fade-up">
+                    <div class="product-sort-area mb-10 d-none" data-aos="fade-up">
                         <div class="row justify-content-sm-end">
                             <div class="col-sm-5 d-xl-none">
                                 <button class="btn btn-sm btn-outline icon-end radius-sm mb-15" type="button"
