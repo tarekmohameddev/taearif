@@ -46,7 +46,7 @@
                         @endif
 
                             @if (count($userFooterQuickLinks) == 0)
-                                <h6 class="">{{ $keywords['No Link Found'] ?? __('No Link Found')  }}</h6>
+                                <!-- <h6 class="">{{ $keywords['No Link Found'] ?? __('No Link Found')  }}</h6> -->
                             @else
                                 <ul class="footer-links">
                                     @foreach ($userFooterQuickLinks as $quickLinkInfo)

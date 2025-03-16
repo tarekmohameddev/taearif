@@ -604,10 +604,10 @@
                                     </div>
                                 </div>
                             @empty
-                                <div class="p-3 text-center mb-30 w-100">
+                                <!-- <div class="p-3 text-center mb-30 w-100">
                                     <h3 class="mb-0">{{ $keywords['No Brands Found'] ?? __('No Brands Found') }}
                                     </h3>
-                                </div>
+                                </div> -->
                             @endforelse
                             </div>
                             <!-- Slider pagination -->
