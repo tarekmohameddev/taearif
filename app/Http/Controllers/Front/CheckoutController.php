@@ -498,15 +498,19 @@ class CheckoutController extends Controller
 
                 // --- Begin: Basic Settings Record ---
                 // Basic Settings Json
+                // "favicon": "https://taearif.com/assets/front/img/user/67c6ef042c39b.jpeg",
+                // "email": "F.a.t-550@hotmail.com",
+                // "website_title": "شركة ليرا العقارية",
+                // "base_color": "0003FF",
+                // "secondary_color": "00F5E5",
+                // "logo": "https://taearif.com/assets/front/img/user/67c6ef042c39b.jpeg",
+
+
                 $basicSettingsJson = '{
-                    "favicon": "https://taearif.com/assets/front/img/user/67c6ef042c39b.jpeg",
+
                     "breadcrumb": "https://codecanyon8.kreativdev.com/estaty/assets/img/hero/static/6574372e0ad77.jpg",
-                    "logo": "https://taearif.com/assets/front/img/user/67c6ef042c39b.jpeg",
                     "preloader": "https://taearif.com/assets/front/img/user/67c6ef042c39b.jpeg",
-                    "base_color": "0003FF",
-                    "secondary_color": "00F5E5",
                     "theme": "home13",
-                    // "email": "F.a.t-550@hotmail.com",
                     "from_name": null,
                     "is_quote": "1",
                     "qr_image": "6727bead51be1.png",
@@ -525,7 +529,7 @@ class CheckoutController extends Controller
                     "qr_inserted_image_x": "50",
                     "qr_inserted_image_y": "50",
                     "qr_type": "default",
-                    "qr_url": "https:\/\/taearif.com\/rangs",
+                    "qr_url": "https:\/\/taearif.com\/",
                     "whatsapp_status": "0",
                     "whatsapp_number": null,
                     "whatsapp_header_title": null,
@@ -540,7 +544,6 @@ class CheckoutController extends Controller
                     "tawkto_status": "0",
                     "tawkto_direct_chat_link": null,
                     "custom_css": null,
-                    "website_title": "شركة ليرا العقارية",
                     "base_currency_symbol": "$",
                     "base_currency_symbol_position": "left",
                     "base_currency_text": "USD",
