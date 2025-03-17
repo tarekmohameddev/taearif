@@ -166,6 +166,7 @@ return [
         Anand\LaravelPaytmWallet\PaytmWalletServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,
         Ixudra\Curl\CurlServiceProvider::class,
+        App\Providers\UploadServiceProvider::class,
 
 
         /*

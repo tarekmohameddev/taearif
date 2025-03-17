@@ -359,9 +359,9 @@ l47 -48 -307 0 -307 0 0 -90 0 -91 773 3 c858 3 810 -1 886 71 51 49 72 105
 
 
             <div class="flex items-center gap-2 sm:gap-4">
-                <button class="hidden sm:inline-flex h-9 px-4 py-2 rounded-md border border-input bg-background hover:bg-primary hover:text-primary-foreground transition-all duration-300">
+                <a href="/login" class="hidden sm:inline-flex h-9 px-4 py-2 rounded-md border border-input bg-background hover:bg-primary hover:text-primary-foreground transition-all duration-300">
                     تسجيل الدخول
-                </button>
+                </a>
                 <a href="/registration/step-1/trial/16" class="h-9 px-4 py-2 rounded-md bg-primary text-primary-foreground transition-all duration-300 hover:scale-105">
                    ابدأ 7 ايام مجاناً 
                 </a>
