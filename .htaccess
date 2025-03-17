@@ -2,13 +2,24 @@
     <IfModule mod_negotiation.c>
         Options -MultiViews
     </IfModule>
+    
     RewriteEngine On
+    
+    # Ensure Authorization header is passed correctly
+    SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+    
+    # Redirect existing files or directories
     RewriteCond %{REQUEST_FILENAME} -d [OR]
     RewriteCond %{REQUEST_FILENAME} -f
     RewriteRule ^ ^$1 [N]
+
+    # Redirect static assets to the public folder
     RewriteCond %{REQUEST_URI} (\.\w+$) [NC]
-    RewriteRule ^(.*)$ public/$1 
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # Route all other requests to Laravel's entry point
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ server.php
+    RewriteRule ^ server.php [L]
 </IfModule>
+ 
