@@ -36,9 +36,9 @@ class RedirectIfAuthenticated
 
             if (Auth::guard($guard)->check()) {
                 $user = Auth::user();
-                if (!$user->onboarding_completed) {
-                    return redirect()->route('onboarding.index');
-                }
+                // if (!$user->onboarding_completed) {
+                //     return redirect()->route('onboarding.index');
+                // }
 
                 return redirect()->route('user-dashboard');
             }
