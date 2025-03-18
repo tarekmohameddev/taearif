@@ -24,21 +24,6 @@ use Illuminate\Support\Facades\Log;
 class ProjectController extends Controller
 {
 
-    // public function settings()
-    // {
-    //     $content = BasicSetting::where('user_id', Auth::guard('web')->user()->id)->select('project_approval_status')->first();
-    //     return view('user.realestate_management.project-management.settings', compact('content'));
-    // }
-    // //  update_setting
-    // public function updateSettings(Request $request)
-    // {
-    //     $status = BasicSetting::where('user_id', Auth::guard('web')->user()->id)->first();
-
-    //     $status->project_approval_status = $request->project_approval_status;
-    //     $status->save();
-    //     Session::flash('success', 'Project Settings Updated Successfully!');
-    //     return back();
-    // }
 
     public function index(Request $request)
     {
@@ -86,50 +71,7 @@ class ProjectController extends Controller
         return view('user.realestate_management.project-management.create', $information);
     }
 
-    // public function galleryImagesStore(Request $request)
-    // {
-    //     $userId = Auth::guard('web')->user()->id;
-    //     $img = $request->file('file');
-    //     $allowedExts = array('jpg', 'png', 'jpeg', 'svg', 'webp');
-    //     $rules = [
-    //         'file' => [
-    //             function ($attribute, $value, $fail) use ($img, $allowedExts) {
-    //                 $ext = $img->getClientOriginalExtension();
-    //                 if (!in_array($ext, $allowedExts)) {
-    //                     return $fail("Only png, jpg, jpeg images are allowed");
-    //                 }
-    //             },
-    //         ]
-    //     ];
-    //     $validator = Validator::make($request->all(), $rules);
-    //     if ($validator->fails()) {
-    //         $validator->getMessageBag()->add('error', 'true');
-    //         return response()->json($validator->errors());
-    //     }
-    //     $imageName = UploadFile::store('assets/img/project/gallery-images/', $request->file('file'));
 
-    //     $pi = new ProjectGalleryImage();
-    //     if (!empty($request->project_id)) {
-    //         $pi->project_id = $request->project_id;
-    //     }
-    //     $pi->user_id = $userId;
-    //     $pi->image = $imageName;
-    //     $pi->save();
-    //     return response()->json(['status' => 'success', 'file_id' => $pi->id]);
-    // }
-
-    // public function galleryImageRmv(Request $request)
-    // {
-    //     $pi = ProjectGalleryImage::findOrFail($request->fileid);
-    //     $imageCount = ProjectGalleryImage::where('project_id', $pi->project_id)->get()->count();
-    //     if ($imageCount > 1) {
-    //         @unlink(public_path('assets/img/project/gallery-images/') . $pi->image);
-    //         $pi->delete();
-    //         return $pi->id;
-    //     } else {
-    //         return 'false';
-    //     }
-    // }
 
     //imagedbrmv
     public function galleryImageDbrmv(Request $request)
@@ -146,49 +88,7 @@ class ProjectController extends Controller
     }
 
 
-    // public function floorPlanImagesStore(Request $request)
-    // {
-    //     $userId = Auth::guard('web')->user()->id;
-    //     $img = $request->file('file');
-    //     $allowedExts = array('jpg', 'png', 'jpeg', 'svg', 'webp');
-    //     $rules = [
-    //         'file' => [
-    //             function ($attribute, $value, $fail) use ($img, $allowedExts) {
-    //                 $ext = $img->getClientOriginalExtension();
-    //                 if (!in_array($ext, $allowedExts)) {
-    //                     return $fail("Only png, jpg, jpeg images are allowed");
-    //                 }
-    //             },
-    //         ]
-    //     ];
-    //     $validator = Validator::make($request->all(), $rules);
-    //     if ($validator->fails()) {
-    //         $validator->getMessageBag()->add('error', 'true');
-    //         return response()->json($validator->errors());
-    //     }
-    //     $imageName = UploadFile::store('assets/img/project/floor-paln-images/', $request->file('file'));
 
-    //     $pi = new ProjectFloorplanImage();
-    //     if (!empty($request->project_id)) {
-    //         $pi->project_id = $request->project_id;
-    //     }
-    //     $pi->user_id = $userId;
-    //     $pi->image = $imageName;
-    //     $pi->save();
-    //     return response()->json(['status' => 'success', 'file_id' => $pi->id]);
-    // }
-    // public function floorPlanImageRmv(Request $request)
-    // {
-    //     $pi = ProjectFloorplanImage::findOrFail($request->fileid);
-    //     $imageCount = ProjectFloorplanImage::where('project_id', $pi->project_id)->get()->count();
-    //     if ($imageCount > 1) {
-    //         @unlink(public_path('assets/img/project/floor-paln-images/') . $pi->image);
-    //         $pi->delete();
-    //         return $pi->id;
-    //     } else {
-    //         return 'false';
-    //     }
-    // }
 
 
     //imagedbrmv
@@ -249,7 +149,7 @@ class ProjectController extends Controller
 
 
                 $label_datas = $request[$language->code . '_label'] ?? [];
-              
+
                 foreach ($label_datas as $key => $data) {
                     if (!empty($request[$language->code . '_value'][$key])) {
 
@@ -296,16 +196,7 @@ class ProjectController extends Controller
         return redirect()->back();
     }
 
-    // public function approveStatus(Request $request)
-    // {
-    //     $property = Project::findOrFail($request->project);
 
-    //     $property->update(['approve_status' => $request->approve_status]);
-
-    //     Session::flash('success', 'Successfully change approval status!');
-
-    //     return redirect()->back();
-    // }
 
     public function edit($id)
     {

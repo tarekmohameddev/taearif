@@ -15,41 +15,41 @@
             --primary-hover: #3a5ecc;
             --secondary-color: #050e2d;
         }
-        
+
         body {
             background: linear-gradient(to bottom, #f0f7ff, #ffffff);
             min-height: 100vh;
         }
-        
+
         .text-primary {
             color: var(--primary-color) !important;
         }
-        
+
         .btn-primary {
             background-color: var(--primary-color);
             border-color: var(--primary-color);
         }
-        
+
         .btn-primary:hover {
             background-color: var(--primary-hover);
             border-color: var(--primary-hover);
         }
-        
+
         .form-label {
             font-weight: 500;
         }
-        
+
         .required::after {
             content: " *";
             color: #dc3545;
         }
-        
+
         .image-preview-container {
             position: relative;
             display: inline-block;
             margin: 10px;
         }
-        
+
         .image-preview {
             width: 200px;
             height: 150px;
@@ -57,7 +57,7 @@
             border-radius: 8px;
             border: 1px solid #dee2e6;
         }
-        
+
         .remove-image {
             position: absolute;
             top: 5px;
@@ -75,11 +75,11 @@
             opacity: 0;
             transition: opacity 0.3s;
         }
-        
+
         .image-preview-container:hover .remove-image {
             opacity: 1;
         }
-        
+
         .upload-area {
             border: 2px dashed #dee2e6;
             border-radius: 8px;
@@ -88,11 +88,11 @@
             cursor: pointer;
             transition: background-color 0.3s;
         }
-        
+
         .upload-area:hover {
             background-color: #f8f9fa;
         }
-        
+
         .feature-item {
             display: flex;
             align-items: center;
@@ -101,7 +101,7 @@
             border-radius: 6px;
             margin-bottom: 10px;
         }
-        
+
         .feature-badge {
             background-color: #e9ecef;
             color: #495057;
@@ -110,7 +110,7 @@
             margin-left: 10px;
             font-size: 0.875rem;
         }
-        
+
         .advantage-badge {
             background-color: #e9ecef;
             color: #495057;
@@ -121,49 +121,49 @@
             display: inline-flex;
             align-items: center;
         }
-        
+
         .advantage-badge .remove-badge {
             margin-right: 5px;
             cursor: pointer;
             color: #6c757d;
         }
-        
+
         .advantage-badge .remove-badge:hover {
             color: #dc3545;
         }
-        
+
         .nav-tabs .nav-link.active {
             color: var(--primary-color);
             border-color: #dee2e6 #dee2e6 #fff;
             font-weight: 500;
         }
-        
+
         .nav-tabs .nav-link {
             color: #6c757d;
         }
-        
+
         .form-floating > label {
             right: 0;
             left: auto;
             padding-right: 0.75rem;
         }
-        
+
         .form-floating > .form-control {
             padding-right: 0.75rem;
         }
-        
+
         .form-floating > .form-control-plaintext {
             padding-right: 0.75rem;
         }
-        
+
         .form-floating > .form-select {
             padding-right: 0.75rem;
         }
-        
+
         .input-group-text {
             background-color: #f8f9fa;
         }
-        
+
         .map-placeholder {
             height: 300px;
             background-color: #f8f9fa;
@@ -174,7 +174,7 @@
             color: #6c757d;
             border: 1px solid #dee2e6;
         }
-        
+
         /* Enhanced form validation styles */
         .was-validated .form-control:invalid,
         .form-control.is-invalid {
@@ -185,7 +185,7 @@
             background-position: left calc(0.375em + 0.1875rem) center;
             background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
         }
-        
+
         .was-validated .form-control:valid,
         .form-control.is-valid {
             border-color: #198754;
@@ -195,7 +195,7 @@
             background-position: left calc(0.375em + 0.1875rem) center;
             background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
         }
-        
+
         .invalid-feedback {
             display: none;
             width: 100%;
@@ -203,7 +203,7 @@
             font-size: 0.875em;
             color: #dc3545;
         }
-        
+
         .is-invalid ~ .invalid-feedback {
             display: block;
         }
@@ -411,9 +411,9 @@
                                             <i class="fa-solid fa-camera fs-3 text-muted mb-2"></i>
                                             <p class="mb-1">إضافة صور</p>
                                             <p class="text-muted small">PNG، JPG حتى 5 ميجابايت</p>
-                                            
+
                                         </div>
-                                        
+
                                     </div>
                                     <input type="file" id="photo-input" name="slider_images[]" class="d-none" accept="image/*" multiple>
                                     <div class="mb-4">
@@ -676,7 +676,7 @@
             console.log('hereeee');
           displayPreview(file, previewContainer, inputName)
         }
-        
+
       })
     }
 
@@ -1115,7 +1115,7 @@
                     $('#features-container').append(featureElement);
                     $('#feature-key').val('');
                     $('#feature-value').val('');
-          
+
                 }
             });
 
@@ -1150,14 +1150,14 @@
 
             function nextPrev(n) {
                 if (n === 1 && !validateForm()) return false;
-                
+
                 currentTab += n;
-                
+
                 if (currentTab >= tabs.length) {
                     $('#property-form').submit();
                     return false;
                 }
-                
+
                 showTab(currentTab);
             }
 
@@ -1198,7 +1198,7 @@
                 if (validateForm()) {
                     // Collect form data
                     const formData = new FormData(this);
-                    
+
                     // Add photo files
                     $('#photo-input')[0].files.forEach((file, index) => {
                         formData.append('photos[]', file);

@@ -25,4 +25,10 @@ class ProjectFloorplanImg extends Model
             'image' => $imageName
         ]);
     }
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class, 'project_id');
+    }
+
 }

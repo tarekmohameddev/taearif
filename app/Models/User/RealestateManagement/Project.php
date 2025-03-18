@@ -19,6 +19,10 @@ class Project extends Model
         'longitude',
         'featured',
         'complete_status',
+        'units',
+        'completion_date',
+        'developer',
+        'published',
     ];
 
     public static function storeProject($userId, $request)
@@ -30,7 +34,7 @@ class Project extends Model
             'min_price' => $request['min_price'],
             'max_price' => $request['max_price'],
             'featured' => $request['featured'],
-            'complete_status' => $request['status'],
+            'complete_status' => $request['complete_status'],
             'latitude' => $request['latitude'],
             'longitude' => $request['longitude'],
         ]);
@@ -44,7 +48,7 @@ class Project extends Model
             'min_price' => $request['min_price'],
             'max_price' => $request['max_price'],
             'featured' => $request['featured'],
-            'complete_status' => $request['status'],
+            'complete_status' => $request['complete_status'],
             'latitude' => $request['latitude'],
             'longitude' => $request['longitude'],
         ]);
@@ -79,4 +83,20 @@ class Project extends Model
     {
         return $this->hasMany(ProjectContent::class, 'project_id', 'id');
     }
+
+    public function projectContents()
+    {
+        return $this->hasMany(ProjectContent::class, 'project_id');
+    }
+
+    public function types()
+    {
+        return $this->hasMany(ProjectType::class, 'project_id');
+    }
+
+    public function amenities()
+    {
+        return $this->hasMany(PropertyAmenity::class, 'property_id')->with('amenity');
+    }
+
 }
