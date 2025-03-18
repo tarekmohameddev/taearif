@@ -615,6 +615,36 @@
 @endif
 @endif
 
+@if ($home_sections->newsletter_section == 1)
+            <section class="newsletter-area pb-100" data-aos="fade-up">
+                <div class="container">
+                    <div class="newsletter-inner px-4">
+                        <img class="lazyload bg-img"
+                            src="https://codecanyon8.kreativdev.com/estaty/assets/img/6577e0ff3ab05.jpg">
+                        <div class="row justify-content-center text-center" data-aos="fade-up">
+                            <div class="col-lg-6 col-xxl-5">
+                                <div class="content mb-30">
+                                    <span
+                                        class="subtitle color-white mb-10 d-block">{{ $home_text?->newsletter_title }}</span>
+                                    <h2 class="color-white">{{ $home_text?->newsletter_subtitle }}</h2>
+                                </div>
+                                <form id="newsletterForm" class="subscription-form newsletter-form"
+                                    action="{{ route('front.user.subscriber', getParam()) }}" method="POST">
+                                    @csrf
+                                    <div class="input-group radius-md">
+                                        <input class="form-control"
+                                            placeholder="{{ $keywords['Enter Your Email'] ?? __('Enter Your Email') }}"
+                                            type="email" name="email_id" required>
+                                        <button class="btn btn-lg btn-primary" type="submit">
+                                        كٌن على تواصل</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+ @endif
 
 @if ($home_sections->brand_section == 1)
 @if(count($brands) > 0)
@@ -652,33 +682,3 @@
 @endif
 @endsection
 
-@if ($home_sections->newsletter_section == 1)
-            <section class="newsletter-area pb-100" data-aos="fade-up">
-                <div class="container">
-                    <div class="newsletter-inner px-4">
-                        <img class="lazyload bg-img"
-                            src="https://codecanyon8.kreativdev.com/estaty/assets/img/6577e0ff3ab05.jpg">
-                        <div class="row justify-content-center text-center" data-aos="fade-up">
-                            <div class="col-lg-6 col-xxl-5">
-                                <div class="content mb-30">
-                                    <span
-                                        class="subtitle color-white mb-10 d-block">{{ $home_text?->newsletter_title }}</span>
-                                    <h2 class="color-white">{{ $home_text?->newsletter_subtitle }}</h2>
-                                </div>
-                                <form id="newsletterForm" class="subscription-form newsletter-form"
-                                    action="{{ route('front.user.subscriber', getParam()) }}" method="POST">
-                                    @csrf
-                                    <div class="input-group radius-md">
-                                        <input class="form-control"
-                                            placeholder="{{ $keywords['Enter Your Email'] ?? __('Enter Your Email') }}"
-                                            type="email" name="email_id" required>
-                                        <button class="btn btn-lg btn-primary" type="submit">
-                                        كٌن على تواصل</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        @endif
