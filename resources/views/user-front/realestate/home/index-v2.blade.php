@@ -297,10 +297,12 @@
 <div class="container py-5">
     <div class="row align-items-center">
         <!-- Image Column -->
-        <div class="col-lg-6 mb-4 mb-lg-0">
-            <img src="https://faisal-binsaedan.com/wp-content/uploads/2024/05/pic.svg" alt="Company Visual" class="img-fluid">
-        </div>
 
+        @if (!empty($home_text->about_image))
+                                        <div class="col-lg-6 mb-4 mb-lg-0 lazyload blur-up">
+            <img src="{{ asset('assets/front/img/user/home_settings/' . $home_text->about_image) }}" alt="Company Visual" class="img-fluid">
+        </div>                               
+         @endif
         <!-- Content Column -->
         <div class="col-lg-6">
             <!-- Identity Box -->
