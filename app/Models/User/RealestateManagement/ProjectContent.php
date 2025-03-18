@@ -47,7 +47,7 @@ class ProjectContent extends Model
             'project_id' => $requstData['project_id'],
             'language_id' => $requstData['language_id'],
             'title' => $requstData['title'],
-            'slug' => $requstData['title'],
+            'slug' => make_slug($requstData['title']),
             'address' => $requstData['address'],
             'description' => $requstData['description'],
             'meta_keyword' => $requstData['meta_keyword'],
