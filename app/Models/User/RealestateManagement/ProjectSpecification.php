@@ -30,4 +30,10 @@ class ProjectSpecification extends Model
             'value' => $requestData['value'],
         ]);
     }
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class, 'project_id');
+    }
+
 }
