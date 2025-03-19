@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\project\ProjectController;
 use App\Http\Controllers\Api\property\PropertyController;
 use App\Http\Controllers\Api\content\ContentController;
 use App\Http\Controllers\Api\UploadController;
+use App\Http\Controllers\Api\RegionController;
 use Illuminate\Http\Request;
 
 /*
@@ -23,14 +24,16 @@ use Illuminate\Http\Request;
 //     return $request->user();
 // });
 
+// Auth routes
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+// Auth routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-
+// Dashboard routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
@@ -42,7 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/recent-activity', [DashboardController::class, 'getRecentActivity']);
 });
 
-
+// blog routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/blogs', [BlogController::class, 'store']); // Create a blog post
     Route::post('/blogs/{id}', [BlogController::class, 'update']); // Update a blog post
@@ -53,6 +56,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/blog-categories', [BlogController::class, 'categories']); // Get blog categories
 });
 
+// project routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/projects', [ProjectController::class, 'store']); // Create a project
     Route::post('/projects/{id}', [ProjectController::class, 'update']); // Update a project
@@ -62,7 +66,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/projects/{id}', [ProjectController::class, 'show']); // Get a single project
 });
 
-
+// property routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/properties', [PropertyController::class, 'index']);
     Route::get('/properties/{id}', [PropertyController::class, 'show']);
@@ -73,15 +77,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/properties/{id}/toggle-favorite', [PropertyController::class, 'toggleFavorite']);
 });
 
-
+// Content routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/content/sections', [ContentController::class, 'index']);
 
 });
 
+// Upload routes
 Route::middleware('auth:sanctum')->group(function () {
     // Upload routes
     Route::post('/upload', [UploadController::class, 'upload']);
     Route::post('/upload-multiple', [UploadController::class, 'uploadMultiple']);
     Route::post('/delete-file', [UploadController::class, 'delete']);
+});
+
+// Region routes
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('regions', [RegionController::class, 'index']);
+    Route::get('regions/{region}', [RegionController::class, 'show']);
 });
