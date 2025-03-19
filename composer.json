@@ -21,6 +21,7 @@
         "fruitcake/laravel-cors": "^3.0",
         "guzzlehttp/guzzle": "^7.5.0",
         "instamojo/instamojo-php": "^0.4",
+        "intervention/image": "^2.7",
         "ixudra/curl": "^6.22",
         "iyzico/iyzipay-php": "^2.0",
         "james-heinrich/getid3": "^1.9",

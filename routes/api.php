@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\blog\BlogController;
 use App\Http\Controllers\Api\project\ProjectController;
 use App\Http\Controllers\Api\property\PropertyController;
 use App\Http\Controllers\Api\content\ContentController;
+use App\Http\Controllers\Api\UploadController;
 use Illuminate\Http\Request;
 
 /*
@@ -78,3 +79,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
+Route::middleware('auth:sanctum')->group(function () {
+    // Upload routes
+    Route::post('/upload', [UploadController::class, 'upload']);
+    Route::post('/upload-multiple', [UploadController::class, 'uploadMultiple']);
+    Route::post('/delete-file', [UploadController::class, 'delete']);
+});

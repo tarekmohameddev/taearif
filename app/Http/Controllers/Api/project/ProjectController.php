@@ -233,7 +233,7 @@ class ProjectController extends Controller
             'types' => 'nullable|array',
         ]);
 
-        Log::info($validatedData);
+ 
 
         $userId = auth()->id();
 
@@ -261,11 +261,13 @@ class ProjectController extends Controller
             'latitude' => $project->latitude,
             'longitude' => $project->longitude,
             'featured' => (bool) $project->featured,
-            'developer' => $project->developer,
-            'published' => (bool) $project->published,
-            'completion_date' => $project->completion_date,
+            'developer' => $request->developer,
+            'completion_date' => $request->completion_date,
+            'complete_status' => $request->complete_status,
+            'units' => $request->units,
+            'published' => (bool) $request->published,
             'featured_image' => $project->featured_image,
-            'gallery' => $validatedData['gallery_images'] ?? [],
+            'gallery_images' => $validatedData['gallery_images'] ?? [],
             'floorplan_images' => $validatedData['floorplan_images'] ?? [],
             'specifications' => $validatedData['specifications'] ?? [],
             'contents' => $validatedData['contents'],
