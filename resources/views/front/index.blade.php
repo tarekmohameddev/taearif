@@ -7,7 +7,8 @@
     <meta name="referrer" content="no-referrer" />
     <title>تعاريف - أنشئ موقعك الإلكتروني بدون برمجة</title>
     <meta name="description" content="حلول مواقع احترافية تناسب جميع المستخدمين، مع دعم كامل باللغة العربية">
-    
+    <link rel="canonical" href="https://taearif.com/">
+
     <!-- Tajawal Font -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     
