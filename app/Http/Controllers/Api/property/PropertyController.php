@@ -119,7 +119,6 @@ class PropertyController extends Controller
     */
     public function store(Request $request)
     {
-
         $user = auth()->user();
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -137,6 +136,8 @@ class PropertyController extends Controller
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'featured_image' => 'nullable|string',
+            'floor_planning_image' => 'nullable|array',
+            'floor_planning_image.*' => 'nullable|string|url',
             'features' => 'nullable|array',
             'description' => 'nullable|string',
             'featured' => 'nullable|boolean',
@@ -146,7 +147,7 @@ class PropertyController extends Controller
             'amenity_id' => 'nullable|array',
         ]);
 
-        // Log::info($user);
+        $floorPlanningImages = $validatedData['floor_planning_image'] ?? [];
 
         $property = Property::create([
             'user_id' => $user->id,
@@ -174,6 +175,12 @@ class PropertyController extends Controller
             'address' => $validatedData['address'],
             'description' => $validatedData['description'] ?? '',
         ]);
+
+        if (!empty($floorPlanningImages)) {
+            $property->update([
+                'floor_planning_image' => json_encode($floorPlanningImages)
+            ]);
+        }
 
         $featuresArray = $validatedData['features'] ?? [];
         if (!empty($featuresArray) && isset($validatedData['amenity_id'])) {
@@ -204,7 +211,6 @@ class PropertyController extends Controller
             'longitude' => $property->longitude,
             'created_at' => $property->created_at->format('Y-m-d H:i:s'),
             'updated_at' => $property->updated_at->format('Y-m-d H:i:s'),
-
         ];
 
         return response()->json([
@@ -213,6 +219,7 @@ class PropertyController extends Controller
             'data' => ['property' => $responseProperty],
         ], 201);
     }
+
 
 
     /*
@@ -228,8 +235,6 @@ class PropertyController extends Controller
 
     public function update(Request $request, $id)
     {
-        // Log::info('request data', $request->all());
-
         $user = auth()->user();
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -249,6 +254,8 @@ class PropertyController extends Controller
                 'longitude' => 'nullable|numeric',
                 'featured_image' => 'nullable|string',
                 'gallery_images' => 'nullable|string',
+                'floor_planning_image' => 'nullable|array',
+                'floor_planning_image.*' => 'nullable|string|url',
                 'features' => 'nullable|array',
                 'description' => 'nullable|string',
                 'featured' => 'nullable|boolean',
@@ -257,8 +264,6 @@ class PropertyController extends Controller
                 'city_id' => 'nullable|integer',
                 'amenity_id' => 'nullable|array',
             ]);
-
-            // Log::info('validated data', $validatedData);
 
             DB::beginTransaction();
 
@@ -280,6 +285,12 @@ class PropertyController extends Controller
                         'image' => trim($imageUrl)
                     ]);
                 }
+            }
+
+            if (!empty($validatedData['floor_planning_image'])) {
+                $property->update([
+                    'floor_planning_image' => json_encode($validatedData['floor_planning_image'])
+                ]);
             }
 
             $property->update([
@@ -348,6 +359,7 @@ class PropertyController extends Controller
                 'featured_image' => $property->featured_image,
                 'featured' => (bool) $property->featured,
                 'gallery' => $property->galleryImages->pluck('image')->toArray(),
+                'floor_planning_image' => json_decode($property->floor_planning_image),
                 'description' => $propertyContent->description,
                 'latitude' => $property->latitude,
                 'longitude' => $property->longitude,
@@ -370,6 +382,7 @@ class PropertyController extends Controller
             ], 500);
         }
     }
+
 
 
     public function destroy($id)
