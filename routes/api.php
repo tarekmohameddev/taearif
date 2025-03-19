@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\property\PropertyController;
 use App\Http\Controllers\Api\content\ContentController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\RegionController;
+use App\Http\Controllers\Api\content\FooterSettingController;
 use Illuminate\Http\Request;
 
 /*
@@ -97,3 +98,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('regions', [RegionController::class, 'index']);
     Route::get('regions/{region}', [RegionController::class, 'show']);
 });
+
+// Footer Settings routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/content/footer', [FooterSettingController::class, 'index']);
+    Route::put('/content/footer', [FooterSettingController::class, 'update']);
+});
+
