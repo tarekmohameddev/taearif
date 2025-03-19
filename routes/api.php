@@ -112,3 +112,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/content/general', [GeneralSettingController::class, 'update']);
 });
 
+
+// banner routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/content/banner', [ApiBannerSettingController::class, 'index']);
+    Route::post('/content/banner', [ApiBannerSettingController::class, 'update']);
+});
+
+// about routes
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/content/about', [AboutApiController::class, 'index']);
+    Route::post('/content/about', [AboutApiController::class, 'update']);
+});

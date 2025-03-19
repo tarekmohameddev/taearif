@@ -108,7 +108,7 @@
                 </div>
                 <div class="col-lg-4">
                     <aside class="sidebar-widget-area">
-                        <div class="widget widget-categories mb-30">
+                        <div class="widget widget-categories mb-30 d-none">
                             <h4 class="title">{{ __('All Categories') }}</h4>
                             <ul class="list-unstyled m-0">
 
