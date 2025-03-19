@@ -1,14 +1,15 @@
 <?php
+use Illuminate\Http\Request;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\dashboard\DashboardController;
+use App\Http\Controllers\Api\RegionController;
+use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\blog\BlogController;
+use App\Http\Controllers\Api\content\GeneralSettingController;
+use App\Http\Controllers\Api\content\ContentController;
 use App\Http\Controllers\Api\project\ProjectController;
 use App\Http\Controllers\Api\property\PropertyController;
-use App\Http\Controllers\Api\content\ContentController;
-use App\Http\Controllers\Api\UploadController;
-use App\Http\Controllers\Api\RegionController;
+use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\content\FooterSettingController;
-use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -103,5 +104,11 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/content/footer', [FooterSettingController::class, 'index']);
     Route::put('/content/footer', [FooterSettingController::class, 'update']);
+});
+
+// General Settings routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/content/general', [GeneralSettingController::class, 'index']);
+    Route::put('/content/general', [GeneralSettingController::class, 'update']);
 });
 

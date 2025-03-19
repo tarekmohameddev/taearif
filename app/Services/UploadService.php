@@ -72,7 +72,7 @@ class UploadService
     public function deleteFile(string $path)
     {
         $fullPath = public_path($path);
-        
+
         if (file_exists($fullPath)) {
             return unlink($fullPath);
         }
