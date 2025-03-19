@@ -42,11 +42,11 @@ class Amenity extends Model
         ]);
     }
 
-    public  function updateAmenity($request)
+    public  function updateAmenity($userId, $request)
     {
         return $this->update([
-            // 'user_id' => $userId,
-            // 'language_id' => $request['language'],
+            'user_id' => $userId,
+            'language_id' => $request['language'],
             'status' => $request['status'],
             'name' => $request['name'],
             'slug' => $request['name'],

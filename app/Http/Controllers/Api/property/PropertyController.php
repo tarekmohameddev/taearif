@@ -34,12 +34,12 @@ class PropertyController extends Controller
                 'address' => optional($property->contents->first())->address ?? 'No Address',
                 'price' => $property->price,
                 'type' => $property->type,
-                'bedrooms' => $property->beds,
-                'bathrooms' => $property->bath,
-                'size' => $property->area,
+                'beds' => $property->beds,
+                'bath' => $property->bath,
+                'area' => $property->area,
                 'features' => $property->proertyAmenities->pluck('amenity.name')->toArray(),
                 'status' => $property->status,
-                'featured_image' => asset('storage/properties/' . $property->featured_image),
+                'featured_image' => $property->featured_image,
                 'featured' => (bool) $property->featured,
                 'created_at' => $property->created_at->toISOString(),
                 'updated_at' => $property->updated_at->toISOString(),
@@ -81,9 +81,9 @@ class PropertyController extends Controller
             'address' => optional($property->contents->first())->address ?? 'No Address',
             'price' => $property->price,
             'type' => $property->type,
-            'bedrooms' => $property->beds,
-            'bathrooms' => $property->bath,
-            'size' => $property->area,
+            'beds' => $property->beds,
+            'bath' => $property->bath,
+            'area' => $property->area,
             'features' => $property->proertyAmenities->pluck('amenity.name')->toArray(),
             'status' => $property->status,
             'featured_image' => asset('storage/properties/' . $property->featured_image),
@@ -120,24 +120,37 @@ class PropertyController extends Controller
     public function store(Request $request)
     {
 
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
 
+        $validatedData = $request->validate([
+            'title' => 'sometimes|required|string|max:255',
+            'address' => 'sometimes|required|string',
+            'price' => 'sometimes|required|numeric',
+            'type' => 'sometimes|required|string',
+            'beds' => 'nullable|integer',
+            'bath' => 'nullable|numeric',
+            'area' => 'sometimes|required|numeric',
+            'status' => 'sometimes|required',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'featured_image' => 'nullable|string',
+            'features' => 'nullable|array',
+            'description' => 'nullable|string',
+            'featured' => 'nullable|boolean',
+            'language_id' => 'nullable|integer',
+            'city_id' => 'nullable|integer',
+            'category_id' => 'nullable|integer',
+            'amenity_id' => 'nullable|array',
+        ]);
 
-
-        Log::info($validatedData);
-
-        $galleryImages = !empty($validatedData['gallery_images'])
-            ? explode(',', $validatedData['gallery_images'])
-            : [];
-
-
-        $featuresArray = !empty($validatedData['features'])
-            ? json_decode($validatedData['features'], true)
-            : [];
-
+        // Log::info($user);
 
         $property = Property::create([
-            'user_id' => auth()->id(),
-            'featured_image' => $validatedData['featured_image'],
+            'user_id' => $user->id,
+            'featured_image' => $validatedData['featured_image'] ?? null,
             'price' => $validatedData['price'],
             'purpose' => $validatedData['status'],
             'type' => $validatedData['type'],
@@ -148,31 +161,27 @@ class PropertyController extends Controller
             'latitude' => $validatedData['latitude'],
             'longitude' => $validatedData['longitude'],
             'featured' => false,
-            'gallery_images' => json_encode($galleryImages),
         ]);
 
         $propertyContent = PropertyContent::create([
-            'user_id' => auth()->id(),
+            'user_id' => $user->id,
             'property_id' => $property->id,
             'city_id' => $validatedData['city_id'] ?? null,
-            'country_id' => $validatedData['country_id'] ?? null,
-            'state_id' => $validatedData['state_id'] ?? null,
+            'category_id' => $validatedData['category_id'] ?? null,
             'language_id' => $validatedData['language_id'] ?? 1,
-            'category_id' => $validatedData['category_id'] ?? 1,
             'title' => $validatedData['title'],
+            'slug' => make_slug($validatedData['title'] ?? Str::random(8)),
             'address' => $validatedData['address'],
             'description' => $validatedData['description'] ?? '',
         ]);
 
-
-        if (!empty($featuresArray)) {
-            foreach ($featuresArray as $amenityName) {
+        $featuresArray = $validatedData['features'] ?? [];
+        if (!empty($featuresArray) && isset($validatedData['amenity_id'])) {
+            foreach ($validatedData['amenity_id'] as $amenityId) {
                 PropertyAmenity::create([
-                    'user_id' => auth()->id(),
+                    'user_id' => $user->id,
                     'property_id' => $property->id,
-                    /* 'amenity_name' => $amenityName,*/
-                    'amenity_id' => $validatedData['amenity_id'],
-
+                    'amenity_id' => $amenityId,
                 ]);
             }
         }
@@ -183,31 +192,28 @@ class PropertyController extends Controller
             'address' => $propertyContent->address,
             'price' => $property->price,
             'type' => $property->type,
-            'bedrooms' => $property->beds,
-            'bathrooms' => $property->bath,
-            'size' => $property->area,
-            /* 'features' => PropertyAmenity::where('property_id', $property->id)->pluck('amenity_name')->toArray(), */
+            'beds' => $property->beds,
+            'bath' => $property->bath,
+            'area' => $property->area,
             'features' => $featuresArray,
             'status' => $property->status,
             'featured_image' => $property->featured_image,
             'featured' => (bool) $property->featured,
-            'gallery' => $galleryImages,
             'description' => $propertyContent->description,
             'latitude' => $property->latitude,
             'longitude' => $property->longitude,
-            'created_at' => $property->created_at->toISOString(),
-            'updated_at' => $property->updated_at->toISOString(),
+            'created_at' => $property->created_at->format('Y-m-d H:i:s'),
+            'updated_at' => $property->updated_at->format('Y-m-d H:i:s'),
+
         ];
 
         return response()->json([
             'status' => 'success',
             'message' => 'Property created successfully',
-            'data' => [
-                'property' => $responseProperty
-            ]
+            'data' => ['property' => $responseProperty],
         ], 201);
-
     }
+
 
     /*
     * Update the specified resource in storage.
@@ -222,14 +228,12 @@ class PropertyController extends Controller
 
     public function update(Request $request, $id)
     {
-        Log::info('Incoming Request Data:', $request->all());
+        // Log::info('request data', $request->all());
 
-        $statusMapping = [
-            'For Sale' => 1,
-            'Sold' => 2,
-            'Rented' => 3,
-            'Unavailable' => 0
-        ];
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
 
         try {
             $validatedData = $request->validate([
@@ -244,138 +248,121 @@ class PropertyController extends Controller
                 'latitude' => 'nullable|numeric',
                 'longitude' => 'nullable|numeric',
                 'featured_image' => 'nullable|string',
-                'gallery_images.*' => 'nullable|array',
+                'gallery_images' => 'nullable|string',
                 'features' => 'nullable|array',
                 'description' => 'nullable|string',
                 'featured' => 'nullable|boolean',
                 'language_id' => 'nullable|integer',
+                'category_id' => 'nullable|integer',
                 'city_id' => 'nullable|integer',
                 'amenity_id' => 'nullable|array',
             ]);
 
-            // Log::info('Validated Data:', $validatedData);
+            // Log::info('validated data', $validatedData);
 
-            // Start Transaction (Ensures everything updates together)
             DB::beginTransaction();
 
-            // property with relations
-            $property = Property::with('galleryImages', 'proertyAmenities', 'contents')->findOrFail($id);
+            $property = Property::with(['galleryImages', 'proertyAmenities.amenity', 'contents'])->findOrFail($id);
 
-            // Convert `status` to integer
-            $validatedData['status'] = isset($statusMapping[$validatedData['status']])
-                ? $statusMapping[$validatedData['status']]
-                : (int) $validatedData['status'];
-
-            // Check if the featured image is changing
             if (!empty($validatedData['featured_image']) && $validatedData['featured_image'] !== $property->featured_image) {
-                Log::info("Updating Featured Image from {$property->featured_image} to {$validatedData['featured_image']}");
                 $property->featured_image = $validatedData['featured_image'];
             }
 
-            // Handle Gallery Images Update
+            $galleryImages = [];
             if (!empty($validatedData['gallery_images'])) {
                 $galleryImages = explode(',', $validatedData['gallery_images']);
-
-                // Log before deleting images
-                Log::info("Deleting existing gallery images for property ID: {$property->id}");
                 $property->galleryImages()->delete();
 
-                // Insert new images
                 foreach ($galleryImages as $imageUrl) {
-                    Log::info("Inserting gallery image: {$imageUrl}");
                     PropertySliderImg::create([
-                        'user_id' => Auth::id(),  // Ensure user is authenticated
+                        'user_id' => $user->id,
                         'property_id' => $property->id,
-                        'image' => $imageUrl
+                        'image' => trim($imageUrl)
                     ]);
                 }
-            } else {
-                $galleryImages = $property->galleryImages->pluck('image')->toArray();
             }
 
-            // Log property before updating
-            Log::info("Updating Property with ID: {$property->id}");
-
-            // Update Property Fields
-            $updateResult = $property->update([
+            $property->update([
                 'price' => $validatedData['price'] ?? $property->price,
-                'purpose' => $validatedData['status'] ?? $property->status,
+                'status' => $validatedData['status'],
                 'type' => $validatedData['type'] ?? $property->type,
                 'beds' => $validatedData['beds'] ?? $property->beds,
                 'bath' => $validatedData['bath'] ?? $property->bath,
                 'area' => $validatedData['area'] ?? $property->area,
-                'status' => $validatedData['status'],
                 'latitude' => $validatedData['latitude'] ?? $property->latitude,
                 'longitude' => $validatedData['longitude'] ?? $property->longitude,
                 'featured' => $request->has('featured') ? (bool) $request->featured : $property->featured,
             ]);
 
-            Log::info("Property update result: " . ($updateResult ? 'Success' : 'Failed'));
-
-            // Update Property Content
             $propertyContent = $property->contents->first();
-            if ($propertyContent) {
-                Log::info("Updating Property Content for ID: {$propertyContent->id}");
+            if (!$propertyContent) {
+                $propertyContent = PropertyContent::create([
+                    'property_id' => $property->id,
+                    'user_id' => $user->id,
+                    'title' => $validatedData['title'] ?? 'Untitled Property',
+                    'slug' => make_slug($validatedData['title'] ?? Str::random(8)),
+                    'address' => $validatedData['address'] ?? 'No Address',
+                    'description' => $validatedData['description'] ?? '',
+                    'city_id' => $validatedData['city_id'] ?? null,
+                    'category_id' => $validatedData['category_id'] ?? null,
+                    'language_id' => $validatedData['language_id'] ?? 1,
+                ]);
+            } else {
                 $propertyContent->update([
                     'title' => $validatedData['title'] ?? $propertyContent->title,
                     'address' => $validatedData['address'] ?? $propertyContent->address,
                     'description' => $validatedData['description'] ?? $propertyContent->description,
+                    'city_id' => $validatedData['city_id'] ?? $propertyContent->city_id,
+                    'category_id' => $validatedData['category_id'] ?? $propertyContent->category_id,
+                    'language_id' => $validatedData['language_id'] ?? $propertyContent->language_id,
                 ]);
             }
 
-            // Update Features (Amenities)
-            if (!empty($validatedData['features'])) {
-                Log::info("Updating Amenities for Property ID: {$property->id}");
+            if (!empty($validatedData['amenity_id']) && is_array($validatedData['amenity_id'])) {
                 $property->proertyAmenities()->delete();
-                foreach ($validatedData['features'] as $amenityId) {
+
+                foreach ($validatedData['amenity_id'] as $amenityId) {
                     PropertyAmenity::create([
-                        'user_id' => Auth::id(),
+                        'user_id' => $user->id,
                         'property_id' => $property->id,
                         'amenity_id' => $amenityId
                     ]);
                 }
             }
 
-            // Commit the transaction
             DB::commit();
-            Log::info("Transaction Committed Successfully for Property ID: {$property->id}");
 
-            // Format Response Data
+            $property->load(['galleryImages', 'proertyAmenities.amenity', 'contents']);
+
             $responseProperty = [
                 'id' => $property->id,
                 'title' => $propertyContent->title,
                 'address' => $propertyContent->address,
                 'price' => $property->price,
                 'type' => $property->type,
-                'bedrooms' => $property->beds,
-                'bathrooms' => $property->bath,
-                'size' => $property->area,
+                'beds' => $property->beds,
+                'bath' => $property->bath,
+                'area' => $property->area,
                 'features' => $property->proertyAmenities->pluck('amenity.name')->toArray(),
                 'status' => $property->status,
                 'featured_image' => $property->featured_image,
                 'featured' => (bool) $property->featured,
-                'gallery' => $galleryImages,
+                'gallery' => $property->galleryImages->pluck('image')->toArray(),
                 'description' => $propertyContent->description,
-                'location' => [
-                    'latitude' => $property->latitude,
-                    'longitude' => $property->longitude,
-                ],
-                'created_at' => $property->created_at->toISOString(),
-                'updated_at' => $property->updated_at->toISOString(),
+                'latitude' => $property->latitude,
+                'longitude' => $property->longitude,
+                'created_at' => $property->created_at->format('Y-m-d H:i:s'),
+                'updated_at' => $property->updated_at->format('Y-m-d H:i:s'),
             ];
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Property updated successfully',
-                'data' => [
-                    'property' => $responseProperty
-                ]
+                'data' => ['property' => $responseProperty],
             ]);
 
         } catch (\Exception $e) {
-            // Rollback transaction on error
             DB::rollBack();
-            Log::error("Error updating property: " . $e->getMessage(), ['trace' => $e->getTrace()]);
             return response()->json([
                 'status' => 'error',
                 'message' => 'Property update failed',
@@ -383,6 +370,7 @@ class PropertyController extends Controller
             ], 500);
         }
     }
+
 
     public function destroy($id)
     {
