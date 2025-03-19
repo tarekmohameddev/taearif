@@ -33,7 +33,7 @@ class PropertyContent extends Model
         'slug',
         'address',
         'description',
-        // 'price',
+        'price',
         'meta_keyword',
         'meta_description',
     ];

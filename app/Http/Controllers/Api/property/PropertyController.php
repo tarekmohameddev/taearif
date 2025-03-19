@@ -170,6 +170,7 @@ class PropertyController extends Controller
             'category_id' => $validatedData['category_id'] ?? null,
             'language_id' => $validatedData['language_id'] ?? 1,
             'title' => $validatedData['title'],
+            'slug' => make_slug($validatedData['title'] ?? Str::random(8)),
             'address' => $validatedData['address'],
             'description' => $validatedData['description'] ?? '',
         ]);
@@ -299,6 +300,7 @@ class PropertyController extends Controller
                     'property_id' => $property->id,
                     'user_id' => $user->id,
                     'title' => $validatedData['title'] ?? 'Untitled Property',
+                    'slug' => make_slug($validatedData['title'] ?? Str::random(8)),
                     'address' => $validatedData['address'] ?? 'No Address',
                     'description' => $validatedData['description'] ?? '',
                     'city_id' => $validatedData['city_id'] ?? null,
