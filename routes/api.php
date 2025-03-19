@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\content\ContentController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\content\FooterSettingController;
+use App\Http\Controllers\Api\content\ApiBannerSettingController;
+use App\Http\Controllers\Api\content\AboutApiController;
 use Illuminate\Http\Request;
 
 /*
@@ -105,3 +107,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/content/footer', [FooterSettingController::class, 'update']);
 });
 
+
+// banner routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/content/banner', [ApiBannerSettingController::class, 'index']);
+    Route::post('/content/banner', [ApiBannerSettingController::class, 'update']);
+});
+
+// about routes
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/content/about', [AboutApiController::class, 'index']);
+    Route::post('/content/about', [AboutApiController::class, 'update']);
+});
