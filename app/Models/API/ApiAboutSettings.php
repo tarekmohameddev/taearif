@@ -21,7 +21,7 @@ class ApiAboutSettings extends Model
         'vision',
         'image_path',
         'features',  // JSON column
-    ];
+    ]; 
     
     // Cast the features column to array
     protected $casts = [
