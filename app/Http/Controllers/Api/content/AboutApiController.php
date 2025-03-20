@@ -15,7 +15,7 @@ class AboutApiController extends Controller
         // Get the about data or create default if not exists
         $user = $request->user();
         $about = ApiAboutSettings::where('user_id', $user->id)->first();
-        
+
         if (!$about) {
             // Default features
             $defaultFeatures = [
@@ -23,7 +23,7 @@ class AboutApiController extends Controller
                 ['id' => 2, 'title' => 'الابتكار', 'description' => 'نسعى دائمًا لتطوير حلول مبتكرة تلبي احتياجات عملائنا المتغيرة.'],
                 ['id' => 3, 'title' => 'الموثوقية', 'description' => 'يمكنك الاعتماد علينا لتقديم النتائج في الوقت المحدد وبالميزانية المتفق عليها.'],
             ];
-            
+
             $about = ApiAboutSettings::create([
                 'user_id' => $user->id,
                 'title' => 'عن شركتنا',
@@ -35,9 +35,9 @@ class AboutApiController extends Controller
                 'features' => $defaultFeatures,
             ]);
         }
-        
+
         // Format the response
-        
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -52,14 +52,14 @@ class AboutApiController extends Controller
     public function update(Request $request)
     {
         $user = $request->user();
-   
+
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'subtitle' => 'nullable|string|max:255',
             'history' => 'nullable|string',
             'mission' => 'nullable|string',
             'vision' => 'nullable|string',
-            'image' => 'nullable|string',
+            'image_path' => 'nullable|string',
             'features' => 'required|array',
             'features.*.id' => 'required|integer',
             'features.*.title' => 'required|string|max:255',
@@ -67,7 +67,7 @@ class AboutApiController extends Controller
         ]);
 
 
-        
+
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
@@ -75,16 +75,16 @@ class AboutApiController extends Controller
                 'errors' => $validator->errors(),
             ], 422);
         }
-        
+
         try {
-            
+
             // Get or create the about record
             $about = ApiAboutSettings::where('user_id', $user->id)->first();
             if (!$about) {
                 $about = new ApiAboutSettings();
                 $about->user_id = $user->id;
             }
-            
+
             // Update about data
             $about->title = $request->title;
             $about->subtitle = $request->subtitle;
@@ -92,10 +92,10 @@ class AboutApiController extends Controller
             $about->mission = $request->mission;
             $about->vision = $request->vision;
             $about->features = $request->features;
-            $about->image_path = $request->image;
+            $about->image_path = $request->image_path;
 
             $about->save();
-             
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'About page updated successfully',
