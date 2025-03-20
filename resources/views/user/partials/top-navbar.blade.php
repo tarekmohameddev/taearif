@@ -2,8 +2,8 @@
     <!-- Logo Header -->
     <div class="logo-header" @if(request()->cookie('user-theme') == 'dark') data-background-color="dark2" @endif>
         <a href="{{route('front.index')}}" class="logo" target="_blank">
-            @if(!empty($userBs->logo))
-        <img src="{{!empty($userBs->logo) ? asset('assets/front/img/user/'.$userBs->logo) : 'logo'}}" alt="LOGO" class="navbar-brand">
+            @if(!empty($logo))
+        <img src="{{!empty($logo) ? $logo : 'logo'}}" alt="LOGO" class="navbar-brand">
             @else
             {{__('logo')}}
             @endif

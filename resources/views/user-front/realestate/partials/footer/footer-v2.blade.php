@@ -1,5 +1,15 @@
   <!-- Footer-area start -->
 
+@php
+    $footerData = json_decode($userApi_footerData, true);
+    $socialLinks = $footerData['social'] ?? []; // Get 'social' data
+    $general = $footerData['general'] ?? []; // Get 'general' data
+    $columns = $footerData['columns'] ?? []; // Get 'columns' data
+
+    $general_settingsData = json_decode($userApi_general_settingsData, true);
+    $logo = $general_settingsData['logo'] ?? [];
+
+@endphp
   <footer class="footer-area border border-primary" style="background-color: transparent !important;">
       @if (!empty($userFooterData->bg_image))
           <!-- Background Image -->
@@ -10,106 +20,111 @@
           <div class="footer-top">
               <div class="container">
                   <div class="row gx-xl-5 justify-content-xl-between">
-                      <div class="col-lg-5">
-                          <div class="footer-widget">
-                              <div class="navbar-brand">
-                                  @if (!empty($userFooterData->logo))
-                                      <a href="{{ route('front.user.detail.view', getParam()) }}">
-                                          <img style="max-height: 50px; width: auto;"
-                                              src="{{ asset('assets/front/img/user/footer/' . $userFooterData->logo) }}">
-                                      </a>
-                                  @endif
-                              </div>
-                              <p class="text">
-                                  {{ !empty($userFooterData->about_company) ? $userFooterData->about_company : '' }}
-                              </p>
+            <!-- Company Info -->
+            <div class="col-lg-3 col-md-6">
+                <div class="footer-widget">
+                    <div class="navbar-brand mb-3">
+                        @if (!empty($logo))
+                            <a href="{{ route('front.user.detail.view', getParam()) }}">
+                                <img style="max-height: 50px; width: auto;" src="{{ $logo }}">
+                            </a>
+                        @endif
+                    </div>
+                    <p class="text-muted">{{ $general['companyName'] }}</p>
+                    @if($general['showWorkingHours'])
+                        <p class="small text-muted">{{ $general['workingHours'] }}</p>
+                    @endif
+                    @if (count($socialLinks) > 0)
 
-                              @if (count($social_medias) > 0)
-                                  <div class="social-link">
-                                      @foreach ($social_medias as $socialMediaInfo)
-                                          <a href="{{ $socialMediaInfo->url }}" target="_blank"><i
-                                                  class="{{ $socialMediaInfo->icon }}"></i></a>
-                                      @endforeach
-                                  </div>
-                              @endif
-                          </div>
-                      </div>
-                      <div class="col-lg-3 col-xl-2 col-sm-6">
-                          <div class="footer-widget">
-                              <h4>{{ $keywords['Useful Links'] ?? __('Useful Links') }}</h4>
-                              @if (count($userFooterQuickLinks) == 0)
-                                  <h6 class="">{{ $keywords['No Link Found'] ?? __('No Link Found') }}</h6>
-                              @else
-                                  <ul class="footer-links">
-                                      @foreach ($userFooterQuickLinks as $quickLinkInfo)
-                                          <li>
-                                              <a href="{{ $quickLinkInfo->url }}">{{ $quickLinkInfo->title }}</a>
-                                          </li>
-                                      @endforeach
-                                  </ul>
-                              @endif
-                          </div>
-                      </div>
-                      <div class="col-lg-4 col-xl-3 col-sm-6">
-                          <div class="footer-widget">
-                              <h4>{{ $keywords['Contact Us'] ?? __('Contact Us') }}</h4>
-                              @php
-                                  $phone_numbers = !empty($userContact->contact_numbers)
-                                      ? explode(',', $userContact->contact_numbers)
-                                      : [];
-                                  $emails = !empty($userContact->contact_mails)
-                                      ? explode(',', $userContact->contact_mails)
-                                      : [];
-                                  $addresses = !empty($userContact->contact_addresses)
-                                      ? explode(PHP_EOL, $userContact->contact_addresses)
-                                      : [];
-                              @endphp
-                              <ul class="footer-links">
+                    <div class="social-links mt-3">
+                        <ul class="list-inline d-flex align-items-center gap-3">
+                            @foreach($socialLinks as $social)
+                                @if($social['enabled'])
+                                    <li class="list-inline-item">
+                                        <a href="{{ $social['url'] }}" target="_blank" class="text-decoration-none">
+                                            <i class="fab fa-{{ strtolower($social['platform']) }} fa-lg text-secondary"></i>
+                                        </a>
+                                    </li>
+                                @endif
+                            @endforeach
+                        </ul>
+                    </div>
 
+                    @endif
+                </div>
+            </div>
 
-                                  @if (count($addresses) > 0)
-                                      <li>
-                                          <i class="fal fa-map-marker-alt"></i>
-                                          @foreach ($addresses as $address)
-                                              <a
-                                                  href="tel: {{ $address }}">{{ $address }}</a>{{ !$loop->last ? ', ' : '' }}
-                                          @endforeach
-                                      </li>
-                                  @endif
+            <!-- Useful Links -->
+            <div class="col-lg-6 col-md-6">
+                <div class="footer-widget">
+                    @php
+                        $usefulLinks = collect($columns)->where('enabled', true);
+                    @endphp
+                    @if ($usefulLinks->isEmpty())
+                        <h6 class="text-muted">{{ $keywords['No Link Found'] ?? __('لا توجد روابط') }}</h6>
+                    @else
+                        <div class="row">
+                            @foreach ($usefulLinks as $column)
+                                <div class="col-md-4">
+                                    <h6 class="fw-bold text-dark">{{ $column['title'] }}</h6>
+                                    <ul class="list-unstyled">
+                                        @foreach ($column['links'] as $link)
+                                            <li class="mt-2">
+                                                <a href="{{ $link['url'] }}" class="text-muted text-decoration-none">
+                                                    {{ $link['text'] }}
+                                                </a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
 
 
-                                  @if (count($phone_numbers) > 0)
-                                      <li>
-                                          <i class="fal fa-phone-plus"></i>
-                                          @foreach ($phone_numbers as $phone_number)
-                                              <a
-                                                  href="tel: {{ $phone_number }}">{{ $phone_number }}</a>{{ !$loop->last ? ', ' : '' }}
-                                          @endforeach
-                                      </li>
-                                  @endif
+            <!-- Contact Info -->
+            <div class="col-lg-3 col-md-6">
+                <div class="footer-widget">
+                    <h6 class="fw-bold text-dark">{{ $keywords['Contact Us'] ?? __('Contact Us') }}</h6>
+                    <ul class="list-unstyled mt-3">
+                        @if($general['address'])
+                            <li class="mb-2">
+                                <i class="fas fa-map-marker-alt me-2 text-primary"></i>
+                                <span class="text-muted">{{ $general['address'] }}</span>
+                            </li>
+                        @endif
+                        @if($general['showContactInfo'])
+                            <li class="mb-2">
+                                <i class="fas fa-phone me-2 text-primary"></i>
+                                <a href="tel:{{ $general['phone'] }}" class="text-muted text-decoration-none">
+                                    {{ $general['phone'] }}
+                                </a>
+                            </li>
+                            <li>
+                                <i class="fas fa-envelope me-2 text-primary"></i>
+                                <a href="mailto:{{ $general['email'] }}" class="text-muted text-decoration-none">
+                                    {{ $general['email'] }}
+                                </a>
+                            </li>
+                        @endif
+                    </ul>
+                </div>
+            </div>
 
-
-                                  @if (count($emails) > 0)
-                                      <li>
-                                          <i class="fal fa-envelope"></i>
-                                          @foreach ($emails as $email)
-                                              <a
-                                                  href="mailto: {{ $email }}">{{ $email }}</a>{{ !$loop->last ? ', ' : '' }}
-                                          @endforeach
-                                      </li>
-                                  @endif
-                              </ul>
-                          </div>
-                      </div>
                   </div>
               </div>
           </div>
       @endif
-      @if (isset($home_sections->copyright_section) && $home_sections->copyright_section == 1)
+
+      @if($general['showCopyright'])
           <div class="copy-right-area border-top">
               <div class="container">
                   <div class="copy-right-content">
-                      <span> {!! replaceBaseUrl($userFooterData->copyright_text ?? null) !!} </span>
+                        <span>
+                        {{ $general['copyrightText'] }}
+                        </span>
                   </div>
               </div>
           </div>

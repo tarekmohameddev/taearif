@@ -12,6 +12,8 @@ use App\Models\User\UserVcard;
 use App\Models\User\UserCoupon;
 use App\Models\User\UserFeature;
 use App\Models\User\WorkProcess;
+use Laravel\Sanctum\HasApiTokens;
+use App\Models\Api\GeneralSetting;
 use App\Models\User\JobExperience;
 use App\Http\Controllers\Controller;
 use App\Models\User\UserOfferBanner;
@@ -43,7 +45,6 @@ use App\Models\User\DonationManagement\DonationCategories;
 use App\Models\User\CourseManagement\Instructor\Instructor;
 use App\Models\User\CourseManagement\LessonContentComplete;
 use App\Models\User\CourseManagement\Coupon as CourseManagementCoupon;
-use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
@@ -467,5 +468,10 @@ class User extends Authenticatable
     public function userbasicsettings()
     {
         return $this->hasMany('App\Models\User\BasicSetting', 'user_id');
+    }
+
+    public function generalSettings()
+    {
+        return $this->hasOne(GeneralSetting::class, 'user_id', 'id');
     }
 }

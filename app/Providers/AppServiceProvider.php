@@ -7,10 +7,13 @@ use App\Models\User;
 use App\Models\Social;
 use App\Models\Language;
 use App\Models\User\SEO;
+use App\Models\UserStep;
 use App\Models\User\FooterText;
 use App\Models\User\UserContact;
 use App\Models\User\UserService;
+use App\Models\Api\FooterSetting;
 use App\Models\User\BasicSetting;
+use App\Models\Api\GeneralSetting;
 use Illuminate\Support\Facades\DB;
 use App\Models\User\FooterQuickLink;
 use App\Models\User\UserShopSetting;
@@ -20,11 +23,10 @@ use Illuminate\Support\Facades\View;
 use App\Models\User\Menu as UserMenu;
 use App\Models\User\UserItemCategory;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Http\Helpers\UserPermissionHelper;
 use App\Models\User\Language as UserLanguage;
-use App\Models\UserStep;
-use Illuminate\Support\Facades\Schema;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -58,9 +60,12 @@ class AppServiceProvider extends ServiceProvider
                 } else {
                     $currentLang = Language::where('is_default', 1)->first();
                 }
+                $api_general_settingsData = GeneralSetting::where('user_id', Auth::user()->id)->first();
+
 
                 $bs = $currentLang->basic_setting;
                 $be = $currentLang->basic_extended;
+                $api_general_settingsData = $api_general_settingsData;
                 Config::set('app.timezone', $bs->timezone);
 
 
@@ -87,8 +92,16 @@ class AppServiceProvider extends ServiceProvider
                 if (Auth::check()) {
                     $userBs = BasicSetting::with('timezoneinfo')->where('user_id', Auth::user()->id)->first();
                     $userRoomSettings = DB::table('user_room_settings')->where('user_id', Auth::guard('web')->user()->id)->first();
+                    $api_general_settingsData = GeneralSetting::where('user_id', Auth::user()->id)->first();
 
-                    $view->with(['userBs' => $userBs, 'roomSetting' => $userRoomSettings]);
+
+                    $view->with(
+                        [
+                            'userBs' => $userBs,
+                            'userapi_general_settingsData' => $api_general_settingsData,
+                            'roomSetting' => $userRoomSettings
+                        ]
+                    );
                     Config::set('app.timezone', $userBs->timezoneinfo->timezone ?? '');
                     $userId = Auth::guard('web')->user()->id;
                     if (request()->has('language')) {
@@ -161,6 +174,8 @@ class AppServiceProvider extends ServiceProvider
                 $footerData = FooterText::where('language_id', $userCurrentLang->id)
                     ->where('user_id', $user->id)
                     ->first();
+                $api_footerData = FooterSetting::where('user_id', $user->id)->first();
+                $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
 
                 if ($userBs->theme == 'home_seven') {
                     $fservices = UserService::where('lang_id', $userCurrentLang->id)
@@ -210,6 +225,8 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('userMenus', $userMenus);
                 $view->with('userFooterQuickLinks', $footerQuickLinks);
                 $view->with('userFooterData', $footerData);
+                $view->with('userApi_footerData', $api_footerData);
+                $view->with('userApi_general_settingsData', $api_general_settingsData);
                 $view->with('userFooterRecentBlogs', $footerRecentBlogs);
                 $view->with('roomSetting', $userRoomSettings);
                 $view->with('userContact', $userContact);
