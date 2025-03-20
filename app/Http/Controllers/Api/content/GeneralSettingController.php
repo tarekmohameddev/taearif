@@ -28,7 +28,7 @@ class GeneralSettingController extends Controller
                 'description' => 'مرحباً بكم في موقعي',
                 'maintenance_mode' => false,
                 'show_breadcrumb' => true,
-                'additional_settings' => 'nullable|array',
+                'additional_settings' => null,
             ]);
         }
 

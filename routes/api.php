@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\project\ProjectController;
 use App\Http\Controllers\Api\property\PropertyController;
 use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\content\FooterSettingController;
+use App\Http\Controllers\Api\content\AboutApiController;
 
 /*
 |--------------------------------------------------------------------------
