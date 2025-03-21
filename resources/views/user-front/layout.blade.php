@@ -1,3 +1,10 @@
+@php
+$general_settingsData = json_decode($userApi_general_settingsData, true);
+    $favicon = $general_settingsData['favicon'] ?? [];
+    $site_name = $general_settingsData['site_name'] ?? [];
+
+@endphp
+
 <!DOCTYPE html>
 <html lang="{{ $userCurrentLang->code }}" @if ($userCurrentLang->rtl == 1) dir="rtl" @endif>
 
@@ -13,7 +20,7 @@
 
     @yield('og-meta')
     <!--====== Title ======-->
-    <title> {{ convertUtf8($userBs->website_title) }} - @yield('tab-title') </title>
+    <title> {{ convertUtf8($site_name) }} - @yield('tab-title') </title>
     @includeIf('user-front.partials.styles')
     @if ($userBs->whatsapp_status == 1)
         <style>
@@ -90,7 +97,7 @@
             !request()->routeIs('front.user.course.details') &&
             // !request()->routeIs('front.user.projects') &&
             !request()->routeIs('front.user.project.details') &&
-    
+
             !request()->routeIs('front.user.property.details') &&
             !request()->routeIs('front.user.properties'))
         @php

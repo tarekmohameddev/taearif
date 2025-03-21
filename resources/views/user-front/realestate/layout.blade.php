@@ -22,32 +22,37 @@
         href="{{ !empty($userBs->favicon) ? asset('assets/front/img/user/' . $userBs->favicon) : '' }}"
         type="img/png" />
 
-    @php
-        $primaryColor = $userBs->base_color;
-        $secoundaryColor = $userBs->secondary_color;
-        // check, whether color has '#' or not, will return 0 or 1
-        function checkColorCode($color)
-        {
-            return preg_match('/^#[a-f0-9]{6}/i', $color);
-        }
+        @php
+            $primaryColor = $userBs->base_color;
+            $secoundaryColor = $userBs->secondary_color;
 
-        // if, primary color value does not contain '#', then add '#' before color value
-        if (isset($primaryColor) && checkColorCode($primaryColor) == 0 && checkColorCode($secoundaryColor) == 0) {
-            $primaryColor = '#' . $primaryColor;
-            $secoundaryColor = '#' . $secoundaryColor;
-        }
-
-        // change decimal point into hex value for opacity
-        function rgb($color = null)
-        {
-            if (!$color) {
-                echo '';
+            // Check whether color has '#' or not, will return 0 or 1
+            if (!function_exists('checkColorCode')) {
+                function checkColorCode($color)
+                {
+                    return preg_match('/^#[a-f0-9]{6}/i', $color);
+                }
             }
-            $hex = htmlspecialchars($color);
-            [$r, $g, $b] = sscanf($hex, '#%02x%02x%02x');
-            echo "$r, $g, $b";
-        }
-    @endphp
+
+            // Ensure the color has a '#' prefix
+            if (isset($primaryColor) && checkColorCode($primaryColor) == 0 && checkColorCode($secoundaryColor) == 0) {
+                $primaryColor = '#' . $primaryColor;
+                $secoundaryColor = '#' . $secoundaryColor;
+            }
+
+            // Convert Hex to RGB
+            if (!function_exists('rgb')) {
+                function rgb($color = null)
+                {
+                    if (!$color) {
+                        return '';
+                    }
+                    $hex = htmlspecialchars($color);
+                    [$r, $g, $b] = sscanf($hex, '#%02x%02x%02x');
+                    return "$r, $g, $b";
+                }
+            }
+        @endphp
     <style>
         :root {
             --color-primary: {{ $primaryColor }};

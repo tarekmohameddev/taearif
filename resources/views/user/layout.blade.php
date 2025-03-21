@@ -1,3 +1,10 @@
+@php
+$general_settingsData = json_decode($userapi_general_settingsData, true);
+    $favicon = $general_settingsData['favicon'] ?? [];
+    $logo = $general_settingsData['logo'] ?? [];
+    $site_name = $general_settingsData['site_name'] ?? [];
+
+@endphp
 <!DOCTYPE html>
 <html lang="en">
 
@@ -6,8 +13,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta content='width=device-width, initial-scale=1.0, shrink-to-fit=no' name='viewport' />
-    <title>{{ $bs->website_title }} - User Dashboard</title>
-    <link rel="icon" href="{{ !empty($userBs->favicon) ? asset('assets/front/img/user/' . $userBs->favicon) : '' }}">
+    <title>{{ $site_name }} - User Dashboard</title>
+    <link rel="icon" href="{{ !empty($favicon) ? $favicon : '' }}">
     @includeif('user.partials.styles')
     @php
     $selLang = App\Models\Language::where('code', request()->input('language'))->first();
