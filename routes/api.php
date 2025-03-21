@@ -1,16 +1,18 @@
 <?php
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\blog\BlogController;
-use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\content\ContentController;
 use App\Http\Controllers\Api\project\ProjectController;
+use App\Http\Controllers\Api\content\AboutApiController;
 use App\Http\Controllers\Api\property\PropertyController;
 use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\content\FooterSettingController;
-use App\Http\Controllers\Api\content\AboutApiController;
+use App\Http\Controllers\Api\content\GeneralSettingController;
+use App\Http\Controllers\Api\content\ApiBannerSettingController;
 
 /*
 |--------------------------------------------------------------------------
