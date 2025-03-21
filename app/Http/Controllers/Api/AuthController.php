@@ -41,7 +41,7 @@ class AuthController extends Controller
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|string|min:6'
             ]);
-    
+
 
             $request['status'] = 1;
             $request['mode'] = 'online';
@@ -65,71 +65,74 @@ class AuthController extends Controller
             $request['expire_date'] = '09-01-2026';
 
 
-    
+
             // Validate Coupon
             $coupon = Coupon::where('code', Session::get('coupon'))->first();
             if (!empty($coupon) && $coupon->maximum_uses_limit != 999999 && $coupon->total_uses >= $coupon->maximum_uses_limit) {
                 Session::forget('coupon');
                 return response()->json(['status' => 'error', 'message' => __('This coupon reached maximum limit')], 400);
             }
-    
+
             // Get language settings
             $currentLang = session()->has('lang') ?
                 Language::where('code', session()->get('lang'))->first() :
                 Language::where('is_default', 1)->first();
             $bs = $currentLang->basic_setting;
             $be = $currentLang->basic_extended;
-    
+
             Session::put('paymentFor', 'membership');
-    
+
             // Retrieve package
             $package = Package::find(16);
             if (!$package) {
                 return response()->json(['status' => 'error', 'message' => __('Invalid package selection')], 400);
             }
-    
+
             // Handle Trial / Free Package
 
                 $transaction_id = UserPermissionHelper::uniqidReal(8);
                 $transaction_details = $request->package_type == "trial" ? "Trial" : "Free";
                 $price = 0.00;
                 $request['payment_method'] = "-";
-    
+
                 // Store user and process membership
                 $user = $this->create_website($request->all(), $transaction_id, $transaction_details, $price, $be, $request->password);
               //  dd($user);
                 Auth::login($user);
+                
+                $token = $user->createToken('auth_token')->plainTextToken;
+
                 $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
                 $activation = Carbon::parse($lastMemb->start_date);
                 $expire = Carbon::parse($lastMemb->expire_date);
-    
-                
-                return response()->json(['status' => 'success', 'user' => $user], 201);
 
-      
-    
+
+                return response()->json(['status' => 'success', 'user' => $user,'token'=>$token], 201);
+
+
+
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
-    
+
     public function login(Request $request)
     {
         $credentials = $request->validate([
             'email' => 'required|email',
             'password' => 'required'
         ]);
-    
+
         if (!Auth::attempt($credentials)) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
-    
+
         // Get authenticated user
         $user = Auth::user();
-    
+
         // Create token for API authentication
         $token = $user->createToken('auth_token')->plainTextToken;
-    
+
         return response()->json([
             'user' => $user,
             'token' => $token
@@ -138,12 +141,12 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-     
-        
+
+
         if (!$request->user()) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
-    
+
         // Revoke the current token
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logged out successfully']);
@@ -154,7 +157,7 @@ class AuthController extends Controller
     {
         return response()->json(['status' => 'error', 'message' => __($message)], 400);
     }
-    
+
     private function formatCurrency($amount, $be)
     {
         return ($be->base_currency_text_position == 'left' ? $be->base_currency_text . ' ' : '') . $amount . ($be->base_currency_text_position == 'right' ? ' ' . $be->base_currency_text : '');
