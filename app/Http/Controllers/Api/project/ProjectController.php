@@ -33,12 +33,13 @@ class ProjectController extends Controller
     public function index(Request $request): JsonResponse
     {
 
-
+        $user = $request->user();
         $projects = Project::with([
             'contents',
             'specifications',
             'types'
-        ])->paginate(10);
+        ])->where('user_id', $user->id)->paginate(10);
+        
 
         $formattedProjects = $projects->map(function ($project) {
             return [

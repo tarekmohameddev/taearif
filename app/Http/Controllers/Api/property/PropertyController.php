@@ -20,12 +20,15 @@ class PropertyController extends Controller
 {
     public function index()
     {
+
+        $user = $request->user();
         $properties = Property::with([
             'category',
             'user',
             'contents',
             'proertyAmenities.amenity'
-        ])->paginate(10);
+        ])->where('user_id', $user->id)->paginate(10);
+        
 
         $formattedProperties = $properties->map(function ($property) {
             return [
