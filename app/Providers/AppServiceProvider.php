@@ -12,7 +12,7 @@ use App\Models\User\FooterText;
 use App\Models\User\UserContact;
 use App\Models\User\UserService;
 use App\Models\Api\FooterSetting;
-use App\Models\Api\ApiBannerSetting;
+// use App\Models\Api\ApiBannerSetting;
 use App\Models\User\BasicSetting;
 use App\Models\Api\GeneralSetting;
 use Illuminate\Support\Facades\DB;
@@ -55,29 +55,20 @@ class AppServiceProvider extends ServiceProvider
             $langs = Language::all();
 
             View::composer('*', function ($view) {
-                $api_Banner_settingsData = null;
+                // $api_Banner_settingsData = null;
                 $api_general_settingsData = null;
 
                 $username = request()->segment(1);
                 $user = User::where('username', $username)->first();
 
-                if ($user) {
-                    $api_Banner_settingsData = ApiBannerSetting::where('user_id', $user->id)->first();
-                    $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
-                }
+                // if ($user) {
+                    // $api_Banner_settingsData = ApiBannerSetting::where('user_id', $user->id)->first();
+                    // $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
+                // }
 
-                if ($api_Banner_settingsData && is_string($api_Banner_settingsData)) {
-                    $api_Banner_settingsData = json_decode($api_Banner_settingsData);
-                }
-
-                if (!$api_Banner_settingsData) {
-                    $api_Banner_settingsData = (object) [
-                        'banner_type' => null,
-                        'static' => (object) [],
-                        'slider' => (object) [],
-                        'common' => (object) []
-                    ];
-                }
+                // if ($api_Banner_settingsData && is_string($api_Banner_settingsData)) {
+                //     $api_Banner_settingsData = json_decode($api_Banner_settingsData);
+                // }
 
                 if (session()->has('lang')) {
                     $currentLang = Language::where('code', session()->get('lang'))->first();
@@ -97,8 +88,8 @@ class AppServiceProvider extends ServiceProvider
 
                 $view->with('bs', $bs);
                 $view->with('be', $be);
-                $view->with('api_Banner_settingsData', $api_Banner_settingsData);
-                $view->with('api_general_settingsData', $api_general_settingsData);
+                // $view->with('api_Banner_settingsData', $api_Banner_settingsData);
+                // $view->with('api_general_settingsData', $api_general_settingsData);
                 $view->with('currentLang', $currentLang);
                 $view->with('menus', $menus);
                 $view->with('rtl', $rtl);

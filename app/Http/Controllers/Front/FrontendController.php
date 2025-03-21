@@ -33,6 +33,7 @@ use App\Models\User\UserFeature;
 use App\Models\User\BasicSetting;
 use App\Models\User\HomePageText;
 use JeroenDesloovere\VCard\VCard;
+use App\Models\Api\GeneralSetting;
 use App\Models\BasicSetting as BS;
 use App\Traits\MiscellaneousTrait;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +42,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 use App\Models\BasicExtended as BE;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Models\Api\ApiBannerSetting;
 use App\Models\User\UserOfferBanner;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -507,6 +509,17 @@ class FrontendController extends Controller
         $lang_id = $currentLang->id;
         $bs = $currentLang->basic_setting;
         $be = $currentLang->basic_extended;
+
+        //
+        $api_Banner_settingsData = ApiBannerSetting::where('user_id', $user->id)->first();
+        $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
+
+        if ($api_Banner_settingsData && is_string($api_Banner_settingsData)) {
+            $api_Banner_settingsData = json_decode($api_Banner_settingsData);
+        }
+
+        $data['api_Banner_settingsData'] = $api_Banner_settingsData;
+        $data['api_general_settingsData'] = $api_general_settingsData;
 
         $data['home_sections'] = User\HomeSection::where('user_id', $user->id)->first();
 
@@ -1032,7 +1045,7 @@ class FrontendController extends Controller
 
                     ->where('user_project_contents.language_id', $userCurrentLang->id)
                     ->select('user_projects.*', 'user_project_contents.slug', 'user_project_contents.title', 'user_project_contents.address')->inRandomOrder()->latest()->take(8)->get();
-                
+
                 return view('user-front.realestate.home.index-v1', $data);
             } elseif ($userBs->theme == 'home14') {
 
@@ -1057,7 +1070,7 @@ class FrontendController extends Controller
 
                     ->where('user_project_contents.language_id', $userCurrentLang->id)
                     ->select('user_projects.*', 'user_project_contents.slug', 'user_project_contents.title', 'user_project_contents.address')->inRandomOrder()->latest()->take(8)->get();
-                
+
                 return view('user-front.realestate.home.index-v2', $data);
             } elseif ($userBs->theme == 'home15') {
                 $data['heroStatic'] = User\HeroStatic::where('user_id', $user->id)
