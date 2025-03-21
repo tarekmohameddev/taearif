@@ -12,6 +12,7 @@ use App\Models\User\FooterText;
 use App\Models\User\UserContact;
 use App\Models\User\UserService;
 use App\Models\Api\FooterSetting;
+use App\Models\Api\ApiBannerSetting;
 use App\Models\User\BasicSetting;
 use App\Models\Api\GeneralSetting;
 use Illuminate\Support\Facades\DB;
@@ -57,6 +58,7 @@ class AppServiceProvider extends ServiceProvider
 
                 $authenticatedUser = Auth::guard('web')->user();
                 $api_general_settingsData = null;
+                $api_Banner_settingsData = null;
 
 
                 if (session()->has('lang')) {
@@ -66,11 +68,29 @@ class AppServiceProvider extends ServiceProvider
                 }
                 if ($authenticatedUser) {
                     $api_general_settingsData = GeneralSetting::where('user_id', $authenticatedUser->id)->first();
+                    $api_Banner_settingsData = ApiBannerSetting::where('user_id', $authenticatedUser->id)->first();
+                }
+
+                if (!$api_Banner_settingsData) {
+                    $api_Banner_settingsData = (object) [
+                        'banner_type' => 'static',
+                        'static' => (object) [
+                            'image' => null,
+                            'title' => 'Default Static Title',
+                            'subtitle' => 'Default Subtitle',
+                            'buttonUrl' => '/',
+                            'buttonText' => 'Explore',
+                            'showButton' => false,
+                            'buttonStyle' => 'primary'
+                        ],
+                        'slider' => (object) [
+                            'slides' => []
+                        ]
+                    ];
                 }
 
                 $bs = $currentLang->basic_setting;
                 $be = $currentLang->basic_extended;
-                $api_general_settingsData = $api_general_settingsData;
                 Config::set('app.timezone', $bs->timezone);
 
 
@@ -88,6 +108,7 @@ class AppServiceProvider extends ServiceProvider
 
                 $view->with('bs', $bs);
                 $view->with('be', $be);
+                $view->with('api_Banner_settingsData', $api_Banner_settingsData);
                 $view->with('currentLang', $currentLang);
                 $view->with('menus', $menus);
                 $view->with('rtl', $rtl);

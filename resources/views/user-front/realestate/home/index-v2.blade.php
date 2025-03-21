@@ -1,3 +1,15 @@
+@php
+    $sliderData = json_decode($api_Banner_settingsData);
+    $slidertype = $sliderData->banner_type ?? null;
+    $hero = null;
+    if ($slidertype  === 'static') {
+        $hero = $sliderData->static;
+    }elseif ($slidertype  === 'slider'){
+        $hero = $sliderData->slider;
+    }
+
+@endphp
+
 @extends('user-front.realestate.layout')
 
 @section('pageHeading', $keywords['Home'] ?? 'Home')
@@ -19,24 +31,26 @@
 
 @section('content')
 
-@if(count($sliderInfos) > 0)
+@if($slidertype == 'slider')
 <section class="home-banner home-banner-2">
     <div class="container">
+
         <div class="swiper home-slider" id="home-slider-1">
             <div class="swiper-wrapper">
-                @foreach ($sliderInfos as $slider)
+                @foreach ($hero->slides as $slide)
                 <div class="swiper-slide">
                     <div class="content">
-                        <span class="subtitle color-white">{{ $slider->title }}</span>
-                        <h1 class="title color-white mb-0">{{ $slider->subtitle }}</h1>
-                        </br>
-                        <button class="btn bg-white text-dark border-dark">تملك دارك</button>
-
-
+                        <span class="subtitle color-white">{{ $slide->title }}</span>
+                        <h1 class="title color-white mb-0">{{ $slide->subtitle }}</h1>
+                        <br>
+                        @if ($slide->showButton)
+                            <a href="{{ $slide->buttonUrl }}" class="btn btn-{{ $slide->buttonStyle ?? 'primary' }}">
+                                {{ $slide->buttonText }}
+                            </a>
+                        @endif
                     </div>
                 </div>
                 @endforeach
-
             </div>
         </div>
 
@@ -232,17 +246,47 @@
 
     <div class="swiper home-img-slider" id="home-img-slider-1">
         <div class="swiper-wrapper">
-            @foreach ($sliderInfos as $slider)
+        @foreach ($hero->slides as $slider)
             <div class="swiper-slide">
-                <img class="lazyload bg-img" src=" {{ asset('assets/front/img/hero_slider/' . $slider->img) }}">
+                <img class="lazyload bg-img" src="https://taearifdev.com/assets/front/img/user/home_settings/67d16c0704ed7.jpg">
             </div>
-            @endforeach
+        @endforeach
 
 
         </div>
     </div>
 </section>
+@elseif($slidertype == 'static')
+<section class="home-banner home-banner-1">
+        @if (!empty($hero->image))
+            <img class="lazyload bg-img" src="https://taearifdev.com/assets/front/img/user/home_settings/67d16c0704ed7.jpg">
+        @else
+            <div class="bg-img" style="background-color: #222; height: 500px;"></div>
+        @endif
+
+        <div class="container">
+            <div class="row justify-content-center text-center align-items-center">
+                <div class="col-xxl-5">
+                    <div class="content" data-aos="fade-up">
+                        <h1 class="title">
+                            {{ $hero->title }}
+                        </h1>
+                        <p class="text text-white">
+                            {{ $hero->subtitle }}
+                        </p>
+                        @if ($hero->showButton)
+                            <a href="{{ $hero->buttonUrl }}" class="btn btn-lg btn-{{ $hero->buttonStyle ?? 'primary' }}">
+                                {{ $hero->buttonText }}
+                            </a>
+                        @endif
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
 @endif
+
 <style>
     .info-box {
         background: #f8f9fa;
@@ -301,7 +345,7 @@
         @if (!empty($home_text->about_image))
                                         <div class="col-lg-6 mb-4 mb-lg-0 lazyload blur-up">
             <img src="{{ asset('assets/front/img/user/home_settings/' . $home_text->about_image) }}" alt="Company Visual" class="img-fluid">
-        </div>                               
+        </div>
          @endif
         <!-- Content Column -->
         <div class="col-lg-6">

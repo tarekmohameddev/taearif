@@ -1,3 +1,15 @@
+@php
+    $sliderData = json_decode($api_Banner_settingsData);
+    $slidertype = $sliderData->banner_type ?? null;
+    $hero = null;
+    if ($slidertype  === 'static') {
+        $hero = $sliderData->static;
+    }elseif ($slidertype  === 'slider'){
+        $hero = $sliderData->slider;
+    }
+
+@endphp
+
 @extends('user-front.realestate.layout')
 
 
@@ -17,10 +29,49 @@
 
 @section('content')
 
-@if (!is_null($heroStatic))
-<section class="home-banner home-banner-3 with-radius">
-    <img class="lazyload bg-img blur-up" src="{{ asset('assets/front/img/hero_static/' . $heroStatic->img) }}" alt="Banner">
+@if ($slidertype === 'slider')
+<section class="home-banner home-banner-2">
     <div class="container">
+
+        <div class="swiper home-slider" id="home-slider-1">
+            <div class="swiper-wrapper">
+                @foreach ($hero->slides as $slide)
+                <div class="swiper-slide">
+                    <div class="content">
+                        <span class="subtitle color-white">{{ $slide->title }}</span>
+                        <h1 class="title color-white mb-0">{{ $slide->subtitle }}</h1>
+                        <br>
+                        @if ($slide->showButton)
+                            <a href="{{ $slide->buttonUrl }}" class="btn btn-{{ $slide->buttonStyle ?? 'primary' }}">
+                                {{ $slide->buttonText }}
+                            </a>
+                        @endif
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="swiper-pagination pagination-fraction mt-40" id="home-slider-1-pagination"></div>
+    </div>
+
+    <div class="swiper home-img-slider" id="home-img-slider-1">
+        <div class="swiper-wrapper">
+        @foreach ($hero->slides as $slider)
+            <div class="swiper-slide">
+                <img class="lazyload bg-img" src="https://taearifdev.com/assets/front/img/user/home_settings/67d16c0704ed7.jpg">
+            </div>
+        @endforeach
+
+
+        </div>
+    </div>
+</section>
+@elseif ($slidertype === 'static')
+<section class="home-banner home-banner-3 with-radius">
+    <img class="lazyload bg-img blur-up" src="https://taearifdev.com/assets/front/img/user/home_settings/67d16c0704ed7.jpg" alt="Banner">
+    <div class="container">
+
         <div class="row align-items-center">
             <div class="col-xl-7 col-lg-7">
                 <div class="content mb-40" data-aos="fade-up">
@@ -215,6 +266,7 @@
                 </div>
             </div>
         </div>
+
     </div>
 </section>
 @endif
