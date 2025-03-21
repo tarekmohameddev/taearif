@@ -1,5 +1,5 @@
 @php
-    $sliderData = json_decode($api_Banner_settingsData);
+    $sliderData = is_string($api_Banner_settingsData) ? $api_Banner_settingsData : json_decode($api_Banner_settingsData);
     $slidertype = $sliderData->banner_type ?? null;
     $hero = null;
     if ($slidertype  === 'static') {
@@ -7,14 +7,10 @@
     }elseif ($slidertype  === 'slider'){
         $hero = $sliderData->slider;
     }
-
 @endphp
 
 @extends('user-front.realestate.layout')
-
-
 @section('pageHeading', $keywords['Home'] ?? 'Home')
-
 @section('metaDescription', !empty($userSeo) ? $userSeo->home_meta_description : '')
 @section('metaKeywords', !empty($userSeo) ? $userSeo->home_meta_keywords : '')
 
