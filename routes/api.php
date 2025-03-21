@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\content\FooterSettingController;
 use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
 
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
