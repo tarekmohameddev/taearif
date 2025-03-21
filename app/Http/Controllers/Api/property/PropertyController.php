@@ -18,7 +18,7 @@ use App\Models\User\RealestateManagement\PropertySliderImg;
 
 class PropertyController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
 
         $user = $request->user();
