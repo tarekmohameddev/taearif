@@ -55,13 +55,18 @@ class AppServiceProvider extends ServiceProvider
 
             View::composer('*', function ($view) {
 
+                $authenticatedUser = Auth::guard('web')->user();
+                $api_general_settingsData = null;
+
+
                 if (session()->has('lang')) {
                     $currentLang = Language::where('code', session()->get('lang'))->first();
                 } else {
                     $currentLang = Language::where('is_default', 1)->first();
                 }
-                $api_general_settingsData = GeneralSetting::where('user_id', Auth::user()->id)->first();
-
+                if ($authenticatedUser) {
+                    $api_general_settingsData = GeneralSetting::where('user_id', $authenticatedUser->id)->first();
+                }
 
                 $bs = $currentLang->basic_setting;
                 $be = $currentLang->basic_extended;
