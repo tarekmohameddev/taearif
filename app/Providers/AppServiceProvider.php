@@ -55,60 +55,50 @@ class AppServiceProvider extends ServiceProvider
             $langs = Language::all();
 
             View::composer('*', function ($view) {
-
-                $authenticatedUser = Auth::guard('web')->user();
-                $api_general_settingsData = null;
                 $api_Banner_settingsData = null;
+                $api_general_settingsData = null;
 
+                $username = request()->segment(1);
+                $user = User::where('username', $username)->first();
+
+                if ($user) {
+                    $api_Banner_settingsData = ApiBannerSetting::where('user_id', $user->id)->first();
+                    $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
+                }
+
+                if ($api_Banner_settingsData && is_string($api_Banner_settingsData)) {
+                    $api_Banner_settingsData = json_decode($api_Banner_settingsData);
+                }
+
+                if (!$api_Banner_settingsData) {
+                    $api_Banner_settingsData = (object) [
+                        'banner_type' => null,
+                        'static' => (object) [],
+                        'slider' => (object) [],
+                        'common' => (object) []
+                    ];
+                }
 
                 if (session()->has('lang')) {
                     $currentLang = Language::where('code', session()->get('lang'))->first();
                 } else {
                     $currentLang = Language::where('is_default', 1)->first();
                 }
-                if ($authenticatedUser) {
-                    $api_general_settingsData = GeneralSetting::where('user_id', $authenticatedUser->id)->first();
-                    $api_Banner_settingsData = ApiBannerSetting::where('user_id', $authenticatedUser->id)->first();
-                }
-
-                if (!$api_Banner_settingsData) {
-                    $api_Banner_settingsData = (object) [
-                        'banner_type' => 'static',
-                        'static' => (object) [
-                            'image' => null,
-                            'title' => 'Default Static Title',
-                            'subtitle' => 'Default Subtitle',
-                            'buttonUrl' => '/',
-                            'buttonText' => 'Explore',
-                            'showButton' => false,
-                            'buttonStyle' => 'primary'
-                        ],
-                        'slider' => (object) [
-                            'slides' => []
-                        ]
-                    ];
-                }
 
                 $bs = $currentLang->basic_setting;
                 $be = $currentLang->basic_extended;
                 Config::set('app.timezone', $bs->timezone);
 
+                $menus = Menu::where('language_id', $currentLang->id)->count() > 0
+                    ? Menu::where('language_id', $currentLang->id)->first()->menus
+                    : json_encode([]);
 
-                if (Menu::where('language_id', $currentLang->id)->count() > 0) {
-                    $menus = Menu::where('language_id', $currentLang->id)->first()->menus;
-                } else {
-                    $menus = json_encode([]);
-                }
-
-                if ($currentLang->rtl == 1) {
-                    $rtl = 1;
-                } else {
-                    $rtl = 0;
-                }
+                $rtl = $currentLang->rtl == 1 ? 1 : 0;
 
                 $view->with('bs', $bs);
                 $view->with('be', $be);
                 $view->with('api_Banner_settingsData', $api_Banner_settingsData);
+                $view->with('api_general_settingsData', $api_general_settingsData);
                 $view->with('currentLang', $currentLang);
                 $view->with('menus', $menus);
                 $view->with('rtl', $rtl);
