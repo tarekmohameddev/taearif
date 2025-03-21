@@ -44,7 +44,7 @@ class ProjectController extends Controller
         $formattedProjects = $projects->map(function ($project) {
             return [
                 "id" => $project->id,
-                "featured_image" => $project->featured_image ? "/storage/" . $project->featured_image : "/storage/default.jpg",
+                "featured_image" => $project->featured_image,
                 "price_range" => "From $" . number_format($project->min_price, 2) . " to $" . number_format($project->max_price, 2),
                 "latitude" => $project->latitude,
                 "longitude" => $project->longitude,
@@ -133,7 +133,7 @@ class ProjectController extends Controller
 
         $formattedProject = [
             "id" => $project->id,
-            "featured_image" => $project->featured_image ? "/storage/" . $project->featured_image : "/storage/default.jpg",
+            "featured_image" => $project->featured_image,
             "price_range" => "From $" . number_format($project->min_price, 2) . " to $" . number_format($project->max_price, 2),
             "latitude" => $project->latitude,
             "longitude" => $project->longitude,
@@ -158,11 +158,11 @@ class ProjectController extends Controller
             }),
 
             "gallery" => $project->galleryImages->map(function ($image) {
-                return "/storage/" . $image->image;
+                return  $image->image;
             }),
 
             "floorplan_images" => $project->floorplanImages->map(function ($image) {
-                return "/storage/" . $image->image;
+                return  $image->image;
             }),
 
             "specifications" => $project->specifications->map(function ($spec) {
@@ -188,7 +188,7 @@ class ProjectController extends Controller
                 return $propertyAmenity->amenity ? [
                     "id" => $propertyAmenity->amenity->id,
                     "name" => $propertyAmenity->amenity->name,
-                    "icon" => $propertyAmenity->amenity->icon ? "/storage/" . $propertyAmenity->amenity->icon : null,
+                    "icon" => $propertyAmenity->amenity->icon,
                     "status" => $propertyAmenity->amenity->status
                 ] : null;
             })->filter()->values()
