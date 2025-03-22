@@ -506,7 +506,7 @@
                         <a href="{{ route('front.user.project.details', [getParam(), 'slug' => $project->slug]) }}">
                             <div class="card product-default">
                                 <div class="card-img">
-                                    <img src="{{ asset('assets/img/project/featured/' . $project->featured_image) }}" alt="Product">
+                                    <img src="{{ $project->featured_image }}" alt="Product">
                                     <span class="label">
                                         {{ $project->complete_status == 1 ? $keywords['start selling'] ?? __('start selling') : $keywords['Under Construction'] ?? __('Under Construction') }}
                                     </span>
