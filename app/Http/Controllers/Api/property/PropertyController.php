@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\property;
 
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ use App\Models\User\RealestateManagement\PropertyContact;
 use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\RealestateManagement\PropertyWishlist;
 use App\Models\User\RealestateManagement\PropertySliderImg;
+use App\Models\User\RealestateManagement\Amenity;
 
 class PropertyController extends Controller
 {
@@ -29,7 +31,7 @@ class PropertyController extends Controller
             'proertyAmenities.amenity'
         ])->where('user_id', $user->id)->paginate(10);
         
-
+            log::info(json_encode($properties));
         $formattedProperties = $properties->map(function ($property) {
             return [
                 'id' => $property->id,
@@ -186,13 +188,40 @@ class PropertyController extends Controller
         }
 
         $featuresArray = $validatedData['features'] ?? [];
-        if (!empty($featuresArray) && isset($validatedData['amenity_id'])) {
-            foreach ($validatedData['amenity_id'] as $amenityId) {
+
+        // log::info('here');
+        // log::info(json_encode($featuresArray));
+        // log::info('here');
+        // if (!empty($featuresArray) && isset($validatedData['amenity_id'])) {
+        //     foreach ($validatedData['amenity_id'] as $amenityId) {
+        //         log::info('herexx');
+        //         PropertyAmenity::create([
+        //             'user_id' => $user->id,
+        //             'property_id' => $property->id,
+        //             'amenity_id' => $amenityId,
+        //         ]);
+        //     }
+        // }
+
+
+        if (!empty($validatedData['features'])) {
+            foreach ($validatedData['features'] as $amenity) {
+                $Amenity = Amenity::create([
+                    'user_id' => $user->id,
+                    'language_id' => 1,
+                    'name' => $amenity,
+                    'serial_number' => 0,
+                    'slug' => Str::slug($amenity),
+                    'icon' => 'fab fa-accusoft',
+                ]);
+
+
                 PropertyAmenity::create([
                     'user_id' => $user->id,
                     'property_id' => $property->id,
-                    'amenity_id' => $amenityId,
+                    'amenity_id' => $Amenity->id,
                 ]);
+
             }
         }
 
