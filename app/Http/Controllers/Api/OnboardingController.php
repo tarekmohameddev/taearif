@@ -115,6 +115,11 @@ class OnboardingController extends Controller
                 ]
             );
 
+
+
+            $user->onboarding_completed = true; 
+            $user->save();
+
             return response()->json([
                 'status' => 'success',
                 'data' => [

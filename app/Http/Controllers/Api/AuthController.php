@@ -107,7 +107,7 @@ class AuthController extends Controller
                 $activation = Carbon::parse($lastMemb->start_date);
                 $expire = Carbon::parse($lastMemb->expire_date);
 
-
+                $user['onboarding_completed'] = false;
                 return response()->json(['status' => 'success', 'user' => $user,'token'=>$token], 201);
 
 
