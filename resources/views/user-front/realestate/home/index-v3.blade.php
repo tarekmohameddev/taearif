@@ -7,6 +7,7 @@
     }elseif ($slidertype  === 'slider'){
         $hero = $sliderData->slider;
     }
+
 @endphp
 
 @extends('user-front.realestate.layout')
@@ -55,7 +56,7 @@
         <div class="swiper-wrapper">
         @foreach ($hero->slides as $slider)
             <div class="swiper-slide">
-                <img class="lazyload bg-img" src="https://taearifdev.com/assets/front/img/user/home_settings/67d16c0704ed7.jpg">
+                <img class="lazyload bg-img" src="{{$slider->image}}">
             </div>
         @endforeach
 
@@ -65,7 +66,7 @@
 </section>
 @elseif ($slidertype === 'static')
 <section class="home-banner home-banner-3 with-radius">
-    <img class="lazyload bg-img blur-up" src="https://taearifdev.com/assets/front/img/user/home_settings/67d16c0704ed7.jpg" alt="Banner">
+    <img class="lazyload bg-img blur-up" src="{{$hero->image}}" alt="Banner">
     <div class="container">
 
         <div class="row align-items-center">

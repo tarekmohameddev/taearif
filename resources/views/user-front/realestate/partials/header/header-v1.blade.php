@@ -1,3 +1,9 @@
+@php
+    $general_settingsData = json_decode($userApi_general_settingsData, true);
+    $logo = $general_settingsData['logo'] ?? [];
+    $favicon	 = $general_settingsData['favicon	'] ?? [];
+@endphp
+
 {{-- <!-- Preloader end -->
 <div class="request-loader">
     <img src="{{ asset('assets/img/loaders.gif') }}">
@@ -15,9 +21,9 @@
     <div class="main-responsive-nav">
         <div class="container">
             <div class="logo">
-                @if (!empty($userBs->logo))
+                @if (!empty($logo))
                     <a href="{{ route('front.user.detail.view', getParam()) }}">
-                        <img style="max-height: 50px; width: auto;" src="{{ asset('assets/front/img/user/' . $userBs->logo) }}">
+                        <img style="max-height: 50px; width: auto;" src="{{ $logo}}">
                     </a>
                 @endif
             </div>
@@ -32,9 +38,9 @@
         <div class="container">
             <nav class="navbar navbar-expand-lg">
                 <!-- Logo -->
-                @if (!empty($userBs->logo))
+                @if (!empty($logo))
                     <a href="{{ route('front.user.detail.view', getParam()) }}" class="navbar-brand">
-                        <img style="max-height: 50px; width: auto;" src="{{ asset('assets/front/img/user/' . $userBs->logo) }}">
+                        <img style="max-height: 50px; width: auto;" src="{{ $logo}}">
                     </a>
                 @endif
                 <!-- Navigation items -->
