@@ -7,6 +7,7 @@
     }elseif ($slidertype  === 'slider'){
         $hero = $sliderData->slider;
     }
+
 @endphp
 
 @extends('user-front.realestate.layout')
@@ -314,7 +315,7 @@
                                             href="{{ route('front.user.project.details', [getParam(), 'slug' => $project->slug]) }}">
                                             <div class="card product-default">
                                                 <div class="card-img">
-                                                    <img src="{{ asset('assets/img/project/featured/' . $project->featured_image) }}"
+                                                    <img src="{{$project->featured_image}}"
                                                         alt="Product">
                                                     <span class="label">
                                                         {{ $project->complete_status == 1 ?  __('start selling') :  __('Under Construction') }}
