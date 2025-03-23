@@ -17,6 +17,8 @@ use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\RealestateManagement\PropertyWishlist;
 use App\Models\User\RealestateManagement\PropertySliderImg;
 use App\Models\User\RealestateManagement\Amenity;
+use Illuminate\Support\Facades\Validator;
+
 
 class PropertyController extends Controller
 {
@@ -128,8 +130,8 @@ class PropertyController extends Controller
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-
-        $validatedData = $request->validate([
+    
+        $validator = Validator::make($request->all(), [
             'title' => 'sometimes|required|string|max:255',
             'address' => 'sometimes|required|string',
             'price' => 'sometimes|required|numeric',
@@ -142,7 +144,7 @@ class PropertyController extends Controller
             'longitude' => 'nullable|numeric',
             'featured_image' => 'nullable|string',
             'floor_planning_image' => 'nullable|array',
-            'floor_planning_image.*' => 'nullable|string|url',
+            'floor_planning_image.*' => 'nullable|string',
             'features' => 'nullable|array',
             'description' => 'nullable|string',
             'featured' => 'nullable|boolean',
@@ -151,9 +153,18 @@ class PropertyController extends Controller
             'category_id' => 'nullable|integer',
             'amenity_id' => 'nullable|array',
         ]);
-
+    
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+    
+        $validatedData = $validator->validated();
         $floorPlanningImages = $validatedData['floor_planning_image'] ?? [];
-
+    
         $property = Property::create([
             'user_id' => $user->id,
             'featured_image' => $validatedData['featured_image'] ?? null,
@@ -164,11 +175,11 @@ class PropertyController extends Controller
             'bath' => $validatedData['bath'] ?? null,
             'area' => $validatedData['area'],
             'status' => $validatedData['status'],
-            'latitude' => $validatedData['latitude'],
-            'longitude' => $validatedData['longitude'],
+            'latitude' => $validatedData['latitude'] ?? null,
+            'longitude' => $validatedData['longitude'] ?? null,
             'featured' => false,
         ]);
-
+    
         $propertyContent = PropertyContent::create([
             'user_id' => $user->id,
             'property_id' => $property->id,
@@ -180,30 +191,15 @@ class PropertyController extends Controller
             'address' => $validatedData['address'],
             'description' => $validatedData['description'] ?? '',
         ]);
-
+    
         if (!empty($floorPlanningImages)) {
             $property->update([
                 'floor_planning_image' => json_encode($floorPlanningImages)
             ]);
         }
-
+    
         $featuresArray = $validatedData['features'] ?? [];
-
-        // log::info('here');
-        // log::info(json_encode($featuresArray));
-        // log::info('here');
-        // if (!empty($featuresArray) && isset($validatedData['amenity_id'])) {
-        //     foreach ($validatedData['amenity_id'] as $amenityId) {
-        //         log::info('herexx');
-        //         PropertyAmenity::create([
-        //             'user_id' => $user->id,
-        //             'property_id' => $property->id,
-        //             'amenity_id' => $amenityId,
-        //         ]);
-        //     }
-        // }
-
-
+    
         if (!empty($validatedData['features'])) {
             foreach ($validatedData['features'] as $amenity) {
                 $Amenity = Amenity::create([
@@ -214,17 +210,15 @@ class PropertyController extends Controller
                     'slug' => Str::slug($amenity),
                     'icon' => 'fab fa-accusoft',
                 ]);
-
-
+    
                 PropertyAmenity::create([
                     'user_id' => $user->id,
                     'property_id' => $property->id,
                     'amenity_id' => $Amenity->id,
                 ]);
-
             }
         }
-
+    
         $responseProperty = [
             'id' => $property->id,
             'title' => $propertyContent->title,
@@ -244,7 +238,7 @@ class PropertyController extends Controller
             'created_at' => $property->created_at->format('Y-m-d H:i:s'),
             'updated_at' => $property->updated_at->format('Y-m-d H:i:s'),
         ];
-
+    
         return response()->json([
             'status' => 'success',
             'message' => 'Property created successfully',
@@ -287,7 +281,7 @@ class PropertyController extends Controller
                 'featured_image' => 'nullable|string',
                 'gallery_images' => 'nullable|string',
                 'floor_planning_image' => 'nullable|array',
-                'floor_planning_image.*' => 'nullable|string|url',
+                'floor_planning_image.*' => 'nullable|string',
                 'features' => 'nullable|array',
                 'description' => 'nullable|string',
                 'featured' => 'nullable|boolean',

@@ -21,6 +21,8 @@ use App\Models\User\RealestateManagement\PropertyAmenity;
 use App\Models\User\RealestateManagement\ProjectGalleryImg;
 use App\Models\User\RealestateManagement\ProjectFloorplanImg;
 use App\Models\User\RealestateManagement\ProjectSpecification;
+use Illuminate\Support\Facades\Validator;
+
 
 class ProjectController extends Controller
 {
@@ -216,111 +218,115 @@ class ProjectController extends Controller
 
 
 
-    public function store(Request $request)
-    {
-        $validatedData = $request->validate([
-            'featured_image' => 'nullable|string',
-            'min_price' => 'required|numeric',
-            'max_price' => 'required|numeric',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'featured' => 'required|boolean',
-            'complete_status' => 'required|string',
-            'units' => 'required|integer',
-            'completion_date' => 'required|date',
-            'developer' => 'required|string|max:255',
-            'published' => 'required|boolean',
-            'contents' => 'required|array',
-            'gallery_images' => 'nullable|array',
-            'floorplan_images' => 'nullable|array',
-            'specifications' => 'nullable|array',
-            'types' => 'nullable|array',
-            'amenities' => 'nullable|array',
-        ]);
-
- 
-
-        $userId = auth()->id();
-        $userLanguage = Language::where('user_id', $userId)->where('is_default', 1)->first();
-        $languageId = $userLanguage ? $userLanguage->id : 1;
-
-        DB::beginTransaction();
-        try {
-
-            $project = Project::storeProject($userId, $validatedData);
-
-
-            foreach ($validatedData['contents'] as $content) {
-                $content['project_id'] = $project->id;
-                $content['slug'] = Str::slug($content['title']);
-                ProjectContent::storeProjectContent($userId, $content);
-            }
-
-
-            if (!empty($validatedData['types'])) {
-                foreach ($validatedData['types'] as $type) {
-                    $type['project_id'] = $project->id;
-                    ProjectType::storeProjectType($userId, $type);
-                }
-            }
-
-            if (!empty($validatedData['amenities'])) {
-                foreach ($validatedData['amenities'] as $amenity) {
-                    Amenity::create([
-                        'user_id' => $userId,
-                        'language_id' => $languageId,
-                        'name' => $amenity,
-                        'serial_number' => 0,
-                        'slug' => Str::slug($amenity),
-                        'icon' => 'fab fa-accusoft',
-                    ]);
-                }
-            }
-
-            DB::commit();
-
-            $responseProject = [
-                'id' => $project->id,
-                'title' => $validatedData['contents'][0]['title'],
-                'address' => $validatedData['contents'][0]['address'],
-                'min_price' => $project->min_price,
-                'max_price' => $project->max_price,
-                'latitude' => $project->latitude,
-                'longitude' => $project->longitude,
-                'featured' => (bool) $project->featured,
-                'developer' => $request->developer,
-                'published' => (bool) $request->published,
-                'completion_date' => $request->completion_date,
-                'complete_status' => $request->complete_status,
-                'featured_image' => $project->featured_image,
-                'units' => $request->units,
-                'gallery_images' => $validatedData['gallery_images'] ?? [],
-                'floorplan_images' => $validatedData['floorplan_images'] ?? [],
-                'specifications' => $validatedData['specifications'] ?? [],
-                'contents' => $validatedData['contents'],
-                'types' => $validatedData['types'] ?? [],
-                'amenities' => $validatedData['amenities'] ?? [],
-                'created_at' => $project->created_at->toISOString(),
-                'updated_at' => $project->updated_at->toISOString(),
-            ];
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'User Project created successfully',
-                'data' => [
-                    'user_project' => $responseProject
-                ]
-            ], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Project creation failed: ' . $e->getMessage());
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Project creation failed',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
+     public function store(Request $request)
+     {
+         $validator = Validator::make($request->all(), [
+             'featured_image' => 'nullable|string',
+             'min_price' => 'required|numeric',
+             'max_price' => 'required|numeric',
+             'latitude' => 'required|numeric',
+             'longitude' => 'required|numeric',
+             'featured' => 'required|boolean',
+             'complete_status' => 'required|string',
+             'units' => 'required|integer',
+             'completion_date' => 'required|date',
+             'developer' => 'required|string|max:255',
+             'published' => 'required|boolean',
+             'contents' => 'required|array',
+             'gallery_images' => 'nullable|array',
+             'floorplan_images' => 'nullable|array',
+             'specifications' => 'nullable|array',
+             'types' => 'nullable|array',
+             'amenities' => 'nullable|array',
+         ]);
+     
+         if ($validator->fails()) {
+             return response()->json([
+                 'status' => 'error',
+                 'message' => 'Validation failed',
+                 'errors' => $validator->errors()
+             ], 422);
+         }
+     
+         $validatedData = $validator->validated();
+         $userId = auth()->id();
+         $userLanguage = Language::where('user_id', $userId)->where('is_default', 1)->first();
+         $languageId = $userLanguage ? $userLanguage->id : 1;
+     
+         DB::beginTransaction();
+         try {
+             $project = Project::storeProject($userId, $validatedData);
+     
+             foreach ($validatedData['contents'] as $content) {
+                 $content['project_id'] = $project->id;
+                 $content['slug'] = Str::slug($content['title']);
+                 ProjectContent::storeProjectContent($userId, $content);
+             }
+     
+             if (!empty($validatedData['types'])) {
+                 foreach ($validatedData['types'] as $type) {
+                     $type['project_id'] = $project->id;
+                     ProjectType::storeProjectType($userId, $type);
+                 }
+             }
+     
+             if (!empty($validatedData['amenities'])) {
+                 foreach ($validatedData['amenities'] as $amenity) {
+                     Amenity::create([
+                         'user_id' => $userId,
+                         'language_id' => $languageId,
+                         'name' => $amenity,
+                         'serial_number' => 0,
+                         'slug' => Str::slug($amenity),
+                         'icon' => 'fab fa-accusoft',
+                     ]);
+                 }
+             }
+     
+             DB::commit();
+     
+             $responseProject = [
+                 'id' => $project->id,
+                 'title' => $validatedData['contents'][0]['title'],
+                 'address' => $validatedData['contents'][0]['address'],
+                 'min_price' => $project->min_price,
+                 'max_price' => $project->max_price,
+                 'latitude' => $project->latitude,
+                 'longitude' => $project->longitude,
+                 'featured' => (bool) $project->featured,
+                 'developer' => $request->developer,
+                 'published' => (bool) $request->published,
+                 'completion_date' => $request->completion_date,
+                 'complete_status' => $request->complete_status,
+                 'featured_image' => $project->featured_image,
+                 'units' => $request->units,
+                 'gallery_images' => $validatedData['gallery_images'] ?? [],
+                 'floorplan_images' => $validatedData['floorplan_images'] ?? [],
+                 'specifications' => $validatedData['specifications'] ?? [],
+                 'contents' => $validatedData['contents'],
+                 'types' => $validatedData['types'] ?? [],
+                 'amenities' => $validatedData['amenities'] ?? [],
+                 'created_at' => $project->created_at->toISOString(),
+                 'updated_at' => $project->updated_at->toISOString(),
+             ];
+     
+             return response()->json([
+                 'status' => 'success',
+                 'message' => 'User Project created successfully',
+                 'data' => [
+                     'user_project' => $responseProject
+                 ]
+             ], 201);
+         } catch (\Exception $e) {
+             DB::rollBack();
+             Log::error('Project creation failed: ' . $e->getMessage());
+             return response()->json([
+                 'status' => 'error',
+                 'message' => 'Project creation failed',
+                 'error' => $e->getMessage()
+             ], 500);
+         }
+     }
 
     /**
      * Update an existing project.
