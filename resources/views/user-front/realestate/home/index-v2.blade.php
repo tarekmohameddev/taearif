@@ -244,20 +244,18 @@
 
     <div class="swiper home-img-slider" id="home-img-slider-1">
         <div class="swiper-wrapper">
-        @foreach ($hero->slides as $slider)
+            @foreach ($hero->slides as $slider)
             <div class="swiper-slide">
-                <img class="lazyload bg-img" src="https://taearifdev.com/assets/front/img/user/home_settings/67d16c0704ed7.jpg">
+                <img class="lazyload bg-img" src="{{$slider->image}}">
             </div>
-        @endforeach
-
-
+            @endforeach
         </div>
     </div>
 </section>
 @elseif($slidertype == 'static')
 <section class="home-banner home-banner-1">
         @if (!empty($hero->image))
-            <img class="lazyload bg-img" src="https://taearifdev.com/assets/front/img/user/home_settings/67d16c0704ed7.jpg">
+            <img class="lazyload bg-img" src="{{$hero->image}}">
         @else
             <div class="bg-img" style="background-color: #222; height: 500px;"></div>
         @endif
