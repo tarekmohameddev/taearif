@@ -244,13 +244,11 @@
 
     <div class="swiper home-img-slider" id="home-img-slider-1">
         <div class="swiper-wrapper">
-        @foreach ($hero->slides as $slider)
+            @foreach ($hero->slides as $slider)
             <div class="swiper-slide">
                 <img class="lazyload bg-img" src="{{ asset($slider->image) }}">
             </div>
-        @endforeach
-
-
+            @endforeach
         </div>
     </div>
 </section>

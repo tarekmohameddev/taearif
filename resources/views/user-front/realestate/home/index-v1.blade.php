@@ -7,6 +7,7 @@
     }elseif ($slidertype  === 'slider'){
         $hero = $sliderData->slider;
     }
+
 @endphp
 
 @extends('user-front.realestate.layout')

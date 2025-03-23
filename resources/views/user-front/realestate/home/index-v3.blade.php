@@ -72,9 +72,9 @@
         <div class="row align-items-center">
             <div class="col-xl-7 col-lg-7">
                 <div class="content mb-40" data-aos="fade-up">
-                    <h1 class="title color-white">{{ $heroStatic?->title }}</h1>
+                    <h1 class="title color-white">{{ $hero?->title }}</h1>
                     <p class="text color-white m-0">
-                        {{ $heroStatic?->subtitle }}
+                        {{ $hero?->subtitle }}
                     </p>
                 </div>
             </div>
