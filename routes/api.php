@@ -13,7 +13,7 @@ use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\content\FooterSettingController;
 use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
-
+use App\Http\Controllers\Api\OnboardingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,6 +35,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/onboarding', [OnboardingController::class, 'store']);
+});
 // Auth routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);

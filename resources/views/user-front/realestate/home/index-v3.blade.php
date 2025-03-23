@@ -56,7 +56,7 @@
         <div class="swiper-wrapper">
         @foreach ($hero->slides as $slider)
             <div class="swiper-slide">
-                <img class="lazyload bg-img" src="{{$slider->image}}">
+                <img class="lazyload bg-img" src="{{ asset($slider->image) }}">
             </div>
         @endforeach
 
@@ -66,7 +66,7 @@
 </section>
 @elseif ($slidertype === 'static')
 <section class="home-banner home-banner-3 with-radius">
-    <img class="lazyload bg-img blur-up" src="{{$hero->image}}" alt="Banner">
+    <img class="lazyload bg-img blur-up" src="{{ asset($hero->image) }}" alt="Banner">
     <div class="container">
 
         <div class="row align-items-center">
@@ -431,7 +431,7 @@
                     <img class="lazyload blur-up" src="{{ asset('assets/front/images/placeholder.png') }}" data-src="{{ asset('assets/front/img/user/home_settings/' . $home_text->about_image) }}" alt="Image">
                     @endif
                 </div>
-                <div class="img-2">
+                <div class="img-2 d-none">
                     @if (!empty($home_text->about_image_two))
                     <img class="lazyload blur-up" src="{{ asset('assets/front/images/placeholder.png') }}" data-src="{{ asset('assets/front/img/user/home_settings/' . $home_text->about_image_two) }}" alt="Image">
                     @endif
@@ -549,7 +549,7 @@
                         <a href="{{ route('front.user.project.details', [getParam(), 'slug' => $project->slug]) }}">
                             <div class="card product-default">
                                 <div class="card-img">
-                                    <img src="{{ asset('assets/img/project/featured/' . $project->featured_image) }}" alt="Product">
+                                    <img src="{{ asset($project->featured_image) }}" alt="Product">
                                     <span class="label">
                                         {{ $project->complete_status == 1 ? $keywords['Complete'] ?? __('Complete') : $keywords['Under Construction'] ?? __('Under Construction') }}
                                     </span>

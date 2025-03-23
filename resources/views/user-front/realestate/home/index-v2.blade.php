@@ -246,7 +246,7 @@
         <div class="swiper-wrapper">
         @foreach ($hero->slides as $slider)
             <div class="swiper-slide">
-                <img class="lazyload bg-img" src="https://taearifdev.com/assets/front/img/user/home_settings/67d16c0704ed7.jpg">
+                <img class="lazyload bg-img" src="{{ asset($slider->image) }}">
             </div>
         @endforeach
 
@@ -257,7 +257,7 @@
 @elseif($slidertype == 'static')
 <section class="home-banner home-banner-1">
         @if (!empty($hero->image))
-            <img class="lazyload bg-img" src="https://taearifdev.com/assets/front/img/user/home_settings/67d16c0704ed7.jpg">
+            <img class="lazyload bg-img" src="{{ asset($hero->image) }}">
         @else
             <div class="bg-img" style="background-color: #222; height: 500px;"></div>
         @endif
@@ -342,7 +342,7 @@
 
         @if (!empty($home_text->about_image))
                                         <div class="col-lg-6 mb-4 mb-lg-0 lazyload blur-up">
-            <img src="{{ asset('assets/front/img/user/home_settings/' . $home_text->about_image) }}" alt="Company Visual" class="img-fluid">
+            <img src="{{ asset($home_text->about_image) }}" alt="Company Visual" class="img-fluid">
         </div>
          @endif
         <!-- Content Column -->
@@ -506,7 +506,7 @@
                         <a href="{{ route('front.user.project.details', [getParam(), 'slug' => $project->slug]) }}">
                             <div class="card product-default">
                                 <div class="card-img">
-                                    <img src="{{ $project->featured_image }}" alt="Product">
+                                    <img src="{{ asset($project->featured_image) }}" alt="Product">
                                     <span class="label">
                                         {{ $project->complete_status == 1 ? $keywords['start selling'] ?? __('start selling') : $keywords['Under Construction'] ?? __('Under Construction') }}
                                     </span>

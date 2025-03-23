@@ -19,7 +19,7 @@
              <div class="logo">
                  @if (!empty($logo))
                      <a href="{{ route('front.user.detail.view', getParam()) }}">
-                         <img style="max-height: 50px; width: auto;" src="{{ $logo}}">
+                         <img style="max-height: 50px; width: auto;" src="{{ asset($logo) }}">
                      </a>
                  @endif
              </div>
@@ -37,7 +37,7 @@
                  <!-- Logo -->
                  @if (!empty($logo))
                      <a href="{{ route('front.user.detail.view', getParam()) }}" class="navbar-brand">
-                         <img style="max-height: 50px; width: auto;" src="{{$logo}}">
+                         <img style="max-height: 50px; width: auto;" src="{{ asset($logo) }}">
                      </a>
                  @endif
                  <!-- Navigation items -->

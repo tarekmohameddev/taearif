@@ -19,7 +19,7 @@
     @yield('og:tag')
     {{-- fav icon --}}
     <link rel="shortcut icon"
-        href="{{ !empty($userBs->favicon) ? asset('assets/front/img/user/' . $userBs->favicon) : '' }}"
+        href="{{ asset($userBs->favicon) }}"
         type="img/png" />
 
         @php

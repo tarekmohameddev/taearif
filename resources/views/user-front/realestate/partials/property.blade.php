@@ -3,8 +3,8 @@
         <a href="{{ route('front.user.property.details', [getParam(), 'slug' => $property->slug ?? $property->propertyContent->slug]) }}"
             class="lazy-container ratio ratio-1-1">
             <img class="lazyload" {{-- src="assets/images/placeholder.png" --}}
-                data-src="{{ $property->featured_image }}"
-                src="{{  $property->featured_image }}">
+                data-src="{{ asset($property->featured_image) }}"
+                src="{{  asset($property->featured_image) }}">
         </a>
     </figure>
     <div class="product-details">

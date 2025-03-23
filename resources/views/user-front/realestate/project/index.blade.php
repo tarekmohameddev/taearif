@@ -84,8 +84,8 @@
                                         <div class="card-img">
                                             <div class="lazy-container ratio ratio-1-3">
                                                 <img class="lazyload"
-                                                    data-src="{{ asset('assets/img/project/featured/' . $project->featured_image) }}"
-                                                    src="{{ asset('assets/img/project/featured/' . $project->featured_image) }}">
+                                                    data-src="{{ asset($project->featured_image) }}"
+                                                    src="{{ asset('assets/front/images/placeholder.png') }}">
                                             </div>
                                             <span class="label">
                                                 @if ($project->status == 0)
