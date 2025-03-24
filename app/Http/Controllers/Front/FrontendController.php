@@ -42,6 +42,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 use App\Models\BasicExtended as BE;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Models\Api\ApiAboutSettings;
 use App\Models\Api\ApiBannerSetting;
 use App\Models\User\UserOfferBanner;
 use Illuminate\Support\Facades\Auth;
@@ -513,6 +514,8 @@ class FrontendController extends Controller
         //
         $api_Banner_settingsData = ApiBannerSetting::where('user_id', $user->id)->first();
         $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
+        $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
+        $api_about_settingsData = ApiAboutSettings::where('user_id', $user->id)->first();
 
         if ($api_Banner_settingsData && is_string($api_Banner_settingsData)) {
             $api_Banner_settingsData = json_decode($api_Banner_settingsData);
@@ -520,6 +523,7 @@ class FrontendController extends Controller
 
         $data['api_Banner_settingsData'] = $api_Banner_settingsData;
         $data['api_general_settingsData'] = $api_general_settingsData;
+        $data['api_about_settingsData'] = $api_about_settingsData;
 
         $data['home_sections'] = User\HomeSection::where('user_id', $user->id)->first();
 
@@ -987,7 +991,7 @@ class FrontendController extends Controller
                 ->leftJoin('user_cities', 'user_cities.id', '=', 'user_property_contents.city_id')
                 ->leftJoin('user_states', 'user_states.id', '=', 'user_property_contents.state_id')
                 ->leftJoin('user_countries', 'user_countries.id', '=', 'user_property_contents.country_id')
-                ->where('user_property_contents.language_id', $userCurrentLang->id)
+                ->where('user_property_contents.language_id', 1)
                 ->select(
                     'user_properties.*',
                     'user_property_contents.slug',

@@ -30,9 +30,10 @@
                             </a>
                         @endif
                     </div>
-                    <p class="text-muted">{{ $general['companyName'] }}</p>
-                    @if($general['showWorkingHours'])
-                        <p class="small text-muted">{{ $general['workingHours'] }}</p>
+                    <p class="text-muted">{{ $general['companyName'] ?? '' }}</p>
+
+                    @if(!empty($general['showWorkingHours']))
+                    <p class="small text-muted">{{ $general['workingHours'] ?? '' }}</p>
                     @endif
                     @if (count($socialLinks) > 0)
 
@@ -89,23 +90,23 @@
                 <div class="footer-widget">
                     <h6 class="fw-bold text-dark">{{ $keywords['Contact Us'] ?? __('Contact Us') }}</h6>
                     <ul class="list-unstyled mt-3">
-                        @if($general['address'])
+                        @if(!empty($general['address']))
                             <li class="mb-2">
                                 <i class="fas fa-map-marker-alt me-2 text-primary"></i>
-                                <span class="text-muted">{{ $general['address'] }}</span>
+                                <span class="text-muted">{{ $general['address'] ?? "" }}</span>
                             </li>
                         @endif
-                        @if($general['showContactInfo'])
+                        @if(!empty($general['showContactInfo']))
                             <li class="mb-2">
                                 <i class="fas fa-phone me-2 text-primary"></i>
                                 <a href="tel:{{ $general['phone'] }}" class="text-muted text-decoration-none">
-                                    {{ $general['phone'] }}
+                                    {{ $general['phone'] ?? "" }}
                                 </a>
                             </li>
                             <li>
                                 <i class="fas fa-envelope me-2 text-primary"></i>
                                 <a href="mailto:{{ $general['email'] }}" class="text-muted text-decoration-none">
-                                    {{ $general['email'] }}
+                                    {{ $general['email'] ?? "" }}
                                 </a>
                             </li>
                         @endif
@@ -118,12 +119,12 @@
           </div>
       @endif
 
-      @if($general['showCopyright'])
+      @if(!empty($general['showCopyright']))
           <div class="copy-right-area border-top">
               <div class="container">
                   <div class="copy-right-content">
                         <span>
-                        {{ $general['copyrightText'] }}
+                        {{ $general['copyrightText'] ??"" }}
                         </span>
                   </div>
               </div>
