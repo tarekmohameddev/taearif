@@ -96,11 +96,14 @@ class AboutApiController extends Controller
 
             $about->save();
 
+            $responseAbout = $about->toArray();
+            $responseAbout['image_path'] = asset($about->image_path);
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'About page updated successfully',
                 'data' => [
-                    'about' => $about
+                    'about' => $responseAbout
                 ]
             ]);
         } catch (\Exception $e) {

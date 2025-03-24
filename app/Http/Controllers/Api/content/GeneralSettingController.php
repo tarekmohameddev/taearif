@@ -48,8 +48,8 @@ class GeneralSettingController extends Controller
             'site_name' => 'required|string|max:255',
             'tagline' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'logo' => 'nullable|url|max:255',
-            'favicon' => 'nullable|url|max:255',
+            'logo' => 'nullable|string|max:255',
+            'favicon' => 'nullable|string|max:255',
             'maintenance_mode' => 'nullable|boolean',
             'show_breadcrumb' => 'nullable|boolean',
             'additional_settings' => 'nullable|array',
@@ -83,11 +83,15 @@ class GeneralSettingController extends Controller
 
         $settings->save();
 
+        $responseSettings = $settings->toArray();
+        $responseSettings['logo'] = asset($settings->logo);
+        $responseSettings['favicon'] = asset($settings->favicon);
+
         return response()->json([
             'status' => 'success',
             'message' => 'General settings updated successfully',
             'data' => [
-                'settings' => $settings
+                'settings' => $responseSettings
             ]
         ]);
     }

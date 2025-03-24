@@ -153,6 +153,7 @@ class ApiBannerSettingController extends Controller
             'common.fullWidth' => 'boolean',
         ]);
 
+
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
@@ -177,11 +178,35 @@ class ApiBannerSettingController extends Controller
         
         $settings->save();
 
+
+        $responseSettings = $settings->toArray();
+
+        if (!empty($responseSettings['static'])) {
+            $static = $responseSettings['static'];
+            if (isset($static['image']) && $static['image']) {
+                $static['image'] = asset($static['image']);
+            }
+            $responseSettings['static'] = $static;
+        }
+        
+
+        if (!empty($responseSettings['slider'])) {
+            $slider = $responseSettings['slider']['slides'];
+            if (is_array($slider)) {
+                foreach ($slider as &$slide) {
+                    if (isset($slide['image']) && $slide['image']) {
+                        $slide['image'] = asset($slide['image']);
+                    }
+                }
+            }
+            $responseSettings['slider'] = $slider;
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'Banner settings updated successfully',
             'data' => [
-                'settings' => $settings
+                'settings' => $responseSettings
             ]
         ]);
     }
