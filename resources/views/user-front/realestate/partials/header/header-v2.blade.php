@@ -2,7 +2,7 @@
 @php
     $general_settingsData = json_decode($userApi_general_settingsData, true);
     $logo = $general_settingsData['logo'] ?? [];
-    $favicon	 = $general_settingsData['favicon	'] ?? [];
+    $favicon = $general_settingsData['favicon'] ?? [];
 @endphp
  <header class="header-area header-2 @if (!request()->routeIs('front.user.detail.view', getParam())) header-static @endif" data-aos="slide-down">
      <!-- Start mobile menu -->
