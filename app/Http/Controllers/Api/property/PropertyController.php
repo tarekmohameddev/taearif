@@ -33,7 +33,7 @@ class PropertyController extends Controller
             'proertyAmenities.amenity'
         ])->where('user_id', $user->id)->paginate(10);
         
-            log::info(json_encode($properties));
+       
         $formattedProperties = $properties->map(function ($property) {
             return [
                 'id' => $property->id,
@@ -46,7 +46,7 @@ class PropertyController extends Controller
                 'area' => $property->area,
                 'features' => $property->proertyAmenities->pluck('amenity.name')->toArray(),
                 'status' => $property->status,
-                'featured_image' => $property->featured_image,
+                'featured_image' => asset($property->featured_image),
                 'featured' => (bool) $property->featured,
                 'created_at' => $property->created_at->toISOString(),
                 'updated_at' => $property->updated_at->toISOString(),
@@ -93,9 +93,9 @@ class PropertyController extends Controller
             'area' => $property->area,
             'features' => $property->proertyAmenities->pluck('amenity.name')->toArray(),
             'status' => $property->status,
-            'featured_image' => asset('storage/properties/' . $property->featured_image),
+            'featured_image' => asset($property->featured_image),
             'featured' => (bool) $property->featured,
-            'gallery' => $property->galleryImages->pluck('image')->map(fn($image) => asset('storage/properties/' . $image))->toArray(),
+            'gallery' => $property->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
             'description' => optional($property->contents->first())->description ?? 'No Description',
             'location' => [
                 'latitude' => $property->latitude,
@@ -152,6 +152,7 @@ class PropertyController extends Controller
             'city_id' => 'nullable|integer',
             'category_id' => 'nullable|integer',
             'amenity_id' => 'nullable|array',
+            'gallery' => 'nullable|array',
         ]);
     
         if ($validator->fails()) {
@@ -177,7 +178,7 @@ class PropertyController extends Controller
             'status' => $validatedData['status'],
             'latitude' => $validatedData['latitude'] ?? null,
             'longitude' => $validatedData['longitude'] ?? null,
-            'featured' => false,
+            'featured' => $validatedData['featured'],
         ]);
     
         $propertyContent = PropertyContent::create([
@@ -192,6 +193,17 @@ class PropertyController extends Controller
             'description' => $validatedData['description'] ?? '',
         ]);
     
+
+        if (!empty($validatedData['gallery'])) {
+            foreach ($validatedData['gallery'] as $imageUrl) {
+                PropertySliderImg::create([
+                    'user_id' => $user->id,
+                    'property_id' => $property->id,
+                    'image' => $imageUrl
+                ]);
+            }
+        }
+
         if (!empty($floorPlanningImages)) {
             $property->update([
                 'floor_planning_image' => json_encode($floorPlanningImages)
@@ -230,7 +242,7 @@ class PropertyController extends Controller
             'area' => $property->area,
             'features' => $featuresArray,
             'status' => $property->status,
-            'featured_image' => $property->featured_image,
+            'featured_image' => asset($property->featured_image),
             'featured' => (bool) $property->featured,
             'description' => $propertyContent->description,
             'latitude' => $property->latitude,
@@ -267,7 +279,8 @@ class PropertyController extends Controller
         }
 
         try {
-            $validatedData = $request->validate([
+            
+            $validator = Validator::make($request->all(), [
                 'title' => 'sometimes|required|string|max:255',
                 'address' => 'sometimes|required|string',
                 'price' => 'sometimes|required|numeric',
@@ -279,36 +292,41 @@ class PropertyController extends Controller
                 'latitude' => 'nullable|numeric',
                 'longitude' => 'nullable|numeric',
                 'featured_image' => 'nullable|string',
-                'gallery_images' => 'nullable|string',
+                'gallery_images' => 'nullable|array',
                 'floor_planning_image' => 'nullable|array',
                 'floor_planning_image.*' => 'nullable|string',
                 'features' => 'nullable|array',
                 'description' => 'nullable|string',
-                'featured' => 'nullable|boolean',
-                'language_id' => 'nullable|integer',
-                'category_id' => 'nullable|integer',
-                'city_id' => 'nullable|integer',
-                'amenity_id' => 'nullable|array',
+                'featured' => 'nullable|boolean'
             ]);
+            
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+        
+            $validatedData = $validator->validated();
 
             DB::beginTransaction();
 
             $property = Property::with(['galleryImages', 'proertyAmenities.amenity', 'contents'])->findOrFail($id);
-
+                    
             if (!empty($validatedData['featured_image']) && $validatedData['featured_image'] !== $property->featured_image) {
                 $property->featured_image = $validatedData['featured_image'];
             }
 
             $galleryImages = [];
             if (!empty($validatedData['gallery_images'])) {
-                $galleryImages = explode(',', $validatedData['gallery_images']);
-                $property->galleryImages()->delete();
+                PropertySliderImg::where('property_id', $property->id)->delete();
 
-                foreach ($galleryImages as $imageUrl) {
+                foreach ($validatedData['gallery_images'] as $imageUrl) {
                     PropertySliderImg::create([
                         'user_id' => $user->id,
                         'property_id' => $property->id,
-                        'image' => trim($imageUrl)
+                        'image' => $imageUrl
                     ]);
                 }
             }
@@ -333,6 +351,7 @@ class PropertyController extends Controller
 
             $propertyContent = $property->contents->first();
             if (!$propertyContent) {
+                
                 $propertyContent = PropertyContent::create([
                     'property_id' => $property->id,
                     'user_id' => $user->id,
@@ -344,7 +363,9 @@ class PropertyController extends Controller
                     'category_id' => $validatedData['category_id'] ?? null,
                     'language_id' => $validatedData['language_id'] ?? 1,
                 ]);
+                
             } else {
+                
                 $propertyContent->update([
                     'title' => $validatedData['title'] ?? $propertyContent->title,
                     'address' => $validatedData['address'] ?? $propertyContent->address,
@@ -382,10 +403,14 @@ class PropertyController extends Controller
                 'area' => $property->area,
                 'features' => $property->proertyAmenities->pluck('amenity.name')->toArray(),
                 'status' => $property->status,
-                'featured_image' => $property->featured_image,
+                'featured_image' => asset($property->featured_image),
                 'featured' => (bool) $property->featured,
-                'gallery' => $property->galleryImages->pluck('image')->toArray(),
-                'floor_planning_image' => json_decode($property->floor_planning_image),
+                'gallery' => $property->galleryImages->pluck('image')->map(function ($image) {
+                    return asset($image);
+                })->toArray(),
+                'floor_planning_image' => $property->floor_planning_image ? collect(json_decode($property->floor_planning_image))->map(function ($image) {
+                    return asset($image);
+                })->toArray() : [],
                 'description' => $propertyContent->description,
                 'latitude' => $property->latitude,
                 'longitude' => $property->longitude,

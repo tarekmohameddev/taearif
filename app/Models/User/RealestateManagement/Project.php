@@ -23,6 +23,11 @@ class Project extends Model
         'completion_date',
         'developer',
         'published',
+        'amenities',
+    ];
+
+    protected $casts = [
+        'amenities' => 'array'
     ];
 
     public static function storeProject($userId, $request)
@@ -40,6 +45,7 @@ class Project extends Model
             'complete_status' => $request['complete_status'],
             'latitude' => $request['latitude'],
             'longitude' => $request['longitude'],
+            'amenities' => $request['amenities'],
         ]);
     }
 
@@ -54,6 +60,7 @@ class Project extends Model
             'complete_status' => $request['complete_status'],
             'latitude' => $request['latitude'],
             'longitude' => $request['longitude'],
+            'amenities' => $request['amenities'],
         ]);
     }
 

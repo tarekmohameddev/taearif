@@ -51,14 +51,14 @@ class ProjectController extends Controller
                 "latitude" => $project->latitude,
                 "longitude" => $project->longitude,
                 "featured" => $project->featured,
-                "status" => $project->complete_status ?? "Unknown",
+                "complete_status" => $project->complete_status ?? "Unknown",
                 "units" => $project->units ?? 0,
                 "completion_date" => $project->completion_date ?? "N/A",
                 "developer" => $project->developer ?? "Unknown",
                 "published" => $project->published,
                 "created_at" => $project->created_at,
                 "updated_at" => $project->updated_at,
-
+                "amenities" => $project->amenities,
                 "contents" => $project->contents->map(function ($content) {
                     return [
                         "id" => $content->id,
@@ -132,7 +132,7 @@ class ProjectController extends Controller
                 'message' => 'Project not found'
             ], 404);
         }
-
+        
         $formattedProject = [
             "id" => $project->id,
             "featured_image" => $project->featured_image,
@@ -147,7 +147,7 @@ class ProjectController extends Controller
             "published" => $project->published,
             "created_at" => $project->created_at,
             "updated_at" => $project->updated_at,
-
+            "amenities" => $project->amenities,
             "contents" => $project->contents->map(function ($content) {
                 return [
                     "id" => $content->id,
@@ -185,15 +185,6 @@ class ProjectController extends Controller
                     "unit" => $type->unit,
                 ];
             }),
-
-            "amenities" => $project->amenities->map(function ($propertyAmenity) {
-                return $propertyAmenity->amenity ? [
-                    "id" => $propertyAmenity->amenity->id,
-                    "name" => $propertyAmenity->amenity->name,
-                    "icon" => $propertyAmenity->amenity->icon,
-                    "status" => $propertyAmenity->amenity->status
-                ] : null;
-            })->filter()->values()
         ];
 
         return response()->json([
@@ -254,7 +245,7 @@ class ProjectController extends Controller
          $languageId = $userLanguage ? $userLanguage->id : 1;
      
          DB::beginTransaction();
-         try {
+        // try {
              $project = Project::storeProject($userId, $validatedData);
      
              foreach ($validatedData['contents'] as $content) {
@@ -270,18 +261,18 @@ class ProjectController extends Controller
                  }
              }
      
-             if (!empty($validatedData['amenities'])) {
-                 foreach ($validatedData['amenities'] as $amenity) {
-                     Amenity::create([
-                         'user_id' => $userId,
-                         'language_id' => $languageId,
-                         'name' => $amenity,
-                         'serial_number' => 0,
-                         'slug' => Str::slug($amenity),
-                         'icon' => 'fab fa-accusoft',
-                     ]);
-                 }
-             }
+            //  if (!empty($validatedData['amenities'])) {
+            //      foreach ($validatedData['amenities'] as $amenity) {
+            //          Amenity::create([
+            //              'user_id' => $userId,
+            //              'language_id' => $languageId,
+            //              'name' => $amenity,
+            //              'serial_number' => 0,
+            //              'slug' => Str::slug($amenity),
+            //              'icon' => 'fab fa-accusoft',
+            //          ]);
+            //      }
+            //  }
      
              DB::commit();
      
@@ -317,15 +308,15 @@ class ProjectController extends Controller
                      'user_project' => $responseProject
                  ]
              ], 201);
-         } catch (\Exception $e) {
-             DB::rollBack();
-             Log::error('Project creation failed: ' . $e->getMessage());
-             return response()->json([
-                 'status' => 'error',
-                 'message' => 'Project creation failed',
-                 'error' => $e->getMessage()
-             ], 500);
-         }
+        //  } catch (\Exception $e) {
+        //      DB::rollBack();
+        //      Log::error('Project creation failed: ' . $e->getMessage());
+        //      return response()->json([
+        //          'status' => 'error',
+        //          'message' => 'Project creation failed',
+        //          'error' => $e->getMessage()
+        //      ], 500);
+        //  }
      }
 
     /**
@@ -338,8 +329,11 @@ class ProjectController extends Controller
             return response()->json(['error' => 'Unauthorized: User ID is missing'], 401);
         }
 
-        $project = Project::findOrFail($id);
+        $project = Project::where('id', $id)
+        ->where('user_id', $userId)
+        ->firstOrFail();
 
+        
         $validatedData = $request->validate([
             'featured_image' => 'nullable|string',
             'min_price' => 'required|numeric',
@@ -361,7 +355,7 @@ class ProjectController extends Controller
             'amenities.*' => 'string|max:255',
         ]);
 
-        Log::info($validatedData);
+        
 
         DB::beginTransaction();
         try {
@@ -402,19 +396,6 @@ class ProjectController extends Controller
             $languageId = $userLanguage ? $userLanguage->id : 1;
 
 
-            Amenity::where('user_id', $userId)->delete();
-            if (!empty($validatedData['amenities'])) {
-                foreach ($validatedData['amenities'] as $amenity) {
-                    Amenity::create([
-                        'user_id' => $userId,
-                        'language_id' => $languageId,
-                        'name' => $amenity,
-                        'slug' => Str::slug($amenity),
-                        'icon' => 'fab fa-accusoft',
-                    ]);
-                }
-            }
-
             DB::commit();
 
             $responseProject = [
@@ -451,7 +432,7 @@ class ProjectController extends Controller
      */
     public function destroy($id): JsonResponse
     {
-
+        $userId = auth()->id();
         DB::beginTransaction();
         try {
             $project = Project::with([
@@ -463,7 +444,8 @@ class ProjectController extends Controller
                 'amenities'
             ])->find($id);
 
-            if (!$project) {
+
+            if (!$project || $project->user_id != $userId) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Project not found'
