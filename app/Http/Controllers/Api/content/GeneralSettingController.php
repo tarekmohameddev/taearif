@@ -32,10 +32,15 @@ class GeneralSettingController extends Controller
             ]);
         }
 
+
+        $responseSettings = $settings->toArray();
+        $responseSettings['logo'] = asset($settings->logo);
+        $responseSettings['favicon'] = asset($settings->favicon);
+
         return response()->json([
             'status' => 'success',
             'data' => [
-                'settings' => $settings
+                'settings' => $responseSettings
             ]
         ]);
     }
