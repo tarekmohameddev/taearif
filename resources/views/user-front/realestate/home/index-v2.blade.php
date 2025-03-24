@@ -340,7 +340,10 @@
 
         @if (!empty($api_about_settingsData['image_path']))
             <div class="col-lg-6 mb-4 mb-lg-0 lazyload blur-up">
-                <img src="{{ asset('storage/' . $api_about_settingsData['image_path']) }}" alt="Company Visual" class="img-fluid">
+                <img class="lazyload img-fluid blur-up"
+                                 src="{{ asset('assets/front/images/placeholder.png') }}"
+                                 data-src="{{ asset($api_about_settingsData['image_path']) }}"
+                                 alt="About Image">
             </div>
         @endif
 

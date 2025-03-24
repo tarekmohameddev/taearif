@@ -125,9 +125,12 @@
                 <div class="col-lg-6">
                     <div class="img-content" data-aos="fade-up">
                         @if (!empty($api_about_settingsData['image_path']))
-                            <img class="lazyload blur-up"
-                                data-src="{{ asset('storage/' . $api_about_settingsData['image_path']) }}"
-                                alt="About Image">
+                        <img class="lazyload blur-up"
+                                 src="{{ asset('assets/front/images/placeholder.png') }}"
+                                 data-src="{{ asset($api_about_settingsData['image_path']) }}"
+                                 alt="About Image">
+
+
                         @endif
                     </div>
                 </div>
