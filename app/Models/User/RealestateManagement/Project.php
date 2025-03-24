@@ -39,13 +39,13 @@ class Project extends Model
             'min_price' => $request['min_price'],
             'max_price' => $request['max_price'],
             'featured' => $request['featured'],
-            'developer' => $request['developer'],
-            'units' => $request['units'],
-            'completion_date' => $request['completion_date'],
-            'complete_status' => $request['complete_status'],
+            'developer' => $request['developer'] ?? 'Unknown Developer',
+            'units' => $request['units'] ?? 0,
+            'completion_date' => $request['completion_date'] ?? now()->addYear()->toDateString(),
+            'complete_status' => $request['complete_status'] ?? 'In Progress',
             'latitude' => $request['latitude'],
             'longitude' => $request['longitude'],
-            'amenities' => $request['amenities'],
+            'amenities' => $request['amenities'] ?? [],
         ]);
     }
 
@@ -57,10 +57,10 @@ class Project extends Model
             'min_price' => $request['min_price'],
             'max_price' => $request['max_price'],
             'featured' => $request['featured'],
-            'complete_status' => $request['complete_status'],
+            'complete_status' => $request['complete_status'] ?? 'In Progress',
             'latitude' => $request['latitude'],
             'longitude' => $request['longitude'],
-            'amenities' => $request['amenities'],
+            'amenities' => $request['amenities'] ?? [],
         ]);
     }
 

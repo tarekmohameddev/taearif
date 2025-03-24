@@ -32,84 +32,113 @@ class ProjectController extends Controller
      * @return \Illuminate\Http\Response
      */
 
-    public function index(Request $request): JsonResponse
-    {
+     public function index(Request $request): JsonResponse
+     {
+         $user = $request->user();
 
-        $user = $request->user();
-        $projects = Project::with([
-            'contents',
-            'specifications',
-            'types'
-        ])->where('user_id', $user->id)->paginate(10);
-        
+         // Get user's projects with related data
+         $projects = Project::with(['contents', 'specifications', 'types'])
+             ->where('user_id', $user->id)
+             ->paginate(10);
 
-        $formattedProjects = $projects->map(function ($project) {
-            return [
-                "id" => $project->id,
-                "featured_image" => asset($project->featured_image),
-                "price_range" =>  number_format($project->min_price, 2),
-                "latitude" => $project->latitude,
-                "longitude" => $project->longitude,
-                "featured" => $project->featured,
-                "complete_status" => $project->complete_status ?? "Unknown",
-                "units" => $project->units ?? 0,
-                "completion_date" => $project->completion_date ?? "N/A",
-                "developer" => $project->developer ?? "Unknown",
-                "published" => $project->published,
-                "created_at" => $project->created_at,
-                "updated_at" => $project->updated_at,
-                "amenities" => $project->amenities,
-                "contents" => $project->contents->map(function ($content) {
-                    return [
-                        "id" => $content->id,
-                        "title" => $content->title,
-                        "address" => $content->address,
-                        "description" => $content->description,
-                        "meta_keyword" => $content->meta_keyword,
-                        "meta_description" => $content->meta_description,
-                    ];
-                }),
+         // If user has no projects, create a default one
+         if ($projects->isEmpty()) {
+             $defaultProject = Project::create([
+                 'user_id' => $user->id,
+                 'featured_image' => null,
+                 'min_price' => 0,
+                 'max_price' => 0,
+                 'latitude' => 0,
+                 'longitude' => 0,
+                 'featured' => false,
+                 'complete_status' => 'In Progress',
+                 'units' => 0,
+                 'completion_date' => now()->addYear()->toDateString(),
+                 'developer' => 'Default Developer',
+                 'published' => false,
+             ]);
 
-                "specifications" => $project->specifications->map(function ($spec) {
-                    return [
-                        "key" => $spec->key,
-                        "label" => $spec->label,
-                        "value" => $spec->value,
-                    ];
-                }),
+             // Create default content
+             ProjectContent::create([
+                 'user_id' => $user->id,
+                 'project_id' => $defaultProject->id,
+                 'title' => 'Default Project Title',
+                 'address' => 'Default Address',
+                 'description' => 'This is a default project.',
+                 'meta_keyword' => 'default, project',
+                 'meta_description' => 'Default project description.',
+                 'slug' => Str::slug('Default Project Title')
+             ]);
 
-                "types" => $project->types->map(function ($type) {
-                    return [
-                        "title" => $type->title,
-                        "min_area" => $type->min_area,
-                        "max_area" => $type->max_area,
-                        "min_price" => $type->min_price,
-                        "max_price" => $type->max_price,
-                        "unit" => $type->unit,
-                    ];
-                }),
-            ];
-        });
+             // Reload with fresh pagination
+             $projects = Project::with(['contents', 'specifications', 'types'])
+                 ->where('user_id', $user->id)
+                 ->paginate(10);
+         }
 
-        return response()->json([
-            "status" => "success",
-            "data" => [
-                "projects" => $formattedProjects,
-                "pagination" => [
-                    "total" => $projects->total(),
-                    "per_page" => $projects->perPage(),
-                    "current_page" => $projects->currentPage(),
-                    "last_page" => $projects->lastPage(),
-                    "from" => $projects->firstItem(),
-                    "to" => $projects->lastItem(),
-                ]
-            ]
-        ]);
+         // Format the project data
+         $formattedProjects = $projects->getCollection()->map(function ($project) {
+             return [
+                 "id" => $project->id,
+                 "featured_image" => $project->featured_image ? asset($project->featured_image) : null,
+                 "price_range" => number_format($project->min_price, 2),
+                 "latitude" => $project->latitude,
+                 "longitude" => $project->longitude,
+                 "featured" => (bool) $project->featured,
+                 "complete_status" => $project->complete_status,
+                 "units" => $project->units,
+                 "completion_date" => $project->completion_date,
+                 "developer" => $project->developer,
+                 "published" => (bool) $project->published,
+                 "created_at" => $project->created_at->toISOString(),
+                 "updated_at" => $project->updated_at->toISOString(),
+                 "amenities" => $project->amenities ?? [],
+                 "contents" => $project->contents->map(function ($content) {
+                     return [
+                         "id" => $content->id,
+                         "title" => $content->title,
+                         "address" => $content->address,
+                         "description" => $content->description,
+                         "meta_keyword" => $content->meta_keyword,
+                         "meta_description" => $content->meta_description,
+                     ];
+                 }),
+                 "specifications" => $project->specifications->map(function ($spec) {
+                     return [
+                         "key" => $spec->key,
+                         "label" => $spec->label,
+                         "value" => $spec->value,
+                     ];
+                 }),
+                 "types" => $project->types->map(function ($type) {
+                     return [
+                         "title" => $type->title,
+                         "min_area" => $type->min_area,
+                         "max_area" => $type->max_area,
+                         "min_price" => $type->min_price,
+                         "max_price" => $type->max_price,
+                         "unit" => $type->unit,
+                     ];
+                 }),
+             ];
+         });
 
+         return response()->json([
+             "status" => "success",
+             "data" => [
+                 "projects" => $formattedProjects,
+                 "pagination" => [
+                     "total" => $projects->total(),
+                     "per_page" => $projects->perPage(),
+                     "current_page" => $projects->currentPage(),
+                     "last_page" => $projects->lastPage(),
+                     "from" => $projects->firstItem(),
+                     "to" => $projects->lastItem(),
+                 ]
+             ]
+         ]);
+     }
 
-
-
-    }
 
     /**
      * Get a single project.
@@ -132,7 +161,7 @@ class ProjectController extends Controller
                 'message' => 'Project not found'
             ], 404);
         }
-        
+
         $formattedProject = [
             "id" => $project->id,
             "featured_image" => asset($project->featured_image),
@@ -230,7 +259,7 @@ class ProjectController extends Controller
              'types' => 'nullable|array',
              'amenities' => 'nullable|array',
          ]);
-     
+
          if ($validator->fails()) {
              return response()->json([
                  'status' => 'error',
@@ -238,44 +267,46 @@ class ProjectController extends Controller
                  'errors' => $validator->errors()
              ], 422);
          }
-     
+
          $validatedData = $validator->validated();
          $userId = auth()->id();
          $userLanguage = Language::where('user_id', $userId)->where('is_default', 1)->first();
          $languageId = $userLanguage ? $userLanguage->id : 1;
-     
+
          DB::beginTransaction();
-        // try {
+
+         try {
              $project = Project::storeProject($userId, $validatedData);
-     
+
              foreach ($validatedData['contents'] as $content) {
                  $content['project_id'] = $project->id;
                  $content['slug'] = Str::slug($content['title']);
                  ProjectContent::storeProjectContent($userId, $content);
              }
-     
+
              if (!empty($validatedData['types'])) {
                  foreach ($validatedData['types'] as $type) {
                      $type['project_id'] = $project->id;
                      ProjectType::storeProjectType($userId, $type);
                  }
              }
-     
-            //  if (!empty($validatedData['amenities'])) {
-            //      foreach ($validatedData['amenities'] as $amenity) {
-            //          Amenity::create([
-            //              'user_id' => $userId,
-            //              'language_id' => $languageId,
-            //              'name' => $amenity,
-            //              'serial_number' => 0,
-            //              'slug' => Str::slug($amenity),
-            //              'icon' => 'fab fa-accusoft',
-            //          ]);
-            //      }
-            //  }
-     
+
+             // amenities
+             // if (!empty($validatedData['amenities'])) {
+             //     foreach ($validatedData['amenities'] as $amenity) {
+             //         Amenity::create([
+             //             'user_id' => $userId,
+             //             'language_id' => $languageId,
+             //             'name' => $amenity,
+             //             'serial_number' => 0,
+             //             'slug' => Str::slug($amenity),
+             //             'icon' => 'fab fa-accusoft',
+             //         ]);
+             //     }
+             // }
+
              DB::commit();
-     
+
              $responseProject = [
                  'id' => $project->id,
                  'title' => $validatedData['contents'][0]['title'],
@@ -300,7 +331,7 @@ class ProjectController extends Controller
                  'created_at' => $project->created_at->toISOString(),
                  'updated_at' => $project->updated_at->toISOString(),
              ];
-     
+
              return response()->json([
                  'status' => 'success',
                  'message' => 'User Project created successfully',
@@ -308,16 +339,19 @@ class ProjectController extends Controller
                      'user_project' => $responseProject
                  ]
              ], 201);
-        //  } catch (\Exception $e) {
-        //      DB::rollBack();
-        //      Log::error('Project creation failed: ' . $e->getMessage());
-        //      return response()->json([
-        //          'status' => 'error',
-        //          'message' => 'Project creation failed',
-        //          'error' => $e->getMessage()
-        //      ], 500);
-        //  }
+
+         } catch (\Exception $e) {
+             DB::rollBack();
+             Log::error('Project creation failed: ' . $e->getMessage());
+
+             return response()->json([
+                 'status' => 'error',
+                 'message' => 'Project creation failed',
+                 'error' => $e->getMessage()
+             ], 500);
+         }
      }
+
 
     /**
      * Update an existing project.
@@ -333,7 +367,7 @@ class ProjectController extends Controller
         ->where('user_id', $userId)
         ->firstOrFail();
 
-        
+
         $validatedData = $request->validate([
             'featured_image' => 'nullable|string',
             'min_price' => 'required|numeric',
@@ -355,7 +389,7 @@ class ProjectController extends Controller
             'amenities.*' => 'string|max:255',
         ]);
 
-        
+
 
         DB::beginTransaction();
         try {
@@ -367,7 +401,7 @@ class ProjectController extends Controller
                 ProjectContent::updateOrCreate(
                     [
                         'project_id' => $project->id,
-                        'language_id' => $content['language_id']
+                        'language_id' => 1
                     ],
                     array_merge($content, [
                         'project_id' => $project->id,
@@ -383,7 +417,7 @@ class ProjectController extends Controller
                     ProjectType::updateOrCreate(
                         [
                             'project_id' => $project->id,
-                            'language_id' => $type['language_id']
+                            'language_id' => 1
                         ],
                         array_merge($type, [
                             'project_id' => $project->id,

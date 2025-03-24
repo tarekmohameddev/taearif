@@ -2,7 +2,7 @@
 $general_settingsData = json_decode($userapi_general_settingsData, true);
     $favicon = $general_settingsData['favicon'] ?? [];
     $logo = $general_settingsData['logo'] ?? [];
-    $site_name = $general_settingsData['site_name'] ?? [];
+    $site_name = $general_settingsData['site_name'] ?? '';
 
 @endphp
 <!DOCTYPE html>

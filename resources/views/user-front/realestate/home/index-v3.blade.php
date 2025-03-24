@@ -393,58 +393,58 @@
 @endif
 @endif
 
-
-@if ($home_sections->intro_section == 1)
+@if (!empty($api_about_settingsData))
 <section class="about-area about-2 pb-70">
     <div class="container">
         <div class="row align-items-center gx-xl-5">
             <div class="col-lg-5">
                 <div class="content mb-30" data-aos="fade-up">
                     <div class="content-title">
-                        <span class="subtitle">{{ $home_text?->about_title }}</span>
-                        <h2>{{ $home_text?->about_subtitle }}</h2>
+                        <span class="subtitle">{{ $api_about_settingsData['title'] ?? '' }}</span>
+                        <h2>{{ $api_about_settingsData['subtitle'] ?? '' }}</h2>
                     </div>
-                    <div class="text summernote-content">{!! $home_text?->about_content !!}</div>
 
-                    <div class="d-flex align-items-center flex-wrap gap-15">
-                        @if (!empty($home_text->about_button_url))
-                        <a href="{{ $home_text->about_button_url }}" class="btn btn-lg btn-primary">{{ $home_text?->about_button_text }}</a>
-                        @endif
-                        {{-- @if (!empty($aboutInfo->client_text))
-                                    <div class="clients">
-                                        <span class="color-primary">{{ $aboutInfo?->client_text }}</span>
-                        <div class="client-img mt-1">
-                            <img src="{{ asset('assets/front/') }}/images/client/client-1.jpg">
-                            <img src="{{ asset('assets/front/') }}/images/client/client-2.jpg">
-                            <img src="{{ asset('assets/front/') }}/images/client/client-3.jpg">
-                            <img src="{{ asset('assets/front/') }}/images/client/client-4.jpg">
-                        </div>
+                    <div class="text summernote-content">
+                        <p><strong>التاريخ:</strong> {{ $api_about_settingsData['history'] ?? '' }}</p>
+                        <p><strong>مهمتنا:</strong> {{ $api_about_settingsData['mission'] ?? '' }}</p>
+                        <p><strong>رؤيتنا:</strong> {{ $api_about_settingsData['vision'] ?? '' }}</p>
                     </div>
-                    @endif --}}
+
+                    {{-- Optional Button --}}
+                    {{--
+                    <div class="d-flex align-items-center flex-wrap gap-15 mt-4">
+                        <a href="#" class="btn btn-lg btn-primary">اعرف المزيد</a>
+                    </div>
+                    --}}
                 </div>
             </div>
-        </div>
-        <div class="col-lg-7">
-            <div class="img-content img-right mb-30" data-aos="fade-up">
-                <div class="img-1">
-                    @if (!empty($home_text->about_image))
-                    <img class="lazyload blur-up" src="{{ asset('assets/front/images/placeholder.png') }}" data-src="{{ asset('assets/front/img/user/home_settings/' . $home_text->about_image) }}" alt="Image">
-                    @endif
-                </div>
-                <div class="img-2 d-none">
-                    @if (!empty($home_text->about_image_two))
-                    <img class="lazyload blur-up" src="{{ asset('assets/front/images/placeholder.png') }}" data-src="{{ asset('assets/front/img/user/home_settings/' . $home_text->about_image_two) }}" alt="Image">
-                    @endif
-                    @if (!empty($home_text->about_video_url))
-                    <a href="{{ $home_text->about_video_url }}" class="video-btn youtube-popup p-absolute">
-                        <i class="fas fa-play"></i>
-                    </a>
-                    @endif
+
+            <div class="col-lg-7">
+                <div class="img-content img-right mb-30" data-aos="fade-up">
+                    <div class="img-1">
+                        @if (!empty($api_about_settingsData['image_path']))
+                            <img class="lazyload blur-up"
+                                 src="{{ asset('assets/front/images/placeholder.png') }}"
+                                 data-src="{{ asset('storage/' . $api_about_settingsData['image_path']) }}"
+                                 alt="About Image">
+                        @endif
+                    </div>
+
+                    {{-- These are optional elements, not available in your current data, but left as placeholders --}}
+                    <div class="img-2 d-none">
+                        {{-- Secondary image and video URL not provided in new data --}}
+                        {{--
+                        <img class="lazyload blur-up" src="{{ asset('assets/front/images/placeholder.png') }}" data-src="{{ asset('storage/your-second-image.jpg') }}" alt="Image">
+                        <a href="https://youtube.com/..." class="video-btn youtube-popup p-absolute">
+                            <i class="fas fa-play"></i>
+                        </a>
+                        --}}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    </div>
+
     <!-- Bg shape -->
     <div class="shape">
         <img class="shape-1" src="{{ asset('assets/front/user/realestate/shape/shape-2.png') }}" alt="Shape">
@@ -454,6 +454,7 @@
     </div>
 </section>
 @endif
+
 
 @if ($home_sections->work_process_section == 1)
 @if(count($work_processes) > 0)

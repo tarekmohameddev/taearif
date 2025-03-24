@@ -334,46 +334,49 @@
 </style>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 
+@if (!empty($api_about_settingsData))
 <div class="container py-5">
     <div class="row align-items-center">
-        <!-- Image Column -->
 
-        @if (!empty($home_text->about_image))
-                                        <div class="col-lg-6 mb-4 mb-lg-0 lazyload blur-up">
-            <img src="{{ asset($home_text->about_image) }}" alt="Company Visual" class="img-fluid">
-        </div>
-         @endif
-        <!-- Content Column -->
+        @if (!empty($api_about_settingsData['image_path']))
+            <div class="col-lg-6 mb-4 mb-lg-0 lazyload blur-up">
+                <img src="{{ asset('storage/' . $api_about_settingsData['image_path']) }}" alt="Company Visual" class="img-fluid">
+            </div>
+        @endif
+
+
         <div class="col-lg-6">
-            <!-- Identity Box -->
+
             <div class="info-box slide-in">
                 <div class="title-wrapper">
                     <i class="bi bi-building info-icon"></i>
                     <h4>هويتنا</h4>
                 </div>
-                <p class="mb-0">شركة متخصصة في الاستثمار العقاري، ترتكز على الابتكار والجودة لتقديم حلول عقارية متكاملة تلبي تطلعات عملائنا وتسهم في تنمية القطاع العقاري.</p>
+                <p class="mb-0">{{ $api_about_settingsData['history'] ?? '...' }}</p>
             </div>
 
-            <!-- Mission Box -->
+
             <div class="info-box slide-in" style="animation-delay: 0.5s;">
                 <div class="title-wrapper">
                     <i class="bi bi-rocket-takeoff info-icon"></i>
                     <h4>مهمتنا</h4>
                 </div>
-                <p class="mb-0">تقديم مشاريع عقارية متميزة تلبي احتياجات السوق، من خلال الابتكار والاستدامة .</p>
+                <p class="mb-0">{{ $api_about_settingsData['mission'] ?? '...' }}</p>
             </div>
 
-            <!-- Values Box -->
+
             <div class="info-box slide-in" style="animation-delay: 1s;">
                 <div class="title-wrapper">
                     <i class="bi bi-stars info-icon"></i>
-                    <h4>قيمنا</h4>
+                    <h4>رؤيتنا</h4>
                 </div>
-                <p class="mb-0">الشفافية ، الثقة ، الجودة ، المرونة ، الالتزام ، مع بناء شراكات مستدامة تخلق قيمة مضافة لعملائنا والمجتمع</p>
+                <p class="mb-0">{{ $api_about_settingsData['vision'] ?? '...' }}</p>
             </div>
         </div>
     </div>
 </div>
+@endif
+
 
 @if ($home_sections->counter_info_section == 1)
 @if(count($counterInformations) > 0)
