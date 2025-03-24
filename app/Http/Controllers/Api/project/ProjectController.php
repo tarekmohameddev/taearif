@@ -46,8 +46,8 @@ class ProjectController extends Controller
         $formattedProjects = $projects->map(function ($project) {
             return [
                 "id" => $project->id,
-                "featured_image" => $project->featured_image,
-                "price_range" => "From $" . number_format($project->min_price, 2) . " to $" . number_format($project->max_price, 2),
+                "featured_image" => asset($project->featured_image),
+                "price_range" =>  number_format($project->min_price, 2),
                 "latitude" => $project->latitude,
                 "longitude" => $project->longitude,
                 "featured" => $project->featured,
@@ -135,7 +135,7 @@ class ProjectController extends Controller
         
         $formattedProject = [
             "id" => $project->id,
-            "featured_image" => $project->featured_image,
+            "featured_image" => asset($project->featured_image),
             "price_range" => "From $" . number_format($project->min_price, 2) . " to $" . number_format($project->max_price, 2),
             "latitude" => $project->latitude,
             "longitude" => $project->longitude,
@@ -289,7 +289,7 @@ class ProjectController extends Controller
                  'published' => (bool) $request->published,
                  'completion_date' => $request->completion_date,
                  'complete_status' => $request->complete_status,
-                 'featured_image' => $project->featured_image,
+                 'featured_image' => asset($project->featured_image),
                  'units' => $request->units,
                  'gallery_images' => $validatedData['gallery_images'] ?? [],
                  'floorplan_images' => $validatedData['floorplan_images'] ?? [],
@@ -410,9 +410,13 @@ class ProjectController extends Controller
                 'developer' => $project->developer,
                 'published' => (bool) $project->published,
                 'completion_date' => $project->completion_date,
-                'featured_image' => $project->featured_image,
-                'gallery' => $validatedData['gallery_images'] ?? [],
-                'floorplan_images' => $validatedData['floorplan_images'] ?? [],
+                'featured_image' => asset($project->featured_image),
+                'gallery' => !empty($validatedData['gallery_images']) ? collect($validatedData['gallery_images'])->map(function($image) {
+                    return asset($image);
+                })->toArray() : [],
+                'floorplan_images' => !empty($validatedData['floorplan_images']) ? collect($validatedData['floorplan_images'])->map(function($image) {
+                    return asset($image);
+                })->toArray() : [],
                 'specifications' => $validatedData['specifications'] ?? [],
                 'contents' => $validatedData['contents'],
                 'types' => $validatedData['types'] ?? [],
