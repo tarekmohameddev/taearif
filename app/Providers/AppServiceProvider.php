@@ -14,6 +14,7 @@ use App\Models\User\UserService;
 use App\Models\Api\FooterSetting;
 // use App\Models\Api\ApiBannerSetting;
 use App\Models\User\BasicSetting;
+use App\Models\Api\ApiMenuSetting;
 use App\Models\Api\GeneralSetting;
 use Illuminate\Support\Facades\DB;
 use App\Models\User\FooterQuickLink;
@@ -149,11 +150,17 @@ class AppServiceProvider extends ServiceProvider
                 $keywords = json_decode(optional($userCurrentLang)->keywords ?? '{}', true);
 
 
-                if (UserMenu::where('language_id', $userCurrentLang->id)->where('user_id', $user->id)->count() > 0) {
-                    $userMenus = UserMenu::where('language_id', $userCurrentLang->id)->where('user_id', $user->id)->first()->menus;
-                } else {
-                    $userMenus = json_encode([]);
-                }
+                // if (UserMenu::where('language_id', $userCurrentLang->id)->where('user_id', $user->id)->count() > 0) {
+                //     $userMenus = UserMenu::where('language_id', $userCurrentLang->id)->where('user_id', $user->id)->first()->menus;
+                // } else {
+                //     $userMenus = json_encode([]);
+                // }
+                $menuItems = ApiMenuSetting::with('children')
+                ->where('user_id', $user->id)
+                ->where('is_active', 1)
+                ->whereNull('parent_id')
+                ->orderBy('order')
+                ->get();
 
                 $userBs = BasicSetting::where('user_id', $user->id)->with('timezoneinfo')->first();
                 $userRoomSettings = DB::table('user_room_settings')->where('user_id', $user->id)->first();
@@ -229,7 +236,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('home_sections', $home_sections);
                 $view->with('userSeo', $userSeo);
                 $view->with('userBs', $userBs);
-                $view->with('userMenus', $userMenus);
+                $view->with('userMenus', $menuItems);
                 $view->with('userFooterQuickLinks', $footerQuickLinks);
                 $view->with('userFooterData', $footerData);
                 $view->with('userApi_footerData', $api_footerData);
