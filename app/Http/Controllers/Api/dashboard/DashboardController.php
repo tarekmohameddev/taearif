@@ -10,14 +10,14 @@ class DashboardController extends Controller
     public function summary()
     {
         return response()->json([
-            'visits' => 1245,
-            'visits_change' => 12,
-            'page_views' => 3721,
-            'page_views_change' => 8,
-            'average_time' => '2:14',
-            'average_time_change' => 4,
-            'bounce_rate' => 32.1,
-            'bounce_rate_change' => 2,
+            'visits' => 0,
+            'visits_change' => 0,
+            'page_views' => 0,
+            'page_views_change' => 0,
+            'average_time' => '0',
+            'average_time_change' => 0,
+            'bounce_rate' => 0,
+            'bounce_rate_change' => 0,
         ]);
     }
 
@@ -25,16 +25,9 @@ class DashboardController extends Controller
     {
         return response()->json([
             'visitor_data' => [
-                ['date' => '1 يناير', 'visits' => 450, 'uniqueVisitors' => 320],
-                ['date' => '5 يناير', 'visits' => 580, 'uniqueVisitors' => 420],
-                ['date' => '10 يناير', 'visits' => 540, 'uniqueVisitors' => 380],
-                ['date' => '15 يناير', 'visits' => 750, 'uniqueVisitors' => 560],
-                ['date' => '20 يناير', 'visits' => 800, 'uniqueVisitors' => 600],
-                ['date' => '25 يناير', 'visits' => 920, 'uniqueVisitors' => 680],
-                ['date' => '30 يناير', 'visits' => 1150, 'uniqueVisitors' => 850],
             ],
-            'total_visits' => 5190,
-            'total_unique_visitors' => 3810,
+            'total_visits' => 0,
+            'total_unique_visitors' => 0,
         ]);
     }
 
@@ -42,10 +35,6 @@ class DashboardController extends Controller
     {
         return response()->json([
             'devices' => [
-                ['name' => 'الهاتف المحمول', 'value' => 55, 'color' => '#4285F4'],
-                ['name' => 'الحاسوب', 'value' => 25, 'color' => '#34A853'],
-                ['name' => 'الجهاز اللوحي', 'value' => 15, 'color' => '#A142F4'],
-                ['name' => 'أخرى', 'value' => 5, 'color' => '#6B7280'],
             ]
         ]);
     }
@@ -54,11 +43,6 @@ class DashboardController extends Controller
     {
         return response()->json([
             'sources' => [
-                ['name' => 'البحث العضوي', 'value' => 45, 'color' => '#4285F4'],
-                ['name' => 'الروابط المباشرة', 'value' => 25, 'color' => '#34A853'],
-                ['name' => 'وسائل التواصل', 'value' => 15, 'color' => '#A142F4'],
-                ['name' => 'الإعلانات', 'value' => 10, 'color' => '#F4B400'],
-                ['name' => 'أخرى', 'value' => 5, 'color' => '#6B7280'],
             ]
         ]);
     }
@@ -91,10 +75,6 @@ class DashboardController extends Controller
     {
         return response()->json([
             'activities' => [
-                ['id' => 1, 'action' => 'تم تحديث المحتوى', 'section' => 'الصفحة الرئيسية', 'time' => 'منذ 2 ساعة', 'icon' => 'file-text', 'user_id' => 1, 'created_at' => '2023-01-01T10:00:00.000000Z'],
-                ['id' => 2, 'action' => 'تم تغيير القالب', 'section' => 'الموقع بالكامل', 'time' => 'منذ 5 ساعات', 'icon' => 'layout-grid', 'user_id' => 1, 'created_at' => '2023-01-01T07:00:00.000000Z'],
-                ['id' => 3, 'action' => 'تم نشر الموقع', 'section' => 'الموقع بالكامل', 'time' => 'منذ يومين', 'icon' => 'globe', 'user_id' => 1, 'created_at' => '2022-12-30T15:00:00.000000Z'],
-                ['id' => 4, 'action' => 'تم تحديث الإعدادات', 'section' => 'إعدادات الموقع', 'time' => 'منذ 3 أيام', 'icon' => 'settings', 'user_id' => 1, 'created_at' => '2022-12-29T09:00:00.000000Z']
             ]
         ]);
     }
