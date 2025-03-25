@@ -5,23 +5,25 @@ namespace App\Http\Controllers\Api\project;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\User\Language;
+use App\Models\User\BasicSetting;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\ProjectStoreRequest;
 use App\Models\User\RealestateManagement\Amenity;
 use App\Models\User\RealestateManagement\Project;
+use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\ProjectType;
 use App\Models\User\RealestateManagement\ProjectContent;
 use App\Models\User\RealestateManagement\PropertyAmenity;
 use App\Models\User\RealestateManagement\ProjectGalleryImg;
 use App\Models\User\RealestateManagement\ProjectFloorplanImg;
 use App\Models\User\RealestateManagement\ProjectSpecification;
-use Illuminate\Support\Facades\Validator;
 
 
 class ProjectController extends Controller
@@ -234,240 +236,210 @@ class ProjectController extends Controller
      * @throws \Throwable
      * @throws \Illuminate\Validation\ValidationException
      * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
-     */
+    */
 
-
-
-     public function store(Request $request)
-     {
-         $validator = Validator::make($request->all(), [
-             'featured_image' => 'nullable|string',
-             'min_price' => 'required|numeric',
-             'max_price' => 'required|numeric',
-             'latitude' => 'required|numeric',
-             'longitude' => 'required|numeric',
-             'featured' => 'required|boolean',
-             'complete_status' => 'required|string',
-             'units' => 'required|integer',
-             'completion_date' => 'required|date',
-             'developer' => 'required|string|max:255',
-             'published' => 'required|boolean',
-             'contents' => 'required|array',
-             'gallery_images' => 'nullable|array',
-             'floorplan_images' => 'nullable|array',
-             'specifications' => 'nullable|array',
-             'types' => 'nullable|array',
-             'amenities' => 'nullable|array',
-         ]);
-
-         if ($validator->fails()) {
-             return response()->json([
-                 'status' => 'error',
-                 'message' => 'Validation failed',
-                 'errors' => $validator->errors()
-             ], 422);
-         }
-
-         $validatedData = $validator->validated();
-         $userId = auth()->id();
-         $userLanguage = Language::where('user_id', $userId)->where('is_default', 1)->first();
-         $languageId = $userLanguage ? $userLanguage->id : 1;
-
-         DB::beginTransaction();
-
-         try {
-             $project = Project::storeProject($userId, $validatedData);
-
-             foreach ($validatedData['contents'] as $content) {
-                 $content['project_id'] = $project->id;
-                 $content['slug'] = Str::slug($content['title']);
-                 ProjectContent::storeProjectContent($userId, $content);
-             }
-
-             if (!empty($validatedData['types'])) {
-                 foreach ($validatedData['types'] as $type) {
-                     $type['project_id'] = $project->id;
-                     ProjectType::storeProjectType($userId, $type);
-                 }
-             }
-
-             // amenities
-             // if (!empty($validatedData['amenities'])) {
-             //     foreach ($validatedData['amenities'] as $amenity) {
-             //         Amenity::create([
-             //             'user_id' => $userId,
-             //             'language_id' => $languageId,
-             //             'name' => $amenity,
-             //             'serial_number' => 0,
-             //             'slug' => Str::slug($amenity),
-             //             'icon' => 'fab fa-accusoft',
-             //         ]);
-             //     }
-             // }
-
-             DB::commit();
-
-             $responseProject = [
-                 'id' => $project->id,
-                 'title' => $validatedData['contents'][0]['title'],
-                 'address' => $validatedData['contents'][0]['address'],
-                 'min_price' => $project->min_price,
-                 'max_price' => $project->max_price,
-                 'latitude' => $project->latitude,
-                 'longitude' => $project->longitude,
-                 'featured' => (bool) $project->featured,
-                 'developer' => $request->developer,
-                 'published' => (bool) $request->published,
-                 'completion_date' => $request->completion_date,
-                 'complete_status' => $request->complete_status,
-                 'featured_image' => asset($project->featured_image),
-                 'units' => $request->units,
-                 'gallery_images' => $validatedData['gallery_images'] ?? [],
-                 'floorplan_images' => $validatedData['floorplan_images'] ?? [],
-                 'specifications' => $validatedData['specifications'] ?? [],
-                 'contents' => $validatedData['contents'],
-                 'types' => $validatedData['types'] ?? [],
-                 'amenities' => $validatedData['amenities'] ?? [],
-                 'created_at' => $project->created_at->toISOString(),
-                 'updated_at' => $project->updated_at->toISOString(),
-             ];
-
-             return response()->json([
-                 'status' => 'success',
-                 'message' => 'User Project created successfully',
-                 'data' => [
-                     'user_project' => $responseProject
-                 ]
-             ], 201);
-
-         } catch (\Exception $e) {
-             DB::rollBack();
-             Log::error('Project creation failed: ' . $e->getMessage());
-
-             return response()->json([
-                 'status' => 'error',
-                 'message' => 'Project creation failed',
-                 'error' => $e->getMessage()
-             ], 500);
-         }
-     }
-
-
-    /**
-     * Update an existing project.
-     */
-    public function update(Request $request, $id)
+    public function store(Request $request)
     {
         $userId = auth()->id();
-        if (!$userId) {
-            return response()->json(['error' => 'Unauthorized: User ID is missing'], 401);
+        $defaultLang = Language::where('user_id', $userId)->where('is_default', 1)->firstOrFail();
+
+        $rules = [
+            'gallery_images' => 'required|array',
+            'gallery_images.*' => 'string',
+
+            'floor_plan_images' => 'required|array',
+            'floor_plan_images.*' => 'string',
+
+            'featured_image' => 'required|string',
+            'min_price' => 'required|numeric',
+            'max_price' => 'nullable|numeric',
+            'featured' => 'sometimes',
+            'status' => 'required',
+            'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
+            'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
+
+            'title' => 'required|max:255',
+            'address' => 'required',
+            'description' => 'required|min:15',
+            'label' => 'nullable|array',
+            'value' => 'nullable|array',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'fail',
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
-        $project = Project::where('id', $id)
-        ->where('user_id', $userId)
-        ->firstOrFail();
+        $project = null;
 
+        DB::transaction(function () use ($request, $userId, $defaultLang, &$project) {
+            $requestData = $request->all();
+            $requestData['featured_image'] = $request->featured_image;
 
-        $validatedData = $request->validate([
-            'featured_image' => 'nullable|string',
-            'min_price' => 'required|numeric',
-            'max_price' => 'required|numeric',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'featured' => 'required|boolean',
-            'complete_status' => 'required|string',
-            'units' => 'required|integer',
-            'completion_date' => 'required|date',
-            'developer' => 'required|string|max:255',
-            'published' => 'required|boolean',
-            'contents' => 'required|array',
-            'gallery_images' => 'nullable|array',
-            'floorplan_images' => 'nullable|array',
-            'specifications' => 'nullable|array',
-            'types' => 'nullable|array',
-            'amenities' => 'nullable|array',
-            'amenities.*' => 'string|max:255',
-        ]);
+            $project = Project::storeProject($userId, $requestData);
 
-
-
-        DB::beginTransaction();
-        try {
-
-            $project->update($validatedData);
-
-
-            foreach ($validatedData['contents'] as $content) {
-                ProjectContent::updateOrCreate(
-                    [
-                        'project_id' => $project->id,
-                        'language_id' => 1
-                    ],
-                    array_merge($content, [
-                        'project_id' => $project->id,
-                        'user_id' => $userId,
-                        'slug' => Str::slug($content['title']),
-                    ])
-                );
+            foreach ($request->gallery_images as $imgPath) {
+                ProjectGalleryImg::storeGalleryImage($userId, $project->id, $imgPath);
             }
 
+            foreach ($request->floor_plan_images as $imgPath) {
+                ProjectFloorplanImg::storeFloorplanImage($userId, $project->id, $imgPath);
+            }
 
-            if (!empty($validatedData['types'])) {
-                foreach ($validatedData['types'] as $type) {
-                    ProjectType::updateOrCreate(
-                        [
-                            'project_id' => $project->id,
-                            'language_id' => 1
-                        ],
-                        array_merge($type, [
-                            'project_id' => $project->id,
-                            'user_id' => $userId,
-                        ])
-                    );
+            $content = [
+                'project_id' => $project->id,
+                'language_id' => $defaultLang->id,
+                'title' => $request->title,
+                'address' => $request->address,
+                'description' => $request->description,
+                'meta_keyword' => $request->meta_keyword ?? null,
+                'meta_description' => $request->meta_description ?? null,
+            ];
+            ProjectContent::storeProjectContent($userId, $content);
+
+            $labels = $request->input('label', []);
+            $values = $request->input('value', []);
+
+            foreach ($labels as $key => $label) {
+                if (!empty($values[$key])) {
+                    ProjectSpecification::storeSpecification($userId, [
+                        'language_id' => $defaultLang->id,
+                        'project_id' => $project->id,
+                        'key' => $key,
+                        'label' => $label,
+                        'value' => $values[$key],
+                    ]);
                 }
             }
-            $userLanguage = Language::where('user_id', $userId)->where('is_default', 1)->first();
-            $languageId = $userLanguage ? $userLanguage->id : 1;
+        });
 
+        $responseProject = Project::with([
+            'galleryImages',
+            'floorPlanImages',
+            'contents',
+            'specifications'
+        ])->find($project->id);
 
-            DB::commit();
-
-            $responseProject = [
-                'id' => $project->id,
-                'title' => $validatedData['contents'][0]['title'],
-                'address' => $validatedData['contents'][0]['address'],
-                'min_price' => $project->min_price,
-                'max_price' => $project->max_price,
-                'latitude' => $project->latitude,
-                'longitude' => $project->longitude,
-                'featured' => (bool) $project->featured,
-                'developer' => $project->developer,
-                'published' => (bool) $project->published,
-                'completion_date' => $project->completion_date,
-                'featured_image' => asset($project->featured_image),
-                'gallery' => !empty($validatedData['gallery_images']) ? collect($validatedData['gallery_images'])->map(function($image) {
-                    return asset($image);
-                })->toArray() : [],
-                'floorplan_images' => !empty($validatedData['floorplan_images']) ? collect($validatedData['floorplan_images'])->map(function($image) {
-                    return asset($image);
-                })->toArray() : [],
-                'specifications' => $validatedData['specifications'] ?? [],
-                'contents' => $validatedData['contents'],
-                'types' => $validatedData['types'] ?? [],
-                'amenities' => $validatedData['amenities'] ?? [],
-            ];
-
-            return response()->json(['status' => 'success', 'message' => 'User Project updated successfully', 'data' => ['user_project' => $responseProject]], 200);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['status' => 'error', 'message' => 'Project update failed', 'error' => $e->getMessage()], 500);
-        }
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Project created successfully',
+            'data' => [
+                'project' => $responseProject
+            ]
+        ], 201);
     }
 
 
     /**
+     * Update an existing project.
+    */
+
+    public function update(Request $request, $id)
+    {
+        $userId = auth()->id();
+        $defaultLang = Language::where('user_id', $userId)->where('is_default', 1)->firstOrFail();
+
+        $project = Project::where('user_id', $userId)->findOrFail($id);
+
+        $rules = [
+            'gallery_images' => 'sometimes|array',
+            'gallery_images.*' => 'string',
+            'floor_plan_images' => 'sometimes|array',
+            'floor_plan_images.*' => 'string',
+            'featured_image' => 'required|string',
+            'min_price' => 'required|numeric',
+            'max_price' => 'nullable|numeric',
+            'featured' => 'sometimes',
+            'status' => 'required',
+            'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
+            'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
+            'title' => 'required|max:255',
+            'address' => 'required',
+            'description' => 'required|min:15',
+            'label' => 'nullable|array',
+            'value' => 'nullable|array',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'fail',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        DB::transaction(function () use ($request, $userId, $defaultLang, &$project) {
+            $requestData = $request->all();
+            $requestData['featured_image'] = $request->featured_image;
+            $project->updateProject($requestData);
+            if ($request->has('gallery_images')) {
+                ProjectGalleryImg::where('project_id', $project->id)->delete();
+                foreach ($request->gallery_images as $imgPath) {
+                    ProjectGalleryImg::storeGalleryImage($userId, $project->id, $imgPath);
+                }
+            }
+            if ($request->has('floor_plan_images')) {
+                ProjectFloorplanImg::where('project_id', $project->id)->delete();
+                foreach ($request->floor_plan_images as $imgPath) {
+                    ProjectFloorplanImg::storeFloorplanImage($userId, $project->id, $imgPath);
+                }
+            }
+            ProjectContent::where('project_id', $project->id)->delete();
+            $content = [
+                'project_id' => $project->id,
+                'language_id' => $defaultLang->id,
+                'title' => $request->title,
+                'address' => $request->address,
+                'description' => $request->description,
+                'meta_keyword' => $request->meta_keyword ?? null,
+                'meta_description' => $request->meta_description ?? null,
+            ];
+            ProjectContent::storeProjectContent($userId, $content);
+            ProjectSpecification::where('project_id', $project->id)->delete();
+
+            $labels = $request->input('label', []);
+            $values = $request->input('value', []);
+
+            foreach ($labels as $key => $label) {
+                if (!empty($values[$key])) {
+                    ProjectSpecification::storeSpecification($userId, [
+                        'language_id' => $defaultLang->id,
+                        'project_id' => $project->id,
+                        'key' => $key,
+                        'label' => $label,
+                        'value' => $values[$key],
+                    ]);
+                }
+            }
+        });
+
+        $responseProject = Project::with([
+            'galleryImages',
+            'floorPlanImages',
+            'contents',
+            'specifications'
+        ])->find($project->id);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Project updated successfully',
+            'data' => [
+                'project' => $responseProject
+            ]
+        ]);
+    }
+
+
+
+
+    /**
      * Delete a project.
-     */
+    */
     public function destroy($id): JsonResponse
     {
         $userId = auth()->id();
