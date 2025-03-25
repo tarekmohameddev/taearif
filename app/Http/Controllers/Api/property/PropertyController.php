@@ -127,16 +127,19 @@ class PropertyController extends Controller
     * @throws \Throwable
     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
     */
+
+
     public function store(Request $request)
     {
-
         $user = auth()->user();
 
         $basicSettings = BasicSetting::where('user_id', $user->id)
             ->select('property_state_status', 'property_country_status')
             ->first();
 
-        $languages = Language::where('user_id', $user->id)->get();
+        $defaultLanguage = Language::where('user_id', $user->id)
+            ->where('is_default', 1)
+            ->firstOrFail();
 
         $rules = [
             'slider_images' => 'required|array',
@@ -155,27 +158,23 @@ class PropertyController extends Controller
 
             'latitude' => ['required', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
             'longitude' => ['required', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
+
+            'category_id' => 'required',
+            'city_id' => 'required',
+            'title' => 'required|max:255',
+            'address' => 'required',
+            'description' => 'required|min:15',
+            'amenities' => 'nullable|array',
+            'label' => 'nullable|array',
+            'value' => 'nullable|array',
         ];
 
-        foreach ($languages as $language) {
-            $lang = $language->code;
+        if ($basicSettings->property_country_status == 1) {
+            $rules["country_id"] = 'required';
+        }
 
-            $rules["{$lang}_category_id"] = 'required';
-            $rules["{$lang}_city_id"] = 'required';
-            $rules["{$lang}_title"] = 'required|max:255';
-            $rules["{$lang}_address"] = 'required';
-            $rules["{$lang}_description"] = 'required|min:15';
-
-            $rules["{$lang}_amenities"] = 'nullable|array';
-            $rules["{$lang}_label"] = 'nullable|array';
-            $rules["{$lang}_value"] = 'nullable|array';
-
-            if ($basicSettings->property_country_status == 1) {
-                $rules["{$lang}_country_id"] = 'required';
-            }
-            if ($basicSettings->property_state_status == 1) {
-                $rules["{$lang}_state_id"] = 'required';
-            }
+        if ($basicSettings->property_state_status == 1) {
+            $rules["state_id"] = 'required';
         }
 
         $validator = Validator::make($request->all(), $rules);
@@ -189,7 +188,7 @@ class PropertyController extends Controller
 
         $property = null;
 
-        DB::transaction(function () use ($request, $user, $languages, &$property) {
+        DB::transaction(function () use ($request, $user, $defaultLanguage, &$property) {
             $featuredImgName = $request->featured_image;
             $floorPlanningImage = $request->floor_planning_image;
             $videoImage = $request->video_image;
@@ -208,44 +207,40 @@ class PropertyController extends Controller
                 }
             }
 
-            foreach ($languages as $language) {
-                $langCode = $language->code;
-
-                if ($request->has("{$langCode}_amenities")) {
-                    foreach ((array) $request["{$langCode}_amenities"] as $amenity) {
-                        PropertyAmenity::sotreAmenity($user->id, $property->id, $amenity);
-                    }
+            if ($request->has('amenities')) {
+                foreach ((array) $request->amenities as $amenity) {
+                    PropertyAmenity::sotreAmenity($user->id, $property->id, $amenity);
                 }
+            }
 
-                $contentRequest = [
-                    'language_id' => $language->id,
-                    'category_id' => $request["{$langCode}_category_id"],
-                    'country_id' => $request["{$langCode}_country_id"] ?? null,
-                    'state_id' => $request["{$langCode}_state_id"] ?? null,
-                    'city_id' => $request["{$langCode}_city_id"],
-                    'title' => $request["{$langCode}_title"],
-                    'slug' => Str::slug($request["{$langCode}_title"]),
-                    'address' => $request["{$langCode}_address"],
-                    'description' => $request["{$langCode}_description"],
-                    'meta_keyword' => $request["{$langCode}_meta_keyword"] ?? null,
-                    'meta_description' => $request["{$langCode}_meta_description"] ?? null,
-                ];
+            $contentRequest = [
+                'language_id' => $defaultLanguage->id,
+                'category_id' => $request->category_id,
+                'country_id' => $request->country_id ?? null,
+                'state_id' => $request->state_id ?? null,
+                'city_id' => $request->city_id,
+                'title' => $request->title,
+                'slug' => Str::slug($request->title),
+                'address' => $request->address,
+                'description' => $request->description,
+                'meta_keyword' => $request->meta_keyword ?? null,
+                'meta_description' => $request->meta_description ?? null,
+            ];
 
-                PropertyContent::storePropertyContent($user->id, $property->id, $contentRequest);
+            PropertyContent::storePropertyContent($user->id, $property->id, $contentRequest);
 
-                $labels = (array) $request->input("{$langCode}_label", []);
-                $values = (array) $request->input("{$langCode}_value", []);
+            $labels = (array) $request->input('label', []);
+            $values = (array) $request->input('value', []);
 
-                foreach ($labels as $key => $label) {
-                    if (!empty($values[$key])) {
-                        $spec = [
-                            'language_id' => $language->id,
-                            'key' => $key,
-                            'label' => $label,
-                            'value' => $values[$key],
-                        ];
-                        PropertySpecification::storeSpecification($user->id, $property->id, $spec);
-                    }
+            foreach ($labels as $key => $label) {
+                if (!empty($values[$key])) {
+                    $spec = [
+                        'language_id' => $defaultLanguage->id,
+                        'key' => $key,
+                        'label' => $label,
+                        'value' => $values[$key],
+                    ];
+                    PropertySpecification::storeSpecification($user->id, $property->id, $spec);
                 }
             }
         });
@@ -289,42 +284,44 @@ class PropertyController extends Controller
             ->select('property_state_status', 'property_country_status')
             ->first();
 
-        $languages = Language::where('user_id', $user->id)->get();
+        $defaultLanguage = Language::where('user_id', $user->id)
+            ->where('is_default', 1)
+            ->firstOrFail();
 
         $rules = [
             'slider_images' => 'sometimes|array',
             'slider_images.*' => 'string',
+
             'featured_image' => 'required|string',
             'floor_planning_image' => 'nullable|string',
             'video_image' => 'nullable|string',
+
             'price' => 'nullable|numeric',
             'beds' => 'nullable',
             'bath' => 'nullable',
             'purpose' => 'nullable',
             'area' => 'nullable',
             'status' => 'nullable',
+
             'latitude' => ['required', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
             'longitude' => ['required', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
+
+            'category_id' => 'required',
+            'city_id' => 'required',
+            'title' => 'required|max:255',
+            'address' => 'required',
+            'description' => 'required|min:15',
+            'amenities' => 'nullable|array',
+            'label' => 'nullable|array',
+            'value' => 'nullable|array',
         ];
 
-        foreach ($languages as $language) {
-            $lang = $language->code;
+        if ($basicSettings->property_country_status == 1) {
+            $rules["country_id"] = 'required';
+        }
 
-            $rules["{$lang}_category_id"] = 'required';
-            $rules["{$lang}_city_id"] = 'required';
-            $rules["{$lang}_title"] = 'required|max:255';
-            $rules["{$lang}_address"] = 'required';
-            $rules["{$lang}_description"] = 'required|min:15';
-            $rules["{$lang}_amenities"] = 'nullable|array';
-            $rules["{$lang}_label"] = 'nullable|array';
-            $rules["{$lang}_value"] = 'nullable|array';
-
-            if ($basicSettings->property_country_status == 1) {
-                $rules["{$lang}_country_id"] = 'required';
-            }
-            if ($basicSettings->property_state_status == 1) {
-                $rules["{$lang}_state_id"] = 'required';
-            }
+        if ($basicSettings->property_state_status == 1) {
+            $rules["state_id"] = 'required';
         }
 
         $validator = Validator::make($request->all(), $rules);
@@ -336,15 +333,12 @@ class PropertyController extends Controller
             ], 422);
         }
 
-        DB::transaction(function () use ($request, $user, $languages, &$property) {
-            $featuredImgName = $request->featured_image;
-            $floorPlanningImage = $request->floor_planning_image;
-            $videoImage = $request->video_image;
-
-            $property->updateProperty($request->all(),$user->id, $featuredImgName, $floorPlanningImage, $videoImage);
+        DB::transaction(function () use ($request, $user, $defaultLanguage, &$property) {
+            $property->updateProperty($request->all());
 
             if ($request->has('slider_images')) {
                 PropertySliderImg::where('property_id', $property->id)->delete();
+
                 foreach ($request->slider_images as $imagePath) {
                     PropertySliderImg::storeSliderImage($user->id, $property->id, $imagePath);
                 }
@@ -354,44 +348,40 @@ class PropertyController extends Controller
             PropertyContent::where('property_id', $property->id)->delete();
             PropertySpecification::where('property_id', $property->id)->delete();
 
-            foreach ($languages as $language) {
-                $langCode = $language->code;
-
-                if ($request->has("{$langCode}_amenities")) {
-                    foreach ((array) $request["{$langCode}_amenities"] as $amenity) {
-                        PropertyAmenity::sotreAmenity($user->id, $property->id, $amenity);
-                    }
+            if ($request->has('amenities')) {
+                foreach ((array) $request->amenities as $amenity) {
+                    PropertyAmenity::sotreAmenity($user->id, $property->id, $amenity);
                 }
+            }
 
-                $contentRequest = [
-                    'language_id' => $language->id,
-                    'category_id' => $request["{$langCode}_category_id"],
-                    'country_id' => $request["{$langCode}_country_id"] ?? null,
-                    'state_id' => $request["{$langCode}_state_id"] ?? null,
-                    'city_id' => $request["{$langCode}_city_id"],
-                    'title' => $request["{$langCode}_title"],
-                    'slug' => Str::slug($request["{$langCode}_title"]),
-                    'address' => $request["{$langCode}_address"],
-                    'description' => $request["{$langCode}_description"],
-                    'meta_keyword' => $request["{$langCode}_meta_keyword"] ?? null,
-                    'meta_description' => $request["{$langCode}_meta_description"] ?? null,
-                ];
+            $contentRequest = [
+                'language_id' => $defaultLanguage->id,
+                'category_id' => $request->category_id,
+                'country_id' => $request->country_id ?? null,
+                'state_id' => $request->state_id ?? null,
+                'city_id' => $request->city_id,
+                'title' => $request->title,
+                'slug' => Str::slug($request->title),
+                'address' => $request->address,
+                'description' => $request->description,
+                'meta_keyword' => $request->meta_keyword ?? null,
+                'meta_description' => $request->meta_description ?? null,
+            ];
 
-                PropertyContent::storePropertyContent($user->id, $property->id, $contentRequest);
+            PropertyContent::storePropertyContent($user->id, $property->id, $contentRequest);
 
-                $labels = (array) $request->input("{$langCode}_label", []);
-                $values = (array) $request->input("{$langCode}_value", []);
+            $labels = (array) $request->input('label', []);
+            $values = (array) $request->input('value', []);
 
-                foreach ($labels as $key => $label) {
-                    if (!empty($values[$key])) {
-                        $spec = [
-                            'language_id' => $language->id,
-                            'key' => $key,
-                            'label' => $label,
-                            'value' => $values[$key],
-                        ];
-                        PropertySpecification::storeSpecification($user->id, $property->id, $spec);
-                    }
+            foreach ($labels as $key => $label) {
+                if (!empty($values[$key])) {
+                    $spec = [
+                        'language_id' => $defaultLanguage->id,
+                        'key' => $key,
+                        'label' => $label,
+                        'value' => $values[$key],
+                    ];
+                    PropertySpecification::storeSpecification($user->id, $property->id, $spec);
                 }
             }
         });
@@ -409,8 +399,9 @@ class PropertyController extends Controller
             'data' => [
                 'property' => $responseProperty
             ]
-        ], 200);
+        ]);
     }
+
 
 
 
