@@ -51,8 +51,6 @@ class DashboardController extends Controller
     {
         return response()->json([
             'pages' => [
-                ['path' => '/', 'views' => 4256, 'unique_visitors' => 3128, 'bounce_rate' => 32.4, 'avg_time' => '1:45', 'percentage' => 35],
-                ['path' => '/المنتجات', 'views' => 2845, 'unique_visitors' => 2012, 'bounce_rate' => 28.7, 'avg_time' => '2:30', 'percentage' => 22],
             ]
         ]);
     }
