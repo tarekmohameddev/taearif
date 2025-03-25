@@ -146,7 +146,7 @@ class AppServiceProvider extends ServiceProvider
                     $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
                 }
 
-                $keywords = json_decode($userCurrentLang->keywords, true);
+                $keywords = json_decode(optional($userCurrentLang)->keywords ?? '{}', true);
 
 
                 if (UserMenu::where('language_id', $userCurrentLang->id)->where('user_id', $user->id)->count() > 0) {
