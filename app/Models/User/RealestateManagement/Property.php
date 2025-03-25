@@ -3,9 +3,11 @@
 namespace App\Models\User\RealestateManagement;
 
 use App\Models\User;
+use App\Models\User\RealestateManagement\PropertyAmenity;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\User\RealestateManagement\PropertySliderImg;
 
 
 class Property extends Model
@@ -67,9 +69,10 @@ class Property extends Model
 
     public function updateProperty($requestData)
     {
+        \Log::info($requestData);
         return $this->update([
-            'featured_image' => $requestData['featured_image'],
-            'floor_planning_image' => $requestData['floor_planning_image']?? null,
+            'featured_image' => $request['featured_image'] ?? $this->featured_image, //73
+            'floor_planning_image' => $request['floor_planning_image']?? null,
             'video_image' => $requestData['video_image'],
             'price' => $requestData['price'],
             'purpose' => $requestData['purpose'] ?? null,
@@ -131,6 +134,15 @@ class Property extends Model
         return $this->contents->first();
     }
 
+    public function sliderImages()
+    {
+        return $this->hasMany(PropertySliderImg::class, 'property_id');
+    }
+
+    public function amenities()
+    {
+        return $this->hasMany(PropertyAmenity::class, 'property_id');
+    }
 
 
 }

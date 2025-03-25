@@ -4,20 +4,23 @@ namespace App\Http\Controllers\Api\property;
 
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Models\User\Language;
+use App\Models\User\BasicSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use App\Models\User\RealestateManagement\Amenity;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyAmenity;
 use App\Models\User\RealestateManagement\PropertyContact;
 use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\RealestateManagement\PropertyWishlist;
 use App\Models\User\RealestateManagement\PropertySliderImg;
-use App\Models\User\RealestateManagement\Amenity;
-use Illuminate\Support\Facades\Validator;
+use App\Models\User\RealestateManagement\PropertySpecification;
 
 
 class PropertyController extends Controller
@@ -32,8 +35,8 @@ class PropertyController extends Controller
             'contents',
             'proertyAmenities.amenity'
         ])->where('user_id', $user->id)->paginate(10);
-        
-       
+
+
         $formattedProperties = $properties->map(function ($property) {
             return [
                 'id' => $property->id,
@@ -67,7 +70,7 @@ class PropertyController extends Controller
                     'to' => $properties->lastItem(),
                 ]
             ]
-        ]);
+                ],200);
 
 
     }
@@ -126,135 +129,140 @@ class PropertyController extends Controller
     */
     public function store(Request $request)
     {
+
         $user = auth()->user();
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+
+        $basicSettings = BasicSetting::where('user_id', $user->id)
+            ->select('property_state_status', 'property_country_status')
+            ->first();
+
+        $languages = Language::where('user_id', $user->id)->get();
+
+        $rules = [
+            'slider_images' => 'required|array',
+            'slider_images.*' => 'string',
+
+            'featured_image' => 'required|string',
+            'floor_planning_image' => 'nullable|string',
+            'video_image' => 'nullable|string',
+
+            'price' => 'nullable|numeric',
+            'beds' => 'nullable',
+            'bath' => 'nullable',
+            'purpose' => 'nullable',
+            'area' => 'nullable',
+            'status' => 'nullable',
+
+            'latitude' => ['required', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
+            'longitude' => ['required', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
+        ];
+
+        foreach ($languages as $language) {
+            $lang = $language->code;
+
+            $rules["{$lang}_category_id"] = 'required';
+            $rules["{$lang}_city_id"] = 'required';
+            $rules["{$lang}_title"] = 'required|max:255';
+            $rules["{$lang}_address"] = 'required';
+            $rules["{$lang}_description"] = 'required|min:15';
+
+            $rules["{$lang}_amenities"] = 'nullable|array';
+            $rules["{$lang}_label"] = 'nullable|array';
+            $rules["{$lang}_value"] = 'nullable|array';
+
+            if ($basicSettings->property_country_status == 1) {
+                $rules["{$lang}_country_id"] = 'required';
+            }
+            if ($basicSettings->property_state_status == 1) {
+                $rules["{$lang}_state_id"] = 'required';
+            }
         }
-    
-        $validator = Validator::make($request->all(), [
-            'title' => 'sometimes|required|string|max:255',
-            'address' => 'sometimes|required|string',
-            'price' => 'sometimes|required|numeric',
-            'type' => 'sometimes|required|string',
-            'beds' => 'nullable|integer',
-            'bath' => 'nullable|numeric',
-            'area' => 'sometimes|required|numeric',
-            'status' => 'sometimes|required',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-            'featured_image' => 'nullable|string',
-            'floor_planning_image' => 'nullable|array',
-            'floor_planning_image.*' => 'nullable|string',
-            'features' => 'nullable|array',
-            'description' => 'nullable|string',
-            'featured' => 'nullable|boolean',
-            'language_id' => 'nullable|integer',
-            'city_id' => 'nullable|integer',
-            'category_id' => 'nullable|integer',
-            'amenity_id' => 'nullable|array',
-            'gallery' => 'nullable|array',
-        ]);
-    
+
+        $validator = Validator::make($request->all(), $rules);
+
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'status' => 'fail',
+                'errors' => $validator->errors(),
             ], 422);
         }
-    
-        $validatedData = $validator->validated();
-        $floorPlanningImages = $validatedData['floor_planning_image'] ?? [];
-    
-        $property = Property::create([
-            'user_id' => $user->id,
-            'featured_image' => $validatedData['featured_image'] ?? null,
-            'price' => $validatedData['price'],
-            'purpose' => $validatedData['status'],
-            'type' => $validatedData['type'],
-            'beds' => $validatedData['beds'] ?? null,
-            'bath' => $validatedData['bath'] ?? null,
-            'area' => $validatedData['area'],
-            'status' => $validatedData['status'],
-            'latitude' => $validatedData['latitude'] ?? null,
-            'longitude' => $validatedData['longitude'] ?? null,
-            'featured' => $validatedData['featured'],
-        ]);
-    
-        $propertyContent = PropertyContent::create([
-            'user_id' => $user->id,
-            'property_id' => $property->id,
-            'city_id' => $validatedData['city_id'] ?? null,
-            'category_id' => $validatedData['category_id'] ?? null,
-            'language_id' => $validatedData['language_id'] ?? 1,
-            'title' => $validatedData['title'],
-            'slug' => make_slug($validatedData['title'] ?? Str::random(8)),
-            'address' => $validatedData['address'],
-            'description' => $validatedData['description'] ?? '',
-        ]);
-    
 
-        if (!empty($validatedData['gallery'])) {
-            foreach ($validatedData['gallery'] as $imageUrl) {
-                PropertySliderImg::create([
-                    'user_id' => $user->id,
-                    'property_id' => $property->id,
-                    'image' => $imageUrl
-                ]);
-            }
-        }
+        $property = null;
 
-        if (!empty($floorPlanningImages)) {
-            $property->update([
-                'floor_planning_image' => json_encode($floorPlanningImages)
-            ]);
-        }
-    
-        $featuresArray = $validatedData['features'] ?? [];
-    
-        if (!empty($validatedData['features'])) {
-            foreach ($validatedData['features'] as $amenity) {
-                $Amenity = Amenity::create([
-                    'user_id' => $user->id,
-                    'language_id' => 1,
-                    'name' => $amenity,
-                    'serial_number' => 0,
-                    'slug' => Str::slug($amenity),
-                    'icon' => 'fab fa-accusoft',
-                ]);
-    
-                PropertyAmenity::create([
-                    'user_id' => $user->id,
-                    'property_id' => $property->id,
-                    'amenity_id' => $Amenity->id,
-                ]);
+        DB::transaction(function () use ($request, $user, $languages, &$property) {
+            $featuredImgName = $request->featured_image;
+            $floorPlanningImage = $request->floor_planning_image;
+            $videoImage = $request->video_image;
+
+            $property = Property::storeProperty(
+                $user->id,
+                $request->all(),
+                $featuredImgName,
+                $floorPlanningImage,
+                $videoImage
+            );
+
+            if ($request->has('slider_images')) {
+                foreach ($request->slider_images as $imagePath) {
+                    PropertySliderImg::storeSliderImage($user->id, $property->id, $imagePath);
+                }
             }
-        }
-    
-        $responseProperty = [
-            'id' => $property->id,
-            'title' => $propertyContent->title,
-            'address' => $propertyContent->address,
-            'price' => $property->price,
-            'type' => $property->type,
-            'beds' => $property->beds,
-            'bath' => $property->bath,
-            'area' => $property->area,
-            'features' => $featuresArray,
-            'status' => $property->status,
-            'featured_image' => asset($property->featured_image),
-            'featured' => (bool) $property->featured,
-            'description' => $propertyContent->description,
-            'latitude' => $property->latitude,
-            'longitude' => $property->longitude,
-            'created_at' => $property->created_at->format('Y-m-d H:i:s'),
-            'updated_at' => $property->updated_at->format('Y-m-d H:i:s'),
-        ];
-    
+
+            foreach ($languages as $language) {
+                $langCode = $language->code;
+
+                if ($request->has("{$langCode}_amenities")) {
+                    foreach ((array) $request["{$langCode}_amenities"] as $amenity) {
+                        PropertyAmenity::sotreAmenity($user->id, $property->id, $amenity);
+                    }
+                }
+
+                $contentRequest = [
+                    'language_id' => $language->id,
+                    'category_id' => $request["{$langCode}_category_id"],
+                    'country_id' => $request["{$langCode}_country_id"] ?? null,
+                    'state_id' => $request["{$langCode}_state_id"] ?? null,
+                    'city_id' => $request["{$langCode}_city_id"],
+                    'title' => $request["{$langCode}_title"],
+                    'slug' => Str::slug($request["{$langCode}_title"]),
+                    'address' => $request["{$langCode}_address"],
+                    'description' => $request["{$langCode}_description"],
+                    'meta_keyword' => $request["{$langCode}_meta_keyword"] ?? null,
+                    'meta_description' => $request["{$langCode}_meta_description"] ?? null,
+                ];
+
+                PropertyContent::storePropertyContent($user->id, $property->id, $contentRequest);
+
+                $labels = (array) $request->input("{$langCode}_label", []);
+                $values = (array) $request->input("{$langCode}_value", []);
+
+                foreach ($labels as $key => $label) {
+                    if (!empty($values[$key])) {
+                        $spec = [
+                            'language_id' => $language->id,
+                            'key' => $key,
+                            'label' => $label,
+                            'value' => $values[$key],
+                        ];
+                        PropertySpecification::storeSpecification($user->id, $property->id, $spec);
+                    }
+                }
+            }
+        });
+
+        $responseProperty = Property::with([
+            'sliderImages',
+            'amenities',
+            'contents',
+            'specifications'
+        ])->find($property->id);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Property created successfully',
-            'data' => ['property' => $responseProperty],
+            'data' => [
+                'property' => $responseProperty
+            ]
         ], 201);
     }
 
@@ -274,164 +282,134 @@ class PropertyController extends Controller
     public function update(Request $request, $id)
     {
         $user = auth()->user();
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+
+        $property = Property::where('user_id', $user->id)->findOrFail($id);
+
+        $basicSettings = BasicSetting::where('user_id', $user->id)
+            ->select('property_state_status', 'property_country_status')
+            ->first();
+
+        $languages = Language::where('user_id', $user->id)->get();
+
+        $rules = [
+            'slider_images' => 'sometimes|array',
+            'slider_images.*' => 'string',
+            'featured_image' => 'required|string',
+            'floor_planning_image' => 'nullable|string',
+            'video_image' => 'nullable|string',
+            'price' => 'nullable|numeric',
+            'beds' => 'nullable',
+            'bath' => 'nullable',
+            'purpose' => 'nullable',
+            'area' => 'nullable',
+            'status' => 'nullable',
+            'latitude' => ['required', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
+            'longitude' => ['required', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
+        ];
+
+        foreach ($languages as $language) {
+            $lang = $language->code;
+
+            $rules["{$lang}_category_id"] = 'required';
+            $rules["{$lang}_city_id"] = 'required';
+            $rules["{$lang}_title"] = 'required|max:255';
+            $rules["{$lang}_address"] = 'required';
+            $rules["{$lang}_description"] = 'required|min:15';
+            $rules["{$lang}_amenities"] = 'nullable|array';
+            $rules["{$lang}_label"] = 'nullable|array';
+            $rules["{$lang}_value"] = 'nullable|array';
+
+            if ($basicSettings->property_country_status == 1) {
+                $rules["{$lang}_country_id"] = 'required';
+            }
+            if ($basicSettings->property_state_status == 1) {
+                $rules["{$lang}_state_id"] = 'required';
+            }
         }
 
-        try {
-            
-            $validator = Validator::make($request->all(), [
-                'title' => 'sometimes|required|string|max:255',
-                'address' => 'sometimes|required|string',
-                'price' => 'sometimes|required|numeric',
-                'type' => 'sometimes|required|string',
-                'beds' => 'nullable|integer',
-                'bath' => 'nullable|numeric',
-                'area' => 'sometimes|required|numeric',
-                'status' => 'sometimes|required',
-                'latitude' => 'nullable|numeric',
-                'longitude' => 'nullable|numeric',
-                'featured_image' => 'nullable|string',
-                'gallery_images' => 'nullable|array',
-                'floor_planning_image' => 'nullable|array',
-                'floor_planning_image.*' => 'nullable|string',
-                'features' => 'nullable|array',
-                'description' => 'nullable|string',
-                'featured' => 'nullable|boolean'
-            ]);
-            
-            if ($validator->fails()) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-        
-            $validatedData = $validator->validated();
+        $validator = Validator::make($request->all(), $rules);
 
-            DB::beginTransaction();
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'fail',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
-            $property = Property::with(['galleryImages', 'proertyAmenities.amenity', 'contents'])->findOrFail($id);
-                    
-            if (!empty($validatedData['featured_image']) && $validatedData['featured_image'] !== $property->featured_image) {
-                $property->featured_image = $validatedData['featured_image'];
-            }
+        DB::transaction(function () use ($request, $user, $languages, &$property) {
+            $featuredImgName = $request->featured_image;
+            $floorPlanningImage = $request->floor_planning_image;
+            $videoImage = $request->video_image;
 
-            $galleryImages = [];
-            if (!empty($validatedData['gallery_images'])) {
+            $property->updateProperty($request->all(),$user->id, $featuredImgName, $floorPlanningImage, $videoImage);
+
+            if ($request->has('slider_images')) {
                 PropertySliderImg::where('property_id', $property->id)->delete();
-
-                foreach ($validatedData['gallery_images'] as $imageUrl) {
-                    PropertySliderImg::create([
-                        'user_id' => $user->id,
-                        'property_id' => $property->id,
-                        'image' => $imageUrl
-                    ]);
+                foreach ($request->slider_images as $imagePath) {
+                    PropertySliderImg::storeSliderImage($user->id, $property->id, $imagePath);
                 }
             }
 
-            if (!empty($validatedData['floor_planning_image'])) {
-                $property->update([
-                    'floor_planning_image' => json_encode($validatedData['floor_planning_image'])
-                ]);
-            }
+            PropertyAmenity::where('property_id', $property->id)->delete();
+            PropertyContent::where('property_id', $property->id)->delete();
+            PropertySpecification::where('property_id', $property->id)->delete();
 
-            $property->update([
-                'price' => $validatedData['price'] ?? $property->price,
-                'status' => $validatedData['status'],
-                'type' => $validatedData['type'] ?? $property->type,
-                'beds' => $validatedData['beds'] ?? $property->beds,
-                'bath' => $validatedData['bath'] ?? $property->bath,
-                'area' => $validatedData['area'] ?? $property->area,
-                'latitude' => $validatedData['latitude'] ?? $property->latitude,
-                'longitude' => $validatedData['longitude'] ?? $property->longitude,
-                'featured' => $request->has('featured') ? (bool) $request->featured : $property->featured,
-            ]);
+            foreach ($languages as $language) {
+                $langCode = $language->code;
 
-            $propertyContent = $property->contents->first();
-            if (!$propertyContent) {
-                
-                $propertyContent = PropertyContent::create([
-                    'property_id' => $property->id,
-                    'user_id' => $user->id,
-                    'title' => $validatedData['title'] ?? 'Untitled Property',
-                    'slug' => make_slug($validatedData['title'] ?? Str::random(8)),
-                    'address' => $validatedData['address'] ?? 'No Address',
-                    'description' => $validatedData['description'] ?? '',
-                    'city_id' => $validatedData['city_id'] ?? null,
-                    'category_id' => $validatedData['category_id'] ?? null,
-                    'language_id' => $validatedData['language_id'] ?? 1,
-                ]);
-                
-            } else {
-                
-                $propertyContent->update([
-                    'title' => $validatedData['title'] ?? $propertyContent->title,
-                    'address' => $validatedData['address'] ?? $propertyContent->address,
-                    'description' => $validatedData['description'] ?? $propertyContent->description,
-                    'city_id' => $validatedData['city_id'] ?? $propertyContent->city_id,
-                    'category_id' => $validatedData['category_id'] ?? $propertyContent->category_id,
-                    'language_id' => $validatedData['language_id'] ?? $propertyContent->language_id,
-                ]);
-            }
+                if ($request->has("{$langCode}_amenities")) {
+                    foreach ((array) $request["{$langCode}_amenities"] as $amenity) {
+                        PropertyAmenity::sotreAmenity($user->id, $property->id, $amenity);
+                    }
+                }
 
-            if (!empty($validatedData['amenity_id']) && is_array($validatedData['amenity_id'])) {
-                $property->proertyAmenities()->delete();
+                $contentRequest = [
+                    'language_id' => $language->id,
+                    'category_id' => $request["{$langCode}_category_id"],
+                    'country_id' => $request["{$langCode}_country_id"] ?? null,
+                    'state_id' => $request["{$langCode}_state_id"] ?? null,
+                    'city_id' => $request["{$langCode}_city_id"],
+                    'title' => $request["{$langCode}_title"],
+                    'slug' => Str::slug($request["{$langCode}_title"]),
+                    'address' => $request["{$langCode}_address"],
+                    'description' => $request["{$langCode}_description"],
+                    'meta_keyword' => $request["{$langCode}_meta_keyword"] ?? null,
+                    'meta_description' => $request["{$langCode}_meta_description"] ?? null,
+                ];
 
-                foreach ($validatedData['amenity_id'] as $amenityId) {
-                    PropertyAmenity::create([
-                        'user_id' => $user->id,
-                        'property_id' => $property->id,
-                        'amenity_id' => $amenityId
-                    ]);
+                PropertyContent::storePropertyContent($user->id, $property->id, $contentRequest);
+
+                $labels = (array) $request->input("{$langCode}_label", []);
+                $values = (array) $request->input("{$langCode}_value", []);
+
+                foreach ($labels as $key => $label) {
+                    if (!empty($values[$key])) {
+                        $spec = [
+                            'language_id' => $language->id,
+                            'key' => $key,
+                            'label' => $label,
+                            'value' => $values[$key],
+                        ];
+                        PropertySpecification::storeSpecification($user->id, $property->id, $spec);
+                    }
                 }
             }
+        });
 
-            DB::commit();
+        $responseProperty = Property::with([
+            'sliderImages',
+            'amenities',
+            'contents',
+            'specifications'
+        ])->find($property->id);
 
-            $property->load(['galleryImages', 'proertyAmenities.amenity', 'contents']);
-
-            $responseProperty = [
-                'id' => $property->id,
-                'title' => $propertyContent->title,
-                'address' => $propertyContent->address,
-                'price' => $property->price,
-                'type' => $property->type,
-                'beds' => $property->beds,
-                'bath' => $property->bath,
-                'area' => $property->area,
-                'features' => $property->proertyAmenities->pluck('amenity.name')->toArray(),
-                'status' => $property->status,
-                'featured_image' => asset($property->featured_image),
-                'featured' => (bool) $property->featured,
-                'gallery' => $property->galleryImages->pluck('image')->map(function ($image) {
-                    return asset($image);
-                })->toArray(),
-                'floor_planning_image' => $property->floor_planning_image ? collect(json_decode($property->floor_planning_image))->map(function ($image) {
-                    return asset($image);
-                })->toArray() : [],
-                'description' => $propertyContent->description,
-                'latitude' => $property->latitude,
-                'longitude' => $property->longitude,
-                'created_at' => $property->created_at->format('Y-m-d H:i:s'),
-                'updated_at' => $property->updated_at->format('Y-m-d H:i:s'),
-            ];
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Property updated successfully',
-                'data' => ['property' => $responseProperty],
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Property update failed',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Property updated successfully',
+            'data' => [
+                'property' => $responseProperty
+            ]
+        ], 200);
     }
 
 
@@ -519,7 +497,6 @@ class PropertyController extends Controller
         if ($property && isset($property->gallery_images)) {
             return array_map(fn($img) => "/storage/properties/" . $img, json_decode($property->gallery_images, true));
         }
-
 
         return [
             "/storage/properties/default-1.jpg",
