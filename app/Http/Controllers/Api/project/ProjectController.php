@@ -354,7 +354,7 @@ class ProjectController extends Controller
             'min_price' => 'required|numeric',
             'max_price' => 'nullable|numeric',
             'featured' => 'sometimes',
-            'status' => 'required',
+            'status' => 'sometimes',
             'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
             'title' => 'required|max:255',
