@@ -89,12 +89,12 @@ class OnboardingController extends Controller
     
             if ($request->category == 'realestate') {
                 $this->updateUserMenu($user->id, $lang->id);
-                $this->updateUserBasicSettings($user->id, $user->username);
-                $this->updateUserHomePageText($user->id, $lang->id);
-                $this->updateUserCounterInformation($user->id, $lang->id);
-                $this->updateUserBrands($user->id, $lang->id);
-                $this->updateUserSkills($user->id, $lang->id, $request->colors['secondary']);
-                $this->updateUserAmenities($user->id, $lang->id);
+                // $this->updateUserBasicSettings($user->id, $user->username);
+                // $this->updateUserHomePageText($user->id, $lang->id);
+                // $this->updateUserCounterInformation($user->id, $lang->id);
+                // $this->updateUserBrands($user->id, $lang->id);
+                // $this->updateUserSkills($user->id, $lang->id, $request->colors['secondary']);
+                // $this->updateUserAmenities($user->id, $lang->id);
             }
     
             BasicSetting::updateOrCreate(
@@ -144,9 +144,6 @@ class OnboardingController extends Controller
     {
         $realEstateMenu = [
             ["text" => "الصفحة الرئيسية", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "home"],
-            ["text" => "نبذة عنا", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "about-us"],
-            ["text" => "المشاريع", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "projects"],
-            ["text" => "العقارات", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "properties"],
             ["text" => "اتصل بنا", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "contact"]
         ];
 

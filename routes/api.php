@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\content\FooterSettingController;
 use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
+use App\Http\Controllers\Api\content\ApiMenuController;
 use App\Http\Controllers\Api\OnboardingController;
 
 /*
@@ -131,4 +132,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/content/about', [AboutApiController::class, 'index']);
     Route::post('/content/about', [AboutApiController::class, 'update']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/content/menu', [ApiMenuController::class, 'index']);
+    Route::put('/content/menu', [ApiMenuController::class, 'update']);
 });
