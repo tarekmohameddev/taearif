@@ -10,24 +10,15 @@ class ApiMenuSetting extends Model
 {
     use HasFactory;
 
-    protected $table = 'api_menu_items';
+    protected $table = 'api_menu_settings';
 
     protected $fillable = [
+        'user_id',
         'menu_position',
         'menu_style',
         'mobile_menu_type',
         'is_sticky',
         'is_transparent',
-        'user_id',
-        'label',
-        'url',
-        'is_external',
-        'is_active',
-        'order',
-        'parent_id',
-        'show_on_mobile',
-        'show_on_desktop',
-
     ];
 
     protected $casts = [
@@ -38,15 +29,5 @@ class ApiMenuSetting extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function children()
-    {
-        return $this->hasMany(ApiMenuSetting::class, 'parent_id');
-    }
-
-    public function parent()
-    {
-        return $this->belongsTo(ApiMenuSetting::class, 'parent_id');
     }
 }
