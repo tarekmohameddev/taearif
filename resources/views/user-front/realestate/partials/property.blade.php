@@ -24,7 +24,9 @@
         </div>
         <h3 class="product-title">
             <a class="@if (in_array($userBs->theme, ['home_five'])) text-dark @endif"
-                href="{{ route('front.user.property.details', [getParam(), 'slug' => $property->slug ?? $property->propertyContent->slug]) }}">{{ $property->title ?? $property->propertyContent->title }}</a>
+                href="{{ route('front.user.property.details', [getParam(), 'slug' => $property->slug ?? $property->propertyContent->slug]) }}">
+                {{ $property->title ?? $property->propertyContent->title }}
+            </a>
         </h3>
         <div class="product-price">
             <span class="new-price">{{ $keywords['Price'] ?? __('Price') }} ({{ $userBs->base_currency_text }}) :

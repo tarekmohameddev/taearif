@@ -10,6 +10,8 @@ class Project extends Model
 {
     use HasFactory;
     public $table = "user_projects";
+    protected $primaryKey = 'id';
+
     protected $fillable = [
         'user_id',
         'featured_image',

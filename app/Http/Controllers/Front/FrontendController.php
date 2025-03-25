@@ -991,7 +991,7 @@ class FrontendController extends Controller
                 ->leftJoin('user_cities', 'user_cities.id', '=', 'user_property_contents.city_id')
                 ->leftJoin('user_states', 'user_states.id', '=', 'user_property_contents.state_id')
                 ->leftJoin('user_countries', 'user_countries.id', '=', 'user_property_contents.country_id')
-                ->where('user_property_contents.language_id', 1)
+                ->where('user_property_contents.language_id', $userCurrentLang->id)
                 ->select(
                     'user_properties.*',
                     'user_property_contents.slug',
@@ -1007,13 +1007,13 @@ class FrontendController extends Controller
                 ->get();
 
             $data['properties'] = Property::where([['user_properties.status', 1], ['user_properties.user_id', $user->id]])
-                ->where('user_property_contents.language_id', 1)
+                ->where('user_property_contents.language_id', $userCurrentLang->id)
                 ->leftJoin('user_property_contents', 'user_property_contents.property_id', 'user_properties.id')
 
                 ->leftJoin('user_cities', 'user_cities.id', '=', 'user_property_contents.city_id')
                 ->leftJoin('user_states', 'user_states.id', '=', 'user_property_contents.state_id')
                 ->leftJoin('user_countries', 'user_countries.id', '=', 'user_property_contents.country_id')
-                ->where('user_property_contents.language_id', 1)
+                ->where('user_property_contents.language_id', $userCurrentLang->id)
                 ->select(
                     'user_properties.*',
                     'user_property_contents.slug',
@@ -1047,7 +1047,7 @@ class FrontendController extends Controller
                     $data['projects'] = Project::where('user_projects.user_id', $user->id)->leftJoin('user_project_contents', 'user_project_contents.project_id', 'user_projects.id')
                     ->where('user_projects.featured', 1)
 
-                    ->where('user_project_contents.language_id', 1)
+                    ->where('user_project_contents.language_id', $userCurrentLang->id)
                     ->select('user_projects.*', 'user_project_contents.slug', 'user_project_contents.title', 'user_project_contents.address')->inRandomOrder()->latest()->take(8)->get();
 
                 return view('user-front.realestate.home.index-v1', $data);
@@ -1072,7 +1072,7 @@ class FrontendController extends Controller
                 $data['projects'] = Project::where('user_projects.user_id', $user->id)->leftJoin('user_project_contents', 'user_project_contents.project_id', 'user_projects.id')
                     ->where('user_projects.featured', 1)
 
-                    ->where('user_project_contents.language_id', 1)
+                    ->where('user_project_contents.language_id', $userCurrentLang->id)
                     ->select('user_projects.*', 'user_project_contents.slug', 'user_project_contents.title', 'user_project_contents.address')->inRandomOrder()->latest()->take(8)->get();
 
 
@@ -1089,7 +1089,7 @@ class FrontendController extends Controller
                 $data['projects'] = Project::where('user_projects.user_id', $user->id)->leftJoin('user_project_contents', 'user_project_contents.project_id', 'user_projects.id')
                     ->where('user_projects.featured', 1)
 
-                    ->where('user_project_contents.language_id', 1)
+                    ->where('user_project_contents.language_id', $userCurrentLang->id)
                     ->select('user_projects.*', 'user_project_contents.slug', 'user_project_contents.title', 'user_project_contents.address')->inRandomOrder()->latest()->take(8)->get();
 
                 $data['property_categories'] = Category::where([['status', 1], ['user_id', $user->id], ['featured', 1], ['language_id', $userCurrentLang->id]])->orderBy('serial_number', 'asc')->get();

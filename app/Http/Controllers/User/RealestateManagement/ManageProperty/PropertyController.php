@@ -2,24 +2,25 @@
 
 namespace App\Http\Controllers\User\RealestateManagement\ManageProperty;
 
-use App\Http\Controllers\Controller;
-use App\Http\Helpers\UploadFile;
-use App\Http\Requests\PropertyStoreRequest;
-use App\Http\Requests\PropertyUpdateRequest;
-use App\Models\User\BasicSetting;
+use Log;
+use App\Models\User\Region;
+use Illuminate\Http\Request;
 use App\Models\User\Language;
+use App\Http\Helpers\UploadFile;
+use App\Models\User\BasicSetting;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Response;
+use App\Http\Requests\PropertyStoreRequest;
+use Http\Message\UriFactory\SlimUriFactory;
+use App\Http\Requests\PropertyUpdateRequest;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyAmenity;
 use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\RealestateManagement\PropertySliderImg;
 use App\Models\User\RealestateManagement\PropertySpecification;
-use Http\Message\UriFactory\SlimUriFactory;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Session;
-use App\Models\User\Region;
 
 class PropertyController extends Controller
 {
@@ -68,7 +69,7 @@ class PropertyController extends Controller
 
         $data['language'] = $lang;
 
-        $language_id = $lang->id;
+        $language_id = 1;
         $title = null;
 
 
@@ -98,8 +99,8 @@ class PropertyController extends Controller
             abort(404);
         }
 
-        $user  = Auth::guard('web')->user();
-
+        // $user  = Auth::guard('web')->user();
+        $user = auth()->user();
         // $information = [];
         // $information['lang'] = Language::where('code', $request->language)->where('user_id', $user->id)->first();
         // $information['languages'] = Language::where('user_id', $user->id)->get();
@@ -220,8 +221,13 @@ class PropertyController extends Controller
     {
 
       //  dd($request->all());
+      Log::info('PropertyStoreRequest');
+      \Log::info($request->all());
+
+
         DB::transaction(function () use ($request) {
-            $user = Auth::guard('web')->user();
+            // $user = Auth::guard('web')->user();
+            $user = auth()->user();
             $featuredImgURL = $request->featured_image;
             if (request()->hasFile('featured_image')) {
                 $featuredImgName = UploadFile::store('assets/img/property/featureds', $featuredImgURL);

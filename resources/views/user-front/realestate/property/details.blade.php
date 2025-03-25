@@ -131,7 +131,7 @@
                                     </span>
                                     <span>
 
-                                        {{ $propertyContent->city->name }}
+                                        {{ $propertyContent->city->name ?? "" }}
 
                                         {{ $userBs->property_state_status == 1 && !is_null($propertyContent->state) ? ', ' . $propertyContent->state->name : '' }}
                                         {{ $userBs->property_country_status == 1 && !is_null($propertyContent->country) ? ', ' . $propertyContent->country->name : '' }}
@@ -145,7 +145,7 @@
                                         <i class="fal fa-vector-square"></i>
                                         <span>{{ $propertyContent->area }} {{ $keywords['Sqft'] ?? __('Sqft') }}</span>
                                     </li>
-                                @endif 
+                                @endif
                                     @if ($propertyContent->beds)
                                         <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
                                             title="{{ $keywords['Beds'] ?? __('Beds') }}">
@@ -154,8 +154,8 @@
                                                 {{ $keywords['Beds'] ?? __('Beds') }}</span>
                                         </li>
 
-                                    @endif  
-                                    @if ($propertyContent->bath) 
+                                    @endif
+                                    @if ($propertyContent->bath)
                                         <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
                                             title="{{ $keywords['Baths'] ?? __('Baths') }}">
                                             <i class="fal fa-bath"></i>
@@ -166,7 +166,7 @@
                                 </ul>
                             </div>
                             <div class="col-md-4">
-                                
+
                             @if ($propertyContent->price)
                                 <div class="product-price mb-10">
                                     <span class="new-price">{{ ($keywords['Price'] ?? __('Price')) . ':' }}

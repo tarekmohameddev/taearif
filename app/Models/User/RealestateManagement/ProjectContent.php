@@ -14,6 +14,7 @@ class ProjectContent extends Model
     use HasFactory;
 
     public $table = "user_project_contents";
+    protected $primaryKey = 'id';
     protected $fillable = [
         'user_id',
         'project_id',
