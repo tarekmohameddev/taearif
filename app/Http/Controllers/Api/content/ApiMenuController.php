@@ -130,7 +130,9 @@ class ApiMenuController extends Controller
         ]);
     }
 
-
+    /**
+     * Update menu items and settings for the authenticated user
+     */
     public function update(Request $request)
     {
         $validator = Validator::make($request->all(), [

@@ -329,29 +329,12 @@ l47 -48 -307 0 -307 0 0 -90 0 -91 773 3 c858 3 810 -1 886 71 51 49 72 105
     <a href="#" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
         الرئيسية
     </a>
-    <div class="relative group">
-        <a href="#services" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full flex items-center gap-1">
-            الخدمات
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-        </a>
-        <div class="absolute top-full right-0 bg-white shadow-lg rounded-md p-4 min-w-[250px] hidden group-hover:block z-10">
-            <div class="flex flex-col gap-2 text-right">
-                <a href="/p/خدمات-الاستضافة" class="text-sm py-1 hover:text-primary transition-colors">خدمات الاستضافة</a>
-                <a href="/p/إدارة-النطاقات" class="text-sm py-1 hover:text-primary transition-colors">إدارة النطاقات</a>
-                <a href="/p/دعم-متعدد-اللغات" class="text-sm py-1 hover:text-primary transition-colors">دعم-متعدد اللغات</a>
-                <a href="/p/أدوات-تحسين-محركات-البحث-(seo)" class="text-sm py-1 hover:text-primary transition-colors">أدوات تحسين محركات البحث (seo)</a>
-                <a href="/p/تحسين-للجوال" class="text-sm py-1 hover:text-primary transition-colors">تحسين للجوال</a>
-                <a href="/p/مكتبة-القوالب" class="text-sm py-1 hover:text-primary transition-colors">مكتبة القوالب</a>
-                <a href="/p/تعديل-المحتوى" class="text-sm py-1 hover:text-primary transition-colors">تعديل المحتوى</a>
-                <a href="/p/إنشاء-مواقع-مخصصة" class="text-sm py-1 hover:text-primary transition-colors">إنشاء مواقع مخصصة</a>
-                <a href="/p/بطاقات-للموظفين-vcard" class="text-sm py-1 hover:text-primary transition-colors">بطاقات للموظفين vcard</a>
-            </div>
-        </div>
-    </div>
+
     <a href="/blog" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
-        المدونة
+        مواقع
+    </a>
+    <a href="/blog" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
+        الاسعار
     </a>
     <a href="/contact" class="text-sm font-medium relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full">
         تواصل معنا
@@ -402,33 +385,11 @@ l47 -48 -307 0 -307 0 0 -90 0 -91 773 3 c858 3 810 -1 886 71 51 49 72 105
     <a href="#" class="text-lg font-medium py-3 border-b border-gray-100 mobile-menu-link">
         الرئيسية
     </a>
-    <div class="relative">
-    <a href="javascript:void(0)" class="text-lg font-medium py-3 border-b border-gray-100 mobile-menu-link services-toggle flex justify-between items-center">
-        الخدمات
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
-    </a>
-    <div class="submenu hidden flex flex-col pr-4 mt-1 mb-2">
-        <a href="/p/خدمات-الاستضافة" class="text-base py-2 mobile-submenu-link">خدمات الاستضافة</a>
-        <a href="/p/إدارة-النطاقات" class="text-base py-2 mobile-submenu-link">إدارة النطاقات</a>
-        <a href="/p/دعم-متعدد-اللغات" class="text-base py-2 mobile-submenu-link">دعم متعدد اللغات</a>
-        <a href="/p/أدوات-تحسين-محركات-البحث-(seo)" class="text-base py-2 mobile-submenu-link">أدوات تحسين محركات البحث (seo)</a>
-        <a href="/p/تحسين-للجوال" class="text-base py-2 mobile-submenu-link">تحسين للجوال</a>
-        <a href="/p/مكتبة-القوالب" class="text-base py-2 mobile-submenu-link">مكتبة القوالب</a>
-        <a href="/p/تعديل-المحتوى" class="text-base py-2 mobile-submenu-link">تعديل المحتوى</a>
-        <a href="/p/إنشاء-مواقع-مخصصة" class="text-base py-2 mobile-submenu-link">إنشاء مواقع مخصصة</a>
-        <a href="/p/بطاقات-للموظفين-vcard" class="text-base py-2 mobile-submenu-link">بطاقات للموظفين vcard</a>
-    </div>
-</div>
     <a href="#features" class="text-lg font-medium py-3 border-b border-gray-100 mobile-menu-link">
-        المميزات
+        المواقع
     </a>
     <a href="#faq" class="text-lg font-medium py-3 border-b border-gray-100 mobile-menu-link">
-        الأسئلة الشائعة
-    </a>
-    <a href="#contact" class="text-lg font-medium py-3 border-b border-gray-100 mobile-menu-link">
-        تواصل معنا
+        الاسعار
     </a>
 </nav>
             <div class="mt-auto flex flex-col gap-4">
@@ -494,7 +455,7 @@ l47 -48 -307 0 -307 0 0 -90 0 -91 773 3 c858 3 810 -1 886 71 51 49 72 105
                             </div>
                         </div>
                         <div class="pt-12">
-                            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1470&auto=format&fit=crop" alt="لوحة تحكم تعاريف" class="w-full object-cover">
+                            <img src="https://d.top4top.io/p_3371e8fzo1.jpg" alt="لوحة تحكم تعاريف" class="w-full object-cover">
                         </div>
                     </div>
                 </div>
@@ -568,8 +529,8 @@ l47 -48 -307 0 -307 0 0 -90 0 -91 773 3 c858 3 810 -1 886 71 51 49 72 105
                 <div class="mx-auto grid max-w-5xl items-center gap-6 py-8 md:py-12 lg:grid-cols-2 lg:gap-12">
                     <div class="animate-slide-right order-2 lg:order-1">
                         <div class="relative">
-                            <div class="absolute inset-0 bg-gradient-to-r from-black/10 to-black/5 rounded-lg transform -rotate-3 scale-105 transition-transform duration-500 hover:rotate-0"></div>
-                            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1470&auto=format&fit=crop" alt="صورة توضيحية للميزات" class="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full shadow-xl transition-all duration-500 hover:shadow-black/30">
+                           
+                            <img src="https://i.top4top.io/p_3371t38xi1.jpg" alt="صورة توضيحية للميزات" class="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center shadow-xl transition-all duration-500 hover:shadow-black/30">
                         </div>
                     </div>
                     <div class="flex flex-col justify-center space-y-4 animate-slide-left order-1 lg:order-2">
@@ -979,7 +940,7 @@ l47 -48 -307 0 -307 0 0 -90 0 -91 773 3 c858 3 810 -1 886 71 51 49 72 105
         </section>
 
         <!-- Partners with Hexagon Pattern -->
-        <section class="w-full py-12 md:py-24 lg:py-32 relative">
+        <section class="w-full py-12 md:py-24 lg:py-32 relative hidden">
             <!-- Enhanced Background -->
             <div class="absolute inset-0 bg-[url('/textures/hexagon-pattern.svg')] opacity-5 z-0"></div>
             <div class="absolute inset-0 bg-gradient-to-b from-background to-muted/40 z-0"></div>
