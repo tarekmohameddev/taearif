@@ -133,32 +133,24 @@ class PropertyController extends Controller
     {
         $user = auth()->user();
 
-        $basicSettings = BasicSetting::where('user_id', $user->id)
-            ->select('property_state_status', 'property_country_status')
-            ->first();
-
         $defaultLanguage = Language::where('user_id', $user->id)
             ->where('is_default', 1)
             ->firstOrFail();
 
         $rules = [
-            'slider_images' => 'required|array',
-            'slider_images.*' => 'string',
-
+            'gallery' => 'required|array',
+            'gallery.*' => 'string',
             'featured_image' => 'required|string',
-            'floor_planning_image' => 'nullable|array',
+            'floor_planning_image' => 'nullable',
             'video_image' => 'nullable|string',
-
             'price' => 'nullable|numeric',
             'beds' => 'nullable',
             'bath' => 'nullable',
             'purpose' => 'nullable',
             'area' => 'nullable',
             'status' => 'nullable',
-
             'latitude' => ['required', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
             'longitude' => ['required', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
-
             'category_id' => 'required',
             'city_id' => 'required',
             'title' => 'required|max:255',
@@ -168,12 +160,6 @@ class PropertyController extends Controller
             'label' => 'nullable|array',
             'value' => 'nullable|array',
         ];
-
-
-
-        if ($basicSettings->property_state_status == 1) {
-            $rules["state_id"] = 'required';
-        }
 
         $validator = Validator::make($request->all(), $rules);
 
@@ -188,19 +174,41 @@ class PropertyController extends Controller
 
         DB::transaction(function () use ($request, $user, $defaultLanguage, &$property) {
             $featuredImgName = $request->featured_image;
-            $floorPlanningImage = $request->floor_planning_image;
             $videoImage = $request->video_image;
+
+            $floorPlanningImage = $request->floor_planning_image;
+
+            if (!empty($floorPlanningImage)) {
+                if (is_string($floorPlanningImage)) {
+                    $floorPlanningImage = [$floorPlanningImage];
+                }
+            } else {
+                $floorPlanningImage = null;
+            }
+
+            $propertyData = $request->only([
+                'price',
+                'purpose',
+                'type',
+                'beds',
+                'bath',
+                'area',
+                'video_url',
+                'status',
+                'latitude',
+                'longitude',
+            ]);
 
             $property = Property::storeProperty(
                 $user->id,
-                $request->all(),
+                $propertyData,
                 $featuredImgName,
                 $floorPlanningImage,
                 $videoImage
             );
 
-            if ($request->has('slider_images')) {
-                foreach ($request->slider_images as $imagePath) {
+            if ($request->has('gallery')) {
+                foreach ($request->gallery as $imagePath) {
                     PropertySliderImg::storeSliderImage($user->id, $property->id, $imagePath);
                 }
             }
@@ -214,7 +222,7 @@ class PropertyController extends Controller
             $contentRequest = [
                 'language_id' => $defaultLanguage->id,
                 'category_id' => $request->category_id,
-                'state_id' => $request->state_id ?? null,
+                'state_id' => $request->state_id ?? 3,
                 'city_id' => $request->city_id,
                 'title' => $request->title,
                 'slug' => Str::slug($request->title),
@@ -260,6 +268,7 @@ class PropertyController extends Controller
 
 
 
+
     /*
     * Update the specified resource in storage.
     *
@@ -277,32 +286,24 @@ class PropertyController extends Controller
 
         $property = Property::where('user_id', $user->id)->findOrFail($id);
 
-        $basicSettings = BasicSetting::where('user_id', $user->id)
-            ->select('property_state_status', 'property_country_status')
-            ->first();
-
         $defaultLanguage = Language::where('user_id', $user->id)
             ->where('is_default', 1)
             ->firstOrFail();
 
         $rules = [
-            'slider_images' => 'sometimes|array',
-            'slider_images.*' => 'string',
-
+            'gallery' => 'sometimes|array',
+            'gallery.*' => 'string',
             'featured_image' => 'required|string',
-            'floor_planning_image' => 'nullable|array',
+            'floor_planning_image' => 'nullable',
             'video_image' => 'nullable|string',
-
             'price' => 'nullable|numeric',
             'beds' => 'nullable',
             'bath' => 'nullable',
             'purpose' => 'nullable',
             'area' => 'nullable',
             'status' => 'nullable',
-
             'latitude' => ['required', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
             'longitude' => ['required', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
-
             'category_id' => 'required',
             'city_id' => 'required',
             'title' => 'required|max:255',
@@ -312,12 +313,6 @@ class PropertyController extends Controller
             'label' => 'nullable|array',
             'value' => 'nullable|array',
         ];
-
-
-
-        if ($basicSettings->property_state_status == 1) {
-            $rules["state_id"] = 'required';
-        }
 
         $validator = Validator::make($request->all(), $rules);
 
@@ -331,10 +326,10 @@ class PropertyController extends Controller
         DB::transaction(function () use ($request, $user, $defaultLanguage, &$property) {
             $property->updateProperty($request->all());
 
-            if ($request->has('slider_images')) {
+            if ($request->has('gallery')) {
                 PropertySliderImg::where('property_id', $property->id)->delete();
 
-                foreach ($request->slider_images as $imagePath) {
+                foreach ($request->gallery as $imagePath) {
                     PropertySliderImg::storeSliderImage($user->id, $property->id, $imagePath);
                 }
             }
@@ -352,7 +347,7 @@ class PropertyController extends Controller
             $contentRequest = [
                 'language_id' => $defaultLanguage->id,
                 'category_id' => $request->category_id,
-                'state_id' => $request->state_id ?? null,
+                'state_id' => $request->state_id ?? 3,
                 'city_id' => $request->city_id,
                 'title' => $request->title,
                 'slug' => Str::slug($request->title),

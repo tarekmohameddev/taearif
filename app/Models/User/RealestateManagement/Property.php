@@ -13,6 +13,9 @@ use App\Models\User\RealestateManagement\PropertySliderImg;
 class Property extends Model
 {
     use HasFactory;
+    protected $casts = [
+        'floor_planning_image' => 'array',
+    ];
 
     public $table = "user_properties";
     protected $fillable = [
@@ -60,7 +63,7 @@ class Property extends Model
             'beds' => $request['beds'] ?? null,
             'bath' => $request['bath'] ?? null,
             'area' => $request['area'],
-            'video_url' => $request['video_url'],
+            'video_url' => $request['video_url'] ?? null,
             'status' => $request['status'],
             'latitude' => $request['latitude'],
             'longitude' => $request['longitude']
@@ -80,7 +83,7 @@ class Property extends Model
             'beds' => $requestData['beds'] ?? null,
             'bath' => $requestData['bath'] ?? null,
             'area' => $requestData['area'],
-            'video_url' => $requestData['video_url'],
+            'video_url' => $request['video_url'] ?? null,
             'status' => $requestData['status'],
             'latitude' => $requestData['latitude'],
             'longitude' => $requestData['longitude']

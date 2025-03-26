@@ -170,49 +170,6 @@ class ProjectController extends Controller
         return Response::json(['status' => 'success'], 200);
     }
 
-    public function updateFeatured(Request $request)
-    {
-        $property = Project::findOrFail($request->projectId);
-
-        if ($request->featured == 1) {
-            $property->update(['featured' => 1]);
-
-            Session::flash('success', 'Project featured successfully!');
-        } else {
-            $property->update(['featured' => 0]);
-
-            Session::flash('success', 'Project Unfeatured successfully!');
-        }
-
-        return redirect()->back();
-    }
-
-    public function updateStatus(Request $request)
-    {
-        $project = Project::findOrFail($request->projectId);
-        $project->update(['complete_status' => $request->status]);
-
-        Session::flash('success', 'Successfully chaged project status!');
-        return redirect()->back();
-    }
-
-
-
-    public function edit($id)
-    {
-        $userId = Auth::guard('web')->user()->id;
-        $project = Project::where('user_id', $userId)->findOrFail($id);
-        $information['project'] = $project;
-        $information['projectContents'] = ProjectContent::where('project_id', $project->id)->get();
-        $information['gallery_images'] = $project->galleryImages;
-        $information['floor_plan_images'] = $project->floorplanImages;
-        $information['languages'] = Language::where('user_id', $userId)->get();
-        $information['specifications'] = ProjectSpecification::where('user_id', $userId)->where('project_id', $project->id)->get();
-
-        return view('user.realestate_management.project-management.edit', $information);
-    }
-
-
     public function update(ProjectUpdateRequest $request, $id)
     {
 
@@ -292,6 +249,47 @@ class ProjectController extends Controller
 
         return Response::json(['status' => 'success'], 200);
     }
+
+    public function updateFeatured(Request $request)
+    {
+        $property = Project::findOrFail($request->projectId);
+
+        if ($request->featured == 1) {
+            $property->update(['featured' => 1]);
+
+            Session::flash('success', 'Project featured successfully!');
+        } else {
+            $property->update(['featured' => 0]);
+
+            Session::flash('success', 'Project Unfeatured successfully!');
+        }
+
+        return redirect()->back();
+    }
+
+    public function updateStatus(Request $request)
+    {
+        $project = Project::findOrFail($request->projectId);
+        $project->update(['complete_status' => $request->status]);
+
+        Session::flash('success', 'Successfully chaged project status!');
+        return redirect()->back();
+    }
+
+    public function edit($id)
+    {
+        $userId = Auth::guard('web')->user()->id;
+        $project = Project::where('user_id', $userId)->findOrFail($id);
+        $information['project'] = $project;
+        $information['projectContents'] = ProjectContent::where('project_id', $project->id)->get();
+        $information['gallery_images'] = $project->galleryImages;
+        $information['floor_plan_images'] = $project->floorplanImages;
+        $information['languages'] = Language::where('user_id', $userId)->get();
+        $information['specifications'] = ProjectSpecification::where('user_id', $userId)->where('project_id', $project->id)->get();
+
+        return view('user.realestate_management.project-management.edit', $information);
+    }
+
     public function specificationDelete(Request $request)
     {
         $d_project_specification = ProjectSpecification::where('user_id', Auth::guard('web')->user()->id)->find($request->spacificationId);
