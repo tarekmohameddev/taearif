@@ -9,7 +9,7 @@ use App\Models\User;
 class ApiMenuSetting extends Model
 {
     use HasFactory;
-    
+
     protected $table = 'api_menu_settings';
 
     protected $fillable = [
@@ -20,12 +20,12 @@ class ApiMenuSetting extends Model
         'is_sticky',
         'is_transparent',
     ];
-    
+
     protected $casts = [
         'is_sticky' => 'boolean',
         'is_transparent' => 'boolean',
     ];
-    
+
     public function user()
     {
         return $this->belongsTo(User::class);

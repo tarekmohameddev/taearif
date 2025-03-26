@@ -8,12 +8,14 @@ use App\Models\Social;
 use App\Models\Language;
 use App\Models\User\SEO;
 use App\Models\UserStep;
+use App\Models\Api\ApiMenuItem;
 use App\Models\User\FooterText;
 use App\Models\User\UserContact;
 use App\Models\User\UserService;
-use App\Models\Api\FooterSetting;
 // use App\Models\Api\ApiBannerSetting;
+use App\Models\Api\FooterSetting;
 use App\Models\User\BasicSetting;
+use App\Models\Api\ApiMenuSetting;
 use App\Models\Api\GeneralSetting;
 use Illuminate\Support\Facades\DB;
 use App\Models\User\FooterQuickLink;
@@ -146,14 +148,27 @@ class AppServiceProvider extends ServiceProvider
                     $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
                 }
 
-                $keywords = json_decode($userCurrentLang->keywords, true);
+                $keywords = json_decode(optional($userCurrentLang)->keywords ?? '{}', true);
 
 
-                if (UserMenu::where('language_id', $userCurrentLang->id)->where('user_id', $user->id)->count() > 0) {
-                    $userMenus = UserMenu::where('language_id', $userCurrentLang->id)->where('user_id', $user->id)->first()->menus;
-                } else {
-                    $userMenus = json_encode([]);
+                // if (UserMenu::where('language_id', $userCurrentLang->id)->where('user_id', $user->id)->count() > 0) {
+                //     $userMenus = UserMenu::where('language_id', $userCurrentLang->id)->where('user_id', $user->id)->first()->menus;
+                // } else {
+                //     $userMenus = json_encode([]);
+                // }
+
+                $menuItems = ApiMenuItem::with('children')
+                ->where('user_id', $user->id)
+                ->where('is_active', 1)
+                ->whereNull('parent_id')
+                ->orderBy('order')
+                ->get();
+
+                // If the result is empty
+                if ($menuItems->isEmpty()) {
+                    $menuItems = collect();
                 }
+
 
                 $userBs = BasicSetting::where('user_id', $user->id)->with('timezoneinfo')->first();
                 $userRoomSettings = DB::table('user_room_settings')->where('user_id', $user->id)->first();
@@ -229,7 +244,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('home_sections', $home_sections);
                 $view->with('userSeo', $userSeo);
                 $view->with('userBs', $userBs);
-                $view->with('userMenus', $userMenus);
+                $view->with('userMenus', $menuItems);
                 $view->with('userFooterQuickLinks', $footerQuickLinks);
                 $view->with('userFooterData', $footerData);
                 $view->with('userApi_footerData', $api_footerData);

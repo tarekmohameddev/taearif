@@ -31,12 +31,12 @@ class ProjectStoreRequest extends FormRequest
 
         $rules = [
             'gallery_images' => 'required|array',
-            'floor_plan_images' => 'required',
+            'floorplan_images' => 'required',
             'featured_image' => 'required|mimes:png,jpg,jpeg,svg',
             'min_price' => 'required|numeric',
             'max_price' => 'nullable|numeric',
             'featured' => 'sometimes',
-            'status' => 'required',
+            'status' => 'sometimes',
             'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/']
         ];

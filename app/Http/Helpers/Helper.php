@@ -372,7 +372,11 @@ if (!function_exists('getUser')) {
                 $q->where('status', '=', 1)
                     ->where('start_date', '<=', Carbon::now()->format('Y-m-d'))
                     ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'));
-            })->firstOrFail();
+            })->first();
+
+        if (!$user) {
+            return view('errors.404');
+        }
 
 
         if (!cPackageHasCdomain($user)) {

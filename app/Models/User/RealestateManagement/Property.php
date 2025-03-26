@@ -73,8 +73,8 @@ class Property extends Model
         return $this->update([
             'featured_image' => $request['featured_image'] ?? $this->featured_image, //73
             'floor_planning_image' => $request['floor_planning_image']?? null,
-            'video_image' => $requestData['video_image'],
-            'price' => $requestData['price'],
+            'video_image' => $requestData['video_image'] ?? null,
+            'price' => $requestData['price'] ?? null,
             'purpose' => $requestData['purpose'] ?? null,
             'type' => $requestData['type'] ?? null,
             'beds' => $requestData['beds'] ?? null,

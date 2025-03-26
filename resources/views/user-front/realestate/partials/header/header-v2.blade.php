@@ -41,41 +41,41 @@
                      </a>
                  @endif
                  <!-- Navigation items -->
-                 <div class="collapse navbar-collapse">
-                     <ul id="mainMenu" class="navbar-nav mobile-item text-white">
-                         @php
-                             $links = json_decode($userMenus, true);
-                         @endphp
-                         @foreach ($links as $link)
-                             @php
-                                 $href = getUserHref($link);
-                             @endphp
+<div class="collapse navbar-collapse">
+    <ul id="mainMenu" class="navbar-nav mobile-item mx-auto">
+        @foreach ($userMenus as $menu)
+            @php
+                $href = $menu->is_external ? $menu->url : url($menu->url);
+            @endphp
 
-                             @if (!array_key_exists('children', $link))
-                                 <li class="nav-item"> <a class="nav-link" href="{{ $href }}"
-                                         target="{{ $link['target'] }}"> {{ $link['text'] }} </a>
-                                 </li>
-                             @else
-                                 <li class="nav-item">
-                                     <a class="nav-link toggle" href="{{ $href }}"
-                                         target="{{ $link['target'] }}">{{ $link['text'] }}</a>
-                                     <ul class="menu-dropdown">
-                                         @foreach ($link['children'] as $level2)
-                                             @php
-                                                 $l2Href = getUserHref($level2);
-                                             @endphp
-                                             <li class="nav-item">
-                                                 <a class="nav-link" href="{{ $l2Href }}"
-                                                     target="{{ $level2['target'] }}"> {{ $level2['text'] }} </a>
-                                             </li>
-                                         @endforeach
-                                     </ul>
-                                 </li>
-                             @endif
-                         @endforeach
-
-                     </ul>
-                 </div>
+            @if ($menu->children->isEmpty())
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ $href }}" target="{{ $menu->is_external ? '_blank' : '_self' }}">
+                        {{ $menu->label }}
+                    </a>
+                </li>
+            @else
+                <li class="nav-item">
+                    <a class="nav-link toggle" href="{{ $href }}" target="{{ $menu->is_external ? '_blank' : '_self' }}">
+                        {{ $menu->label }}
+                    </a>
+                    <ul class="menu-dropdown">
+                        @foreach ($menu->children as $child)
+                            @php
+                                $childHref = $child->is_external ? $child->url : url($child->url);
+                            @endphp
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ $childHref }}" target="{{ $child->is_external ? '_blank' : '_self' }}">
+                                    {{ $child->label }}
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </li>
+            @endif
+        @endforeach
+    </ul>
+</div>
                  <div class="more-option mobile-item text-white">
 
                      <div class="item d-none">
