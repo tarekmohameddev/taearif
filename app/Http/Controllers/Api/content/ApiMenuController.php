@@ -148,11 +148,11 @@ class ApiMenuController extends Controller
             'menuItems.*.showOnDesktop' => 'required|boolean',
         
             'settings' => 'required|array',
-            'settings.menuPosition' => 'required|string|in:top,bottom,left,right',
-            'settings.menuStyle' => 'required|string|in:buttons,dropdown',
-            'settings.mobileMenuType' => 'required|string|in:fullscreen,sidebar',
-            'settings.isSticky' => 'required|boolean',
-            'settings.isTransparent' => 'required|boolean',
+            'settings.menuPosition' => 'nullable|string|in:top,bottom,left,right',
+            'settings.menuStyle' => 'nullable|string|in:buttons,underline,minimal',
+            'settings.mobileMenuType' => 'nullable|string|in:hamburger,sidebar,fullscreen',
+            'settings.isSticky' => 'nullable|boolean',
+            'settings.isTransparent' => 'nullable|boolean',
         ]);
         
         
