@@ -266,9 +266,6 @@ class PropertyController extends Controller
         ], 201);
     }
 
-
-
-
     /*
     * Update the specified resource in storage.
     *
@@ -390,9 +387,6 @@ class PropertyController extends Controller
             ]
         ]);
     }
-
-
-
 
     public function destroy($id)
     {

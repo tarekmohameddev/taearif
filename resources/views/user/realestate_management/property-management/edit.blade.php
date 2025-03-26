@@ -255,8 +255,9 @@
                                             <label for="">{{ __('Floor Planning Image') . '*' }}</label>
                                             <br>
                                             <div class="showImage2">
-                                                <img src="{{ !empty($property->floor_planning_image) ? asset('assets/img/property/plannings/' . $property->floor_planning_image) : asset('assets/img/noimage.jpg') }}"
-                                                    alt="..." class="img-thumbnail img-fluid">
+                                            <img src="{{ !empty($property->floor_planning_image['filename']) ? asset('assets/img/property/plannings/' . $property->floor_planning_image['filename']) : asset('assets/img/noimage.jpg') }}"
+                                                alt="..." class="img-thumbnail img-fluid">
+
                                             </div>
 
                                             <div class="mt-3">
