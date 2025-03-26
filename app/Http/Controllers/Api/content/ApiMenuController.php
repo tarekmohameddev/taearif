@@ -149,7 +149,7 @@ class ApiMenuController extends Controller
         
             'settings' => 'required|array',
             'settings.menuPosition' => 'nullable|string|in:top,bottom,left,right',
-            'settings.menuStyle' => 'nullable|string|in:buttons,underline,minimal',
+            'settings.menuStyle' => 'nullable|string|in:buttons,underline,minimal,standard',
             'settings.mobileMenuType' => 'nullable|string|in:hamburger,sidebar,fullscreen',
             'settings.isSticky' => 'nullable|boolean',
             'settings.isTransparent' => 'nullable|boolean',
