@@ -146,7 +146,7 @@ class PropertyController extends Controller
             'slider_images.*' => 'string',
 
             'featured_image' => 'required|string',
-            'floor_planning_image' => 'nullable|string',
+            'floor_planning_image' => 'nullable|array',
             'video_image' => 'nullable|string',
 
             'price' => 'nullable|numeric',
@@ -169,9 +169,7 @@ class PropertyController extends Controller
             'value' => 'nullable|array',
         ];
 
-        if ($basicSettings->property_country_status == 1) {
-            $rules["country_id"] = 'required';
-        }
+
 
         if ($basicSettings->property_state_status == 1) {
             $rules["state_id"] = 'required';
@@ -216,7 +214,6 @@ class PropertyController extends Controller
             $contentRequest = [
                 'language_id' => $defaultLanguage->id,
                 'category_id' => $request->category_id,
-                'country_id' => $request->country_id ?? null,
                 'state_id' => $request->state_id ?? null,
                 'city_id' => $request->city_id,
                 'title' => $request->title,
@@ -293,7 +290,7 @@ class PropertyController extends Controller
             'slider_images.*' => 'string',
 
             'featured_image' => 'required|string',
-            'floor_planning_image' => 'nullable|string',
+            'floor_planning_image' => 'nullable|array',
             'video_image' => 'nullable|string',
 
             'price' => 'nullable|numeric',
@@ -316,9 +313,7 @@ class PropertyController extends Controller
             'value' => 'nullable|array',
         ];
 
-        if ($basicSettings->property_country_status == 1) {
-            $rules["country_id"] = 'required';
-        }
+
 
         if ($basicSettings->property_state_status == 1) {
             $rules["state_id"] = 'required';
@@ -357,7 +352,6 @@ class PropertyController extends Controller
             $contentRequest = [
                 'language_id' => $defaultLanguage->id,
                 'category_id' => $request->category_id,
-                'country_id' => $request->country_id ?? null,
                 'state_id' => $request->state_id ?? null,
                 'city_id' => $request->city_id,
                 'title' => $request->title,

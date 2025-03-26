@@ -247,20 +247,20 @@ class ProjectController extends Controller
             'gallery_images' => 'required|array',
             'gallery_images.*' => 'string',
 
-            'floor_plan_images' => 'required|array',
-            'floor_plan_images.*' => 'string',
+            'floorplan_images' => 'required|array',
+            'floorplan_images.*' => 'string',
 
             'featured_image' => 'required|string',
             'min_price' => 'required|numeric',
             'max_price' => 'nullable|numeric',
             'featured' => 'sometimes',
-            'status' => 'required',
+            'status' => 'nullable',
             'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
 
-            'title' => 'required|max:255',
-            'address' => 'required',
-            'description' => 'required|min:15',
+            'title' => 'nullable|max:255',
+            'address' => 'nullable',
+            'description' => 'nullable|min:15',
             'label' => 'nullable|array',
             'value' => 'nullable|array',
         ];
@@ -286,18 +286,18 @@ class ProjectController extends Controller
                 ProjectGalleryImg::storeGalleryImage($userId, $project->id, $imgPath);
             }
 
-            foreach ($request->floor_plan_images as $imgPath) {
+            foreach ($request->floorplan_images as $imgPath) {
                 ProjectFloorplanImg::storeFloorplanImage($userId, $project->id, $imgPath);
             }
 
             $content = [
                 'project_id' => $project->id,
                 'language_id' => $defaultLang->id,
-                'title' => $request->title,
-                'address' => $request->address,
-                'description' => $request->description,
-                'meta_keyword' => $request->meta_keyword ?? null,
-                'meta_description' => $request->meta_description ?? null,
+                'title' => $request->title ?? 'Default Project Title',
+                'address' => $request->address ?? 'Default Address',
+                'description' => $request->description ?? 'This is a default project.',
+                'meta_keyword' => $request->meta_keyword ?? 'default, project',
+                'meta_description' => $request->meta_description ?? 'Default project description.',
             ];
             ProjectContent::storeProjectContent($userId, $content);
 
@@ -348,8 +348,8 @@ class ProjectController extends Controller
         $rules = [
             'gallery_images' => 'sometimes|array',
             'gallery_images.*' => 'string',
-            'floor_plan_images' => 'sometimes|array',
-            'floor_plan_images.*' => 'string',
+            'floorplan_images' => 'sometimes|array',
+            'floorplan_images.*' => 'string',
             'featured_image' => 'required|string',
             'min_price' => 'required|numeric',
             'max_price' => 'nullable|numeric',
@@ -357,9 +357,9 @@ class ProjectController extends Controller
             'status' => 'sometimes',
             'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
-            'title' => 'required|max:255',
-            'address' => 'required',
-            'description' => 'required|min:15',
+            'title' => 'nullable|max:255',
+            'address' => 'nullable',
+            'description' => 'nullable|min:15',
             'label' => 'nullable|array',
             'value' => 'nullable|array',
         ];
@@ -383,9 +383,9 @@ class ProjectController extends Controller
                     ProjectGalleryImg::storeGalleryImage($userId, $project->id, $imgPath);
                 }
             }
-            if ($request->has('floor_plan_images')) {
+            if ($request->has('floorplan_images')) {
                 ProjectFloorplanImg::where('project_id', $project->id)->delete();
-                foreach ($request->floor_plan_images as $imgPath) {
+                foreach ($request->floorplan_images as $imgPath) {
                     ProjectFloorplanImg::storeFloorplanImage($userId, $project->id, $imgPath);
                 }
             }
@@ -393,11 +393,13 @@ class ProjectController extends Controller
             $content = [
                 'project_id' => $project->id,
                 'language_id' => $defaultLang->id,
-                'title' => $request->title,
-                'address' => $request->address,
-                'description' => $request->description,
-                'meta_keyword' => $request->meta_keyword ?? null,
-                'meta_description' => $request->meta_description ?? null,
+                'title' => $request->title ?? 'Default Project Title',
+                'address' => $request->address ?? 'Default Address',
+                'description' => $request->description ?? 'This is a default project.',
+                'meta_keyword' => $request->meta_keyword ?? 'default, project',
+                'meta_description' => $request->meta_description ?? 'Default project description.',
+                'slug' => Str::slug('Default Project Title')
+
             ];
             ProjectContent::storeProjectContent($userId, $content);
             ProjectSpecification::where('project_id', $project->id)->delete();

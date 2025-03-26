@@ -31,7 +31,7 @@ class ProjectStoreRequest extends FormRequest
 
         $rules = [
             'gallery_images' => 'required|array',
-            'floor_plan_images' => 'required',
+            'floorplan_images' => 'required',
             'featured_image' => 'required|mimes:png,jpg,jpeg,svg',
             'min_price' => 'required|numeric',
             'max_price' => 'nullable|numeric',
