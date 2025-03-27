@@ -23,6 +23,7 @@ use App\Models\User\RealestateManagement\PropertySliderImg;
 use App\Models\User\RealestateManagement\PropertySpecification;
 
 
+
 class PropertyController extends Controller
 {
     public function index(Request $request)
@@ -47,7 +48,8 @@ class PropertyController extends Controller
                 'beds' => $property->beds,
                 'bath' => $property->bath,
                 'area' => $property->area,
-                'features' => $property->proertyAmenities->pluck('amenity.name')->toArray(),
+                'transaction_type' => $property->purpose,
+                'features' => $property->features,
                 'status' => $property->status,
                 'featured_image' => asset($property->featured_image),
                 'featured' => (bool) $property->featured,
@@ -153,6 +155,7 @@ class PropertyController extends Controller
             'longitude' => ['required', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
             'category_id' => 'required',
             'city_id' => 'required',
+            'featured' => 'nullable',
             'title' => 'required|max:255',
             'address' => 'required',
             'description' => 'required|min:15',
@@ -175,7 +178,7 @@ class PropertyController extends Controller
         DB::transaction(function () use ($request, $user, $defaultLanguage, &$property) {
             $featuredImgName = $request->featured_image;
             $videoImage = $request->video_image;
-
+            $featured = $request->featured;
             $floorPlanningImage = $request->floor_planning_image;
 
             if (!empty($floorPlanningImage)) {
@@ -197,6 +200,8 @@ class PropertyController extends Controller
                 'status',
                 'latitude',
                 'longitude',
+                'features',
+                'transaction_type'
             ]);
 
             $property = Property::storeProperty(
@@ -204,7 +209,8 @@ class PropertyController extends Controller
                 $propertyData,
                 $featuredImgName,
                 $floorPlanningImage,
-                $videoImage
+                $videoImage,
+                $featured
             );
 
             if ($request->has('gallery')) {
@@ -258,7 +264,34 @@ class PropertyController extends Controller
         ])->find($property->id);
 
 
+        if ($responseProperty->purpose) {
+            $responseProperty->transaction_type = $responseProperty->purpose;
+        }
         
+        if ($responseProperty->featured_image) {
+            $responseProperty->featured_image = asset($responseProperty->featured_image);
+        }
+
+        if (is_array($responseProperty->floor_planning_image)) {
+            $responseProperty->floor_planning_image = array_map(function($image) {
+                return asset($image);
+            }, $responseProperty->floor_planning_image);
+        }
+        
+ 
+        $responseProperty->gallery = $responseProperty->sliderImages->pluck('image')
+            ->map(function($image) {
+                return asset($image);
+            })->toArray();
+        
+
+       unset($responseProperty->sliderImages);
+       unset($responseProperty->amenities);
+       unset($responseProperty->purpose);
+
+        $responseProperty->featured = (bool) $responseProperty->featured;
+        $responseProperty->status = (bool) $responseProperty->status;
+  
         return response()->json([
             'status' => 'success',
             'message' => 'Property created successfully',

@@ -15,6 +15,7 @@ class Property extends Model
     use HasFactory;
     protected $casts = [
         'floor_planning_image' => 'array',
+        'features' => 'array',
     ];
 
     public $table = "user_properties";
@@ -32,6 +33,7 @@ class Property extends Model
         'video_url',
         'status',
         'featured',
+        'features',
         'latitude',
         'longitude',
 
@@ -50,7 +52,7 @@ class Property extends Model
     }
 
 
-    public static function storeProperty($userId, $request, $featuredImgName, $floorPlanningImage, $videoImage)
+    public static function storeProperty($userId, $request, $featuredImgName, $floorPlanningImage, $videoImage,$featured)
     {
         return self::create([
             'user_id' => $userId,
@@ -58,11 +60,13 @@ class Property extends Model
             'floor_planning_image' => $floorPlanningImage ?? null,
             'video_image' => $videoImage,
             'price' => $request['price'],
-            'purpose' => $request['purpose'] ?? null,
+            'purpose' => $request['transaction_type'] ?? null,
             'type' => $request['type'] ?? null,
             'beds' => $request['beds'] ?? null,
             'bath' => $request['bath'] ?? null,
             'area' => $request['area'],
+            'featured' => $featured,
+            'features' => $request['features'],
             'video_url' => $request['video_url'] ?? null,
             'status' => $request['status'],
             'latitude' => $request['latitude'],
@@ -78,13 +82,15 @@ class Property extends Model
             'floor_planning_image' => $request['floor_planning_image']?? null,
             'video_image' => $requestData['video_image'] ?? null,
             'price' => $requestData['price'] ?? null,
-            'purpose' => $requestData['purpose'] ?? null,
+            'purpose' => $requestData['transaction_type'] ?? null,
             'type' => $requestData['type'] ?? null,
             'beds' => $requestData['beds'] ?? null,
             'bath' => $requestData['bath'] ?? null,
             'area' => $requestData['area'],
+            'featured' => $request['featured'],
             'video_url' => $request['video_url'] ?? null,
             'status' => $requestData['status'],
+            'features' => $request['features'],
             'latitude' => $requestData['latitude'],
             'longitude' => $requestData['longitude']
         ]);
