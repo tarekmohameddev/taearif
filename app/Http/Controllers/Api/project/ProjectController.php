@@ -290,12 +290,20 @@ class ProjectController extends Controller
                 ProjectFloorplanImg::storeFloorplanImage($userId, $project->id, $imgPath);
             }
 
+            $firstContent = $request->input('contents.0'); // Get the first element
+
+            if ($firstContent) {
+                $title = $firstContent['title'];
+                $address = $firstContent['address'];
+                $description = $firstContent['description'];
+            }
+
             $content = [
                 'project_id' => $project->id,
                 'language_id' => $defaultLang->id,
-                'title' => $request->title ?? 'Default Project Title',
-                'address' => $request->address ?? 'Default Address',
-                'description' => $request->description ?? 'This is a default project.',
+                'title' => $title ?? 'Default Project Title',
+                'address' => $address ?? 'Default Address',
+                'description' => $description ?? 'This is a default project.',
                 'meta_keyword' => $request->meta_keyword ?? 'default, project',
                 'meta_description' => $request->meta_description ?? 'Default project description.',
             ];

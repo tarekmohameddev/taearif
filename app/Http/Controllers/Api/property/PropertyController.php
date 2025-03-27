@@ -257,6 +257,8 @@ class PropertyController extends Controller
             'specifications'
         ])->find($property->id);
 
+
+        
         return response()->json([
             'status' => 'success',
             'message' => 'Property created successfully',
