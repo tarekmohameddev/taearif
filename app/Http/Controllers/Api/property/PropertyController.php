@@ -260,9 +260,7 @@ class PropertyController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Property created successfully',
-            'data' => [
-                'property' => $responseProperty
-            ]
+            'user_property' => $responseProperty
         ], 201);
     }
 
@@ -382,9 +380,7 @@ class PropertyController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Property updated successfully',
-            'data' => [
-                'property' => $responseProperty
-            ]
+            'user_property' => $responseProperty
         ]);
     }
 
