@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\blog\BlogController;
 use App\Http\Controllers\Api\OnboardingController;
+use App\Http\Controllers\Api\ThemeSettingsController;
+use App\Http\Controllers\Api\DomainSettingsController;
 use App\Http\Controllers\Api\content\ApiMenuController;
 use App\Http\Controllers\Api\content\ContentController;
 use App\Http\Controllers\Api\project\ProjectController;
@@ -16,7 +18,6 @@ use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\content\FooterSettingController;
 use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
-use App\Http\Controllers\Api\ThemeSettingsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -144,4 +145,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/settings/theme', [ThemeSettingsController::class, 'index']);
     Route::put('/settings/theme', [ThemeSettingsController::class, 'update']);
     Route::post('/settings/theme/set-active', [ThemeSettingsController::class, 'setActiveTheme']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/settings/domain ', [DomainSettingsController::class, 'index']);
+    Route::post('/settings/domain ', [DomainSettingsController::class, 'store']);
+    Route::get('/settings/domain/{id}', [DomainSettingsController::class, 'show']);
+    Route::post('/settings/domain/{id}', [DomainSettingsController::class, 'destroy']);
+    Route::post('/settings/domain/set-primary ', [DomainSettingsController::class, 'setPrimary']);
+    Route::post('/settings/domain/verify ', [DomainSettingsController::class, 'verify']);
 });

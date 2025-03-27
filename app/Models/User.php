@@ -16,6 +16,7 @@ use Laravel\Sanctum\HasApiTokens;
 use App\Models\Api\GeneralSetting;
 use App\Models\User\JobExperience;
 use App\Http\Controllers\Controller;
+use App\Models\Api\ApiDomainSetting;
 use App\Models\User\UserOfferBanner;
 use App\Models\User\UserShopSetting;
 use App\Models\User\UserItemCategory;
@@ -474,4 +475,10 @@ class User extends Authenticatable
     {
         return $this->hasOne(GeneralSetting::class, 'user_id', 'id');
     }
+
+    public function domains()
+    {
+        return $this->hasMany(ApiDomainSetting::class);
+    }
+
 }
