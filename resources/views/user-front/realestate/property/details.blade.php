@@ -292,8 +292,8 @@
                                 <h3 class="mb-20">{{ $keywords['Floor Planning'] ?? __('Floor Planning') }}</h3>
                                 <div class="lazy-container radius-lg ratio ratio-16-11 border">
                                     <img class="lazyload"
-                                        src="{{ asset($propertyContent->image) }}"
-                                        data-src="{{ asset($propertyContent->image) }}">
+                                        src="{{ asset($propertyContent->floor_planning_image) }}"
+                                        data-src="{{ asset($propertyContent->floor_planning_image) }}">
                                 </div>
                             </div>
                         @endif
