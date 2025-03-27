@@ -8,7 +8,7 @@ use Illuminate\Support\Carbon;
 use App\Http\Controllers\Controller;
 use App\Models\Api\ApiDomainSetting;
 use Illuminate\Support\Facades\Auth;
-// use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 class DomainSettingsController extends Controller
 {
 

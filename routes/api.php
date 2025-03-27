@@ -143,15 +143,14 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/settings/theme', [ThemeSettingsController::class, 'index']);
-    Route::put('/settings/theme', [ThemeSettingsController::class, 'update']);
-    Route::post('/settings/theme/set-active', [ThemeSettingsController::class, 'setActiveTheme']);
+    Route::patch('/settings/theme/set-active', [ThemeSettingsController::class, 'setActiveTheme']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/settings/domain ', [DomainSettingsController::class, 'index']);
-    Route::post('/settings/domain ', [DomainSettingsController::class, 'store']);
     Route::get('/settings/domain/{id}', [DomainSettingsController::class, 'show']);
-    Route::post('/settings/domain/{id}', [DomainSettingsController::class, 'destroy']);
-    Route::post('/settings/domain/set-primary ', [DomainSettingsController::class, 'setPrimary']);
+    Route::post('/settings/domain ', [DomainSettingsController::class, 'store']);
     Route::post('/settings/domain/verify ', [DomainSettingsController::class, 'verify']);
+    Route::patch('/settings/domain/set-primary', [DomainSettingsController::class, 'setPrimary']);
+    Route::delete('/settings/domain/{id}', [DomainSettingsController::class, 'destroy']);
 });
