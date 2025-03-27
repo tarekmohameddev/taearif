@@ -45,37 +45,38 @@ class ProjectController extends Controller
 
          // If user has no projects, create a default one
          if ($projects->isEmpty()) {
-             $defaultProject = Project::create([
-                 'user_id' => $user->id,
-                 'featured_image' => null,
-                 'min_price' => 0,
-                 'max_price' => 0,
-                 'latitude' => 0,
-                 'longitude' => 0,
-                 'featured' => false,
-                 'complete_status' => 'In Progress',
-                 'units' => 0,
-                 'completion_date' => now()->addYear()->toDateString(),
-                 'developer' => 'Default Developer',
-                 'published' => false,
-             ]);
+  
+            //  $defaultProject = Project::create([
+            //      'user_id' => $user->id,
+            //      'featured_image' => null,
+            //      'min_price' => 0,
+            //      'max_price' => 0,
+            //      'latitude' => 0,
+            //      'longitude' => 0,
+            //      'featured' => false,
+            //      'complete_status' => 'In Progress',
+            //      'units' => 0,
+            //      'completion_date' => now()->addYear()->toDateString(),
+            //      'developer' => 'Default Developer',
+            //      'published' => false,
+            //  ]);
 
-             // Create default content
-             ProjectContent::create([
-                 'user_id' => $user->id,
-                 'project_id' => $defaultProject->id,
-                 'title' => 'Default Project Title',
-                 'address' => 'Default Address',
-                 'description' => 'This is a default project.',
-                 'meta_keyword' => 'default, project',
-                 'meta_description' => 'Default project description.',
-                 'slug' => Str::slug('Default Project Title')
-             ]);
+            //  // Create default content
+            //  ProjectContent::create([
+            //      'user_id' => $user->id,
+            //      'project_id' => $defaultProject->id,
+            //      'title' => 'Default Project Title',
+            //      'address' => 'Default Address',
+            //      'description' => 'This is a default project.',
+            //      'meta_keyword' => 'default, project',
+            //      'meta_description' => 'Default project description.',
+            //      'slug' => Str::slug('Default Project Title')
+            //  ]);
 
-             // Reload with fresh pagination
-             $projects = Project::with(['contents', 'specifications', 'types'])
-                 ->where('user_id', $user->id)
-                 ->paginate(10);
+            //  // Reload with fresh pagination
+            //  $projects = Project::with(['contents', 'specifications', 'types'])
+            //      ->where('user_id', $user->id)
+            //      ->paginate(10);
          }
 
          // Format the project data
