@@ -11,7 +11,7 @@
 
     @section('og:tag')
         <meta property="og:title" content="{{ $project->title }}">
-        <meta property="og:image" content="{{ asset('assets/img/project/featured/' . $project->featured_image) }}">
+        <meta property="og:image" content="{{ asset($project->featured_image) }}">
         <meta property="og:url" content="{{ route('front.user.project.details', [getParam(), 'slug' => $project->slug]) }}">
     @endsection
 @else
@@ -126,7 +126,7 @@
     <div class="page-title-area  @if ($userBs->theme != 'home_eight') header-next @endif"
         @if ($userBs->theme == 'home_eight') style="padding-block: 200px !important;" @endif>
         <!-- Background Image -->
-        <img class="lazyload blur-up bg-img" src="{{ asset('assets/front/img/user/' . $userBs->breadcrumb) }}">
+        <img class="lazyload blur-up bg-img" src="{{ asset($userBs->breadcrumb) }}">
         <div class="container">
             <div class="content text-center">
                 <div class="row justify-content-center">
@@ -217,8 +217,8 @@
                                 <div class="col-lg-4">
                                     <div class="mb-30">
                                         <img class="lazyload blur-up radius-lg"
-                                            src="{{ asset('assets/img/project/floor-paln-images/' . $floorplan->image) }}"
-                                            data-src="{{ asset('assets/img/project/floor-paln-images/' . $floorplan->image) }}">
+                                            src="{{ asset($floorplan->image) }}"
+                                            data-src="{{ asset($floorplan->image) }}">
                                     </div>
                                 </div>
                             @endforeach
@@ -293,10 +293,10 @@
                             @foreach ($galleryImages as $gallery)
                                 <div class="col-lg-4 col-md-6 grid-item mb-30">
                                     <div class="card radius-md">
-                                        <a href="{{ asset('assets/img/project/gallery-images/' . $gallery->image) }}"
+                                        <a href="{{ asset($gallery->image) }}"
                                             class="card-img">
                                             <img
-                                                src="{{ asset('assets/img/project/gallery-images/' . $gallery->image) }}">
+                                                src="{{ asset($gallery->image) }}">
                                         </a>
                                     </div>
                                 </div>

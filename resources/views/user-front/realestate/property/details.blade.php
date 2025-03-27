@@ -9,7 +9,7 @@
 
     @section('og:tag')
         <meta property="og:title" content="{{ $propertyContent->title }}">
-        <meta property="og:image" content="{{ asset('assets/img/property/featureds/' . $propertyContent->featured_image) }}">
+        <meta property="og:image" content="{{ asset($propertyContent->featured_image) }}">
         <meta property="og:url"
             content="{{ route('front.user.property.details', [getParam(), 'slug' => $propertyContent->slug]) }}">
     @endsection
@@ -86,11 +86,11 @@
                                 @foreach ($sliders as $slider)
                                     <div class="swiper-slide">
                                         <figure class="radius-lg lazy-container ratio ratio-16-11">
-                                            <a href="{{ asset('assets/img/property/slider-images/' . $slider->image) }}"
+                                            <a href="{{ asset($slider->image) }}"
                                                 class="lightbox-single">
                                                 <img class="lazyload"
-                                                    data-src="{{ asset('assets/img/property/slider-images/' . $slider->image) }}"
-                                                    src="{{ asset('assets/img/property/slider-images/' . $slider->image) }}">
+                                                    data-src="{{ asset($slider->image) }}"
+                                                    src="{{ asset($slider->image) }}">
                                             </a>
                                         </figure>
                                     </div>
@@ -105,8 +105,8 @@
                                     <div class="swiper-slide">
                                         <div class="thumbnail-img lazy-container radius-md ratio ratio-16-11">
                                             <img class="lazyload"
-                                                data-src="{{ asset('assets/img/property/slider-images/' . $slider->image) }}"
-                                                src="{{ asset('assets/img/property/slider-images/' . $slider->image) }}">
+                                                data-src="{{ asset($slider->image) }}"
+                                                src="{{ asset($slider->image) }}">
                                         </div>
                                     </div>
                                 @endforeach
@@ -287,16 +287,27 @@
                                 </div>
                             </div>
                         @endif
-                        @if (!empty($propertyContent->floor_planning_image))
-                            <div class="product-planning mb-40">
-                                <h3 class="mb-20">{{ $keywords['Floor Planning'] ?? __('Floor Planning') }}</h3>
-                                <div class="lazy-container radius-lg ratio ratio-16-11 border">
-                                    <img class="lazyload"
-                                        src="{{ asset('assets/img/property/plannings/' . $propertyContent->floor_planning_image) }}"
-                                        data-src="{{ asset('assets/img/property/plannings/' . $propertyContent->floor_planning_image) }}">
-                                </div>
-                            </div>
-                        @endif
+
+                                @if (!empty($propertyContent->floor_planning_image))
+                                    @php
+                                        $floorPlanningImages = json_decode($propertyContent->floor_planning_image, true);
+                                    @endphp
+
+                                    @if (!empty($floorPlanningImages) && is_array($floorPlanningImages))
+                                        <div class="product-planning mb-40">
+                                            <h3 class="mb-20">{{ $keywords['Floor Planning'] ?? __('Floor Planning') }}</h3>
+                                            
+                                            @foreach ($floorPlanningImages as $image)
+                                                <div class="lazy-container radius-lg ratio ratio-16-11 border mb-3">
+                                                    <img class="lazyload"
+                                                        src="{{ asset($image) }}"
+                                                        data-src="{{ asset($image) }}">
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                @endif
+
                         @if (!empty($propertyContent->latitude) && !empty($propertyContent->longitude))
                             <div class="product-location mb-40">
                                 <h3 class="mb-20">{{ $keywords['Location'] ?? __('Location') }}</h3>
@@ -415,8 +426,8 @@
                                                 <a href="{{ route('front.user.property.details', [getParam(), 'slug' => $property->slug]) }}"
                                                     class="lazy-container ratio ratio-1-1 radius-md">
                                                     <img class="lazyload"
-                                                        data-src="{{ asset('assets/img/property/featureds/' . $property->featured_image) }}"
-                                                        src="{{ asset('assets/img/property/featureds/' . $property->featured_image) }}">
+                                                        data-src="{{ asset($property->featured_image) }}"
+                                                        src="{{ asset($property->featured_image) }}">
                                                 </a>
                                             </figure>
                                             <div class="product-details">
