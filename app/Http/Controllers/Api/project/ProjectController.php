@@ -45,7 +45,7 @@ class ProjectController extends Controller
 
          // If user has no projects, create a default one
          if ($projects->isEmpty()) {
-  
+
             //  $defaultProject = Project::create([
             //      'user_id' => $user->id,
             //      'featured_image' => null,
@@ -337,12 +337,12 @@ class ProjectController extends Controller
         if ($responseProject->featured_image) {
             $responseProject->featured_image = asset($responseProject->featured_image);
         }
-        
+
         $responseProject->gallery_images = $responseProject->galleryImages->map(function ($image) {
             $image->image = asset($image->image);
             return $image;
         });
-        
+
         $responseProject->floor_plan_images = $responseProject->floorPlanImages->map(function ($image) {
             $image->image = asset($image->image);
             return $image;

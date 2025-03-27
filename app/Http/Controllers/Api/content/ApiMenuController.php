@@ -21,8 +21,8 @@ class ApiMenuController extends Controller
 
         $menuItems = ApiMenuItem::where('user_id', $user_id)->orderBy('order')->get();
         $settings = ApiMenuSetting::where('user_id', $user_id)->first();
-        
-     
+
+
         if ($menuItems->isEmpty()) {
             $defaultItems = [
                 [
@@ -76,17 +76,17 @@ class ApiMenuController extends Controller
                     'show_on_desktop' => true,
                 ],
             ];
-            
+
             foreach ($defaultItems as $item) {
                 $menuItem = new ApiMenuItem($item);
                 $menuItem->user_id = $user_id;
                 $menuItem->save();
-                
+
             }
-            
+
             $menuItems = ApiMenuItem::where('user_id', $user_id)->orderBy('order')->get();
         }
-        
+
         if (!$settings) {
             $settings = ApiMenuSetting::create([
                 'user_id' => $user_id,
@@ -97,7 +97,7 @@ class ApiMenuController extends Controller
                 'is_transparent' => false,
             ]);
         }
-        
+
         $formattedItems = $menuItems->map(function ($item) {
             return [
                 'id' => $item->id,
@@ -111,8 +111,8 @@ class ApiMenuController extends Controller
                 'showOnDesktop' => $item->show_on_desktop,
             ];
         });
-        
-  
+
+
         $formattedSettings = [
             'menuPosition' => $settings->menu_position,
             'menuStyle' => $settings->menu_style,
@@ -120,7 +120,7 @@ class ApiMenuController extends Controller
             'isSticky' => $settings->is_sticky,
             'isTransparent' => $settings->is_transparent,
         ];
-        
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -146,7 +146,7 @@ class ApiMenuController extends Controller
             'menuItems.*.parentId' => 'nullable|integer',
             'menuItems.*.showOnMobile' => 'required|boolean',
             'menuItems.*.showOnDesktop' => 'required|boolean',
-        
+
             'settings' => 'required|array',
             'settings.menuPosition' => 'nullable|string|in:top,bottom,left,right',
             'settings.menuStyle' => 'nullable|string|in:buttons,underline,minimal,standard,default',
@@ -154,8 +154,8 @@ class ApiMenuController extends Controller
             'settings.isSticky' => 'nullable|boolean',
             'settings.isTransparent' => 'nullable|boolean',
         ]);
-        
-        
+
+
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
@@ -169,15 +169,15 @@ class ApiMenuController extends Controller
 
         $menuItemsData = $request->menuItems;
         $settingsData = $request->settings;
-        
-    
+
+
         DB::beginTransaction();
-        
+
         try {
 
             ApiMenuItem::where('user_id', $user_id)->delete();
-            
- 
+
+
             foreach ($menuItemsData as $itemData) {
                 if ($itemData['parentId'] === null) {
                     $menuItem = ApiMenuItem::create([
@@ -191,7 +191,7 @@ class ApiMenuController extends Controller
                         'show_on_mobile' => $itemData['showOnMobile'],
                         'show_on_desktop' => $itemData['showOnDesktop'],
                     ]);
-                    $parentIds[$itemData['id']] = $menuItem->id; 
+                    $parentIds[$itemData['id']] = $menuItem->id;
                 }
             }
 
@@ -200,7 +200,7 @@ class ApiMenuController extends Controller
                     if (!isset($parentIds[$itemData['parentId']])) {
                         throw new \Exception("Parent menu item with ID {$itemData['parentId']} does not exist.");
                     }
-            
+
                     ApiMenuItem::create([
                         'user_id' => $user_id,
                         'label' => $itemData['label'],
@@ -208,35 +208,35 @@ class ApiMenuController extends Controller
                         'is_external' => $itemData['isExternal'],
                         'is_active' => $itemData['isActive'],
                         'order' => $itemData['order'],
-                        'parent_id' => $parentIds[$itemData['parentId']], 
+                        'parent_id' => $parentIds[$itemData['parentId']],
                         'show_on_mobile' => $itemData['showOnMobile'],
                         'show_on_desktop' => $itemData['showOnDesktop'],
                     ]);
                 }
             }
-            
-    
+
+
             $settings = ApiMenuSetting::where('user_id', $user_id)->first();
-            
+
             if (!$settings) {
                 $settings = new ApiMenuSetting();
                 $settings->user_id = $user_id;
             }
-            
+
             $settings->menu_position = $settingsData['menuPosition'];
             $settings->menu_style = $settingsData['menuStyle'];
             $settings->mobile_menu_type = $settingsData['mobileMenuType'];
             $settings->is_sticky = $settingsData['isSticky'];
             $settings->is_transparent = $settingsData['isTransparent'];
             $settings->save();
-            
-    
+
+
             DB::commit();
-            
-      
+
+
             $updatedItems = ApiMenuItem::where('user_id', $user_id)->orderBy('order')->get();
-            
-    
+
+
             $formattedItems = $updatedItems->map(function ($item) {
                 return [
                     'id' => $item->id,
@@ -250,7 +250,7 @@ class ApiMenuController extends Controller
                     'showOnDesktop' => $item->show_on_desktop,
                 ];
             });
-            
+
 
             $formattedSettings = [
                 'menuPosition' => $settings->menu_position,
@@ -259,7 +259,7 @@ class ApiMenuController extends Controller
                 'isSticky' => $settings->is_sticky,
                 'isTransparent' => $settings->is_transparent,
             ];
-            
+
             return response()->json([
                 'status' => 'success',
                 'data' => [
@@ -270,7 +270,7 @@ class ApiMenuController extends Controller
         } catch (\Exception $e) {
             // Rollback the transaction in case of error
             DB::rollBack();
-            
+
             return response()->json([
                 'message' => 'Failed to update menu',
                 'error' => $e->getMessage(),
