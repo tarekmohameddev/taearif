@@ -278,7 +278,7 @@ class ProjectController extends Controller
 
         DB::transaction(function () use ($request, $userId, $defaultLang, &$project) {
             $requestData = $request->all();
-            $requestData['featured_image'] = $request->featured_image;
+            $requestData['featured_image'] = asset($request->featured_image);
 
             $project = Project::storeProject($userId, $requestData);
 
@@ -323,6 +323,23 @@ class ProjectController extends Controller
             'contents',
             'specifications'
         ])->find($project->id);
+
+
+        if ($responseProject->featured_image) {
+            $responseProject->featured_image = asset($responseProject->featured_image);
+        }
+        
+        $responseProject->gallery_images = $responseProject->galleryImages->map(function ($image) {
+            $image->image = asset($image->image);
+            return $image;
+        });
+        
+        $responseProject->floor_plan_images = $responseProject->floorPlanImages->map(function ($image) {
+            $image->image = asset($image->image);
+            return $image;
+        });
+
+        $responseProject->featured = (bool) $responseProject->featured;
 
         return response()->json([
             'status' => 'success',
