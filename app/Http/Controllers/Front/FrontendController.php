@@ -153,6 +153,11 @@ class FrontendController extends Controller
         return view('front.index', $data);
     }
 
+    public function realestate()
+    {
+        return view('front.realestate');
+    }
+
     public function subscribe(Request $request)
     {
         $rules = [

@@ -821,27 +821,27 @@
                     </a>
                 </div>
                 <div class="group relative">
-    <button class="text-sm font-medium text-slate-700 relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-black after:transition-all after:duration-300 group-hover:after:w-full group-hover:text-gray-600 flex items-center gap-1">
-        المواقع الإلكترونية
-        <i data-lucide="chevron-down" class="h-4 w-4 opacity-70"></i>
-    </button>
-    <div class="absolute z-10 top-full mt-2 ltr:right-0 rtl:left-0 bg-white rounded-xl shadow-lg w-56 overflow-hidden opacity-0 invisible group-hover:visible group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 border border-gray-100">
-        <a href="{{ url('/real-estate-websites') }}" class="block px-4 py-3 text-sm text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-colors duration-200 border-b border-gray-50">
-            <i data-lucide="building-2" class="h-4 w-4 inline-block ml-2 text-gray-500"></i>
-            مواقع العقارات
-        </a>
-        <div class="block px-4 py-3 text-sm text-slate-400 border-b border-gray-50">
-            <i data-lucide="layers" class="h-4 w-4 inline-block ml-2 text-slate-300"></i>
-            مواقع المحاماة (قريباً)
-        </div>
-        <div class="block px-4 py-3 text-sm text-slate-400">
-            <i data-lucide="users" class="h-4 w-4 inline-block ml-2 text-slate-300"></i>
-            المواقع الشخصية (قريباً)
-        </div>
-    </div>
-</div>
+                    <button class="text-sm font-medium text-slate-700 relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-black after:transition-all after:duration-300 group-hover:after:w-full group-hover:text-gray-600 flex items-center gap-1">
+                        المواقع الإلكترونية
+                        <i data-lucide="chevron-down" class="h-4 w-4 opacity-70"></i>
+                    </button>
+                    <div class="absolute z-10 top-full mt-2 ltr:right-0 rtl:left-0 bg-white rounded-xl shadow-lg w-56 overflow-hidden opacity-0 invisible group-hover:visible group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 border border-gray-100">
+                        <a href="{{ url('/realestate') }}" class="block px-4 py-3 text-sm text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-colors duration-200 border-b border-gray-50">
+                            <i data-lucide="building-2" class="h-4 w-4 inline-block ml-2 text-gray-500"></i>
+                            مواقع العقارات
+                        </a>
+                        <div class="block px-4 py-3 text-sm text-slate-400 border-b border-gray-50">
+                            <i data-lucide="layers" class="h-4 w-4 inline-block ml-2 text-slate-300"></i>
+                            مواقع المحاماة (قريباً)
+                        </div>
+                        <div class="block px-4 py-3 text-sm text-slate-400">
+                            <i data-lucide="users" class="h-4 w-4 inline-block ml-2 text-slate-300"></i>
+                            المواقع الشخصية (قريباً)
+                        </div>
+                    </div>
+                </div>
                 <div class="group relative">
-                    <a href="#pricing" class="text-sm font-medium text-slate-700 relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-black after:transition-all after:duration-300 group-hover:after:w-full group-hover:text-gray-600">
+                    <a href="/pricing" class="text-sm font-medium text-slate-700 relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-black after:transition-all after:duration-300 group-hover:after:w-full group-hover:text-gray-600">
                         الأسعار
                     </a>
                 </div>
@@ -889,7 +889,7 @@
                 <div class="py-3 px-4 rounded-lg bg-gray-50/50">
                     <div class="text-lg font-medium mb-2 text-gray-700">المواقع الإلكترونية</div>
                     <div class="pr-4 flex flex-col gap-3">
-                        <a href="{{ url('/real-estate-websites') }}" class="text-base font-medium text-slate-700 hover:text-gray-700 transition-colors duration-200 flex items-center gap-2">
+                        <a href="{{ url('/realestate') }}" class="text-base font-medium text-slate-700 hover:text-gray-700 transition-colors duration-200 flex items-center gap-2">
                             <i data-lucide="building-2" class="h-4 w-4 text-gray-500"></i>
                             <span>مواقع العقارات</span>
                         </a>
@@ -944,258 +944,332 @@
 
     <main class="flex-1">
         <!-- Hero Section -->
-  
-        <!-- Pricing Section -->
-        <section id="pricing" class="w-full py-12 md:py-24 lg:py-32 relative">
+        <section class="w-full py-12 md:py-24 lg:py-32 relative overflow-hidden">
             <!-- Enhanced Background -->
-            <div class="absolute inset-0 bg-gradient-to-br from-gray-50/50 via-white to-blue-50/30 z-0"></div>
-            <div class="absolute inset-0 bg-[url('/textures/dot-pattern.svg')] opacity-5 z-0"></div>
-            <div class="absolute top-0 left-0 w-80 h-80 bg-gradient-to-br from-gray-200/20 to-transparent rounded-full blur-3xl"></div>
-            <div class="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-blue-200/20 to-transparent rounded-full blur-3xl"></div>
+            <div class="absolute inset-0 bg-[url('{{ asset('images/textures/grid-pattern.svg') }}')]  opacity-5 z-0"></div>
+            <div class="absolute inset-0 bg-gradient-to-br from-black/5 via-muted/20 to-background z-0"></div>
+            <div class="absolute top-20 right-10 w-72 h-72 bg-black/5 rounded-full blur-3xl animate-pulse-subtle"></div>
+            <div class="absolute bottom-10 left-10 w-96 h-96 bg-black/5 rounded-full blur-3xl animate-pulse-subtle" style="animation-delay: 1s;"></div>
 
             <div class="container px-4 md:px-6 relative z-10">
-                <div class="flex flex-col items-center justify-center space-y-4 text-center animate-fade-in">
-                    <div class="inline-flex items-center rounded-full border border-gray-200 bg-white/80 px-3 py-1 text-sm font-medium text-gray-800 shadow-sm backdrop-blur-sm">
-                        <i data-lucide="bookmark" class="h-3.5 w-3.5 mr-1 text-gray-600"></i>
-                        <span>الأسعار</span>
+                <!-- Badge -->
+                <div class="flex justify-center mb-8 animate-fade-in">
+                    <div class="px-4 py-1 border border-black/20 bg-white/50 backdrop-blur-sm rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5 mr-1 text-blue-500 inline-block">
+                            <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+                            <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+                            <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+                            <path d="M10 6h4" />
+                            <path d="M10 10h4" />
+                            <path d="M10 14h4" />
+                            <path d="M10 18h4" />
+                        </svg>
+                        <span class="text-sm">مواقع العقارات الاحترافية</span>
                     </div>
-                    <h2 class="text-2xl sm:text-3xl font-bold tracking-tighter md:text-4xl/tight gradient-gray-gray">
-                        خطط أسعار بسيطة وشفافة
-                    </h2>
-                    <p class="max-w-[900px] text-slate-600 text-lg leading-relaxed">
-                        اختر الخطة المناسبة لاحتياجاتك وابدأ في بناء موقعك الإلكتروني اليوم
+                </div>
+
+                <!-- Main Hero Content -->
+                <div class="flex flex-col items-center text-center space-y-4 animate-fade-in">
+                    <h1 class="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl/none max-w-3xl bg-clip-text text-transparent bg-gradient-to-l from-gray-700 to-black">
+                        أنشئ موقع عقاري احترافي بدون برمجة
+                    </h1>
+                    <p class="max-w-[700px] text-muted-foreground text-lg md:text-xl">
+                        قم بإنشاء موقع عقاري متكامل يساعدك على عرض وإدارة العقارات بطريقة احترافية وجذابة للعملاء
                     </p>
-                </div>
-
-                <!-- Billing Toggle -->
-                <div class="flex justify-center items-center mt-8 mb-10">
-                    <span id="monthly-label" class="text-sm font-medium transition-colors duration-300 text-gray-800">
-                        فاتورة شهرية
-                    </span>
-                    <button id="billing-toggle" class="relative mx-4 h-6 w-12 rounded-full bg-gray-100 transition-colors duration-300">
-                        <div id="billing-toggle-slider" class="absolute inset-y-0.5 right-0.5 w-5 rounded-full bg-black shadow-md transform transition-transform duration-300"></div>
-                    </button>
-                    <span id="yearly-label" class="text-sm font-medium transition-colors duration-300 text-slate-500">
-                        فاتورة سنوية <span class="text-xs text-green-600 font-bold">وفر 20%</span>
-                    </span>
-                </div>
-
-                <!-- Pricing Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 max-w-5xl mx-auto">
-                    <!-- Free Plan -->
-                    <div class="relative group">
-                        <div class="absolute inset-0.5 bg-gradient-to-tr from-black/5 to-black/30 rounded-xl blur opacity-30 group-hover:opacity-100 transition duration-500"></div>
-                        <div class="relative bg-white border border-black/10 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 md:p-8 h-full flex flex-col animate-scale">
-                            <div class="mb-5">
-                                <h3 class="text-xl font-bold">الخطة المجانية</h3>
-                                <div class="mt-4 flex items-baseline text-gray-900">
-                                    <span class="text-5xl font-extrabold tracking-tight">0</span>
-                                    <span class="mr-1 text-2xl font-semibold">ريال</span>
-                                    <span class="mr-1 text-xl text-gray-500">/شهرياً</span>
-                                </div>
-                                <p class="mt-3 text-sm text-gray-500">
-                                    كل ما تحتاجه للبدء في إنشاء موقعك الأول
-                                </p>
-                            </div>
-
-                            <ul class="mt-6 space-y-4 flex-1">
-                                <li class="flex items-start">
-                                    <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                        <i data-lucide="check-circle" class="h-4 w-4 text-green-500"></i>
-                                    </div>
-                                    <span class="mr-3 text-gray-700">10 عقارات كحد أقصى</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                        <i data-lucide="check-circle" class="h-4 w-4 text-green-500"></i>
-                                    </div>
-                                    <span class="mr-3 text-gray-700">قوالب أساسية</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                        <i data-lucide="check-circle" class="h-4 w-4 text-green-500"></i>
-                                    </div>
-                                    <span class="mr-3 text-gray-700">دعم عبر البريد الإلكتروني</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                        <i data-lucide="check-circle" class="h-4 w-4 text-green-500"></i>
-                                    </div>
-                                    <span class="mr-3 text-gray-700">علامة تعاريف في التذييل</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                        <i data-lucide="x" class="h-4 w-4 text-gray-400"></i>
-                                    </div>
-                                    <span class="mr-3 text-gray-500">تحليلات الزوار</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                        <i data-lucide="x" class="h-4 w-4 text-gray-400"></i>
-                                    </div>
-                                    <span class="mr-3 text-gray-500">نطاق مخصص</span>
-                                </li>
-                            </ul>
-
-                            <div class="mt-8">
-                                <a href="https://website-builder-dashboard-six.vercel.app/register" class="w-full bg-black text-white hover:bg-gray-800 transition-all duration-300 h-12 text-base btn">
-                                    ابدأ مجاناً
-                                </a>
-                                <p class="mt-3 text-xs text-center text-gray-500">لا حاجة لبطاقة ائتمان</p>
-                            </div>
-                        </div>
+                    <div class="flex flex-col sm:flex-row gap-3 mt-2">
+                        <a href="/register" class="inline-flex items-center justify-center h-10 px-8 py-2 rounded-md bg-black text-white hover:bg-gray-800 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl text-sm font-medium">
+                            ابدأ مجاناً
+                        </a>
+                        <a href="/templates" class="inline-flex items-center justify-center h-10 px-8 py-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground border-black text-black hover:bg-black hover:text-white transition-all duration-300 text-sm font-medium">
+                            عرض القوالب
+                        </a>
                     </div>
-
-                    <!-- Pro Plan -->
-                    <div class="relative group">
-                        <div class="absolute inset-0.5 bg-gradient-to-tr from-blue-500/30 to-gray-500/30 rounded-xl blur opacity-70 group-hover:opacity-100 transition duration-500"></div>
-                        <div class="relative bg-white border-2 border-blue-500/20 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 md:p-8 h-full flex flex-col animate-scale">
-                            <div class="absolute -top-5 right-0 left-0 mx-auto w-fit px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-full shadow-lg">
-                                الأكثر شعبية
-                            </div>
-                            <div class="mb-5">
-                                <h3 class="text-xl font-bold">الخطة الاحترافية</h3>
-                                <div class="mt-4 flex items-baseline text-gray-900">
-                                    <span class="text-5xl font-extrabold tracking-tight pricing-value">99</span>
-                                    <span class="mr-1 text-2xl font-semibold">ريال</span>
-                                    <span class="mr-1 text-xl text-gray-500 pricing-period">/شهرياً</span>
-                                </div>
-                                <p class="mt-3 text-sm text-gray-500">
-                                    كل ما تحتاجه لبناء مواقع احترافية بلا حدود
-                                </p>
-                            </div>
-
-                            <ul class="mt-6 space-y-4 flex-1">
-                                <li class="flex items-start">
-                                    <div class="flex-shrink-0 w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center mt-0.5">
-                                        <i data-lucide="check-circle" class="h-4 w-4 text-blue-600"></i>
-                                    </div>
-                                    <span class="mr-3 text-gray-700 font-medium">50 عقار</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <div class="flex-shrink-0 w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center mt-0.5">
-                                        <i data-lucide="check-circle" class="h-4 w-4 text-blue-600"></i>
-                                    </div>
-                                    <span class="mr-3 text-gray-700 font-medium">اضافة مشاريع</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <div class="flex-shrink-0 w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center mt-0.5">
-                                        <i data-lucide="check-circle" class="h-4 w-4 text-blue-600"></i>
-                                    </div>
-                                    <span class="mr-3 text-gray-700 font-medium">جميع القوالب الاحترافية</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <div class="flex-shrink-0 w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center mt-0.5">
-                                        <i data-lucide="check-circle" class="h-4 w-4 text-blue-600"></i>
-                                    </div>
-                                    <span class="mr-3 text-gray-700 font-medium">دعم فني على مدار الساعة</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <div class="flex-shrink-0 w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center mt-0.5">
-                                        <i data-lucide="check-circle" class="h-4 w-4 text-blue-600"></i>
-                                    </div>
-                                    <span class="mr-3 text-gray-700 font-medium">بدون علامة تعاريف</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <div class="flex-shrink-0 w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center mt-0.5">
-                                        <i data-lucide="check-circle" class="h-4 w-4 text-blue-600"></i>
-                                    </div>
-                                    <span class="mr-3 text-gray-700 font-medium">نطاق مخصص مجاني</span>
-                                </li>
-                                <li class="flex items-start">
-                                    <div class="flex-shrink-0 w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center mt-0.5">
-                                        <i data-lucide="check-circle" class="h-4 w-4 text-blue-600"></i>
-                                    </div>
-                                    <span class="mr-3 text-gray-700 font-medium">تحليلات متقدمة للزوار</span>
-                                </li>
-                            </ul>
-
-                            <div class="mt-8">
-                                <a href="https://website-builder-dashboard-six.vercel.app/register" class="w-full bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all duration-300 h-12 text-base btn">
-                                    اشترك الآن
-                                </a>
-                                <p class="mt-3 text-xs text-center text-gray-500 pricing-note">ضمان استرداد الأموال لمدة 14 يوماً</p>
-                            </div>
-                        </div>
-                    </div>
+                    <p class="text-sm text-muted-foreground mt-2">لا حاجة لبطاقة ائتمان • إلغاء الاشتراك في أي وقت</p>
                 </div>
 
-                <!-- Enterprise Plan -->
-                <div class="mt-12 max-w-5xl mx-auto">
-                    <div class="relative group">
-                        <div class="absolute inset-0.5 bg-gradient-to-tr from-gray-500/20 to-gray-500/20 rounded-xl blur opacity-50 group-hover:opacity-100 transition duration-500"></div>
-                        <div class="relative bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 md:p-8 animate-scale">
-                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                                <div>
-                                    <h3 class="text-xl font-bold gradient-gray-gray">
-                                        خطة المؤسسات
-                                    </h3>
-                                    <p class="mt-2 text-slate-600">حلول مخصصة للشركات والمؤسسات الكبيرة</p>
-                                </div>
-                                <div class="flex flex-col sm:flex-row gap-3">
-                                    <a href="https://wa.me/966541839888" class="border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 btn btn-outline">
-                                        تواصل معنا
-                                    </a>
-                                    <a href="https://wa.me/966541839888" class="bg-black text-white hover:bg-gray-700 transition-all duration-300 shadow-lg shadow-gray-200/20 btn">
-                                        احصل على عرض سعر
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                                <div class="flex items-start">
-                                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center">
-                                        <i data-lucide="users" class="h-5 w-5 text-gray-600"></i>
-                                    </div>
-                                    <div class="mr-4">
-                                        <h4 class="font-medium text-slate-800">فريق متخصص</h4>
-                                        <p class="text-sm text-slate-600 mt-1">مدير حساب مخصص لمساعدتك في كل خطوة</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-start">
-                                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center">
-                                        <i data-lucide="code" class="h-5 w-5 text-gray-600"></i>
-                                    </div>
-                                    <div class="mr-4">
-                                        <h4 class="font-medium text-slate-800">تخصيص متقدم</h4>
-                                        <p class="text-sm text-slate-600 mt-1">تطوير ميزات مخصصة حسب احتياجات عملك</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-start">
-                                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                                        <i data-lucide="server" class="h-5 w-5 text-blue-600"></i>
-                                    </div>
-                                    <div class="mr-4">
-                                        <h4 class="font-medium text-slate-800">تكامل مع الأنظمة</h4>
-                                        <p class="text-sm text-slate-600 mt-1">ربط موقعك مع أنظمة الشركة الداخلية</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Payment Methods -->
-                <div class="mt-12 text-center">
-                    <p class="text-sm text-slate-600 mb-6">
-                        جميع الخطط تشمل تحديثات مجانية • ضمان استرداد الأموال لمدة 14 يوماً • دعم فني متميز
-                    </p>
-                    <div class="flex justify-center items-center gap-6 flex-wrap bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/2560px-Stripe_Logo%2C_revised_2016.svg.png" 
-                            alt="Stripe" 
-                            class="h-6 object-contain opacity-60 hover:opacity-100 transition-opacity duration-300">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/2560px-PayPal.svg.png" 
-                            alt="PayPal" 
-                            class="h-6 object-contain opacity-60 hover:opacity-100 transition-opacity duration-300">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" 
-                            alt="Visa" 
-                            class="h-6 object-contain opacity-60 hover:opacity-100 transition-opacity duration-300">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" 
-                            alt="Mastercard" 
-                            class="h-6 object-contain opacity-60 hover:opacity-100 transition-opacity duration-300">
+                <!-- Real Estate Website Preview -->
+                <div class="mt-12 md:mt-16 relative animate-slide-up">
+                    <div class="rounded-xl overflow-hidden shadow-lg">
+                        <img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=1470&auto=format&fit=crop" alt="موقع عقاري احترافي" class="w-full object-cover">
                     </div>
                 </div>
             </div>
-        </section>  
+        </section>
+
+        <!-- Why Choose Us Section -->
+        <section class="w-full py-12 md:py-24 lg:py-32 relative">
+            <!-- Enhanced Background -->
+            <div class="absolute inset-0 bg-[url('{{ asset('images/textures/dot-pattern.svg') }}')]  opacity-5 z-0"></div>
+            <div class="absolute inset-0 bg-gradient-to-tr from-black/5 via-transparent to-black/5 z-0"></div>
+            <div class="absolute top-0 left-0 w-80 h-80 bg-gradient-to-br from-black/10 to-transparent rounded-full blur-3xl"></div>
+            <div class="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-black/10 to-transparent rounded-full blur-3xl"></div>
+
+            <div class="container px-4 md:px-6 relative z-10">
+                <div class="flex flex-col items-center justify-center space-y-4 text-center animate-fade-in">
+                    <div class="space-y-2">
+                        <div class="inline-block rounded-lg bg-black px-3 py-1 text-sm text-white transform transition-transform duration-300 hover:scale-105">
+                            لماذا تختارنا
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-bold tracking-tighter md:text-4xl/tight bg-clip-text text-transparent bg-gradient-to-l from-gray-700 to-black">
+                            لماذا تحتاج إلى موقع عقاري احترافي؟
+                        </h2>
+                        <p class="max-w-[900px] text-muted-foreground text-sm sm:text-base md:text-xl/relaxed">
+                            اكتشف كيف يمكن لموقع عقاري احترافي أن يساعدك في تنمية أعمالك وزيادة مبيعاتك
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+                    <div class="border border-black/10 hover:border-black transition-all duration-300 hover:shadow-lg rounded-lg animate-scale hover-scale">
+                        <div class="p-6 flex flex-col items-center text-center space-y-4">
+                            <div class="p-3 bg-blue-100 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-blue-600">
+                                    <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+                                    <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+                                    <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+                                    <path d="M10 6h4" />
+                                    <path d="M10 10h4" />
+                                    <path d="M10 14h4" />
+                                    <path d="M10 18h4" />
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-bold">تعزيز الاحترافية</h3>
+                            <p class="text-muted-foreground">
+                                يمنح موقعك العقاري الاحترافي انطباعاً أولياً قوياً للعملاء المحتملين ويعزز ثقتهم في خدماتك
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="border border-black/10 hover:border-black transition-all duration-300 hover:shadow-lg rounded-lg animate-scale hover-scale">
+                        <div class="p-6 flex flex-col items-center text-center space-y-4">
+                            <div class="p-3 bg-green-100 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-green-600">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <path d="m21 21-4.3-4.3" />
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-bold">زيادة الوصول</h3>
+                            <p class="text-muted-foreground">
+                                يساعدك موقعك في الوصول إلى عملاء جدد من خلال محركات البحث والتسويق الرقمي، مما يزيد من فرص البيع
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="border border-black/10 hover:border-black transition-all duration-300 hover:shadow-lg rounded-lg animate-scale hover-scale">
+                        <div class="p-6 flex flex-col items-center text-center space-y-4">
+                            <div class="p-3 bg-purple-100 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-purple-600">
+                                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-bold">إدارة فعالة</h3>
+                            <p class="text-muted-foreground">
+                                يوفر لك نظام إدارة متكامل للعقارات والعملاء، مما يساعدك على توفير الوقت وزيادة الكفاءة
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="w-full py-12 md:py-24 lg:py-32 bg-gray-50 relative">
+            <div class="absolute inset-0 bg-[url('{{ asset('images/textures/geometric-pattern.svg') }}')]  opacity-5 z-0"></div>
+            <div class="absolute inset-0 bg-gradient-to-b from-gray-50 to-white/40 z-0"></div>
+
+            <div class="container px-4 md:px-6 relative z-10">
+                <div class="flex flex-col items-center justify-center space-y-4 text-center animate-fade-in mb-12">
+                    <div class="space-y-2">
+                        <div class="inline-block rounded-lg bg-black px-3 py-1 text-sm text-white transform transition-transform duration-300 hover:scale-105">
+                            المميزات
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-bold tracking-tighter md:text-4xl/tight bg-clip-text text-transparent bg-gradient-to-l from-gray-700 to-black">
+                            مميزات موقعك العقاري
+                        </h2>
+                        <p class="max-w-[900px] text-muted-foreground text-sm sm:text-base md:text-xl/relaxed">
+                            كل ما تحتاجه لإدارة وعرض العقارات بطريقة احترافية
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="flex flex-col space-y-3 animate-slide-up" style="animation-delay: 0.1s;">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+                                    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                    <polyline points="9 22 9 12 15 12 15 22" />
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-bold">عرض العقارات</h3>
+                        </div>
+                        <p class="text-muted-foreground pr-12">
+                            عرض العقارات بطريقة جذابة مع صور عالية الجودة وتفاصيل كاملة
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col space-y-3 animate-slide-up" style="animation-delay: 0.2s;">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <path d="m21 21-4.3-4.3" />
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-bold">بحث متقدم</h3>
+                        </div>
+                        <p class="text-muted-foreground pr-12">
+                            نظام بحث متقدم يساعد العملاء في العثور على العقارات المناسبة بسهولة
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col space-y-3 animate-slide-up" style="animation-delay: 0.3s;">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-bold">نظام تواصل</h3>
+                        </div>
+                        <p class="text-muted-foreground pr-12">
+                            نظام تواصل مباشر بين العملاء والوكلاء العقاريين لتسهيل عملية البيع
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col space-y-3 animate-slide-up" style="animation-delay: 0.4s;">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+                                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-bold">لوحة تحكم</h3>
+                        </div>
+                        <p class="text-muted-foreground pr-12">
+                            لوحة تحكم سهلة الاستخدام لإدارة العقارات والعملاء والمبيعات
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col space-y-3 animate-slide-up" style="animation-delay: 0.5s;">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+                                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                                    <line x1="3" x2="21" y1="9" y2="9" />
+                                    <line x1="9" x2="9" y1="21" y2="9" />
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-bold">تصميم متجاوب</h3>
+                        </div>
+                        <p class="text-muted-foreground pr-12">
+                            تصميم متجاوب يعمل على جميع الأجهزة من الهواتف الذكية إلى أجهزة الكمبيوتر
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col space-y-3 animate-slide-up" style="animation-delay: 0.6s;">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+                                    <polyline points="16 18 22 12 16 6" />
+                                    <polyline points="8 6 2 12 8 18" />
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-bold">تحسين SEO</h3>
+                        </div>
+                        <p class="text-muted-foreground pr-12">
+                            تحسين محركات البحث لزيادة ظهور موقعك في نتائج البحث وجذب المزيد من العملاء
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Templates Showcase -->
+        <section class="w-full py-12 md:py-24 lg:py-32 relative">
+            <div class="absolute inset-0 bg-[url('{{ asset('images/textures/subtle-lines.svg') }}')]  opacity-5 z-0"></div>
+            <div class="absolute inset-0 bg-gradient-to-br from-transparent via-black/5 to-transparent z-0"></div>
+
+            <div class="container px-4 md:px-6 relative z-10">
+                <div class="flex flex-col items-center justify-center space-y-4 text-center animate-fade-in mb-12">
+                    <div class="space-y-2">
+                        <div class="inline-block rounded-lg bg-black px-3 py-1 text-sm text-white transform transition-transform duration-300 hover:scale-105">
+                            القوالب
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-bold tracking-tighter md:text-4xl/tight bg-clip-text text-transparent bg-gradient-to-l from-gray-700 to-black">
+                            قوالب عقارية احترافية
+                        </h2>
+                        <p class="max-w-[900px] text-muted-foreground text-sm sm:text-base md:text-xl/relaxed">
+                            اختر من بين مجموعة متنوعة من القوالب العقارية الاحترافية
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="group relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-md transition-all duration-300 hover:shadow-xl animate-scale">
+                        <div class="aspect-video overflow-hidden">
+                            <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1473&auto=format&fit=crop" alt="قالب عقاري 1" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        </div>
+                        <div class="p-5">
+                            <h3 class="text-xl font-bold">قالب العقارات الفاخرة</h3>
+                            <p class="mt-2 text-muted-foreground">مثالي لشركات العقارات الفاخرة والمنازل الراقية</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+                                    احترافي
+                                </span>
+                                <a href="#" class="inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-black hover:text-white">
+                                    معاينة
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="group relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-md transition-all duration-300 hover:shadow-xl animate-scale">
+                        <div class="aspect-video overflow-hidden">
+                            <img src="https://images.unsplash.com/photo-1582407947304-fd86f028f716?q=80&w=1296&auto=format&fit=crop" alt="قالب عقاري 2" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        </div>
+                        <div class="p-5">
+                            <h3 class="text-xl font-bold">قالب الوسيط العقاري</h3>
+                            <p class="mt-2 text-muted-foreground">مصمم خصيصاً للوسطاء العقاريين والمكاتب الصغيرة</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-700">
+                                    سهل الاستخدام
+                                </span>
+                                <a href="#" class="inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-black hover:text-white">
+                                    معاينة
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="group relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-md transition-all duration-300 hover:shadow-xl animate-scale">
+                        <div class="aspect-video overflow-hidden">
+                            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1470&auto=format&fit=crop" alt="قالب عقاري 3" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">
+                        </div>
+                        <div class="p-5">
+                            <h3 class="text-xl font-bold">قالب المشاريع السكنية</h3>
+                            <p class="mt-2 text-muted-foreground">مثالي للمطورين العقاريين والمشاريع السكنية الكبيرة</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="inline-flex items-center rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-700">
+                                    متقدم
+                                </span>
+                                <a href="#" class="inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-black hover:text-white">
+                                    معاينة
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-10 text-center">
+                    <a href="/templates" class="inline-flex h-10 items-center justify-center rounded-md bg-black text-white hover:bg-gray-800 px-8 py-2 font-medium">
+                        عرض جميع القوالب
+                    </a>
+                </div>
+            </div>
+        </section>
 
 
         <!-- CTA Section -->
