@@ -28,10 +28,15 @@
                 {{ $property->title ?? $property->propertyContent->title }}
             </a>
         </h3>
-        <div class="product-price">
-            <span class="new-price">{{ $keywords['Price'] ?? __('Price') }} ({{ $userBs->base_currency_text }}) :
-                {{ $property->price ? formatNumber($property->price) : $keywords['Negotiable'] ?? __('Negotiable') }}</span>
-        </div>
+<hr>
+<div class="product-price">
+    <span class="new-price">
+        {{ $keywords['Price'] ?? __('Price') }}
+        {{ $property->price ? formatNumber($property->price) : ($keywords['Negotiable'] ?? __('Negotiable')) }}
+        <img src="{{ $userBs->base_currency_symbol }}" alt="Currency Symbol" style="width: 22px; height: 22px; vertical-align: middle;">
+    </span>
+</div>
+
         <ul class="product-info p-0 list-unstyled d-flex align-items-center">
             <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
                 title="{{ $keywords['Area'] ?? __('Area') }}">
