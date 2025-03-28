@@ -1526,7 +1526,7 @@
             <div class="relative animate-slide-left">
                 <div class="relative mx-auto w-full max-w-[500px] rounded-2xl overflow-hidden shadow-2xl shadow-gray-200/20 border border-gray-100">
                     <div class="aspect-[4/3] relative overflow-hidden">
-                        <img src="https://st3.depositphotos.com/2853475/19523/i/450/depositphotos_195236752-stock-photo-arabic-business-team-in-the.jpg" 
+                        <img src="https://img.freepik.com/free-vector/partners-holding-big-jigsaw-puzzle-pieces_74855-5278.jpg" 
                             alt="فريق التصميم" 
                             class="w-full h-full object-cover">
                         <div class="absolute inset-0 bg-gradient-to-t from-gray-900/30 to-transparent"></div>
