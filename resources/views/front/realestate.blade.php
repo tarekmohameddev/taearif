@@ -904,7 +904,7 @@
                     </div>
                 </div>
 
-                <a href="#pricing" class="text-lg font-medium py-3 px-4 rounded-lg text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200">
+                <a href="/pricing" class="text-lg font-medium py-3 px-4 rounded-lg text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200">
                     الأسعار
                 </a>
                 <a href="#faq" class="text-lg font-medium py-3 px-4 rounded-lg text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200">

@@ -826,7 +826,7 @@
         <i data-lucide="chevron-down" class="h-4 w-4 opacity-70"></i>
     </button>
     <div class="absolute z-10 top-full mt-2 ltr:right-0 rtl:left-0 bg-white rounded-xl shadow-lg w-56 overflow-hidden opacity-0 invisible group-hover:visible group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 border border-gray-100">
-        <a href="{{ url('/real-estate-websites') }}" class="block px-4 py-3 text-sm text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-colors duration-200 border-b border-gray-50">
+        <a href="{{ url('/realestate') }}" class="block px-4 py-3 text-sm text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-colors duration-200 border-b border-gray-50">
             <i data-lucide="building-2" class="h-4 w-4 inline-block ml-2 text-gray-500"></i>
             مواقع العقارات
         </a>
@@ -841,7 +841,7 @@
     </div>
 </div>
                 <div class="group relative">
-                    <a href="#pricing" class="text-sm font-medium text-slate-700 relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-black after:transition-all after:duration-300 group-hover:after:w-full group-hover:text-gray-600">
+                    <a href="/pricing" class="text-sm font-medium text-slate-700 relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-black after:transition-all after:duration-300 group-hover:after:w-full group-hover:text-gray-600">
                         الأسعار
                     </a>
                 </div>
@@ -889,7 +889,7 @@
                 <div class="py-3 px-4 rounded-lg bg-gray-50/50">
                     <div class="text-lg font-medium mb-2 text-gray-700">المواقع الإلكترونية</div>
                     <div class="pr-4 flex flex-col gap-3">
-                        <a href="{{ url('/real-estate-websites') }}" class="text-base font-medium text-slate-700 hover:text-gray-700 transition-colors duration-200 flex items-center gap-2">
+                        <a href="{{ url('/realestate') }}" class="text-base font-medium text-slate-700 hover:text-gray-700 transition-colors duration-200 flex items-center gap-2">
                             <i data-lucide="building-2" class="h-4 w-4 text-gray-500"></i>
                             <span>مواقع العقارات</span>
                         </a>
@@ -904,7 +904,7 @@
                     </div>
                 </div>
 
-                <a href="#pricing" class="text-lg font-medium py-3 px-4 rounded-lg text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200">
+                <a href="/pricing" class="text-lg font-medium py-3 px-4 rounded-lg text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200">
                     الأسعار
                 </a>
                 <a href="#faq" class="text-lg font-medium py-3 px-4 rounded-lg text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200">
