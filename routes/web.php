@@ -1675,6 +1675,7 @@ Route::domain($domain)->group(function () {
             Route::post('/domain/mail', 'Admin\CustomDomainController@mail')->name('admin.custom-domain.mail');
             Route::post('/domain/delete', 'Admin\CustomDomainController@delete')->name('admin.custom-domain.delete');
             Route::post('/domain/bulk-delete', 'Admin\CustomDomainController@bulkDelete')->name('admin.custom-domain.bulk.delete');
+            Route::post('/domain/ssl-status', 'Admin\CustomDomainController@updateSslStatus')->name('admin.custom-domain.ssl-status');
         });
 
         // Subdomains

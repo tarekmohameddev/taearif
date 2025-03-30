@@ -426,6 +426,17 @@ if (!function_exists('getCdomain')) {
         return $cdomains->count() > 0 ? $cdomains->orderBy('id', 'DESC')->first()->requested_domain : false;
     }
 }
+if (!function_exists('getActiveCustomDomain')) {
+    function getActiveCustomDomain($user)
+    {
+        $domain = $user->domains()
+            ->where('status', 'active')
+            ->latest('id')
+            ->first();
+
+        return $domain ? $domain->custom_name : false;
+    }
+}
 
 if (!function_exists('getUser')) {
 

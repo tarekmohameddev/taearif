@@ -151,6 +151,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/settings/domain/{id}', [DomainSettingsController::class, 'show']);
     Route::post('/settings/domain ', [DomainSettingsController::class, 'store']);
     Route::post('/settings/domain/verify ', [DomainSettingsController::class, 'verify']);
-    Route::post('/settings/domain/set-primary', [DomainSettingsController::class, 'setPrimary']);
+    Route::patch('/settings/domain/set-primary', [DomainSettingsController::class, 'setPrimary']);
     Route::delete('/settings/domain/{id}', [DomainSettingsController::class, 'destroy']);
+
+    Route::patch('/settings/domain/request-ssl', [DomainSettingsController::class, 'requestSsl']);
+    Route::patch('/settings/domain/ssl-status', [DomainSettingsController::class, 'updateSslStatus']);
 });
