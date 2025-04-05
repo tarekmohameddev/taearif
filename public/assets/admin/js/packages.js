@@ -1,25 +1,32 @@
-(function ($) {
-    "use strict";
-    $('input[name="is_trial"]').on('change', function () {
-        if ($(this).val() == 1) {
-            $('#trial_day').show();
-        } else {
-            $('#trial_day').hide();
-        }
-        $('#trial_days').val(null);
-    });
-})(jQuery);
-
-
 "use strict";
 $(document).ready(function () {
-    $(".selectgroup-input").on('click', function () {
-        var val = $(this).val()
-        if (val == 'vCard') {
-            if ($(this).is(":checked")) {
-                $(".v-card-box").show();
+    $(".selectgroup-input").on('change', function () {
+        var val = $(this).val();
+        console.log("Value:", val, "Checked:", this.checked);
+
+        if (val === 'vCard') {
+            if (this.checked) {
+                $(".v-card-box").removeClass('vcrd-none').show();
             } else {
                 $(".v-card-box").hide();
+            }
+        }
+
+        if (val === 'projectLimit') {
+            if (this.checked) {
+                $(".project-limit-box").removeClass('project-limit-none').show();
+            } else {
+                $(".project-limit-box").addClass('project-limit-none').hide();
+
+            }
+        }
+
+        if (val === 'real_estate_Limit') {
+            if (this.checked) {
+                $(".real_estate-limit-box").removeClass('real_estate-limit-none').show();
+            } else {
+                $(".real_estate-limit-box").addClass('real_estate-limit-none').hide();
+
             }
         }
     });
@@ -43,4 +50,3 @@ $(document).ready(function () {
         }
     });
 });
-

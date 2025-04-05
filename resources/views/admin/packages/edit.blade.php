@@ -86,12 +86,6 @@
                                         value="{{ $package->title }}" placeholder="{{ __('Enter name') }}">
                                     <p id="errtitle" class="mb-0 text-danger em"></p>
                                 </div>
-                                {{-- <div class="form-group">
-                                    <label for="subtitle">{{ __('Package subtitle') }}</label>
-                                    <input id="subtitle" type="text" class="form-control" name="subtitle"
-                                        value="{{ $package->subtitle }}" placeholder="{{ __('Enter subtitle') }}">
-                                    <p id="errsubtitle" class="mb-0 text-danger em"></p>
-                                </div> --}}
                                 <div class="form-group">
                                     <label for="price">{{ __('Price') }} ({{ $bex->base_currency_text }})*</label>
                                     <input id="price" type="number" class="form-control" name="price"
@@ -236,14 +230,25 @@
                                                 @if (is_array($permissions) && in_array('Donation Management', $permissions)) checked @endif>
                                             <span class="selectgroup-button">{{ __('Donation Management') }}</span>
                                         </label>
-
                                         <label class="selectgroup-item">
-                                            <input id="RealestateManagement" type="checkbox" name="features[]"
-                                                value="Real Estate Management" class="selectgroup-input"
-                                                @if (is_array($permissions) && in_array('Real Estate Management', $permissions)) checked @endif>
+                                            <input id="RealestateManagement" type="checkbox" name="features[]" value="Real Estate Management" class="selectgroup-input"
+                                            @if (is_array($permissions) && in_array('Real Estate Management', $permissions)) checked @endif>
                                             <span class="selectgroup-button">{{ __('Real Estate Management') }}</span>
                                         </label>
 
+                                        <!-- NEW: Project Limit Checkbox -->
+                                        <label class="selectgroup-item">
+                                            <input type="checkbox" name="features[]" value="projectLimit" class="selectgroup-input"
+                                            @if (is_array($permissions) && in_array('projectLimit', $permissions)) checked @endif>
+                                            <span class="selectgroup-button">{{ __('Project Limit') }}</span>
+                                        </label>
+
+                                        <!-- NEW: Real Estate Limit Checkbox -->
+                                        <label class="selectgroup-item">
+                                            <input type="checkbox" name="features[]" value="real_estate_Limit" class="selectgroup-input"
+                                            @if (is_array($permissions) && in_array('real_estate_Limit', $permissions)) checked @endif>
+                                            <span class="selectgroup-button">{{ __('Real Estate Limit') }}</span>
+                                        </label>
                                     </div>
                                 </div>
                                 <div class="form-group" id="max_video_size">
@@ -274,6 +279,23 @@
                                     <p id="errnumber_of_vcards" class="mb-0 text-danger em"></p>
                                     <p class="text-warning">Enter 999999 , then it will appear as unlimited</p>
                                 </div>
+
+                                <!-- NEW: Project Limit Field -->
+                                <div class="form-group project-limit-box @if (is_array($permissions) && in_array('projectLimit', $permissions)) @else project-limit-none @endif">
+                                    <label for="project_limit_number">{{ __('Project Number Limit') }} * </label>
+                                    <input type="number" id="project_limit_number" class="form-control" name="project_limit_number" value="{{ $package->project_limit_number }}">
+                                    <p id="errproject_limit_number" class="mb-0 text-danger em"></p>
+                                    <p class="text-warning">{{ __('Enter 999999, then it will appear as unlimited') }}</p>
+                                </div>
+
+                                <!-- NEW: Real Estate Limit Field -->
+                                <div class="form-group real_estate-limit-box @if (is_array($permissions) && in_array('real_estate_Limit', $permissions)) @else real_estate-limit-none @endif">
+                                    <label for="real_estate_limit_number">{{ __('Real Estate Number Limit') }} * </label>
+                                    <input type="number" id="real_estate_limit_number" class="form-control" name="real_estate_limit_number" value="{{ $package->real_estate_limit_number }}">
+                                    <p id="errreal_estate_limit_number" class="mb-0 text-danger em"></p>
+                                    <p class="text-warning">{{ __('Enter 999999, then it will appear as unlimited') }}</p>
+                                </div>
+
                                 <div class="form-group">
                                     <label class="form-label">{{ __('Featured') }} *</label>
                                     <div class="selectgroup w-100">

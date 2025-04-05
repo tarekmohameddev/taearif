@@ -18,6 +18,9 @@
                 direction: rtl;
                 text-align: right;
             }
+            .project-limit-box {
+            display: none;
+        }
         </style>
     @endsection
 @endif
@@ -225,6 +228,16 @@
                                     <input type="checkbox" name="features[]" value="vCard" class="selectgroup-input">
                                     <span class="selectgroup-button">{{ __('vCard') }}</span>
                                 </label>
+<label class="selectgroup-item">
+    <input type="checkbox" name="features[]" value="projectLimit" class="selectgroup-input">
+    <span class="selectgroup-button">{{ __('Project Limit') }}</span>
+</label>
+
+<label class="selectgroup-item">
+    <input type="checkbox" name="features[]" value="real_estate_Limit" class="selectgroup-input">
+    <span class="selectgroup-button">{{ __('Real estate Limit') }}</span>
+</label>
+
                                 <label class="selectgroup-item">
                                     <input type="checkbox" name="features[]" value="QR Builder"
                                         class="selectgroup-input">
@@ -337,6 +350,20 @@
                             <p id="errnumber_of_vcards" class="mb-0 text-danger em"></p>
                             <p class="text-warning">Enter 999999 , then it will appear as unlimited</p>
                         </div>
+
+<div class="form-group project-limit-box" style="display: none;">
+    <label for="project_limit_number">{{ __('Project Number Limit') }} * </label>
+    <input type="number" id="project_limit_number" class="form-control" name="project_limit_number" value="">
+    <p id="errproject_limit_number" class="mb-0 text-danger em"></p>
+    <p class="text-warning">{{ __('Enter 999999, then it will appear as unlimited') }}</p>
+</div>
+<div class="form-group real_estate-limit-box" style="display: none;">
+    <label for="real_estate_limit_number">{{ __('Real Estate Number Limit') }} * </label>
+    <input type="number" id="real_estate_limit_number" class="form-control" name="real_estate_limit_number" value="">
+    <p id="errreal_estate_limit_number" class="mb-0 text-danger em"></p>
+    <p class="text-warning">{{ __('Enter 999999, then it will appear as unlimited') }}</p>
+</div>
+
                         <div class="form-group">
                             <label class="form-label">{{ __('Featured') }} *</label>
                             <div class="selectgroup w-100">
