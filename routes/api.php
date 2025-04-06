@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\blog\BlogController;
 use App\Http\Controllers\Api\OnboardingController;
+use App\Http\Controllers\Api\ApiSideMenusController;
 use App\Http\Controllers\Api\ThemeSettingsController;
 use App\Http\Controllers\Api\DomainSettingsController;
 use App\Http\Controllers\Api\content\ApiMenuController;
@@ -156,4 +157,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::patch('/settings/domain/request-ssl', [DomainSettingsController::class, 'requestSsl']);
     Route::patch('/settings/domain/ssl-status', [DomainSettingsController::class, 'updateSslStatus']);
+});
+
+//ApiSideMenusController
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/settings/side-menus', [ApiSideMenusController::class, 'index']);
+
 });

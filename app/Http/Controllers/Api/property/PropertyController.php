@@ -135,6 +135,29 @@ class PropertyController extends Controller
     {
         $user = auth()->user();
 
+        $membership = Membership::where('user_id', $user->id)
+            ->where('status', 1)
+            ->orderBy('id', 'desc')
+            ->with('package')
+            ->first();
+
+        if (!$membership || !$membership->package) {
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'No active package found for the user.',
+            ], 403);
+        }
+
+        $realEstateLimit = $membership->package->real_estate_limit_number;
+        $currentPropertyCount = Property::where('user_id', $user->id)->count();
+
+        if (!is_null($realEstateLimit) && $currentPropertyCount >= $realEstateLimit) {
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'You have reached your property listing limit.',
+            ], 403);
+        }
+
         $defaultLanguage = Language::where('user_id', $user->id)
             ->where('is_default', 1)
             ->firstOrFail();
@@ -267,7 +290,7 @@ class PropertyController extends Controller
         if ($responseProperty->purpose) {
             $responseProperty->transaction_type = $responseProperty->purpose;
         }
-        
+
         if ($responseProperty->featured_image) {
             $responseProperty->featured_image = asset($responseProperty->featured_image);
         }
@@ -277,13 +300,13 @@ class PropertyController extends Controller
                 return asset($image);
             }, $responseProperty->floor_planning_image);
         }
-        
- 
+
+
         $responseProperty->gallery = $responseProperty->sliderImages->pluck('image')
             ->map(function($image) {
                 return asset($image);
             })->toArray();
-        
+
 
        unset($responseProperty->sliderImages);
        unset($responseProperty->amenities);
@@ -291,7 +314,7 @@ class PropertyController extends Controller
 
         $responseProperty->featured = (bool) $responseProperty->featured;
         $responseProperty->status = (bool) $responseProperty->status;
-  
+
         return response()->json([
             'status' => 'success',
             'message' => 'Property created successfully',
