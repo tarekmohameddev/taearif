@@ -9,7 +9,7 @@ use App\Models\BasicSetting;
 use App\Models\Membership;
 use App\Http\Helpers\LimitCheckerHelper;
 use App\Http\Helpers\UserPermissionHelper;
-
+use Illuminate\Support\Facades\Auth;
 class ApiSideMenusController extends Controller
 {
     /**
@@ -20,54 +20,80 @@ class ApiSideMenusController extends Controller
     public function index()
     {
 
-        return response()->json([
+        $user = Auth::user();
 
+        // Load the latest active membership for the user
+        $membership = Membership::where('user_id', $user->id)
+            ->where('status', 'active') // Adjust according to your logic
+            ->orderByDesc('id')
+            ->with('package')
+            ->first();
+
+        // Get the package features
+        $package = $membership?->package;
+
+        // Default always-visible sections
+        $sections = [
+            [
+                'title' => 'لوحة التحكم',
+                'description' => 'نظره عامه عن الموقع',
+                'icon' => 'panel',
+                'path' => '/settings/side-menus/panel',
+            ],
+            [
+                'title' => 'ادارة المحتوى',
+                'description' => 'ادارة محتوى الموقع',
+                'icon' => 'content-settings',
+                'path' => '/settings/side-menus/content-settings',
+            ],
+            [
+                'title' => 'اعدادات الموقع',
+                'description' => 'تكوين اعدادات الموقع',
+                'icon' => 'web-settings',
+                'path' => '/settings/side-menus/web-settings',
+            ]
+        ];
+
+        // Conditionally add sections based on package
+        if ($package) {
+            if ($package->project_limit_number > 0) {
+                $sections[] = [
+                    'title' => 'المشاريع',
+                    'description' => 'ادارة المشاريع',
+                    'icon' => 'projects',
+                    'path' => '/settings/side-menus/projects',
+                ];
+            }
+
+            if ($package->real_estate_limit_number > 0) {
+                $sections[] = [
+                    'title' => 'العقارات',
+                    'description' => 'ادارة العقارات',
+                    'icon' => 'properties',
+                    'path' => '/settings/side-menus/properties',
+                ];
+            }
+
+            // You can add more conditional checks here for other modules
+            if (!empty($package->features) && str_contains($package->features, 'blog')) {
+                $sections[] = [
+                    'title' => 'المدونة',
+                    'description' => 'ادارة المدونة',
+                    'icon' => 'blog',
+                    'path' => '/settings/side-menus/blog',
+                ];
+            }
+        }
+
+        return response()->json([
             'status' => true,
             'message' => 'Side menus retrieved successfully.',
             'code' => 200,
             'data' => [
-                'sections' => [
-                        [
-                            'title' => 'لوحة التحكم',
-                            'description' => 'نظره عامه عن الموقع',
-                            'icon' => 'Settings2',
-                            'path' => '/settings/side-menus/panel',
-                        ],
-                        [
-                            'title' => 'ادارة المحتوى',
-                            'description' => 'ادارة محتوى الموقع',
-                            'icon' => 'SocialMedia',
-                            'path' => '/settings/side-menus/content-settings',
-                        ],
-                        [
-                            'title' => 'المدونة',
-                            'description' => 'ادارة المدونة',
-                            'icon' => 'Blog',
-                            'icon' => 'Analytics',
-                            'path' => '/settings/side-menus/blog',
-                        ],
-                        [
-                            'title' => 'المشاريع',
-                            'description' => 'ادارة المشاريع',
-                            'icon' => 'Settings2',
-                            'path' => '/settings/side-menus/projects',
-                        ],
-                        [
-                            'title' => 'العقارات',
-                            'description' => 'ادارة العقارات',
-                            'icon' => 'Info',
-                            'path' => '/settings/side-menus/properties',
-                        ],
-                        [
-                            'title' => 'اعدادات الموقع',
-                            'description' => 'تكوين اعدادات الموقع',
-                            'icon' => 'Footer',
-                            'path' => '/settings/side-menus/web-settings',
-                        ]
-                    ]
+                'sections' => $sections,
             ],
-
         ]);
+
     }
 
     /**
