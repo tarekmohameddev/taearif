@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\property;
 
+use App\Models\Membership;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\User\Language;
@@ -153,8 +154,10 @@ class PropertyController extends Controller
 
         if (!is_null($realEstateLimit) && $currentPropertyCount >= $realEstateLimit) {
             return response()->json([
-                'status' => 'fail',
+                'status' => false,
                 'message' => 'You have reached your property listing limit.',
+                'limit' => $realEstateLimit,
+                'used' => $currentPropertyCount
             ], 403);
         }
 

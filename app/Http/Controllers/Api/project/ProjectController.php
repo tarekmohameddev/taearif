@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Api\project;
 
+use App\Models\Membership;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\User\Language;
 use App\Models\User\BasicSetting;
-use Illuminate\Http\JsonResponse;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
@@ -261,10 +262,13 @@ class ProjectController extends Controller
 
         if (!is_null($projectLimit) && $currentProjectsCount >= $projectLimit) {
             return response()->json([
-                'status' => 'fail',
+                'status' => false,
                 'message' => 'You have reached your project creation limit.',
+                'limit' => $projectLimit,
+                'used' => $currentProjectsCount
             ], 403);
         }
+
 
         $defaultLang = Language::where('user_id', $userId)->where('is_default', 1)->firstOrFail();
 
