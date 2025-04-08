@@ -20,6 +20,11 @@ return [
         'endpoint' => env('MAILGUN_ENDPOINT', 'api.mailgun.net'),
     ],
 
+    'recaptcha' => [
+    'secret' => env('RECAPTCHA_SECRET'),
+    ],
+
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],
@@ -38,7 +43,7 @@ return [
         'channel' => '',
         'industry_type' => '',
       ],
-      
+
       'stripe' => [
         'key' => '',
         'secret' => '',
