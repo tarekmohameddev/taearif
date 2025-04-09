@@ -29,6 +29,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\User\UserShopSetting;
 use App\Models\User\UserEmailTemplate;
 use App\Models\User\UserPaymentGeteway;
+use App\Rules\Recaptcha;
 
 class AuthController extends Controller
 {
@@ -40,7 +41,8 @@ class AuthController extends Controller
             $request->validate([
                 'email' => 'required|email|unique:users,email',
                 'username' => 'required|string|unique:users,username',
-                'password' => 'required|string|min:6'
+                'password' => 'required|string|min:6',
+                'recaptcha_token' => ['required', new Recaptcha],
             ]);
 
 
@@ -100,7 +102,7 @@ class AuthController extends Controller
                 $user = $this->create_website($request->all(), $transaction_id, $transaction_details, $price, $be, $request->password);
               //  dd($user);
                 Auth::login($user);
-                
+
                 $token = $user->createToken('auth_token')->plainTextToken;
 
                 $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
@@ -119,10 +121,14 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
+
+        $request->validate([
             'email' => 'required|email',
-            'password' => 'required'
+            'password' => 'required',
+            'recaptcha_token' => ['required', new Recaptcha],
         ]);
+
+        $credentials = $request->only('email', 'password');
 
         if (!Auth::attempt($credentials)) {
             return response()->json(['message' => 'Invalid credentials'], 401);

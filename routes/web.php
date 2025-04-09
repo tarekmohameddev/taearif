@@ -1675,6 +1675,7 @@ Route::domain($domain)->group(function () {
             Route::post('/domain/mail', 'Admin\CustomDomainController@mail')->name('admin.custom-domain.mail');
             Route::post('/domain/delete', 'Admin\CustomDomainController@delete')->name('admin.custom-domain.delete');
             Route::post('/domain/bulk-delete', 'Admin\CustomDomainController@bulkDelete')->name('admin.custom-domain.bulk.delete');
+            Route::post('/domain/ssl-status', 'Admin\CustomDomainController@updateSslStatus')->name('admin.custom-domain.ssl-status');
         });
 
         // Subdomains
@@ -1733,26 +1734,33 @@ Route::domain($domain)->group(function () {
         });
     });
 });
-$parsedUrl = parse_url(url()->current());
-$host = str_replace("www.", "", $parsedUrl['host']);
-if (array_key_exists('host', $parsedUrl)) {
-    // if it is a path based URL
-    if ($host == env('WEBSITE_HOST')) {
-        $domain = $domain;
-        $prefix = '/{username}';
-    }
-    // if it is a subdomain / custom domain
-    else {
-        if (!app()->runningInConsole()) {
-            if (substr($_SERVER['HTTP_HOST'], 0, 4) === 'www.') {
-                $domain = 'www.{domain}';
-            } else {
-                $domain = '{domain}';
-            }
+
+    $parsedUrl = parse_url(url()->current());
+    $host = str_replace("www.", "", $parsedUrl['host']);
+    if (array_key_exists('host', $parsedUrl)) {
+        // if it is a path based URL
+        if ($host == env('WEBSITE_HOST')) {
+            $domain = $domain;
+            $prefix = '/{username}';
         }
-        $prefix = '';
+        // if it is a subdomain / custom domain
+        else {
+            if (!app()->runningInConsole()) {
+                if (substr($_SERVER['HTTP_HOST'], 0, 4) === 'www.') {
+                    $domain = 'www.{domain}';
+                } else {
+                    $domain = '{domain}';
+                }
+            }
+            $prefix = '';
+        }
     }
-}
+    // dd([
+    //     '$domain' => $domain,
+    //     '$prefix' => $prefix,
+    //     'env(WEBSITE_HOST)' => env('WEBSITE_HOST')
+    //   ]);
+
 Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
     Route::get('/', 'Front\FrontendController@userDetailView')->name('front.user.detail.view');
 
@@ -1762,7 +1770,7 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
     // });
     // Route::group(['middleware' => ['routeAccess:Real Estate']], function () {
     // Properties route
-    Route::controller(FrontPropertyController::class)->group(function () {
+    Route::controller(FrontPropertyController::class)->group(function () { 
         Route::get('/properties', 'index')->name('front.user.properties');
         Route::get('/property/{slug}', 'details')->name('front.user.property.details');
         Route::post('/property-contact', 'contact')->name('front.user.property_contact');

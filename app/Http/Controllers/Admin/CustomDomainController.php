@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
-use App\Http\Helpers\MegaMailer;
-use App\Models\BasicExtended;
-use App\Models\BasicSetting;
-use App\Models\User\UserCustomDomain;
-use Illuminate\Http\Request;
-use PHPMailer\PHPMailer\PHPMailer;
 use Session;
 use Validator;
+use App\Models\BasicSetting;
+use Illuminate\Http\Request;
+use App\Models\BasicExtended;
+use App\Http\Helpers\MegaMailer;
+use PHPMailer\PHPMailer\PHPMailer;
+use App\Http\Controllers\Controller;
+use App\Models\Api\ApiDomainSetting;
+use App\Models\User\UserCustomDomain;
 
 class CustomDomainController extends Controller
 {
@@ -41,36 +42,77 @@ class CustomDomainController extends Controller
 
     public function index(Request $request)
     {
-        $rcDomains = UserCustomDomain::orderBy('id', 'DESC')
+        $rcDomains = ApiDomainSetting::with('user')->orderBy('id', 'DESC')
             ->when($request->domain, function ($query) use ($request) {
-                return $query->where(function ($query) use ($request) {
-                    $query->where('current_domain', 'LIKE', '%' . $request->domain . '%')
-                        ->orWhere('requested_domain', 'LIKE', '%' . $request->domain . '%');
-                });
+                $query->where('custom_name', 'LIKE', '%' . $request->domain . '%');
             })
             ->when($request->username, function ($query) use ($request) {
-                return $query->whereHas('user', function ($query) use ($request) {
-                    $query->where('username', $request->username);
+                $query->whereHas('user', function ($q) use ($request) {
+                    $q->where('username', $request->username);
                 });
             });
+
         if (empty($request->type)) {
             $rcDomains = $rcDomains->paginate(10);
         } elseif ($request->type == 'pending') {
-            $rcDomains = $rcDomains->where('status', 0)->paginate(10);
+            $rcDomains = $rcDomains->where('status', 'pending')->paginate(10);
         } elseif ($request->type == 'connected') {
-            $rcDomains = $rcDomains->where('status', 1)->paginate(10);
+            $rcDomains = $rcDomains->where('status', 'active')->paginate(10);
         } elseif ($request->type == 'rejected') {
-            $rcDomains = $rcDomains->where('status', 2)->paginate(10);
+            $rcDomains = $rcDomains->where('status', 'rejected')->paginate(10);
         } else {
             return view('errors.404');
         }
+
         $data['rcDomains'] = $rcDomains;
+
         return view('admin.domains.custom', $data);
+    }
+
+    // public function index(Request $request)
+    // {
+    //     $rcDomains = UserCustomDomain::orderBy('id', 'DESC')
+    //         ->when($request->domain, function ($query) use ($request) {
+    //             return $query->where(function ($query) use ($request) {
+    //                 $query->where('current_domain', 'LIKE', '%' . $request->domain . '%')
+    //                     ->orWhere('requested_domain', 'LIKE', '%' . $request->domain . '%');
+    //             });
+    //         })
+    //         ->when($request->username, function ($query) use ($request) {
+    //             return $query->whereHas('user', function ($query) use ($request) {
+    //                 $query->where('username', $request->username);
+    //             });
+    //         });
+    //     if (empty($request->type)) {
+    //         $rcDomains = $rcDomains->paginate(10);
+    //     } elseif ($request->type == 'pending') {
+    //         $rcDomains = $rcDomains->where('status', 0)->paginate(10);
+    //     } elseif ($request->type == 'connected') {
+    //         $rcDomains = $rcDomains->where('status', 1)->paginate(10);
+    //     } elseif ($request->type == 'rejected') {
+    //         $rcDomains = $rcDomains->where('status', 2)->paginate(10);
+    //     } else {
+    //         return view('errors.404');
+    //     }
+    //     $data['rcDomains'] = $rcDomains;
+    //     dd($data);
+    //     return view('admin.domains.custom', $data);
+    // }
+    public function updateSslStatus(Request $request)
+    {
+        $domain = ApiDomainSetting::findOrFail($request->domain_id);
+        $domain->ssl = $request->status; // 1 = enabled, 0 = disabled
+        $domain->save();
+
+
+
+        $request->session()->flash('success', 'SSL status updated.');
+        return back();
     }
 
     public function status(Request $request)
     {
-        $rcDomain = UserCustomDomain::findOrFail($request->domain_id);
+        $rcDomain = ApiDomainSetting::findOrFail($request->domain_id);
         $rcDomain->status = $request->status;
         $rcDomain->save();
 

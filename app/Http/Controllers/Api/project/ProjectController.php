@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Api\project;
 
+use App\Models\Membership;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\User\Language;
 use App\Models\User\BasicSetting;
-use Illuminate\Http\JsonResponse;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
@@ -242,6 +243,33 @@ class ProjectController extends Controller
     public function store(Request $request)
     {
         $userId = auth()->id();
+
+        $membership = Membership::where('user_id', $userId)
+            ->where('status', 1)
+            ->orderBy('id', 'desc')
+            ->with('package')
+            ->first();
+
+        if (!$membership || !$membership->package) {
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'No active package found for the user.',
+            ], 403);
+        }
+
+        $projectLimit = $membership->package->project_limit_number;
+        $currentProjectsCount = Project::where('user_id', $userId)->count();
+
+        if (!is_null($projectLimit) && $currentProjectsCount >= $projectLimit) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You have reached your project creation limit.',
+                'limit' => $projectLimit,
+                'used' => $currentProjectsCount
+            ], 403);
+        }
+
+
         $defaultLang = Language::where('user_id', $userId)->where('is_default', 1)->firstOrFail();
 
         $rules = [
@@ -332,7 +360,6 @@ class ProjectController extends Controller
             'contents',
             'specifications'
         ])->find($project->id);
-
 
         if ($responseProject->featured_image) {
             $responseProject->featured_image = asset($responseProject->featured_image);

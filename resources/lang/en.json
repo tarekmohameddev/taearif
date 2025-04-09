@@ -2481,5 +2481,8 @@
         "contact_us_footer_links": "اتصل بنا",
         "No Link Found": "لم يتم العثور على رابط!",
 
-        "Menu Builder": "منشئ القوائم"
+        "Menu Builder": "منشئ القوائم",
+    "Number Limit": "الحد الأقصى",
+    "Project Number Limit": "الحد الأقصى لعدد المشروع",
+    "Real Estate Number Limit": "الحد الأقصى لعدد العقارات"
 }

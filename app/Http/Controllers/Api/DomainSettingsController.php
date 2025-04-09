@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use Log;
+use Mail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -9,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Api\ApiDomainSetting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+
 class DomainSettingsController extends Controller
 {
 
@@ -20,7 +23,6 @@ class DomainSettingsController extends Controller
      */
     public function index()
     {
-        //
         $user = Auth::user();
         $domains = $user->domains;
 
@@ -131,18 +133,6 @@ class DomainSettingsController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
      * Remove the specified resource from storage.
      *
      * @param  int  $id
@@ -185,6 +175,7 @@ class DomainSettingsController extends Controller
         ]);
     }
 
+    /* verify domain */
     public function verify(Request $request)
     {
         $user = Auth::user();
@@ -200,6 +191,9 @@ class DomainSettingsController extends Controller
         if ($domain->status !== 'active') {
             $domain->status = 'active';
             $domain->save();
+
+
+            $this->notifyAdminOfVerifiedDomain($domain); // Notify admin
         }
         return response()->json([
             'success' => true,
@@ -214,6 +208,7 @@ class DomainSettingsController extends Controller
         ]);
     }
 
+    /* set primary domain */
     public function setPrimary(Request $request)
     {
 
@@ -263,6 +258,97 @@ class DomainSettingsController extends Controller
 
 
     }
+
+    /* Notify admin of verified domain */
+    private function notifyAdminOfVerifiedDomain(ApiDomainSetting $domain)
+    {
+        $adminEmail = env('MAIL_ADMIN_ADDRESS', 'admin@example.com'); // from .env
+        if (!$adminEmail) {
+            Log::error("Failed to send admin domain verification email: Admin email not set in .env");
+            return;
+        }
+
+        $user = $domain->user;
+
+        $subject = " Domain Verified: {$domain->custom_name}";
+        $message = "
+            A user has verified a domain on your platform:
+
+            - User: {$user->username} ({$user->email})
+            - Domain: {$domain->custom_name}
+            - Date: " . now()->toDateTimeString() . "
+
+            You can review it in the admin panel.
+        ";
+
+        try {
+            Mail::raw($message, function ($mail) use ($adminEmail, $subject) {
+                $mail->to($adminEmail)
+                     ->subject($subject);
+            });
+        } catch (\Exception $e) {
+            Log::error("Failed to send admin domain verification email: " . $e->getMessage());
+        }
+    }
+
+    /* user request to enable the ssl */
+
+    public function requestSsl(Request $request)
+    {
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'id' => 'required|integer|exists:api_domains_settings,id',
+        ]);
+
+        $domain = ApiDomainSetting::where('id', $validated['id'])
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        if ($domain->status !== 'active') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Domain must be active before requesting SSL.',
+            ], 400);
+        }
+
+        if ($domain->ssl) {
+            return response()->json([
+                'success' => false,
+                'message' => 'SSL is already enabled for this domain.',
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'SSL request submitted. It will be provisioned shortly.',
+        ]);
+    }
+
+    /* admin update ssl status */
+
+    public function updateSslStatus(Request $request)
+    {
+        $request->validate([
+            'domain_id' => 'required|exists:api_domains_settings,id',
+            'ssl' => 'required|boolean',
+        ]);
+
+        $domain = ApiDomainSetting::findOrFail($request->domain_id);
+        $domain->ssl = $request->ssl;
+        $domain->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'SSL status updated successfully.',
+            'data' => [
+                'id' => $domain->id,
+                'custom_name' => $domain->requested_domain ?? $domain->custom_name,
+                'ssl' => $domain->ssl,
+            ],
+        ]);
+    }
+
 
 
 }

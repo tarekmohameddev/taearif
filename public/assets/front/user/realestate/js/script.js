@@ -196,12 +196,14 @@
                         'max': o_max
                     }
                 }), fsl.noUiSlider.on("update", function (values, handle) {
-                    $("[data-range-value='filterPriceSliderValue']").text(currency_symbol + values.join(" - " + currency_symbol));
+                    $("[data-range-value='filterPriceSliderValue'] .price-values").text(values.join(" - "));
+
 
                     inputs[handle].value = values[handle];
                 }), fsl.noUiSlider.on("change", function (values, handle) {
 
-                    $("[data-range-value='filterPriceSliderValue']").text(currency_symbol + values.join(" - " + currency_symbol));
+                    $("[data-range-value='filterPriceSliderValue'] .price-values").text(values.join(" - "));
+
                     inputs[handle].value = values[handle];
                 }),
 
@@ -232,12 +234,14 @@
                         'max': o_max
                     }
                 }), fsl2.noUiSlider.on("update", function (values, handle) {
-                    $("[data-range-value='filterPriceSlider2Value']").text(currency_symbol + values.join(" - " + currency_symbol));
+                    $("[data-range-value='filterPriceSliderValue'] .price-values").text(values.join(" - "));
+
 
                     inputs2[handle].value = values[handle];
                 }), fsl2.noUiSlider.on("change", function (values, handle) {
 
-                    $("[data-range-value='filterPriceSlider2Value']").text(currency_symbol + values.join(" - " + currency_symbol));
+                    $("[data-range-value='filterPriceSliderValue'] .price-values").text(values.join(" - "));
+
                     inputs2[handle].value = values[handle];
                 }),
 
@@ -957,19 +961,32 @@
             data: {
                 type: value,
             },
+            // success: function (data) {
+            //     if (data.categories.length > 0) {
+            //         $('.bringCategory').find('option').remove();
+            //         $.each(data.categories, function (key, value) {
+
+            //             $('.bringCategory').append($(
+            //                 `<option></option>`
+            //             ).val(value.category_content.slug).html(value.category_content.name));
+            //         });
+
+            //     }
+            //     $('.request-loader').removeClass('show');
+            // }
             success: function (data) {
                 if (data.categories.length > 0) {
-                    $('.bringCategory').find('option').remove();
-                    $.each(data.categories, function (key, value) {
-
-                        $('.bringCategory').append($(
-                            `<option></option>`
-                        ).val(value.category_content.slug).html(value.category_content.name));
-                    });
-
+                  $('.bringCategory').find('option').remove();
+                  $.each(data.categories, function (key, item) {
+                    // item.slug and item.name (not item.category_content)
+                    $('.bringCategory').append(
+                      $('<option></option>').val(item.slug).html(item.name)
+                    );
+                  });
                 }
                 $('.request-loader').removeClass('show');
-            }
+              }
+
         });
     });
 

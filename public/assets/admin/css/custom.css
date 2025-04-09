@@ -559,6 +559,12 @@ a:hover {
 .vcrd-none {
     display: none;
 }
+.project-limit-none {
+    display: none;
+}
+.real_estate-limit-none {
+    display: none;
+}
 
 /* Custom accordion */
 .custom-accordion {

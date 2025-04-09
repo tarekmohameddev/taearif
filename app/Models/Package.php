@@ -23,6 +23,8 @@ class Package extends Model
         'meta_keywords',
         'meta_description',
         'number_of_vcards',
+        'project_limit_number',
+        'real_estate_limit_number',
         'video_size_limit',
         'file_size_limit',
         'serial_number'

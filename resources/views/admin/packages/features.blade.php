@@ -84,6 +84,16 @@
                                             <span class="selectgroup-button">{{ __('vCard') }}</span>
                                         </label>
                                         <label class="selectgroup-item">
+                                            <input type="checkbox" name="features[]" value="projectLimit"
+                                                class="selectgroup-input" @if (is_array($features) && in_array('projectLimit', $features)) checked @endif>
+                                            <span class="selectgroup-button">{{ __('projectLimit') }}</span>
+                                        </label>
+                                        <label class="selectgroup-item">
+                                            <input type="checkbox" name="features[]" value="real_estate_Limit"
+                                                class="selectgroup-input" @if (is_array($features) && in_array('real_estate_Limit', $features)) checked @endif>
+                                            <span class="selectgroup-button">{{ __('real_estate_Limit') }}</span>
+                                        </label>
+                                        <label class="selectgroup-item">
                                             <input type="checkbox" name="features[]" value="QR Builder"
                                                 class="selectgroup-input" @if (is_array($features) && in_array('QR Builder', $features)) checked @endif>
                                             <span class="selectgroup-button">{{ __('QR Builder') }}</span>

@@ -387,6 +387,26 @@ if (!function_exists('getUser')) {
     }
 }
 
+//
+if (!function_exists('getDynamicBaseUrl')) {
+    function getDynamicBaseUrl()
+    {
+        $user = getUser();
+        if (!$user) {
+            return url('/');
+        }
+
+        $host = request()->getHttpHost();
+
+        if ($host == env('WEBSITE_HOST')) {
+            return request()->getScheme() . '://' . env('WEBSITE_HOST') . '/' . $user->username;
+        } else {
+
+            return request()->getSchemeAndHttpHost();
+        }
+    }
+  }
+//
 // checks if 'current package has subdomain ?'
 
 if (!function_exists('cPackageHasSubdomain')) {
@@ -424,6 +444,17 @@ if (!function_exists('getCdomain')) {
     {
         $cdomains = $user->custom_domains()->where('status', 1);
         return $cdomains->count() > 0 ? $cdomains->orderBy('id', 'DESC')->first()->requested_domain : false;
+    }
+}
+if (!function_exists('getActiveCustomDomain')) {
+    function getActiveCustomDomain($user)
+    {
+        $domain = $user->domains()
+            ->where('status', 'active')
+            ->latest('id')
+            ->first();
+
+        return $domain ? $domain->custom_name : false;
     }
 }
 

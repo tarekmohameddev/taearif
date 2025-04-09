@@ -60,6 +60,7 @@
                                         <th>{{__('Username')}}</th>
                                         <th scope="col">{{__('Requested Domain')}}</th>
                                         <th scope="col">{{__('Current Domain')}}</th>
+                                        <th scope="col">{{__('SSL')}}</th>
                                         <th scope="col">{{__('Status')}}</th>
                                         <th>{{__('Action')}}</th>
                                     </tr>
@@ -76,8 +77,8 @@
                                         <td>-</td>
                                         @endif
                                         <td>
-                                            @if (!empty($rcDomain->requested_domain))
-                                            <a href="//{{$rcDomain->requested_domain}}" target="_blank">{{$rcDomain->requested_domain}}</a>
+                                            @if (!empty($rcDomain->custom_name))
+                                            <a href="//{{$rcDomain->custom_name}}" target="_blank">{{$rcDomain->custom_name}}</a>
                                             @else
                                             -
                                             @endif
@@ -90,24 +91,28 @@
                                             @endif
                                         </td>
                                         <td>
+                                            @if ($rcDomain->ssl)
+                                                <span class="badge badge-success">Enabled</span>
+                                            @else
+                                                <span class="badge badge-secondary">Disabled</span>
+                                            @endif
+                                        </td>
+                                        <td>
                                             <form id="statusForm{{$rcDomain->id}}" action="{{route('admin.custom-domain.status')}}" method="POST">
                                                 @csrf
                                                 <input type="hidden" name="domain_id" value="{{$rcDomain->id}}">
                                                 <select class="max-w-130 form-control form-control-sm
-                                                    @if($rcDomain->status == 0)
+                                                    @if($rcDomain->status == 'pending')
                                                     bg-warning text-white
-                                                    @elseif($rcDomain->status == 1)
+                                                    @elseif($rcDomain->status == 'active')
                                                     bg-success text-white
-                                                    @elseif($rcDomain->status == 2)
+                                                    @elseif($rcDomain->status == 'failed')
                                                     bg-danger text-white
-                                                    @elseif($rcDomain->status == 3)
-                                                    bg-dark text-white
                                                     @endif
                                                     " name="status" onchange="document.getElementById('statusForm{{$rcDomain->id}}').submit();">
-                                                <option value="0" {{$rcDomain->status == 0 ? 'selected' : ''}}>{{__('Pending')}}</option>
-                                                <option value="1" {{$rcDomain->status == 1 ? 'selected' : ''}}>{{__('Connected')}}</option>
-                                                <option value="2" {{$rcDomain->status == 2 ? 'selected' : ''}}>{{__('Rejected')}}</option>
-                                                <option value="3" {{$rcDomain->status == 3 ? 'selected' : ''}}>{{__('Removed')}}</option>
+                                                <option value="pending" {{$rcDomain->status == 'pending' ? 'selected' : ''}}>{{__('Pending')}}</option>
+                                                <option value="active" {{$rcDomain->status == 'active' ? 'selected' : ''}}>{{__('Connected')}}</option>
+                                                <option value="failed" {{$rcDomain->status == 'failed' ? 'selected' : ''}}>{{__('Rejected')}}</option>
                                                 </select>
                                             </form>
                                         </td>
