@@ -961,19 +961,32 @@
             data: {
                 type: value,
             },
+            // success: function (data) {
+            //     if (data.categories.length > 0) {
+            //         $('.bringCategory').find('option').remove();
+            //         $.each(data.categories, function (key, value) {
+
+            //             $('.bringCategory').append($(
+            //                 `<option></option>`
+            //             ).val(value.category_content.slug).html(value.category_content.name));
+            //         });
+
+            //     }
+            //     $('.request-loader').removeClass('show');
+            // }
             success: function (data) {
                 if (data.categories.length > 0) {
-                    $('.bringCategory').find('option').remove();
-                    $.each(data.categories, function (key, value) {
-
-                        $('.bringCategory').append($(
-                            `<option></option>`
-                        ).val(value.category_content.slug).html(value.category_content.name));
-                    });
-
+                  $('.bringCategory').find('option').remove();
+                  $.each(data.categories, function (key, item) {
+                    // item.slug and item.name (not item.category_content)
+                    $('.bringCategory').append(
+                      $('<option></option>').val(item.slug).html(item.name)
+                    );
+                  });
                 }
                 $('.request-loader').removeClass('show');
-            }
+              }
+
         });
     });
 

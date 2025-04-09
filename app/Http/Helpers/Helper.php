@@ -387,6 +387,26 @@ if (!function_exists('getUser')) {
     }
 }
 
+//
+if (!function_exists('getDynamicBaseUrl')) {
+    function getDynamicBaseUrl()
+    {
+        $user = getUser();
+        if (!$user) {
+            return url('/');
+        }
+
+        $host = request()->getHttpHost();
+
+        if ($host == env('WEBSITE_HOST')) {
+            return request()->getScheme() . '://' . env('WEBSITE_HOST') . '/' . $user->username;
+        } else {
+
+            return request()->getSchemeAndHttpHost();
+        }
+    }
+  }
+//
 // checks if 'current package has subdomain ?'
 
 if (!function_exists('cPackageHasSubdomain')) {

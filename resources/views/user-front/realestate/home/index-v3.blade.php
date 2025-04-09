@@ -710,3 +710,7 @@
 @endif
 
 @endsection
+
+<script>
+  var baseURL = "{{ getDynamicBaseUrl() }}";
+</script>
