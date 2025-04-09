@@ -234,12 +234,14 @@
                         'max': o_max
                     }
                 }), fsl2.noUiSlider.on("update", function (values, handle) {
-                    $("[data-range-value='filterPriceSlider2Value']").text(currency_symbol + values.join(" - " + currency_symbol));
+                    $("[data-range-value='filterPriceSliderValue'] .price-values").text(values.join(" - "));
+
 
                     inputs2[handle].value = values[handle];
                 }), fsl2.noUiSlider.on("change", function (values, handle) {
 
-                    $("[data-range-value='filterPriceSlider2Value']").text(currency_symbol + values.join(" - " + currency_symbol));
+                    $("[data-range-value='filterPriceSliderValue'] .price-values").text(values.join(" - "));
+
                     inputs2[handle].value = values[handle];
                 }),
 
