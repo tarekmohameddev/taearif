@@ -982,13 +982,12 @@
 
                         <!-- Main Headline -->
                         <h1 class="mb-6 max-w-4xl gradient-gray-gray text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
-                            أنشئ موقعك الإلكتروني المثالي بدون برمجة في دقائق
+                        موقع احترافي في دقائق!
                         </h1>
 
                         <!-- Subheadline -->
                         <p class="mb-8 max-w-2xl text-lg text-slate-600 md:text-xl">
-                            منصة تعاريف توفر لك حلول مواقع احترافية تناسب جميع المستخدمين، مع دعم كامل باللغة العربية وتجربة
-                            مستخدم فريدة
+                        ✔️بدون برمجة  ✔️سهل الاستخدام ✔️تصاميم احترافية
                         </p>
 
                         <!-- CTA Buttons -->
@@ -1401,43 +1400,7 @@
                 </div>
 
       <!-- Stats Section -->
-      <div class="mt-20 grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8 place-items-center">
-                    <div class="bg-white rounded-xl border border-gray-100 p-6 text-center shadow-sm hover:shadow-md transition-all duration-300 animate-scale w-full max-w-[300px]">
-                        <div class="flex justify-center mb-4">
-                            <div class="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
-                                <i data-lucide="users" class="h-6 w-6 text-gray-600"></i>
-                            </div>
-                        </div>
-                        <div class="text-3xl font-bold gradient-gray-gray">
-                            +3000
-                        </div>
-                        <p class="text-slate-600 mt-1">مستخدم نشط</p>
-                    </div>
 
-                    <div class="bg-white rounded-xl border border-gray-100 p-6 text-center shadow-sm hover:shadow-md transition-all duration-300 animate-scale w-full max-w-[300px]">
-                        <div class="flex justify-center mb-4">
-                            <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                <i data-lucide="globe" class="h-6 w-6 text-blue-600"></i>
-                            </div>
-                        </div>
-                        <div class="text-3xl font-bold gradient-gray-gray">
-                            +3000
-                        </div>
-                        <p class="text-slate-600 mt-1">موقع تم إنشاؤه</p>
-                    </div>
-
-                    <div class="bg-white rounded-xl border border-gray-100 p-6 text-center shadow-sm hover:shadow-md transition-all duration-300 animate-scale w-full max-w-[300px]">
-                        <div class="flex justify-center mb-4">
-                            <div class="h-12 w-12 rounded-full bg-cyan-100 flex items-center justify-center">
-                                <i data-lucide="star" class="h-6 w-6 text-cyan-600"></i>
-                            </div>
-                        </div>
-                        <div class="text-3xl font-bold gradient-gray-gray">
-                            4.9/5
-                        </div>
-                        <p class="text-slate-600 mt-1">تقييم المستخدمين</p>
-                    </div>
-                </div>
             </div>
         </section>
 
@@ -1461,13 +1424,12 @@
                     </div>
 
                     <h2 class="text-2xl sm:text-3xl font-bold tracking-tighter sm:text-4xl gradient-gray-gray">
-                        دع فريقنا المحترف يصمم موقعك
+                    أنشئ موقعك بمساعدة شركائنا المعتمدين
                     </h2>
 
                     <p class="text-slate-600 text-lg leading-relaxed">
-                        نقدم خدمات تصميم احترافية لمن يرغب في الحصول على موقع متميز دون عناء. فريقنا من المصممين والمطورين
-                        المحترفين جاهز لتحويل أفكارك إلى واقع.
-                    </p>
+                    ابدأ رحلتك الرقمية بسهولة وثقة، عبر الاستعانة بشركائنا من المصممين والمطورين المحترفين. سواء كنت تبحث عن تصميم فريد أو إطلاق سريع، ستجد من يساعدك في كل خطوة.
+                </p>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                         <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-all duration-300">
@@ -1515,8 +1477,8 @@
 
                     <div class="mt-4">
                         <a href="https://wa.me/966541839888" class="rounded-full bg-gray-600 hover:bg-gray-700 text-white px-8 py-6 shadow-lg shadow-gray-200/30 transition-all duration-300 hover:shadow-gray-200/50 text-base btn">
-                            تواصل مع فريق التصميم
-                            <i data-lucide="arrow-right" class="mr-2 h-4 w-4"></i>
+                        تواصل مع شركائنا
+                                                    <i data-lucide="arrow-right" class="mr-2 h-4 w-4"></i>
                         </a>
                     </div>
                 </div>
@@ -1570,6 +1532,7 @@
         </div>
     </div>
 </section>
+
 
         <!-- Real Estate Section -->
         <section class="w-full py-12 md:py-24 lg:py-32 relative">
