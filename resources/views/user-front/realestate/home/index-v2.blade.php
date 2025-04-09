@@ -412,7 +412,9 @@
 
 @if ($home_sections->category_section == 1)
 @if(count($property_categories) > 0)
-<section class="category pt-100 pb-70 bg-light">
+<!-- الفئات -->
+
+<section class="category pt-100 pb-70 bg-light d-none">
     <div class="container">
         <div class="row">
             <div class="col-12">

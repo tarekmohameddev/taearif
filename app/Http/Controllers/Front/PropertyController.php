@@ -385,11 +385,11 @@ class PropertyController extends Controller
     public function buynow($website, Request $request)
     {
         $user = getUser();
-        
+
         $info = BasicSetting::where('user_id', $user->id)->select('is_recaptcha')->first();
         $messages = [];
-        
-        
+
+
 
         $request['to_mail'] = $user->email;
 

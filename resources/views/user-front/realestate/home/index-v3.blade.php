@@ -161,9 +161,12 @@
                                         <div class="form-group mb-20">
                                             <div class="form-control price-slider">
                                                 <div data-range-slider="filterPriceSlider"></div>
-                                                <span data-range-value="filterPriceSliderValue" class="w-60">{{ formatNumber($min) }}
-                                                    -
-                                                    {{ formatNumber($max) }}</span>
+                                                <span data-range-value="filterPriceSliderValue" class="w-60">
+                                                    <span class="price-icon">
+                                                        <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg" width="14" style="vertical-align: middle;">
+                                                    </span>
+                                                    <span class="price-values">{{ formatNumber($min) }} - {{ formatNumber($max) }}</span>
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -270,7 +273,7 @@
 
 @if ($home_sections->brand_section == 1)
 @if(count($brands) > 0)
-<div class="sponsor ptb-100" data-aos="fade-up">
+<div class="sponsor ptb-100 d-none" data-aos="fade-up">
     <div class="container">
         <div class="row">
             <div class="col-12">
@@ -304,13 +307,16 @@
 
 @if ($home_sections->category_section == 1)
 @if(count($property_categories) > 0)
-<section class="category category-2 pb-100">
+<!-- الفئات -->
+<section class="category category-2 pb-100 d-none">
     <div class="container">
         <div class="row">
             <div class="col-12">
                 <div class="section-title title-center mb-40" data-aos="fade-up">
                     <span class="subtitle">{{ $home_text?->category_section_title }}</span>
                     <h2 class="title">{{ $home_text?->category_section_subtitle }}</h2>
+                    <h2 class="title">الفئات</h2>
+
                 </div>
             </div>
             <div class="col-12" data-aos="fade-up">
@@ -458,7 +464,7 @@
 
 @if ($home_sections->work_process_section == 1)
 @if(count($work_processes) > 0)
-<section class="work-process work-process-2 pb-70">
+<section class="work-process work-process-2 pb-70 d-none">
     <div class="container">
         <div class="row">
             <div class="col-12">

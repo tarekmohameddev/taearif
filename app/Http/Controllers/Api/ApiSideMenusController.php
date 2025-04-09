@@ -35,22 +35,23 @@ class ApiSideMenusController extends Controller
         // Default always-visible sections
         $sections = [
             [
+
                 'title' => 'لوحة التحكم',
                 'description' => 'نظره عامه عن الموقع',
                 'icon' => 'panel',
-                'path' => '/settings/side-menus/panel',
+                'path' => '/',
             ],
             [
                 'title' => 'ادارة المحتوى',
                 'description' => 'ادارة محتوى الموقع',
                 'icon' => 'content-settings',
-                'path' => '/settings/side-menus/content-settings',
+                'path' => '/content',
             ],
             [
                 'title' => 'اعدادات الموقع',
                 'description' => 'تكوين اعدادات الموقع',
                 'icon' => 'web-settings',
-                'path' => '/settings/side-menus/web-settings',
+                'path' => '/settings',
             ]
         ];
 
@@ -60,8 +61,8 @@ class ApiSideMenusController extends Controller
                 $sections[] = [
                     'title' => 'المشاريع',
                     'description' => 'ادارة المشاريع',
-                    'icon' => 'projects',
-                    'path' => '/settings/side-menus/projects',
+                    'icon' => 'building',
+                    'path' => '/projects',
                 ];
             }
 
@@ -69,8 +70,8 @@ class ApiSideMenusController extends Controller
                 $sections[] = [
                     'title' => 'العقارات',
                     'description' => 'ادارة العقارات',
-                    'icon' => 'properties',
-                    'path' => '/settings/side-menus/properties',
+                    'icon' => 'home',
+                    'path' => '/properties',
                 ];
             }
 
@@ -80,7 +81,7 @@ class ApiSideMenusController extends Controller
                     'title' => 'المدونة',
                     'description' => 'ادارة المدونة',
                     'icon' => 'blog',
-                    'path' => '/settings/side-menus/blog',
+                    'path' => '/blog',
                 ];
             }
         }

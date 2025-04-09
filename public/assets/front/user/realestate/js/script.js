@@ -196,12 +196,14 @@
                         'max': o_max
                     }
                 }), fsl.noUiSlider.on("update", function (values, handle) {
-                    $("[data-range-value='filterPriceSliderValue']").text(currency_symbol + values.join(" - " + currency_symbol));
+                    $("[data-range-value='filterPriceSliderValue'] .price-values").text(values.join(" - "));
+
 
                     inputs[handle].value = values[handle];
                 }), fsl.noUiSlider.on("change", function (values, handle) {
 
-                    $("[data-range-value='filterPriceSliderValue']").text(currency_symbol + values.join(" - " + currency_symbol));
+                    $("[data-range-value='filterPriceSliderValue'] .price-values").text(values.join(" - "));
+
                     inputs[handle].value = values[handle];
                 }),
 
