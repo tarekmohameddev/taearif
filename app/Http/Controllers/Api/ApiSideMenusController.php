@@ -21,13 +21,8 @@ class ApiSideMenusController extends Controller
     {
 
         $user = Auth::user();
-
         // Load the latest active membership for the user
-        $membership = Membership::where('user_id', $user->id)
-            ->where('status', 'active') // Adjust according to your logic
-            ->orderByDesc('id')
-            ->with('package')
-            ->first();
+        $membership = Membership::where('user_id', $user->id)->where('status', 1)->orderByDesc('id')->with('package')->first();
 
         // Get the package features
         $package = $membership?->package;
@@ -76,7 +71,7 @@ class ApiSideMenusController extends Controller
             }
 
             // You can add more conditional checks here for other modules
-            if (!empty($package->features) && str_contains($package->features, 'blog')) {
+            if (!empty($package->features) && str_contains($package->features, 'Blog')) {
                 $sections[] = [
                     'title' => 'المدونة',
                     'description' => 'ادارة المدونة',

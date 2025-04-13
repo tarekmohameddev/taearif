@@ -577,6 +577,13 @@ class FrontendController extends Controller
                 ['language_id', $userdefaultLang->id],
             ])->select(['video_section_image', 'video_section_title', 'video_section_subtitle', 'video_section_button_url', 'video_section_button_text', 'video_section_url', 'video_section_text'])->first();
 
+        // resources\views\user-front\maintenance_mode.blade.php
+        // maintenance_mode
+        if ($api_general_settingsData->maintenance_mode == 1) {
+            return view('user-front.maintenance_mode', $data);
+        }
+
+
         if ($userBs->theme == 'home_one') {
             $blogLimits = 3;
         } elseif ($userBs->theme == 'home_four' || $userBs->theme == 'home_five' || $userBs->theme == 'home_seven') {

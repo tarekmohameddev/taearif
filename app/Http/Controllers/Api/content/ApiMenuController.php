@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Api\content;
 
+use App\Models\Membership;
+use Illuminate\Http\Request;
 use App\Models\Api\ApiMenuItem;
 use App\Models\Api\ApiMenuSetting;
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Validator;
 
 class ApiMenuController extends Controller
 {
@@ -16,14 +17,17 @@ class ApiMenuController extends Controller
      */
     public function index(Request $request)
     {
-        $user_id = $request->user();
-        $user_id = $user_id->id;
+        $user_id = $request->user()->id;
 
         $menuItems = ApiMenuItem::where('user_id', $user_id)->orderBy('order')->get();
         $settings = ApiMenuSetting::where('user_id', $user_id)->first();
 
-
         if ($menuItems->isEmpty()) {
+            $membership = Membership::where('user_id', $user_id)
+                ->where('status', 'active') // You might adjust this condition
+                ->with('package')
+                ->first();
+
             $defaultItems = [
                 [
                     'label' => 'الرئيسية',
@@ -45,17 +49,22 @@ class ApiMenuController extends Controller
                     'show_on_mobile' => true,
                     'show_on_desktop' => true,
                 ],
-                [
+            ];
+
+            if ($membership && $membership->package && !empty($membership->package->real_estate_limit_number)) {
+                $defaultItems[] = [
                     'label' => 'الوحدات',
-                    'url' => '/properties',
                     'is_external' => false,
                     'is_active' => true,
                     'order' => 3,
                     'parent_id' => null,
                     'show_on_mobile' => true,
                     'show_on_desktop' => true,
-                ],
-                [
+                ];
+            }
+
+            if ($membership && $membership->package && !empty($membership->package->project_limit_number)) {
+                $defaultItems[] = [
                     'label' => 'المشاريع',
                     'url' => '/projects',
                     'is_external' => false,
@@ -64,24 +73,24 @@ class ApiMenuController extends Controller
                     'parent_id' => null,
                     'show_on_mobile' => true,
                     'show_on_desktop' => true,
-                ],
-                [
-                    'label' => 'اتصل بنا',
-                    'url' => '/contact',
-                    'is_external' => false,
-                    'is_active' => true,
-                    'order' => 5,
-                    'parent_id' => null,
-                    'show_on_mobile' => true,
-                    'show_on_desktop' => true,
-                ],
+                ];
+            }
+
+            $defaultItems[] = [
+                'label' => 'اتصل بنا',
+                'url' => '/contact',
+                'is_external' => false,
+                'is_active' => true,
+                'order' => 5,
+                'parent_id' => null,
+                'show_on_mobile' => true,
+                'show_on_desktop' => true,
             ];
 
             foreach ($defaultItems as $item) {
                 $menuItem = new ApiMenuItem($item);
                 $menuItem->user_id = $user_id;
                 $menuItem->save();
-
             }
 
             $menuItems = ApiMenuItem::where('user_id', $user_id)->orderBy('order')->get();
@@ -112,7 +121,6 @@ class ApiMenuController extends Controller
             ];
         });
 
-
         $formattedSettings = [
             'menuPosition' => $settings->menu_position,
             'menuStyle' => $settings->menu_style,
@@ -129,6 +137,7 @@ class ApiMenuController extends Controller
             ]
         ]);
     }
+
 
     /**
      * Update menu items and settings for the authenticated user

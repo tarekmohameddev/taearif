@@ -26,6 +26,7 @@ use App\Models\User\RealestateManagement\PropertySpecification;
 
 class PropertyController extends Controller
 {
+    
     public function properties_categories(Request $request){
         $user = Auth::user();
         $properties_categories = [
