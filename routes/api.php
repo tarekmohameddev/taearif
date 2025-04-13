@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\ApiSideMenusController;
 use App\Http\Controllers\Api\ThemeSettingsController;
 use App\Http\Controllers\Api\DomainSettingsController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\content\ApiMenuController;
 use App\Http\Controllers\Api\content\ContentController;
 use App\Http\Controllers\Api\project\ProjectController;
@@ -36,8 +37,12 @@ use App\Http\Controllers\Api\content\ApiBannerSettingController;
 // });
 
 // Auth routes
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', [AuthController::class, 'getUserProfile']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/make-payment', [PaymentController::class, 'checkout']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {

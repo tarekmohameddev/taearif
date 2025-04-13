@@ -180,7 +180,107 @@ class AuthController extends Controller
         return response()->json(['message' => 'Logged out successfully']);
     }
 
-    // Helper functions
+
+        public function getUserProfile()
+        {
+            try {
+                // Get authenticated user from API token
+                $user = Auth::user();
+                
+                if (!$user) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Unauthorized access'
+                    ], 401);
+                }
+                
+                // Get current date for comparing with membership expiration
+                $currentDate = now();
+                
+                // Get user's latest membership from the membership table
+                $membership = Membership::where('user_id', $user->id)
+                    ->orderBy('expire_date', 'desc')
+                    ->first();
+                
+                $membershipDetails = null;
+                $isFreePlan = true;
+                $isExpired = true;
+                
+                if ($membership) {
+                    // Determine if membership is expired
+                    $isExpired = $currentDate->gt($membership->expire_date);
+                    
+                    // Determine if it's a free plan (price = 0)
+                    $isFreePlan = (float)$membership->price <= 0;
+                    
+                    // Format membership details
+                    $membershipDetails = [
+                        'id' => $membership->id,
+                        'package_id' => $membership->package_id,
+                        'package_price' => $membership->package_price,
+                        'price' => $membership->price,
+                        'discount' => $membership->discount,
+                        'coupon_code' => $membership->coupon_code,
+                        'currency' => $membership->currency,
+                        'currency_symbol' => $membership->currency_symbol,
+                        'payment_method' => $membership->payment_method,
+                        'transaction_id' => $membership->transaction_id,
+                        'status' => $membership->status,
+                        'is_trial' => $membership->is_trial,
+                        'trial_days' => $membership->trial_days,
+                        'start_date' => $membership->start_date,
+                        'expire_date' => $membership->expire_date,
+                        'is_expired' => $isExpired,
+                        'days_remaining' => $isExpired ? 0 : $currentDate->diffInDays($membership->expire_date),
+                        'is_free_plan' => $isFreePlan
+                    ];
+                    
+                    // Get package details if needed
+                    if ($membership->package_id) {
+                        $package = Package::find($membership->package_id);
+                        if ($package) {
+                            $membershipDetails['package'] = [
+                                'title' => $package->title,
+                                'features' => json_decode($package->features, true),
+                                // Add any other package details you need
+                            ];
+                        }
+                    }
+                }
+                
+                // Compile user data
+                $userData = [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'email' => $user->email,
+                    'phone' => $user->phone_number ?? null,
+                    'address' => $user->address ?? null,
+                    'city' => $user->city ?? null,
+                    'state' => $user->state ?? null,
+                    'country' => $user->country ?? null,
+                    'zip_code' => $user->zip_code ?? null,
+                    'profile_image' => $user->profile_image ? url('/') . '/assets/front/img/user/' . $user->profile_image : null,
+                    'membership' => $membershipDetails,
+                    'is_free_plan' => $isFreePlan,
+                    'has_active_membership' => !$isExpired && $membership && $membership->status == 1,
+                    'created_at' => $user->created_at,
+                    'updated_at' => $user->updated_at
+                ];
+                
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $userData
+                ], 200);
+                
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $e->getMessage()
+                ], 500);
+            }
+        }
+    
     private function invalidCurrencyResponse($message)
     {
         return response()->json(['status' => 'error', 'message' => __($message)], 400);
