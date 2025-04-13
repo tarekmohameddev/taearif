@@ -21,12 +21,14 @@ class GeneralSetting extends Model
         'favicon',
         'maintenance_mode',
         'show_breadcrumb',
+        'show_properties',
         'additional_settings'
     ];
 
     protected $casts = [
         'maintenance_mode' => 'boolean',
         'show_breadcrumb' => 'boolean',
+        'show_properties' => 'boolean',
         'additional_settings' => 'array',
     ];
 

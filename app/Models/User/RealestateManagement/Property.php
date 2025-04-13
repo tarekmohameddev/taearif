@@ -7,6 +7,7 @@ use App\Models\User\RealestateManagement\PropertyAmenity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\User\RealestateManagement\PropertySliderImg;
 
 
@@ -20,6 +21,7 @@ class Property extends Model
 
     public $table = "user_properties";
     protected $fillable = [
+        'region_id',
         'user_id',
         'featured_image',
         'floor_planning_image',
@@ -55,6 +57,7 @@ class Property extends Model
     public static function storeProperty($userId, $request, $featuredImgName, $floorPlanningImage, $videoImage,$featured)
     {
         return self::create([
+            'region_id' => $request['region_id'] ?? null,
             'user_id' => $userId,
             'featured_image' => $featuredImgName,
             'floor_planning_image' => $floorPlanningImage ?? null,
@@ -76,8 +79,8 @@ class Property extends Model
 
     public function updateProperty($requestData)
     {
-        \Log::info($requestData);
         return $this->update([
+            'region_id' => $requestData['region_id'] ?? null,
             'featured_image' => $request['featured_image'] ?? $this->featured_image, //73
             'floor_planning_image' => $request['floor_planning_image']?? null,
             'video_image' => $requestData['video_image'] ?? null,
@@ -87,10 +90,10 @@ class Property extends Model
             'beds' => $requestData['beds'] ?? null,
             'bath' => $requestData['bath'] ?? null,
             'area' => $requestData['area'],
-            'featured' => $request['featured'],
+            'featured' => $requestData['featured'],
             'video_url' => $request['video_url'] ?? null,
             'status' => $requestData['status'],
-            'features' => $request['features'],
+            'features' => $requestData['features'],
             'latitude' => $requestData['latitude'],
             'longitude' => $requestData['longitude']
         ]);

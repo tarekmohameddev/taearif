@@ -57,6 +57,7 @@ class GeneralSettingController extends Controller
             'favicon' => 'nullable|string|max:255',
             'maintenance_mode' => 'nullable|boolean',
             'show_breadcrumb' => 'nullable|boolean',
+            'show_properties' => 'nullable|boolean',
             'additional_settings' => 'nullable|array',
 
         ]);
@@ -100,4 +101,25 @@ class GeneralSettingController extends Controller
             ]
         ]);
     }
+    public function ShowProperties(Request $request)
+    {
+        $request->validate([
+            'enabled' => 'required|boolean',
+        ]);
+        $user = $request->user();
+        $settings = GeneralSetting::where('user_id', $user->id)->first();
+
+        if (!$settings) {
+            return response()->json(['message' => 'Settings not found.'], 404);
+        }
+
+        $settings->show_properties = $request->boolean('enabled');
+        $settings->save();
+
+        return response()->json([
+            'message' => 'show_properties updated successfully.',
+            'show_properties' => $settings->show_properties
+        ]);
+    }
+
 }

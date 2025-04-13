@@ -37,12 +37,22 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         try {
+
+            $recaptchaValidator = Validator::make($request->only('recaptcha_token'), [
+                'recaptcha_token' => ['required', new Recaptcha],
+            ]);
+            if ($recaptchaValidator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'reCAPTCHA failed',
+                    'errors' => $recaptchaValidator->errors()
+                ], 422);
+            }
             // Validate request fields
             $request->validate([
                 'email' => 'required|email|unique:users,email',
                 'username' => 'required|string|unique:users,username',
                 'password' => 'required|string|min:6',
-                'recaptcha_token' => ['required', new Recaptcha],
             ]);
 
 
@@ -122,10 +132,21 @@ class AuthController extends Controller
     public function login(Request $request)
     {
 
+        $recaptchaValidator = Validator::make($request->only('recaptcha_token'), [
+            'recaptcha_token' => ['required', new Recaptcha],
+        ]);
+
+        if ($recaptchaValidator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'reCAPTCHA failed',
+                'errors' => $recaptchaValidator->errors()
+            ], 422);
+        }
+
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
-            'recaptcha_token' => ['required', new Recaptcha],
         ]);
 
         $credentials = $request->only('email', 'password');

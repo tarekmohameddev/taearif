@@ -60,6 +60,7 @@ use App\Models\User\HotelBooking\RoomContent;
 use App\Models\User\Language as UserLanguage;
 use App\Models\User\RealestateManagement\City;
 use App\Models\User\DonationManagement\Donation;
+use App\Models\User\RealestateManagement\Country;
 use App\Models\User\RealestateManagement\Project;
 use App\Models\User\RealestateManagement\Category;
 use App\Models\User\RealestateManagement\Property;
@@ -477,7 +478,7 @@ class FrontendController extends Controller
         $data['users'] = $users;
         return view('front.users', $data);
     }
-    public function userDetailView($domain)
+    public function userDetailView(Request $request,$domain)
     {
         $user = getUser();
 
@@ -518,7 +519,6 @@ class FrontendController extends Controller
 
         //
         $api_Banner_settingsData = ApiBannerSetting::where('user_id', $user->id)->first();
-        $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
         $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
         $api_about_settingsData = ApiAboutSettings::where('user_id', $user->id)->first();
 
@@ -1011,29 +1011,109 @@ class FrontendController extends Controller
                 ->take(10)
                 ->get();
 
-            $data['properties'] = Property::where([['user_properties.status', 1], ['user_properties.user_id', $user->id]])
-                ->where('user_property_contents.language_id', $userCurrentLang->id)
-                ->leftJoin('user_property_contents', 'user_property_contents.property_id', 'user_properties.id')
+                $propertyQuery = Property::with([
+                    'category',
+                    'user',
+                    'contents',
+                    'proertyAmenities.amenity'
+                ])
+                    ->where('user_properties.user_id', $user->id)
+                    ->where('user_properties.status', 1)
+                    ->leftJoin('user_property_contents', 'user_property_contents.property_id', '=', 'user_properties.id')
+                    ->leftJoin('user_cities', 'user_cities.id', '=', 'user_property_contents.city_id')
+                    ->leftJoin('user_states', 'user_states.id', '=', 'user_property_contents.state_id')
+                    ->leftJoin('user_countries', 'user_countries.id', '=', 'user_property_contents.country_id')
+                    ->where('user_property_contents.language_id', $userCurrentLang->id);
 
-                ->leftJoin('user_cities', 'user_cities.id', '=', 'user_property_contents.city_id')
-                ->leftJoin('user_states', 'user_states.id', '=', 'user_property_contents.state_id')
-                ->leftJoin('user_countries', 'user_countries.id', '=', 'user_property_contents.country_id')
-                ->where('user_property_contents.language_id', $userCurrentLang->id)
-                ->select(
-                    'user_properties.*',
-                    'user_property_contents.slug',
-                    'user_property_contents.title',
-                    'user_property_contents.address',
-                    'user_property_contents.language_id',
-                    'user_cities.name as city_name',
-                    'user_states.name as state_name',
-                    'user_countries.name as country_name'
-                )->latest()->take(8)->get();
+                // === Filters ===
+                if ($request->filled('type') && $request->type !== 'all') {
+                    $propertyQuery->where('type', $request->type);
+                }
+
+                if ($request->filled('purpose') && $request->purpose !== 'all') {
+                    $propertyQuery->where('purpose', $request->purpose);
+                }
+
+                if ($request->filled('category') && $request->category !== 'all') {
+                    $propertyQuery->where('category_id', $request->category);
+                }
+
+                if ($request->filled('beds')) {
+                    $propertyQuery->where('beds', $request->beds);
+                }
+
+                if ($request->filled('baths')) {
+                    $propertyQuery->where('bath', $request->baths);
+                }
+
+                if ($request->filled('area')) {
+                    $propertyQuery->where('area', $request->area);
+                }
+
+                if ($request->filled('min')) {
+                    $propertyQuery->where('price', '>=', $request->min);
+                }
+
+                if ($request->filled('max')) {
+                    $propertyQuery->where('price', '<=', $request->max);
+                }
+
+                if ($request->filled('location')) {
+                    $propertyQuery->where('user_property_contents.address', 'LIKE', '%' . $request->location . '%');
+                }
+
+                if ($request->filled('city')) {
+                    $propertyQuery->where('user_property_contents.city_id', $request->city);
+                }
+
+                if ($request->filled('state')) {
+                    $propertyQuery->where('user_property_contents.state_id', $request->state);
+                }
+
+                if ($request->filled('country')) {
+                    $propertyQuery->where('user_property_contents.country_id', $request->country);
+                }
+
+                if ($request->filled('sort')) {
+                    switch ($request->sort) {
+                        case 'new':
+                            $propertyQuery->orderBy('user_properties.id', 'desc');
+                            break;
+                        case 'old':
+                            $propertyQuery->orderBy('user_properties.id', 'asc');
+                            break;
+                        case 'low-to-high':
+                            $propertyQuery->orderBy('price', 'asc');
+                            break;
+                        case 'high-to-low':
+                            $propertyQuery->orderBy('price', 'desc');
+                            break;
+                    }
+                } else {
+                    $propertyQuery->orderBy('user_properties.id', 'desc');
+                }
+
+                // === Final fetch ===
+                $data['properties'] = $propertyQuery
+                    ->select(
+                        'user_properties.*',
+                        'user_property_contents.slug',
+                        'user_property_contents.title',
+                        'user_property_contents.address',
+                        'user_property_contents.language_id',
+                        'user_cities.name as city_name',
+                        'user_states.name as state_name',
+                        'user_countries.name as country_name'
+                    )
+                    ->paginate(6);
+
 
             $cities = City::where([['status', 1], ['featured', 1], ['user_id', $user->id]])->limit(6)->orderBy('serial_number', 'asc')->get();
             $cities->map(function ($city) {
                 $city['propertyCount'] = $city->propertyContent()->count();
             });
+            $data['all_countries'] = Country::where('user_id', $user->id)
+                            ->get();
             $data['cities'] = $cities;
 
             $data['all_cities'] = City::where([['status', 1], ['user_id', $user->id], ['language_id', $userCurrentLang->id]])->get();
