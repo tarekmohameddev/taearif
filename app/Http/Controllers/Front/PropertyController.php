@@ -58,7 +58,9 @@ class PropertyController extends Controller
         $category = null;
         if ($request->filled('category') && $request->category != 'all') {
             $category = $request->category;
-            $propertyCategory = Category::where('user_id', $tenantId)->where([['language_id', $userCurrentLang->id], ['slug', $category]])->first();
+            $propertyCategory = Category::where('user_id', $tenantId)
+                ->where([['language_id', $userCurrentLang->id], ['id', $category]])
+                ->first();
         }
 
         $amenities = [];
