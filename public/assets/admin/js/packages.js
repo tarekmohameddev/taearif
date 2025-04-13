@@ -68,6 +68,8 @@ $(document).ready(function () {
                 $("#errproject_limit_number").text("Please enter a Project Number Limit.");
                 valid = false;
             }
+        } else {
+            $("#project_limit_number").val(0);
         }
 
         // Validate Real Estate Limit Field if its checkbox is checked
@@ -77,6 +79,8 @@ $(document).ready(function () {
                 $("#errreal_estate_limit_number").text("Please enter a Real Estate Number Limit.");
                 valid = false;
             }
+        } else {
+            $("#real_estate_limit_number").val(0);
         }
 
         // focus on the first empty field If validation fails
