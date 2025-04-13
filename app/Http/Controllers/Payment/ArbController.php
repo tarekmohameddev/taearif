@@ -35,7 +35,7 @@ class ArbController extends Controller
         $paydata = $paymentMethod->convertAutoData();
     }
 
-    public function paymentProcess(Request $request, $_amount, $_success_url, $_cancel_url, $_title, $bex)
+    public function paymentProcess(Request $request, $_amount, $_success_url, $_cancel_url, $_title)
     {
         /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ~~~~~~~~~~~~~~~~~ Buy Plan Info ~~~~~~~~~~~~~~
