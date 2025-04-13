@@ -221,6 +221,8 @@ class AuthController extends Controller
                             $membershipDetails['package'] = [
                                 'title' => $package->title,
                                 'features' => json_decode($package->features, true),
+                                'project_limit_number' => $package->project_limit_number,
+                                'real_estate_limit_number' => $package->real_estate_limit_number
                                 // Add any other package details you need
                             ];
                         }
