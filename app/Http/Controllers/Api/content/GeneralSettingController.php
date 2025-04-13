@@ -84,6 +84,7 @@ class GeneralSettingController extends Controller
         $settings->favicon = $request->input('favicon');
         $settings->maintenance_mode = $request->input('maintenance_mode', false);
         $settings->show_breadcrumb = $request->input('show_breadcrumb', true);
+        $settings->show_properties = $request->input('show_properties', false);
         $settings->additional_settings = $request->input('additional_settings', []);
 
 
