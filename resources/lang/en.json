@@ -2484,5 +2484,9 @@
         "Menu Builder": "منشئ القوائم",
     "Number Limit": "الحد الأقصى",
     "Project Number Limit": "الحد الأقصى لعدد المشروع",
+    "No Categories Found": "لم يتم العثور على فئات!",
+    "No Property Found": "لم يتم العثور على أي عقار!",
+    "sqtf": "مساحة",
+
     "Real Estate Number Limit": "الحد الأقصى لعدد العقارات"
 }

@@ -11,15 +11,15 @@
         <div class="d-flex align-items-center justify-content-between mb-10">
 
 
-            <span class="product-category text-sm @if (in_array($userBs->theme, ['home_five'])) text-dark @endif">
-                @if ($property->type == 'residential')
-                    {{ $keywords['Residential'] ?? __('Residential') }}
-                @elseif($property->type == 'commercial')
-                    {{ $keywords['Commercial'] ?? __('Commercial') }}
-                @else
-                    {{ __(ucfirst($property->type)) }}
-                @endif
-            </span>
+        <span class="product-category text-sm @if (in_array($userBs->theme, ['home_five'])) text-dark @endif">
+            @if ($property->type == 'residential')
+                {{ $keywords['Residential'] ?? __('Residential') }}
+            @elseif($property->type == 'commercial')
+                {{ $keywords['Commercial'] ?? __('Commercial') }}
+            @else
+                {{ __(ucfirst($property->type)) }}
+            @endif
+        </span>
 
         </div>
         <h3 class="product-title">
@@ -28,27 +28,35 @@
                 {{ $property->title ?? $property->propertyContent->title }}
             </a>
         </h3>
-<hr>
-<div class="product-price">
-    <span class="new-price">
-        {{ $keywords['Price'] ?? __('Price') }}
-        {{ $property->price ? formatNumber($property->price) : ($keywords['Negotiable'] ?? __('Negotiable')) }}
-        <img src="{{ $userBs->base_currency_symbol }}" alt="Currency Symbol" style="width: 22px; height: 22px; vertical-align: middle;">
-    </span>
-</div>
+        <hr>
+        <div class="product-price">
+            <span class="new-price">
+                {{ $keywords['Price'] ?? __('Price') }}
+                {{ $property->price ? formatNumber($property->price) : ($keywords['Negotiable'] ?? __('Negotiable')) }}
+                <img src="{{ $userBs->base_currency_symbol }}" alt="Currency Symbol" style="width: 22px; height: 22px; vertical-align: middle;">
+            </span>
+        </div>
 
         <ul class="product-info p-0 list-unstyled d-flex align-items-center">
+            {{-- Area --}}
+            @if (!empty($property->area))
             <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
                 title="{{ $keywords['Area'] ?? __('Area') }}">
                 <i class="fal fa-vector-square"></i>
                 <span>{{ $property->area }} {{ $keywords['Sqft'] ?? __('Sqft') }}</span>
             </li>
-            @if ($property->type == 'residential')
+            @endif
+            {{-- Beds --}}
+            @if (!empty($property->beds))
                 <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
                     title="{{ $keywords['Beds'] ?? __('Beds') }}">
                     <i class="fal fa-bed"></i>
                     <span>{{ $property->beds }} {{ $keywords['Beds'] ?? __('Beds') }}</span>
                 </li>
+            @endif
+
+            {{-- Baths --}}
+            @if (!empty($property->bath))
                 <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
                     title="{{ $keywords['Baths'] ?? __('Baths') }}">
                     <i class="fal fa-bath"></i>
@@ -56,6 +64,7 @@
                 </li>
             @endif
         </ul>
+
     </div>
 
     <span class="label">

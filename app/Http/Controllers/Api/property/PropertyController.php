@@ -26,34 +26,27 @@ use App\Models\User\RealestateManagement\PropertySpecification;
 
 class PropertyController extends Controller
 {
-    
+
     public function properties_categories(Request $request){
         $user = Auth::user();
         $properties_categories = [
-            [
-                "status" => "success",
-                "data" => [
-                    "categories" => [
-                        ["type" => "residential", "name" => "شقة"],
-                        ["type" => "residential", "name" => "دور"],
-                        ["type" => "residential", "name" => "فيلا"],
-                        ["type" => "residential", "name" => "دوبلكس"],
-                        ["type" => "residential", "name" => "قصر"],
-                        ["type" => "residential", "name" => "مبنى سكني"],
-                        ["type" => "residential", "name" => "برج سكني"],
-                        ["type" => "residential", "name" => "استراحة"],
-                        ["type" => "residential", "name" => "مزرعة"],
-                        ["type" => "commercial", "name" => "ارض"],
-                        ["type" => "commercial", "name" => "تاون هاوس"],
-                        ["type" => "commercial", "name" => "مبنى"],
-                        ["type" => "commercial", "name" => "صالة عرض"],
-                        ["type" => "commercial", "name" => "منتجع"],
-                        ["type" => "commercial", "name" => "مكاتب"],
-                        ["type" => "commercial", "name" => "تجاري"],
-                    ]
+            ["type" => "residential", "name" => "شقة"],
+            ["type" => "residential", "name" => "دور"],
+            ["type" => "residential", "name" => "فيلا"],
+            ["type" => "residential", "name" => "دوبلكس"],
+            ["type" => "residential", "name" => "قصر"],
+            ["type" => "residential", "name" => "مبنى سكني"],
+            ["type" => "residential", "name" => "برج سكني"],
+            ["type" => "residential", "name" => "استراحة"],
+            ["type" => "residential", "name" => "مزرعة"],
+            ["type" => "commercial", "name" => "ارض"],
+            ["type" => "commercial", "name" => "تاون هاوس"],
+            ["type" => "commercial", "name" => "مبنى"],
+            ["type" => "commercial", "name" => "صالة عرض"],
+            ["type" => "commercial", "name" => "منتجع"],
+            ["type" => "commercial", "name" => "مكاتب"],
+            ["type" => "commercial", "name" => "تجاري"],
 
-                ]
-            ]
         ];
         return response()->json([
             'status' => 'success',

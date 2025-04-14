@@ -5,12 +5,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\UploadController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\blog\BlogController;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\ApiSideMenusController;
 use App\Http\Controllers\Api\ThemeSettingsController;
 use App\Http\Controllers\Api\DomainSettingsController;
-use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\content\ApiMenuController;
 use App\Http\Controllers\Api\content\ContentController;
 use App\Http\Controllers\Api\project\ProjectController;
@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\content\FooterSettingController;
 use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
+use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -171,4 +172,13 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/settings/side-menus', [ApiSideMenusController::class, 'index']);
 
+});
+
+// ApiCategoryController
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('user/categories', [ApiCategoryController::class, 'index']);
+    Route::post('user/categories', [ApiCategoryController::class, 'store']);
+    Route::get('user/categories/{id}', [ApiCategoryController::class, 'show']);
+    Route::put('user/categories/{id}', [ApiCategoryController::class, 'update']);
+    Route::delete('user/categories/{id}', [ApiCategoryController::class, 'destroy']);
 });

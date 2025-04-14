@@ -67,6 +67,7 @@ use App\Models\User\RealestateManagement\Property;
 use App\Models\User\CourseManagement\CourseCategory;
 use App\Models\User\CourseManagement\CourseEnrolment;
 use App\Models\User\DonationManagement\DonationDetail;
+use App\Models\User\RealestateManagement\ApiUserCategory;
 
 
 class FrontendController extends Controller
@@ -1126,7 +1127,10 @@ class FrontendController extends Controller
             $data['all_cities'] = City::where([['status', 1], ['user_id', $user->id], ['language_id', $userCurrentLang->id]])->get();
 
             $data['all_proeprty_categories'] =
-            Category::where([['status', 1], ['user_id', $user->id], ['language_id', $userCurrentLang->id]])->orderBy('serial_number', 'asc')->get();
+            // Category::where([['status', 1], ['user_id', $user->id], ['language_id', $userCurrentLang->id]])->orderBy('serial_number', 'asc')->get();
+            ApiUserCategory::where([['is_active', 1]])->get();
+
+            // dd($data['all_proeprty_categories']);
 
             $min = Property::where([['status', 1], ['user_id', $user->id]])->min('price');
             $max = Property::where([['status', 1], ['user_id', $user->id]])->max('price');
@@ -1149,7 +1153,8 @@ class FrontendController extends Controller
                     ->orderBy('serial_number', 'ASC')
                     ->where('user_id', $user->id)
                     ->get();
-                $data['property_categories'] = Category::where([['status', 1], ['user_id', $user->id], ['featured', 1], ['language_id', $userCurrentLang->id]])->orderBy('serial_number', 'asc')->get();
+                // $data['property_categories'] = Category::where([['status', 1], ['user_id', $user->id], ['featured', 1], ['language_id', $userCurrentLang->id]])->orderBy('serial_number', 'asc')->get();
+                $data['property_categories'] = ApiUserCategory::where([['is_active', 1]])->get();
 
                 $data['callToActionInfo'] = User\ActionSection::query()
                     ->where('user_id', $user->id)
@@ -1184,7 +1189,8 @@ class FrontendController extends Controller
                     ->where('user_project_contents.language_id', $userCurrentLang->id)
                     ->select('user_projects.*', 'user_project_contents.slug', 'user_project_contents.title', 'user_project_contents.address')->inRandomOrder()->latest()->take(8)->get();
 
-                $data['property_categories'] = Category::where([['status', 1], ['user_id', $user->id], ['featured', 1], ['language_id', $userCurrentLang->id]])->orderBy('serial_number', 'asc')->get();
+                // $data['property_categories'] = Category::where([['status', 1], ['user_id', $user->id], ['featured', 1], ['language_id', $userCurrentLang->id]])->orderBy('serial_number', 'asc')->get();
+                $data['property_categories'] = ApiUserCategory::where([['is_active', 1]])->get();
 
                 return view('user-front.realestate.home.index-v3', $data);
             }

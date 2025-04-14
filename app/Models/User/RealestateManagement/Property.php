@@ -14,12 +14,14 @@ use App\Models\User\RealestateManagement\PropertySliderImg;
 class Property extends Model
 {
     use HasFactory;
+    public $table = "user_properties";
+
     protected $casts = [
         'floor_planning_image' => 'array',
         'features' => 'array',
     ];
 
-    public $table = "user_properties";
+
     protected $fillable = [
         'region_id',
         'user_id',

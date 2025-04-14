@@ -1,8 +1,8 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\seeds;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Console\seeders\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Region;
 use App\Models\Governorate;

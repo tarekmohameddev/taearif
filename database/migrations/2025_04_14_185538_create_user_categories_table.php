@@ -13,9 +13,12 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('user_categories', function (Blueprint $table) {
+        Schema::create('api_user_categories', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('name'); // ارض- فيلا
+            $table->string('slug')->unique();
+            $table->enum('type', ['property', 'project']);
+            $table->string('is_active')->default(1);
             $table->string('icon')->nullable();
             $table->timestamps();
         });
@@ -28,6 +31,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('user_categories');
+        Schema::dropIfExists('api_user_categories');
     }
 };

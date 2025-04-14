@@ -283,6 +283,29 @@
     </section>
 @endif
 
+<!-- // categories -->
+@if (!empty($api_general_settingsData['show_properties']))
+    @if ($properties->count() > 0)
+        <div class="categories pb-100">
+            <section id="property-filter-section">
+                @include('user-front.realestate.partials.property-filter-list', [
+                    'property_contents' => $properties,
+                    'categories' => $all_proeprty_categories,
+                    'all_cities' => $all_cities,
+                    'min' => $min,
+                    'max' => $max,
+                    'userBs' => $userBs,
+                    'keywords' => $keywords,
+                    'userCurrentLang' => $userCurrentLang,
+                    'userSeo' => $userSeo ?? null,
+                    'amenities' => $amenities ?? []
+                ])
+            </section>
+
+        </div>
+    @endif
+@endif
+
 <style>
     .info-box {
         background: #f8f9fa;
@@ -698,7 +721,7 @@
 
 @if ($home_sections->brand_section == 1)
 @if(count($brands) > 0)
-<div class="sponsor ptb-100" data-aos="fade-up">
+<div class="sponsor ptb-100 d-none" data-aos="fade-up">
     <div class="container">
         <div class="row">
             <div class="col-12">
