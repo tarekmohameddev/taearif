@@ -854,10 +854,10 @@
 
             <!-- Action Buttons -->
             <div class="flex items-center gap-2 sm:gap-4">
-                <a href="https://website-builder-dashboard-six.vercel.app/" class="hidden sm:inline-flex btn btn-outline btn-sm border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-800 hover:border-gray-300 transition-all duration-300">
+                <a href="https://taearif.vercel.app/" class="hidden sm:inline-flex btn btn-outline btn-sm border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-800 hover:border-gray-300 transition-all duration-300">
                     تسجيل الدخول
                 </a>
-                <a href="https://website-builder-dashboard-six.vercel.app/register" class="btn btn-sm bg-black hover:bg-gray-700 text-white transition-all duration-300 hover:scale-105 shadow-sm hover:shadow-gray-200/50">
+                <a href="https://taearif.vercel.app/register" class="btn btn-sm bg-black hover:bg-gray-700 text-white transition-all duration-300 hover:scale-105 shadow-sm hover:shadow-gray-200/50">
                    ابدأ 7 ايام مجاناً
                 </a>
                 <button id="menuButton" class="md:hidden btn btn-ghost btn-icon text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-300 menu-button">
@@ -932,10 +932,10 @@
             </div>
 
             <div class="mt-auto flex flex-col gap-4">
-                <a href="https://website-builder-dashboard-six.vercel.app" class="btn btn-outline w-full border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-800 hover:border-gray-300 transition-all duration-300 py-6">
+                <a href="https://taearif.vercel.app" class="btn btn-outline w-full border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-800 hover:border-gray-300 transition-all duration-300 py-6">
                     تسجيل الدخول
                 </a>
-                <a href="https://website-builder-dashboard-six.vercel.app/register" class="btn w-full bg-black hover:bg-gray-700 text-white transition-all duration-300 py-6">
+                <a href="https://taearif.vercel.app/register" class="btn w-full bg-black hover:bg-gray-700 text-white transition-all duration-300 py-6">
                     ابدأ 7 ايام مجاناً
                 </a>
             </div>
@@ -992,7 +992,7 @@
 
                         <!-- CTA Buttons -->
                         <div class="mb-10 flex flex-col space-y-4 sm:flex-row sm:space-x-0 sm:space-x-reverse sm:space-y-0 sm:rtl:space-x-4">
-                            <a href="https://website-builder-dashboard-six.vercel.app/register" class="group relative overflow-hidden rounded-full bg-black px-8 text-white shadow-lg transition-all duration-300 hover:bg-gray-700 hover:shadow-gray-200/50 btn btn-lg">
+                            <a href="https://taearif.vercel.app/register" class="group relative overflow-hidden rounded-full bg-black px-8 text-white shadow-lg transition-all duration-300 hover:bg-gray-700 hover:shadow-gray-200/50 btn btn-lg">
                                 <span class="relative z-10 flex items-center">
                                     ابني موقعك مجاناً الان
                                     <i data-lucide="arrow-right" class="mr-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"></i>
@@ -1267,7 +1267,7 @@
                                     </li>
                                 </ul>
                                 <div class="mt-8">
-                                    <a href="https://website-builder-dashboard-six.vercel.app/register" class="rounded-full bg-black hover:bg-gray-700 text-white px-6 shadow-lg shadow-gray-200/30 transition-all duration-300 hover:shadow-gray-200/50 btn">
+                                    <a href="https://taearif.vercel.app/register" class="rounded-full bg-black hover:bg-gray-700 text-white px-6 shadow-lg shadow-gray-200/30 transition-all duration-300 hover:shadow-gray-200/50 btn">
                                         اكتشف المزيد
                                         <i data-lucide="arrow-right" class="mr-2 h-4 w-4"></i>
                                     </a>
@@ -1329,7 +1329,7 @@
                                     </li>
                                 </ul>
                                 <div class="mt-8">
-                                    <a href="https://website-builder-dashboard-six.vercel.app/register" class="rounded-full bg-black hover:bg-gray-700 text-white px-6 shadow-lg shadow-gray-200/30 transition-all duration-300 hover:shadow-gray-200/50 btn">
+                                    <a href="https://taearif.vercel.app/register" class="rounded-full bg-black hover:bg-gray-700 text-white px-6 shadow-lg shadow-gray-200/30 transition-all duration-300 hover:shadow-gray-200/50 btn">
                                         اكتشف المزيد
                                         <i data-lucide="arrow-right" class="mr-2 h-4 w-4"></i>
                                     </a>
@@ -1741,7 +1741,7 @@
                             </p>
 
                             <div class="flex flex-col sm:flex-row gap-4 mt-4">
-                                <a href="https://website-builder-dashboard-six.vercel.app/register" class="px-8 py-6 bg-white text-gray-900 hover:bg-gray-100 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-white/20 text-base rounded-full btn btn-lg">
+                                <a href="https://taearif.vercel.app/register" class="px-8 py-6 bg-white text-gray-900 hover:bg-gray-100 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-white/20 text-base rounded-full btn btn-lg">
                                     ابدأ مجاناً
                                     <i data-lucide="arrow-right" class="mr-2 h-4 w-4"></i>
                                 </a>
