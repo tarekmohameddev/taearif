@@ -166,6 +166,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::patch('/settings/domain/request-ssl', [DomainSettingsController::class, 'requestSsl']);
     Route::patch('/settings/domain/ssl-status', [DomainSettingsController::class, 'updateSslStatus']);
+
+    Route::get('/settings/payment ', [PaymentController::class, 'index']);
 });
 
 //ApiSideMenusController
