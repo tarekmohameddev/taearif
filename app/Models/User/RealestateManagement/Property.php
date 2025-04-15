@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\User\RealestateManagement\PropertySliderImg;
+use App\Models\User\RealestateManagement\ApiUserCategory;
 
 
 class Property extends Model
@@ -23,6 +24,7 @@ class Property extends Model
 
 
     protected $fillable = [
+        'category_id',
         'region_id',
         'user_id',
         'featured_image',
@@ -52,7 +54,7 @@ class Property extends Model
 
     public function category()
     {
-        return $this->belongsTo(Category::class, 'category_id');
+        return $this->belongsTo(ApiUserCategory::class, 'category_id');
     }
 
 
