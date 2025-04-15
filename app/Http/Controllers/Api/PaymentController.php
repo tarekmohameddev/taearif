@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Http\Controllers\Payment\ArbController;
+use App\Models\Package;
 
 class PaymentController extends Controller
 {
@@ -54,5 +55,37 @@ class PaymentController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+    public function index()
+    {
+        $user = Auth::user();
+
+        $plans = Package::with('memberships')
+            ->get()
+            ->map(function ($package) use ($user) {
+                $isCurrent = $package->memberships->contains('user_id', $user->id);
+    
+                return [
+                    'id' => $package->id,
+                    'name' => $package->title,
+                    'price' => '' . number_format($package->price, 2),
+                    'billing' => match ($package->term) {
+                        'monthly' => 'شهريًا',
+                        'yearly' => 'سنويًا',
+                        'trial', 'is_trial' => 'تجريبي',
+                        default => '',
+                    },
+                    'features' => is_array($package->features)
+                        ? $package->features
+                        : json_decode($package->features, true) ?? [],
+                    'is_trial' => (bool) $package->is_trial,
+                    'cta' => $isCurrent ? 'الخطة الحالية' :  'الترقية',
+                ];
+            });
+    
+        return response()->json([
+            'plans' => $plans,
+        ]);
+
     }
 }
