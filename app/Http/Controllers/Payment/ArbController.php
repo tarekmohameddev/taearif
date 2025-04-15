@@ -40,7 +40,7 @@ class ArbController extends Controller
         /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ~~~~~~~~~~~~~~~~~ Buy Plan Info ~~~~~~~~~~~~~~
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-        Session::put('request', $request->all());
+       // Session::put('request', $request->all());
 
         /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ~~~~~~~~~~~~~~~~~ Payment Gateway Info ~~~~~~~~~~~~~~
@@ -51,7 +51,7 @@ class ArbController extends Controller
 
         $random_1 = rand(999, 9999);
         $random_2 = rand(9999, 99999);
-        $paymentFor = Session::get('paymentFor');
+        $paymentFor = 'membership';
         $name = $paymentFor == 'membership' ? $request->first_name . ' ' . $request->last_name : auth()->user()->first_name . ' ' . auth()->user()->first_name;
 
         $phone = $paymentFor == 'membership' ? $request->phone : auth()->user()->phone;
@@ -73,10 +73,10 @@ class ArbController extends Controller
         ];
       
        // $data = $data + $this->generateUdfs($data);
-        log::info($data);
+        // log::info($data);
         $data = $this->createRequestBody($this->wrapData($data));
 
-        log::info($data);
+        // log::info($data);
         
         $configName = 'bank_hosted_endpoint';
 
@@ -87,20 +87,23 @@ class ArbController extends Controller
             : $paydata["test_$configName"]
             );
 
-        log::info('hereee');
-        log::info($response);
-        log::info('end');
 
         $response = $response->json('0');
 
         if ($response['status'] == '1') {
-            $request->session()->put('myfatoorah_payment_type', 'buy_plan');
             [$paymentID, , $baseURL] = explode(':', $response['result']);
             $baseURL = 'https:'.$baseURL;
             $paymentID = '?PaymentID='.$paymentID;
-            return redirect($baseURL.$paymentID);
+            $return_object = array(
+                'redirect_url'=> $baseURL.$paymentID,
+                'payment_token' => $paymentID
+            );
+            
+            return $return_object; 
+          //  return redirect($baseURL.$paymentID);
         } else {
-            return redirect(route('membership.arb.cancel'));
+            return 'error';
+          //  return redirect(route('membership.arb.cancel'));
         }
     }
 
@@ -117,22 +120,22 @@ class ArbController extends Controller
         $bs = $currentLang->basic_setting;
         $be = $currentLang->basic_extended;
 
-        log::info('success');
-        log::info($request);
-        log::info('end sucess');
-        session()->flash('success', __('successful_payment'));
-        Session::forget('request');
-        Session::forget('paymentFor');
+        // log::info('success');
+        // log::info($request);
+        // log::info('end sucess');
+        // session()->flash('success', __('successful_payment'));
+        // Session::forget('request');
+        // Session::forget('paymentFor');
 
         $dataArr = json_decode($request, true);
         
         $decrypted = $this->decryption($request['trandata'], $paydata["resource_key"]);
 
-        log::info('decrpted '.$decrypted);
+       // log::info('decrpted '.$decrypted);
         $raw = urldecode($decrypted);
         $dataArr = json_decode($raw, true);
 
-        $paymentFor = Session::get('paymentFor');
+        $paymentFor = 'membership';
         $package = Package::find($requestData['package_id']);
         $transaction_id = UserPermissionHelper::uniqidReal(8);
         $transaction_details = json_encode($request->all());
@@ -165,9 +168,9 @@ class ArbController extends Controller
             ];
             $mailer->mailFromAdmin($data);
 
-            session()->flash('success', __('successful_payment'));
-            Session::forget('request');
-            Session::forget('paymentFor');
+            // session()->flash('success', __('successful_payment'));
+            // Session::forget('request');
+            // Session::forget('paymentFor');
         
                 return redirect(route('customer.dashboard'));
        
@@ -198,9 +201,9 @@ class ArbController extends Controller
             ];
             $mailer->mailFromAdmin($data);
 
-            session()->flash('success', __('successful_payment'));
-            Session::forget('request');
-            Session::forget('paymentFor');
+            // session()->flash('success', __('successful_payment'));
+            // Session::forget('request');
+            // Session::forget('paymentFor');
             return redirect(route('customer.dashboard'));
         }
 
