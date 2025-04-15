@@ -382,12 +382,12 @@
 
 @if ($home_sections->property_section == 1)
 @if(count($properties) > 0)
-<section class="product-area popular-product pb-70">
+<section class="product-area popular-product pb-70 d-none">
     <div class="container">
         <div class="row">
             <div class="col-12">
                 <div class="section-title title-inline mb-10" data-aos="fade-up">
-                    <h2 class="title mb-20">{{ $home_text?->property_title }}</h2>
+                    <h2 class="title mb-20"> الوحدات</h2>
                     <div class="slider-navigation mb-20">
                         <button type="button" title="Slide prev" class="slider-btn product-slider-btn-prev">
                             <i class="fal fa-angle-left"></i>
@@ -406,7 +406,7 @@
                             @include('user-front.realestate.partials.property')
                         </div>
                         @empty
-                        <div class="p-3 text-center mb-30 w-100">
+                        <div class="p-3 text-center mb-30 w-100 d-none">
                             <h3 class="mb-0">
                                 {{ $keywords['No Properties Found'] ?? __('No Properties Found') }}
                             </h3>
@@ -699,7 +699,7 @@
 @endif
 
 @if ($home_sections->brand_section == 1)
-<div class="sponsor ptb-100" data-aos="fade-up">
+<div class="sponsor ptb-100 d-none" data-aos="fade-up">
     <div class="container">
         <div class="row">
             <div class="col-12">
