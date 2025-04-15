@@ -62,7 +62,7 @@ class PropertyController extends Controller
     {
         $categories = ApiUserCategory::where('is_active', true)
             ->where('type', 'property')
-            ->get(['id', 'name', 'slug']);
+            ->get(['id', 'name']);
 
         return response()->json([
             'success' => true,
