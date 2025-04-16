@@ -98,7 +98,7 @@
 
                         </div>
                     </div>
-                    <div class="item">
+                    <div class="item d-none">
                         <div class="dropdown">
                             <button class="btn btn-primary btn-sm dropdown-toggle" type="button"
                                 data-bs-toggle="dropdown" aria-expanded="false">

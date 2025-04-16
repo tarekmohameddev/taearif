@@ -328,7 +328,10 @@
     "No Link Found": "لم يتم العثور على رابط!",
     "No Categories Found": "لم يتم العثور على فئات!",
     "No Property Found": "لم يتم العثور على أي عقار!",
-    "sqtf": "مساحة",
+    "Sqft": "مساحة",
+    "Sale": "بيع",
+    "Rent": "إيجار",
+    "House": "منزل",
 
     "Menu Builder": "منشئ القوائم"
   }

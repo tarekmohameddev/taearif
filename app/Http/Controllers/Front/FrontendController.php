@@ -533,6 +533,12 @@ class FrontendController extends Controller
 
         $data['home_sections'] = User\HomeSection::where('user_id', $user->id)->first();
 
+        $tenantId = getUser()->id;
+        $property_contents = Property::where([
+            ['user_properties.user_id', $tenantId],
+            ['user_properties.status', 1],
+        ]);
+        $data['property_contents'] = $property_contents;
         $data['home_text'] = User\HomePageText::query()
             ->where([
                 ['user_id', $user->id],

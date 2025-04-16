@@ -103,7 +103,7 @@
 
                     <div class="item">
                         <div class="dropdown">
-                            <button class="btn btn-primary btn-sm dropdown-toggle" type="button"
+                            <button class="btn btn-primary btn-sm dropdown-toggle d-none" type="button"
                                 data-bs-toggle="dropdown" aria-expanded="false">
                                 @if (!Auth::guard('customer')->check())
                                     {{ $keywords['Customer'] ?? __('Customer') }}

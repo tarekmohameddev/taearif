@@ -543,3 +543,172 @@
 
 @endif
 @endsection
+<script>
+    'use strict';
+
+    $(window).on("load", function() {
+        const delay = 350;
+
+        /*============================================
+            Aos animation
+        ============================================*/
+        var aosAnimation = function() {
+            AOS.init({
+                easing: "ease",
+                duration: 1500,
+                once: true,
+                offset: 60,
+                disable: 'mobile'
+            });
+        }
+        aosAnimation();
+
+    })
+
+    /*============================================
+        Price range
+    ============================================*/
+
+
+    var range_slider_max = document.getElementById('min');
+    if (range_slider_max) {
+        var sliders = document.querySelectorAll("[data-range-slider='priceSlider']");
+        var filterSliders = document.querySelectorAll("[data-range-slider='filterPriceSlider']");
+        var filterSliders2 = document.querySelectorAll("[data-range-slider='filterPriceSlider2']");
+        var input0 = document.getElementById('min1');
+        var input1 = document.getElementById('max1');
+
+        var input20 = document.getElementById('min2');
+        var input21 = document.getElementById('max2');
+
+        var min = document.getElementById('min').value;
+        var max = document.getElementById('max').value;
+
+        var o_min = document.getElementById('o_min').value;
+        var o_max = document.getElementById('o_max').value;
+
+        // var c_min = document.getElementsByClassName('minval');
+        // var c_max = document.getElementsByClassName('maxval');
+
+        var currency_symbol = document.getElementById('currency_symbol').value;
+        var min = parseFloat(min);
+        var max = parseFloat(max);
+
+        var o_min = parseFloat(o_min);
+        var o_max = parseFloat(o_max);
+        var inputs = [input0, input1];
+        var inputs2 = [input20, input21];
+        // Home price slider
+        for (let i = 0; i < sliders.length; i++) {
+            const el = sliders[i];
+
+            noUiSlider.create(el, {
+                start: [min, max],
+                connect: true,
+                step: 10,
+                margin: 0,
+                range: {
+                    'min': o_min,
+                    'max': o_max
+                }
+            }), el.noUiSlider.on("end", function(values, handle) {
+
+                $("[data-range-value='priceSliderValue']").text(currency_symbol + values.join(" - " +
+                    currency_symbol));
+
+                inputs[handle].value = values[handle];
+                updateURL('min=' + values[0]);
+                updateURL('max=' + values[1]);
+            })
+        }
+        // Filter price slider
+        if (filterSliders) {
+            for (let i = 0; i < filterSliders.length; i++) {
+                const fsl = filterSliders[i];
+
+                noUiSlider.create(fsl, {
+
+                        start: [min, max],
+                        connect: !0,
+                        step: 10,
+                        margin: 40,
+                        range: {
+                            'min': o_min,
+                            'max': o_max
+                        }
+                    }), fsl.noUiSlider.on("update", function(values, handle) {
+                        $("[data-range-value='filterPriceSliderValue']").text(currency_symbol + values.join(" - " +
+                            currency_symbol));
+
+                        inputs[handle].value = values[handle];
+                    }), fsl.noUiSlider.on("change", function(values, handle) {
+
+                        $("[data-range-value='filterPriceSliderValue']").text(currency_symbol + values.join(" - " +
+                            currency_symbol));
+                        inputs[handle].value = values[handle];
+                    }),
+
+                    inputs.forEach(function(input, handle) {
+                        if (input) {
+                            input.addEventListener('change', function() {
+                                fsl.noUiSlider.setHandle(handle, this.value);
+                            });
+                        }
+                    });
+            }
+        }
+
+
+        // Filter price slider 2
+        if (filterSliders2) {
+            for (let i = 0; i < filterSliders2.length; i++) {
+                const fsl2 = filterSliders2[i];
+
+                noUiSlider.create(fsl2, {
+
+                        start: [min, max],
+                        connect: !0,
+                        step: 10,
+                        margin: 40,
+                        range: {
+                            'min': o_min,
+                            'max': o_max
+                        }
+                    }), fsl2.noUiSlider.on("update", function(values, handle) {
+                        $("[data-range-value='filterPriceSlider2Value']").text(currency_symbol + values.join(" - " +
+                            currency_symbol));
+
+                        inputs2[handle].value = values[handle];
+                    }), fsl2.noUiSlider.on("change", function(values, handle) {
+
+                        $("[data-range-value='filterPriceSlider2Value']").text(currency_symbol + values.join(" - " +
+                            currency_symbol));
+                        inputs2[handle].value = values[handle];
+                    }),
+
+                    inputs2.forEach(function(input, handle) {
+                        if (input) {
+                            input.addEventListener('change', function() {
+                                fsl2.noUiSlider.setHandle(handle, this.value);
+                            });
+                        }
+                    });
+
+            }
+        }
+    }
+
+    var imgUrl = "{{ url('/') }}";
+    let baseURL = mainurl;
+    var property_contents = @json($property_contents);
+    var properties = property_contents.data;
+    var siteURL = "{{ route('front.user.detail.view', getParam()) }}"
+    const categoryUrl = "{{ route('front.user.get_categories', getParam()) }}";
+</script>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script src="{{ asset('/assets/front/user/realestate/js/map.js') }}"></script>
+<script src="{{ asset('/assets/front/user/realestate/js/properties.js') }}"></script>
+
