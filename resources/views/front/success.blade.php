@@ -39,11 +39,20 @@
     </div>
     
     <script>
-            if (window.opener) {
-                window.opener.postMessage("payment_success", "*");
-                window.close();
-            }
+      window.onload = function () {
+        // Send a message to the parent window with the current URL (or any data you want)
+        window.parent.postMessage({
+          type: 'iframe-redirect',
+          url: window.location.href
+        }, 'https://agents-internal.taearif.com/html.html');
+      };
+      
+      window.parent.postMessage("payment_success", "https://taearif.vercel.app");
     </script>
+
+<script>
+  
+</script>
 
 </body>
 
