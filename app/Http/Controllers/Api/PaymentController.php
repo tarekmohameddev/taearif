@@ -40,8 +40,16 @@ class PaymentController extends Controller
                 $cancel_url = route('membership.arb.cancel');
                 
                 $arbPayment = new ArbController();
-                $result = $arbPayment->paymentProcess($request, $amount, $success_url, $cancel_url, $title);
-                
+                $result = $arbPayment->paymentProcess($request, $amount, $success_url, $cancel_url, $title,$user->id);
+
+                if ($result == 'error'){
+                    return response()->json([
+                        'status' => 'error',
+                        'payment_url' => null,
+                        'payment_token' => null
+                    ], 422);
+                }
+
                 return response()->json([
                     'status' => 'success',
                     'payment_url' => $result['redirect_url'],

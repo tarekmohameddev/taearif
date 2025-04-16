@@ -178,6 +178,7 @@ Route::domain($domain)->group(function () {
         Route::get('/check/{username}/username', 'Front\FrontendController@checkUsername')->name('front.username.check');
         Route::get('/p/{slug}', 'Front\FrontendController@dynamicPage')->name('front.dynamicPage');
         Route::get('/success', 'Front\CheckoutController@onlineSuccess')->name('success.page');
+        Route::get('/failed', 'Front\CheckoutController@onlinefailed')->name('failed.page');
     });
 
     Route::group(['middleware' => ['web', 'guest', 'setlang']], function () {
@@ -1727,7 +1728,7 @@ Route::domain($domain)->group(function () {
             Route::post('/iyzico/success', 'Payment\IyzicoController@successPayment')->name('membership.iyzico.success');
 
             Route::post('/arb/success', 'Payment\ArbController@successPayment')->name('membership.arb.success');
-            Route::post('/arb/cancel', 'Payment\ArbController@errorPayment')->name('membership.arb.cancel');
+            Route::post('/arb/cancel', 'Payment\ArbController@failedPayment')->name('membership.arb.cancel');
 
             Route::get('/offline/success', 'Front\CheckoutController@offlineSuccess')->name('membership.offline.success')->middleware('setlang');
             Route::get('/trial/success', 'Front\CheckoutController@trialSuccess')->name('membership.trial.success')->middleware('setlang');
