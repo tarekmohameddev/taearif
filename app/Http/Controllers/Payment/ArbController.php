@@ -35,7 +35,7 @@ class ArbController extends Controller
         $paydata = $paymentMethod->convertAutoData();
     }
 
-    public function paymentProcess(Request $request, $_amount, $_success_url, $_cancel_url, $_title)
+    public function paymentProcess(Request $request, $_amount, $_success_url, $_cancel_url, $_title,$user_id)
     {
         /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ~~~~~~~~~~~~~~~~~ Buy Plan Info ~~~~~~~~~~~~~~
@@ -56,20 +56,34 @@ class ArbController extends Controller
 
         $phone = $paymentFor == 'membership' ? $request->phone : auth()->user()->phone;
 
+        $package_id_request = (int)$request->package_id;
+    
+       // $package = Package::find($package_id_request); // Replace 1 with your package ID
+        $package = Package::where('id', $package_id_request)->first();
+        $price = $package->price;
+
+        if ($package) {
+            if ($price != $_amount){
+                return 'error';
+            }
+        } else {
+            return 'error';
+        }
 
         //#######################################################################
-        $trackId = uniqid($_amount * time());
+        $trackId = uniqid($price * time());
         $data = [
             'id' => $paydata['tranportal_id'],
             'password' => $paydata['tranportal_password'],
             'action' => '1',
             'trackId' => $trackId,
-            'amt' => (float) $_amount,
+            'amt' => (float) $price,
             'currencyCode' => '682',
             'langid' => 'ar',
             'responseURL' => route('membership.arb.success'),
             'errorURL' => route('membership.arb.cancel'),
-            'udf1' => '453'
+            'udf1' => $package_id_request,
+            'udf2' => $user_id
         ];
       
        // $data = $data + $this->generateUdfs($data);
@@ -110,30 +124,53 @@ class ArbController extends Controller
     // return to success page
     public function successPayment(Request $request)
     {
-        return redirect()->route('success.page');
+
         $paymentMethod = PaymentGateway::where('keyword', 'arb')->first();
         $paydata = $paymentMethod->convertAutoData();
-        $requestData = Session::get('request');
+
         $currentLang = session()->has('lang') ?
             (Language::where('code', session()->get('lang'))->first())
             : (Language::where('is_default', 1)->first());
         $bs = $currentLang->basic_setting;
         $be = $currentLang->basic_extended;
 
-        // log::info('success');
-        // log::info($request);
-        // log::info('end sucess');
-        // session()->flash('success', __('successful_payment'));
-        // Session::forget('request');
-        // Session::forget('paymentFor');
-
         $dataArr = json_decode($request, true);
         
         $decrypted = $this->decryption($request['trandata'], $paydata["resource_key"]);
 
-       // log::info('decrpted '.$decrypted);
+
         $raw = urldecode($decrypted);
         $dataArr = json_decode($raw, true);
+
+        log::info($dataArr);
+        if (!empty($dataArr) && is_array($dataArr)) {
+            $paymentData = $dataArr[0]; // Get the first element
+            
+            if (isset($paymentData['result']) && $paymentData['result'] === 'CAPTURED') {
+                $isSuccessful = true;
+                $resultMessage = 'payment_success';
+                // You can access transaction details like $paymentData['transId'], $paymentData['amt'], etc.
+            } else if (isset($paymentData['error'])) {
+                $isSuccessful = false;
+                $resultMessage = 'payment_failed';
+            } else {
+                $isSuccessful = false;
+                $resultMessage = 'payment_failed';
+            }
+        }
+        
+        // Now you can use $isSuccessful and $resultMessage as needed
+        if ($isSuccessful) {
+            log::info('yessss');
+        } else {
+            log::info('nooo'.$resultMessage);
+        }
+
+       // log::info('data back'.$request);
+       return redirect()->route('success.page')->with([
+        'resultMessage' => $resultMessage,
+        'isSuccessful' => $isSuccessful
+    ]);
 
         $paymentFor = 'membership';
         $package = Package::find($requestData['package_id']);
