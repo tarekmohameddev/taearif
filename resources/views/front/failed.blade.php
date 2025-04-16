@@ -47,7 +47,7 @@
         }, 'https://agents-internal.taearif.com/html.html');
       };
       
-      window.parent.postMessage("payment_success", "https://taearif.vercel.app");
+      window.parent.postMessage("payment_failed", "https://taearif.vercel.app");
     </script>
 
 <script>

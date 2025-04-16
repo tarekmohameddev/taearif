@@ -122,6 +122,11 @@ class ArbController extends Controller
     }
 
     // return to success page
+
+    public function failedPayment(Request $request)
+    {
+        return redirect()->route('failed.page');
+    }
     public function successPayment(Request $request)
     {
 
@@ -162,15 +167,14 @@ class ArbController extends Controller
         // Now you can use $isSuccessful and $resultMessage as needed
         if ($isSuccessful) {
             log::info('yessss');
+            return redirect()->route('success.page');
         } else {
             log::info('nooo'.$resultMessage);
+            return redirect()->route('failed.page');
         }
 
        // log::info('data back'.$request);
-       return redirect()->route('success.page')->with([
-        'resultMessage' => $resultMessage,
-        'isSuccessful' => $isSuccessful
-    ]);
+       
 
         $paymentFor = 'membership';
         $package = Package::find($requestData['package_id']);

@@ -1774,6 +1774,13 @@ class CheckoutController extends Controller
         return view('front.success');
     }
 
+    public function onlinefailed()
+    {
+        Session::forget('coupon');
+        Session::forget('coupon_amount');
+        return view('front.failed');
+    }
+
     public function offlineSuccess()
     {
         Session::forget('coupon');
