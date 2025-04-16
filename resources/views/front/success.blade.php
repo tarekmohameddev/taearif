@@ -16,7 +16,7 @@
 </head>
 
 <body>
-    <div class="container">
+    <div class="container d-none">
         <div class="row">
             <div class="col-md-6 mx-auto" id="mt">
                 <div class="payment">
