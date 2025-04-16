@@ -31,12 +31,20 @@
                         <p class="paragraph-text">
                             {{ __('payment_success_msg') }}
                         </p>
-                        <a href="{{ route('front.index') }}">{{ __('Go to Home') }}</a>
+                       
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    
+    <script>
+            if (window.opener) {
+                window.opener.postMessage("payment_success", "*");
+                window.close();
+            }
+    </script>
+
 </body>
 
 </html>

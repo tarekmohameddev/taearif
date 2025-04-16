@@ -64,7 +64,7 @@ class PaymentController extends Controller
             ->get()
             ->map(function ($package) use ($user) {
                 $isCurrent = $package->memberships->contains('user_id', $user->id);
-    
+                
                 return [
                     'id' => $package->id,
                     'name' => $package->title,
