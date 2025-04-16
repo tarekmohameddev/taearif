@@ -63,7 +63,7 @@ class PropertyController extends Controller
         $categories = ApiUserCategory::where('is_active', true)
             ->where('type', 'property')
             ->get(['id', 'name']);
-
+// dd($categories);
         return response()->json([
             'success' => true,
             'data' => $categories,
@@ -233,6 +233,7 @@ class PropertyController extends Controller
             'amenities' => 'nullable|array',
             'label' => 'nullable|array',
             'value' => 'nullable|array',
+            'category_id' => 'nullable|integer',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -273,7 +274,8 @@ class PropertyController extends Controller
                 'latitude',
                 'longitude',
                 'features',
-                'transaction_type'
+                'transaction_type',
+                'category_id',
             ]);
 
             $property = Property::storeProperty(
@@ -414,6 +416,7 @@ class PropertyController extends Controller
             'amenities' => 'nullable|array',
             'label' => 'nullable|array',
             'value' => 'nullable|array',
+            'category_id' => 'nullable|integer',
         ];
 
         $validator = Validator::make($request->all(), $rules);

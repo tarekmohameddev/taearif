@@ -26,10 +26,10 @@ class ApiUserCategory extends Model
         'is_active' => 'boolean',
     ];
 
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
+    // public function user()
+    // {
+    //     return $this->belongsTo(User::class, 'user_id');
+    // }
 
     public function properties()
     {
@@ -53,7 +53,6 @@ class ApiUserCategory extends Model
 
     public static function storeCategory(int $userId,array $data)
     {
-        $data['user_id'] = $userId;
 
         $existing = self::where('name', $data['name'])->first();
         if ($existing) {

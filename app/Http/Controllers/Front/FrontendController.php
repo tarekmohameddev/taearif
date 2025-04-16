@@ -580,9 +580,10 @@ class FrontendController extends Controller
 
         // resources\views\user-front\maintenance_mode.blade.php
         // maintenance_mode
-        if ($api_general_settingsData->maintenance_mode == 1) {
+        if (isset($api_general_settingsData->maintenance_mode) && $api_general_settingsData->maintenance_mode == 1) {
             return view('user-front.maintenance_mode', $data);
         }
+
 
 
         if ($userBs->theme == 'home_one') {

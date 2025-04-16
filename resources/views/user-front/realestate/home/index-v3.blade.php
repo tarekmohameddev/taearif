@@ -269,6 +269,9 @@
 
     </div>
 </section>
+@else
+    <div style="margin-top: 100px;">
+    </div>
 @endif
 <!-- // categories -->
 @if (!empty($api_general_settingsData['show_properties']))

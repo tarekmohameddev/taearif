@@ -53,9 +53,9 @@ Route::fallback(function () {
 
     Route::get('/all-routes', function () {
         // Basic access control: Only allow access if the user is authenticated
-        if (!auth()->check()) {
-            return redirect('/login')->with('error', 'You must be logged in to view this page.');
-        }
+        // if (!auth()->check()) {
+        //     return redirect('/login')->with('error', 'You must be logged in to view this page.');
+        // }
 
         // Get the 'type' parameter to decide which routes to show (web, api, or all)
         $type = request()->get('type', 'all'); // Default to 'all' if not specified
@@ -1770,7 +1770,7 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
     // });
     // Route::group(['middleware' => ['routeAccess:Real Estate']], function () {
     // Properties route
-    Route::controller(FrontPropertyController::class)->group(function () { 
+    Route::controller(FrontPropertyController::class)->group(function () {
         Route::get('/properties', 'index')->name('front.user.properties');
         Route::get('/property/{slug}', 'details')->name('front.user.property.details');
         Route::post('/property-contact', 'contact')->name('front.user.property_contact');

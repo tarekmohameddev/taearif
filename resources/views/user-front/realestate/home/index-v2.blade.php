@@ -281,29 +281,9 @@
             </div>
         </div>
     </section>
-@endif
-
-<!-- // categories -->
-@if (!empty($api_general_settingsData['show_properties']))
-    @if ($properties->count() > 0)
-        <div class="categories pb-100">
-            <section id="property-filter-section">
-                @include('user-front.realestate.partials.property-filter-list', [
-                    'property_contents' => $properties,
-                    'categories' => $all_proeprty_categories,
-                    'all_cities' => $all_cities,
-                    'min' => $min,
-                    'max' => $max,
-                    'userBs' => $userBs,
-                    'keywords' => $keywords,
-                    'userCurrentLang' => $userCurrentLang,
-                    'userSeo' => $userSeo ?? null,
-                    'amenities' => $amenities ?? []
-                ])
-            </section>
-
-        </div>
-    @endif
+    @else
+    <div style="margin-top: 100px;">
+    </div>
 @endif
 
 <style>

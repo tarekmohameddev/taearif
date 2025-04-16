@@ -54,7 +54,7 @@ class Property extends Model
 
     public function category()
     {
-        return $this->belongsTo(ApiUserCategory::class, 'category_id');
+        return $this->belongsTo(ApiUserCategory::class, 'category_id', 'id');
     }
 
 

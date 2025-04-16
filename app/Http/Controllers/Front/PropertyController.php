@@ -58,7 +58,7 @@ class PropertyController extends Controller
 
         $information['amenities'] = Amenity::where('user_id', $tenantId)
             ->where('language_id', $userCurrentLang->id)
-            ->where('is_active', 1)
+            ->where('status', 1)
             ->orderBy('serial_number')
             ->get();
 
@@ -66,8 +66,7 @@ class PropertyController extends Controller
         $category = null;
         if ($request->filled('category') && $request->category !== 'all') {
             $category = $request->category;
-            $propertyCategory = Category::where('user_id', $tenantId)
-                ->where('id', $category)
+            $propertyCategory = Category::where('id', $category)
                 ->first();
         }
 
@@ -129,9 +128,9 @@ class PropertyController extends Controller
         [$order_by_column, $order] = $sortOptions[$request->sort] ?? ['user_properties.id', 'desc'];
 
         $property_contents = Property::where([
-                ['user_properties.user_id', $tenantId],
-                ['user_properties.status', 1],
-            ])
+            ['user_properties.user_id', $tenantId],
+            ['user_properties.status', 1],
+        ])
             ->join('user_property_contents', 'user_properties.id', '=', 'user_property_contents.property_id')
             ->leftJoin('user_cities', 'user_cities.id', '=', 'user_property_contents.city_id')
             ->leftJoin('user_states', 'user_states.id', '=', 'user_property_contents.state_id')
@@ -145,7 +144,9 @@ class PropertyController extends Controller
             ->when($cityId, fn($q) => $q->where('user_property_contents.city_id', $cityId))
             ->when($category && $propertyCategory, fn($q) => $q->where('user_properties.category_id', $propertyCategory->id))
             ->when(!empty($amenityInContentId), function ($q) use ($amenityInContentId) {
-                $q->whereHas('proertyAmenities', fn($q2) =>
+                $q->whereHas(
+                    'proertyAmenities',
+                    fn($q2) =>
                     $q2->whereIn('amenity_id', $amenityInContentId),
                     '=',
                     count($amenityInContentId)
@@ -176,12 +177,22 @@ class PropertyController extends Controller
         $information['property_contents'] = $property_contents;
         $information['contents'] = $property_contents;
 
-        $information['all_cities'] = City::where('user_id', $tenantId)->where('is_active', 1)->where('language_id', $userCurrentLang->id)->get();
+        // $information['all_cities'] = City::where('user_id', $tenantId)->where('active', 1)->where('language_id', $userCurrentLang->id)->get();
+        $information['all_cities'] = City::where('user_id', $tenantId)
+            ->where('status', 1)
+            ->where('language_id', $userCurrentLang->id)
+            ->get();
+
         $information['all_states'] = State::where('user_id', $tenantId)->where('language_id', $userCurrentLang->id)->get();
         $information['all_countries'] = Country::where('user_id', $tenantId)->where('language_id', $userCurrentLang->id)->get();
 
-        $priceRange = Property::where('user_id', $tenantId)->where('is_active', 1)
-            ->selectRaw('MIN(price) as min, MAX(price) as max')->first();
+        // $priceRange = Property::where('user_id', $tenantId)->where('active', 1)
+        //     ->selectRaw('MIN(price) as min, MAX(price) as max')->first();
+        $priceRange = Property::where('user_id', $tenantId)
+            ->where('status', 1)
+            ->selectRaw('MIN(price) as min, MAX(price) as max')
+            ->first();
+
         $information['min'] = intval($priceRange->min);
         $information['max'] = intval($priceRange->max);
 
@@ -245,7 +256,8 @@ class PropertyController extends Controller
 
         $categories = Category::where('is_active', 1)->get();
         $categories->map(function ($category) use ($user) {
-            $category['propertiesCount'] = $category->properties()->where([['is_active', 1]])->count();
+            // $category['propertiesCount'] = $category->properties()->where([['is_active', 1]])->count();
+            $category['propertiesCount'] = $category->properties()->where('status', 1)->count();
         });
         $information['categories'] = $categories;
 
@@ -500,27 +512,32 @@ class PropertyController extends Controller
 
     public function getCategories(Request $request)
     {
-        $userId = getUser()->id;
+        $userId = getUser()?->id;
 
-
+        \Log::info('request');
+        \Log::info($request);
         if (session()->has('user_lang')) {
             $userCurrentLang = Language::where('code', session()->get('user_lang'))->where('user_id', $userId)->first();
             if (empty($userCurrentLang)) {
-                $userCurrentLang = Language::where(
-                    'is_default',
-                    1
-                )->where('user_id', $userId)->first();
+                $userCurrentLang = Language::where('is_default',1)->where('user_id', $userId)->first();
                 session()->put('user_lang', $userCurrentLang->code);
             }
         } else {
             $userCurrentLang = Language::where('is_default', 1)->where('user_id', $userId)->first();
         }
-
+        // dd($request->all());
         if ($request->type != 'all') {
-            $categories = Category::where([['type', $request->type], ['status', 1], ['user_id', $userId], ['language_id', $userCurrentLang->id]])->select('id', 'type', 'name', 'slug')->orderBy('serial_number', "ASC")->get();
+            $categories = Category::where('type', $request->type)
+                ->select('id', 'type', 'name', 'slug')
+                ->orderBy('name', 'ASC')
+                ->get();
         } else {
-            $categories = Category::where([['status', 1], ['user_id', $userId], ['language_id', $userCurrentLang->id]])->select('id', 'type', 'name', 'slug')->orderBy('serial_number', "ASC")->get();
+            $categories = Category::where('is_active', true)
+                ->select('id', 'type', 'name', 'slug')
+                ->orderBy('name', 'ASC')
+                ->get();
         }
+
 
         return Response::json(['categories' => $categories], 200);
     }

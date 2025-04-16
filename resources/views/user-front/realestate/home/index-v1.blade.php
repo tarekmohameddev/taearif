@@ -83,6 +83,9 @@
             </div>
         </div>
     </section>
+@else
+    <div style="margin-top: 100px;">
+    </div>
 @endif
 
 <!-- // categories -->
