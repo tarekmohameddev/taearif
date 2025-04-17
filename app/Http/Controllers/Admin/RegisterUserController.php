@@ -35,6 +35,8 @@ use App\Models\User\BasicSetting as UserBasicSetting;
 use App\Models\User\UserVcard;
 use Illuminate\Support\Facades\DB;
 use App\Models\UserStep;
+use Illuminate\Support\Facades\Log;
+
 
 class RegisterUserController extends Controller
 {
@@ -1557,7 +1559,7 @@ class RegisterUserController extends Controller
             Session::flash('membership_warning', 'To add a Lifetime package as Current Package, You have to remove the next package');
             return back();
         }
-
+        log::info('xxxx'.$currMembership);
         // expire the current package
         $currMembership->expire_date = Carbon::parse(Carbon::now()->subDay()->format('d-m-Y'));
         $currMembership->modified = 1;
