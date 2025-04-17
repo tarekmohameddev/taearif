@@ -610,7 +610,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-xl-9">
+            <div class="col-xl-12">
                 <div class="product-sort-area mb-10 d-none" data-aos="fade-up">
                     <div class="row justify-content-sm-end">
                         <div class="col-sm-5 d-xl-none">
@@ -654,7 +654,7 @@
                 </div>
                 <div class="row properties">
                     @forelse ($property_contents as $property)
-                    <div class="col-lg-4 col-md-6">
+                    <div class="col-lg-3 col-md-3">
                         @include('user-front.realestate.partials.property')
                     </div>
                     @empty
