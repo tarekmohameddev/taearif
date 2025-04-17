@@ -17,7 +17,10 @@ use App\Http\Helpers\MegaMailer;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Log;
-
+use App\Models\User;
+use App\Models\BasicExtended;
+use App\Models\BasicSetting;
+use App\Models\User\BasicSetting as UserBasicSetting;
 
 class ArbController extends Controller
 {
@@ -60,12 +63,12 @@ class ArbController extends Controller
     
        // $package = Package::find($package_id_request); // Replace 1 with your package ID
         $package = Package::where('id', $package_id_request)->first();
+
+
         $price = $package->price;
 
         if ($package) {
-            if ($price != $_amount){
-                return 'error';
-            }
+
         } else {
             return 'error';
         }
@@ -154,6 +157,11 @@ class ArbController extends Controller
             if (isset($paymentData['result']) && $paymentData['result'] === 'CAPTURED') {
                 $isSuccessful = true;
                 $resultMessage = 'payment_success';
+                $package_id = $paymentData['udf1'];
+                $user_id = $paymentData['udf2'];
+                $price = $paymentData['amt'];
+
+
                 // You can access transaction details like $paymentData['transId'], $paymentData['amt'], etc.
             } else if (isset($paymentData['error'])) {
                 $isSuccessful = false;
@@ -166,183 +174,94 @@ class ArbController extends Controller
         
         // Now you can use $isSuccessful and $resultMessage as needed
         if ($isSuccessful) {
-            log::info('yessss');
+
+
+
+            $user = User::findOrFail($user_id);
+            log::info($user);
+            $currMembership = UserPermissionHelper::currMembOrPending($user_id);
+            $nextMembership = UserPermissionHelper::nextMembership($user_id);
+    
+            $be = BasicExtended::first();
+            $bs = BasicSetting::select('website_title')->first();
+    
+            $selectedPackage = Package::find($package_id);
+    
+            // if the user has a next package to activate & selected package is 'lifetime' package
+            // if (!empty($nextMembership) && $selectedPackage->term == 'lifetime') {
+            //     Session::flash('membership_warning', 'To add a Lifetime package as Current Package, You have to remove the next package');
+            //     return back();
+            // }
+    
+            // expire the current package
+            log::info('ddd'.$currMembership);
+            $currMembership->expire_date = Carbon::parse(Carbon::now()->subDay()->format('d-m-Y'));
+            $currMembership->modified = 1;
+            if ($currMembership->status == 0) {
+                $currMembership->status = 2;
+            }
+            $currMembership->save();
+    
+            // calculate expire date for selected package
+            if ($selectedPackage->term == 'monthly') {
+                $exDate = Carbon::now()->addMonth()->format('d-m-Y');
+            } elseif ($selectedPackage->term == 'yearly') {
+                $exDate = Carbon::now()->addYear()->format('d-m-Y');
+            } elseif ($selectedPackage->term == 'lifetime') {
+                $exDate = Carbon::maxValue()->format('d-m-Y');
+            }
+
+            $requestData = [
+                'user_id' => $user_id,
+                'start_date' => Carbon::parse(Carbon::now()->format('d-m-Y')),
+                'price' => $price,
+                'package_id' => $package_id,
+                'payment_method' => 'Arb',
+                'status' => 1,
+                'receipt_name' => 'Monthly Subscription',
+                'expire_date' => Carbon::parse($exDate),
+            ];
+
+            $paymentFor = 'extend';
+            $package = Package::find($package_id);
+            $transaction_id = UserPermissionHelper::uniqidReal(8);
+            $transaction_details = '';
+            if ($paymentFor == "membership") {
+                $amount = $price;
+                $password = $requestData['password'];
+                $checkout = new CheckoutController();
+                $user = $checkout->store($requestData, $transaction_id, $transaction_details, $amount, $be, $password);
+    
+                $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
+                $activation = Carbon::parse($lastMemb->start_date);
+                $expire = Carbon::parse($lastMemb->expire_date);
+              //  $file_name = $this->makeInvoice($requestData, "membership", $user, $password, $amount, $requestData["payment_method"], $requestData['phone'], $be->base_currency_symbol_position, $be->base_currency_symbol, $be->base_currency_text, $transaction_id, $package->title, $lastMemb);
+
+            
+                    return redirect(route('customer.dashboard'));
+           
+            } elseif ($paymentFor == "extend") {
+                $amount = $price;
+                $password = uniqid('qrcode');
+                $checkout = new UserCheckoutController();
+                $user = $checkout->store($requestData, $transaction_id, $transaction_details, $amount, $be, $password);
+    
+                $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
+                $activation = Carbon::parse($lastMemb->start_date);
+                $expire = Carbon::parse($lastMemb->expire_date);
+              // $file_name = $this->makeInvoice($requestData, "extend", $user, $password, $amount, $requestData["payment_method"], $user->phone, $be->base_currency_symbol_position, $be->base_currency_symbol, $be->base_currency_text, $transaction_id, $package->title, $lastMemb);
+            }
+
             return redirect()->route('success.page');
         } else {
-            log::info('nooo'.$resultMessage);
+            
             return redirect()->route('failed.page');
         }
 
        // log::info('data back'.$request);
        
 
-        $paymentFor = 'membership';
-        $package = Package::find($requestData['package_id']);
-        $transaction_id = UserPermissionHelper::uniqidReal(8);
-        $transaction_details = json_encode($request->all());
-        if ($paymentFor == "membership") {
-            $amount = $requestData['price'];
-            $password = $requestData['password'];
-            $checkout = new CheckoutController();
-            $user = $checkout->store($requestData, $transaction_id, $transaction_details, $amount, $be, $password);
 
-            $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
-            $activation = Carbon::parse($lastMemb->start_date);
-            $expire = Carbon::parse($lastMemb->expire_date);
-            $file_name = $this->makeInvoice($requestData, "membership", $user, $password, $amount, $requestData["payment_method"], $requestData['phone'], $be->base_currency_symbol_position, $be->base_currency_symbol, $be->base_currency_text, $transaction_id, $package->title, $lastMemb);
-
-            $mailer = new MegaMailer();
-            $data = [
-                'toMail' => $user->email,
-                'toName' => $user->fname,
-                'username' => $user->username,
-                'package_title' => $package->title,
-                'package_price' => ($be->base_currency_text_position == 'left' ? $be->base_currency_text . ' ' : '') . $package->price . ($be->base_currency_text_position == 'right' ? ' ' . $be->base_currency_text : ''),
-                'discount' => ($be->base_currency_text_position == 'left' ? $be->base_currency_text . ' ' : '') . $lastMemb->discount . ($be->base_currency_text_position == 'right' ? ' ' . $be->base_currency_text : ''),
-                'total' => ($be->base_currency_text_position == 'left' ? $be->base_currency_text . ' ' : '') . $lastMemb->price . ($be->base_currency_text_position == 'right' ? ' ' . $be->base_currency_text : ''),
-                'activation_date' => $activation->toFormattedDateString(),
-                'expire_date' => Carbon::parse($expire->toFormattedDateString())->format('Y') == '9999' ? 'Lifetime' : $expire->toFormattedDateString(),
-                'membership_invoice' => $file_name,
-                'website_title' => $bs->website_title,
-                'templateType' => 'registration_with_premium_package',
-                'type' => 'registrationWithPremiumPackage'
-            ];
-            $mailer->mailFromAdmin($data);
-
-            // session()->flash('success', __('successful_payment'));
-            // Session::forget('request');
-            // Session::forget('paymentFor');
-        
-                return redirect(route('customer.dashboard'));
-       
-        } elseif ($paymentFor == "extend") {
-            $amount = $requestData['price'];
-            $password = uniqid('qrcode');
-            $checkout = new UserCheckoutController();
-            $user = $checkout->store($requestData, $transaction_id, $transaction_details, $amount, $be, $password);
-
-            $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
-            $activation = Carbon::parse($lastMemb->start_date);
-            $expire = Carbon::parse($lastMemb->expire_date);
-            $file_name = $this->makeInvoice($requestData, "extend", $user, $password, $amount, $requestData["payment_method"], $user->phone, $be->base_currency_symbol_position, $be->base_currency_symbol, $be->base_currency_text, $transaction_id, $package->title, $lastMemb);
-
-            $mailer = new MegaMailer();
-            $data = [
-                'toMail' => $user->email,
-                'toName' => $user->fname,
-                'username' => $user->username,
-                'package_title' => $package->title,
-                'package_price' => ($be->base_currency_text_position == 'left' ? $be->base_currency_text . ' ' : '') . $package->price . ($be->base_currency_text_position == 'right' ? ' ' . $be->base_currency_text : ''),
-                'activation_date' => $activation->toFormattedDateString(),
-                'expire_date' => Carbon::parse($expire->toFormattedDateString())->format('Y') == '9999' ? 'Lifetime' : $expire->toFormattedDateString(),
-                'membership_invoice' => $file_name,
-                'website_title' => $bs->website_title,
-                'templateType' => 'membership_extend',
-                'type' => 'membershipExtend'
-            ];
-            $mailer->mailFromAdmin($data);
-
-            // session()->flash('success', __('successful_payment'));
-            // Session::forget('request');
-            // Session::forget('paymentFor');
-            return redirect(route('customer.dashboard'));
-        }
-
-        return redirect(route('customer.dashboard'));
-
-
-        log::info($data);
-        
-        $requestData = Session::get('request');
-        $currentLang = session()->has('lang') ?
-            (Language::where('code', session()->get('lang'))->first())
-            : (Language::where('is_default', 1)->first());
-        $bs = $currentLang->basic_setting;
-        $be = $currentLang->basic_extended;
-        /** Get the payment ID before session clear **/
-
-        if (!empty($request->paymentId)) {
-            $result = $this->myfatoorah->getPaymentStatus('paymentId', $request->paymentId);
-            if ($result && $result['IsSuccess'] == true && $result['Data']['InvoiceStatus'] == "Paid") {
-                $paymentFor = Session::get('paymentFor');
-                $package = Package::find($requestData['package_id']);
-                $transaction_id = UserPermissionHelper::uniqidReal(8);
-                $transaction_details = json_encode($request->all());
-                if ($paymentFor == "membership") {
-                    $amount = $requestData['price'];
-                    $password = $requestData['password'];
-                    $checkout = new CheckoutController();
-                    $user = $checkout->store($requestData, $transaction_id, $transaction_details, $amount, $be, $password);
-
-                    $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
-                    $activation = Carbon::parse($lastMemb->start_date);
-                    $expire = Carbon::parse($lastMemb->expire_date);
-                    $file_name = $this->makeInvoice($requestData, "membership", $user, $password, $amount, $requestData["payment_method"], $requestData['phone'], $be->base_currency_symbol_position, $be->base_currency_symbol, $be->base_currency_text, $transaction_id, $package->title, $lastMemb);
-
-                    $mailer = new MegaMailer();
-                    $data = [
-                        'toMail' => $user->email,
-                        'toName' => $user->fname,
-                        'username' => $user->username,
-                        'package_title' => $package->title,
-                        'package_price' => ($be->base_currency_text_position == 'left' ? $be->base_currency_text . ' ' : '') . $package->price . ($be->base_currency_text_position == 'right' ? ' ' . $be->base_currency_text : ''),
-                        'discount' => ($be->base_currency_text_position == 'left' ? $be->base_currency_text . ' ' : '') . $lastMemb->discount . ($be->base_currency_text_position == 'right' ? ' ' . $be->base_currency_text : ''),
-                        'total' => ($be->base_currency_text_position == 'left' ? $be->base_currency_text . ' ' : '') . $lastMemb->price . ($be->base_currency_text_position == 'right' ? ' ' . $be->base_currency_text : ''),
-                        'activation_date' => $activation->toFormattedDateString(),
-                        'expire_date' => Carbon::parse($expire->toFormattedDateString())->format('Y') == '9999' ? 'Lifetime' : $expire->toFormattedDateString(),
-                        'membership_invoice' => $file_name,
-                        'website_title' => $bs->website_title,
-                        'templateType' => 'registration_with_premium_package',
-                        'type' => 'registrationWithPremiumPackage'
-                    ];
-                    $mailer->mailFromAdmin($data);
-
-                    session()->flash('success', __('successful_payment'));
-                    Session::forget('request');
-                    Session::forget('paymentFor');
-                    return [
-                        'status' => 'success'
-                    ];
-                } elseif ($paymentFor == "extend") {
-                    $amount = $requestData['price'];
-                    $password = uniqid('qrcode');
-                    $checkout = new UserCheckoutController();
-                    $user = $checkout->store($requestData, $transaction_id, $transaction_details, $amount, $be, $password);
-
-                    $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
-                    $activation = Carbon::parse($lastMemb->start_date);
-                    $expire = Carbon::parse($lastMemb->expire_date);
-                    $file_name = $this->makeInvoice($requestData, "extend", $user, $password, $amount, $requestData["payment_method"], $user->phone, $be->base_currency_symbol_position, $be->base_currency_symbol, $be->base_currency_text, $transaction_id, $package->title, $lastMemb);
-
-                    $mailer = new MegaMailer();
-                    $data = [
-                        'toMail' => $user->email,
-                        'toName' => $user->fname,
-                        'username' => $user->username,
-                        'package_title' => $package->title,
-                        'package_price' => ($be->base_currency_text_position == 'left' ? $be->base_currency_text . ' ' : '') . $package->price . ($be->base_currency_text_position == 'right' ? ' ' . $be->base_currency_text : ''),
-                        'activation_date' => $activation->toFormattedDateString(),
-                        'expire_date' => Carbon::parse($expire->toFormattedDateString())->format('Y') == '9999' ? 'Lifetime' : $expire->toFormattedDateString(),
-                        'membership_invoice' => $file_name,
-                        'website_title' => $bs->website_title,
-                        'templateType' => 'membership_extend',
-                        'type' => 'membershipExtend'
-                    ];
-                    $mailer->mailFromAdmin($data);
-
-                    session()->flash('success', __('successful_payment'));
-                    Session::forget('request');
-                    Session::forget('paymentFor');
-                    return [
-                        'status' => 'success'
-                    ];
-                }
-            } else {
-                return [
-                    'status' => 'fail'
-                ];
-            }
-        }
     }
 
     private function decryption($code, $key): false|string
