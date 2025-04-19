@@ -27,7 +27,7 @@
 @section('content')
 
 @if ($slidertype === 'slider')
-<section class="home-banner home-banner-2">
+<section class="home-banner home-banner-2" style="max-height: 600px; width: 100%; object-fit: cover;">
     <div class="container">
 
         <div class="swiper home-slider" id="home-slider-1">
@@ -65,8 +65,9 @@
     </div>
 </section>
 @elseif ($slidertype === 'static')
-<section class="home-banner home-banner-3 with-radius">
-    <img class="lazyload bg-img blur-up" src="{{ asset($hero->image) }}" alt="Banner">
+<section class="home-banner home-banner-3 with-radius" style="max-height: 600px; width: 100%; object-fit: cover;">
+    <img class="lazyload bg-img blur-up" src="{{ asset($hero->image) }}" alt="Banner" >
+
     <div class="container">
 
         <div class="row align-items-center">
