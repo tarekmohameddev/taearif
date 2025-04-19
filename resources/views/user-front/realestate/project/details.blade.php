@@ -199,6 +199,7 @@
                     @endif
 
                     <div class="pb-20"></div>
+                    @if (!empty($project->latitude) && !empty($project->longitude))
 
                     <div class="project-location mb-40" data-aos="fade-up">
                         <h3 class="mb-20"> {{ $keywords['Location'] ?? __('Location') }}</h3>
@@ -207,9 +208,10 @@
                                 src="https://maps.google.com/maps?q={{ $project->latitude }},{{ $project->longitude }}&hl={{ $userCurrentLang->code }};z=15&amp;output=embed"></iframe>
                         </div>
                     </div>
-
+                    @endif
                     <div class="pb-20"></div><!-- Space -->
 
+                    @if (!empty($floorPlanImages) && count($floorPlanImages) > 0)
                     <div class="project-planning mb-10" data-aos="fade-up">
                         <h3 class="mb-20">{{ $keywords['Floor Planning'] ?? __('Floor Planning') }}</h3>
                         <div class="row">
@@ -227,6 +229,7 @@
 
                         </div>
                     </div>
+                    @endif
 
                     <div class="pb-20"></div><!-- Space -->
                     @if (count($project->projectTypes) > 0)
@@ -285,6 +288,7 @@
                     @endif --}}
                     <div class="pb-20"></div><!-- Space -->
 
+                    @if (!empty($galleryImages) && count($galleryImages) > 0)
                     <div class="project-gallery">
                         <h3 class="mb-20"> {{ $keywords['Project Gallery Images'] ?? __('Project Gallery Images') }}
                         </h3>
@@ -304,6 +308,8 @@
 
                         </div>
                     </div>
+                    @endif
+
                 </div>
             </div>
         </div>

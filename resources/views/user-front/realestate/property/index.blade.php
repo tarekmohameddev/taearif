@@ -209,14 +209,6 @@
 @endsection
 @endif
 
-
-
-
-
-
-
-
-
 @section('content')
 
 <!-- Map Start-->
@@ -905,18 +897,18 @@
 <!-- Listing End -->
 @endsection
 @section('script')
-    <script>
-        'use strict';
-        var imgUrl = "{{ url('/') }}";
-        var property_contents = @json($property_contents);
-        var properties = property_contents.data;
-        var siteURL = "{{ route('front.user.detail.view', getParam()) }}"
-        const categoryUrl = "{{ route('front.user.get_categories', getParam()) }}";
-    </script>
-    <!-- Leaflet Map JS -->
-    <script src="{{ asset('/assets/front/user/realestate/js/vendors/leaflet.js') }}"></script>
-    <script src="{{ asset('/assets/front/user/realestate/js/vendors/leaflet.markercluster.js') }}"></script>
-    <!-- Map JS -->
-    <script src="{{ asset('/assets/front/user/realestate/js/map.js') }}"></script>
-    <script src="{{ asset('/assets/front/user/realestate/js/properties.js') }}"></script>
+<script>
+    'use strict';
+    var imgUrl = "{{ url('/') }}";
+    var property_contents = @json($property_contents);
+    var properties = property_contents.data;
+    var siteURL = "{{ route('front.user.detail.view', getParam()) }}"
+    const categoryUrl = "{{ route('front.user.get_categories', getParam()) }}";
+</script>
+<!-- Leaflet Map JS -->
+<script src="{{ asset('/assets/front/user/realestate/js/vendors/leaflet.js') }}"></script>
+<script src="{{ asset('/assets/front/user/realestate/js/vendors/leaflet.markercluster.js') }}"></script>
+<!-- Map JS -->
+<script src="{{ asset('/assets/front/user/realestate/js/map.js') }}"></script>
+<script src="{{ asset('/assets/front/user/realestate/js/properties.js') }}"></script>
 @endsection

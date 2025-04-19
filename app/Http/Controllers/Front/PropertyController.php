@@ -356,6 +356,7 @@ class PropertyController extends Controller
 
         return back()->with('success', 'Message sent successfully');
     }
+
     public function contactUser(Request $request)
     {
 
@@ -414,6 +415,7 @@ class PropertyController extends Controller
 
         return back()->with('success', 'Message sent successfully');
     }
+
     private function sendMail($request)
     {
 
@@ -520,7 +522,7 @@ class PropertyController extends Controller
         if (session()->has('user_lang')) {
             $userCurrentLang = Language::where('code', session()->get('user_lang'))->where('user_id', $userId)->first();
             if (empty($userCurrentLang)) {
-                $userCurrentLang = Language::where('is_default',1)->where('user_id', $userId)->first();
+                $userCurrentLang = Language::where('is_default', 1)->where('user_id', $userId)->first();
                 session()->put('user_lang', $userCurrentLang->code);
             }
         } else {

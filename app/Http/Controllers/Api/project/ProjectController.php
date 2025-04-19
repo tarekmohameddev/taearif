@@ -7,7 +7,6 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\User\Language;
 use App\Models\User\BasicSetting;
-
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -273,23 +272,25 @@ class ProjectController extends Controller
         $defaultLang = Language::where('user_id', $userId)->where('is_default', 1)->firstOrFail();
 
         $rules = [
-            'gallery_images' => 'required|array',
-            'gallery_images.*' => 'string',
-
-            'floorplan_images' => 'required|array',
-            'floorplan_images.*' => 'string',
-
-            'featured_image' => 'required|string',
-            'min_price' => 'required|numeric',
-            'max_price' => 'nullable|numeric',
-            'featured' => 'sometimes',
-            'status' => 'nullable',
-            'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
-            'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
-
             'title' => 'nullable|max:255',
             'address' => 'nullable',
             'description' => 'nullable|min:15',
+            'featured_image' => 'required|string',
+
+            'complete_status' => 'nullable',
+            'units' => 'nullable|integer',
+            'completion_date' => 'nullable|date',
+            'developer' => 'nullable|max:255',
+            'gallery_images' => 'nullable|array',
+            'gallery_images.*' => 'nullable',
+            'floorplan_images' => 'nullable|array',
+            'floorplan_images.*' => 'nullable',
+            'min_price' => 'nullable|numeric',
+            'max_price' => 'nullable|numeric',
+            'featured' => 'nullable',
+            'status' => 'nullable',
+            'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
+            'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
             'label' => 'nullable|array',
             'value' => 'nullable|array',
         ];
@@ -330,11 +331,11 @@ class ProjectController extends Controller
             $content = [
                 'project_id' => $project->id,
                 'language_id' => $defaultLang->id,
-                'title' => $title ?? 'Default Project Title',
-                'address' => $address ?? 'Default Address',
-                'description' => $description ?? 'This is a default project.',
-                'meta_keyword' => $request->meta_keyword ?? 'default, project',
-                'meta_description' => $request->meta_description ?? 'Default project description.',
+                'title' => $title ,
+                'address' => $address ,
+                'description' => $description ,
+                'meta_keyword' => $request->meta_keyword ,
+                'meta_description' => $request->meta_description ,
             ];
             ProjectContent::storeProjectContent($userId, $content);
 
@@ -397,20 +398,21 @@ class ProjectController extends Controller
         $project = Project::where('user_id', $userId)->findOrFail($id);
 
         $rules = [
+            'title' => 'nullable|max:255',
+            'address' => 'nullable',
+            'description' => 'nullable|min:15',
+            'featured_image' => 'required|string',
+
             'gallery_images' => 'sometimes|array',
             'gallery_images.*' => 'string',
             'floorplan_images' => 'sometimes|array',
             'floorplan_images.*' => 'string',
-            'featured_image' => 'required|string',
-            'min_price' => 'required|numeric',
+             'min_price' => 'required|numeric',
             'max_price' => 'nullable|numeric',
             'featured' => 'sometimes',
             'status' => 'sometimes',
             'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
-            'title' => 'nullable|max:255',
-            'address' => 'nullable',
-            'description' => 'nullable|min:15',
             'label' => 'nullable|array',
             'value' => 'nullable|array',
         ];
