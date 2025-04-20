@@ -12,14 +12,15 @@ use App\Http\Controllers\Api\ApiSideMenusController;
 use App\Http\Controllers\Api\ThemeSettingsController;
 use App\Http\Controllers\Api\DomainSettingsController;
 use App\Http\Controllers\Api\content\ApiMenuController;
-use App\Http\Controllers\Api\content\ContentController;
 use App\Http\Controllers\Api\project\ProjectController;
 use App\Http\Controllers\Api\content\AboutApiController;
 use App\Http\Controllers\Api\property\PropertyController;
+// use App\Http\Controllers\Api\content\ApiContentSection;
 use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\content\FooterSettingController;
 use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
+use App\Http\Controllers\Api\content\ApiContentSectionsController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
 
 /*
@@ -100,7 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Content routes
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/content/sections', [ContentController::class, 'index']);
+    Route::get('/content/sections', [ApiContentSectionsController::class, 'index']);
 
 });
 

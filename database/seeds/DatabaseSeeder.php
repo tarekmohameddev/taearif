@@ -1,7 +1,10 @@
 <?php
 
-use Illuminate\Database\Seeder;
+namespace Database\seeds;
+use Illuminate\Database\seeds;
 use Database\seeds\ApiUserCategorySeeder;
+use Database\seeds\DefaultCategorySeeder;
+use Database\seeds\ApiContentSectionSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,6 +18,8 @@ class DatabaseSeeder extends Seeder
         // $this->call(UsersTableSeeder::class);
          $this->call([
         ApiUserCategorySeeder::class,
+        ApiContentSectionSeeder::class,
+        DefaultCategorySeeder::class,
     ]);
     }
 }
