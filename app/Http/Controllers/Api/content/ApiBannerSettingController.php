@@ -103,11 +103,11 @@ class ApiBannerSettingController extends Controller
     public function update(Request $request)
     {
         $user = $request->user();
-        
+
         // Validate the request
         $validator = Validator::make($request->all(), [
             'banner_type' => 'required|string|in:static,slider',
-            
+
             // Static banner settings
             'static' => 'required|array',
             'static.enabled' => 'boolean',
@@ -121,7 +121,7 @@ class ApiBannerSettingController extends Controller
             'static.textAlignment' => 'string|in:left,center,right',
             'static.overlayColor' => 'nullable|string|max:30',
             'static.textColor' => 'nullable|string|max:30',
-            
+
             // Slider banner settings
             'slider' => 'required|array',
             'slider.enabled' => 'boolean',
@@ -143,7 +143,7 @@ class ApiBannerSettingController extends Controller
             'slider.animation' => 'string|in:fade,slide',
             'slider.overlayColor' => 'nullable|string|max:30',
             'slider.textColor' => 'nullable|string|max:30',
-            
+
             // Common settings
             'common' => 'required|array',
             'common.height' => 'string|in:small,medium,large,full',
@@ -164,7 +164,7 @@ class ApiBannerSettingController extends Controller
 
         // Find or create settings
         $settings = ApiBannerSetting::where('user_id', $user->id)->first();
-        
+
         if (!$settings) {
             $settings = new ApiBannerSetting();
             $settings->user_id = $user->id;
@@ -175,7 +175,7 @@ class ApiBannerSettingController extends Controller
         $settings->static = $request->input('static');
         $settings->slider = $request->input('slider');
         $settings->common = $request->input('common');
-        
+
         $settings->save();
 
 
@@ -188,7 +188,7 @@ class ApiBannerSettingController extends Controller
             }
             $responseSettings['static'] = $static;
         }
-        
+
 
         if (!empty($responseSettings['slider'])) {
             $slider = $responseSettings['slider']['slides'];

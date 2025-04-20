@@ -15,6 +15,18 @@
 @section('metaDescription', !empty($userSeo) ? $userSeo->home_meta_description : '')
 @section('metaKeywords', !empty($userSeo) ? $userSeo->home_meta_keywords : '')
 
+
+@section('style')
+<style>
+.caption {
+        font-family: 'Courier New', Courier, monospace;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 400;
+        margin-top: 10px;
+    }
+</style>
+@endsection
 @section('content')
 @if($slidertype == 'slider')
 <section class="home-banner home-banner-2"  style="max-height: 600px; width: 100%; object-fit: cover;">
@@ -32,6 +44,9 @@
                             <a href="{{ $slide->buttonUrl }}" class="btn btn-{{ $slide->buttonStyle ?? 'primary' }}">
                                 {{ $slide->buttonText }}
                             </a>
+                            <p class="caption">{{ $slide->caption ?? '' }}</p>
+
+
                         @endif
                     </div>
                 </div>

@@ -16,6 +16,13 @@
     .header-area.header-2:not(.header-static, .is-sticky) :is(.nav-link:not(:is(.active, .menu-dropdown .nav-link)), .wishlist-btn, .nice-select, .nice-select::after) {
         font-weight: var(--font-medium);
     }
+    .caption {
+        font-family: 'Courier New', Courier, monospace;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 400;
+        margin-top: 10px;
+    }
 </style>
 @endsection
 {{-- @section('pageHeading')
@@ -46,6 +53,7 @@
                             <a href="{{ $slide->buttonUrl }}" class="btn btn-{{ $slide->buttonStyle ?? 'primary' }}">
                                 {{ $slide->buttonText }}
                             </a>
+                            <P class="caption">{{ $slide->caption}}</P>
                         @endif
                     </div>
                 </div>

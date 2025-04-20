@@ -21,6 +21,13 @@
         color: var(--color-dark);
         font-weight: var(--font-medium);
     }
+    .caption {
+        font-family: 'Courier New', Courier, monospace;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 400;
+        margin-top: 10px;
+    }
 </style>
 @endsection
 
@@ -43,7 +50,7 @@
                                 <a href="{{ $slide->buttonUrl }}" class="btn btn-{{ $slide->buttonStyle ?? 'primary' }}">
                                     {{ $slide->buttonText }}
                                 </a>
-                                <p style="color: white">Autoplay Speed: {{ $hero->autoplaySpeed }} ms</p>
+                                <P class="caption">{{ $slide->caption}}</P>
 
                             @endif
                         </div>
