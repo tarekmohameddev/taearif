@@ -12,31 +12,9 @@ class AboutApiController extends Controller
 {
     public function index(Request $request)
     {
-        // Get the about data or create default if not exists
+        // Get the about data
         $user = $request->user();
         $about = ApiAboutSettings::where('user_id', $user->id)->first();
-
-        if (!$about) {
-            // Default features
-            $defaultFeatures = [
-                ['id' => 1, 'title' => 'الجودة', 'description' => 'نلتزم بتقديم أعلى معايير الجودة في جميع منتجاتنا وخدماتنا.'],
-                ['id' => 2, 'title' => 'الابتكار', 'description' => 'نسعى دائمًا لتطوير حلول مبتكرة تلبي احتياجات عملائنا المتغيرة.'],
-                ['id' => 3, 'title' => 'الموثوقية', 'description' => 'يمكنك الاعتماد علينا لتقديم النتائج في الوقت المحدد وبالميزانية المتفق عليها.'],
-            ];
-
-            $about = ApiAboutSettings::create([
-                'user_id' => $user->id,
-                'title' => 'عن شركتنا',
-                'subtitle' => 'قصتنا ورسالتنا',
-                'history' => 'تأسست شركتنا في عام 2010، ونمت من شركة ناشئة صغيرة إلى مزود رائد في مجالنا. لقد التزمنا دائمًا بالجودة والابتكار.',
-                'mission' => 'مهمتنا هي تقديم منتجات وخدمات استثنائية تحسن حياة عملائنا مع الحفاظ على أعلى معايير الجودة ورضا العملاء.',
-                'vision' => 'نتطلع إلى أن نصبح الشركة الرائدة في مجالنا، معروفين بالابتكار والجودة والخدمة الاستثنائية للعملاء.',
-                'image_path' => null,
-                'features' => $defaultFeatures,
-            ]);
-        }
-
-        // Format the response
 
         return response()->json([
             'status' => 'success',
