@@ -30,40 +30,44 @@
 <section class="home-banner home-banner-2" style="max-height: 600px; width: 100%; object-fit: cover;">
     <div class="container">
 
+        {{-- Slider Content --}}
         <div class="swiper home-slider" id="home-slider-1">
             <div class="swiper-wrapper">
                 @foreach ($hero->slides as $slide)
-                <div class="swiper-slide">
-                    <div class="content">
-                        <span class="subtitle color-white">{{ $slide->title }}</span>
-                        <h1 class="title color-white mb-0">{{ $slide->subtitle }}</h1>
-                        <br>
-                        @if ($slide->showButton)
-                            <a href="{{ $slide->buttonUrl }}" class="btn btn-{{ $slide->buttonStyle ?? 'primary' }}">
-                                {{ $slide->buttonText }}
-                            </a>
-                        @endif
+                    <div class="swiper-slide" data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
+                        <div class="content">
+                            <span class="subtitle color-white">{{ $slide->title }}</span>
+                            <h1 class="title color-white mb-0">{{ $slide->subtitle }}</h1>
+                            <br>
+                            @if (!empty($slide->showButton))
+                                <a href="{{ $slide->buttonUrl }}" class="btn btn-{{ $slide->buttonStyle ?? 'primary' }}">
+                                    {{ $slide->buttonText }}
+                                </a>
+                                <p style="color: white">Autoplay Speed: {{ $hero->autoplaySpeed }} ms</p>
+
+                            @endif
+                        </div>
                     </div>
-                </div>
                 @endforeach
             </div>
         </div>
 
+        {{-- Pagination --}}
         <div class="swiper-pagination pagination-fraction mt-40" id="home-slider-1-pagination"></div>
     </div>
 
+    {{-- Background Images --}}
     <div class="swiper home-img-slider" id="home-img-slider-1">
         <div class="swiper-wrapper">
-        @foreach ($hero->slides as $slider)
-            <div class="swiper-slide">
-                <img class="lazyload bg-img" src="{{ asset($slider->image) }}">
-            </div>
-        @endforeach
-
-
+            @foreach ($hero->slides as $slider)
+                <div class="swiper-slide" data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
+                    <img class="lazyload bg-img" src="{{ asset($slider->image) }}">
+                </div>
+            @endforeach
         </div>
     </div>
 </section>
+
 @elseif ($slidertype === 'static')
 <section class="home-banner home-banner-3 with-radius" style="max-height: 600px; width: 100%; object-fit: cover;">
     <img class="lazyload bg-img blur-up" src="{{ asset($hero->image) }}" alt="Banner" >
@@ -306,7 +310,7 @@
                 <div class="swiper sponsor-slider">
                     <div class="swiper-wrapper">
                         @forelse ($brands as $brand)
-                        <div class="swiper-slide">
+                        <div class="swiper-slide" data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
                             <div class="item-single d-flex justify-content-center" data-aos="fade-up">
                                 <div class="sponsor-img">
                                     <a href="{{ $brand->brand_url }}" target="_blank">
@@ -406,7 +410,7 @@
                 <div class="swiper product-slider">
                     <div class="swiper-wrapper">
                         @forelse ($properties as $property)
-                        <div class="swiper-slide">
+                        <div class="swiper-slide" data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
                             @include('user-front.realestate.partials.property')
                         </div>
                         @empty
@@ -710,7 +714,7 @@
                 <div class="swiper sponsor-slider">
                     <div class="swiper-wrapper">
                         @forelse ($brands as $brand)
-                        <div class="swiper-slide">
+                        <div class="swiper-slide" data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
                             <div class="item-single d-flex justify-content-center">
                                 <div class="sponsor-img">
                                     <a href="{{ $brand->brand_url }}" target="_blank">
@@ -738,5 +742,7 @@
 @endsection
 
 <script>
-  var baseURL = "{{ getDynamicBaseUrl() }}";
+    if (typeof baseURL === 'undefined') {
+        var baseURL = "{{ getDynamicBaseUrl() }}";
+    }
 </script>

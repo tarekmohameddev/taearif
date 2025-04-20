@@ -30,13 +30,14 @@
 @section('content')
 
 @if($slidertype == 'slider')
-<section class="home-banner home-banner-2">
+<section class="home-banner home-banner-2" style="max-height: 600px; width: 100%; object-fit: cover;">
+
     <div class="container">
 
         <div class="swiper home-slider" id="home-slider-1">
             <div class="swiper-wrapper">
                 @foreach ($hero->slides as $slide)
-                <div class="swiper-slide">
+                <div class="swiper-slide" data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
                     <div class="content">
                         <span class="subtitle color-white">{{ $slide->title }}</span>
                         <h1 class="title color-white mb-0">{{ $slide->subtitle }}</h1>
@@ -245,7 +246,7 @@
     <div class="swiper home-img-slider" id="home-img-slider-1">
         <div class="swiper-wrapper">
             @foreach ($hero->slides as $slider)
-            <div class="swiper-slide">
+            <div class="swiper-slide" data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
                 <img class="lazyload bg-img" src="{{ asset($slider->image) }}">
             </div>
             @endforeach
@@ -462,7 +463,7 @@
                 <div class="swiper" id="category-slider-1">
                     <div class="swiper-wrapper">
                         @forelse ($property_categories as $category)
-                        <div class="swiper-slide mb-30 color-1">
+                        <div class="swiper-slide mb-30 color-1" data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
                             <a href="{{ route('front.user.properties', [getParam(), 'category' => $category->categoryContent?->slug]) }}">
                                 <div class="category-item bg-white radius-md text-center">
                                     <div class="category-icons ">
@@ -642,7 +643,7 @@
                 <div class="swiper" id="testimonial-slider-2">
                     <div class="swiper-wrapper">
                         @forelse ($testimonials as $testimonial)
-                        <div class="swiper-slide pb-30">
+                        <div class="swiper-slide pb-30"  data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
                             <div class="slider-item">
                                 <div class="client-content">
                                     <div class="quote">
@@ -758,3 +759,8 @@
 @endif
 @endsection
 
+<script>
+    if (typeof baseURL === 'undefined') {
+        var baseURL = "{{ getDynamicBaseUrl() }}";
+    }
+</script>

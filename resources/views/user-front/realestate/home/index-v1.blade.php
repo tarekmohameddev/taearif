@@ -17,13 +17,13 @@
 
 @section('content')
 @if($slidertype == 'slider')
-<section class="home-banner home-banner-2">
+<section class="home-banner home-banner-2"  style="max-height: 600px; width: 100%; object-fit: cover;">
     <div class="container">
 
         <div class="swiper home-slider" id="home-slider-1">
             <div class="swiper-wrapper">
                 @foreach ($hero->slides as $slide)
-                <div class="swiper-slide">
+                <div class="swiper-slide"  data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
                     <div class="content">
                         <span class="subtitle color-white">{{ $slide->title }}</span>
                         <h1 class="title color-white mb-0">{{ $slide->subtitle }}</h1>
@@ -45,7 +45,7 @@
     <div class="swiper home-img-slider" id="home-img-slider-1">
         <div class="swiper-wrapper">
         @foreach ($hero->slides as $slider)
-            <div class="swiper-slide">
+            <div class="swiper-slide"  data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
                 <img class="lazyload bg-img" src="{{ asset($slider->image) }}">
             </div>
         @endforeach
@@ -543,6 +543,13 @@
 
 @endif
 @endsection
+
+<script>
+    if (typeof baseURL === 'undefined') {
+        var baseURL = "{{ getDynamicBaseUrl() }}";
+    }
+</script>
+
 <script>
     'use strict';
 
