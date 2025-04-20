@@ -77,6 +77,11 @@ class ApiUserCategory extends Model
         return $this;
     }
 
+    public static function getDefaultCategoryId()
+    {
+        return self::where('slug', 'other')->value('id');
+    }
+
 
 
 }

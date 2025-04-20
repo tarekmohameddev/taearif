@@ -300,7 +300,7 @@ class PropertyController extends Controller
 
             $contentRequest = [
                 'language_id' => $defaultLanguage->id,
-                'category_id' => $request->category_id,
+                'category_id' => $request->category_id ?? ApiUserCategory::where('slug', 'other')->value('id'),
                 'state_id' => $request->state_id ?? 3,
                 'city_id' => $request->city_id,
                 'title' => $request->title,
@@ -450,7 +450,7 @@ class PropertyController extends Controller
 
             $contentRequest = [
                 'language_id' => $defaultLanguage->id,
-                'category_id' => $request->category_id,
+                'category_id' => $request->category_id ?? ApiUserCategory::where('slug', 'other')->value('id'),
                 'state_id' => $request->state_id ?? 3,
                 'city_id' => $request->city_id,
                 'title' => $request->title,
