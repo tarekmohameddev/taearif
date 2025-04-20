@@ -99,7 +99,7 @@
                         @if(!empty($general['showContactInfo']))
                             <li class="mb-2">
                                 <i class="fas fa-phone me-2 text-primary"></i>
-                                <a href="tel:{{ $general['phone'] }}" class="text-muted text-decoration-none">
+                                <a href="tel:{{ $general['phone'] }}" class="text-muted text-decoration-none" dir="ltr">
                                     {{ $general['phone'] ?? "" }}
                                 </a>
                             </li>
