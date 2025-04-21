@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\content;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Api\ApiContentSection;
+use Carbon\Carbon;
 
 class ApiContentSectionsController extends Controller
 {
@@ -15,6 +16,7 @@ class ApiContentSectionsController extends Controller
      */
     public function index()
     {
+        Carbon::setLocale('ar');
         $sections = ApiContentSection::all()->map(function ($section) {
             return [
                 'id' => $section->section_id,
