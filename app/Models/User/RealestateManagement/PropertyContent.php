@@ -5,6 +5,7 @@ namespace App\Models\User\RealestateManagement;
 use App\Models\Sale;
 use App\Models\User;
 use App\Models\Contract;
+use Illuminate\Support\Str;
 use Mews\Purifier\Facades\Purifier;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User\RealestateManagement\City;
@@ -45,6 +46,19 @@ class PropertyContent extends Model
         );
     }
 
+    public static function generateUniqueSlug($title, $propertyId = null)
+    {
+        $slug = Str::slug($title);
+        $originalSlug = $slug;
+        $counter = 1;
+
+        while (self::where('slug', $slug)->when($propertyId, fn($q) => $q->where('property_id', '!=', $propertyId))->exists()) {
+            $slug = $originalSlug . '-' . $counter++;
+        }
+
+        return $slug;
+    }
+
     public function description(): Attribute
     {
         return Attribute::make(
@@ -64,7 +78,8 @@ class PropertyContent extends Model
             'city_id' => $requestData['city_id'],
 
             'title' => $requestData['title'],
-            'slug' => $requestData['slug'],
+            // 'slug' => $requestData['slug'],
+            'slug' => self::generateUniqueSlug($requestData['title'], $propertyId),
             'address' => $requestData['address'],
             'description' => $requestData['description'],
             'meta_keyword' => $requestData['meta_keyword'],
