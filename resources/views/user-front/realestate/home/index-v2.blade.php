@@ -284,7 +284,7 @@
                                 {{ $hero->buttonText }}
                             </a>
                         @endif
-                        <P class="caption">{{ $hero->caption}}</P>
+                        <p class="caption">{{ isset($slide->caption) ? $slide->caption : '' }}</p>
                     </div>
 
                 </div>

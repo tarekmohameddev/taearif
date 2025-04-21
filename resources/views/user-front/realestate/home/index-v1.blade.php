@@ -93,7 +93,7 @@
                             </a>
 
                         @endif
-                        <p class="caption">{{ $hero->caption ?? '' }}</p>
+                        <p class="caption">{{ isset($slide->caption) ? $slide->caption : '' }}</p>
                     </div>
 
                 </div>
