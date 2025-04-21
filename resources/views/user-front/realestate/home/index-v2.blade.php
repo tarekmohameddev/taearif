@@ -284,6 +284,7 @@
                                 {{ $hero->buttonText }}
                             </a>
                         @endif
+                        <P class="caption">{{ $hero->caption}}</P>
                     </div>
 
                 </div>

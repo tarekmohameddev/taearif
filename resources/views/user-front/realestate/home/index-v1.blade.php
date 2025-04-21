@@ -91,7 +91,9 @@
                             <a href="{{ $hero->buttonUrl }}" class="btn btn-lg btn-{{ $hero->buttonStyle ?? 'primary' }}">
                                 {{ $hero->buttonText }}
                             </a>
+
                         @endif
+                        <p class="caption">{{ $hero->caption ?? '' }}</p>
                     </div>
 
                 </div>

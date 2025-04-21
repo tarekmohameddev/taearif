@@ -50,9 +50,9 @@
                                 <a href="{{ $slide->buttonUrl }}" class="btn btn-{{ $slide->buttonStyle ?? 'primary' }}">
                                     {{ $slide->buttonText }}
                                 </a>
-                                <P class="caption">{{ $slide->caption}}</P>
 
                             @endif
+                            <p class="caption">{{ isset($slide->caption) ? $slide->caption : '' }}</p>
                         </div>
                     </div>
                 @endforeach
