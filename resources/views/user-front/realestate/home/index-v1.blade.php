@@ -271,41 +271,6 @@
 
 <!--// skills -->
 
-@if ($home_sections->featured_properties_section == 1)
-    @if(count($featured_properties) > 0)
-        <section class="product-area featured-product pb-70">
-            <div class="container">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="section-title title-inline mb-40" data-aos="fade-up">
-                            <h2 class="title">{{ $home_text?->featured_property_title }}</h2>
-                        </div>
-                    </div>
-                    <div class="col-12" data-aos="fade-up">
-                        <div class="swiper product-slider">
-                            <div class="swiper-wrapper">
-                                @forelse ($featured_properties as $property)
-                                    <div class="swiper-slide">
-                                        @include('user-front.realestate.partials.property')
-                                    </div>
-                                @empty
-                                    <!-- <div class=" p-3 text-center mb-30 w-100">
-                                        <h3 class="mb-0">
-                                            {{ $keywords['No Featured Property Found'] ?? __('No Featured Property Found') }}
-                                        </h3>
-                                    </div> -->
-                                @endforelse
-                            </div>
-                            <!-- Slider pagination -->
-                            <div class="swiper-pagination position-static mb-30" id="product-slider-pagination"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    @endif
-@endif
-
 
 @if ($home_sections->why_choose_us_section == 1)
     @if (!empty($home_text?->why_choose_us_section_image))

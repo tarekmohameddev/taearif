@@ -212,7 +212,7 @@ class PropertyController extends Controller
         $rules = [
             'title' => 'required|max:255',
             'address' => 'required',
-            'description' => 'required|min:15',
+            'description' => 'required',
             'featured_image' => 'required|string',
             'gallery' => 'nullable|array',
             'gallery.*' => 'string',
@@ -274,7 +274,7 @@ class PropertyController extends Controller
                 'longitude',
                 'features',
                 'transaction_type',
-                // 'category_id',
+                'category_id',
             ]);
 
             $property = Property::storeProperty(
@@ -396,7 +396,7 @@ class PropertyController extends Controller
         $rules = [
             'title' => 'required|max:255',
             'address' => 'required',
-            'description' => 'required|min:15',
+            'description' => 'required',
             'featured_image' => 'required|string',
             'gallery' => 'nullable|array',
             'gallery.*' => 'string',
