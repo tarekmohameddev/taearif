@@ -85,6 +85,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/projects/{id}/toggle-featured', [ProjectController::class, 'toggleFeatured']); // Toggle featured status
     Route::get('/projects', [ProjectController::class, 'index']); // Get all projects
     Route::get('/projects/{id}', [ProjectController::class, 'show']); // Get a single project
+
+    // Route::get('/projects/categories', [ProjectController::class, 'categories']); // Get project categories
+    Route::get('/user/projects', [ProjectController::class, 'userProjects']); // Get all projects for the authenticated user
 });
 
 // property routes

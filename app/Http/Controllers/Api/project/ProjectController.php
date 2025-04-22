@@ -385,7 +385,6 @@ class ProjectController extends Controller
         ], 201);
     }
 
-
     /**
      * Update an existing project.
     */
@@ -487,9 +486,6 @@ class ProjectController extends Controller
         ]);
     }
 
-
-
-
     /**
      * Delete a project.
     */
@@ -585,4 +581,34 @@ class ProjectController extends Controller
             ]
         ]);
     }
+
+    public function userProjects(Request $request)
+    {
+        $user = $request->user();
+
+        Log::info('User ID: ' . $user->id);
+
+        $projects = Project::where('user_id', $user->id)
+            ->with(['projectContents' => function ($query) {
+                $query->select('id', 'project_id', 'title')->orderBy('id');
+            }])
+            ->get()
+            ->map(function ($project) {
+                return [
+                    'id' => $project->id,
+                    'title' => optional($project->projectContents->first())->title ?? '(No title)'
+                ];
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'user_projects' => $projects
+            ]
+        ]);
+
+    }
+
+
+
 }
