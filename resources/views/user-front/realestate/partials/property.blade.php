@@ -67,6 +67,7 @@
 
     </div>
 
+    @if (!empty($property->purpose))
     <span class="label">
         @if ($property->purpose == 'rent')
             {{ $keywords['Rent'] ?? __('Rent') }}
@@ -76,6 +77,8 @@
             {{ __(ucfirst($property->purpose)) }}
         @endif
     </span>
+@endif
+
     @if (Auth::guard('customer')->check())
         @php
             $customer_id = Auth::guard('customer')->user()->id;
