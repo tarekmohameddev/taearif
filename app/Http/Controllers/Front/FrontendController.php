@@ -1050,7 +1050,8 @@ class FrontendController extends Controller
                 }
 
                 if ($request->filled('category') && $request->category !== 'all') {
-                    $propertyQuery->where('category_id', $request->category);
+                    // $propertyQuery->where('category_id', $request->category);
+                    $propertyQuery->where('user_properties.category_id', $request->category);
                 }
 
                 if ($request->filled('beds')) {

@@ -27,7 +27,7 @@ class ApiContentSectionsController extends Controller
                 'status' => $section->status,
                 'count' => $section->count,
                 'info' => [
-                    'text' => $section->description,
+                    'email' => $section->description,
                     'website' => optional(json_decode($section->info))->website ?? null,
                 ],
                 'badge' => json_decode($section->badge),
@@ -37,6 +37,7 @@ class ApiContentSectionsController extends Controller
         });
 
         return response()->json([
+            'status' => 'success',
             'data' => [
                 'sections' => $sections,
             ],
