@@ -60,6 +60,12 @@ class Property extends Model
 
     public static function storeProperty($userId, $request, $featuredImgName, $floorPlanningImage, $videoImage,$featured)
     {
+        // Ensure default "other" category exists
+        $defaultCategory = ApiUserCategory::firstOrCreate(
+            ['slug' => 'other'],
+            ['name' => 'Other', 'type' => 'property', 'is_active' => 1]
+        );
+
         return self::create([
             'region_id' => $request['region_id'] ?? null,
             'user_id' => $userId,
@@ -67,7 +73,7 @@ class Property extends Model
             'floor_planning_image' => $floorPlanningImage ?? null,
             'video_image' => $videoImage,
             'price' => $request['price'],
-            'purpose' => $request['transaction_type'] ?? null,
+            'purpose' => $request['purpose'] ?? null,
             'type' => $request['type'] ?? null,
             'beds' => $request['beds'] ?? null,
             'bath' => $request['bath'] ?? null,
@@ -77,7 +83,8 @@ class Property extends Model
             'video_url' => $request['video_url'] ?? null,
             'status' => $request['status'],
             'latitude' => $request['latitude'],
-            'longitude' => $request['longitude']
+            'longitude' => $request['longitude'],
+            'category_id' => $request['category_id'] ?? $defaultCategory->id,
         ]);
     }
 
@@ -89,7 +96,7 @@ class Property extends Model
             'floor_planning_image' => $request['floor_planning_image']?? null,
             'video_image' => $requestData['video_image'] ?? null,
             'price' => $requestData['price'] ?? null,
-            'purpose' => $requestData['transaction_type'] ?? null,
+            'purpose' => $requestData['purpose'] ?? null,
             'type' => $requestData['type'] ?? null,
             'beds' => $requestData['beds'] ?? null,
             'bath' => $requestData['bath'] ?? null,

@@ -274,7 +274,7 @@ class PropertyController extends Controller
                 'longitude',
                 'features',
                 'transaction_type',
-                'category_id',
+                // 'category_id',
             ]);
 
             $property = Property::storeProperty(
