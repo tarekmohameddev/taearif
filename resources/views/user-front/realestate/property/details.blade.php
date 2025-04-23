@@ -235,11 +235,13 @@
                         </div>
                     </div>
                     <div class="mb-20"></div>
+                    @if (!empty($propertyContent->description))
                     <div class="product-desc mb-40">
                         <h3 class="mb-20">{{ $keywords['Property Description'] ?? __('Property Description') }}</h3>
                         <div style="white-space: pre-wrap ;">{!! $propertyContent->description !!}</div>
                         <div class="mb-20"></div>
                     </div>
+                    @endif
                     {{-- @if (!empty(showAd(3)))
                              <div class="text-center mb-3 mt-3">
                                  {!! showAd(3) !!}
@@ -262,6 +264,7 @@
                     </div>
                     <div class="pb-20"></div>
                     @endif
+                    @if (!empty($amenities) && count($amenities) > 0)
 
                     <div class="product-featured mb-40">
                         <h3 class="mb-20">{{ $keywords['Amenities'] ?? __('Amenities') }}</h3>
@@ -276,6 +279,8 @@
 
                         </ul>
                     </div>
+                    @endif
+
                     @if (!empty($propertyContent->video_url))
                     <div class="product-video mb-40">
                         <h3 class="mb-20"> {{ $keywords['Video'] ?? __('Video') }}</h3>
@@ -443,11 +448,15 @@
                                     {{ $userBs->property_state_status == 1 && $property->state_name != null ? ', ' . $property->state_name : '' }}
                                     {{ $userBs->property_country_status == 1 && $property->country_name != null ? ', ' . $property->country_name : '' }}
                                 </span>
+
+                                @if (!empty($property->price))
+
                                 <div class="product-price">
 
                                     <span class="new-price">{{ ($keywords['Price'] ?? __('Price')) . ':' }} {{ $property->price ? $property->price : $keywords['Negotiable'] ?? __('Negotiable') }}</span>
                                         <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg" alt="Currency Symbol" style="width: 15px; height: 15px; vertical-align: middle;">
                                 </div>
+                                @endif
                                 <ul class="product-info p-0 list-unstyled d-flex align-items-center">
                                     <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
                                         title="{{ $keywords['Area'] ?? __('Area') }}">
