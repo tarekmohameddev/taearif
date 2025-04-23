@@ -270,11 +270,11 @@ class ProjectController extends Controller
         $defaultLang = Language::where('user_id', $userId)->where('is_default', 1)->firstOrFail();
 
         $rules = [
-            'title' => 'nullable|max:255',
-            'address' => 'nullable',
-            'description' => 'nullable|min:15',
+            'title' => 'required|max:255',
             'featured_image' => 'required|string',
 
+            'address' => 'nullable',
+            'description' => 'nullable|min:15',
             'complete_status' => 'nullable',
             'units' => 'nullable|integer',
             'completion_date' => 'nullable|date',
@@ -395,16 +395,16 @@ class ProjectController extends Controller
         $project = Project::where('user_id', $userId)->findOrFail($id);
 
         $rules = [
-            'title' => 'nullable|max:255',
-            'address' => 'nullable',
-            'description' => 'nullable|min:15',
+            'title' => 'required|max:255',
             'featured_image' => 'required|string',
 
+            'address' => 'nullable',
+            'description' => 'nullable|min:15',
             'gallery_images' => 'sometimes|array',
             'gallery_images.*' => 'string',
             'floorplan_images' => 'sometimes|array',
             'floorplan_images.*' => 'string',
-            'min_price' => 'required|numeric',
+            'min_price' => 'nullable|numeric',
             'max_price' => 'nullable|numeric',
             'featured' => 'sometimes',
             'status' => 'sometimes',
