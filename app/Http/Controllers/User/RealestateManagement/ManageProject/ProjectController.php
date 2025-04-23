@@ -136,7 +136,7 @@ class ProjectController extends Controller
             }
 
             foreach ($languages as $language) {
-                $requstData = [
+                $requestData = [
                     'project_id' => $project->id,
                     'language_id' => $language->id,
                     'title' => $request[$language->code . '_title'],
@@ -145,7 +145,7 @@ class ProjectController extends Controller
                     'meta_keyword' => $request[$language->code . '_meta_keyword'],
                     'meta_description' => $request[$language->code . '_meta_description'],
                 ];
-                ProjectContent::storeProjectContent($userId,  $requstData);
+                ProjectContent::storeProjectContent($userId,  $requestData);
 
 
                 $label_datas = $request[$language->code . '_label'] ?? [];

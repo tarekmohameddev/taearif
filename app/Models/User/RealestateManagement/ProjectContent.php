@@ -41,18 +41,18 @@ class ProjectContent extends Model
         );
     }
 
-    public static function storeProjectContent($userId,  $requstData)
+    public static function storeProjectContent($userId,  $requestData)
     {
         return self::create([
             'user_id' => $userId,
-            'project_id' => $requstData['project_id'],
-            'language_id' => $requstData['language_id'],
-            'title' => $requstData['title'],
-            'slug' => make_slug($requstData['title']),
-            'address' => $requstData['address'],
-            'description' => $requstData['description'],
-            'meta_keyword' => $requstData['meta_keyword'],
-            'meta_description' => $requstData['meta_description'],
+            'project_id' => $requestData['project_id'],
+            'language_id' => $requestData['language_id'],
+            'title' => $requestData['title'],
+            'slug' => make_slug($requestData['title']),
+            'address' => $requestData['address'],
+            'description' => $requestData['description'],
+            'meta_keyword' => $requestData['meta_keyword'],
+            'meta_description' => $requestData['meta_description'],
         ]);
     }
 
