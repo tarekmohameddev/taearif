@@ -226,7 +226,7 @@ class PropertyController extends Controller
             'status' => 'nullable',
             'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
-            'category_id' => 'nullable',
+            'project_id' => 'nullable',
             'city_id' => 'nullable',
             'featured' => 'nullable',
             'amenities' => 'nullable|array',
@@ -275,6 +275,7 @@ class PropertyController extends Controller
                 'features',
                 'transaction_type',
                 'category_id',
+                'project_id',
             ]);
 
             $property = Property::storeProperty(
@@ -410,7 +411,7 @@ class PropertyController extends Controller
             'status' => 'nullable',
             'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
-            'category_id' => 'nullable',
+            'project_id' => 'nullable',
             'city_id' => 'nullable',
             'amenities' => 'nullable|array',
             'label' => 'nullable|array',

@@ -42,6 +42,7 @@ class Property extends Model
         'features',
         'latitude',
         'longitude',
+        'project_id',
 
     ];
 
@@ -68,6 +69,7 @@ class Property extends Model
 
         return self::create([
             'region_id' => $request['region_id'] ?? null,
+            'project_id' => $request['project_id'] ?? null,
             'user_id' => $userId,
             'featured_image' => $featuredImgName,
             'floor_planning_image' => $floorPlanningImage ?? null,
@@ -91,6 +93,7 @@ class Property extends Model
     public function updateProperty($requestData)
     {
         return $this->update([
+            'project_id' => $requestData['project_id'] ?? null,
             'region_id' => $requestData['region_id'] ?? null,
             'featured_image' => $request['featured_image'] ?? $this->featured_image, //73
             'floor_planning_image' => $request['floor_planning_image']?? null,
