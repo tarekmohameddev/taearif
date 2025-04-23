@@ -311,6 +311,19 @@
                 </div>
                 @endif
 
+                @if ($relatedProperties->count())
+                <div class="related-properties pt-70" data-aos="fade-up">
+                    <h3 class="mb-30">{{ $keywords['Related Properties'] ?? __('Related Properties') }}</h3>
+                    <div class="row">
+                        @foreach ($relatedProperties as $property)
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            @include('user-front.realestate.partials.property', ['property' => $property])
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+
             </div>
         </div>
     </div>
