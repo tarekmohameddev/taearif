@@ -56,4 +56,16 @@ class Category extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+
+    public function projects()
+    {
+        return $this->belongsToMany(
+            Project::class,
+            'user_property_categories',
+            'category_id',
+            'project_id'
+        );
+    }
+
 }

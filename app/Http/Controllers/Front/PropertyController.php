@@ -2,32 +2,33 @@
 
 namespace App\Http\Controllers\Front;
 
-use App\Http\Controllers\Controller;
-use App\Models\User\BasicSetting;
+use Illuminate\Http\Request;
+use Illuminate\Mail\Message;
 use App\Models\User\Language;
-use App\Models\User\RealestateManagement\Amenity;
+use App\Models\User\BasicSetting;
 // use App\Models\User\RealestateManagement\Category;
-use App\Models\User\RealestateManagement\ApiUserCategory as Category;
+use Illuminate\Support\Facades\DB;
+use PHPMailer\PHPMailer\PHPMailer;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Validator;
 use App\Models\User\RealestateManagement\City;
+use App\Models\User\RealestateManagement\State;
+use App\Models\User\RealestateManagement\Amenity;
 use App\Models\User\RealestateManagement\Country;
+use App\Models\User\RealestateManagement\Project;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyAmenity;
 use App\Models\User\RealestateManagement\PropertyContact;
 use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\RealestateManagement\PropertyWishlist;
-use App\Models\User\RealestateManagement\State;
-use Illuminate\Http\Request;
-use Illuminate\Mail\Message;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\View;
-use PHPMailer\PHPMailer\PHPMailer;
+use App\Models\User\RealestateManagement\ApiUserCategory as Category;
 
 
 class PropertyController extends Controller
@@ -45,6 +46,8 @@ class PropertyController extends Controller
             $userCurrentLang = Language::where('is_default', 1)->where('user_id', $tenantId)->first();
             session()->put('user_lang', $userCurrentLang->code);
         }
+
+        $projectId = $request->filled('project') ? intval($request->project) : null;
 
         if ($request->has('type') && in_array($request->type, ['commercial', 'residential'])) {
             $information['categories'] = Category::where([
@@ -132,6 +135,7 @@ class PropertyController extends Controller
             ['user_properties.user_id', $tenantId],
             ['user_properties.status', 1],
         ])
+
             ->join('user_property_contents', 'user_properties.id', '=', 'user_property_contents.property_id')
             ->leftJoin('user_cities', 'user_cities.id', '=', 'user_property_contents.city_id')
             ->leftJoin('user_states', 'user_states.id', '=', 'user_property_contents.state_id')
@@ -139,6 +143,7 @@ class PropertyController extends Controller
             ->where('user_property_contents.language_id', $userCurrentLang->id)
 
             ->when($type, fn($q) => $q->where('user_properties.type', $type))
+            ->when($projectId, fn($q) => $q->where('user_properties.project_id', $projectId))
             ->when($purpose, fn($q) => $q->where('user_properties.purpose', $purpose))
             ->when($countryId, fn($q) => $q->where('user_property_contents.country_id', $countryId))
             ->when($stateId, fn($q) => $q->where('user_property_contents.state_id', $stateId))
@@ -197,6 +202,8 @@ class PropertyController extends Controller
         $information['min'] = intval($priceRange->min);
         $information['max'] = intval($priceRange->max);
 
+        $information['projects'] = Project::with(['content'])->where('user_id', $tenantId)->get();
+
         if ($request->ajax()) {
             $viewContent = View::make('user-front.realestate.property.property', $information)->render();
             return response()->json([
@@ -225,6 +232,9 @@ class PropertyController extends Controller
         } else {
             $userCurrentLang = Language::where('is_default', 1)->where('user_id', $tenantId)->first();
         }
+        // if ($userCurrentLang) {
+        //     session()->put('user_lang_id', $userCurrentLang->id);
+        // }
 
         // $information['bgImg'] = $misc->getBreadcrumb($tenantId);
         // $queryResult['pageHeading'] = $this->pageHeading($tenantId);
@@ -544,4 +554,11 @@ class PropertyController extends Controller
 
         return Response::json(['categories' => $categories], 200);
     }
+
+    public function showJson($id)
+    {
+        $project = Project::findOrFail($id);
+        return response()->json($project);
+    }
+
 }
