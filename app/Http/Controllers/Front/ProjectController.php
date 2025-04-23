@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Front;
 
-use App\Http\Controllers\Controller;
-use App\Models\User\Language;
-use App\Models\User\RealestateManagement\Project;
-use App\Models\User\RealestateManagement\ProjectContent;
 use Illuminate\Http\Request;
+use App\Models\User\Language;
+use App\Http\Controllers\Controller;
+use App\Models\User\RealestateManagement\Project;
+use App\Models\User\RealestateManagement\Category;
+use App\Models\User\RealestateManagement\ProjectContent;
 
 class ProjectController extends Controller
 {
@@ -119,6 +120,23 @@ class ProjectController extends Controller
         $information['floorPlanImages'] = $information['project']->floorplanImages;
         $information['galleryImages'] =  $information['project']->galleryImages;
 
-        return view('user-front.realestate.project.details', $information);
+        $allCategories = Category::where('user_id', $userId)->get();
+        $selectedCategoryId = $request->get('category');
+
+        if ($selectedCategoryId) {
+            $project->specifications = $project->specifications->filter(function ($spec) use ($selectedCategoryId) {
+                return $spec->category_id == $selectedCategoryId;
+            })->values();
+        }
+
+
+        return view('user-front.realestate.project.details', [
+            'project' => $project,
+            'floorPlanImages' => $project->floorplanImages,
+            'galleryImages' => $project->galleryImages,
+            'allCategories' => $allCategories,
+            'selectedCategoryId' => $selectedCategoryId,
+        ]);
+
     }
 }

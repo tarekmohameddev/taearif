@@ -3,8 +3,10 @@
 namespace App\Models\User\RealestateManagement;
 
 use App\Models\User;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User\RealestateManagement\Category;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\User\RealestateManagement\ProjectContent;
 
 class Project extends Model
 {
@@ -91,6 +93,11 @@ class Project extends Model
     {
         return $this->hasMany(ProjectSpecification::class, 'project_id');
     }
+    public function content()
+    {
+        return $this->hasOne(ProjectContent::class, 'project_id', 'id')
+                    ->where('language_id', session('user_lang_id')); // Or use a helper if available
+    }
 
     public function contents()
     {
@@ -111,5 +118,18 @@ class Project extends Model
     {
         return $this->hasMany(PropertyAmenity::class, 'property_id')->with('amenity');
     }
+
+    public function categories()
+    {
+        return $this->belongsToMany(
+            Category::class,
+            'user_property_categories', // Pivot table
+            'project_id',               // FK to projects
+            'category_id'               // FK to categories
+        );
+    }
+
+
+
 
 }

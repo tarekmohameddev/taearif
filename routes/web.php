@@ -1784,6 +1784,8 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
     Route::controller(FrontProjectController::class)->group(function () {
         Route::get('/projects', 'index')->name('front.user.projects');
         Route::get('/project/{slug}', 'details')->name('front.user.project.details');
+        Route::get('/project-info/{id}', [ProjectController::class, 'showJson']);
+
     });
     // });
 

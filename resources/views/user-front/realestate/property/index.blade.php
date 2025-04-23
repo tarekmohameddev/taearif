@@ -348,6 +348,7 @@
         }
     </script>
     <!-- Filter Dropdowns -->
+
     <div class="container py-4">
         <div class="row g-3">
             <div class="col-md-6 col-lg-3">
@@ -373,6 +374,21 @@
                             </select>
                         </div>
                     </div>
+
+<div class="form-group">
+    <label for="project">{{ $keywords['Project'] ?? __('Project') }}</label>
+    <select name="project" id="project" class="form-control" onchange="updateURL('project='+this.value)">
+        <option value="">{{ __('All Projects') }}</option>
+        @foreach ($projects as $project)
+
+        <option value="{{ $project->id }}">
+            {{ optional($project->contents->first())->title ?? $project->developer }}
+        </option>
+
+        @endforeach
+    </select>
+</div>
+
 
                 </div>
             </div>
@@ -508,6 +524,7 @@
                             </div>
                             <form action="{{ route('front.user.properties', getParam()) }}" method="get"
                                 id="searchForm" class="w-100">
+
                                 <div class="widget widget-select radius-md mb-30">
                                     <h3 class="title">
                                         <button class="accordion-button" type="button" data-bs-toggle="collapse"
@@ -911,4 +928,17 @@
 <!-- Map JS -->
 <script src="{{ asset('/assets/front/user/realestate/js/map.js') }}"></script>
 <script src="{{ asset('/assets/front/user/realestate/js/properties.js') }}"></script>
+<script>
+    $('#project').on('change', function () {
+    let id = $(this).val();
+    if (id) {
+        $.get('/project-info/' + id, function (data) {
+            // display data.featured_image, data.min_price, etc.
+        });
+    }
+});
+    function getCities(element) {
+        var stateId = $(element).find(':selected').data('id');
+        var countryId = $(element).closest('.state').find('.country').find(':selected').data('id');
+</script>
 @endsection
