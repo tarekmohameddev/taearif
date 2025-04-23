@@ -858,8 +858,8 @@
                     تسجيل الدخول
                 </a>
                 <a href="https://taearif.vercel.app/register" class="btn btn-sm bg-black hover:bg-gray-700 text-white transition-all duration-300 hover:scale-105 shadow-sm hover:shadow-gray-200/50">
-                   ابدأ 7 ايام مجاناً
-                </a>
+                   أبدأ الان
+            </a>
                 <button id="menuButton" class="md:hidden btn btn-ghost btn-icon text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-300 menu-button">
                     <i data-lucide="menu" class="h-5 w-5"></i>
                     <span class="sr-only">القائمة</span>
@@ -936,8 +936,7 @@
                     تسجيل الدخول
                 </a>
                 <a href="https://taearif.vercel.app/register" class="btn w-full bg-black hover:bg-gray-700 text-white transition-all duration-300 py-6">
-                    ابدأ 7 ايام مجاناً
-                </a>
+                    ابدأ الان         </a>
             </div>
         </div>
     </div>
