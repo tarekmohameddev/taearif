@@ -82,7 +82,8 @@ class ApiBannerSettingController extends Controller
                     'searchBoxPosition' => 'center', // left, center, right
                     'responsive' => true,
                     'fullWidth' => true
-                ]
+                ],
+                'status' => 'off'
             ]);
         }
 
@@ -107,7 +108,7 @@ class ApiBannerSettingController extends Controller
         // Validate the request
         $validator = Validator::make($request->all(), [
             'banner_type' => 'required|string|in:static,slider',
-
+            'status' => 'required|string|in:on,off',
             // Static banner settings
             'static' => 'required|array',
             'static.enabled' => 'boolean',
@@ -175,6 +176,7 @@ class ApiBannerSettingController extends Controller
         $settings->static = $request->input('static');
         $settings->slider = $request->input('slider');
         $settings->common = $request->input('common');
+        $settings->status = $request->input('status');
 
         $settings->save();
 

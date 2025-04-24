@@ -17,13 +17,15 @@ class ApiBannerSetting extends Model
         'banner_type',
         'static',
         'slider',
-        'common'
+        'common',
+        'status'
     ];
 
     protected $casts = [
         'static' => 'array',
         'slider' => 'array',
-        'common' => 'array'
+        'common' => 'array',
+        'status' => 'string'
     ];
 
     public function user()

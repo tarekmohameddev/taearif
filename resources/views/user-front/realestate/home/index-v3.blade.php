@@ -32,7 +32,7 @@
 @endsection
 
 @section('content')
-
+<!-- // banner -->
 @if ($slidertype === 'slider')
 <section class="home-banner home-banner-2" style="max-height: 600px; width: 100%; object-fit: cover;">
     <div class="container">
@@ -308,6 +308,7 @@
     @endif
 @endif
 
+<!-- // brands -->
 @if ($home_sections->brand_section == 1)
 @if(count($brands) > 0)
 <div class="sponsor ptb-100 d-none" data-aos="fade-up">
@@ -395,6 +396,7 @@
 @endif
 @endif
 
+<!-- // properties -->
 @if ($home_sections->property_section == 1)
 @if(count($properties) > 0)
 <section class="product-area popular-product pb-70 d-none">
@@ -436,6 +438,7 @@
 @endif
 @endif
 
+<!-- // about -->
 @if (!empty($api_about_settingsData))
 <section class="about-area about-2 pb-70">
     <div class="container">
@@ -498,7 +501,7 @@
 </section>
 @endif
 
-
+<!-- // work-process -->
 @if ($home_sections->work_process_section == 1)
 @if(count($work_processes) > 0)
 <section class="work-process work-process-2 pb-70 d-none">
@@ -543,7 +546,7 @@
 @endif
 @endif
 
-
+<!-- // counter -->
 @if ($home_sections->counter_info_section == 1)
 @if(count($counterInformations) > 0)
 <div class="counter-area with-radius border pt-100 pb-70">
@@ -574,7 +577,7 @@
 @endif
 @endif
 
-
+<!-- // projects -->
 @if ($home_sections->project_section == 1)
 @if(count($projects) > 0)
 <section class="projects-area pt-100 pb-70">
@@ -638,7 +641,7 @@
 @endif
 @endif
 
-
+<!-- // testimonials -->
 @if ($home_sections->testimonials_section == 1)
 @if(count($testimonials) > 0)
 <section class="testimonial-area testimonial-3 pb-100">
@@ -713,6 +716,7 @@
 @endif
 @endif
 
+<!-- // brands -->
 @if ($home_sections->brand_section == 1)
 <div class="sponsor ptb-100 d-none" data-aos="fade-up">
     <div class="container">
