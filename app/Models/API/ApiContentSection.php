@@ -27,7 +27,9 @@ class ApiContentSection extends Model
         'created_at',
         'updated_at'
     ];
-
+    protected $casts = [
+        'status' => 'boolean', // true/false
+    ];
     public function getLastUpdateFormattedAttribute()
     {
         return 'آخر تحديث ' . Carbon::parse($this->updated_at)->diffForHumans([
