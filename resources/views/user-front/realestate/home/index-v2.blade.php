@@ -37,7 +37,7 @@ $hero = $sliderData->slider;
 
 @section('content')
 
-@if ($sliderData->status !== 'off')
+@if ($sliderData->status !== false)
 
     @if($slidertype == 'slider')
     <section class="home-banner home-banner-2" style="max-height: 600px; width: 100%; object-fit: cover;">
@@ -375,7 +375,7 @@ $hero = $sliderData->slider;
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 
 <!-- // about -->
-@if ($api_about_settingsData->status !== 'off')
+@if ($api_about_settingsData->status !== false)
     @if (!empty($api_about_settingsData))
     <div class="container py-5">
         <div class="row align-items-center">

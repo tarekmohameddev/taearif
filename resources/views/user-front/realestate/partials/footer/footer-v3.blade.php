@@ -11,7 +11,7 @@
 
 @endphp
 <!-- footer -->
-@if ($userApi_footerData->status !== 'off')
+@if ($userApi_footerData->status !== false)
   <footer class="footer-area border border-primary" style="background-color: transparent !important;">
       @if (!empty($userFooterData->bg_image))
           <!-- Background Image -->

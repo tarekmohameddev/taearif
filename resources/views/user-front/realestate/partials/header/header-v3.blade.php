@@ -10,7 +10,7 @@ $favicon = $general_settingsData['favicon'] ?? [];
 
 <header class="header-area header-2 @if (!request()->routeIs('front.user.detail.view', getParam())) header-static @endif" data-aos="slide-down">
 
-@if ($api_menu_settingsData->status !== 'off')
+@if ($api_menu_settingsData->status !== false)
     <!-- Start mobile menu -->
     <div class="mobile-menu text-white">
         <div class="container">

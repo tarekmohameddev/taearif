@@ -31,7 +31,7 @@
 
 @section('content')
 
-@if ($sliderData->status !== 'off')
+@if ($sliderData->status !== false)
     @if($slidertype == 'slider')
     <section class="home-banner home-banner-2"  style="max-height: 600px; width: 100%; object-fit: cover;">
         <div class="container">
@@ -162,7 +162,7 @@
 @endif
 
 <!-- // about -->
-@if ($api_about_settingsData->status !== 'off')
+@if ($api_about_settingsData->status !== false)
     @if (!empty($api_about_settingsData))
     <section class="about-area pb-70 pt-30">
         <div class="container">
