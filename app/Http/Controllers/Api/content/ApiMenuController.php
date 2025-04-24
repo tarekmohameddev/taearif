@@ -162,7 +162,8 @@ class ApiMenuController extends Controller
             'settings.mobileMenuType' => 'nullable|string|in:hamburger,sidebar,fullscreen',
             'settings.isSticky' => 'nullable|boolean',
             'settings.isTransparent' => 'nullable|boolean',
-            'settings.status' => 'required|string|in:on,off',
+            'settings.status' => 'required|boolean',
+
         ]);
 
 

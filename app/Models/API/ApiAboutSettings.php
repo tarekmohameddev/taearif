@@ -21,12 +21,13 @@ class ApiAboutSettings extends Model
         'vision',
         'image_path',
         'features',  // JSON column
-        'status', // 'on' or 'off'
+        'status', // 'true' or 'false'
     ];
 
     // Cast the features column to array
     protected $casts = [
         'features' => 'array',
+        'status' => 'boolean',
     ];
 
     public function user()

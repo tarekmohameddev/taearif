@@ -83,7 +83,7 @@ class ApiBannerSettingController extends Controller
                     'responsive' => true,
                     'fullWidth' => true
                 ],
-                'status' => 'off'
+                'status' => false
             ]);
         }
 
@@ -108,7 +108,7 @@ class ApiBannerSettingController extends Controller
         // Validate the request
         $validator = Validator::make($request->all(), [
             'banner_type' => 'required|string|in:static,slider',
-            'status' => 'required|string|in:on,off',
+            'status' => 'required|boolean',
             // Static banner settings
             'static' => 'required|array',
             'static.enabled' => 'boolean',

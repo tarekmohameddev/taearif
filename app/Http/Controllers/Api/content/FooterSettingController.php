@@ -62,7 +62,7 @@ class FooterSettingController extends Controller
 
         // Validation
         $validator = Validator::make($request->all(), [
-            'status' => 'required|string|in:on,off',
+            'status' => 'required|boolean',
             'general' => 'required|array',
             'general.companyName' => 'required|string|max:100',
             'general.address' => 'nullable|string|max:255',

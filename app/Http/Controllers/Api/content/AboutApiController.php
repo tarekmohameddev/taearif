@@ -42,7 +42,7 @@ class AboutApiController extends Controller
             'features.*.id' => 'required|integer',
             'features.*.title' => 'required|string|max:255',
             'features.*.description' => 'required|string',
-            'status' => 'required|string|in:on,off',
+            'status' => 'required|boolean',
         ]);
 
 

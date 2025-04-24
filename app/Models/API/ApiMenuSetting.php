@@ -19,7 +19,7 @@ class ApiMenuSetting extends Model
         'mobile_menu_type',
         'is_sticky',
         'is_transparent',
-         'status', // 'on' or 'off'
+        'status', // 'true' or 'false'
     ];
 
     protected $casts = [
@@ -28,6 +28,7 @@ class ApiMenuSetting extends Model
         'menu_position' => 'string',
         'menu_style' => 'string',
         'mobile_menu_type' => 'string',
+        'status' => 'boolean',
     ];
 
     public function user()

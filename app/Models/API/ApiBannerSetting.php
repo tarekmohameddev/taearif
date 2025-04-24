@@ -25,7 +25,7 @@ class ApiBannerSetting extends Model
         'static' => 'array',
         'slider' => 'array',
         'common' => 'array',
-        'status' => 'string'
+        'status' => 'boolean'
     ];
 
     public function user()
