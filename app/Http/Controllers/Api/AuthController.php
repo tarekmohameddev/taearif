@@ -274,7 +274,8 @@ class AuthController extends Controller
                 'has_active_membership' => !$isExpired && $membership && $membership->status == 1,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
-                'domain' => $domain ? $domain->custom_name : 'https://taearif.com/'.$user->username,
+                'domain' => $domain ? $domain->custom_name : "https://{$user->username}.taearif.com/",
+
             ];
 
             return response()->json([
