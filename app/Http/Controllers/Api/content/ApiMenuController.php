@@ -162,6 +162,7 @@ class ApiMenuController extends Controller
             'settings.mobileMenuType' => 'nullable|string|in:hamburger,sidebar,fullscreen',
             'settings.isSticky' => 'nullable|boolean',
             'settings.isTransparent' => 'nullable|boolean',
+            'settings.status' => 'required|string|in:on,off',
         ]);
 
 
@@ -237,6 +238,7 @@ class ApiMenuController extends Controller
             $settings->mobile_menu_type = $settingsData['mobileMenuType'];
             $settings->is_sticky = $settingsData['isSticky'];
             $settings->is_transparent = $settingsData['isTransparent'];
+            $settings->status = $settingsData['status'];
             $settings->save();
 
 
@@ -267,6 +269,7 @@ class ApiMenuController extends Controller
                 'mobileMenuType' => $settings->mobile_menu_type,
                 'isSticky' => $settings->is_sticky,
                 'isTransparent' => $settings->is_transparent,
+                'status' => $settings->status,
             ];
 
             return response()->json([

@@ -33,6 +33,7 @@ use App\Models\User\UserFeature;
 use App\Models\User\BasicSetting;
 use App\Models\User\HomePageText;
 use JeroenDesloovere\VCard\VCard;
+use App\Models\Api\ApiMenuSetting;
 use App\Models\Api\GeneralSetting;
 use App\Models\BasicSetting as BS;
 use App\Traits\MiscellaneousTrait;
@@ -522,6 +523,7 @@ class FrontendController extends Controller
         $api_Banner_settingsData = ApiBannerSetting::where('user_id', $user->id)->first();
         $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
         $api_about_settingsData = ApiAboutSettings::where('user_id', $user->id)->first();
+        $api_menu_settingsData = ApiMenuSetting::where('user_id', $user->id)->first();
 
         if ($api_Banner_settingsData && is_string($api_Banner_settingsData)) {
             $api_Banner_settingsData = json_decode($api_Banner_settingsData);
@@ -530,6 +532,7 @@ class FrontendController extends Controller
         $data['api_Banner_settingsData'] = $api_Banner_settingsData;
         $data['api_general_settingsData'] = $api_general_settingsData;
         $data['api_about_settingsData'] = $api_about_settingsData;
+        $data['api_menu_settingsData'] = $api_menu_settingsData;
 
         $data['home_sections'] = User\HomeSection::where('user_id', $user->id)->first();
 

@@ -136,6 +136,6 @@
 @endif
 <!-- Footer-area end-->
 
-  <!-- Go to Top -->
-  <div class="go-top"><i class="fal fa-angle-double-up"></i></div>
-  <!-- Go to Top -->
+<!-- Go to Top -->
+<div class="go-top"><i class="fal fa-angle-double-up"></i></div>
+<!-- Go to Top -->
