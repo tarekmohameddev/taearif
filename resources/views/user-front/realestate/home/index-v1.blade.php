@@ -18,93 +18,96 @@
 
 @section('style')
 <style>
-.caption {
-        font-family: 'Courier New', Courier, monospace;
-        color: #fff;
-        font-size: 16px;
-        font-weight: 400;
-        margin-top: 10px;
-    }
+    .caption {
+            font-family: 'Courier New', Courier, monospace;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 400;
+            margin-top: 10px;
+        }
 </style>
+
 @endsection
+
 @section('content')
-@if($slidertype == 'slider')
-<section class="home-banner home-banner-2"  style="max-height: 600px; width: 100%; object-fit: cover;">
-    <div class="container">
 
-        <div class="swiper home-slider" id="home-slider-1">
-            <div class="swiper-wrapper">
-                @foreach ($hero->slides as $slide)
-                <div class="swiper-slide"  data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
-                    <div class="content">
-                        <span class="subtitle color-white">{{ $slide->title }}</span>
-                        <h1 class="title color-white mb-0">{{ $slide->subtitle }}</h1>
-                        <br>
-                        @if ($slide->showButton)
-                            <a href="{{ $slide->buttonUrl }}" class="btn btn-{{ $slide->buttonStyle ?? 'primary' }}">
-                                {{ $slide->buttonText }}
-                            </a>
-                            <p class="caption">{{ $slide->caption ?? '' }}</p>
-
-
-                        @endif
-                    </div>
-                </div>
-                @endforeach
-            </div>
-        </div>
-
-        <div class="swiper-pagination pagination-fraction mt-40" id="home-slider-1-pagination"></div>
-    </div>
-
-    <div class="swiper home-img-slider" id="home-img-slider-1">
-        <div class="swiper-wrapper">
-        @foreach ($hero->slides as $slider)
-            <div class="swiper-slide"  data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
-                <img class="lazyload bg-img" src="{{ asset($slider->image) }}">
-            </div>
-        @endforeach
-
-
-        </div>
-    </div>
-</section>
-@elseif($slidertype == 'static')
-    <section class="home-banner home-banner-1">
-        @if (!empty($hero->image))
-            <img class="lazyload bg-img" src="{{ asset($hero->image) }}">
-        @else
-            <div class="bg-img" style="background-color: #222; height: 500px;"></div>
-        @endif
-
+@if ($sliderData->status !== 'off')
+    @if($slidertype == 'slider')
+    <section class="home-banner home-banner-2"  style="max-height: 600px; width: 100%; object-fit: cover;">
         <div class="container">
-            <div class="row justify-content-center text-center align-items-center">
-                <div class="col-xxl-5">
-                    <div class="content" data-aos="fade-up">
-                        <h1 class="title">
-                            {{ $hero->title }}
-                        </h1>
-                        <p class="text text-white">
-                            {{ $hero->subtitle }}
-                        </p>
-                        @if ($hero->showButton)
-                            <a href="{{ $hero->buttonUrl }}" class="btn btn-lg btn-{{ $hero->buttonStyle ?? 'primary' }}">
-                                {{ $hero->buttonText }}
-                            </a>
 
-                        @endif
-                        <p class="caption">{{ isset($slide->caption) ? $slide->caption : '' }}</p>
+            <div class="swiper home-slider" id="home-slider-1">
+                <div class="swiper-wrapper">
+                    @foreach ($hero->slides as $slide)
+                    <div class="swiper-slide"  data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
+                        <div class="content">
+                            <span class="subtitle color-white">{{ $slide->title }}</span>
+                            <h1 class="title color-white mb-0">{{ $slide->subtitle }}</h1>
+                            <br>
+                            @if ($slide->showButton)
+                                <a href="{{ $slide->buttonUrl }}" class="btn btn-{{ $slide->buttonStyle ?? 'primary' }}">
+                                    {{ $slide->buttonText }}
+                                </a>
+                                <p class="caption">{{ $slide->caption ?? '' }}</p>
+
+
+                            @endif
+                        </div>
                     </div>
-
+                    @endforeach
                 </div>
+            </div>
+
+            <div class="swiper-pagination pagination-fraction mt-40" id="home-slider-1-pagination"></div>
+        </div>
+
+        <div class="swiper home-img-slider" id="home-img-slider-1">
+            <div class="swiper-wrapper">
+            @foreach ($hero->slides as $slider)
+                <div class="swiper-slide"  data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
+                    <img class="lazyload bg-img" src="{{ asset($slider->image) }}">
+                </div>
+            @endforeach
+
+
             </div>
         </div>
     </section>
-@else
-    <div style="margin-top: 100px;">
-    </div>
-@endif
+    @elseif($slidertype == 'static')
+        <section class="home-banner home-banner-1">
+            @if (!empty($hero->image))
+                <img class="lazyload bg-img" src="{{ asset($hero->image) }}">
+            @else
+                <div class="bg-img" style="background-color: #222; height: 500px;"></div>
+            @endif
 
+            <div class="container">
+                <div class="row justify-content-center text-center align-items-center">
+                    <div class="col-xxl-5">
+                        <div class="content" data-aos="fade-up">
+                            <h1 class="title">
+                                {{ $hero->title }}
+                            </h1>
+                            <p class="text text-white">
+                                {{ $hero->subtitle }}
+                            </p>
+                            @if ($hero->showButton)
+                                <a href="{{ $hero->buttonUrl }}" class="btn btn-lg btn-{{ $hero->buttonStyle ?? 'primary' }}">
+                                    {{ $hero->buttonText }}
+                                </a>
+
+                            @endif
+                            <p class="caption">{{ isset($slide->caption) ? $slide->caption : '' }}</p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
+@endif
+<div style="margin-top: 100px;">
+</div>
 <!-- // categories -->
 @if (!empty($api_general_settingsData['show_properties']))
     @if ($properties->count() > 0)

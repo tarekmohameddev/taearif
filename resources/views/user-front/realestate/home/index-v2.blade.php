@@ -1,12 +1,12 @@
 @php
-    $sliderData = is_string($api_Banner_settingsData) ? $api_Banner_settingsData : json_decode($api_Banner_settingsData);
-    $slidertype = $sliderData->banner_type ?? null;
-    $hero = null;
-    if ($slidertype  === 'static') {
-        $hero = $sliderData->static;
-    }elseif ($slidertype  === 'slider'){
-        $hero = $sliderData->slider;
-    }
+$sliderData = is_string($api_Banner_settingsData) ? $api_Banner_settingsData : json_decode($api_Banner_settingsData);
+$slidertype = $sliderData->banner_type ?? null;
+$hero = null;
+if ($slidertype === 'static') {
+$hero = $sliderData->static;
+}elseif ($slidertype === 'slider'){
+$hero = $sliderData->slider;
+}
 @endphp
 
 @extends('user-front.realestate.layout')
@@ -16,6 +16,7 @@
     .header-area.header-2:not(.header-static, .is-sticky) :is(.nav-link:not(:is(.active, .menu-dropdown .nav-link)), .wishlist-btn, .nice-select, .nice-select::after) {
         font-weight: var(--font-medium);
     }
+
     .caption {
         font-family: 'Courier New', Courier, monospace;
         color: #fff;
@@ -36,237 +37,239 @@
 
 @section('content')
 
-@if($slidertype == 'slider')
-<section class="home-banner home-banner-2" style="max-height: 600px; width: 100%; object-fit: cover;">
+@if ($sliderData->status !== 'off')
 
-    <div class="container">
+    @if($slidertype == 'slider')
+    <section class="home-banner home-banner-2" style="max-height: 600px; width: 100%; object-fit: cover;">
 
-        <div class="swiper home-slider" id="home-slider-1">
-            <div class="swiper-wrapper">
-                @foreach ($hero->slides as $slide)
-                <div class="swiper-slide" data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
-                    <div class="content">
-                        <span class="subtitle color-white">{{ $slide->title }}</span>
-                        <h1 class="title color-white mb-0">{{ $slide->subtitle }}</h1>
-                        <br>
-                        @if ($slide->showButton)
+        <div class="container">
+
+            <div class="swiper home-slider" id="home-slider-1">
+                <div class="swiper-wrapper">
+                    @foreach ($hero->slides as $slide)
+                    <div class="swiper-slide" data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
+                        <div class="content">
+                            <span class="subtitle color-white">{{ $slide->title }}</span>
+                            <h1 class="title color-white mb-0">{{ $slide->subtitle }}</h1>
+                            <br>
+                            @if ($slide->showButton)
                             <a href="{{ $slide->buttonUrl }}" class="btn btn-{{ $slide->buttonStyle ?? 'primary' }}">
                                 {{ $slide->buttonText }}
                             </a>
-                            <P class="caption">{{ $slide->caption}}</P>
-                        @endif
+                            <p class="caption">{{ isset($slide->caption) ? $slide->caption : '' }}</p>
+                            @endif
+                        </div>
                     </div>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="banner-filter-form mt-40 d-none" data-aos="fade-up">
+                <div class="row justify-content-center">
+                    <div class="col-xxl-10">
+                        <div class="tabs-navigation">
+                            <ul class="nav nav-tabs">
+                                <li class="nav-item">
+                                    <button class="nav-link btn-md rounded-pill active" data-bs-toggle="tab" data-bs-target="#rent" type="button">{{ $keywords['Rent'] ?? __('Rent') }}</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link btn-md rounded-pill" data-bs-toggle="tab" data-bs-target="#sale" type="button">{{ $keywords['Sale'] ?? __('Sale') }}</button>
+                                </li>
+
+                            </ul>
+                        </div>
+                        <div class="tab-content form-wrapper radius-md">
+                            <input type="hidden" id="currency_symbol" value="{{ $userBs->base_currency_symbol }}">
+                            <input type="hidden" name="min" value="{{ $min }}" id="min">
+                            <input type="hidden" name="max" value="{{ $max }}" id="max">
+
+                            <input class="form-control" type="hidden" value="{{ $min }}" id="o_min">
+                            <input class="form-control" type="hidden" value="{{ $max }}" id="o_max">
+                            <div class="tab-pane fade show active" id="rent">
+                                <form action="{{ route('front.user.properties', getParam()) }}" method="get">
+                                    <input type="hidden" name="purposre" value="rent">
+                                    <input type="hidden" name="min" value="{{ $min }}" id="min1">
+                                    <input type="hidden" name="max" value="{{ $max }}" id="max1">
+                                    <div class="grid">
+                                        <div class="grid-item">
+                                            <div class="form-group">
+                                                <label for="search1">{{ $keywords['Location'] ?? __('Location') }}</label>
+                                                <input type="text" id="search1" name="location" class="form-control" placeholder="{{ $keywords['Location'] ?? __('Location') }}">
+                                            </div>
+                                        </div>
+                                        <div class="grid-item">
+                                            <div class="form-group">
+                                                <label for="type" class="icon-end">{{ $keywords['Property Type'] ?? __('Property Type') }}</label>
+                                                <select aria-label="#" name="type" class="form-control select2 type" id="type">
+                                                    <option selected disabled value="">
+                                                        {{ $keywords['Select Property'] ?? __('Select Property') }}
+                                                    </option>
+                                                    <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
+                                                    <option value="residential">
+                                                        {{ $keywords['Residential'] ?? __('Residential') }}
+                                                    </option>
+                                                    <option value="commercial">
+                                                        {{ $keywords['Commercial'] ?? __('Commercial') }}
+                                                    </option>
+
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="grid-item">
+                                            <div class="form-group">
+                                                <label for="category" class="icon-end">{{ $keywords['Categories'] ?? __('Categories') }}</label>
+                                                <select aria-label="#" class="form-control select2 bringCategory" id="category" name="category">
+                                                    <option selected disabled value="">{{ __('Select Category') }}
+                                                    </option>
+                                                    <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
+                                                    @foreach ($all_proeprty_categories as $category)
+                                                    <option value="{{ $category->slug }}">
+                                                        {{ $category->name }}
+                                                    </option>
+                                                    @endforeach
+
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid-item city">
+                                            <div class="form-group">
+                                                <label for="city" class="icon-end">{{ $keywords['City'] ?? __('City') }}</label>
+                                                <select aria-label="#" name="city" class="form-control select2 city_id" id="city">
+                                                    <option selected disabled value="">
+                                                        {{ $keywords['Select City'] ?? __('Select City') }}
+                                                    </option>
+                                                    <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
+                                                    @foreach ($all_cities as $city)
+                                                    <option data-id="{{ $city->id }}" value="{{ $city->name }}">
+                                                        {{ $city->name }}
+                                                    </option>
+                                                    @endforeach
+
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="grid-item">
+                                            <label class="price-value">{{ $keywords['Price'] ?? __('Price') }}: <br>
+                                                <span data-range-value="filterPriceSliderValue">{{ formatNumber($min) }}
+                                                    -
+                                                    {{ formatNumber($max) }}</span>
+                                            </label>
+                                            <div data-range-slider="filterPriceSlider"></div>
+                                        </div>
+                                        <div class="grid-item">
+                                            <button type="submit" class="btn btn-lg btn-primary bg-primary icon-start w-100">
+                                                {{ $keywords['Search'] ?? __('Search') }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="tab-pane fade" id="sale">
+                                <form action="{{ route('front.user.properties', getParam()) }}" method="get">
+                                    <input type="hidden" name="purposre" value="sale">
+                                    <input type="hidden" name="min" value="{{ $min }}" id="min2">
+                                    <input type="hidden" name="max" value="{{ $max }}" id="max2">
+                                    <div class="grid">
+                                        <div class="grid-item">
+                                            <div class="form-group">
+                                                <label for="search1">{{ $keywords['Location'] ?? __('Location') }}</label>
+                                                <input type="text" id="search1" name="location" class="form-control" placeholder="{{ $keywords['Location'] ?? __('Location') }}">
+                                            </div>
+                                        </div>
+                                        <div class="grid-item">
+                                            <div class="form-group">
+                                                <label for="type1" class="icon-end">{{ $keywords['Property Type'] ?? __('Property Type') }}</label>
+                                                <select aria-label="#" name="type" class="form-control select2 type" id="type1">
+                                                    <option selected disabled value="">
+                                                        {{ $keywords['Select Property'] ?? __('Select Property') }}
+                                                    </option>
+                                                    <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
+                                                    <option value="residential">
+                                                        {{ $keywords['Residential'] ?? __('Residential') }}
+                                                    </option>
+                                                    <option value="commercial">
+                                                        {{ $keywords['Commercial'] ?? __('Commercial') }}
+                                                    </option>
+
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="grid-item">
+                                            <div class="form-group">
+                                                <label for="category1" class="icon-end">{{ $keywords['Categories'] ?? __('Categories') }}</label>
+                                                <select aria-label="#" class="form-control select2 bringCategory" id="category1" name="category">
+                                                    <option selected disabled value="">
+                                                        {{ $keywords['Select Category'] ?? __('Select Category') }}
+                                                    </option>
+                                                    <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
+                                                    @foreach ($all_proeprty_categories as $category)
+                                                    <option value="{{ $category->slug }}">
+                                                        {{ $category->name }}
+                                                    </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid-item city">
+                                            <div class="form-group">
+                                                <label for="city1" class="icon-end">{{ $keywords['City'] ?? __('City') }}</label>
+                                                <select aria-label="#" name="city" class="form-control select2 city_id" id="city1">
+                                                    <option selected disabled value="">
+                                                        {{ $keywords['Select City'] ?? __('Select City') }}
+                                                    </option>
+                                                    <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
+
+                                                    @foreach ($all_cities as $city)
+                                                    <option data-id="{{ $city->id }}" value="{{ $city->name }}">
+                                                        {{ $city->name }}
+                                                    </option>
+                                                    @endforeach
+
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="grid-item">
+                                            <label class="price-value">{{ $keywords['Price'] ?? __('Price') }}: <br>
+                                                <span data-range-value="filterPriceSlider2Value">{{ formatNumber($min) }}
+                                                    -
+                                                    {{ formatNumber($max) }}</span>
+                                            </label>
+                                            <div data-range-slider="filterPriceSlider2"></div>
+                                        </div>
+                                        <div class="grid-item">
+                                            <button type="submit" class="btn btn-lg btn-primary bg-primary icon-start w-100">
+                                                {{ $keywords['Search'] ?? __('Search') }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="swiper-pagination pagination-fraction mt-40" id="home-slider-1-pagination"></div>
+        </div>
+
+        <div class="swiper home-img-slider" id="home-img-slider-1">
+            <div class="swiper-wrapper">
+                @foreach ($hero->slides as $slider)
+                <div class="swiper-slide" data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
+                    <img class="lazyload bg-img" src="{{ asset($slider->image) }}">
                 </div>
                 @endforeach
             </div>
         </div>
-
-        <div class="banner-filter-form mt-40 d-none" data-aos="fade-up">
-            <div class="row justify-content-center">
-                <div class="col-xxl-10">
-                    <div class="tabs-navigation">
-                        <ul class="nav nav-tabs">
-                            <li class="nav-item">
-                                <button class="nav-link btn-md rounded-pill active" data-bs-toggle="tab" data-bs-target="#rent" type="button">{{ $keywords['Rent'] ?? __('Rent') }}</button>
-                            </li>
-                            <li class="nav-item">
-                                <button class="nav-link btn-md rounded-pill" data-bs-toggle="tab" data-bs-target="#sale" type="button">{{ $keywords['Sale'] ?? __('Sale') }}</button>
-                            </li>
-
-                        </ul>
-                    </div>
-                    <div class="tab-content form-wrapper radius-md">
-                        <input type="hidden" id="currency_symbol" value="{{ $userBs->base_currency_symbol }}">
-                        <input type="hidden" name="min" value="{{ $min }}" id="min">
-                        <input type="hidden" name="max" value="{{ $max }}" id="max">
-
-                        <input class="form-control" type="hidden" value="{{ $min }}" id="o_min">
-                        <input class="form-control" type="hidden" value="{{ $max }}" id="o_max">
-                        <div class="tab-pane fade show active" id="rent">
-                            <form action="{{ route('front.user.properties', getParam()) }}" method="get">
-                                <input type="hidden" name="purposre" value="rent">
-                                <input type="hidden" name="min" value="{{ $min }}" id="min1">
-                                <input type="hidden" name="max" value="{{ $max }}" id="max1">
-                                <div class="grid">
-                                    <div class="grid-item">
-                                        <div class="form-group">
-                                            <label for="search1">{{ $keywords['Location'] ?? __('Location') }}</label>
-                                            <input type="text" id="search1" name="location" class="form-control" placeholder="{{ $keywords['Location'] ?? __('Location') }}">
-                                        </div>
-                                    </div>
-                                    <div class="grid-item">
-                                        <div class="form-group">
-                                            <label for="type" class="icon-end">{{ $keywords['Property Type'] ?? __('Property Type') }}</label>
-                                            <select aria-label="#" name="type" class="form-control select2 type" id="type">
-                                                <option selected disabled value="">
-                                                    {{ $keywords['Select Property'] ?? __('Select Property') }}
-                                                </option>
-                                                <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
-                                                <option value="residential">
-                                                    {{ $keywords['Residential'] ?? __('Residential') }}
-                                                </option>
-                                                <option value="commercial">
-                                                    {{ $keywords['Commercial'] ?? __('Commercial') }}
-                                                </option>
-
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="grid-item">
-                                        <div class="form-group">
-                                            <label for="category" class="icon-end">{{ $keywords['Categories'] ?? __('Categories') }}</label>
-                                            <select aria-label="#" class="form-control select2 bringCategory" id="category" name="category">
-                                                <option selected disabled value="">{{ __('Select Category') }}
-                                                </option>
-                                                <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
-                                                @foreach ($all_proeprty_categories as $category)
-                                                <option value="{{ $category->slug }}">
-                                                    {{ $category->name }}
-                                                </option>
-                                                @endforeach
-
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="grid-item city">
-                                        <div class="form-group">
-                                            <label for="city" class="icon-end">{{ $keywords['City'] ?? __('City') }}</label>
-                                            <select aria-label="#" name="city" class="form-control select2 city_id" id="city">
-                                                <option selected disabled value="">
-                                                    {{ $keywords['Select City'] ?? __('Select City') }}
-                                                </option>
-                                                <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
-                                                @foreach ($all_cities as $city)
-                                                <option data-id="{{ $city->id }}" value="{{ $city->name }}">
-                                                    {{ $city->name }}
-                                                </option>
-                                                @endforeach
-
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="grid-item">
-                                        <label class="price-value">{{ $keywords['Price'] ?? __('Price') }}: <br>
-                                            <span data-range-value="filterPriceSliderValue">{{ formatNumber($min) }}
-                                                -
-                                                {{ formatNumber($max) }}</span>
-                                        </label>
-                                        <div data-range-slider="filterPriceSlider"></div>
-                                    </div>
-                                    <div class="grid-item">
-                                        <button type="submit" class="btn btn-lg btn-primary bg-primary icon-start w-100">
-                                            {{ $keywords['Search'] ?? __('Search') }}
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="tab-pane fade" id="sale">
-                            <form action="{{ route('front.user.properties', getParam()) }}" method="get">
-                                <input type="hidden" name="purposre" value="sale">
-                                <input type="hidden" name="min" value="{{ $min }}" id="min2">
-                                <input type="hidden" name="max" value="{{ $max }}" id="max2">
-                                <div class="grid">
-                                    <div class="grid-item">
-                                        <div class="form-group">
-                                            <label for="search1">{{ $keywords['Location'] ?? __('Location') }}</label>
-                                            <input type="text" id="search1" name="location" class="form-control" placeholder="{{ $keywords['Location'] ?? __('Location') }}">
-                                        </div>
-                                    </div>
-                                    <div class="grid-item">
-                                        <div class="form-group">
-                                            <label for="type1" class="icon-end">{{ $keywords['Property Type'] ?? __('Property Type') }}</label>
-                                            <select aria-label="#" name="type" class="form-control select2 type" id="type1">
-                                                <option selected disabled value="">
-                                                    {{ $keywords['Select Property'] ?? __('Select Property') }}
-                                                </option>
-                                                <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
-                                                <option value="residential">
-                                                    {{ $keywords['Residential'] ?? __('Residential') }}
-                                                </option>
-                                                <option value="commercial">
-                                                    {{ $keywords['Commercial'] ?? __('Commercial') }}
-                                                </option>
-
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="grid-item">
-                                        <div class="form-group">
-                                            <label for="category1" class="icon-end">{{ $keywords['Categories'] ?? __('Categories') }}</label>
-                                            <select aria-label="#" class="form-control select2 bringCategory" id="category1" name="category">
-                                                <option selected disabled value="">
-                                                    {{ $keywords['Select Category'] ?? __('Select Category') }}
-                                                </option>
-                                                <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
-                                                @foreach ($all_proeprty_categories as $category)
-                                                <option value="{{ $category->slug }}">
-                                                    {{ $category->name }}
-                                                </option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="grid-item city">
-                                        <div class="form-group">
-                                            <label for="city1" class="icon-end">{{ $keywords['City'] ?? __('City') }}</label>
-                                            <select aria-label="#" name="city" class="form-control select2 city_id" id="city1">
-                                                <option selected disabled value="">
-                                                    {{ $keywords['Select City'] ?? __('Select City') }}
-                                                </option>
-                                                <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
-
-                                                @foreach ($all_cities as $city)
-                                                <option data-id="{{ $city->id }}" value="{{ $city->name }}">
-                                                    {{ $city->name }}
-                                                </option>
-                                                @endforeach
-
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="grid-item">
-                                        <label class="price-value">{{ $keywords['Price'] ?? __('Price') }}: <br>
-                                            <span data-range-value="filterPriceSlider2Value">{{ formatNumber($min) }}
-                                                -
-                                                {{ formatNumber($max) }}</span>
-                                        </label>
-                                        <div data-range-slider="filterPriceSlider2"></div>
-                                    </div>
-                                    <div class="grid-item">
-                                        <button type="submit" class="btn btn-lg btn-primary bg-primary icon-start w-100">
-                                            {{ $keywords['Search'] ?? __('Search') }}
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="swiper-pagination pagination-fraction mt-40" id="home-slider-1-pagination"></div>
-    </div>
-
-    <div class="swiper home-img-slider" id="home-img-slider-1">
-        <div class="swiper-wrapper">
-            @foreach ($hero->slides as $slider)
-            <div class="swiper-slide" data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
-                <img class="lazyload bg-img" src="{{ asset($slider->image) }}">
-            </div>
-            @endforeach
-        </div>
-    </div>
-</section>
-@elseif($slidertype == 'static')
-<section class="home-banner home-banner-1">
+    </section>
+    @else($slidertype == 'static')
+    <section class="home-banner home-banner-1">
         @if (!empty($hero->image))
-            <img class="lazyload bg-img" src="{{ asset($hero->image) }}">
+        <img class="lazyload bg-img" src="{{ asset($hero->image) }}">
         @else
-            <div class="bg-img" style="background-color: #222; height: 500px;"></div>
+        <div class="bg-img" style="background-color: #222; height: 500px;"></div>
         @endif
 
         <div class="container">
@@ -280,9 +283,9 @@
                             {{ $hero->subtitle }}
                         </p>
                         @if ($hero->showButton)
-                            <a href="{{ $hero->buttonUrl }}" class="btn btn-lg btn-{{ $hero->buttonStyle ?? 'primary' }}">
-                                {{ $hero->buttonText }}
-                            </a>
+                        <a href="{{ $hero->buttonUrl }}" class="btn btn-lg btn-{{ $hero->buttonStyle ?? 'primary' }}">
+                            {{ $hero->buttonText }}
+                        </a>
                         @endif
                         <p class="caption">{{ isset($slide->caption) ? $slide->caption : '' }}</p>
                     </div>
@@ -291,32 +294,33 @@
             </div>
         </div>
     </section>
-    @else
-    <div style="margin-top: 100px;">
-    </div>
+    @endif
 @endif
+
+<div style="margin-top: 100px;">
+</div>
 
 <!-- // categories -->
 @if (!empty($api_general_settingsData['show_properties']))
-    @if ($properties->count() > 0)
-        <div class="categories pb-100">
-            <section id="property-filter-section">
-                @include('user-front.realestate.partials.property-filter-list', [
-                    'property_contents' => $properties,
-                    'categories' => $all_proeprty_categories,
-                    'all_cities' => $all_cities,
-                    'min' => $min,
-                    'max' => $max,
-                    'userBs' => $userBs,
-                    'keywords' => $keywords,
-                    'userCurrentLang' => $userCurrentLang,
-                    'userSeo' => $userSeo ?? null,
-                    'amenities' => $amenities ?? []
-                ])
-            </section>
+@if ($properties->count() > 0)
+<div class="categories pb-100">
+    <section id="property-filter-section">
+        @include('user-front.realestate.partials.property-filter-list', [
+        'property_contents' => $properties,
+        'categories' => $all_proeprty_categories,
+        'all_cities' => $all_cities,
+        'min' => $min,
+        'max' => $max,
+        'userBs' => $userBs,
+        'keywords' => $keywords,
+        'userCurrentLang' => $userCurrentLang,
+        'userSeo' => $userSeo ?? null,
+        'amenities' => $amenities ?? []
+        ])
+    </section>
 
-        </div>
-    @endif
+</div>
+@endif
 @endif
 
 <style>
@@ -375,12 +379,12 @@
     <div class="row align-items-center">
 
         @if (!empty($api_about_settingsData['image_path']))
-            <div class="col-lg-6 mb-4 mb-lg-0 lazyload blur-up">
-                <img class="lazyload img-fluid blur-up"
-                                 src="{{ asset('assets/front/images/placeholder.png') }}"
-                                 data-src="{{ asset($api_about_settingsData['image_path']) }}"
-                                 alt="About Image">
-            </div>
+        <div class="col-lg-6 mb-4 mb-lg-0 lazyload blur-up">
+            <img class="lazyload img-fluid blur-up"
+                src="{{ asset('assets/front/images/placeholder.png') }}"
+                data-src="{{ asset($api_about_settingsData['image_path']) }}"
+                alt="About Image">
+        </div>
         @endif
 
 
@@ -652,7 +656,7 @@
                 <div class="swiper" id="testimonial-slider-2">
                     <div class="swiper-wrapper">
                         @forelse ($testimonials as $testimonial)
-                        <div class="swiper-slide pb-30"  data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
+                        <div class="swiper-slide pb-30" data-swiper-autoplay="{{ $hero->autoplaySpeed ?? 5000 }}">
                             <div class="slider-item">
                                 <div class="client-content">
                                     <div class="quote">
@@ -702,35 +706,35 @@
 @endif
 
 @if ($home_sections->newsletter_section == 1)
-            <section class="newsletter-area pb-100" data-aos="fade-up">
-                <div class="container">
-                    <div class="newsletter-inner px-4">
-                        <img class="lazyload bg-img"
-                            src="https://codecanyon8.kreativdev.com/estaty/assets/img/6577e0ff3ab05.jpg">
-                        <div class="row justify-content-center text-center" data-aos="fade-up">
-                            <div class="col-lg-6 col-xxl-5">
-                                <div class="content mb-30">
-                                    <span
-                                        class="subtitle color-white mb-10 d-block">{{ $home_text?->newsletter_title }}</span>
-                                    <h2 class="color-white">{{ $home_text?->newsletter_subtitle }}</h2>
-                                </div>
-                                <form id="newsletterForm" class="subscription-form newsletter-form"
-                                    action="{{ route('front.user.subscriber', getParam()) }}" method="POST">
-                                    @csrf
-                                    <div class="input-group radius-md">
-                                        <input class="form-control"
-                                            placeholder="{{ $keywords['Enter Your Email'] ?? __('Enter Your Email') }}"
-                                            type="email" name="email_id" required>
-                                        <button class="btn btn-lg btn-primary" type="submit">
-                                        كٌن على تواصل</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
+<section class="newsletter-area pb-100" data-aos="fade-up">
+    <div class="container">
+        <div class="newsletter-inner px-4">
+            <img class="lazyload bg-img"
+                src="https://codecanyon8.kreativdev.com/estaty/assets/img/6577e0ff3ab05.jpg">
+            <div class="row justify-content-center text-center" data-aos="fade-up">
+                <div class="col-lg-6 col-xxl-5">
+                    <div class="content mb-30">
+                        <span
+                            class="subtitle color-white mb-10 d-block">{{ $home_text?->newsletter_title }}</span>
+                        <h2 class="color-white">{{ $home_text?->newsletter_subtitle }}</h2>
                     </div>
+                    <form id="newsletterForm" class="subscription-form newsletter-form"
+                        action="{{ route('front.user.subscriber', getParam()) }}" method="POST">
+                        @csrf
+                        <div class="input-group radius-md">
+                            <input class="form-control"
+                                placeholder="{{ $keywords['Enter Your Email'] ?? __('Enter Your Email') }}"
+                                type="email" name="email_id" required>
+                            <button class="btn btn-lg btn-primary" type="submit">
+                                كٌن على تواصل</button>
+                        </div>
+                    </form>
                 </div>
-            </section>
- @endif
+            </div>
+        </div>
+    </div>
+</section>
+@endif
 
 @if ($home_sections->brand_section == 1)
 @if(count($brands) > 0)
