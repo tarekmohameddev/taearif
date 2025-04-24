@@ -21,6 +21,7 @@ class ApiAboutSettings extends Model
         'vision',
         'image_path',
         'features',  // JSON column
+        'status', // 'on' or 'off'
     ];
 
     // Cast the features column to array

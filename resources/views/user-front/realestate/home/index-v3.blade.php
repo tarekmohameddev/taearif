@@ -442,67 +442,72 @@
 @endif
 @endif
 
+
+
 <!-- // about -->
-@if (!empty($api_about_settingsData))
-<section class="about-area about-2 pb-70">
-    <div class="container">
-        <div class="row align-items-center gx-xl-5">
-            <div class="col-lg-5">
-                <div class="content mb-30" data-aos="fade-up">
-                    <div class="content-title">
-                        <span class="subtitle">{{ $api_about_settingsData['title'] ?? '' }}</span>
-                        <h2>{{ $api_about_settingsData['subtitle'] ?? '' }}</h2>
-                    </div>
+@if ($api_about_settingsData->status !== 'off')
 
-                    <div class="text summernote-content">
-                        <p><strong>التاريخ:</strong> {{ $api_about_settingsData['history'] ?? '' }}</p>
-                        <p><strong>مهمتنا:</strong> {{ $api_about_settingsData['mission'] ?? '' }}</p>
-                        <p><strong>رؤيتنا:</strong> {{ $api_about_settingsData['vision'] ?? '' }}</p>
-                    </div>
+    @if (!empty($api_about_settingsData))
+    <section class="about-area about-2 pb-70">
+        <div class="container">
+            <div class="row align-items-center gx-xl-5">
+                <div class="col-lg-5">
+                    <div class="content mb-30" data-aos="fade-up">
+                        <div class="content-title">
+                            <span class="subtitle">{{ $api_about_settingsData['title'] ?? '' }}</span>
+                            <h2>{{ $api_about_settingsData['subtitle'] ?? '' }}</h2>
+                        </div>
 
-                    {{-- Optional Button --}}
-                    {{--
-                    <div class="d-flex align-items-center flex-wrap gap-15 mt-4">
-                        <a href="#" class="btn btn-lg btn-primary">اعرف المزيد</a>
-                    </div>
-                    --}}
-                </div>
-            </div>
+                        <div class="text summernote-content">
+                            <p><strong>التاريخ:</strong> {{ $api_about_settingsData['history'] ?? '' }}</p>
+                            <p><strong>مهمتنا:</strong> {{ $api_about_settingsData['mission'] ?? '' }}</p>
+                            <p><strong>رؤيتنا:</strong> {{ $api_about_settingsData['vision'] ?? '' }}</p>
+                        </div>
 
-            <div class="col-lg-7">
-                <div class="img-content img-right mb-30" data-aos="fade-up">
-                    <div class="img-1">
-                        @if (!empty($api_about_settingsData['image_path']))
-                            <img class="lazyload blur-up"
-                                 src="{{ asset('assets/front/images/placeholder.png') }}"
-                                 data-src="{{ asset($api_about_settingsData['image_path']) }}"
-                                 alt="About Image">
-                        @endif
-                    </div>
-
-                    {{-- These are optional elements, not available in your current data, but left as placeholders --}}
-                    <div class="img-2 d-none">
-                        {{-- Secondary image and video URL not provided in new data --}}
+                        {{-- Optional Button --}}
                         {{--
-                        <img class="lazyload blur-up" src="{{ asset('assets/front/images/placeholder.png') }}" data-src="{{ asset('storage/your-second-image.jpg') }}" alt="Image">
-                        <a href="https://youtube.com/..." class="video-btn youtube-popup p-absolute">
-                            <i class="fas fa-play"></i>
-                        </a>
+                        <div class="d-flex align-items-center flex-wrap gap-15 mt-4">
+                            <a href="#" class="btn btn-lg btn-primary">اعرف المزيد</a>
+                        </div>
                         --}}
+                    </div>
+                </div>
+
+                <div class="col-lg-7">
+                    <div class="img-content img-right mb-30" data-aos="fade-up">
+                        <div class="img-1">
+                            @if (!empty($api_about_settingsData['image_path']))
+                                <img class="lazyload blur-up"
+                                    src="{{ asset('assets/front/images/placeholder.png') }}"
+                                    data-src="{{ asset($api_about_settingsData['image_path']) }}"
+                                    alt="About Image">
+                            @endif
+                        </div>
+
+                        {{-- These are optional elements, not available in your current data, but left as placeholders --}}
+                        <div class="img-2 d-none">
+                            {{-- Secondary image and video URL not provided in new data --}}
+                            {{--
+                            <img class="lazyload blur-up" src="{{ asset('assets/front/images/placeholder.png') }}" data-src="{{ asset('storage/your-second-image.jpg') }}" alt="Image">
+                            <a href="https://youtube.com/..." class="video-btn youtube-popup p-absolute">
+                                <i class="fas fa-play"></i>
+                            </a>
+                            --}}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Bg shape -->
-    <div class="shape">
-        <img class="shape-1" src="{{ asset('assets/front/user/realestate/shape/shape-2.png') }}" alt="Shape">
-        <img class="shape-2" src="{{ asset('assets/front/user/realestate/shape/shape-9.png') }}" alt="Shape">
-        <img class="shape-3" src="{{ asset('assets/front/user/realestate/shape/shape-8.png') }}" alt="Shape">
-        <img class="shape-4" src="{{ asset('assets/front/user/realestate/shape/shape-3.png') }}" alt="Shape">
-    </div>
-</section>
+        <!-- Bg shape -->
+        <div class="shape">
+            <img class="shape-1" src="{{ asset('assets/front/user/realestate/shape/shape-2.png') }}" alt="Shape">
+            <img class="shape-2" src="{{ asset('assets/front/user/realestate/shape/shape-9.png') }}" alt="Shape">
+            <img class="shape-3" src="{{ asset('assets/front/user/realestate/shape/shape-8.png') }}" alt="Shape">
+            <img class="shape-4" src="{{ asset('assets/front/user/realestate/shape/shape-3.png') }}" alt="Shape">
+        </div>
+    </section>
+    @endif
 @endif
 
 <!-- // work-process -->

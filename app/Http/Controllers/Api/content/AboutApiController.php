@@ -41,7 +41,8 @@ class AboutApiController extends Controller
             'features' => 'required|array',
             'features.*.id' => 'required|integer',
             'features.*.title' => 'required|string|max:255',
-            'features.*.description' => 'required|string'
+            'features.*.description' => 'required|string',
+            'status' => 'required|string|in:on,off',
         ]);
 
 
@@ -71,6 +72,7 @@ class AboutApiController extends Controller
             $about->vision = $request->vision;
             $about->features = $request->features;
             $about->image_path = $request->image_path;
+            $about->status = $request->status;
 
             $about->save();
 
