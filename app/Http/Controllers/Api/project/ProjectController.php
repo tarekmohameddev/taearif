@@ -270,7 +270,7 @@ class ProjectController extends Controller
         $defaultLang = Language::where('user_id', $userId)->where('is_default', 1)->firstOrFail();
 
         $rules = [
-            'title' => 'required|max:255',
+            // 'title' => 'required|max:255',
             'featured_image' => 'required|string',
 
             'address' => 'nullable',
@@ -395,7 +395,7 @@ class ProjectController extends Controller
         $project = Project::where('user_id', $userId)->findOrFail($id);
 
         $rules = [
-            'title' => 'required|max:255',
+            // 'title' => 'required|max:255',
             'featured_image' => 'required|string',
 
             'address' => 'nullable',
