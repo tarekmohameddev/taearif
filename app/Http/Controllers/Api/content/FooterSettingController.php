@@ -62,6 +62,7 @@ class FooterSettingController extends Controller
 
         // Validation
         $validator = Validator::make($request->all(), [
+            'status' => 'required|string|in:on,off',
             'general' => 'required|array',
             'general.companyName' => 'required|string|max:100',
             'general.address' => 'nullable|string|max:255',
@@ -116,7 +117,7 @@ class FooterSettingController extends Controller
         // Find or create settings
         $settings = FooterSetting::updateOrCreate(
             ['user_id' => $user->id],
-            $request->only(['general', 'social', 'columns', 'newsletter', 'style'])
+            $request->only(['general', 'social', 'columns', 'newsletter', 'style', 'status'])
         );
 
         return response()->json([

@@ -161,57 +161,59 @@
     @endif
 @endif
 
+<!-- // about -->
+@if ($api_about_settingsData->status !== 'off')
+    @if (!empty($api_about_settingsData))
+    <section class="about-area pb-70 pt-30">
+        <div class="container">
+            <div class="row gx-xl-5">
+                <div class="col-lg-6">
+                    <div class="img-content" data-aos="fade-up">
+                        @if (!empty($api_about_settingsData['image_path']))
+                        <img class="lazyload blur-up"
+                                    src="{{ asset('assets/front/images/placeholder.png') }}"
+                                    data-src="{{ asset($api_about_settingsData['image_path']) }}"
+                                    alt="About Image">
 
-@if (!empty($api_about_settingsData))
-<section class="about-area pb-70 pt-30">
-    <div class="container">
-        <div class="row gx-xl-5">
-            <div class="col-lg-6">
-                <div class="img-content" data-aos="fade-up">
-                    @if (!empty($api_about_settingsData['image_path']))
-                    <img class="lazyload blur-up"
-                                src="{{ asset('assets/front/images/placeholder.png') }}"
-                                data-src="{{ asset($api_about_settingsData['image_path']) }}"
-                                alt="About Image">
 
-
-                    @endif
+                        @endif
+                    </div>
                 </div>
-            </div>
-            <div class="col-lg-6">
-                <div class="content mb-30" data-aos="fade-up">
-                    <div class="content-title">
-                        <span class="subtitle"><span class="line"></span>
-                            {{ $api_about_settingsData['title'] ?? '' }}</span>
-                        <h2>{{ $api_about_settingsData['subtitle'] ?? '' }}</h2>
-                    </div>
-
-                    <div class="text summernote-content">
-                        <p><strong>التاريخ:</strong> {{ $api_about_settingsData['history'] ?? '' }}</p>
-                        <p><strong>مهمتنا:</strong> {{ $api_about_settingsData['mission'] ?? '' }}</p>
-                        <p><strong>رؤيتنا:</strong> {{ $api_about_settingsData['vision'] ?? '' }}</p>
-                    </div>
-
-                    @if (!empty($api_about_settingsData['features']) && is_array($api_about_settingsData['features']))
-                        <div class="features-list mt-4">
-                            @foreach ($api_about_settingsData['features'] as $feature)
-                                <div class="mb-3">
-                                    <h5 class="mb-1">{{ $feature['title'] ?? '' }}</h5>
-                                    <p class="mb-0">{{ $feature['description'] ?? '' }}</p>
-                                </div>
-                            @endforeach
+                <div class="col-lg-6">
+                    <div class="content mb-30" data-aos="fade-up">
+                        <div class="content-title">
+                            <span class="subtitle"><span class="line"></span>
+                                {{ $api_about_settingsData['title'] ?? '' }}</span>
+                            <h2>{{ $api_about_settingsData['subtitle'] ?? '' }}</h2>
                         </div>
-                    @endif
 
-                    {{-- Optional button if needed --}}
-                    {{-- <div class="d-flex align-items-center flex-wrap gap-15 mt-4">
-                        <a href="#" class="btn btn-lg btn-primary bg-secondary">اعرف المزيد</a>
-                    </div> --}}
+                        <div class="text summernote-content">
+                            <p><strong>التاريخ:</strong> {{ $api_about_settingsData['history'] ?? '' }}</p>
+                            <p><strong>مهمتنا:</strong> {{ $api_about_settingsData['mission'] ?? '' }}</p>
+                            <p><strong>رؤيتنا:</strong> {{ $api_about_settingsData['vision'] ?? '' }}</p>
+                        </div>
+
+                        @if (!empty($api_about_settingsData['features']) && is_array($api_about_settingsData['features']))
+                            <div class="features-list mt-4">
+                                @foreach ($api_about_settingsData['features'] as $feature)
+                                    <div class="mb-3">
+                                        <h5 class="mb-1">{{ $feature['title'] ?? '' }}</h5>
+                                        <p class="mb-0">{{ $feature['description'] ?? '' }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        {{-- Optional button if needed --}}
+                        {{-- <div class="d-flex align-items-center flex-wrap gap-15 mt-4">
+                            <a href="#" class="btn btn-lg btn-primary bg-secondary">اعرف المزيد</a>
+                        </div> --}}
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
+    @endif
 @endif
 
 

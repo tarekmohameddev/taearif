@@ -374,50 +374,53 @@ $hero = $sliderData->slider;
 </style>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 
-@if (!empty($api_about_settingsData))
-<div class="container py-5">
-    <div class="row align-items-center">
+<!-- // about -->
+@if ($api_about_settingsData->status !== 'off')
+    @if (!empty($api_about_settingsData))
+    <div class="container py-5">
+        <div class="row align-items-center">
 
-        @if (!empty($api_about_settingsData['image_path']))
-        <div class="col-lg-6 mb-4 mb-lg-0 lazyload blur-up">
-            <img class="lazyload img-fluid blur-up"
-                src="{{ asset('assets/front/images/placeholder.png') }}"
-                data-src="{{ asset($api_about_settingsData['image_path']) }}"
-                alt="About Image">
-        </div>
-        @endif
-
-
-        <div class="col-lg-6">
-
-            <div class="info-box slide-in">
-                <div class="title-wrapper">
-                    <i class="bi bi-building info-icon"></i>
-                    <h4>هويتنا</h4>
-                </div>
-                <p class="mb-0">{{ $api_about_settingsData['history'] ?? '...' }}</p>
+            @if (!empty($api_about_settingsData['image_path']))
+            <div class="col-lg-6 mb-4 mb-lg-0 lazyload blur-up">
+                <img class="lazyload img-fluid blur-up"
+                    src="{{ asset('assets/front/images/placeholder.png') }}"
+                    data-src="{{ asset($api_about_settingsData['image_path']) }}"
+                    alt="About Image">
             </div>
+            @endif
 
 
-            <div class="info-box slide-in" style="animation-delay: 0.5s;">
-                <div class="title-wrapper">
-                    <i class="bi bi-rocket-takeoff info-icon"></i>
-                    <h4>مهمتنا</h4>
+            <div class="col-lg-6">
+
+                <div class="info-box slide-in">
+                    <div class="title-wrapper">
+                        <i class="bi bi-building info-icon"></i>
+                        <h4>هويتنا</h4>
+                    </div>
+                    <p class="mb-0">{{ $api_about_settingsData['history'] ?? '...' }}</p>
                 </div>
-                <p class="mb-0">{{ $api_about_settingsData['mission'] ?? '...' }}</p>
-            </div>
 
 
-            <div class="info-box slide-in" style="animation-delay: 1s;">
-                <div class="title-wrapper">
-                    <i class="bi bi-stars info-icon"></i>
-                    <h4>رؤيتنا</h4>
+                <div class="info-box slide-in" style="animation-delay: 0.5s;">
+                    <div class="title-wrapper">
+                        <i class="bi bi-rocket-takeoff info-icon"></i>
+                        <h4>مهمتنا</h4>
+                    </div>
+                    <p class="mb-0">{{ $api_about_settingsData['mission'] ?? '...' }}</p>
                 </div>
-                <p class="mb-0">{{ $api_about_settingsData['vision'] ?? '...' }}</p>
+
+
+                <div class="info-box slide-in" style="animation-delay: 1s;">
+                    <div class="title-wrapper">
+                        <i class="bi bi-stars info-icon"></i>
+                        <h4>رؤيتنا</h4>
+                    </div>
+                    <p class="mb-0">{{ $api_about_settingsData['vision'] ?? '...' }}</p>
+                </div>
             </div>
         </div>
     </div>
-</div>
+    @endif
 @endif
 
 

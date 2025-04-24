@@ -10,6 +10,9 @@
     $logo = $general_settingsData['logo'] ?? [];
 
 @endphp
+
+<!-- footer -->
+@if ($userApi_footerData->status !== 'off')
   <footer class="footer-area border border-primary" style="background-color: transparent !important;">
       @if (!empty($userFooterData->bg_image))
           <!-- Background Image -->
@@ -132,7 +135,8 @@
       @endif
   </footer>
 
-  <!-- Footer-area end-->
+<!-- Footer-area end-->
+@endif
 
   <!-- Go to Top -->
   <div class="go-top"><i class="fal fa-angle-double-up"></i></div>

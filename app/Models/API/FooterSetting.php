@@ -17,7 +17,8 @@ class FooterSetting extends Model
         'social',
         'columns',
         'newsletter',
-        'style'
+        'style',
+        'status', // 'on' or 'off'
     ];
 
     protected $casts = [
@@ -25,7 +26,8 @@ class FooterSetting extends Model
         'social' => 'array',
         'columns' => 'array',
         'newsletter' => 'array',
-        'style' => 'array'
+        'style' => 'array',
+        'status' => 'string',
     ];
 
     public function user()
