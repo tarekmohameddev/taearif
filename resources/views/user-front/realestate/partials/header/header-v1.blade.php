@@ -13,7 +13,7 @@ $favicon = $general_settingsData['favicon '] ?? [];
 <!-- Header Start -->
 <header class="header-area header-1 @if (!request()->routeIs('front.user.detail.view')) header-static @endif" data-aos="slide-down">
 
-@if ($api_menu_settingsData->status !== false)
+@if (!empty($api_about_settingsData) && $api_about_settingsData->status !== false)
     <div class="mobile-menu">
         <div class="container">
             <div class="mobile-menu-wrapper"></div>
