@@ -305,7 +305,7 @@ $hero = $sliderData->slider;
 @if ($properties->count() > 0)
 <div class="categories pb-100">
     <section id="property-filter-section">
-        @include('user-front.realestate.partials.property-filter-list', [
+        @include('user-front.realestate.partials.categories-filter-list', [
         'property_contents' => $properties,
         'categories' => $all_proeprty_categories,
         'all_cities' => $all_cities,

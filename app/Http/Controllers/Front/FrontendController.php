@@ -480,6 +480,7 @@ class FrontendController extends Controller
         $data['users'] = $users;
         return view('front.users', $data);
     }
+
     public function userDetailView(Request $request,$domain)
     {
         $user = getUser();
@@ -537,10 +538,44 @@ class FrontendController extends Controller
         $data['home_sections'] = User\HomeSection::where('user_id', $user->id)->first();
 
         $tenantId = getUser()->id;
+
+
+        // Fetch categories with user-specific visibility settings (only active in api_user_category_settings)
+        $visibleCategoriesQuery = \App\Models\User\RealestateManagement\ApiUserCategory::join('api_user_category_settings', function ($join) use ($tenantId) {
+            $join->on('api_user_categories.id', '=', 'api_user_category_settings.category_id')
+                 ->where('api_user_category_settings.user_id', '=', $tenantId)
+                 ->where('api_user_category_settings.is_active', 1);
+        })
+        ->select('api_user_categories.*');
+
+        // $visibleCategoriesQuery = \App\Models\User\RealestateManagement\ApiUserCategory::leftJoin('api_user_category_settings', function ($join) use ($tenantId) {
+        //     $join->on('api_user_categories.id', '=', 'api_user_category_settings.category_id')
+        //          ->where('api_user_category_settings.user_id', '=', $tenantId);
+        // })
+        // ->where('api_user_category_settings.is_active', 1)
+        // ->orWhereNull('api_user_category_settings.id')
+        // ->select('api_user_categories.*');
+
+
+        // Categories for filtering and display
+        $data['all_property_categories'] = $visibleCategoriesQuery->get();
+        $data['property_categories'] = $visibleCategoriesQuery->get();
+
+
+        $data['visibleCategories'] = $visibleCategoriesQuery->get();
+        $data['all_proeprty_categories'] = $visibleCategoriesQuery->get();
+        $data['property_categories'] = $visibleCategoriesQuery->get();
+
+        $data['all_property_categories'] = $visibleCategoriesQuery->get();
+
+        // dd($data['visibleCategories'] );
+
+
         $property_contents = Property::where([
             ['user_properties.user_id', $tenantId],
             ['user_properties.status', 1],
         ]);
+
         $data['property_contents'] = $property_contents;
         $data['home_text'] = User\HomePageText::query()
             ->where([

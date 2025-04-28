@@ -5,8 +5,6 @@ namespace App\Http\Controllers\Api\User\RealestateManagement;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\User\RealestateManagement\ApiUserCategory;
-use App\Models\Api\ApiUserCategorySetting;
-use Illuminate\Support\Facades\Auth;
 
 class ApiCategoryController extends Controller
 {
@@ -26,35 +24,15 @@ class ApiCategoryController extends Controller
         return response()->json($categories);
     }
 
-    // Get all categories with user-specific visibility
     public function index()
     {
-        $user = Auth::user();
-        $categories = ApiUserCategory::with(['userSettings' => function ($query) use ($user) {
-            $query->where('user_id', $user->id);
-        }])->get();
-
-        $categories = $categories->map(function ($category) use ($user) {
-            $setting = $category->userSettings->first();
-            $category->user_is_active = $setting ? $setting->is_active : (bool) $category->is_active;
-            return $category;
-        });
+        $categories = ApiUserCategory::all();
 
         return response()->json([
             'success' => true,
             'data' => $categories
         ], 200);
     }
-
-    // public function index()
-    // {
-    //     $categories = ApiUserCategory::all();
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'data' => $categories
-    //     ], 200);
-    // }
 
     public function store(Request $request)
     {
@@ -118,9 +96,9 @@ class ApiCategoryController extends Controller
     public function toggleVisibility(Request $request, $categoryId)
     {
         $user = Auth::user();
-        $category = ApiUserCategory::findOrFail($categoryId);
+        $category = UserCategory::findOrFail($categoryId);
 
-        $setting = ApiUserCategorySetting::firstOrCreate(
+        $setting = UserCategorySetting::firstOrCreate(
             ['user_id' => $user->id, 'category_id' => $categoryId],
             ['is_active' => $category->is_active]
         );

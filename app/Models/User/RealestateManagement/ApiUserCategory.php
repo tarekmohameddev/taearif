@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use App\Models\User\RealestateManagement\Property;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Api\ApiUserCategorySetting;
 
 class ApiUserCategory extends Model
 {
@@ -22,14 +23,20 @@ class ApiUserCategory extends Model
         'is_active',
         'icon',
     ];
+
     protected $casts = [
         'is_active' => 'boolean',
     ];
 
-    // public function user()
-    // {
-    //     return $this->belongsTo(User::class, 'user_id');
-    // }
+    public function userSettings()
+    {
+        return $this->hasMany(ApiUserCategorySetting::class, 'category_id');
+    }
+
+    public function userSetting()
+    {
+        return $this->hasOne(ApiUserCategorySetting::class, 'category_id', 'id')->where('user_id', auth()->id());
+    }
 
     public function properties()
     {
@@ -51,9 +58,8 @@ class ApiUserCategory extends Model
         });
     }
 
-    public static function storeCategory(int $userId,array $data)
+    public static function storeCategory(int $userId, array $data)
     {
-
         $existing = self::where('name', $data['name'])->first();
         if ($existing) {
             return $existing;
@@ -62,7 +68,6 @@ class ApiUserCategory extends Model
         $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
         return self::create($data);
     }
-
 
     public function updateCategory(array $data)
     {
@@ -81,7 +86,4 @@ class ApiUserCategory extends Model
     {
         return self::where('slug', 'other')->value('id');
     }
-
-
-
 }
