@@ -44,7 +44,7 @@
                             <span class="subtitle color-white">{{ $slide->title }}</span>
                             <h1 class="title color-white mb-0">{{ $slide->subtitle }}</h1>
                             <br>
-                            @if ($slide->showButton)
+                            @if (!empty($slide->showButton) && !empty($slide->buttonText))
                                 <a href="{{ $slide->buttonUrl }}" class="btn btn-{{ $slide->buttonStyle ?? 'primary' }}">
                                     {{ $slide->buttonText }}
                                 </a>
