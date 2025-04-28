@@ -10,6 +10,9 @@ class ApiUserCategorySetting extends Model
 {
     protected $table = 'api_user_category_settings';
     protected $fillable = ['user_id', 'category_id', 'is_active'];
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 
     public function user()
     {

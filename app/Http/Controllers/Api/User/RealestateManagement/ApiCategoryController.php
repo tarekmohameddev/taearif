@@ -10,23 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class ApiCategoryController extends Controller
 {
-    public function getCategories()
-    {
-        $user = Auth::user();
-        $categories = UserCategory::with(['userSettings' => function ($query) use ($user) {
-            $query->where('user_id', $user->id);
-        }])->get();
 
-        $categories = $categories->map(function ($category) use ($user) {
-            $setting = $category->userSettings->first();
-            $category->user_is_active = $setting ? $setting->is_active : $category->is_active;
-            return $category;
-        });
-
-        return response()->json($categories);
-    }
-
-    // Get all categories with user-specific visibility
     public function index()
     {
         $user = Auth::user();
@@ -36,7 +20,7 @@ class ApiCategoryController extends Controller
 
         $categories = $categories->map(function ($category) use ($user) {
             $setting = $category->userSettings->first();
-            $category->user_is_active = $setting ? $setting->is_active : (bool) $category->is_active;
+            $category->category_is_active = $setting ? $setting->is_active : (bool) $category->is_active;
             return $category;
         });
 
@@ -46,15 +30,7 @@ class ApiCategoryController extends Controller
         ], 200);
     }
 
-    // public function index()
-    // {
-    //     $categories = ApiUserCategory::all();
 
-    //     return response()->json([
-    //         'success' => true,
-    //         'data' => $categories
-    //     ], 200);
-    // }
 
     public function store(Request $request)
     {
