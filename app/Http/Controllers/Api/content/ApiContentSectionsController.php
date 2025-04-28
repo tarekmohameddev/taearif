@@ -57,29 +57,25 @@ class ApiContentSectionsController extends Controller
     {
         $userId = auth()->id();
 
-        switch ($sectionId) {
-            case 'general':
-                $record = GeneralSetting::where('user_id', $userId)->first();
-                break;
-            case 'banner':
-                $record = ApiBannerSetting::where('user_id', $userId)->first();
-                break;
-            case 'about':
-                $record = ApiAboutSettings::where('user_id', $userId)->first();
-                break;
-            case 'footer':
-                $record = FooterSetting::where('user_id', $userId)->first();
-                break;
-            case 'domains':
-                $record = ApiDomainSetting::where('user_id', $userId)->first();
-                break;
-            default:
-                $record = null;
-                break;
+        $models = [
+            'general' => \App\Models\Api\GeneralSetting::class,
+            'banner'  => \App\Models\Api\ApiBannerSetting::class,
+            'about'   => \App\Models\Api\ApiAboutSettings::class,
+            'footer'  => \App\Models\Api\FooterSetting::class,
+            'domains' => \App\Models\Api\ApiDomainSetting::class,
+        ];
+
+        if (!isset($models[$sectionId])) {
+            return false;
         }
+
+        $modelClass = $models[$sectionId];
+
+        $record = $modelClass::where('user_id', $userId)->first();
 
         return $record ? (bool) $record->status : false;
     }
+
 
 
     /**
