@@ -104,6 +104,7 @@ class ProjectController extends Controller
                         "description" => $content->description,
                         "meta_keyword" => $content->meta_keyword,
                         "meta_description" => $content->meta_description,
+                        "slug" => $content->slug,
                     ];
                 }),
                 "specifications" => $project->specifications->map(function ($spec) {
