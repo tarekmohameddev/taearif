@@ -557,7 +557,7 @@ $hero = $sliderData->slider;
                                 <div class="card-img">
                                     <img src="{{ asset($project->featured_image) }}" alt="Product">
                                     <span class="label">
-                                        {{ $project->complete_status == 1 ? $keywords['start selling'] ?? __('start selling') : $keywords['Under Construction'] ?? __('Under Construction') }}
+                                    {{ $project->complete_status == 1 ?  __('start selling') :  __('Under Construction') }}
                                     </span>
                                 </div>
                                 <div class="card-text product-title text-center p-3">
