@@ -444,11 +444,11 @@ class ProjectController extends Controller
             $content = [
                 'project_id' => $project->id,
                 'language_id' => $defaultLang->id,
-                'title' => $request->title ?? 'Default Project Title',
-                'address' => $request->address ?? 'Default Address',
-                'description' => $request->description ?? 'This is a default project.',
-                'meta_keyword' => $request->meta_keyword ?? 'default, project',
-                'meta_description' => $request->meta_description ?? 'Default project description.',
+                'title' => $request->contents[0]['title'],
+                'address' => $request->contents[0]['address'],
+                'description' => $request->contents[0]['description'],
+                'meta_keyword' => $request->contents[0]['meta_keyword'],
+                'meta_description' => $request->contents[0]['meta_description'],
                 'slug' => Str::slug('Default Project Title')
 
             ];
