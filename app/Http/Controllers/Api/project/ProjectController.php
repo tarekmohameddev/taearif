@@ -172,7 +172,7 @@ class ProjectController extends Controller
             "latitude" => $project->latitude,
             "longitude" => $project->longitude,
             "featured" => $project->featured,
-            "status" => $project->complete_status ?? "Unknown",
+            "complete_status" => $project->complete_status ?? "Unknown",
             "units" => $project->units ?? 0,
             "completion_date" => $project->completion_date ?? "N/A",
             "developer" => $project->developer ?? "Unknown",
