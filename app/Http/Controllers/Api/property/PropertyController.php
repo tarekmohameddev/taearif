@@ -60,6 +60,7 @@ class PropertyController extends Controller
                 'id' => $property->id,
                 'title' => optional($property->contents->first())->title ?? 'No Title',
                 'address' => optional($property->contents->first())->address ?? 'No Address',
+                'slug' => optional($property->contents->first())->slug,
                 'price' => $property->price,
                 'type' => $property->type,
                 'beds' => $property->beds,
