@@ -185,7 +185,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('user/categories', [ApiCategoryController::class, 'index']);
     Route::post('user/categories', [ApiCategoryController::class, 'store']);
     Route::get('user/categories/{id}', [ApiCategoryController::class, 'show']);
-    Route::put('user/categories/{id}', [ApiCategoryController::class, 'update']);
+    Route::put('user/categories', [ApiCategoryController::class, 'update']);
     Route::delete('user/categories/{id}', [ApiCategoryController::class, 'destroy']);
     Route::post('/user/categories/toggle/{categoryId}', [ApiCategoryController::class, 'toggleVisibility']);
 });

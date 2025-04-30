@@ -115,6 +115,20 @@ class AuthController extends Controller
             //  dd($user);
             Auth::login($user);
 
+            $categories = \DB::table('api_user_categories')->get();
+
+            // Insert user categories into api_user_category_settings table
+            foreach ($categories as $category) {
+                \DB::table('api_user_category_settings')->insert([
+                    'user_id' => $user->id,
+                    'category_id' => $category->id,
+                    'is_active' => 1,  // Default to active
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+            // Insert user categories into api_user_category_settings table
+
             $token = $user->createToken('auth_token')->plainTextToken;
 
             $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();

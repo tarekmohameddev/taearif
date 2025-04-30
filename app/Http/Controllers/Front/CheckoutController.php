@@ -456,6 +456,19 @@ class CheckoutController extends Controller
                     'verification_link' => $token,
                 ]);
 
+
+                $categories = \DB::table('api_user_categories')->get();
+
+                foreach ($categories as $category) {
+                    \DB::table('api_user_category_settings')->insert([
+                        'user_id' => $user->id,
+                        'category_id' => $category->id,
+                        'is_active' => 1,  // Default active status
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
                 $deLang = User\Language::firstOrFail();
                 $deLang_arabic = User\Language::where('user_id', 0)->firstOrFail();
                 $langCount = User\Language::where('user_id', $user->id)->where('is_default', 1)->count();
