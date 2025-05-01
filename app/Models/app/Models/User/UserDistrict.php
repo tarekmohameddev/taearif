@@ -1,0 +1,22 @@
+<?php
+
+namespace App\Models\app\Models\User;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class UserDistrict extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'id',
+        'name_ar',
+        'name_en',
+        'city_id',
+        'city_name_ar',
+        'city_name_en',
+        'country_name_ar',
+        'country_name_en',
+    ];
+}
