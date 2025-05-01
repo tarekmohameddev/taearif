@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use App\Models\PropertyCharacteristic;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User\RealestateManagement\Amenity;
@@ -23,6 +24,7 @@ use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\RealestateManagement\PropertyWishlist;
 use App\Models\User\RealestateManagement\PropertySliderImg;
 use App\Models\User\RealestateManagement\PropertySpecification;
+use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\RealestateManagement\ApiUserCategory as Category;
 
 class PropertyController extends Controller
@@ -207,6 +209,17 @@ class PropertyController extends Controller
             'label' => 'nullable|array',
             'value' => 'nullable|array',
             'category_id' => 'nullable|integer',
+
+            'property_characteristics.facade_id' => 'nullable|exists:facades,id',
+            'property_characteristics.area' => 'nullable|numeric',
+            'property_characteristics.length' => 'nullable|numeric',
+            'property_characteristics.width' => 'nullable|numeric',
+            'property_characteristics.street_width_north' => 'nullable|numeric',
+            'property_characteristics.street_width_south' => 'nullable|numeric',
+            'property_characteristics.street_width_east' => 'nullable|numeric',
+            'property_characteristics.street_width_west' => 'nullable|numeric',
+            'property_characteristics.building_age' => 'nullable|integer',
+
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -250,6 +263,15 @@ class PropertyController extends Controller
                 'transaction_type',
                 'category_id',
                 'project_id',
+
+                "facade_id",
+                "length",
+                "width",
+                "street_width_north",
+                "street_width_south",
+                "street_width_east",
+                "street_width_west",
+                "building_age"
             ]);
 
             $property = Property::storeProperty(
@@ -260,6 +282,22 @@ class PropertyController extends Controller
                 $videoImage,
                 $featured
             );
+
+            $characteristics = $request->only([
+                'facade_id',
+                'length',
+                'width',
+                'street_width_north',
+                'street_width_south',
+                'street_width_east',
+                'street_width_west',
+                'building_age'
+            ]);
+
+            $characteristics['property_id'] = $property->id;
+
+            UserPropertyCharacteristic::create($characteristics);
+
 
             if ($request->has('gallery')) {
                 foreach ($request->gallery as $imagePath) {
@@ -391,6 +429,16 @@ class PropertyController extends Controller
             'label' => 'nullable|array',
             'value' => 'nullable|array',
             'category_id' => 'nullable|integer',
+
+            'property_characteristics.facade_id' => 'nullable|exists:facades,id',
+            'property_characteristics.area' => 'nullable|numeric',
+            'property_characteristics.length' => 'nullable|numeric',
+            'property_characteristics.width' => 'nullable|numeric',
+            'property_characteristics.street_width_north' => 'nullable|numeric',
+            'property_characteristics.street_width_south' => 'nullable|numeric',
+            'property_characteristics.street_width_east' => 'nullable|numeric',
+            'property_characteristics.street_width_west' => 'nullable|numeric',
+            'property_characteristics.building_age' => 'nullable|integer',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -404,6 +452,23 @@ class PropertyController extends Controller
 
         DB::transaction(function () use ($request, $user, $defaultLanguage, &$property) {
             $property->updateProperty($request->all());
+
+            $characteristics = $request->only([
+                'facade_id',
+                'length',
+                'width',
+                'street_width_north',
+                'street_width_south',
+                'street_width_east',
+                'street_width_west',
+                'building_age'
+            ]);
+
+            UserPropertyCharacteristic::updateOrCreate(
+                ['property_id' => $property->id],
+                $characteristics
+            );
+
 
             if ($request->has('gallery')) {
                 PropertySliderImg::where('property_id', $property->id)->delete();

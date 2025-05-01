@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\content\AboutApiController;
 use App\Http\Controllers\Api\property\PropertyController;
 // use App\Http\Controllers\Api\content\ApiContentSection;
 use App\Http\Controllers\Api\dashboard\DashboardController;
+use App\Http\Controllers\Api\Property\UserFacadeController;
 use App\Http\Controllers\Api\content\FooterSettingController;
 use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
@@ -100,6 +101,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/properties/{id}', [PropertyController::class, 'destroy']);
     Route::patch('/properties/{id}/toggle-featured', [PropertyController::class, 'toggleFeatured']);
     Route::post('/properties/{id}/toggle-favorite', [PropertyController::class, 'toggleFavorite']);
+    Route::get('/property/facades', [UserFacadeController::class, 'index']);
+
 });
 
 // Content routes
@@ -183,9 +186,8 @@ Route::middleware('auth:sanctum')->group(function () {
 // ApiCategoryController
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('user/categories', [ApiCategoryController::class, 'index']);
-    Route::post('user/categories', [ApiCategoryController::class, 'store']);
-    Route::get('user/categories/{id}', [ApiCategoryController::class, 'show']);
     Route::put('user/categories', [ApiCategoryController::class, 'update']);
-    Route::delete('user/categories/{id}', [ApiCategoryController::class, 'destroy']);
-    Route::post('/user/categories/toggle/{categoryId}', [ApiCategoryController::class, 'toggleVisibility']);
 });
+
+// PropertyCharacteristicController
+

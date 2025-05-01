@@ -233,11 +233,86 @@
 
                             </ul>
                         </div>
+
+                        <!-- The Characteristics Section -->
+<!-- The Characteristics Section -->
+@php
+    $characteristics = $propertyContent->property->userPropertyCharacteristics;
+@endphp
+
+@if ($characteristics)
+    <div class="product-characteristics mb-40">
+        <h3 class="mb-20">{{ $keywords['The Characteristics'] ?? __('The Characteristics') }}</h3>
+        <div class="row">
+            @if ($characteristics->facade_id)
+                <div class="col-md-4 mb-3 d-flex align-items-center">
+                    <i class="fal fa-layer-group me-2 text-primary"></i>
+                    <strong class="me-1">{{ __('Facade') }}:</strong>
+                    <span>{{ optional($characteristics->UserFacade)->name }}</span>
+                </div>
+            @endif
+
+            @foreach ([
+                'length' => ['label' => __('Length'), 'icon' => 'fal fa-ruler-horizontal'],
+                'width' => ['label' => __('Width'), 'icon' => 'fal fa-ruler-combined'],
+                'street_width_north' => ['label' => __('Street Width (North)'), 'icon' => 'fal fa-ruler-vertical'],
+                'street_width_south' => ['label' => __('Street Width (South)'), 'icon' => 'fal fa-ruler-vertical'],
+                'street_width_east' => ['label' => __('Street Width (East)'), 'icon' => 'fal fa-ruler-vertical'],
+                'street_width_west' => ['label' => __('Street Width (West)'), 'icon' => 'fal fa-ruler-vertical'],
+                'building_age' => ['label' => __('Building Age'), 'icon' => 'fal fa-calendar-alt'],
+            ] as $key => $meta)
+                @if (!is_null($characteristics->$key))
+                    <div class="col-md-4 mb-3 d-flex align-items-center">
+                        <i class="{{ $meta['icon'] }} me-2 text-primary"></i>
+                        <strong class="me-1">{{ $meta['label'] }}:</strong>
+                        <span>{{ $characteristics->$key }}</span>
+                    </div>
+                @endif
+            @endforeach
+        </div>
+    </div>
+@endif
+
+                        <!-- End of Characteristics Section -->
+
+                        <!-- Features Section -->
+                        @if (!empty($propertyContent->features))
+                            @php
+                                $features = json_decode($propertyContent->features, true);
+                                // Define feature-to-icon mapping
+                                $featureIcons = [
+                                    'Garden' => 'fal fa-leaf',
+                                    'Pool' => 'fal fa-swimming-pool',
+                                    'Garage' => 'fal fa-car',
+                                    'Fireplace' => 'fal fa-fireplace',
+                                    'Air Conditioning' => 'fal fa-air-conditioner',
+                                    'Balcony' => 'fal fa-balcony',
+                                    'Security System' => 'fal fa-shield-alt',
+                                    'Gym' => 'fal fa-dumbbell',
+                                    'Parking' => 'fal fa-parking',
+                                ];
+                            @endphp
+                            @if (!empty($features) && is_array($features))
+                                <div class="product-featured mb-40">
+                                    <h3 class="mb-20">{{ $keywords['Features'] ?? __('Features') }}</h3>
+                                    <ul class="featured-list list-unstyled p-0 m-0">
+                                        @foreach ($features as $feature)
+                                            <li class="d-inline-block icon-start">
+                                                <!-- Use the icon from the mapping, fallback to a default icon if not found -->
+                                                <i class="{{ isset($featureIcons[$feature]) ? $featureIcons[$feature] : 'fal fa-star' }}"></i>
+                                                <span>{{ __($feature) }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+                        @endif
+
                     </div>
                     <div class="mb-20"></div>
                     @if (!empty($propertyContent->description))
                     <div class="product-desc mb-40">
-                        <h3 class="mb-20">{{ $keywords['Property Description'] ?? __('Property Description') }}</h3>
+                        <h3 class="mb-20">{{ $keywords['The Description'] ?? __('The Description') }}</h3>
                         <div style="white-space: pre-wrap ;">{!! $propertyContent->description !!}</div>
                         <div class="mb-20"></div>
                     </div>
@@ -423,7 +498,7 @@
                 <h3 class="title">
                     <button class="accordion-button" type="button" data-bs-toggle="collapse"
                         data-bs-target="#products" aria-expanded="true" aria-controls="products">
-                        {{ $keywords['Related Property'] ?? __('Related Property') }}
+                        {{ $keywords['Related'] ?? __('Related') }}
                     </button>
                 </h3>
                 <div id="products" class="collapse show">

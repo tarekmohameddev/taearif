@@ -16,6 +16,7 @@ use App\Models\User\RealestateManagement\Property;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\User\RealestateManagement\PropertySliderImg;
 use App\Models\User\RealestateManagement\PropertySpecification;
+use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 
 class PropertyContent extends Model
 {
@@ -134,5 +135,9 @@ class PropertyContent extends Model
     public function category()
     {
         return $this->belongsTo(Category::class, 'category_id');
+    }
+    public function UserPropertyCharacteristics()
+    {
+        return $this->hasOne(UserPropertyCharacteristic::class);
     }
 }

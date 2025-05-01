@@ -3,13 +3,14 @@
 namespace App\Models\User\RealestateManagement;
 
 use App\Models\User;
-use App\Models\User\RealestateManagement\PropertyAmenity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\User\RealestateManagement\PropertySliderImg;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\User\RealestateManagement\ApiUserCategory;
+use App\Models\User\RealestateManagement\PropertyAmenity;
+use App\Models\User\RealestateManagement\PropertySliderImg;
+use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 
 
 class Property extends Model
@@ -95,21 +96,21 @@ class Property extends Model
         return $this->update([
             'project_id' => $requestData['project_id'] ?? null,
             'region_id' => $requestData['region_id'] ?? null,
-            'featured_image' => $request['featured_image'] ?? $this->featured_image, //73
-            'floor_planning_image' => $request['floor_planning_image']?? null,
+            'featured_image' => $requestData['featured_image'] ?? $this->featured_image,
+            'floor_planning_image' => $requestData['floor_planning_image'] ?? null,
             'video_image' => $requestData['video_image'] ?? null,
             'price' => $requestData['price'] ?? null,
             'purpose' => $requestData['purpose'] ?? null,
             'type' => $requestData['type'] ?? null,
             'beds' => $requestData['beds'] ?? null,
             'bath' => $requestData['bath'] ?? null,
-            'area' => $requestData['area'],
-            'featured' => $requestData['featured'],
-            'video_url' => $request['video_url'] ?? null,
-            'status' => $requestData['status'],
-            'features' => $requestData['features'],
-            'latitude' => $requestData['latitude'],
-            'longitude' => $requestData['longitude']
+            'area' => $requestData['area'] ?? null,
+            'featured' => $requestData['featured'] ?? 0,
+            'video_url' => $requestData['video_url'] ?? null,
+            'status' => $requestData['status'] ?? 0,
+            'features' => $requestData['features'] ?? [],
+            'latitude' => $requestData['latitude'] ?? null,
+            'longitude' => $requestData['longitude'] ?? null
         ]);
     }
 
@@ -168,6 +169,12 @@ class Property extends Model
     public function amenities()
     {
         return $this->hasMany(PropertyAmenity::class, 'property_id');
+    }
+
+
+    public function UserPropertyCharacteristics()
+    {
+        return $this->hasOne(UserPropertyCharacteristic::class, 'property_id', 'id');
     }
 
 

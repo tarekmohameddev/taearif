@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Auth;
 class ApiCategoryController extends Controller
 {
 
+    /**
+     * Display a listing of the user's categories.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function index()
     {
         $user = Auth::user();
@@ -44,16 +49,12 @@ class ApiCategoryController extends Controller
         ], 200);
     }
 
-    public function show($id)
-    {
-        $category = ApiUserCategory::findOrFail($id);
-
-        return response()->json([
-            'success' => true,
-            'data' => $category
-        ], 200);
-    }
-
+    /**
+     * Update the user's category settings.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function update(Request $request)
     {
         $request->validate([
@@ -103,23 +104,6 @@ class ApiCategoryController extends Controller
             'status' => 'success',
             'message' => 'Categories updated successfully.'
         ], 200);
-    }
-
-
-    public function toggleVisibility(Request $request, $categoryId)
-    {
-        $user = Auth::user();
-        $category = ApiUserCategory::findOrFail($categoryId);
-
-        $setting = ApiUserCategorySetting::firstOrCreate(
-            ['user_id' => $user->id, 'category_id' => $categoryId],
-            ['is_active' => $category->is_active]
-        );
-
-        $setting->is_active = $request->input('is_active', 0);
-        $setting->save();
-
-        return response()->json(['message' => 'Category visibility updated']);
     }
 
 }

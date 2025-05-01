@@ -239,7 +239,7 @@ class PropertyController extends Controller
         // $information['bgImg'] = $misc->getBreadcrumb($tenantId);
         // $queryResult['pageHeading'] = $this->pageHeading($tenantId);
 
-        $property = PropertyContent::query()
+            $property = PropertyContent::query()
             ->where('user_property_contents.slug', $slug)
             ->where('user_property_contents.language_id', $userCurrentLang->id)
             ->leftJoin('user_properties', 'user_property_contents.property_id', 'user_properties.id')
@@ -251,7 +251,11 @@ class PropertyController extends Controller
             ->leftJoin('user_states', 'user_states.id', '=', 'user_property_contents.state_id')
             ->leftJoin('user_countries', 'user_countries.id', '=', 'user_property_contents.country_id')
 
-            ->with(['propertySpacifications', 'galleryImages'])
+            ->with([
+                'propertySpacifications',
+                'galleryImages',
+                'property.userPropertyCharacteristics'
+            ])
             ->select('user_properties.*', 'user_property_contents.*', 'user_properties.id as propertyId', 'user_property_contents.id as contentId')->firstOrFail();
 
 

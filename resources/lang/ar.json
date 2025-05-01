@@ -334,5 +334,27 @@
     "House": "منزل",
 
     "Menu Builder": "منشئ القوائم",
-    "Related Properties": "عقارات ذات صلة"
+    "Related Properties": "عقارات ذات صلة",
+    "Garden": "الحديقة",
+    "Pool": "المسبح",
+    "Garage": "المرآب",
+    "Fireplace": "المدفأة",
+    "Air Conditioning": "التكييف",
+    "Balcony": "الشرفة",
+    "Security System": "نظام الأمان",
+    "Gym": "الصالة الرياضية",
+    "Parking": "المواقف",
+    "The Description": "الوصف",
+    "Related":"ذات صلة",
+    "The Properties":"الخصائص",
+    "The Characteristics":"الخصائص",
+    "Facade":"واجهة",
+    "Length":"الطول",
+    "Width":"العرض",
+    "Street Width (North)":"عرض الشارع (شمالًا)",
+    "Street Width (South)":"عرض الشارع (جنوبًا)",
+    "Street Width (East)":"عرض الشارع (شرقًا)",
+    "Street Width (West)":"عرض الشارع (غربًا)",
+    "Building Age":"عمر المبنى",
+    "Similar": "متشابه"
   }
