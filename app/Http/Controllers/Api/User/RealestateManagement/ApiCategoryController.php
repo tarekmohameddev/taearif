@@ -19,11 +19,20 @@ class ApiCategoryController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $categories = ApiUserCategorySetting::where('user_id', $user->id)->with('category')->get(['category_id', 'is_active']);
+
+        // Get existing user category settings
+        $categories = ApiUserCategorySetting::where('user_id', $user->id)
+            ->with('category')
+            ->get(['category_id', 'is_active', 'user_id']);
+
+        // Get all available categories
         $allCategories = ApiUserCategory::all();
         $existingCategoryIds = $categories->pluck('category_id')->toArray();
+
+        // Find categories that don't yet have a setting
         $missingCategories = $allCategories->whereNotIn('id', $existingCategoryIds);
 
+        // Create default active settings for missing categories
         foreach ($missingCategories as $category) {
             ApiUserCategorySetting::create([
                 'user_id' => $user->id,
@@ -34,11 +43,16 @@ class ApiCategoryController extends Controller
             ]);
         }
 
-        $categories = ApiUserCategorySetting::where('user_id', $user->id)->with('category')->get(['category_id', 'is_active']);
+        // Re-fetch with the new entries included
+        $categories = ApiUserCategorySetting::where('user_id', $user->id)
+            ->with('category')
+            ->get(['category_id', 'is_active', 'user_id']);
 
+        // Format output for JSON response
         $formattedCategories = $categories->map(function ($categorySetting) {
             return [
-                'id' => $categorySetting->category_id,
+                'id' => $categorySetting->category->id,
+                'name' => $categorySetting->category->name,
                 'is_active' => $categorySetting->is_active
             ];
         });
@@ -48,6 +62,7 @@ class ApiCategoryController extends Controller
             'categories' => $formattedCategories
         ], 200);
     }
+
 
     /**
      * Update the user's category settings.
