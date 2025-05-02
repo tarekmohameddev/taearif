@@ -47,6 +47,9 @@ class PropertyController extends Controller
             session()->put('user_lang', $userCurrentLang->code);
         }
 
+        $cityNameColumn = $userCurrentLang->code === 'ar' ? 'user_cities.name_ar' : 'user_cities.name_en';
+
+
         $projectId = $request->filled('project') ? intval($request->project) : null;
 
         if ($request->has('type') && in_array($request->type, ['commercial', 'residential'])) {
@@ -166,17 +169,17 @@ class PropertyController extends Controller
             ->when($area, fn($q) => $q->where('user_properties.area', $area))
             ->when($title, fn($q) => $q->where('user_property_contents.title', 'LIKE', "%$title%"))
             ->when($location, fn($q) => $q->where('user_property_contents.address', 'LIKE', "%$location%"))
-            ->select(
-                'user_properties.*',
-                'user_property_contents.title',
-                'user_property_contents.slug',
-                'user_property_contents.address',
-                'user_property_contents.description',
-                'user_property_contents.language_id',
-                'user_cities.name as city_name',
-                'user_states.name as state_name',
-                'user_countries.name as country_name'
-            )
+            ->selectRaw("
+                user_properties.*,
+                user_property_contents.title,
+                user_property_contents.slug,
+                user_property_contents.address,
+                user_property_contents.description,
+                user_property_contents.language_id,
+                {$cityNameColumn} as city_name,
+                user_states.name as state_name,
+                user_countries.name as country_name
+            ")
             ->orderBy($order_by_column, $order)
             ->paginate(12);
 
@@ -232,6 +235,9 @@ class PropertyController extends Controller
         } else {
             $userCurrentLang = Language::where('is_default', 1)->where('user_id', $tenantId)->first();
         }
+
+        $cityNameColumn = $userCurrentLang->code === 'ar' ? 'user_cities.name_ar' : 'user_cities.name_en';
+
         // if ($userCurrentLang) {
         //     session()->put('user_lang_id', $userCurrentLang->id);
         // }
@@ -287,16 +293,16 @@ class PropertyController extends Controller
 
             ->where([['user_properties.id', '!=', $property->property_id], ['user_property_contents.category_id', $property->category_id]])
             ->where('user_property_contents.language_id', $userCurrentLang->id)->latest('user_properties.created_at')
-            ->select(
-                'user_properties.*',
-                'user_property_contents.title',
-                'user_property_contents.slug',
-                'user_property_contents.address',
-                'user_property_contents.language_id',
-                'user_cities.name as city_name',
-                'user_states.name as state_name',
-                'user_countries.name as country_name'
-            )
+            ->selectRaw("
+                user_properties.*,
+                user_property_contents.title,
+                user_property_contents.slug,
+                user_property_contents.address,
+                user_property_contents.language_id,
+                {$cityNameColumn} as city_name,
+                user_states.name as state_name,
+                user_countries.name as country_name
+            ")
             ->take(5)->get();
 
         // $information['info'] = Basic::select('google_recaptcha_status')->first();
