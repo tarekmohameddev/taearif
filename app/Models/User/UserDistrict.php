@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Models\app\Models\User;
+namespace App\Models\User;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class UserCity extends Model
+class UserDistrict extends Model
 {
     use HasFactory;
 
@@ -13,9 +13,10 @@ class UserCity extends Model
         'id',
         'name_ar',
         'name_en',
-        'country_id',
-        'region_id',
-        'latitude',
-        'longitude',
+        'city_id',
+        'city_name_ar',
+        'city_name_en',
+        'country_name_ar',
+        'country_name_en',
     ];
 }

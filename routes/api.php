@@ -3,9 +3,11 @@ use Illuminate\Http\Request;
 use App\Models\Api\ApiThemeSettings;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\DistrictController;
 use App\Http\Controllers\Api\blog\BlogController;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\ApiSideMenusController;
@@ -13,9 +15,9 @@ use App\Http\Controllers\Api\ThemeSettingsController;
 use App\Http\Controllers\Api\DomainSettingsController;
 use App\Http\Controllers\Api\content\ApiMenuController;
 use App\Http\Controllers\Api\project\ProjectController;
+// use App\Http\Controllers\Api\content\ApiContentSection;
 use App\Http\Controllers\Api\content\AboutApiController;
 use App\Http\Controllers\Api\property\PropertyController;
-// use App\Http\Controllers\Api\content\ApiContentSection;
 use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\Property\UserFacadeController;
 use App\Http\Controllers\Api\content\FooterSettingController;
@@ -190,4 +192,11 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // PropertyCharacteristicController
+
+// city and district routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user/cities', [CityController::class, 'index']);
+    Route::get('/user/districts', [DistrictController::class, 'index']);
+});
+
 

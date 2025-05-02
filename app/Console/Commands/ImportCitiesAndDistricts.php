@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\app\Models\User\UserCity;
-use App\Models\app\Models\User\UserDistrict;
+use App\Models\User\UserCity;
+use App\Models\User\UserDistrict;
 use Illuminate\Support\Facades\Http;
 
 
