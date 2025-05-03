@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Front;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Message;
 use App\Models\User\Language;
-use App\Models\User\BasicSetting;
+use App\Models\User\UserCity;
 // use App\Models\User\RealestateManagement\Category;
+use App\Models\User\BasicSetting;
 use Illuminate\Support\Facades\DB;
 use PHPMailer\PHPMailer\PHPMailer;
 use Illuminate\Support\Facades\Log;
@@ -187,10 +188,12 @@ class PropertyController extends Controller
         $information['contents'] = $property_contents;
 
         // $information['all_cities'] = City::where('user_id', $tenantId)->where('active', 1)->where('language_id', $userCurrentLang->id)->get();
-        $information['all_cities'] = City::where('user_id', $tenantId)
-            ->where('status', 1)
-            ->where('language_id', $userCurrentLang->id)
-            ->get();
+        // $information['all_cities'] = City::where('user_id', $tenantId)
+        //     ->where('status', 1)
+        //     ->where('language_id', $userCurrentLang->id)
+        //     ->get();
+        $allCities = UserCity::all();
+        $information['all_cities'] = $allCities;
 
         $information['all_states'] = State::where('user_id', $tenantId)->where('language_id', $userCurrentLang->id)->get();
         $information['all_countries'] = Country::where('user_id', $tenantId)->where('language_id', $userCurrentLang->id)->get();

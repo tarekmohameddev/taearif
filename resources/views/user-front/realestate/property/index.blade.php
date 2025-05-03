@@ -430,8 +430,8 @@
 
                         @foreach ($all_cities as $city)
                         <option data-id="{{ $city->id }}"
-                            value="{{ $city->name }}">
-                            {{ $city->name }}
+                            value="{{ $city->name_ar }}">
+                            {{ $city->name_ar }}
                         </option>
                         @endforeach
 
@@ -625,8 +625,8 @@
                                                     @if ($userBs->property_country_status != 1 && $userBs->property_state_status != 1)
                                                     @foreach ($all_cities as $city)
                                                     <option data-id="{{ $city->id }}"
-                                                        value="{{ $city->name }}">
-                                                        {{ $city->name }}
+                                                        value="{{ $city->name_ar }}">
+                                                        {{ $city->name_ar }}
                                                     </option>
                                                     @endforeach
                                                     @endif
@@ -940,5 +940,8 @@
     function getCities(element) {
         var stateId = $(element).find(':selected').data('id');
         var countryId = $(element).closest('.state').find('.country').find(':selected').data('id');
+        var url = "{{ route('front.user.get_cities', ':id') }}";
+        url = url.replace(':id', stateId);
+    }
 </script>
 @endsection

@@ -141,8 +141,8 @@ $hero = $sliderData->slider;
                                                     </option>
                                                     <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
                                                     @foreach ($all_cities as $city)
-                                                    <option data-id="{{ $city->id }}" value="{{ $city->name }}">
-                                                        {{ $city->name }}
+                                                    <option data-id="{{ $city->id }}" value="{{ $city->name_ar }}">
+                                                        {{ $city->name_ar }}
                                                     </option>
                                                     @endforeach
 
@@ -222,8 +222,8 @@ $hero = $sliderData->slider;
                                                     <option value="all">{{ $keywords['All'] ?? __('All') }}</option>
 
                                                     @foreach ($all_cities as $city)
-                                                    <option data-id="{{ $city->id }}" value="{{ $city->name }}">
-                                                        {{ $city->name }}
+                                                    <option data-id="{{ $city->id }}" value="{{ $city->name_ar }}">
+                                                        {{ $city->name_ar }}
                                                     </option>
                                                     @endforeach
 

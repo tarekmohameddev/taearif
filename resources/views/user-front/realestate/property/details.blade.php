@@ -235,43 +235,52 @@
                         </div>
 
                         <!-- The Characteristics Section -->
-<!-- The Characteristics Section -->
-@php
-    $characteristics = $propertyContent->property->userPropertyCharacteristics;
-@endphp
+                        @php
+                            $characteristics = $propertyContent->property->userPropertyCharacteristics;
+                        @endphp
 
-@if ($characteristics)
-    <div class="product-characteristics mb-40">
-        <h3 class="mb-20">{{ $keywords['The Characteristics'] ?? __('The Characteristics') }}</h3>
-        <div class="row">
-            @if ($characteristics->facade_id)
-                <div class="col-md-4 mb-3 d-flex align-items-center">
-                    <i class="fal fa-layer-group me-2 text-primary"></i>
-                    <strong class="me-1">{{ __('Facade') }}:</strong>
-                    <span>{{ optional($characteristics->UserFacade)->name }}</span>
-                </div>
-            @endif
+                        @if (!empty($characteristics) && collect([
+                                $characteristics->facade_id ?? null,
+                                $characteristics->length ?? null,
+                                $characteristics->width ?? null,
+                                $characteristics->{'street_width_north'} ?? null,
+                                $characteristics->{'street_width_south'} ?? null,
+                                $characteristics->{'street_width_east'} ?? null,
+                                $characteristics->{'street_width_west'} ?? null,
+                                $characteristics->building_age ?? null,
+                            ])->filter()->isNotEmpty())
 
-            @foreach ([
-                'length' => ['label' => __('Length'), 'icon' => 'fal fa-ruler-horizontal'],
-                'width' => ['label' => __('Width'), 'icon' => 'fal fa-ruler-combined'],
-                'street_width_north' => ['label' => __('Street Width (North)'), 'icon' => 'fal fa-ruler-vertical'],
-                'street_width_south' => ['label' => __('Street Width (South)'), 'icon' => 'fal fa-ruler-vertical'],
-                'street_width_east' => ['label' => __('Street Width (East)'), 'icon' => 'fal fa-ruler-vertical'],
-                'street_width_west' => ['label' => __('Street Width (West)'), 'icon' => 'fal fa-ruler-vertical'],
-                'building_age' => ['label' => __('Building Age'), 'icon' => 'fal fa-calendar-alt'],
-            ] as $key => $meta)
-                @if (!is_null($characteristics->$key))
-                    <div class="col-md-4 mb-3 d-flex align-items-center">
-                        <i class="{{ $meta['icon'] }} me-2 text-primary"></i>
-                        <strong class="me-1">{{ $meta['label'] }}:</strong>
-                        <span>{{ $characteristics->$key }}</span>
-                    </div>
-                @endif
-            @endforeach
-        </div>
-    </div>
-@endif
+                            <div class="product-characteristics mb-40">
+                                <h3 class="mb-20">{{ $keywords['The Characteristics'] ?? __('The Characteristics') }}</h3>
+                                <div class="row">
+                                    @if (!empty($characteristics->facade_id))
+                                        <div class="col-md-4 mb-3 d-flex align-items-center">
+                                            <i class="fal fa-layer-group me-2 text-primary"></i>
+                                            <strong class="me-1">{{ __('Facade') }}:</strong>
+                                            <span>{{ optional($characteristics->UserFacade)->name }}</span>
+                                        </div>
+                                    @endif
+
+                                    @foreach ([
+                                        'length' => ['label' => __('Length'), 'icon' => 'fal fa-ruler-horizontal'],
+                                        'width' => ['label' => __('Width'), 'icon' => 'fal fa-ruler-combined'],
+                                        'street_width_north' => ['label' => __('Street Width (North)'), 'icon' => 'fal fa-ruler-vertical'],
+                                        'street_width_south' => ['label' => __('Street Width (South)'), 'icon' => 'fal fa-ruler-vertical'],
+                                        'street_width_east' => ['label' => __('Street Width (East)'), 'icon' => 'fal fa-ruler-vertical'],
+                                        'street_width_west' => ['label' => __('Street Width (West)'), 'icon' => 'fal fa-ruler-vertical'],
+                                        'building_age' => ['label' => __('Building Age'), 'icon' => 'fal fa-calendar-alt'],
+                                    ] as $key => $meta)
+                                        @if (!empty($characteristics->$key))
+                                            <div class="col-md-4 mb-3 d-flex align-items-center">
+                                                <i class="{{ $meta['icon'] }} me-2 text-primary"></i>
+                                                <strong class="me-1">{{ $meta['label'] }}:</strong>
+                                                <span>{{ $characteristics->$key }}</span>
+                                            </div>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
 
                         <!-- End of Characteristics Section -->
 

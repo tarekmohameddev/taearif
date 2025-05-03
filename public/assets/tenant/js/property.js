@@ -8,6 +8,7 @@ $(document).ready(function () {
   });
 
   $(".country").on('change', function (e) {
+    console.log('country');
     $('.request-loader').addClass('show');
     let addedState = "state_id";
     let addedCity = "city_id";

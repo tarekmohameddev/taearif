@@ -22,7 +22,7 @@ class CityController extends Controller
     public function index(Request $request)
     {
         $userId = Auth::guard('web')->user()->id;
-        // first, get the language info from db 
+        // first, get the language info from db
         $information['languages'] = Language::where('user_id', Auth::guard('web')->user()->id)->get();
         if ($request->language) {
             $information['language'] =  $information['languages']->where('code', $request->language)->first();

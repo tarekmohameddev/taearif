@@ -21,6 +21,7 @@ use App\Models\User\Quote;
 use App\Models\Testimonial;
 use Illuminate\Http\Request;
 use App\Models\BasicExtended;
+use App\Models\User\UserCity;
 use App\Models\OfflineGateway;
 use App\Models\PaymentGateway;
 use App\Models\User\UserVcard;
@@ -32,6 +33,7 @@ use App\Models\User\UserContact;
 use App\Models\User\UserFeature;
 use App\Models\User\BasicSetting;
 use App\Models\User\HomePageText;
+use App\Models\User\UserDistrict;
 use JeroenDesloovere\VCard\VCard;
 use App\Models\Api\ApiMenuSetting;
 use App\Models\Api\GeneralSetting;
@@ -1056,7 +1058,7 @@ class FrontendController extends Controller
                     'user_property_contents.title',
                     'user_property_contents.address',
                     'user_property_contents.language_id',
-                    'user_cities.name as city_name',
+                    'user_cities.name_ar as city_name',
                     'user_states.name as state_name',
                     'user_countries.name as country_name'
                 )
@@ -1155,22 +1157,32 @@ class FrontendController extends Controller
                         'user_property_contents.title',
                         'user_property_contents.address',
                         'user_property_contents.language_id',
-                        'user_cities.name as city_name',
+                        'user_cities.name_ar as city_name',
                         'user_states.name as state_name',
                         'user_countries.name as country_name'
                     )
                     ->paginate(6);
 
 
-            $cities = City::where([['status', 1], ['featured', 1], ['user_id', $user->id]])->limit(6)->orderBy('serial_number', 'asc')->get();
+            $cities = UserCity::limit(6)->get();
+
             $cities->map(function ($city) {
                 $city['propertyCount'] = $city->propertyContent()->count();
             });
-            $data['all_countries'] = Country::where('user_id', $user->id)
-                            ->get();
-            $data['cities'] = $cities;
 
-            $data['all_cities'] = City::where([['status', 1], ['user_id', $user->id], ['language_id', $userCurrentLang->id]])->get();
+            $allCountries = UserDistrict::select('country_name_ar')->distinct()->get();
+            $allStates = UserDistrict::select('city_name_ar', 'city_id')->distinct()->get();
+
+            $data['all_countries'] = $allCountries;
+            $data['all_states'] = $allStates;
+
+
+            $allCities = UserCity::all();
+
+            $data['cities'] = $allCities;
+            $data['all_cities'] = $allCities;
+
+            // dd($data['all_cities']);
 
             $data['all_proeprty_categories'] =
             // Category::where([['status', 1], ['user_id', $user->id], ['language_id', $userCurrentLang->id]])->orderBy('serial_number', 'asc')->get();
