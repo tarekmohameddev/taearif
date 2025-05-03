@@ -2514,6 +2514,21 @@
     "Street Width (West)":"عرض الشارع (غربًا)",
     "Building Age":"عمر المبنى",
     "The Description": "الوصف",
+    "Driver Room": "غرفة السائق",
+    "Maid Room": "غرفة الخادمة",
+    "Dining Room": "غرفة الطعام",
+    "Living Room": "الصالة",
+    "Majlis": "المجلس",
+    "Storage Room": "المخزن",
+    "Basement": "القبو",
+    "Swimming Pool": "المسبح",
+    "Annex": "الملحق",
+    "Elevator": "المصعد",
+    "Floors": "الطوابق",
+    "Bathrooms": "الحمامات",
+    "Kitchens": "المطابخ",
+    "Floor Number": "رقم الطابق",
+    "Private Parking": "موقف سيارة مخصص",
     "Similar": "متشابه"
 
 }

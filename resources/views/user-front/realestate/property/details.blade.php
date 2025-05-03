@@ -248,39 +248,77 @@
                                 $characteristics->{'street_width_east'} ?? null,
                                 $characteristics->{'street_width_west'} ?? null,
                                 $characteristics->building_age ?? null,
-                            ])->filter()->isNotEmpty())
+                                $characteristics->rooms ?? null,
+                                $characteristics->bathrooms ?? null,
+                                $characteristics->floors ?? null,
+                                $characteristics->floor_number ?? null,
+                                $characteristics->kitchen ?? null,
 
-                            <div class="product-characteristics mb-40">
-                                <h3 class="mb-20">{{ $keywords['The Characteristics'] ?? __('The Characteristics') }}</h3>
-                                <div class="row">
-                                    @if (!empty($characteristics->facade_id))
+                                $characteristics->driver_room ?? null,
+                                $characteristics->maid_room ?? null,
+                                $characteristics->dining_room ?? null,
+                                $characteristics->living_room ?? null,
+                                $characteristics->majlis ?? null,
+                                $characteristics->storage_room ?? null,
+                                $characteristics->basement ?? null,
+                                $characteristics->swimming_pool ?? null,
+                                $characteristics->balcony ?? null,
+                                $characteristics->garden ?? null,
+                                $characteristics->annex ?? null,
+                                $characteristics->elevator ?? null,
+                                $characteristics->private_parking ?? null,
+                            ])->filter()->isNotEmpty())
+                        @endif
+
+                        <div class="product-characteristics mb-40">
+                            <h3 class="mb-20">{{ $keywords['The Characteristics'] ?? __('The Characteristics') }}</h3>
+                            <div class="row">
+                                @if (!empty($characteristics->facade_id))
+                                    <div class="col-md-4 mb-3 d-flex align-items-center">
+                                        <i class="fal fa-layer-group me-2 text-primary"></i>
+                                        <strong class="me-1">{{ __('Facade') }}:</strong>
+                                        <span>{{ optional($characteristics->UserFacade)->name }}</span>
+                                    </div>
+                                @endif
+
+                                @foreach ([
+                                    'length' => ['label' => __('Length'), 'icon' => 'fal fa-ruler-horizontal'],
+                                    'width' => ['label' => __('Width'), 'icon' => 'fal fa-ruler-combined'],
+                                    'street_width_north' => ['label' => __('Street Width (North)'), 'icon' => 'fal fa-ruler-vertical'],
+                                    'street_width_south' => ['label' => __('Street Width (South)'), 'icon' => 'fal fa-ruler-vertical'],
+                                    'street_width_east' => ['label' => __('Street Width (East)'), 'icon' => 'fal fa-ruler-vertical'],
+                                    'street_width_west' => ['label' => __('Street Width (West)'), 'icon' => 'fal fa-ruler-vertical'],
+                                    'building_age' => ['label' => __('Building Age'), 'icon' => 'fal fa-calendar-alt'],
+                                    'rooms' => ['label' => __('Rooms'), 'icon' => 'fal fa-door-open'],
+                                    'bathrooms' => ['label' => __('Bathrooms'), 'icon' => 'fal fa-toilet'],
+                                    'floors' => ['label' => __('Floors'), 'icon' => 'fal fa-building'],
+                                    'floor_number' => ['label' => __('Floor Number'), 'icon' => 'fal fa-sort-numeric-up'],
+                                    'kitchen' => ['label' => __('Kitchens'), 'icon' => 'fal fa-utensils'],
+                                    'driver_room' => ['label' => __('Driver Room'), 'icon' => 'fal fa-user-tie'],
+                                    'maid_room' => ['label' => __('Maid Room'), 'icon' => 'fal fa-broom'],
+                                    'dining_room' => ['label' => __('Dining Room'), 'icon' => 'fal fa-utensils'],
+                                    'living_room' => ['label' => __('Living Room'), 'icon' => 'fal fa-couch'],
+                                    'majlis' => ['label' => __('Majlis'), 'icon' => 'fal fa-users'],
+                                    'storage_room' => ['label' => __('Storage Room'), 'icon' => 'fal fa-boxes'],
+                                    'basement' => ['label' => __('Basement'), 'icon' => 'fal fa-warehouse'],
+                                    'swimming_pool' => ['label' => __('Swimming Pool'), 'icon' => 'fal fa-swimmer'],
+                                    'balcony' => ['label' => __('Balcony'), 'icon' => 'fal fa-archway'],
+                                    'garden' => ['label' => __('Garden'), 'icon' => 'fal fa-tree'],
+                                    'annex' => ['label' => __('Annex'), 'icon' => 'fal fa-house-user'],
+                                    'elevator' => ['label' => __('Elevator'), 'icon' => 'fal fa-elevator'],
+                                    'private_parking' => ['label' => __('Private Parking'), 'icon' => 'fal fa-parking'],
+                                ] as $key => $meta)
+                                    @if (!is_null($characteristics->$key))
                                         <div class="col-md-4 mb-3 d-flex align-items-center">
-                                            <i class="fal fa-layer-group me-2 text-primary"></i>
-                                            <strong class="me-1">{{ __('Facade') }}:</strong>
-                                            <span>{{ optional($characteristics->UserFacade)->name }}</span>
+                                            <i class="{{ $meta['icon'] }} me-2 text-primary"></i>
+                                            <strong class="me-1">{{ $meta['label'] }}:</strong>
+                                            <span style="margin: 0 2%;">{{ $characteristics->$key }}</span>
                                         </div>
                                     @endif
-
-                                    @foreach ([
-                                        'length' => ['label' => __('Length'), 'icon' => 'fal fa-ruler-horizontal'],
-                                        'width' => ['label' => __('Width'), 'icon' => 'fal fa-ruler-combined'],
-                                        'street_width_north' => ['label' => __('Street Width (North)'), 'icon' => 'fal fa-ruler-vertical'],
-                                        'street_width_south' => ['label' => __('Street Width (South)'), 'icon' => 'fal fa-ruler-vertical'],
-                                        'street_width_east' => ['label' => __('Street Width (East)'), 'icon' => 'fal fa-ruler-vertical'],
-                                        'street_width_west' => ['label' => __('Street Width (West)'), 'icon' => 'fal fa-ruler-vertical'],
-                                        'building_age' => ['label' => __('Building Age'), 'icon' => 'fal fa-calendar-alt'],
-                                    ] as $key => $meta)
-                                        @if (!empty($characteristics->$key))
-                                            <div class="col-md-4 mb-3 d-flex align-items-center">
-                                                <i class="{{ $meta['icon'] }} me-2 text-primary"></i>
-                                                <strong class="me-1">{{ $meta['label'] }}:</strong>
-                                                <span>{{ $characteristics->$key }}</span>
-                                            </div>
-                                        @endif
-                                    @endforeach
-                                </div>
+                                @endforeach
                             </div>
-                        @endif
+                        </div>
+
 
                         <!-- End of Characteristics Section -->
 

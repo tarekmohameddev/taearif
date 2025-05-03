@@ -210,7 +210,7 @@ class PropertyController extends Controller
             'value' => 'nullable|array',
             'category_id' => 'nullable|integer',
 
-            'property_characteristics.facade_id' => 'nullable|exists:facades,id',
+            'property_characteristics.facade_id' => 'nullable|numeric',
             'property_characteristics.area' => 'nullable|numeric',
             'property_characteristics.length' => 'nullable|numeric',
             'property_characteristics.width' => 'nullable|numeric',
@@ -219,6 +219,25 @@ class PropertyController extends Controller
             'property_characteristics.street_width_east' => 'nullable|numeric',
             'property_characteristics.street_width_west' => 'nullable|numeric',
             'property_characteristics.building_age' => 'nullable|integer',
+
+            'property_characteristics.rooms' => 'nullable|integer',
+            'property_characteristics.bathrooms' => 'nullable|integer',
+            'property_characteristics.floors' => 'nullable|integer',
+            'property_characteristics.floor_number' => 'nullable|integer',
+            'property_characteristics.driver_room' => 'nullable|integer',
+            'property_characteristics.maid_room' => 'nullable|integer',
+            'property_characteristics.dining_room' => 'nullable|integer',
+            'property_characteristics.living_room' => 'nullable|integer',
+            'property_characteristics.majlis' => 'nullable|integer',
+            'property_characteristics.storage_room' => 'nullable|integer',
+            'property_characteristics.basement' => 'nullable|integer',
+            'property_characteristics.swimming_pool' => 'nullable|integer',
+            'property_characteristics.kitchen' => 'nullable|integer',
+            'property_characteristics.balcony' => 'nullable|integer',
+            'property_characteristics.garden' => 'nullable|integer',
+            'property_characteristics.annex' => 'nullable|integer',
+            'property_characteristics.elevator' => 'nullable|integer',
+            'property_characteristics.private_parking' => 'nullable|integer',
 
         ];
 
@@ -430,7 +449,7 @@ class PropertyController extends Controller
             'value' => 'nullable|array',
             'category_id' => 'nullable|integer',
 
-            'property_characteristics.facade_id' => 'nullable|exists:facades,id',
+            'property_characteristics.facade_id' => 'nullable|numeric',
             'property_characteristics.area' => 'nullable|numeric',
             'property_characteristics.length' => 'nullable|numeric',
             'property_characteristics.width' => 'nullable|numeric',
@@ -439,6 +458,25 @@ class PropertyController extends Controller
             'property_characteristics.street_width_east' => 'nullable|numeric',
             'property_characteristics.street_width_west' => 'nullable|numeric',
             'property_characteristics.building_age' => 'nullable|integer',
+
+            'property_characteristics.rooms' => 'nullable|integer',
+            'property_characteristics.bathrooms' => 'nullable|integer',
+            'property_characteristics.floors' => 'nullable|integer',
+            'property_characteristics.floor_number' => 'nullable|integer',
+            'property_characteristics.driver_room' => 'nullable|integer',
+            'property_characteristics.maid_room' => 'nullable|integer',
+            'property_characteristics.dining_room' => 'nullable|integer',
+            'property_characteristics.living_room' => 'nullable|integer',
+            'property_characteristics.majlis' => 'nullable|integer',
+            'property_characteristics.storage_room' => 'nullable|integer',
+            'property_characteristics.basement' => 'nullable|integer',
+            'property_characteristics.swimming_pool' => 'nullable|integer',
+            'property_characteristics.kitchen' => 'nullable|integer',
+            'property_characteristics.balcony' => 'nullable|integer',
+            'property_characteristics.garden' => 'nullable|integer',
+            'property_characteristics.annex' => 'nullable|integer',
+            'property_characteristics.elevator' => 'nullable|integer',
+            'property_characteristics.private_parking' => 'nullable|integer',
         ];
 
         $validator = Validator::make($request->all(), $rules);
