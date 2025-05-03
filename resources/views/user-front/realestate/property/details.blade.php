@@ -270,6 +270,8 @@
                             ])->filter()->isNotEmpty())
                         @endif
 
+                        @if ($characteristics)
+
                         <div class="product-characteristics mb-40">
                             <h3 class="mb-20">{{ $keywords['The Characteristics'] ?? __('The Characteristics') }}</h3>
                             <div class="row">
@@ -318,6 +320,7 @@
                                 @endforeach
                             </div>
                         </div>
+                        @endif
 
 
                         <!-- End of Characteristics Section -->
