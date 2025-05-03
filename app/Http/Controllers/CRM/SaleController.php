@@ -76,7 +76,7 @@ class SaleController extends Controller
             'property_title' => 'required|string',
             'price' => 'required|numeric',
             'purpose' => 'required|in:sale,rent,lease,investment',
-            'type' => 'required|in:residential,commercial',
+            'type' => 'required',
             'beds' => 'required|integer|min:0',
             'bath' => 'required|integer|min:0',
             'area' => 'required|numeric|min:0',

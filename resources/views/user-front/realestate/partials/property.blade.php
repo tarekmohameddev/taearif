@@ -21,6 +21,10 @@ $content = $property->contents->first();
                 {{ $keywords['Residential'] ?? __('Residential') }}
                 @elseif($property->type == 'commercial')
                 {{ $keywords['Commercial'] ?? __('Commercial') }}
+                @elseif($property->type == 'rented')
+                {{ $keywords['rented'] ?? __('rented') }}
+                @elseif($property->type == 'sold')
+                {{ $keywords['sold'] ?? __('sold') }}
                 @else
                 {{ __(ucfirst($property->type)) }}
                 @endif
