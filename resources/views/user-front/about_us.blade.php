@@ -14,6 +14,9 @@
     {{ $keywords['Contact_Us'] ?? 'Contact Us' }}
 @endsection
 
+@include('user-front.realestate.partials.header.header-pages')
+<div class="mt-30"></div>
+
 @section('content')
 <section class="about-section about-illustration-img section-gap">
             <div class="container">

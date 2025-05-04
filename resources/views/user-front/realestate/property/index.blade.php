@@ -209,6 +209,9 @@
 @endsection
 @endif
 
+@include('user-front.realestate.partials.header.header-pages')
+<div class="mt-30"></div>
+
 @section('content')
 
 <!-- Map Start-->

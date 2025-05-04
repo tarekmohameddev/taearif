@@ -14,6 +14,8 @@
 {{$keywords["Services"] ?? "Services"}}
 @endsection
 
+@include('user-front.realestate.partials.header.header-pages')
+<div class="mt-30"></div>
 @section('content')
 
 
@@ -27,7 +29,7 @@
                     <div class="col-lg-3 col-sm-6 col-10 wow fadeInUp" data-wow-duration="1500ms"
                          data-wow-delay="400ms">
                         <div class="service-box-three border-0 grey-bg">
-                            <a class="icon" 
+                            <a class="icon"
                             @if($service->detail_page == 1)
                             href="{{route('front.user.service.detail',[getParam(),'slug' => $service->slug,'id' => $service->id])}}"
                             @endif>
@@ -35,7 +37,7 @@
                             </a>
                             <div class="content">
                                 <h5>
-                                    <a 
+                                    <a
                                     @if($service->detail_page == 1)
                                     href="{{route('front.user.service.detail',[getParam(),'slug' => $service->slug,'id' => $service->id])}}"
                                     @endif>{{$service->name}}</a>

@@ -57,9 +57,8 @@
     @endsection
 @endif
 
-
-
-
+@include('user-front.realestate.partials.header.header-pages')
+<div class="mt-30"></div>
 
 @section('content')
     {{-- @includeIf('user-front.realestate.partials.breadcrumb', [
@@ -71,7 +70,7 @@
             ? $pageHeading->projects_page_title
             : $keywords['Projects'] ?? __('Projects'),
     ]) --}}
-    <div class="projects-area pt-100 pb-70">
+    <div class="projects-area pt-100 pb-70 ">
         <div class="container">
             <div class="row">
                 <div class="col-12">

@@ -21,6 +21,9 @@
     {{$keywords["Service_Details"] ?? "Service Details"}}
 @endsection
 
+@include('user-front.realestate.partials.header.header-pages')
+<div class="mt-30"></div>
+
 @section('content')
 
     <!--====== Service Details Start ======-->

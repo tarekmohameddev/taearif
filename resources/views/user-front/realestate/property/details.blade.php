@@ -66,6 +66,8 @@
 
 @endsection
 @endif
+@include('user-front.realestate.partials.header.header-pages')
+<div class="mt-30"></div>
 
 @section('content')
 <div class="product-single pt-100 pb-70 border-top header-next">

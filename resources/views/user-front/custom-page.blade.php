@@ -14,6 +14,9 @@
 {{$page->name}}
 @endsection
 
+@include('user-front.realestate.partials.header.header-pages')
+<div class="mt-30"></div>
+
 @section('content')
     <!--====== Blog Section Start ======-->
     <section class="blog-section section-gap">
