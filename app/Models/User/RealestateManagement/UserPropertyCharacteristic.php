@@ -20,6 +20,26 @@ class UserPropertyCharacteristic extends Model
         'street_width_east',
         'street_width_west',
         'building_age',
+
+        'rooms',
+        'bathrooms',
+        'floors',
+        'floor_number',
+        'driver_room',
+        'maid_room',
+        'dining_room',
+        'living_room',
+        'majlis',
+        'storage_room',
+        'basement',
+        'swimming_pool',
+        'kitchen',
+        'balcony',
+        'garden',
+        'annex',
+        'elevator',
+        'private_parking'
+
     ];
 
     public function UserFacade()
