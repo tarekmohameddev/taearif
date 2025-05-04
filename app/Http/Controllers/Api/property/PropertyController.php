@@ -492,14 +492,30 @@ class PropertyController extends Controller
             $property->updateProperty($request->all());
 
             $characteristics = $request->only([
-                'facade_id',
-                'length',
-                'width',
-                'street_width_north',
-                'street_width_south',
-                'street_width_east',
-                'street_width_west',
-                'building_age'
+                'region_id',
+                'price',
+                'purpose',
+                'type',
+                'beds',
+                'bath',
+                'area',
+                'video_url',
+                'status',
+                'latitude',
+                'longitude',
+                'features',
+                'transaction_type',
+                'category_id',
+                'project_id',
+
+                "facade_id",
+                "length",
+                "width",
+                "street_width_north",
+                "street_width_south",
+                "street_width_east",
+                "street_width_west",
+                "building_age"
             ]);
 
             UserPropertyCharacteristic::updateOrCreate(
