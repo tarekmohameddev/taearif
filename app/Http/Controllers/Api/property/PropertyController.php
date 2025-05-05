@@ -350,6 +350,7 @@ class PropertyController extends Controller
             ]);
 
             $characteristics['property_id'] = $property->id;
+            $characteristics['facade_id'] = !empty($characteristics['facade_id']) ? $characteristics['facade_id'] : null;
 
             UserPropertyCharacteristic::create($characteristics);
 
@@ -571,6 +572,7 @@ class PropertyController extends Controller
                 "elevator",
                 "private_parking"
             ]);
+            $characteristics['facade_id'] = !empty($characteristics['facade_id']) ? $characteristics['facade_id'] : null;
 
             UserPropertyCharacteristic::updateOrCreate(
                 ['property_id' => $property->id],
