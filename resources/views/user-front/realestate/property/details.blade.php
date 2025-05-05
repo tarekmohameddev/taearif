@@ -461,7 +461,7 @@
             </div>
             <div class="col-lg-3 col-xl-4">
                 <aside class="sidebar-widget-area mb-10" data-aos="fade-up">
-                    <div class="widget widget-form radius-md mb-30">
+                    <div class="widget widget-form radius-md mb-30 d-none">
                         <div class="user mb-20">
                             <div class="user-img">
                                 <div class="lazy-container ratio ratio-1-1 rounded-pill d-none">
