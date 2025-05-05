@@ -16,7 +16,7 @@ $content = $property->contents->first();
         <div class="d-flex align-items-center justify-content-between mb-10">
 
 
-            <span class="product-category text-sm @if (in_array($userBs->theme, ['home_five'])) text-dark @endif">
+            <span class="product-category text-sm @if (!empty($userBs) && in_array($userBs->theme, ['home_five'])) text-dark @endif">
                 @if ($property->type == 'residential')
                 {{ $keywords['Residential'] ?? __('Residential') }}
                 @elseif($property->type == 'commercial')
@@ -32,7 +32,7 @@ $content = $property->contents->first();
 
         </div>
         <h3 class="product-title">
-            <a class="@if (in_array($userBs->theme, ['home_five'])) text-dark @endif"
+            <a class="@if (!empty($userBs) && in_array($userBs->theme, ['home_five'])) text-dark @endif"
                 href="{{ $content ? route('front.user.property.details', [getParam(), 'slug' => $content->slug]) : '#' }}">
                 {{ $content->title ?? __('No title') }}
             </a>
@@ -42,7 +42,8 @@ $content = $property->contents->first();
             <span class="new-price">
                 {{ $keywords['Price'] ?? __('Price') }}
                 {{ $property->price ? formatNumber($property->price) : ($keywords['Negotiable'] ?? __('Negotiable')) }}
-                <img src="{{ $userBs->base_currency_symbol }}" alt="Currency Symbol" style="width: 22px; height: 22px; vertical-align: middle;">
+                <img src="{{ !empty($userBs?->base_currency_symbol) ? $userBs->base_currency_symbol : 'https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg' }}" alt="Currency Symbol" style="width: 22px; height: 22px; vertical-align: middle;">
+
             </span>
         </div>
 

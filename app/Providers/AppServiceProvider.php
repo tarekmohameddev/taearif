@@ -8,16 +8,20 @@ use App\Models\Social;
 use App\Models\Language;
 use App\Models\User\SEO;
 use App\Models\UserStep;
+use App\Models\User\Blog;
 use App\Models\Api\ApiMenuItem;
 use App\Models\User\FooterText;
+use App\Models\User\HomeSection;
+// use App\Models\Api\ApiBannerSetting;
 use App\Models\User\UserContact;
 use App\Models\User\UserService;
-// use App\Models\Api\ApiBannerSetting;
 use App\Models\Api\FooterSetting;
 use App\Models\User\BasicSetting;
+use App\Models\User\HomePageText;
 use App\Models\Api\ApiMenuSetting;
 use App\Models\Api\GeneralSetting;
 use Illuminate\Support\Facades\DB;
+use App\Models\Api\ApiBannerSetting;
 use App\Models\User\FooterQuickLink;
 use App\Models\User\UserShopSetting;
 use Illuminate\Pagination\Paginator;
@@ -181,16 +185,28 @@ class AppServiceProvider extends ServiceProvider
                     Config::set('app.timezone', 'UTC');
                 }
 
-                Config::set('captcha.sitekey', $userBs->google_recaptcha_site_key);
-                Config::set('captcha.secret', $userBs->google_recaptcha_secret_key);
+                Config::set('captcha.sitekey', optional($userBs)->google_recaptcha_site_key ?? '');
+                Config::set('captcha.secret', optional($userBs)->google_recaptcha_secret_key ?? '');
+                $userCurrentLang = UserLanguage::where('code', session()->get('user_lang'))->where('user_id', $user->id)->first();
+                if (empty($userCurrentLang)) {
+                    $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
+                    session()->put('user_lang', $userCurrentLang->code);
+                }
 
-                $social_medias = $user->social_media()->get() ?? collect([]);
+                // $social_medias = $user->social_media()->get() ?? collect([]);
+                // $social_media = $user->social_media()->get() ?? collect([]);
                 $userSeo = SEO::where('language_id', $userCurrentLang->id)->where('user_id', $user->id)->first();
                 $userLangs = UserLanguage::where('user_id', $user->id)->get();
                 $userShopSetting = UserShopSetting::where('user_id', $user->id)->first();
 
-                $packagePermissions = UserPermissionHelper::packagePermission($user->id);
-                $packagePermissions = json_decode($packagePermissions, true);
+                // $packagePermissions = UserPermissionHelper::packagePermission($user->id);
+                // $packagePermissions = json_decode($packagePermissions, true);
+                if ($user && $user->id) {
+                    $packagePermissions = UserPermissionHelper::packagePermission($user->id);
+                    $packagePermissions = json_decode($packagePermissions, true);
+                } else {
+                    $packagePermissions = [];
+                }
 
 
                 $footerData = FooterText::where('language_id', $userCurrentLang->id)
@@ -199,19 +215,23 @@ class AppServiceProvider extends ServiceProvider
                 $api_footerData = FooterSetting::where('user_id', $user->id)->first();
                 $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
 
-                if ($userBs->theme == 'home_seven') {
+                if ($userBs && $userBs->theme == 'home_seven') {
                     $fservices = UserService::where('lang_id', $userCurrentLang->id)
                         ->where('user_id', $user->id)
                         ->get();
+                    $view->with('fservices', $fservices);
                 }
-                if ($userBs->theme == 'home_eight') {
+
+                if ($userBs && $userBs->theme == 'home_eight') {
                     $categories = UserItemCategory::query()
                         ->where('user_id', $user->id)
                         ->where('language_id', $userCurrentLang->id)
                         ->with('subcategories')
                         ->where('status', 1)
                         ->get();
+                    $view->with('categories', $categories);
                 }
+
 
                 $footerQuickLinks = FooterQuickLink::where('language_id', $userCurrentLang->id)
                     ->where('user_id', $user->id)
@@ -252,19 +272,23 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('userFooterRecentBlogs', $footerRecentBlogs);
                 $view->with('roomSetting', $userRoomSettings);
                 $view->with('userContact', $userContact);
-                $view->with('social_medias', $social_medias);
+                // $view->with('social_medias', $social_medias);
+                // $view->with('social_media', $social_media);
                 $view->with('userCurrentLang', $userCurrentLang);
                 $view->with('userLangs', $userLangs);
                 $view->with('keywords', $keywords);
                 $view->with('cookieAlertInfo', $cookieAlert);
                 $view->with('packagePermissions', $packagePermissions);
                 $view->with('userShopSetting', $userShopSetting);
-                if ($userBs->theme == 'home_seven') {
+                //
+                if ($userBs && $userBs->theme == 'home_seven') {
                     $view->with('fservices', $fservices);
                 }
-                if ($userBs->theme == 'home_eight') {
+                if ($userBs && $userBs->theme == 'home_eight') {
                     $view->with('categories', $categories);
                 }
+
+
             });
 
             View::share('langs', $langs);

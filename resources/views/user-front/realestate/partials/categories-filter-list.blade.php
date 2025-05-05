@@ -112,21 +112,8 @@
             </div>
         </div>
     </div>
-    <script>
-        function setActiveCategory(category) {
-            const url = new URL(window.location);
-            url.searchParams.set('category', category.split('=')[1]); // Update category in URL
-            window.history.pushState({}, '', url); // Change URL without reloading
 
 
-            document.querySelectorAll('.property-type').forEach(item => {
-                item.classList.remove('active');
-                if (item.getAttribute('data-type') === category.split('=')[1]) {
-                    item.classList.add('active');
-                }
-            });
-        }
-    </script>
     <!-- Filter Dropdowns -->
     <div class="container py-4">
         <div class="row g-3">
@@ -675,3 +662,32 @@
     </div>
 </div>
 <!-- Listing End -->
+@section('script')
+<script>
+    'use strict';
+    var imgUrl = "{{ url('/') }}";
+    var property_contents = @json($property_contents);
+    var properties = property_contents.data;
+    var siteURL = "{{ route('front.user.detail.view', getParam()) }}"
+    const categoryUrl = "{{ route('front.user.get_categories', getParam()) }}";
+</script>
+
+<script src="{{ asset('/assets/front/user/realestate/js/properties-filter.js') }}"></script>
+<script>
+
+    $('#project').on('change', function () {
+        let id = $(this).val();
+        if (id) {
+            $.get('/project-info/' + id, function (data) {
+                // display data.featured_image, data.min_price, etc.
+            });
+        }
+    });
+    function getCities(element) {
+        var stateId = $(element).find(':selected').data('id');
+        var countryId = $(element).closest('.state').find('.country').find(':selected').data('id');
+        var url = "{{ route('front.user.get_cities', ':id') }}";
+        url = url.replace(':id', stateId);
+    }
+</script>
+@endsection

@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Validator;
-use App\Models\User\RealestateManagement\City;
+// use App\Models\User\RealestateManagement\City;
 use App\Models\User\RealestateManagement\State;
 use App\Models\User\RealestateManagement\Amenity;
 use App\Models\User\RealestateManagement\Country;
@@ -113,10 +113,8 @@ class PropertyController extends Controller
             $stateId = $state?->id;
         }
         if ($request->filled('city')) {
-            $city = City::where([
-                ['name', $request->city],
-                ['language_id', $userCurrentLang->id],
-                ['user_id', $tenantId],
+            $city = UserCity::where([
+                ['name_ar', $request->city],
             ])->first();
             $cityId = $city?->id;
         }
@@ -509,7 +507,7 @@ class PropertyController extends Controller
             $q->where('language_id', $userCurrentLang->id);
         }])->get();
 
-        $cities = City::where('country_id', $request->id)->where('language_id', $userCurrentLang->id)->get();
+        $cities = UserCity::all();
 
         return Response::json(['states' => $states, 'cities' => $cities], 200);
     }
@@ -518,21 +516,25 @@ class PropertyController extends Controller
     {
         $userId = getUser()->id;
         if (session()->has('user_lang')) {
-            $userCurrentLang = Language::where('code', session()->get('user_lang'))->where('user_id', $userId)->first();
-            if (empty($userCurrentLang)) {
-                $userCurrentLang = Language::where(
-                    'is_default',
-                    1
-                )->where('user_id', $userId)->first();
-                session()->put('user_lang', $userCurrentLang->code);
+            $language = Language::where('code', session()->get('user_lang'))
+                ->where('user_id', $userId)
+                ->first();
+
+            if (empty($language)) {
+                $language = Language::where('is_default', 1)
+                    ->where('user_id', $userId)
+                    ->first();
+
+                session()->put('user_lang', $language->code);
             }
         } else {
-            $userCurrentLang = Language::where('is_default', 1)->where('user_id', $userId)->first();
+            $language = Language::where('is_default', 1)
+                ->where('user_id', $userId)
+                ->first();
         }
 
-        $cities = City::where('state_id', $request->state_id)->with(['cityContent' => function ($q) use ($language) {
-            $q->where('language_id', $language->id);
-        }])->get();
+        $cities = UserCity::all();
+
         return Response::json(['cities' => $cities], 200);
     }
 
