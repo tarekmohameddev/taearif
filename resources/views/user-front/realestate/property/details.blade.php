@@ -1,9 +1,6 @@
 @extends(in_array($userBs->theme, ['home13', 'home14', 'home15']) ? 'user-front.realestate.layout' : 'user-front.layout')
 @if (in_array($userBs->theme, ['home13', 'home14', 'home15']))
-{{-- @extends('user-front.realestate.layout') --}}
-
 @section('pageHeading', $propertyContent->title)
-
 @section('metaKeywords', !empty($propertyContent) ? $propertyContent->meta_keyword : '')
 @section('metaDescription', !empty($propertyContent) ? $propertyContent->meta_description : '')
 
@@ -14,7 +11,6 @@
     content="{{ route('front.user.property.details', [getParam(), 'slug' => $propertyContent->slug]) }}">
 @endsection
 @else
-{{-- @extends('user-front.layout') --}}
 
 @section('tab-title')
 {{ $propertyContent->title }}
@@ -67,7 +63,6 @@
 @endsection
 @endif
 @include('user-front.realestate.partials.header.header-pages')
-<div class="mt-30"></div>
 
 @section('content')
 <div class="product-single pt-100 pb-70 border-top header-next">

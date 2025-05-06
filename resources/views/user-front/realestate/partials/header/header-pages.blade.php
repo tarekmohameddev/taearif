@@ -152,3 +152,14 @@
 
 
 </header>
+<style>
+    .swiper-wrapper {
+    position: relative;
+    width: 100%;
+    height: 17% !important;
+    z-index: 1;
+    display: flex;
+    transition-property: transform;
+    box-sizing: content-box;
+}
+</style>
