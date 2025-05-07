@@ -9,17 +9,15 @@ class AppSeeder extends Seeder
 {
     public function run(): void
     {
-        // Clear the existing data in the table
-        // DB::table('api_apps')->delete();
-        // Insert new data into the api_apps table
-
-        DB::table('api_apps')->updateOrInsert([
+        DB::table('api_apps')->insert([
             [
                 'name' => 'SEO Booster',
                 'description' => 'Improve search engine rankings',
                 'price' => 9.99,
                 'type' => 'marketplace',
                 'rating' => 4.7,
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
             [
                 'name' => 'Live Chat Widget',
@@ -27,6 +25,8 @@ class AppSeeder extends Seeder
                 'price' => 5.99,
                 'type' => 'marketplace',
                 'rating' => 4.5,
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
             [
                 'name' => 'Analytics Tracker',
@@ -34,8 +34,9 @@ class AppSeeder extends Seeder
                 'price' => 0.00,
                 'type' => 'builtin',
                 'rating' => 4.9,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]
-
         ]);
     }
 }
