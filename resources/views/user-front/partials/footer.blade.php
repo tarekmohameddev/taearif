@@ -139,7 +139,7 @@
                                                 <div class="post-desc post">
                                                     <span class="date">
                                                         <i class="far fa-calendar-alt mar-right-4"></i>
-                                                        {{ \Carbon\Carbon::parse($blog->created_at)->toFormattedDateString() }}
+                                                        {{ \Carbon\Carbon::parse($footerRecentBlog->created_at)->toFormattedDateString() }}
                                                     </span>
 
                                                     <a
