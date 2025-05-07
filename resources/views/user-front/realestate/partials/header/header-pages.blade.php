@@ -1,3 +1,8 @@
+@php
+$general_settingsData = json_decode($userApi_general_settingsData, true);
+$logo = $general_settingsData['logo'] ?? [];
+$favicon = $general_settingsData['favicon'] ?? [];
+@endphp
 <!-- Header Start -->
 <header class="header-area header-1 @if (!request()->routeIs('front.user.detail.view')) header-static @endif" data-aos="slide-down">
 
@@ -144,7 +149,6 @@
                             </ul>
                         </div>
                     </div>
-
                 </div>
             </nav>
         </div>

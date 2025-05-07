@@ -76,6 +76,7 @@ class BasicSetting extends Model
         'property_state_status',
         'short_description',
         'industry_type',
+        'company_name',
     ];
 
 

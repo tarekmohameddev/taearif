@@ -1,6 +1,7 @@
 <!-- Map Start-->
 
 <!-- Map End-->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     body {
         text-align: right;
@@ -18,13 +19,17 @@
         align-items: center;
     }
 
-    .property-type:hover {
-        color: #0d6efd;
+    .property-type {
+        cursor: pointer;
+        padding: 10px 15px;
+        border-radius: 5px;
+        transition: color 0.3s, background-color 0.3s;
+        color: var(--color-dark);
     }
 
+    .property-type:hover,
     .property-type.active {
-        font-weight: bold;
-        color: #0d6efd;
+        color: var(--color-primary);
     }
 
     .property-type.active.all-type {
@@ -90,8 +95,9 @@
         margin-right: 0.255em;
         margin-left: 0;
     }
+
 </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <div class="container-fluid p-0">
     <!-- Property Type Icons -->
     <div class="border-bottom">

@@ -10,6 +10,23 @@
     $logo = $general_settingsData['logo'] ?? [];
 
 @endphp
+
+<style>
+    .footer-area a:hover,
+.footer-area a:focus {
+    color: var(--color-primary) !important;
+}
+
+.footer-area i:hover {
+    color: var(--color-primary) !important;
+}
+
+.footer-area .social-links a:hover i {
+    color: var(--color-primary) !important;
+}
+
+</style>
+
 <!-- footer -->
 @if (isset($userApi_footerData->status) && $userApi_footerData->status !== false)
   <footer class="footer-area border border-primary" style="background-color: transparent !important;">
