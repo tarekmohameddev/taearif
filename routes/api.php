@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\project\ProjectController;
 // use App\Http\Controllers\Api\content\ApiContentSection;
 use App\Http\Controllers\Api\content\AboutApiController;
 use App\Http\Controllers\Api\property\PropertyController;
+use App\Http\Controllers\Api\App\ApiInstallationController;
 use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\Property\UserFacadeController;
 use App\Http\Controllers\Api\content\FooterSettingController;
@@ -199,4 +200,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/districts', [DistrictController::class, 'index']);
 });
 
+// ApiInstallationController
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/apps', [ApiInstallationController::class, 'index']);
+    Route::post('/apps/install', [ApiInstallationController::class, 'install']);
+    Route::post('/apps/uninstall/{appId}', [ApiInstallationController::class, 'uninstall']);
+});
 
