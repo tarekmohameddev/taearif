@@ -193,11 +193,11 @@ class ProjectController extends Controller
             }),
 
             "gallery" => $project->galleryImages->map(function ($image) {
-                return  $image->image;
+                return  asset($image->image);
             }),
 
             "floorplan_images" => $project->floorplanImages->map(function ($image) {
-                return  $image->image;
+                return  asset($image->image);
             }),
 
             "specifications" => $project->specifications->map(function ($spec) {
@@ -319,7 +319,7 @@ class ProjectController extends Controller
                 ProjectFloorplanImg::storeFloorplanImage($userId, $project->id, $imgPath);
             }
 
-            $firstContent = $request->input('contents.0'); // Get the first element
+            $firstContent = $request->input('contents.0');
 
             if ($firstContent) {
                 $title = $firstContent['title'];
@@ -358,7 +358,9 @@ class ProjectController extends Controller
             'galleryImages',
             'floorPlanImages',
             'contents',
-            'specifications'
+            'specifications',
+            'types',
+
         ])->find($project->id);
 
         if ($responseProject->featured_image) {
@@ -413,6 +415,9 @@ class ProjectController extends Controller
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
             'label' => 'nullable|array',
             'value' => 'nullable|array',
+            'complete_status' => 'nullable',
+            'units' => 'nullable|integer',
+
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -440,42 +445,60 @@ class ProjectController extends Controller
                     ProjectFloorplanImg::storeFloorplanImage($userId, $project->id, $imgPath);
                 }
             }
-            ProjectContent::where('project_id', $project->id)->delete();
-            $content = [
-                'project_id' => $project->id,
-                'language_id' => $defaultLang->id,
-                'title' => $request->contents[0]['title'],
-                'address' => $request->contents[0]['address'],
-                'description' => $request->contents[0]['description'],
-                'meta_keyword' => $request->contents[0]['meta_keyword'],
-                'meta_description' => $request->contents[0]['meta_description'],
-                'slug' => Str::slug('Default Project Title')
 
-            ];
-            ProjectContent::storeProjectContent($userId, $content);
+            ProjectContent::where('project_id', $project->id)->delete();
+
+            foreach ($request->contents as $content) {
+                ProjectContent::storeProjectContent($userId, [
+                    'project_id' => $project->id,
+                    'language_id' => $content['language_id'],
+                    'title' => $content['title'],
+                    'address' => $content['address'],
+                    'description' => $content['description'],
+                    'meta_keyword' => $content['meta_keyword'],
+                    'meta_description' => $content['meta_description'],
+                    'slug' => Str::slug($content['title']),
+                ]);
+            }
+
             ProjectSpecification::where('project_id', $project->id)->delete();
 
-            $labels = $request->input('label', []);
-            $values = $request->input('value', []);
+            foreach ($request->specifications as $spec) {
+                ProjectSpecification::storeSpecification($userId, [
+                    'language_id' => $defaultLang->id,
+                    'project_id' => $project->id,
+                    'key' => $spec['key'],
+                    'label' => $spec['label'],
+                    'value' => $spec['value'],
+                ]);
+            }
 
-            foreach ($labels as $key => $label) {
-                if (!empty($values[$key])) {
-                    ProjectSpecification::storeSpecification($userId, [
-                        'language_id' => $defaultLang->id,
+            ProjectType::where('project_id', $project->id)->delete();
+
+            if ($request->has('types')) {
+                foreach ($request->types as $type) {
+                    ProjectType::storeProjectType($userId, [
                         'project_id' => $project->id,
-                        'key' => $key,
-                        'label' => $label,
-                        'value' => $values[$key],
+                        'language_id' => $type['language_id'],
+                        'title' => $type['title'],
+                        'min_area' => $type['min_area'],
+                        'max_area' => $type['max_area'],
+                        'min_price' => $type['min_price'],
+                        'max_price' => $type['max_price'],
+                        'unit' => $type['unit'],
                     ]);
                 }
             }
+
+
         });
 
         $responseProject = Project::with([
             'galleryImages',
             'floorPlanImages',
             'contents',
-            'specifications'
+            'specifications',
+            'types',
         ])->find($project->id);
 
         return response()->json([

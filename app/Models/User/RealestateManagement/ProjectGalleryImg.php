@@ -2,8 +2,9 @@
 
 namespace App\Models\User\RealestateManagement;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User\RealestateManagement\Project;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ProjectGalleryImg extends Model
 {
@@ -16,6 +17,7 @@ class ProjectGalleryImg extends Model
         'project_id',
         'image',
     ];
+
     public static function storeGalleryImage($userId, $projectId, $imageName)
     {
         return self::create([
@@ -24,9 +26,15 @@ class ProjectGalleryImg extends Model
             'image' => $imageName
         ]);
     }
+
     public function project()
-{
-    return $this->belongsTo(Project::class, 'project_id');
-}
+    {
+        return $this->belongsTo(Project::class, 'project_id');
+    }
+
+    public function getImageAttribute($value)
+    {
+        return asset('storage/' . $value);
+    }
 
 }
