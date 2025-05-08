@@ -84,10 +84,10 @@ class Project extends Model
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    // public function projectTypes()
-    // {
-    //     return $this->hasMany(ProjectType::class, 'project_id');
-    // }
+    public function projectTypes()
+    {
+        return $this->hasMany(ProjectType::class, 'project_id');
+    }
 
     public function specifications()
     {
