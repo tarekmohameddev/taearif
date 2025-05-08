@@ -8,22 +8,11 @@ use App\Models\User\RealestateManagement\ApiUserCategory;
 
 class ApiCategoryController extends Controller
 {
-    // public function getCategories()
-    // {
-    //     $user = Auth::user();
-    //     $categories = UserCategory::with(['userSettings' => function ($query) use ($user) {
-    //         $query->where('user_id', $user->id);
-    //     }])->get();
-
-    //     $categories = $categories->map(function ($category) use ($user) {
-    //         $setting = $category->userSettings->first();
-    //         $category->category_is_active = $setting ? $setting->is_active : $category->is_active;
-    //         return $category;
-    //     });
-
-    //     return response()->json($categories);
-    // }
-
+    /**
+     * Display a listing of the user's categories.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function index()
     {
         $categories = ApiUserCategory::all();

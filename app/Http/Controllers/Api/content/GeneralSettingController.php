@@ -59,6 +59,8 @@ class GeneralSettingController extends Controller
             'show_breadcrumb' => 'nullable|boolean',
             'show_properties' => 'nullable|boolean',
             'additional_settings' => 'nullable|array',
+            'color' => 'nullable|string|max:50',
+
 
         ]);
 
@@ -86,6 +88,8 @@ class GeneralSettingController extends Controller
         $settings->show_breadcrumb = $request->input('show_breadcrumb', true);
         $settings->show_properties = $request->input('show_properties', false);
         $settings->additional_settings = $request->input('additional_settings', []);
+        $settings->color = $request->input('color');
+
 
 
         $settings->save();
