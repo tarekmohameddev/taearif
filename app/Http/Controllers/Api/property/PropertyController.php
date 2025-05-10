@@ -220,34 +220,33 @@ class PropertyController extends Controller
             'value' => 'nullable|array',
             'category_id' => 'nullable|integer',
 
-            'property_characteristics.facade_id' => 'nullable|numeric',
-            'property_characteristics.area' => 'nullable|numeric',
-            'property_characteristics.length' => 'nullable|numeric',
-            'property_characteristics.width' => 'nullable|numeric',
-            'property_characteristics.street_width_north' => 'nullable|numeric',
-            'property_characteristics.street_width_south' => 'nullable|numeric',
-            'property_characteristics.street_width_east' => 'nullable|numeric',
-            'property_characteristics.street_width_west' => 'nullable|numeric',
-            'property_characteristics.building_age' => 'nullable|integer',
-
-            'property_characteristics.rooms' => 'nullable|integer',
-            'property_characteristics.bathrooms' => 'nullable|integer',
-            'property_characteristics.floors' => 'nullable|integer',
-            'property_characteristics.floor_number' => 'nullable|integer',
-            'property_characteristics.driver_room' => 'nullable|integer',
-            'property_characteristics.maid_room' => 'nullable|integer',
-            'property_characteristics.dining_room' => 'nullable|integer',
-            'property_characteristics.living_room' => 'nullable|integer',
-            'property_characteristics.majlis' => 'nullable|integer',
-            'property_characteristics.storage_room' => 'nullable|integer',
-            'property_characteristics.basement' => 'nullable|integer',
-            'property_characteristics.swimming_pool' => 'nullable|integer',
-            'property_characteristics.kitchen' => 'nullable|integer',
-            'property_characteristics.balcony' => 'nullable|integer',
-            'property_characteristics.garden' => 'nullable|integer',
-            'property_characteristics.annex' => 'nullable|integer',
-            'property_characteristics.elevator' => 'nullable|integer',
-            'property_characteristics.private_parking' => 'nullable|integer',
+            // Property Characteristics
+            'facade_id' => 'nullable|numeric',
+            'length' => 'nullable|numeric',
+            'width' => 'nullable|numeric',
+            'street_width_north' => 'nullable|numeric',
+            'street_width_south' => 'nullable|numeric',
+            'street_width_east' => 'nullable|numeric',
+            'street_width_west' => 'nullable|numeric',
+            'building_age' => 'nullable|integer',
+            'rooms' => 'nullable|integer',
+            'bathrooms' => 'nullable|integer',
+            'floors' => 'nullable|integer',
+            'floor_number' => 'nullable|integer',
+            'driver_room' => 'nullable|integer',
+            'maid_room' => 'nullable|integer',
+            'dining_room' => 'nullable|integer',
+            'living_room' => 'nullable|integer',
+            'majlis' => 'nullable|integer',
+            'storage_room' => 'nullable|integer',
+            'basement' => 'nullable|integer',
+            'swimming_pool' => 'nullable|integer',
+            'kitchen' => 'nullable|integer',
+            'balcony' => 'nullable|integer',
+            'garden' => 'nullable|integer',
+            'annex' => 'nullable|integer',
+            'elevator' => 'nullable|integer',
+            'private_parking' => 'nullable|integer',
 
         ];
 
@@ -409,45 +408,53 @@ class PropertyController extends Controller
         });
 
         $responseProperty = Property::with([
-            'sliderImages',
-            'amenities',
+            'category',
+            'user',
             'contents',
-            'specifications'
-        ])->find($property->id);
+            'galleryImages',
+            'proertyAmenities.amenity',
+            'specifications',
+            'UserPropertyCharacteristics'
+        ])->findOrFail($property->id);
 
+        $content = $responseProperty->contents->first();
 
-        if ($responseProperty->purpose) {
-            $responseProperty->transaction_type = $responseProperty->purpose;
-        }
-
-        if ($responseProperty->featured_image) {
-            $responseProperty->featured_image = asset($responseProperty->featured_image);
-        }
-
-        if (is_array($responseProperty->floor_planning_image)) {
-            $responseProperty->floor_planning_image = array_map(function($image) {
-                return asset($image);
-            }, $responseProperty->floor_planning_image);
-        }
-
-
-        $responseProperty->gallery = $responseProperty->sliderImages->pluck('image')
-            ->map(function($image) {
-                return asset($image);
-            })->toArray();
-
-
-       unset($responseProperty->sliderImages);
-       unset($responseProperty->amenities);
-       unset($responseProperty->purpose);
-
-        $responseProperty->featured = (bool) $responseProperty->featured;
-        $responseProperty->status = (bool) $responseProperty->status;
+        $formattedProperty = [
+            'id' => $responseProperty->id,
+            'project_id' => $responseProperty->project_id,
+            'title' => optional($content)->title ?? 'No Title',
+            'address' => optional($content)->address ?? 'No Address',
+            'price' => $responseProperty->price,
+            'type' => $responseProperty->type,
+            'beds' => $responseProperty->beds,
+            'bath' => $responseProperty->bath,
+            'area' => $responseProperty->area,
+            'features' => $responseProperty->proertyAmenities->pluck('amenity.name')->toArray(),
+            'characteristics' => $responseProperty->UserPropertyCharacteristics ?? null,
+            'specifications' => $responseProperty->specifications->map(function ($spec) {
+                return [
+                    'key' => $spec->key,
+                    'label' => $spec->label,
+                    'value' => $spec->value,
+                ];
+            })->toArray(),
+            'status' => (bool) $responseProperty->status,
+            'featured' => (bool) $responseProperty->featured,
+            'featured_image' => asset($responseProperty->featured_image),
+            'gallery' => $responseProperty->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
+            'description' => optional($content)->description ?? 'No Description',
+            'location' => [
+                'latitude' => $responseProperty->latitude,
+                'longitude' => $responseProperty->longitude,
+            ],
+            'created_at' => $responseProperty->created_at->toISOString(),
+            'updated_at' => $responseProperty->updated_at->toISOString(),
+        ];
 
         return response()->json([
             'status' => 'success',
             'message' => 'Property created successfully',
-            'user_property' => $responseProperty
+            'user_property' => $formattedProperty
         ], 201);
     }
 
@@ -495,35 +502,33 @@ class PropertyController extends Controller
             'label' => 'nullable|array',
             'value' => 'nullable|array',
             'category_id' => 'nullable|integer',
-
-            'property_characteristics.facade_id' => 'nullable|numeric',
-            'property_characteristics.area' => 'nullable|numeric',
-            'property_characteristics.length' => 'nullable|numeric',
-            'property_characteristics.width' => 'nullable|numeric',
-            'property_characteristics.street_width_north' => 'nullable|numeric',
-            'property_characteristics.street_width_south' => 'nullable|numeric',
-            'property_characteristics.street_width_east' => 'nullable|numeric',
-            'property_characteristics.street_width_west' => 'nullable|numeric',
-            'property_characteristics.building_age' => 'nullable|integer',
-
-            'property_characteristics.rooms' => 'nullable|integer',
-            'property_characteristics.bathrooms' => 'nullable|integer',
-            'property_characteristics.floors' => 'nullable|integer',
-            'property_characteristics.floor_number' => 'nullable|integer',
-            'property_characteristics.driver_room' => 'nullable|integer',
-            'property_characteristics.maid_room' => 'nullable|integer',
-            'property_characteristics.dining_room' => 'nullable|integer',
-            'property_characteristics.living_room' => 'nullable|integer',
-            'property_characteristics.majlis' => 'nullable|integer',
-            'property_characteristics.storage_room' => 'nullable|integer',
-            'property_characteristics.basement' => 'nullable|integer',
-            'property_characteristics.swimming_pool' => 'nullable|integer',
-            'property_characteristics.kitchen' => 'nullable|integer',
-            'property_characteristics.balcony' => 'nullable|integer',
-            'property_characteristics.garden' => 'nullable|integer',
-            'property_characteristics.annex' => 'nullable|integer',
-            'property_characteristics.elevator' => 'nullable|integer',
-            'property_characteristics.private_parking' => 'nullable|integer',
+            // Property Characteristics
+            'facade_id' => 'nullable|numeric',
+            'length' => 'nullable|numeric',
+            'width' => 'nullable|numeric',
+            'street_width_north' => 'nullable|numeric',
+            'street_width_south' => 'nullable|numeric',
+            'street_width_east' => 'nullable|numeric',
+            'street_width_west' => 'nullable|numeric',
+            'building_age' => 'nullable|integer',
+            'rooms' => 'nullable|integer',
+            'bathrooms' => 'nullable|integer',
+            'floors' => 'nullable|integer',
+            'floor_number' => 'nullable|integer',
+            'driver_room' => 'nullable|integer',
+            'maid_room' => 'nullable|integer',
+            'dining_room' => 'nullable|integer',
+            'living_room' => 'nullable|integer',
+            'majlis' => 'nullable|integer',
+            'storage_room' => 'nullable|integer',
+            'basement' => 'nullable|integer',
+            'swimming_pool' => 'nullable|integer',
+            'kitchen' => 'nullable|integer',
+            'balcony' => 'nullable|integer',
+            'garden' => 'nullable|integer',
+            'annex' => 'nullable|integer',
+            'elevator' => 'nullable|integer',
+            'private_parking' => 'nullable|integer',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -640,17 +645,54 @@ class PropertyController extends Controller
         });
 
         $responseProperty = Property::with([
-            'sliderImages',
-            'amenities',
+            'category',
+            'user',
             'contents',
-            'specifications'
+            'galleryImages',
+            'proertyAmenities.amenity',
+            'specifications',
+            'UserPropertyCharacteristics'
         ])->find($property->id);
+
+        $content = $responseProperty->contents->first();
+
+        $formattedProperty = [
+            'id' => $responseProperty->id,
+            'project_id' => $responseProperty->project_id,
+            'title' => optional($content)->title ?? 'No Title',
+            'address' => optional($content)->address ?? 'No Address',
+            'price' => $responseProperty->price,
+            'type' => $responseProperty->type,
+            'beds' => $responseProperty->beds,
+            'bath' => $responseProperty->bath,
+            'area' => $responseProperty->area,
+            'features' => $responseProperty->proertyAmenities->pluck('amenity.name')->toArray(),
+            'characteristics' => $responseProperty->UserPropertyCharacteristics ?? null,
+            'specifications' => $responseProperty->specifications->map(function ($spec) {
+                return [
+                    'key' => $spec->key,
+                    'label' => $spec->label,
+                    'value' => $spec->value,
+                ];
+            })->toArray(),
+            'status' => (bool) $responseProperty->status,
+            'featured' => (bool) $responseProperty->featured,
+            'featured_image' => asset($responseProperty->featured_image),
+            'gallery' => $responseProperty->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
+            'description' => optional($content)->description ?? 'No Description',
+            'location' => [
+                'latitude' => $responseProperty->latitude,
+                'longitude' => $responseProperty->longitude,
+            ],
+            'created_at' => $responseProperty->created_at->toISOString(),
+            'updated_at' => $responseProperty->updated_at->toISOString(),
+        ];
 
         return response()->json([
             'status' => 'success',
             'message' => 'Property updated successfully',
-            'user_property' => $responseProperty
-        ]);
+            'property' => $formattedProperty
+        ], 200);
     }
 
     public function destroy($id)
