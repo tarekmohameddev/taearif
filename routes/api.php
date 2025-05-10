@@ -98,7 +98,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/properties', [PropertyController::class, 'index']);
     Route::get('/properties/categories', [PropertyController::class, 'properties_categories']);
-    Route::get('/properties/{id}', [PropertyController::class, 'show']);
+    Route::get('/properties/{id}', [PropertyController::class, 'show']); // Get a single property
     Route::post('/properties', [PropertyController::class, 'store']);
     Route::post('/properties/{id}', [PropertyController::class, 'update']);
     Route::delete('/properties/{id}', [PropertyController::class, 'destroy']);

@@ -104,7 +104,9 @@ class PropertyController extends Controller
             'user',
             'contents',
             'galleryImages',
-            'proertyAmenities.amenity'
+            'proertyAmenities.amenity',
+            'specifications',
+            'UserPropertyCharacteristics',
         ])->findOrFail($id);
 
         $formattedProperty = [
@@ -118,6 +120,14 @@ class PropertyController extends Controller
             'bath' => $property->bath,
             'area' => $property->area,
             'features' => $property->proertyAmenities->pluck('amenity.name')->toArray(),
+            'characteristics' => $property->UserPropertyCharacteristics  ?? null,
+            'specifications'    => $property->specifications->map(function ($spec) {
+                return [
+                    'key' => $spec->key,
+                    'label' => $spec->label,
+                    'value' => $spec->value,
+                ];
+            })->toArray(),
             'status' => $property->status,
             'featured_image' => asset($property->featured_image),
             'featured' => (bool) $property->featured,
