@@ -216,8 +216,10 @@ class PropertyController extends Controller
             'city_id' => 'nullable',
             'featured' => 'nullable',
             'amenities' => 'nullable|array',
-            'label' => 'nullable|array',
-            'value' => 'nullable|array',
+            'specifications' => 'nullable|array',
+            'specifications.*.label' => 'required_with:specifications|string',
+            'specifications.*.value' => 'required_with:specifications|string',
+
             'category_id' => 'nullable|integer',
 
             // Property Characteristics
@@ -475,6 +477,8 @@ class PropertyController extends Controller
 
         $property = Property::where('user_id', $user->id)->findOrFail($id);
 
+        Log::info($request->all());
+
         $defaultLanguage = Language::where('user_id', $user->id)
             ->where('is_default', 1)
             ->firstOrFail();
@@ -499,8 +503,10 @@ class PropertyController extends Controller
             'project_id' => 'nullable',
             'city_id' => 'nullable',
             'amenities' => 'nullable|array',
-            'label' => 'nullable|array',
-            'value' => 'nullable|array',
+            'specifications' => 'nullable|array',
+            'specifications.*.label' => 'required_with:specifications|string',
+            'specifications.*.value' => 'required_with:specifications|string',
+
             'category_id' => 'nullable|integer',
             // Property Characteristics
             'facade_id' => 'nullable|numeric',
@@ -628,20 +634,19 @@ class PropertyController extends Controller
 
             PropertyContent::storePropertyContent($user->id, $property->id, $contentRequest);
 
-            $labels = (array) $request->input('label', []);
-            $values = (array) $request->input('value', []);
+            $specifications = $request->input('specifications', []);
 
-            foreach ($labels as $key => $label) {
-                if (!empty($values[$key])) {
-                    $spec = [
+            foreach ($specifications as $spec) {
+                if (!empty($spec['label']) && !empty($spec['value'])) {
+                    PropertySpecification::storeSpecification($user->id, $property->id, [
                         'language_id' => $defaultLanguage->id,
-                        'key' => $key,
-                        'label' => $label,
-                        'value' => $values[$key],
-                    ];
-                    PropertySpecification::storeSpecification($user->id, $property->id, $spec);
+                        'label' => $spec['label'],
+                        'value' => $spec['value'],
+                    ]);
                 }
             }
+
+
         });
 
         $responseProperty = Property::with([

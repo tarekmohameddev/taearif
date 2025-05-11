@@ -25,7 +25,7 @@ class PropertySpecification extends Model
             'user_id' => $userID,
             'property_id' => $propertyId,
             'language_id' => $requestData['language_id'],
-            'key' => $requestData['key'],
+            'key' => $requestData['key'] ?? null,
             'label' => $requestData['label'],
             'value' => $requestData['value'],
         ]);
