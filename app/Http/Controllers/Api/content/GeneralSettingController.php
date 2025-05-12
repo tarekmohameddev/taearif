@@ -41,7 +41,7 @@ class GeneralSettingController extends Controller
         $basicSetting = BasicSetting::where('user_id', $user->id)->first();
 
         if ($basicSetting) {
-            $responseSettings['primary_color'] = $basicSetting->base_color;
+            $responseSettings['base_color'] = $basicSetting->base_color;
             $responseSettings['secondary_color'] = $basicSetting->secondary_color;
             $responseSettings['accent_color'] = $basicSetting->accent_color;
         }
@@ -57,6 +57,7 @@ class GeneralSettingController extends Controller
     {
         $user = $request->user();
 
+        // Validate the input fields
         $validator = Validator::make($request->all(), [
             'site_name' => 'required|string|max:255',
             'tagline' => 'nullable|string|max:255',
@@ -68,8 +69,9 @@ class GeneralSettingController extends Controller
             'show_properties' => 'nullable|boolean',
             'additional_settings' => 'nullable|array',
             'color' => 'nullable|string|max:50',
-
-
+            'primary_color' => 'nullable|string|max:50',
+            'secondary_color' => 'nullable|string|max:50',
+            'accent_color' => 'nullable|string|max:50',
         ]);
 
         if ($validator->fails()) {
@@ -80,13 +82,16 @@ class GeneralSettingController extends Controller
             ], 422);
         }
 
+        // Fetch GeneralSettings for the user
         $settings = GeneralSetting::where('user_id', $user->id)->first();
 
+        // If no settings found, create a new one
         if (!$settings) {
             $settings = new GeneralSetting();
             $settings->user_id = $user->id;
         }
 
+        // Update GeneralSettings fields
         $settings->site_name = $request->input('site_name');
         $settings->tagline = $request->input('tagline');
         $settings->description = $request->input('description');
@@ -98,21 +103,33 @@ class GeneralSettingController extends Controller
         $settings->additional_settings = $request->input('additional_settings', []);
         $settings->color = $request->input('color');
 
+        // Fetch BasicSettings for the user and update the colors
+        $basicSetting = BasicSetting::where('user_id', $user->id)->first();
+        if ($basicSetting) {
+            $basicSetting->base_color = $request->input('primary_color', $basicSetting->base_color);
+            $basicSetting->secondary_color = $request->input('secondary_color', $basicSetting->secondary_color);
+            $basicSetting->accent_color = $request->input('accent_color', $basicSetting->accent_color);
 
+            // Save the BasicSetting after updating the colors
+            $basicSetting->save();
+        }
 
+        // Save the updated GeneralSettings
         $settings->save();
 
+        // Prepare response data with the updated settings
         $responseSettings = $settings->toArray();
         $responseSettings['logo'] = asset($settings->logo);
         $responseSettings['favicon'] = asset($settings->favicon);
 
-        $basicSetting = BasicSetting::where('user_id', $user->id)->first();
+        // Make sure to include the updated colors in the response
         if ($basicSetting) {
             $responseSettings['primary_color'] = $basicSetting->base_color;
             $responseSettings['secondary_color'] = $basicSetting->secondary_color;
             $responseSettings['accent_color'] = $basicSetting->accent_color;
         }
 
+        // Return the response
         return response()->json([
             'status' => 'success',
             'message' => 'General settings updated successfully',
@@ -121,6 +138,7 @@ class GeneralSettingController extends Controller
             ]
         ]);
     }
+
     public function ShowProperties(Request $request)
     {
         $request->validate([
