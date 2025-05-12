@@ -103,42 +103,35 @@ class PropertyController extends Controller
             'contents',
             'galleryImages',
             'proertyAmenities.amenity',
-            // 'specifications',
             'UserPropertyCharacteristics',
         ])->findOrFail($id);
 
-        $formattedProperty = [
+        $content = $property->contents->first();
+        $characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
+
+        $formattedProperty = array_merge([
             'id' => $property->id,
             'project_id' => $property->project_id,
-            'title' => optional($property->contents->first())->title ?? 'No Title',
-            'address' => optional($property->contents->first())->address ?? 'No Address',
-            'price' => $property->price,
-            'type' => $property->type,
+            'title' => optional($content)->title ?? '',
+            'address' => optional($content)->address ?? '',
+            'price' => $property->price ?? '0.00',
+            'type' => $property->type ?? '',
             'beds' => $property->beds,
             'bath' => $property->bath,
             'area' => $property->area,
-            'features' => $property->features,
-            // 'features' => $property->proertyAmenities->pluck('amenity.name')->toArray(),
-            'characteristics' => $property->UserPropertyCharacteristics  ?? null,
-            // 'specifications'    => $property->specifications->map(function ($spec) {
-            //     return [
-            //         'key' => $spec->key,
-            //         'label' => $spec->label,
-            //         'value' => $spec->value,
-            //     ];
-            // })->toArray(),
-            'status' => $property->status,
+            'features' => $property->features ?? [],
+            'status' => (int) $property->status,
             'featured_image' => asset($property->featured_image),
-            'featured' => (bool) $property->featured,
+            'floor_planning_image' => $property->floor_planning_image ?? [],
             'gallery' => $property->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
-            'description' => optional($property->contents->first())->description ?? 'No Description',
-            'location' => [
-                'latitude' => $property->latitude,
-                'longitude' => $property->longitude,
-            ],
-            'created_at' => $property->created_at->toISOString(),
-            'updated_at' => $property->updated_at->toISOString(),
-        ];
+            'description' => optional($content)->description ?? '',
+            'latitude' => $property->latitude ? (float) $property->latitude : null,
+            'longitude' => $property->longitude ? (float) $property->longitude : null,
+            'featured' => (bool) $property->featured,
+            'city_id' => $property->city_id,
+            'category_id' => $property->category_id,
+            'size' => $property->size ?? null,
+        ], $characteristics);
 
         return response()->json([
             'status' => 'success',
@@ -148,15 +141,16 @@ class PropertyController extends Controller
         ]);
     }
 
+
     /*
-    * Store a newly created resource in storage.
-    *
-    * @param  \Illuminate\Http\Request  $request
-    * @return \Illuminate\Http\JsonResponse
-    * @throws \Illuminate\Validation\ValidationException
-    * @throws \Exception
-    * @throws \Throwable
-    * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
+        * Store a newly created resource in storage.
+        *
+        * @param  \Illuminate\Http\Request  $request
+        * @return \Illuminate\Http\JsonResponse
+        * @throws \Illuminate\Validation\ValidationException
+        * @throws \Exception
+        * @throws \Throwable
+        * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
     */
 
 
@@ -460,14 +454,14 @@ class PropertyController extends Controller
     }
 
     /*
-    * Update the specified resource in storage.
-    *
-    * @param  \Illuminate\Http\Request  $request
-    * @param  int  $id
-    * @return \Illuminate\Http\JsonResponse
-    * @throws \Illuminate\Validation\ValidationException
-    * @throws \Exception
-    * @throws \Throwable
+        * Update the specified resource in storage.
+        *
+        * @param  \Illuminate\Http\Request  $request
+        * @param  int  $id
+        * @return \Illuminate\Http\JsonResponse
+        * @throws \Illuminate\Validation\ValidationException
+        * @throws \Exception
+        * @throws \Throwable
     */
 
     public function update(Request $request, $id)
@@ -475,8 +469,6 @@ class PropertyController extends Controller
         $user = auth()->user();
 
         $property = Property::where('user_id', $user->id)->findOrFail($id);
-
-        Log::info($request->all());
 
         $defaultLanguage = Language::where('user_id', $user->id)
             ->where('is_default', 1)
@@ -502,10 +494,6 @@ class PropertyController extends Controller
             'project_id' => 'nullable',
             'city_id' => 'nullable',
             'amenities' => 'nullable|array',
-            // 'specifications' => 'nullable|array',
-            // 'specifications.*.label' => 'required_with:specifications|string',
-            // 'specifications.*.value' => 'required_with:specifications|string',
-
             'category_id' => 'nullable|integer',
             // Property Characteristics
             'facade_id' => 'nullable|numeric',
@@ -564,7 +552,7 @@ class PropertyController extends Controller
                 'transaction_type',
                 'category_id',
                 'project_id',
-
+                'city_id',
                 "facade_id",
                 "length",
                 "width",
@@ -599,10 +587,8 @@ class PropertyController extends Controller
                 $characteristics
             );
 
-
             if ($request->has('gallery')) {
                 PropertySliderImg::where('property_id', $property->id)->delete();
-
                 foreach ($request->gallery as $imagePath) {
                     PropertySliderImg::storeSliderImage($user->id, $property->id, $imagePath);
                 }
@@ -632,18 +618,6 @@ class PropertyController extends Controller
             ];
 
             PropertyContent::storePropertyContent($user->id, $property->id, $contentRequest);
-
-            // $specifications = $request->input('specifications', []);
-
-            // foreach ($specifications as $spec) {
-            //     if (!empty($spec['label']) && !empty($spec['value'])) {
-            //         PropertySpecification::storeSpecification($user->id, $property->id, [
-            //             'language_id' => $defaultLanguage->id,
-            //             'label' => $spec['label'],
-            //             'value' => $spec['value'],
-            //         ]);
-            //     }
-            // }
         });
 
         $responseProperty = Property::with([
@@ -652,49 +626,39 @@ class PropertyController extends Controller
             'contents',
             'galleryImages',
             'proertyAmenities.amenity',
-            // 'specifications',
             'UserPropertyCharacteristics'
         ])->find($property->id);
 
         $content = $responseProperty->contents->first();
+        $characteristics = optional($responseProperty->UserPropertyCharacteristics)->toArray() ?? [];
 
-        $formattedProperty = [
-            'id' => $responseProperty->id,
-            'project_id' => $responseProperty->project_id,
-            'title' => optional($content)->title ?? 'No Title',
-            'address' => optional($content)->address ?? 'No Address',
-            'price' => $responseProperty->price,
-            'type' => $responseProperty->type,
+        $formattedProperty = array_merge([
+            'title' => optional($content)->title ?? '',
+            'address' => optional($content)->address ?? '',
+            'price' => $responseProperty->price ?? '0.00',
+            'project_id' => $responseProperty->project_id ?? '',
+            'type' => $responseProperty->type ?? '',
             'beds' => $responseProperty->beds,
             'bath' => $responseProperty->bath,
             'area' => $responseProperty->area,
-            'features' => $property->features,
-            // 'features' => $responseProperty->proertyAmenities->pluck('amenity.name')->toArray(),
-            'characteristics' => $responseProperty->UserPropertyCharacteristics ?? null,
-            // 'specifications' => $responseProperty->specifications->map(function ($spec) {
-            //     return [
-            //         'key' => $spec->key,
-            //         'label' => $spec->label,
-            //         'value' => $spec->value,
-            //     ];
-            // })->toArray(),
-            'status' => (bool) $responseProperty->status,
-            'featured' => (bool) $responseProperty->featured,
+            'features' => $responseProperty->features ?? [],
+            'status' => (int) $responseProperty->status,
             'featured_image' => asset($responseProperty->featured_image),
+            'floor_planning_image' => $responseProperty->floor_planning_image ?? [],
             'gallery' => $responseProperty->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
-            'description' => optional($content)->description ?? 'No Description',
-            'location' => [
-                'latitude' => $responseProperty->latitude,
-                'longitude' => $responseProperty->longitude,
-            ],
-            'created_at' => $responseProperty->created_at->toISOString(),
-            'updated_at' => $responseProperty->updated_at->toISOString(),
-        ];
+            'description' => optional($content)->description ?? '',
+            'latitude' => $responseProperty->latitude ? (float) $responseProperty->latitude : null,
+            'longitude' => $responseProperty->longitude ? (float) $responseProperty->longitude : null,
+            'featured' => (bool) $responseProperty->featured,
+            'city_id' => $responseProperty->city_id,
+            'category_id' => $responseProperty->category_id,
+            'size' => $responseProperty->size ?? null,
+        ], $characteristics);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Property updated successfully',
-            'property' => $formattedProperty
+            'property' => $formattedProperty,
         ], 200);
     }
 
