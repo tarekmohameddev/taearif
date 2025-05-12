@@ -111,7 +111,9 @@ class Property extends Model
             'status' => $requestData['status'] ?? 0,
             'features' => $requestData['features'] ?? [],
             'latitude' => $requestData['latitude'] ?? null,
-            'longitude' => $requestData['longitude'] ?? null
+            'longitude' => $requestData['longitude'] ?? null,
+            'category_id' => $requestData['category_id'] ?? $this->category_id,
+
         ]);
     }
 

@@ -208,7 +208,8 @@ class PropertyController extends Controller
             'city_id' => 'nullable',
             'featured' => 'nullable|boolean',
             'amenities' => 'nullable|array',
-            'transaction_type' => 'nullable',
+            'type' => 'nullable',
+            // 'transaction_type' => 'nullable',
             'category_id' => 'nullable|integer',
             // 'specifications' => 'nullable|array',
             // 'specifications.*.label' => 'required_with:specifications|string',
@@ -283,7 +284,7 @@ class PropertyController extends Controller
                 'latitude',
                 'longitude',
                 'features',
-                'transaction_type',
+                // 'transaction_type',
                 'category_id',
                 'project_id',
                 'city_id',
@@ -526,7 +527,7 @@ class PropertyController extends Controller
             'elevator' => 'nullable|integer',
             'private_parking' => 'nullable|integer',
             'size' => 'nullable|numeric',
-            'transaction_type' => 'nullable',
+            'type' => 'nullable',
             'video_url' => 'nullable|string'
         ];
 
@@ -610,7 +611,7 @@ class PropertyController extends Controller
                     PropertyAmenity::sotreAmenity($user->id, $property->id, $amenity);
                 }
             }
-
+Log::info($request->category_id);
             $contentRequest = [
                 'language_id' => $defaultLanguage->id,
                 'category_id' => $request->category_id ?? ApiUserCategory::where('slug', 'other')->value('id'),
