@@ -241,6 +241,7 @@ class PropertyController extends Controller
             'annex' => 'nullable|integer',
             'elevator' => 'nullable|integer',
             'private_parking' => 'nullable|integer',
+            'size' => 'nullable|integer',
 
         ];
 
@@ -349,7 +350,8 @@ class PropertyController extends Controller
                 "garden",
                 "annex",
                 "elevator",
-                "private_parking"
+                "private_parking",
+                'size',
             ]);
 
             $characteristics['property_id'] = $property->id;
@@ -522,6 +524,7 @@ class PropertyController extends Controller
             'annex' => 'nullable|integer',
             'elevator' => 'nullable|integer',
             'private_parking' => 'nullable|integer',
+            'size' => 'nullable|numeric',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -578,7 +581,8 @@ class PropertyController extends Controller
                 "garden",
                 "annex",
                 "elevator",
-                "private_parking"
+                "private_parking",
+                'size',
             ]);
             $characteristics['facade_id'] = !empty($characteristics['facade_id']) ? $characteristics['facade_id'] : null;
 
