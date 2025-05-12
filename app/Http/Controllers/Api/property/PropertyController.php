@@ -208,11 +208,11 @@ class PropertyController extends Controller
             'city_id' => 'nullable',
             'featured' => 'nullable',
             'amenities' => 'nullable|array',
+            'transaction_type' => 'nullable',
+            'category_id' => 'nullable|integer',
             // 'specifications' => 'nullable|array',
             // 'specifications.*.label' => 'required_with:specifications|string',
             // 'specifications.*.value' => 'required_with:specifications|string',
-
-            'category_id' => 'nullable|integer',
 
             // Property Characteristics
             'facade_id' => 'nullable|numeric',
@@ -286,6 +286,7 @@ class PropertyController extends Controller
                 'transaction_type',
                 'category_id',
                 'project_id',
+                'city_id',
 
                 "facade_id",
                 "length",
@@ -313,6 +314,7 @@ class PropertyController extends Controller
                 "annex",
                 "elevator",
                 "private_parking"
+
             ]);
 
             $property = Property::storeProperty(
@@ -525,6 +527,8 @@ class PropertyController extends Controller
             'elevator' => 'nullable|integer',
             'private_parking' => 'nullable|integer',
             'size' => 'nullable|numeric',
+            'transaction_type' => 'nullable',
+            'video_url' => 'nullable|string'
         ];
 
         $validator = Validator::make($request->all(), $rules);
