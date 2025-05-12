@@ -38,7 +38,8 @@ class UserPropertyCharacteristic extends Model
         'garden',
         'annex',
         'elevator',
-        'private_parking'
+        'private_parking',
+        'size',
 
     ];
 
