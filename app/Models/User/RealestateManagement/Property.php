@@ -44,6 +44,7 @@ class Property extends Model
         'latitude',
         'longitude',
         'project_id',
+        'region_id',
 
     ];
 

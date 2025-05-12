@@ -206,7 +206,7 @@ class PropertyController extends Controller
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
             'project_id' => 'nullable',
             'city_id' => 'nullable',
-            'featured' => 'nullable',
+            'featured' => 'nullable|boolean',
             'amenities' => 'nullable|array',
             'transaction_type' => 'nullable',
             'category_id' => 'nullable|integer',
@@ -405,15 +405,14 @@ class PropertyController extends Controller
             }
         });
 
-        $responseProperty = Property::with([
+        $responseProperty = $property->load([
             'category',
             'user',
             'contents',
             'galleryImages',
             'proertyAmenities.amenity',
-            // 'specifications',
             'UserPropertyCharacteristics'
-        ])->findOrFail($property->id);
+        ]);
 
         $content = $responseProperty->contents->first();
 
@@ -551,13 +550,13 @@ class PropertyController extends Controller
                 'beds',
                 'bath',
                 'area',
-                'video_url',
+                // 'video_url',
                 'status',
                 'latitude',
                 'longitude',
                 'features',
-                'transaction_type',
-                'category_id',
+                // 'transaction_type',
+                // 'category_id',
                 'project_id',
                 'city_id',
                 "facade_id",
