@@ -92,9 +92,7 @@ class PropertyController extends Controller
                     'to' => $properties->lastItem(),
                 ]
             ]
-                ],200);
-
-
+        ], 200);
     }
 
     public function show($id)
@@ -105,7 +103,7 @@ class PropertyController extends Controller
             'contents',
             'galleryImages',
             'proertyAmenities.amenity',
-            'specifications',
+            // 'specifications',
             'UserPropertyCharacteristics',
         ])->findOrFail($id);
 
@@ -119,15 +117,16 @@ class PropertyController extends Controller
             'beds' => $property->beds,
             'bath' => $property->bath,
             'area' => $property->area,
-            'features' => $property->proertyAmenities->pluck('amenity.name')->toArray(),
+            'features' => $property->features,
+            // 'features' => $property->proertyAmenities->pluck('amenity.name')->toArray(),
             'characteristics' => $property->UserPropertyCharacteristics  ?? null,
-            'specifications'    => $property->specifications->map(function ($spec) {
-                return [
-                    'key' => $spec->key,
-                    'label' => $spec->label,
-                    'value' => $spec->value,
-                ];
-            })->toArray(),
+            // 'specifications'    => $property->specifications->map(function ($spec) {
+            //     return [
+            //         'key' => $spec->key,
+            //         'label' => $spec->label,
+            //         'value' => $spec->value,
+            //     ];
+            // })->toArray(),
             'status' => $property->status,
             'featured_image' => asset($property->featured_image),
             'featured' => (bool) $property->featured,
@@ -147,7 +146,6 @@ class PropertyController extends Controller
                 'property' => $formattedProperty
             ]
         ]);
-
     }
 
     /*
@@ -216,9 +214,9 @@ class PropertyController extends Controller
             'city_id' => 'nullable',
             'featured' => 'nullable',
             'amenities' => 'nullable|array',
-            'specifications' => 'nullable|array',
-            'specifications.*.label' => 'required_with:specifications|string',
-            'specifications.*.value' => 'required_with:specifications|string',
+            // 'specifications' => 'nullable|array',
+            // 'specifications.*.label' => 'required_with:specifications|string',
+            // 'specifications.*.value' => 'required_with:specifications|string',
 
             'category_id' => 'nullable|integer',
 
@@ -415,7 +413,7 @@ class PropertyController extends Controller
             'contents',
             'galleryImages',
             'proertyAmenities.amenity',
-            'specifications',
+            // 'specifications',
             'UserPropertyCharacteristics'
         ])->findOrFail($property->id);
 
@@ -431,15 +429,16 @@ class PropertyController extends Controller
             'beds' => $responseProperty->beds,
             'bath' => $responseProperty->bath,
             'area' => $responseProperty->area,
-            'features' => $responseProperty->proertyAmenities->pluck('amenity.name')->toArray(),
+            'features' => $responseProperty->features,
+            // 'features' => $responseProperty->proertyAmenities->pluck('amenity.name')->toArray(),
             'characteristics' => $responseProperty->UserPropertyCharacteristics ?? null,
-            'specifications' => $responseProperty->specifications->map(function ($spec) {
-                return [
-                    'key' => $spec->key,
-                    'label' => $spec->label,
-                    'value' => $spec->value,
-                ];
-            })->toArray(),
+            // 'specifications' => $responseProperty->specifications->map(function ($spec) {
+            //     return [
+            //         'key' => $spec->key,
+            //         'label' => $spec->label,
+            //         'value' => $spec->value,
+            //     ];
+            // })->toArray(),
             'status' => (bool) $responseProperty->status,
             'featured' => (bool) $responseProperty->featured,
             'featured_image' => asset($responseProperty->featured_image),
@@ -503,9 +502,9 @@ class PropertyController extends Controller
             'project_id' => 'nullable',
             'city_id' => 'nullable',
             'amenities' => 'nullable|array',
-            'specifications' => 'nullable|array',
-            'specifications.*.label' => 'required_with:specifications|string',
-            'specifications.*.value' => 'required_with:specifications|string',
+            // 'specifications' => 'nullable|array',
+            // 'specifications.*.label' => 'required_with:specifications|string',
+            // 'specifications.*.value' => 'required_with:specifications|string',
 
             'category_id' => 'nullable|integer',
             // Property Characteristics
@@ -634,19 +633,17 @@ class PropertyController extends Controller
 
             PropertyContent::storePropertyContent($user->id, $property->id, $contentRequest);
 
-            $specifications = $request->input('specifications', []);
+            // $specifications = $request->input('specifications', []);
 
-            foreach ($specifications as $spec) {
-                if (!empty($spec['label']) && !empty($spec['value'])) {
-                    PropertySpecification::storeSpecification($user->id, $property->id, [
-                        'language_id' => $defaultLanguage->id,
-                        'label' => $spec['label'],
-                        'value' => $spec['value'],
-                    ]);
-                }
-            }
-
-
+            // foreach ($specifications as $spec) {
+            //     if (!empty($spec['label']) && !empty($spec['value'])) {
+            //         PropertySpecification::storeSpecification($user->id, $property->id, [
+            //             'language_id' => $defaultLanguage->id,
+            //             'label' => $spec['label'],
+            //             'value' => $spec['value'],
+            //         ]);
+            //     }
+            // }
         });
 
         $responseProperty = Property::with([
@@ -655,7 +652,7 @@ class PropertyController extends Controller
             'contents',
             'galleryImages',
             'proertyAmenities.amenity',
-            'specifications',
+            // 'specifications',
             'UserPropertyCharacteristics'
         ])->find($property->id);
 
@@ -671,15 +668,16 @@ class PropertyController extends Controller
             'beds' => $responseProperty->beds,
             'bath' => $responseProperty->bath,
             'area' => $responseProperty->area,
-            'features' => $responseProperty->proertyAmenities->pluck('amenity.name')->toArray(),
+            'features' => $property->features,
+            // 'features' => $responseProperty->proertyAmenities->pluck('amenity.name')->toArray(),
             'characteristics' => $responseProperty->UserPropertyCharacteristics ?? null,
-            'specifications' => $responseProperty->specifications->map(function ($spec) {
-                return [
-                    'key' => $spec->key,
-                    'label' => $spec->label,
-                    'value' => $spec->value,
-                ];
-            })->toArray(),
+            // 'specifications' => $responseProperty->specifications->map(function ($spec) {
+            //     return [
+            //         'key' => $spec->key,
+            //         'label' => $spec->label,
+            //         'value' => $spec->value,
+            //     ];
+            // })->toArray(),
             'status' => (bool) $responseProperty->status,
             'featured' => (bool) $responseProperty->featured,
             'featured_image' => asset($responseProperty->featured_image),
@@ -707,14 +705,14 @@ class PropertyController extends Controller
             'proertyAmenities',
             'contents',
             'wishlists',
-            'specifications'
+            // 'specifications'
         ])->findOrFail($id);
 
         $property->galleryImages()->delete();
         $property->proertyAmenities()->delete();
         $property->contents()->delete();
         $property->wishlists()->delete();
-        $property->specifications()->delete();
+        // $property->specifications()->delete();
 
         if ($property->featured_image) {
             Storage::delete('public/properties/' . $property->featured_image);
@@ -726,7 +724,6 @@ class PropertyController extends Controller
             'status' => 'success',
             'message' => 'Property deleted successfully'
         ], 200);
-
     }
 
     public function toggleFeatured($id)
@@ -790,6 +787,4 @@ class PropertyController extends Controller
             "/storage/properties/default-3.jpg"
         ];
     }
-
-
 }
