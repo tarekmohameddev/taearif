@@ -274,7 +274,7 @@
                             <div class="row">
                                 @if (!empty($characteristics->facade_id))
                                     <div class="col-md-4 mb-3 d-flex align-items-center">
-                                        <i class="fal fa-layer-group me-2 text-primary"></i>
+                                        <i class="fal fa-layer-group me-2"></i>
                                         <strong class="me-1">{{ __('Facade') }}:</strong>
                                         <span>{{ optional($characteristics->UserFacade)->name }}</span>
                                     </div>
