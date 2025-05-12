@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Content;
 
 use Illuminate\Http\Request;
+use App\Models\User\BasicSetting;
 use App\Models\Api\GeneralSetting;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
@@ -37,6 +38,13 @@ class GeneralSettingController extends Controller
         $responseSettings['logo'] = asset($settings->logo);
         $responseSettings['favicon'] = asset($settings->favicon);
 
+        $basicSetting = BasicSetting::where('user_id', $user->id)->first();
+
+        if ($basicSetting) {
+            $responseSettings['primary_color'] = $basicSetting->base_color;
+            $responseSettings['secondary_color'] = $basicSetting->secondary_color;
+            $responseSettings['accent_color'] = $basicSetting->accent_color;
+        }
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -97,6 +105,13 @@ class GeneralSettingController extends Controller
         $responseSettings = $settings->toArray();
         $responseSettings['logo'] = asset($settings->logo);
         $responseSettings['favicon'] = asset($settings->favicon);
+
+        $basicSetting = BasicSetting::where('user_id', $user->id)->first();
+        if ($basicSetting) {
+            $responseSettings['primary_color'] = $basicSetting->base_color;
+            $responseSettings['secondary_color'] = $basicSetting->secondary_color;
+            $responseSettings['accent_color'] = $basicSetting->accent_color;
+        }
 
         return response()->json([
             'status' => 'success',

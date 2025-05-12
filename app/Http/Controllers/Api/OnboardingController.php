@@ -69,22 +69,22 @@ class OnboardingController extends Controller
 
             $bss->base_color = $request->colors['primary'];
             $bss->secondary_color = $request->colors['secondary'];
+            $bss->accent_color = $request->colors['accent'];
+            $bss->logo = $request->logo;
+            $bss->favicon = $request->favicon;
+            $bss->company_name = $request->title;
+            $bss->industry_type = $request->category;
 
             $templateMapping = [
                 'realestate' => 'home13',
                 'lawyer' => 'home_seven',
                 'personal' => 'home_two'
             ];
-
             if (array_key_exists($request->category, $templateMapping)) {
                 $bss->theme = $templateMapping[$request->category];
             }
-
             $logoFilename = null;
             $faviconFilename = null;
-
-            $bss->logo = $request->logo;
-            $bss->favicon = $request->favicon;;
             $bss->save();
 
             if ($request->category == 'realestate') {
@@ -97,14 +97,8 @@ class OnboardingController extends Controller
                 // $this->updateUserAmenities($user->id, $lang->id);
             }
 
-            BasicSetting::updateOrCreate(
-                ['user_id' => $user->id],
-                [
-                    'company_name' => $request->title,
-                    'industry_type' => $request->category,
-                    'secondary' => $request->colors['secondary']
-                ]
-            );
+            $user->onboarding_completed = true;
+            $user->save();
 
             GeneralSetting::updateOrCreate(
                 ['user_id' => $user->id],
@@ -115,11 +109,6 @@ class OnboardingController extends Controller
                 ]
             );
 
-
-
-            $user->onboarding_completed = true;
-            $user->save();
-
             return response()->json([
                 'status' => 'success',
                 'data' => [
@@ -129,6 +118,7 @@ class OnboardingController extends Controller
                     'category' => $request->category
                 ]
             ], 200);
+
         } catch (\Exception $e) {
             \Log::error("API Onboarding settings update failed: " . $e->getMessage());
 
