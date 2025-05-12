@@ -611,7 +611,7 @@ class PropertyController extends Controller
                     PropertyAmenity::sotreAmenity($user->id, $property->id, $amenity);
                 }
             }
-Log::info($request->category_id);
+
             $contentRequest = [
                 'language_id' => $defaultLanguage->id,
                 'category_id' => $request->category_id ?? ApiUserCategory::where('slug', 'other')->value('id'),
