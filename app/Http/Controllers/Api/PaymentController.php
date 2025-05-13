@@ -88,6 +88,9 @@ class PaymentController extends Controller
                 'features' => is_array($package->features)
                     ? $package->features
                     : json_decode($package->features, true) ?? [],
+                'new_features' => is_array($package->new_features)
+                ? $package->new_features
+                : json_decode($package->new_features, true) ?? [],
                 'is_trial' => (bool) $package->is_trial,
                 'cta' => $isCurrent ? 'الخطة الحالية' :  'الترقية',
             ];
