@@ -26,7 +26,8 @@ use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
 use App\Http\Controllers\Api\content\ApiContentSectionsController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
-
+use App\Http\Controllers\Api\apps\whatsapp\EmbeddingController;
+use App\Http\Controllers\Api\apps\whatsapp\ChatController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -206,4 +207,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/apps/install', [ApiInstallationController::class, 'install']);
     Route::post('/apps/uninstall/{appId}', [ApiInstallationController::class, 'uninstall']);
 });
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/embeddings', [EmbeddingController::class, 'store']);
+    Route::post('/chat', [ChatController::class, 'chat']);
+    
+});
+
 
