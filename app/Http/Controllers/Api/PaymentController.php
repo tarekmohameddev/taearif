@@ -33,30 +33,28 @@ class PaymentController extends Controller
             $description = "Congratulation you are going to join our membership.Please make a payment for confirming your membership now!";
 
 
-                $amount = $request->price;
+            $amount = $request->price;
 
-                // Change success and cancel URLs to API endpoints
-                $success_url = route('membership.arb.success');
-                $cancel_url = route('membership.arb.cancel');
+            // Change success and cancel URLs to API endpoints
+            $success_url = route('membership.arb.success');
+            $cancel_url = route('membership.arb.cancel');
 
-                $arbPayment = new ArbController();
-                $result = $arbPayment->paymentProcess($request, $amount, $success_url, $cancel_url, $title,$user->id);
+            $arbPayment = new ArbController();
+            $result = $arbPayment->paymentProcess($request, $amount, $success_url, $cancel_url, $title, $user->id);
 
-                if ($result == 'error'){
-                    return response()->json([
-                        'status' => 'error',
-                        'payment_url' => null,
-                        'payment_token' => null
-                    ], 422);
-                }
-
+            if ($result == 'error') {
                 return response()->json([
-                    'status' => 'success',
-                    'payment_url' => $result['redirect_url'],
-                    'payment_token' => $result['payment_token'] ?? null
-                ], 200);
+                    'status' => 'error',
+                    'payment_url' => null,
+                    'payment_token' => null
+                ], 422);
+            }
 
-
+            return response()->json([
+                'status' => 'success',
+                'payment_url' => $result['redirect_url'],
+                'payment_token' => $result['payment_token'] ?? null
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -64,41 +62,38 @@ class PaymentController extends Controller
             ], 500);
         }
     }
+
     public function index()
     {
         $user = Auth::user();
 
-        $plans = Package::with(['memberships' => function($query) {
+        $plans = Package::with(['memberships' => function ($query) {
             $query->where('expire_date', '>=', now());
         }])
-        ->get()
-        ->map(function ($package) use ($user) {
-            $isCurrent = $package->memberships->contains('user_id', $user->id);
+            ->get()
+            ->map(function ($package) use ($user) {
+                $isCurrent = $package->memberships->contains('user_id', $user->id);
 
-            return [
-                'id' => $package->id,
-                'name' => $package->title,
-                'price' => '' . number_format($package->price, 2),
-                'billing' => match ($package->term) {
-                    'monthly' => 'شهريًا',
-                    'yearly' => 'سنويًا',
-                    'trial', 'is_trial' => 'تجريبي',
-                    default => '',
-                },
-                'features' => is_array($package->features)
-                    ? $package->features
-                    : json_decode($package->features, true) ?? [],
-                'new_features' => is_array($package->new_features)
-                ? $package->new_features
-                : json_decode($package->new_features, true) ?? [],
-                'is_trial' => (bool) $package->is_trial,
-                'cta' => $isCurrent ? 'الخطة الحالية' :  'الترقية',
-            ];
-        });
+                return [
+                    'id' => $package->id,
+                    'name' => $package->title,
+                    'price' => '' . number_format($package->price, 2),
+                    'billing' => match ($package->term) {
+                        'monthly' => 'شهريًا',
+                        'yearly' => 'سنويًا',
+                        'trial', 'is_trial' => 'تجريبي',
+                        default => '',
+                    },
+                    'features' => is_array($package->new_features)
+                        ? $package->new_features
+                        : json_decode($package->new_features, true, JSON_UNESCAPED_UNICODE) ?? [],
+                    'is_trial' => (bool) $package->is_trial,
+                    'cta' => $isCurrent ? 'الخطة الحالية' :  'الترقية',
+                ];
+            });
 
         return response()->json([
             'plans' => $plans,
-        ]);
-
+        ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 }
