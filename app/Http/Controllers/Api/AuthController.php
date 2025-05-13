@@ -32,6 +32,7 @@ use App\Models\User\UserPaymentGeteway;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Helpers\UserPermissionHelper;
+use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
@@ -57,7 +58,6 @@ class AuthController extends Controller
                 'password' => 'required|string|min:6',
             ]);
 
-
             $request['status'] = 1;
             $request['mode'] = 'online';
             $request['receipt_name'] = null;
@@ -78,8 +78,6 @@ class AuthController extends Controller
             $request['start_date'] = '15-03-2025';
             $request['id'] = 16;
             $request['expire_date'] = '09-01-2026';
-
-
 
             // Validate Coupon
             $coupon = Coupon::where('code', Session::get('coupon'))->first();
@@ -135,10 +133,45 @@ class AuthController extends Controller
             $activation = Carbon::parse($lastMemb->start_date);
             $expire = Carbon::parse($lastMemb->expire_date);
 
+            // send to new user whatsapp welcome message with his own website link
+
+            $link = "https://{$user->username}.taearif.com/";
+            $message = "حياك الله, شكراً على التسجيل في منصة تعاريف وهذا لينك الموقع الخاص : $link";
+            $this->sendWhatsAppMessage($user->phone, $message);
+            \Log::info($user->phone);
+            \Log::info($link);
+
             $user['onboarding_completed'] = false;
             return response()->json(['status' => 'success', 'user' => $user, 'token' => $token], 201);
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    //sendWhatsAppMessage
+    public function sendWhatsAppMessage($phone, $message)
+    {
+        try {
+            $url = 'https://whatsapp-evolution-api.3dxvu8.easypanel.host/message/sendText/ddd';
+            $apiKey = '286540DD68F4-4EE2-AAE1-25A7177E44BD';
+
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'apikey' => $apiKey,
+            ])->post($url, [
+                'number' => $phone,
+                'text' => $message,
+            ]);
+
+            if ($response->successful()) {
+                return true;
+            } else {
+                \Log::error('WhatsApp API error: ' . $response->body());
+                return false;
+            }
+        } catch (\Exception $e) {
+            \Log::error('Exception while sending WhatsApp message: ' . $e->getMessage());
+            return false;
         }
     }
 
