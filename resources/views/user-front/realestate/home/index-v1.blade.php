@@ -498,7 +498,7 @@
     @endif
 
     @if ($home_sections->newsletter_section == 1)
-        <section class="newsletter-area pb-100" data-aos="fade-up">
+        <section class="newsletter-area pb-100 d-none" data-aos="fade-up">
             <div class="container">
                 <div class="newsletter-inner px-4">
                     <img class="lazyload bg-img"
