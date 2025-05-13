@@ -676,6 +676,8 @@
     var properties = property_contents.data;
     var siteURL = "{{ route('front.user.detail.view', getParam()) }}"
     const categoryUrl = "{{ route('front.user.get_categories', getParam()) }}";
+    var noPropertiesFoundMessageAr = @json(__('No properties found'));
+    var noPropertiesFoundMessageEn = @json(__('No properties found'));
 </script>
 
 <script src="{{ asset('/assets/front/user/realestate/js/properties-filter.js') }}"></script>
