@@ -61,12 +61,10 @@ class ChatController extends Controller
             ])->post($endpoint, [
                 'number' => $recipientNumber, // Ensure this is the full WhatsApp number (e.g., country code + number)
                 'options' => [
-                    'delay' => 1200,
+                    'delay' => 600,
                     'presence' => 'composing',
-                ],
-                'textMessage' => [
-                    'text' => $messageText,
-                ],
+                 ],
+               'text' => $messageText,
             ]);
 
             if ($response->successful()) {
