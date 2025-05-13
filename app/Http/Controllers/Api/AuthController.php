@@ -136,10 +136,8 @@ class AuthController extends Controller
             // send to new user whatsapp welcome message with his own website link
 
             $link = "https://{$user->username}.taearif.com/";
-            $message = "حياك الله, شكراً على التسجيل في منصة تعاريف وهذا لينك الموقع الخاص : $link";
+            $message = "حياك الله, شكراً على التسجيل في منصة تعاريف وهذا لينك الموقع الخاص بك : $link";
             $this->sendWhatsAppMessage($user->phone, $message);
-            \Log::info($user->phone);
-            \Log::info($link);
 
             $user['onboarding_completed'] = false;
             return response()->json(['status' => 'success', 'user' => $user, 'token' => $token], 201);
