@@ -4,192 +4,285 @@ namespace App\Http\Controllers\Api\apps\whatsapp;
 
 use App\Http\Controllers\Controller;
 use App\Models\Embedding;
-use App\Models\User\RealestateManagement\Property;
-use App\Models\User\RealestateManagement\PropertyContent;
+use App\Models\User\RealestateManagement\Property as Property;
+use App\Models\User\RealestateManagement\PropertyContent as PropertyContent;
+use App\Models\User\RealestateManagement\UserPropertyCharacteristic as PropertyChar;
 use App\Models\ChatHistory;
 use Illuminate\Http\Request;
-use OpenAI as OpenAIClient;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Collection;
+
+use OpenAI as OpenAIClient;
+
 
 class ChatController extends Controller
 {
-    protected $openai;
-    protected $maxTurns = 10;
-    protected $systemInstructions = <<<INSTR
-أنت موظف دعم عملاء في شركة إدارة عقارات في السعودية
-- اجعل ردودك ودية ودافئة، كما لو كنت تتحاور مع جار، مع الحفاظ على الجدية والوضوح.
-- استخدم جمل بسيطة ومختصرة لا تتجاوز سطرين إلى ثلاثة أسطر.
-- عند حاجتك للتوضيح، اجعل طلبك بسيطًا ومباشرًا، مثلًا: "وش رقم الشقّة لو سمحت؟"
-- إذا كان السؤال خارج نطاق العقارات، رد بعبارة: "عذرًا، أقدر أساعد بس في أمور إدارة العقارات."
 
-# Output Format
-- الردود بجمل قصيرة، لا تزيد عن ثلاثة أسطر.
-- تجنب الودية الزائدة, وخليك طبيعي
-- تجنب الثناء في اول كل رد
-
-# Notes
-- الهدف هو توفير تجربة تواصل مريحة وداعمة للعميل، مع الحفاظ على الالتزام بنطاق المساعدة المتعلق بالعقارات فقط.
-INSTR;
+    protected int $maxTurns = 10;
+    protected string $systemInstructions;
 
     public function __construct()
     {
+
         $this->openai = OpenAIClient::client(env('OPENAI_API_KEY'));
+        $this->systemInstructions = implode("\n", [
+            'أنت موظف دعم عملاء في شركة إدارة عقارات في السعودية.',
+            '– ردودك ودية ودافئة، مع الجدية والوضوح.',
+            '– استخدم جمل بسيطة لا تتجاوز 3 أسطر.',
+            '– للتوضيح: اسأل بشكل مباشر (مثال: "وش رقم الشقّة؟").',
+            '– خارج العقارات: "عذرًا، أقدر أساعد بس في أمور إدارة العقارات."'
+        ]);
     }
 
     public function chat(Request $request)
     {
-        $user = $request->user();
-        $userId = $user->id;
+        $userId = $request->user()->id;
         $userMessage = $request->input('message');
 
-        // Fetch or init history
+        // Load or init chat history
         $record = ChatHistory::firstOrCreate(
             ['user_id' => $userId],
             ['history' => []]
         );
-
         $history = $record->history;
         $history[] = ['role' => 'user', 'content' => $userMessage];
 
-        // Embedding search for FAQs/context
-        $embedResp = $this->openai->embeddings()->create([
-            'model' => env('OPENAI_EMBEDDING_MODEL','text-embedding-3-small'),
-            'input' => $userMessage
-        ]);
-
-        $userVec = $embedResp['data'][0]['embedding'];
-        $scores = Embedding::all()->map(fn($emb) => [
-            'text' => $emb->text,
-            'score' => $this->cosineSimilarity($userVec, $emb->embedding)
-        ])->sortByDesc('score')->pluck('text')->take(2)->toArray();
-
-        // Prepare messages
+        // Build messages
         $messages = [];
+        $messages[] = ['role' => 'system', 'content' => $this->systemInstructions];
+
+        // Inject summary if exists
         if (!empty($history) && $history[0]['role'] === 'system_summary') {
-            $messages[] = ['role'=>'system','content'=>$history[0]['content']];
+            $messages[] = $history[0];
             $history = array_slice($history, 1);
-        } else {
-            $messages[] = ['role'=>'system','content'=>$this->systemInstructions];
         }
-        $messages[] = ['role'=>'system','content'=>'المعلومات ذات الصلة:' . PHP_EOL . '- ' . implode(PHP_EOL . '- ', $scores)];
-        foreach (array_slice($history, -5) as $turn) {
+
+        // Append last 3 turns
+        foreach (array_slice($history, -3) as $turn) {
             $messages[] = $turn;
         }
 
-        // Function schema for property search
-        $functions = [[
-            'name' => 'search_properties',
-            'description' => 'ابحث عن عقارات حسب المعايير',
-            'parameters' => [
-                'type' => 'object',
-                'properties' => [
-                    'location' => ['type'=>'string','description'=>'المدينة أو الحي'],
-                    'min_bedrooms' => ['type'=>'integer','description'=>'الحد الأدنى لعدد الغرف'],
-                    'max_price' => ['type'=>'number','description'=>'الالحد الأقصى للسعر (SAR)'],
+        // Define functions
+        $functions = [
+            [
+                'name' => 'search_properties',
+                'description' => 'ابحث عن عقارات حسب المعايير',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'location' => ['type' => 'string'],
+                        'min_bedrooms' => ['type' => 'integer'],
+                        'max_price' => ['type' => 'number'],
+                        'type' => ['type' => 'string'],
+                        'purpose' => ['type' => 'string'],
+                        'page' => ['type' => 'integer'],
+                        'per_page' => ['type' => 'integer'],
+                    ],
+                    'required' => ['location'],
                 ],
-                'required' => ['location']
-            ]
-        ]];
+            ],
+            [
+                'name' => 'get_faq_answer',
+                'description' => 'إجابة عن الأسئلة الشائعة في إدارة العقارات',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'question' => ['type' => 'string'],
+                    ],
+                    'required' => ['question'],
+                ],
+            ],
+        ];
 
-        // Chat completion
-        log::info($messages);
-        $resp = $this->openai->chat()->create([
-            'model' => env('OPENAI_CHAT_MODEL','gpt-4.1-nano'),
+        // Call API
+        $response = $this->openai->chat()->create([
+            'model' => env('OPENAI_CHAT_MODEL', 'gpt-4.1-nano'),
             'messages' => $messages,
             'functions' => $functions,
-            'function_call' => 'auto'
+            'function_call' => 'auto',
         ]);
-        log::info(json_encode($resp));
-        $assistantMsg = $resp['choices'][0]['message'];
 
-        // Handle function calls
-        if (isset($assistantMsg['function_call'])) {
-            log::info('enter function calling');
-            $call = $assistantMsg['function_call'];
-            $args = json_decode($call['arguments'], true);
-            // $props = Property::where('location', 'like', "%{$args['location']}%")
-            //     ->when($args['min_bedrooms'] ?? null, fn($q, $v) => $q->where('bedrooms', '>=', $v))
-            //     ->when($args['max_price'] ?? null, fn($q, $v) => $q->where('price', '<=', $v))
-            //     ->limit(3)->get();
+        $choice = $response['choices'][0]['message'];
+        $reply = '';
 
-            log::info($args);
-            $props = Property::select('user_properties.*')
-            ->join('user_property_contents', 'user_property_contents.property_id', '=', 'user_properties.id')
-            ->where('user_property_contents.address', 'like', "%{$args['location']}%")
-            ->when($args['min_bedrooms'] ?? null, fn($q, $v) => $q->where('user_properties.beds', '>=', $v))
-            ->when($args['max_price'] ?? null, fn($q, $v) => $q->where('user_properties.price', '<=', $v))
-            ->limit(3)
-            ->get();
-        
-            log::info(json_encode($props));
-            $funcData = $props->map(fn($p) => [
-                'title' => $p->title,
-                'location' => $p->address,
-                'bedrooms' => $p->beds,
-                'price' => $p->price,
-                'link' => url("/properties/{$p->id}")
-            ]);
+        // Handle function call
+        if (isset($choice['function_call'])) {
+            $funcName = $choice['function_call']['name'];
+            $args = json_decode($choice['function_call']['arguments'], true);
 
-            // Append function response to history
-            $history[] = [
+            if ($funcName === 'search_properties') {
+                $funcResponse = $this->handleSearchProperties($args);
+            } else {
+                $funcResponse = $this->handleFaq($args);
+            }
+
+            // Inject function response
+            $messages[] = [
                 'role' => 'assistant',
-                'name' => $call['name'],
-                'content' => json_encode($funcData)
+                'name' => $funcName,
+                'content' => json_encode($funcResponse),
             ];
 
-            // Get assistant natural language reply using function data
-            $messages = array_merge($messages, [[
-                'role' => 'assistant',
-                'name' => $call['name'],
-                'content' => json_encode($funcData)
-            ]]);
-            $finalResp = $this->openai->chat()->create([
-                'model' => env('OPENAI_CHAT_MODEL','gpt-4.1-nano'),
-                'messages' => $messages
+            // Final LLM call to generate natural reply
+            $final = $this->openai->chat()->create([
+                'model' => env('OPENAI_CHAT_MODEL', 'gpt-4.1-nano'),
+                'messages' => $messages,
             ]);
-            $reply = $finalResp['choices'][0]['message']['content'];
+
+            $reply = $final['choices'][0]['message']['content'];
+            $history[] = ['role' => 'assistant', 'name' => $funcName, 'content' => json_encode($funcResponse)];
         } else {
-            // Direct assistant reply
-            $reply = $assistantMsg['content'];
+            // Direct reply
+            $reply = $choice['content'] ?? '';
         }
 
-        // Append assistant reply to history
         $history[] = ['role' => 'assistant', 'content' => $reply];
 
-        // Summarize if too long
+        // Summarize if needed
         if (count($history) > $this->maxTurns) {
             $summary = $this->summarizeHistory($history);
             $history = [['role' => 'system_summary', 'content' => $summary]];
         }
 
-        // Save updated history
+        // Save history
         $record->history = $history;
         $record->save();
 
         return response()->json(['reply' => $reply]);
     }
 
-    private function cosineSimilarity(array $a, array $b): float
+    protected function handleSearchProperties(array $args): array
     {
-        $dot = array_sum(array_map(fn($i) => $a[$i] * $b[$i], array_keys($a)));
-        $normA = sqrt(array_sum(array_map(fn($x) => $x * $x, $a)));
-        $normB = sqrt(array_sum(array_map(fn($x) => $x * $x, $b)));
-        return $dot / ($normA * $normB);
+        $userId   = auth()->id();
+
+        // Base query restricted to this user
+        $query = Property::with([
+            'category',
+            'user',
+            'contents',
+            'proertyAmenities.amenity'
+        ])->where('user_id', $userId);
+
+        // Apply filters
+        if (!empty($args['location'])) {
+            $location = $args['location'];
+            $query->whereHas('contents', fn($q) =>
+                $q->where('language_id', 1)
+                  ->where(fn($qq) =>
+                      $qq->where('city_id', $this->mapCity($location))
+                         ->orWhere('title', 'like', "%{$location}%")
+                         ->orWhere('address', 'like', "%{$location}%")
+                  )
+            );
+        }
+        if (!empty($args['min_bedrooms'])) {
+            $query->where('beds', '>=', $args['min_bedrooms']);
+        }
+        if (!empty($args['max_price'])) {
+            $query->where('price', '<=', $args['max_price']);
+        }
+        if (!empty($args['type'])) {
+            $query->where('type', $args['type']);
+        }
+        if (!empty($args['purpose'])) {
+            $query->where('purpose', $args['purpose']);
+        }
+
+        // Pagination parameters
+        $perPage = $args['page_size'] ?? 10;
+        $page    = $args['page'] ?? 1;
+
+        $paginated = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Format results
+        $formatted = $paginated->getCollection()->map(fn($p) => [
+            'id'               => $p->id,
+            'title'            => optional($p->contents->first())->title ?? 'No Title',
+            'address'          => optional($p->contents->first())->address ?? 'No Address',
+            'slug'             => optional($p->contents->first())->slug,
+            'price'            => $p->price,
+            'type'             => $p->type,
+            'beds'             => $p->beds,
+            'bath'             => $p->bath,
+            'area'             => $p->area,
+            'transaction_type' => $p->purpose,
+            'features'         => $p->features,
+            'status'           => $p->status,
+            'featured_image'   => asset($p->featured_image),
+            'featured'         => (bool) $p->featured,
+            'created_at'       => $p->created_at->toISOString(),
+            'updated_at'       => $p->updated_at->toISOString(),
+        ]);
+
+        return [
+            'properties' => $formatted,
+            'pagination' => [
+                'total'        => $paginated->total(),
+                'per_page'     => $paginated->perPage(),
+                'current_page' => $paginated->currentPage(),
+                'last_page'    => $paginated->lastPage(),
+                'from'         => $paginated->firstItem(),
+                'to'           => $paginated->lastItem(),
+            ],
+        ];
+    }
+
+    protected function handleFaq(array $args): array
+    {
+        $question = $args['question'];
+        $embedRes = $this->openai->embeddings()->create([
+            'model' => env('OPENAI_EMBEDDING_MODEL','text-embedding-3-small'),
+            'input' => $question,
+        ]);
+        $qVec = $embedRes['data'][0]['embedding'];
+
+        $best = Embedding::all()->reduce(function($carry, Embedding $emb) use ($qVec) {
+            $score = $this->cosineSimilarity($qVec, $emb->embedding);
+            if ($carry === null || $score > $carry[1]) {
+                return [$emb->text, $score];
+            }
+            return $carry;
+        }, null);
+
+        $parts = preg_split('/\nج[:：]/u', $best[0], 2);
+        $answer = trim($parts[1] ?? $best[0]);
+        return ['answer' => $answer];
     }
 
     private function summarizeHistory(array $history): string
     {
-        $text = collect($history)->map(fn($m) => ucfirst($m['role']) . ": " . $m['content'])->join("\n");
+        $text = Collection::make($history)
+            ->map(fn($m) => ucfirst($m['role']) . ": " . $m['content'])
+            ->join("\n");
+
         $resp = $this->openai->chat()->create([
             'model' => env('OPENAI_CHAT_MODEL','gpt-4.1-nano'),
             'messages' => [
-                ['role' => 'system', 'content' => 'قم بتلخيص المحادثة التالية بإيجاز بالعربية مع التركيز على معايير المستخدم.'],
-                ['role' => 'user', 'content' => $text]
+                ['role' => 'system', 'content' => 'سّو ملخص بسيط للمحادثة بالتركيز على معايير المستخدم.'],
+                ['role' => 'user',   'content' => $text],
             ],
-            'max_tokens' => 200
+            'max_tokens' => 200,
         ]);
+
         return $resp['choices'][0]['message']['content'];
+    }
+
+    private function mapCity(string $name): int
+    {
+        $map = ['الرياض' => 1, 'جدة' => 2];
+        return $map[$name] ?? 0;
+    }
+
+    private function cosineSimilarity(array $a, array $b): float
+    {
+        $dot = $na = $nb = 0;
+        foreach ($a as $i => $v) {
+            $dot += $v * $b[$i];
+            $na  += $v * $v;
+            $nb  += $b[$i] * $b[$i];
+        }
+        return $dot / (sqrt($na) * sqrt($nb));
     }
 }
