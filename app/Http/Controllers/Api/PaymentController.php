@@ -16,29 +16,29 @@ class PaymentController extends Controller
         try {
             // Get user from token instead of auth() helper
             $user = Auth::user();
-            
+
             if (!$user) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Unauthorized access'
                 ], 401);
             }
-    
+
             $data = $request->all();
             $data['status'] = "1";
             $data['receipt_name'] = null;
             $data['email'] = $user->email;
-            
+
             $title = "You are extending your membership";
             $description = "Congratulation you are going to join our membership.Please make a payment for confirming your membership now!";
-            
-      
+
+
                 $amount = $request->price;
-                
+
                 // Change success and cancel URLs to API endpoints
                 $success_url = route('membership.arb.success');
                 $cancel_url = route('membership.arb.cancel');
-                
+
                 $arbPayment = new ArbController();
                 $result = $arbPayment->paymentProcess($request, $amount, $success_url, $cancel_url, $title,$user->id);
 
@@ -56,7 +56,7 @@ class PaymentController extends Controller
                     'payment_token' => $result['payment_token'] ?? null
                 ], 200);
 
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -74,7 +74,7 @@ class PaymentController extends Controller
         ->get()
         ->map(function ($package) use ($user) {
             $isCurrent = $package->memberships->contains('user_id', $user->id);
-    
+
             return [
                 'id' => $package->id,
                 'name' => $package->title,
@@ -85,14 +85,14 @@ class PaymentController extends Controller
                     'trial', 'is_trial' => 'تجريبي',
                     default => '',
                 },
-                'features' => is_array($package->features)
-                    ? $package->features
-                    : json_decode($package->features, true) ?? [],
+                'features' => is_array($package->new_features)
+                    ? $package->new_features
+                    : json_decode($package->new_features, true) ?? [],
                 'is_trial' => (bool) $package->is_trial,
                 'cta' => $isCurrent ? 'الخطة الحالية' :  'الترقية',
             ];
         });
-    
+
         return response()->json([
             'plans' => $plans,
         ]);

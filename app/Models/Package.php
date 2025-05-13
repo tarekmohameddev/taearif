@@ -19,6 +19,7 @@ class Package extends Model
         'is_trial',
         'trial_days',
         'status',
+        'new_features',
         'features',
         'meta_keywords',
         'meta_description',
