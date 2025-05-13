@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Http;
 
 use OpenAI as OpenAIClient;
 
@@ -22,6 +23,9 @@ class ChatController extends Controller
 
     protected int $maxTurns = 10;
     protected string $systemInstructions;
+    protected string $evolutionApiUrl;
+    protected string $evolutionApiKey;
+    protected string $evolutionApiInstance;
 
     public function __construct()
     {
@@ -31,15 +35,119 @@ class ChatController extends Controller
             'أنت موظف دعم عملاء في شركة إدارة عقارات في السعودية.',
             '– ردودك ودية ودافئة، مع الجدية والوضوح.',
             '– استخدم جمل بسيطة لا تتجاوز 3 أسطر.',
-            '– للتوضيح: اسأل بشكل مباشر (مثال: "وش رقم الشقّة؟").',
+            '_ slug لما تلاقي عقار, رد ب رابط العقار الموجود',
             '– خارج العقارات: "عذرًا، أقدر أساعد بس في أمور إدارة العقارات."'
         ]);
+
+        $this->evolutionApiUrl = rtrim(env('EVOLUTION_API_URL'), '/');
+        $this->evolutionApiKey = env('EVOLUTION_API_KEY');
+        $this->evolutionApiInstance = env('EVOLUTION_API_INSTANCE');
+
     }
+
+    protected function sendWhatsappMessage(string $recipientNumber, string $messageText)
+    {
+        if (empty($this->evolutionApiUrl) || empty($this->evolutionApiKey) || empty($this->evolutionApiInstance)) {
+            Log::error('Evolution API URL, Key, or Instance not configured.');
+            return false;
+        }
+
+        $endpoint = $this->evolutionApiUrl . '/message/sendText/' . $this->evolutionApiInstance;
+
+        try {
+            $response = Http::withHeaders([
+                'apikey' => $this->evolutionApiKey,
+                'Content-Type' => 'application/json',
+            ])->post($endpoint, [
+                'number' => $recipientNumber, // Ensure this is the full WhatsApp number (e.g., country code + number)
+                'options' => [
+                    'delay' => 600,
+                    'presence' => 'composing',
+                 ],
+               'text' => $messageText,
+            ]);
+
+            if ($response->successful()) {
+                Log::info('Message sent successfully via Evolution API: ' . $response->body());
+                return true;
+            } else {
+                Log::error('Failed to send message via Evolution API: ' . $response->status() . ' - ' . $response->body());
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error('Exception sending message via Evolution API: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+// ... (inside ChatController class)
+
+public function handleEvolutionWebhook(Request $request)
+{
+    $payload = $request->all();
+    Log::info('Evolution API Webhook received: ' . json_encode($payload));
+
+    // ---- VALIDATE THE WEBHOOK (IMPORTANT FOR SECURITY) ----
+    // Evolution API might have a way to verify webhooks (e.g., a secret token in headers).
+    // Implement verification if available. For example:
+    // $expectedToken = env('EVOLUTION_WEBHOOK_TOKEN');
+    // if ($request->header('X-Evolution-Token') !== $expectedToken) {
+    //     Log::warning('Invalid webhook token.');
+    //     return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+    // }
+
+    // Extract message details (this depends on Evolution API's webhook payload structure)
+    // Common fields might include:
+    // $messageType = $payload['event'] ?? null; // e.g., 'messages.upsert', 'messages.update'
+    // $instance = $payload['instance'] ?? null;
+    $data = $payload['data'] ?? null; // This usually contains the message details
+
+    if (isset($data['key']['fromMe']) && $data['key']['fromMe'] === true) {
+        Log::info('Ignoring own outgoing message from webhook.');
+        return response()->json(['status' => 'ignored_own_message']);
+    }
+
+    $senderNumber = $data['key']['remoteJid'] ?? null; // Sender's WhatsApp ID (e.g., 1234567890@s.whatsapp.net)
+    $messageContent = null;
+
+    if (isset($data['message']['conversation'])) {
+        $messageContent = $data['message']['conversation'];
+    } elseif (isset($data['message']['extendedTextMessage']['text'])) {
+        $messageContent = $data['message']['extendedTextMessage']['text'];
+    }
+    // Add handling for other message types if needed (images, audio, etc.)
+
+    if ($senderNumber && $messageContent) {
+        // Clean sender number if it has @s.whatsapp.net
+        $senderNumber = str_replace('@s.whatsapp.net', '', $senderNumber);
+
+        // You need to map the $senderNumber to a $userId in your system
+        // This is a placeholder; implement your own user lookup logic
+        // Prepare a request object or parameters to call your existing chat logic
+        $internalRequest = new Request([
+            'message' => $messageContent,
+            'user_id' => 922, // Pass the identified or created user ID
+            'whatsapp_number' => $senderNumber // Pass the sender's WhatsApp number for the reply
+        ]);
+
+        // Call your chat processing logic
+        // Make sure the 'chat' method can handle being called this way
+        // and that it knows to use $recipientWhatsappNumber for the reply
+        $this->chat($internalRequest);
+
+        return response()->json(['status' => 'received_and_processing']);
+    } else {
+        Log::warning('Webhook received but no valid sender or message content.');
+        return response()->json(['status' => 'ignored_invalid_payload'], 400);
+    }
+}
 
     public function chat(Request $request)
     {
-        $userId = $request->user()->id;
         $userMessage = $request->input('message');
+        $userId = $request->input('user_id'); // Or derive from recipientWhatsappNumber if this is from a webhook
+        $recipientWhatsappNumber = $request->input('whatsapp_number'); // This needs to be provided
+
 
         // Load or init chat history
         $record = ChatHistory::firstOrCreate(
@@ -103,7 +211,7 @@ class ChatController extends Controller
             'functions' => $functions,
             'function_call' => 'auto',
         ]);
-
+        log::info(json_encode($response));
         $choice = $response['choices'][0]['message'];
         $reply = '';
 
@@ -132,6 +240,7 @@ class ChatController extends Controller
             ]);
 
             $reply = $final['choices'][0]['message']['content'];
+            log::info('reply'.$reply);
             $history[] = ['role' => 'assistant', 'name' => $funcName, 'content' => json_encode($funcResponse)];
         } else {
             // Direct reply
@@ -142,6 +251,7 @@ class ChatController extends Controller
 
         // Summarize if needed
         if (count($history) > $this->maxTurns) {
+            log::info($history);
             $summary = $this->summarizeHistory($history);
             $history = [['role' => 'system_summary', 'content' => $summary]];
         }
@@ -149,6 +259,10 @@ class ChatController extends Controller
         // Save history
         $record->history = $history;
         $record->save();
+
+        if (!empty($reply)) {
+            $this->sendWhatsappMessage($recipientWhatsappNumber, $reply);
+        }
 
         return response()->json(['reply' => $reply]);
     }
@@ -164,13 +278,12 @@ class ChatController extends Controller
             'contents',
             'proertyAmenities.amenity'
         ])->where('user_id', $userId);
-
+        log::info($args);
         // Apply filters
         if (!empty($args['location'])) {
             $location = $args['location'];
             $query->whereHas('contents', fn($q) =>
-                $q->where('language_id', 1)
-                  ->where(fn($qq) =>
+                $q->where(fn($qq) =>
                       $qq->where('city_id', $this->mapCity($location))
                          ->orWhere('title', 'like', "%{$location}%")
                          ->orWhere('address', 'like', "%{$location}%")
@@ -215,7 +328,7 @@ class ChatController extends Controller
             'created_at'       => $p->created_at->toISOString(),
             'updated_at'       => $p->updated_at->toISOString(),
         ]);
-
+        log::info($formatted);
         return [
             'properties' => $formatted,
             'pagination' => [
