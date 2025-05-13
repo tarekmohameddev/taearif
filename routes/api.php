@@ -211,6 +211,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/embeddings', [EmbeddingController::class, 'store']);
     Route::post('/chat', [ChatController::class, 'chat']);
+    Route::post('/whatsapp/evolution-webhook', [ChatController::class, 'handleEvolutionWebhook']);
     
 });
 
