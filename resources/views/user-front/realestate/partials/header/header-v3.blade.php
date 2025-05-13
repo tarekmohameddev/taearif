@@ -12,15 +12,15 @@ $favicon = $general_settingsData['favicon'] ?? [];
 
 @if (!empty($api_menu_settingsData) && $api_menu_settingsData->status !== false)
     <!-- Start mobile menu -->
-    <div class="mobile-menu text-white">
+    <div class="mobile-menu ">
         <div class="container">
-            <div class="mobile-menu-wrapper text-white"></div>
+            <div class="mobile-menu-wrapper "></div>
         </div>
     </div>
     <!-- End mobile menu -->
 
-    <div class="main-responsive-nav text-white">
-        <div class="container text-white">
+    <div class="main-responsive-nav ">
+        <div class="container ">
             <!-- Mobile Logo -->
             <div class="logo">
                 @if (!empty($userBs->logo))
@@ -38,7 +38,7 @@ $favicon = $general_settingsData['favicon'] ?? [];
         </div>
     </div>
 
-    <div class="main-navbar text-white">
+    <div class="main-navbar ">
         <div class="container">
             <nav class="navbar navbar-expand-lg">
                 <!-- Logo -->
@@ -85,7 +85,7 @@ $favicon = $general_settingsData['favicon'] ?? [];
                     </ul>
                 </div>
 
-                <div class="more-option mobile-item text-white">
+                <div class="more-option mobile-item ">
                     <div class="item d-none">
                         <div class="language">
                             <form action="{{ route('changeUserLanguage', getParam()) }}" id="userLangForms">

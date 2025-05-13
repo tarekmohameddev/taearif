@@ -12,7 +12,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     {{-- title --}}
-    <title>{{ convertUtf8($userBs->website_title) }} - @yield('pageHeading')</title>
+    <title>{{ convertUtf8($userApi_general_settingsData->site_name ?? '') }} - @yield('pageHeading')</title>
 
     <meta name="keywords" content="@yield('metaKeywords')">
     <meta name="description" content="@yield('metaDescription')">

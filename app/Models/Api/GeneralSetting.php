@@ -22,7 +22,8 @@ class GeneralSetting extends Model
         'maintenance_mode',
         'show_breadcrumb',
         'show_properties',
-        'additional_settings'
+        'additional_settings',
+        'color',
     ];
 
     protected $casts = [

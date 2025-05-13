@@ -119,11 +119,10 @@
 @endif
 
 @include('user-front.realestate.partials.header.header-pages')
-<div class="mt-30"></div>
 
 @section('content')
 <!-- Page Title Start-->
-<div class="page-title-area  @if ($userBs->theme != 'home_eight') header-next @endif"
+<div class=" d-none page-title-area  @if ($userBs->theme != 'home_eight') header-next @endif"
     @if ($userBs->theme == 'home_eight') style="padding-block: 200px !important;" @endif>
     <!-- Background Image -->
     <img class="lazyload blur-up bg-img" src="{{ asset($userBs->breadcrumb) }}">
@@ -132,21 +131,22 @@
             <div class="row justify-content-center">
                 <div class="col-lg-12">
                     <h1 class="color-white">{{ $project->title }}</h1>
-                    <p class="font-lg color-white mx-auto"> <span class="product-location icon-start"><i
-                                class="fal fa-map-marker-alt"></i>{{ $project->address }}</span>
+                    <p class="font-lg color-white mx-auto">
+                        <span class="product-location icon-start">
+                            <i class="fal fa-map-marker-alt"></i>
+                            {{ $project->address }}
+                        </span>
                     </p>
-
                 </div>
             </div>
             <!-- create filter  categories of selected project -->
-
             <!-- end create filter -->
         </div>
     </div>
 </div>
 <!-- Page Title End-->
 
-<div class="divider">
+<div class="d-none divider">
     <div class="icon"><a href="#tapDown"><i class="fal fa-long-arrow-down"></i></a></div>
     <span class="line"></span>
 </div>
@@ -169,13 +169,11 @@
                     @endif --}}
                 <div class="">
                     <p>
-
                         <a class="btn btn-primary btn-md" href="#" data-bs-toggle="modal"
                             data-bs-target="#socialMediaModal">
                             <i class="far fa-share-alt"></i>
                             <span>شارك</span>
                         </a>
-
                     </p>
                 </div>
                 <div class="pb-20"></div>
@@ -201,6 +199,21 @@
                 <div class="pb-20"></div>
                 @endif
 
+                @if (!empty($project->amenities) && is_array($project->amenities) && count($project->amenities) > 0)
+                <div class="project-amenities mb-40" data-aos="fade-up">
+                    <h3 class="mb-20">{{ $keywords['Amenities'] ?? __('Amenities') }}</h3>
+                    <div class="row">
+                        @foreach ($project->amenities as $amenity)
+                        <div class="col-lg-3 col-sm-6 col-md-4 mb-20">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle me-2 text-success"></i>
+                                <span>{{ $amenity }}</span>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
                 <div class="pb-20"></div>
                 @if (!empty($project->latitude) && !empty($project->longitude))
 

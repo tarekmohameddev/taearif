@@ -1198,13 +1198,22 @@ class FrontendController extends Controller
                 $data['heroStatic'] = User\HeroStatic::where('user_id', $user->id)
                     ->where('language_id', $userCurrentLang->id)
                     ->first();
-                    $data['projects'] = Project::where('user_projects.user_id', $user->id)->leftJoin('user_project_contents', 'user_project_contents.project_id', 'user_projects.id')
+
+                $data['projects'] = Project::published()->where('user_projects.user_id', $user->id)
+                    ->leftJoin('user_project_contents', 'user_project_contents.project_id', 'user_projects.id')
                     ->where('user_projects.featured', 1)
-
                     ->where('user_project_contents.language_id', $userCurrentLang->id)
-                    ->select('user_projects.*', 'user_project_contents.slug', 'user_project_contents.title', 'user_project_contents.address')->inRandomOrder()->latest()->take(8)->get();
+                    ->select('user_projects.*', 'user_project_contents.slug', 'user_project_contents.title', 'user_project_contents.address')
+                    ->inRandomOrder()
+                    ->latest()
+                    ->take(8)
+                    ->get();
 
-                return view('user-front.realestate.home.index-v1', $data);
+                $data['property_categories'] = ApiUserCategory::where([['is_active', 1]])->get();
+
+                // user-front.realestate.home.index-v1
+            return view('user-front.realestate.home.index-v1', $data);
+
             } elseif ($userBs->theme == 'home14') {
 
                 $data['sliderInfos'] = HeroSlider::where('language_id', $userCurrentLang->id)
@@ -1212,7 +1221,7 @@ class FrontendController extends Controller
                     ->where('user_id', $user->id)
                     ->get();
                 // $data['property_categories'] = Category::where([['status', 1], ['user_id', $user->id], ['featured', 1], ['language_id', $userCurrentLang->id]])->orderBy('serial_number', 'asc')->get();
-                $data['property_categories'] = ApiUserCategory::where([['is_active', 1]])->get();
+
 
                 $data['callToActionInfo'] = User\ActionSection::query()
                     ->where('user_id', $user->id)
@@ -1224,32 +1233,43 @@ class FrontendController extends Controller
                     ['language_id', $userCurrentLang->id],
                 ])->orderBy('serial_number', 'ASC')->get();
 
-                $data['projects'] = Project::where('user_projects.user_id', $user->id)->leftJoin('user_project_contents', 'user_project_contents.project_id', 'user_projects.id')
+                $data['projects'] = Project::published()->where('user_projects.user_id', $user->id)
+                    ->leftJoin('user_project_contents', 'user_project_contents.project_id', 'user_projects.id')
                     ->where('user_projects.featured', 1)
-
                     ->where('user_project_contents.language_id', $userCurrentLang->id)
-                    ->select('user_projects.*', 'user_project_contents.slug', 'user_project_contents.title', 'user_project_contents.address')->inRandomOrder()->latest()->take(8)->get();
+                    ->select('user_projects.*', 'user_project_contents.slug', 'user_project_contents.title', 'user_project_contents.address')
+                    ->inRandomOrder()
+                    ->latest()
+                    ->take(8)
+                    ->get();
 
+                    $data['property_categories'] = ApiUserCategory::where([['is_active', 1]])->get();
 
-                return view('user-front.realestate.home.index-v2', $data);
+                    // user-front.realestate.home.index-v2
+            return view('user-front.realestate.home.index-v2', $data);
             } elseif ($userBs->theme == 'home15') {
                 $data['heroStatic'] = User\HeroStatic::where('user_id', $user->id)
                     ->where('language_id', $userCurrentLang->id)
                     ->first();
+
                 $data['work_processes'] = User\WorkProcess::where([
                     ['user_id', $user->id],
                     ['language_id', $userCurrentLang->id],
                 ])->orderBy('serial_number', 'ASC')->get();
 
-                $data['projects'] = Project::where('user_projects.user_id', $user->id)->leftJoin('user_project_contents', 'user_project_contents.project_id', 'user_projects.id')
+                $data['projects'] = Project::published()->where('user_projects.user_id', $user->id)
+                    ->leftJoin('user_project_contents', 'user_project_contents.project_id', 'user_projects.id')
                     ->where('user_projects.featured', 1)
-
                     ->where('user_project_contents.language_id', $userCurrentLang->id)
-                    ->select('user_projects.*', 'user_project_contents.slug', 'user_project_contents.title', 'user_project_contents.address')->inRandomOrder()->latest()->take(8)->get();
+                    ->select('user_projects.*', 'user_project_contents.slug', 'user_project_contents.title', 'user_project_contents.address')
+                    ->inRandomOrder()
+                    ->latest()
+                    ->take(8)
+                    ->get();
 
-                // $data['property_categories'] = Category::where([['status', 1], ['user_id', $user->id], ['featured', 1], ['language_id', $userCurrentLang->id]])->orderBy('serial_number', 'asc')->get();
                 $data['property_categories'] = ApiUserCategory::where([['is_active', 1]])->get();
 
+                // user-front.realestate.home.index-v3
                 return view('user-front.realestate.home.index-v3', $data);
             }
         } else {

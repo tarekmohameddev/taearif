@@ -209,7 +209,8 @@ class PropertyController extends Controller
         $information['projects'] = Project::with(['content'])->where('user_id', $tenantId)->get();
 
         if ($request->ajax()) {
-            $viewContent = View::make('user-front.realestate.property.property', $information)->render();
+            // $viewContent = View::make('user-front.realestate.property.property', $information)->render();
+            $viewContent = View::make('user-front.realestate.property.contents', $information)->render();
             return response()->json([
                 'propertyContents' => $viewContent,
                 'properties' => $property_contents

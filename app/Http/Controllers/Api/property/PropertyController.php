@@ -92,9 +92,7 @@ class PropertyController extends Controller
                     'to' => $properties->lastItem(),
                 ]
             ]
-                ],200);
-
-
+        ], 200);
     }
 
     public function show($id)
@@ -104,32 +102,36 @@ class PropertyController extends Controller
             'user',
             'contents',
             'galleryImages',
-            'proertyAmenities.amenity'
+            'proertyAmenities.amenity',
+            'UserPropertyCharacteristics',
         ])->findOrFail($id);
 
-        $formattedProperty = [
+        $content = $property->contents->first();
+        $characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
+
+        $formattedProperty = array_merge([
             'id' => $property->id,
             'project_id' => $property->project_id,
-            'title' => optional($property->contents->first())->title ?? 'No Title',
-            'address' => optional($property->contents->first())->address ?? 'No Address',
-            'price' => $property->price,
-            'type' => $property->type,
+            'title' => optional($content)->title ?? '',
+            'address' => optional($content)->address ?? '',
+            'price' => $property->price ?? '0.00',
+            'type' => $property->type ?? '',
             'beds' => $property->beds,
             'bath' => $property->bath,
             'area' => $property->area,
-            'features' => $property->proertyAmenities->pluck('amenity.name')->toArray(),
-            'status' => $property->status,
+            'features' => $property->features ?? [],
+            'status' => (int) $property->status,
             'featured_image' => asset($property->featured_image),
-            'featured' => (bool) $property->featured,
+            'floor_planning_image' => $property->floor_planning_image ?? [],
             'gallery' => $property->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
-            'description' => optional($property->contents->first())->description ?? 'No Description',
-            'location' => [
-                'latitude' => $property->latitude,
-                'longitude' => $property->longitude,
-            ],
-            'created_at' => $property->created_at->toISOString(),
-            'updated_at' => $property->updated_at->toISOString(),
-        ];
+            'description' => optional($content)->description ?? '',
+            'latitude' => $property->latitude ? (float) $property->latitude : null,
+            'longitude' => $property->longitude ? (float) $property->longitude : null,
+            'featured' => (bool) $property->featured,
+            'city_id' => $property->city_id,
+            'category_id' => $property->category_id,
+            'size' => $property->size ?? null,
+        ], $characteristics);
 
         return response()->json([
             'status' => 'success',
@@ -137,18 +139,18 @@ class PropertyController extends Controller
                 'property' => $formattedProperty
             ]
         ]);
-
     }
 
+
     /*
-    * Store a newly created resource in storage.
-    *
-    * @param  \Illuminate\Http\Request  $request
-    * @return \Illuminate\Http\JsonResponse
-    * @throws \Illuminate\Validation\ValidationException
-    * @throws \Exception
-    * @throws \Throwable
-    * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
+        * Store a newly created resource in storage.
+        *
+        * @param  \Illuminate\Http\Request  $request
+        * @return \Illuminate\Http\JsonResponse
+        * @throws \Illuminate\Validation\ValidationException
+        * @throws \Exception
+        * @throws \Throwable
+        * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
     */
 
 
@@ -204,40 +206,43 @@ class PropertyController extends Controller
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
             'project_id' => 'nullable',
             'city_id' => 'nullable',
-            'featured' => 'nullable',
+            'featured' => 'nullable|boolean',
             'amenities' => 'nullable|array',
-            'label' => 'nullable|array',
-            'value' => 'nullable|array',
+            'type' => 'nullable',
+            // 'transaction_type' => 'nullable',
             'category_id' => 'nullable|integer',
+            // 'specifications' => 'nullable|array',
+            // 'specifications.*.label' => 'required_with:specifications|string',
+            // 'specifications.*.value' => 'required_with:specifications|string',
 
-            'property_characteristics.facade_id' => 'nullable|numeric',
-            'property_characteristics.area' => 'nullable|numeric',
-            'property_characteristics.length' => 'nullable|numeric',
-            'property_characteristics.width' => 'nullable|numeric',
-            'property_characteristics.street_width_north' => 'nullable|numeric',
-            'property_characteristics.street_width_south' => 'nullable|numeric',
-            'property_characteristics.street_width_east' => 'nullable|numeric',
-            'property_characteristics.street_width_west' => 'nullable|numeric',
-            'property_characteristics.building_age' => 'nullable|integer',
-
-            'property_characteristics.rooms' => 'nullable|integer',
-            'property_characteristics.bathrooms' => 'nullable|integer',
-            'property_characteristics.floors' => 'nullable|integer',
-            'property_characteristics.floor_number' => 'nullable|integer',
-            'property_characteristics.driver_room' => 'nullable|integer',
-            'property_characteristics.maid_room' => 'nullable|integer',
-            'property_characteristics.dining_room' => 'nullable|integer',
-            'property_characteristics.living_room' => 'nullable|integer',
-            'property_characteristics.majlis' => 'nullable|integer',
-            'property_characteristics.storage_room' => 'nullable|integer',
-            'property_characteristics.basement' => 'nullable|integer',
-            'property_characteristics.swimming_pool' => 'nullable|integer',
-            'property_characteristics.kitchen' => 'nullable|integer',
-            'property_characteristics.balcony' => 'nullable|integer',
-            'property_characteristics.garden' => 'nullable|integer',
-            'property_characteristics.annex' => 'nullable|integer',
-            'property_characteristics.elevator' => 'nullable|integer',
-            'property_characteristics.private_parking' => 'nullable|integer',
+            // Property Characteristics
+            'facade_id' => 'nullable|numeric',
+            'length' => 'nullable|numeric',
+            'width' => 'nullable|numeric',
+            'street_width_north' => 'nullable|numeric',
+            'street_width_south' => 'nullable|numeric',
+            'street_width_east' => 'nullable|numeric',
+            'street_width_west' => 'nullable|numeric',
+            'building_age' => 'nullable|integer',
+            'rooms' => 'nullable|integer',
+            'bathrooms' => 'nullable|integer',
+            'floors' => 'nullable|integer',
+            'floor_number' => 'nullable|integer',
+            'driver_room' => 'nullable|integer',
+            'maid_room' => 'nullable|integer',
+            'dining_room' => 'nullable|integer',
+            'living_room' => 'nullable|integer',
+            'majlis' => 'nullable|integer',
+            'storage_room' => 'nullable|integer',
+            'basement' => 'nullable|integer',
+            'swimming_pool' => 'nullable|integer',
+            'kitchen' => 'nullable|integer',
+            'balcony' => 'nullable|integer',
+            'garden' => 'nullable|integer',
+            'annex' => 'nullable|integer',
+            'elevator' => 'nullable|integer',
+            'private_parking' => 'nullable|integer',
+            'size' => 'nullable|integer',
 
         ];
 
@@ -279,9 +284,10 @@ class PropertyController extends Controller
                 'latitude',
                 'longitude',
                 'features',
-                'transaction_type',
+                // 'transaction_type',
                 'category_id',
                 'project_id',
+                'city_id',
 
                 "facade_id",
                 "length",
@@ -309,6 +315,7 @@ class PropertyController extends Controller
                 "annex",
                 "elevator",
                 "private_parking"
+
             ]);
 
             $property = Property::storeProperty(
@@ -346,10 +353,12 @@ class PropertyController extends Controller
                 "garden",
                 "annex",
                 "elevator",
-                "private_parking"
+                "private_parking",
+                'size',
             ]);
 
             $characteristics['property_id'] = $property->id;
+            $characteristics['facade_id'] = !empty($characteristics['facade_id']) ? $characteristics['facade_id'] : null;
 
             UserPropertyCharacteristic::create($characteristics);
 
@@ -397,58 +406,66 @@ class PropertyController extends Controller
             }
         });
 
-        $responseProperty = Property::with([
-            'sliderImages',
-            'amenities',
+        $responseProperty = $property->load([
+            'category',
+            'user',
             'contents',
-            'specifications'
-        ])->find($property->id);
+            'galleryImages',
+            'proertyAmenities.amenity',
+            'UserPropertyCharacteristics'
+        ]);
 
+        $content = $responseProperty->contents->first();
 
-        if ($responseProperty->purpose) {
-            $responseProperty->transaction_type = $responseProperty->purpose;
-        }
-
-        if ($responseProperty->featured_image) {
-            $responseProperty->featured_image = asset($responseProperty->featured_image);
-        }
-
-        if (is_array($responseProperty->floor_planning_image)) {
-            $responseProperty->floor_planning_image = array_map(function($image) {
-                return asset($image);
-            }, $responseProperty->floor_planning_image);
-        }
-
-
-        $responseProperty->gallery = $responseProperty->sliderImages->pluck('image')
-            ->map(function($image) {
-                return asset($image);
-            })->toArray();
-
-
-       unset($responseProperty->sliderImages);
-       unset($responseProperty->amenities);
-       unset($responseProperty->purpose);
-
-        $responseProperty->featured = (bool) $responseProperty->featured;
-        $responseProperty->status = (bool) $responseProperty->status;
+        $formattedProperty = [
+            'id' => $responseProperty->id,
+            'project_id' => $responseProperty->project_id,
+            'title' => optional($content)->title ?? 'No Title',
+            'address' => optional($content)->address ?? 'No Address',
+            'price' => $responseProperty->price,
+            'type' => $responseProperty->type,
+            'beds' => $responseProperty->beds,
+            'bath' => $responseProperty->bath,
+            'area' => $responseProperty->area,
+            'features' => $responseProperty->features,
+            // 'features' => $responseProperty->proertyAmenities->pluck('amenity.name')->toArray(),
+            'characteristics' => $responseProperty->UserPropertyCharacteristics ?? null,
+            // 'specifications' => $responseProperty->specifications->map(function ($spec) {
+            //     return [
+            //         'key' => $spec->key,
+            //         'label' => $spec->label,
+            //         'value' => $spec->value,
+            //     ];
+            // })->toArray(),
+            'status' => (bool) $responseProperty->status,
+            'featured' => (bool) $responseProperty->featured,
+            'featured_image' => asset($responseProperty->featured_image),
+            'gallery' => $responseProperty->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
+            'description' => optional($content)->description ?? 'No Description',
+            'location' => [
+                'latitude' => $responseProperty->latitude,
+                'longitude' => $responseProperty->longitude,
+            ],
+            'created_at' => $responseProperty->created_at->toISOString(),
+            'updated_at' => $responseProperty->updated_at->toISOString(),
+        ];
 
         return response()->json([
             'status' => 'success',
             'message' => 'Property created successfully',
-            'user_property' => $responseProperty
+            'user_property' => $formattedProperty
         ], 201);
     }
 
     /*
-    * Update the specified resource in storage.
-    *
-    * @param  \Illuminate\Http\Request  $request
-    * @param  int  $id
-    * @return \Illuminate\Http\JsonResponse
-    * @throws \Illuminate\Validation\ValidationException
-    * @throws \Exception
-    * @throws \Throwable
+        * Update the specified resource in storage.
+        *
+        * @param  \Illuminate\Http\Request  $request
+        * @param  int  $id
+        * @return \Illuminate\Http\JsonResponse
+        * @throws \Illuminate\Validation\ValidationException
+        * @throws \Exception
+        * @throws \Throwable
     */
 
     public function update(Request $request, $id)
@@ -481,38 +498,37 @@ class PropertyController extends Controller
             'project_id' => 'nullable',
             'city_id' => 'nullable',
             'amenities' => 'nullable|array',
-            'label' => 'nullable|array',
-            'value' => 'nullable|array',
             'category_id' => 'nullable|integer',
-
-            'property_characteristics.facade_id' => 'nullable|numeric',
-            'property_characteristics.area' => 'nullable|numeric',
-            'property_characteristics.length' => 'nullable|numeric',
-            'property_characteristics.width' => 'nullable|numeric',
-            'property_characteristics.street_width_north' => 'nullable|numeric',
-            'property_characteristics.street_width_south' => 'nullable|numeric',
-            'property_characteristics.street_width_east' => 'nullable|numeric',
-            'property_characteristics.street_width_west' => 'nullable|numeric',
-            'property_characteristics.building_age' => 'nullable|integer',
-
-            'property_characteristics.rooms' => 'nullable|integer',
-            'property_characteristics.bathrooms' => 'nullable|integer',
-            'property_characteristics.floors' => 'nullable|integer',
-            'property_characteristics.floor_number' => 'nullable|integer',
-            'property_characteristics.driver_room' => 'nullable|integer',
-            'property_characteristics.maid_room' => 'nullable|integer',
-            'property_characteristics.dining_room' => 'nullable|integer',
-            'property_characteristics.living_room' => 'nullable|integer',
-            'property_characteristics.majlis' => 'nullable|integer',
-            'property_characteristics.storage_room' => 'nullable|integer',
-            'property_characteristics.basement' => 'nullable|integer',
-            'property_characteristics.swimming_pool' => 'nullable|integer',
-            'property_characteristics.kitchen' => 'nullable|integer',
-            'property_characteristics.balcony' => 'nullable|integer',
-            'property_characteristics.garden' => 'nullable|integer',
-            'property_characteristics.annex' => 'nullable|integer',
-            'property_characteristics.elevator' => 'nullable|integer',
-            'property_characteristics.private_parking' => 'nullable|integer',
+            // Property Characteristics
+            'facade_id' => 'nullable|numeric',
+            'length' => 'nullable|numeric',
+            'width' => 'nullable|numeric',
+            'street_width_north' => 'nullable|numeric',
+            'street_width_south' => 'nullable|numeric',
+            'street_width_east' => 'nullable|numeric',
+            'street_width_west' => 'nullable|numeric',
+            'building_age' => 'nullable|integer',
+            'rooms' => 'nullable|integer',
+            'bathrooms' => 'nullable|integer',
+            'floors' => 'nullable|integer',
+            'floor_number' => 'nullable|integer',
+            'driver_room' => 'nullable|integer',
+            'maid_room' => 'nullable|integer',
+            'dining_room' => 'nullable|integer',
+            'living_room' => 'nullable|integer',
+            'majlis' => 'nullable|integer',
+            'storage_room' => 'nullable|integer',
+            'basement' => 'nullable|integer',
+            'swimming_pool' => 'nullable|integer',
+            'kitchen' => 'nullable|integer',
+            'balcony' => 'nullable|integer',
+            'garden' => 'nullable|integer',
+            'annex' => 'nullable|integer',
+            'elevator' => 'nullable|integer',
+            'private_parking' => 'nullable|integer',
+            'size' => 'nullable|numeric',
+            'type' => 'nullable',
+            'video_url' => 'nullable|string'
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -535,15 +551,15 @@ class PropertyController extends Controller
                 'beds',
                 'bath',
                 'area',
-                'video_url',
+                // 'video_url',
                 'status',
                 'latitude',
                 'longitude',
                 'features',
-                'transaction_type',
-                'category_id',
+                // 'transaction_type',
+                // 'category_id',
                 'project_id',
-
+                'city_id',
                 "facade_id",
                 "length",
                 "width",
@@ -569,18 +585,18 @@ class PropertyController extends Controller
                 "garden",
                 "annex",
                 "elevator",
-                "private_parking"
+                "private_parking",
+                'size',
             ]);
+            $characteristics['facade_id'] = !empty($characteristics['facade_id']) ? $characteristics['facade_id'] : null;
 
             UserPropertyCharacteristic::updateOrCreate(
                 ['property_id' => $property->id],
                 $characteristics
             );
 
-
             if ($request->has('gallery')) {
                 PropertySliderImg::where('property_id', $property->id)->delete();
-
                 foreach ($request->gallery as $imagePath) {
                     PropertySliderImg::storeSliderImage($user->id, $property->id, $imagePath);
                 }
@@ -610,35 +626,48 @@ class PropertyController extends Controller
             ];
 
             PropertyContent::storePropertyContent($user->id, $property->id, $contentRequest);
-
-            $labels = (array) $request->input('label', []);
-            $values = (array) $request->input('value', []);
-
-            foreach ($labels as $key => $label) {
-                if (!empty($values[$key])) {
-                    $spec = [
-                        'language_id' => $defaultLanguage->id,
-                        'key' => $key,
-                        'label' => $label,
-                        'value' => $values[$key],
-                    ];
-                    PropertySpecification::storeSpecification($user->id, $property->id, $spec);
-                }
-            }
         });
 
         $responseProperty = Property::with([
-            'sliderImages',
-            'amenities',
+            'category',
+            'user',
             'contents',
-            'specifications'
+            'galleryImages',
+            'proertyAmenities.amenity',
+            'UserPropertyCharacteristics'
         ])->find($property->id);
+
+        $content = $responseProperty->contents->first();
+        $characteristics = optional($responseProperty->UserPropertyCharacteristics)->toArray() ?? [];
+
+        $formattedProperty = array_merge([
+            'title' => optional($content)->title ?? '',
+            'address' => optional($content)->address ?? '',
+            'price' => $responseProperty->price ?? '0.00',
+            'project_id' => $responseProperty->project_id ?? '',
+            'type' => $responseProperty->type ?? '',
+            'beds' => $responseProperty->beds,
+            'bath' => $responseProperty->bath,
+            'area' => $responseProperty->area,
+            'features' => $responseProperty->features ?? [],
+            'status' => (int) $responseProperty->status,
+            'featured_image' => asset($responseProperty->featured_image),
+            'floor_planning_image' => $responseProperty->floor_planning_image ?? [],
+            'gallery' => $responseProperty->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
+            'description' => optional($content)->description ?? '',
+            'latitude' => $responseProperty->latitude ? (float) $responseProperty->latitude : null,
+            'longitude' => $responseProperty->longitude ? (float) $responseProperty->longitude : null,
+            'featured' => (bool) $responseProperty->featured,
+            'city_id' => $responseProperty->city_id,
+            'category_id' => $responseProperty->category_id,
+            'size' => $responseProperty->size ?? null,
+        ], $characteristics);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Property updated successfully',
-            'user_property' => $responseProperty
-        ]);
+            'property' => $formattedProperty,
+        ], 200);
     }
 
     public function destroy($id)
@@ -648,14 +677,14 @@ class PropertyController extends Controller
             'proertyAmenities',
             'contents',
             'wishlists',
-            'specifications'
+            // 'specifications'
         ])->findOrFail($id);
 
         $property->galleryImages()->delete();
         $property->proertyAmenities()->delete();
         $property->contents()->delete();
         $property->wishlists()->delete();
-        $property->specifications()->delete();
+        // $property->specifications()->delete();
 
         if ($property->featured_image) {
             Storage::delete('public/properties/' . $property->featured_image);
@@ -667,7 +696,6 @@ class PropertyController extends Controller
             'status' => 'success',
             'message' => 'Property deleted successfully'
         ], 200);
-
     }
 
     public function toggleFeatured($id)
@@ -731,6 +759,4 @@ class PropertyController extends Controller
             "/storage/properties/default-3.jpg"
         ];
     }
-
-
 }

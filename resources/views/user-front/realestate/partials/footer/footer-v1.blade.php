@@ -11,6 +11,22 @@
 
 @endphp
 
+<style>
+    .footer-area a:hover,
+.footer-area a:focus {
+    color: var(--color-primary) !important;
+}
+
+.footer-area i:hover {
+    color: var(--color-primary) !important;
+}
+
+.footer-area .social-links a:hover i {
+    color: var(--color-primary) !important;
+}
+
+</style>
+
 <!-- footer -->
 @if (isset($userApi_footerData->status) && $userApi_footerData->status !== false)
   <footer class="footer-area border border-primary" style="background-color: transparent !important;">
@@ -95,19 +111,19 @@
                     <ul class="list-unstyled mt-3">
                         @if(!empty($general['address']))
                             <li class="mb-2">
-                                <i class="fas fa-map-marker-alt me-2 text-primary"></i>
+                                <i class="fas fa-map-marker-alt me-2 "></i>
                                 <span class="text-muted">{{ $general['address'] ?? "" }}</span>
                             </li>
                         @endif
                         @if(!empty($general['showContactInfo']))
                             <li class="mb-2">
-                                <i class="fas fa-phone me-2 text-primary"></i>
+                                <i class="fas fa-phone me-2 "></i>
                                 <a href="tel:{{ $general['phone'] }}" class="text-muted text-decoration-none" dir="ltr">
                                     {{ $general['phone'] ?? "" }}
                                 </a>
                             </li>
                             <li>
-                                <i class="fas fa-envelope me-2 text-primary"></i>
+                                <i class="fas fa-envelope me-2 "></i>
                                 <a href="mailto:{{ $general['email'] }}" class="text-muted text-decoration-none">
                                     {{ $general['email'] ?? "" }}
                                 </a>

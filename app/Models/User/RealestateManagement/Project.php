@@ -129,7 +129,15 @@ class Project extends Model
         );
     }
 
+    // public function getFeaturedImageAttribute($value)
+    // {
+    //     return asset('storage/' . $value);
+    // }
 
+    public function scopePublished($query)
+    {
+        return $query->where('published', 1);
+    }
 
 
 }

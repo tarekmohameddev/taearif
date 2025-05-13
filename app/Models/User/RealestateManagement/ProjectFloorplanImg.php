@@ -31,4 +31,11 @@ class ProjectFloorplanImg extends Model
         return $this->belongsTo(Project::class, 'project_id');
     }
 
+    // public function getImageAttribute($value)
+    // {
+    //     return asset('storage/' . $value);
+    // }
+
+
+
 }
