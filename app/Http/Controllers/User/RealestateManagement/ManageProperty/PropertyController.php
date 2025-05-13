@@ -132,49 +132,6 @@ class PropertyController extends Controller
         return redirect()->back();
     }
 
-    // public function imagesstore(Request $request)
-    // {
-    //     $img = $request->file('file');
-    //     $allowedExts = array('jpg', 'png', 'jpeg', 'svg', 'webp');
-    //     $rules = [
-    //         'file' => [
-    //             function ($attribute, $value, $fail) use ($img, $allowedExts) {
-    //                 $ext = $img->getClientOriginalExtension();
-    //                 if (!in_array($ext, $allowedExts)) {
-    //                     return $fail("Only png, jpg, jpeg images are allowed");
-    //                 }
-    //             },
-    //         ]
-    //     ];
-    //     $validator = Validator::make($request->all(), $rules);
-    //     if ($validator->fails()) {
-    //         $validator->getMessageBag()->add('error', 'true');
-    //         return response()->json($validator->errors());
-    //     }
-    //     $imageName = UploadFile::store('assets/img/property/slider-images/', $request->file('file'));
-
-    //     $pi = new SliderImage();
-    //     if (!empty($request->property_id)) {
-    //         $pi->property_id = $request->property_id;
-    //     }
-    //     $pi->user_id = Auth::guard('web')->user()->id;
-    //     $pi->image = $imageName;
-    //     $pi->save();
-    //     return response()->json(['status' => 'success', 'file_id' => $pi->id]);
-    // }
-    // public function imagermv(Request $request)
-    // {
-    //     $pi = SliderImage::findOrFail($request->fileid);
-    //     $imageCount = SliderImage::where('property_id', $pi->property_id)->get()->count();
-    //     if ($imageCount > 1) {
-    //         @unlink(public_path('assets/img/property/slider-images/') . $pi->image);
-    //         $pi->delete();
-    //         return $pi->id;
-    //     } else {
-    //         return 'false';
-    //     }
-    // }
-
     //imagedbrmv
     public function imagedbrmv(Request $request)
     {
