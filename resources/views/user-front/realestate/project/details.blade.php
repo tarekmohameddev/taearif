@@ -122,7 +122,7 @@
 
 @section('content')
 <!-- Page Title Start-->
-<div class="page-title-area  @if ($userBs->theme != 'home_eight') header-next @endif"
+<div class=" d-none page-title-area  @if ($userBs->theme != 'home_eight') header-next @endif"
     @if ($userBs->theme == 'home_eight') style="padding-block: 200px !important;" @endif>
     <!-- Background Image -->
     <img class="lazyload blur-up bg-img" src="{{ asset($userBs->breadcrumb) }}">
@@ -146,7 +146,7 @@
 </div>
 <!-- Page Title End-->
 
-<div class="divider">
+<div class="d-none divider">
     <div class="icon"><a href="#tapDown"><i class="fal fa-long-arrow-down"></i></a></div>
     <span class="line"></span>
 </div>
