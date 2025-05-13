@@ -25,7 +25,8 @@ use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
 use App\Http\Controllers\Api\content\ApiContentSectionsController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
-
+use App\Http\Controllers\Api\apps\whatsapp\EmbeddingController;
+use App\Http\Controllers\Api\apps\whatsapp\ChatController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -197,6 +198,13 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/cities', [CityController::class, 'index']);
     Route::get('/user/districts', [DistrictController::class, 'index']);
+});
+
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/embeddings', [EmbeddingController::class, 'store']);
+    Route::post('/chat', [ChatController::class, 'chat']);
+    
 });
 
 
