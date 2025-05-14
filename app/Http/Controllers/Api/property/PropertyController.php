@@ -123,7 +123,7 @@ class PropertyController extends Controller
             'features' => $property->features ?? [],
             'status' => (int) $property->status,
             'featured_image' => asset($property->featured_image),
-            'floor_planning_image' => $property->floor_planning_image ?? [],
+            'floor_planning_image' => collect($property->floor_planning_image)->map(fn($img) => asset($img))->toArray(),
             'gallery' => $property->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
             'description' => optional($content)->description ?? '',
             'latitude' => $property->latitude ? (float) $property->latitude : null,
