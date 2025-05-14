@@ -24,6 +24,7 @@ use App\Models\User\RealestateManagement\PropertyAmenity;
 use App\Models\User\RealestateManagement\ProjectGalleryImg;
 use App\Models\User\RealestateManagement\ProjectFloorplanImg;
 use App\Models\User\RealestateManagement\ProjectSpecification;
+use App\Models\Api\ApiMenuItem;
 
 
 class ProjectController extends Controller
@@ -352,6 +353,9 @@ class ProjectController extends Controller
                     ]);
                 }
             }
+
+            $this->ensureProjectsMenuExistsForUser($userId); // Add projects menu item if not exists for the user
+
         });
 
         $responseProject = Project::with([
@@ -385,6 +389,34 @@ class ProjectController extends Controller
             'user_project' => $responseProject
         ], 201);
     }
+
+    /**
+     * Ensure the "Projects" menu exists for the user.
+     * If it doesn't exist, create it.
+     */
+    private function ensureProjectsMenuExistsForUser($userId)
+    {
+        $exists = ApiMenuItem::where('user_id', $userId)
+            ->where('url', '/projects')
+            ->exists();
+
+        if (!$exists) {
+            $maxOrder = ApiMenuItem::where('user_id', $userId)->max('order') ?? 0;
+
+            ApiMenuItem::create([
+                'user_id' => $userId,
+                'label' => 'المشاريع',
+                'url' => '/projects',
+                'is_external' => false,
+                'is_active' => true,
+                'order' => $maxOrder + 1,
+                'parent_id' => null,
+                'show_on_mobile' => true,
+                'show_on_desktop' => true,
+            ]);
+        }
+    }
+
 
     /**
      * Update an existing project.

@@ -26,6 +26,7 @@ use App\Models\User\RealestateManagement\PropertySliderImg;
 use App\Models\User\RealestateManagement\PropertySpecification;
 use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\RealestateManagement\ApiUserCategory as Category;
+use App\Models\Api\ApiMenuItem;
 
 class PropertyController extends Controller
 {
@@ -404,6 +405,8 @@ class PropertyController extends Controller
                     PropertySpecification::storeSpecification($user->id, $property->id, $spec);
                 }
             }
+
+            $this->ensureUnitsMenuItemExists($user->id); // Add properties menu item if not exists for the user
         });
 
         $responseProperty = $property->load([
@@ -456,6 +459,35 @@ class PropertyController extends Controller
             'user_property' => $formattedProperty
         ], 201);
     }
+
+    /**
+     * Ensure the "properties" menu item exists for the user.
+     * If it doesn't exist, create it.
+     */
+    private function ensureUnitsMenuItemExists($userId)
+    {
+        $exists = ApiMenuItem::where('user_id', $userId)
+            ->where('url', '/properties')
+            ->exists();
+
+        if (!$exists) {
+            $maxOrder = ApiMenuItem::where('user_id', $userId)->max('order') ?? 0;
+
+            ApiMenuItem::create([
+                'user_id' => $userId,
+                'label' => 'الوحدات',
+                'url' => '/properties',
+                'is_external' => false,
+                'is_active' => true,
+                'order' => $maxOrder + 1,
+                'parent_id' => null,
+                'show_on_mobile' => true,
+                'show_on_desktop' => true,
+            ]);
+        }
+    }
+
+
 
     /*
         * Update the specified resource in storage.
