@@ -45,7 +45,7 @@ class UserPropertyCharacteristic extends Model
 
     public function UserFacade()
     {
-        return $this->belongsTo(UserFacade::class);
+        return $this->belongsTo(UserFacade::class, 'facade_id');
     }
 
     public function property()

@@ -275,8 +275,8 @@
                                 @if (!empty($characteristics->facade_id))
                                     <div class="col-md-4 mb-3 d-flex align-items-center">
                                         <i class="product-info fal fa-layer-group me-2"></i>
-                                        <strong class="me-1">{{ __('Facade') }}:</strong>
-                                        <span>{{ optional($characteristics->UserFacade)->name }}</span>
+                                        <strong style="margin: 0 5px;" class="me-1">{{ __('Facade') }}  </strong>
+                                        <span style="margin: 0 5px;">{{ optional($characteristics->UserFacade)->name }}</span>
                                     </div>
                                 @endif
 
@@ -307,11 +307,11 @@
                                     'elevator' => ['label' => __('Elevator'), 'icon' => 'fal fa-elevator'],
                                     'private_parking' => ['label' => __('Private Parking'), 'icon' => 'fal fa-parking'],
                                 ] as $key => $meta)
-                                    @if (!is_null($characteristics->$key))
+                                    @if (!is_null($characteristics->$key) && $characteristics->$key != 0)
                                         <div class="col-md-4 mb-3 d-flex align-items-center" >
                                             <i class="product-info {{ $meta['icon'] }} me-2 "></i>
-                                            <strong class="me-1">{{ $meta['label'] }}:</strong>
                                             <span style="margin: 0 2%;">{{ $characteristics->$key }}</span>
+                                            <strong class="me-1">{{ $meta['label'] }} </strong>
                                         </div>
                                     @endif
                                 @endforeach

@@ -225,8 +225,6 @@ class PropertyController extends Controller
     {
         $user = getUser();
         $tenantId = $user->id;
-        // $misc = new MiscellaneousController();
-        // $language = $this->currentLang($tenantId);
 
         if (session()->has('user_lang')) {
             $userCurrentLang = Language::where('code', session()->get('user_lang'))->where('user_id', $tenantId)->first();
@@ -240,31 +238,23 @@ class PropertyController extends Controller
 
         $cityNameColumn = $userCurrentLang->code === 'ar' ? 'user_cities.name_ar' : 'user_cities.name_en';
 
-        // if ($userCurrentLang) {
-        //     session()->put('user_lang_id', $userCurrentLang->id);
-        // }
+        $property = PropertyContent::query()
+        ->where('user_property_contents.slug', $slug)
+        ->where('user_property_contents.language_id', $userCurrentLang->id)
+        ->leftJoin('user_properties', 'user_property_contents.property_id', 'user_properties.id')
+        ->where([['user_properties.status', 1], ['user_properties.user_id', $tenantId]])
+        ->leftJoin('user_property_categories', 'user_property_categories.id', 'user_property_contents.category_id')
+        ->leftJoin('user_cities', 'user_cities.id', '=', 'user_property_contents.city_id')
+        ->leftJoin('user_states', 'user_states.id', '=', 'user_property_contents.state_id')
+        ->leftJoin('user_countries', 'user_countries.id', '=', 'user_property_contents.country_id')
+        ->with([
+            'propertySpacifications',
+            'galleryImages',
+            'property.userPropertyCharacteristics.UserFacade'
+        ])
+        ->select('user_properties.*', 'user_property_contents.*', 'user_properties.id as propertyId', 'user_property_contents.id as contentId')
+        ->firstOrFail();
 
-        // $information['bgImg'] = $misc->getBreadcrumb($tenantId);
-        // $queryResult['pageHeading'] = $this->pageHeading($tenantId);
-
-            $property = PropertyContent::query()
-            ->where('user_property_contents.slug', $slug)
-            ->where('user_property_contents.language_id', $userCurrentLang->id)
-            ->leftJoin('user_properties', 'user_property_contents.property_id', 'user_properties.id')
-            // ->where([['user_properties.status', 1], ['user_properties.approve_status', 1]])
-            ->where([['user_properties.status', 1], ['user_properties.user_id', $tenantId]])
-
-            ->leftJoin('user_property_categories', 'user_property_categories.id', 'user_property_contents.category_id')
-            ->leftJoin('user_cities', 'user_cities.id', '=', 'user_property_contents.city_id')
-            ->leftJoin('user_states', 'user_states.id', '=', 'user_property_contents.state_id')
-            ->leftJoin('user_countries', 'user_countries.id', '=', 'user_property_contents.country_id')
-
-            ->with([
-                'propertySpacifications',
-                'galleryImages',
-                'property.userPropertyCharacteristics'
-            ])
-            ->select('user_properties.*', 'user_property_contents.*', 'user_properties.id as propertyId', 'user_property_contents.id as contentId')->firstOrFail();
 
 
         $information['propertyContent'] = $property;
