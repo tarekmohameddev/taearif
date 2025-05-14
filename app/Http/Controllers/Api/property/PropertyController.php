@@ -684,7 +684,7 @@ class PropertyController extends Controller
             'features' => $responseProperty->features ?? [],
             'status' => (int) $responseProperty->status,
             'featured_image' => asset($responseProperty->featured_image),
-            'floor_planning_image' => $responseProperty->floor_planning_image ?? [],
+            'floor_planning_image' => collect($responseProperty->floor_planning_image)->map(fn($img) => asset($img))->toArray(),
             'gallery' => $responseProperty->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
             'description' => optional($content)->description ?? '',
             'latitude' => $responseProperty->latitude ? (float) $responseProperty->latitude : null,
