@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use App\Models\User\UserDistrict;
+use App\Models\User\RealestateManagement\ApiUserCategory;
+use App\Models\User\UserCity;
 
 use OpenAI as OpenAIClient;
 
@@ -29,26 +32,25 @@ class ChatController extends Controller
 
     public function __construct()
     {
-
         $this->openai = OpenAIClient::client(env('OPENAI_API_KEY'));
         $this->systemInstructions = implode("\n", [
             'أنت موظف دعم عملاء في شركة إدارة عقارات في السعودية.',
             '– ردودك ودية ودافئة، مع الجدية والوضوح.',
             '– استخدم جمل بسيطة لا تتجاوز 3 أسطر.',
             '_ slug لما تلاقي عقار, رد ب رابط العقار الموجود',
+            '_ لو مافي عقارات رد ب طلبك غير متوفر حالياً',
             '– خارج العقارات: "عذرًا، أقدر أساعد بس في أمور إدارة العقارات."'
         ]);
 
         $this->evolutionApiUrl = rtrim(env('EVOLUTION_API_URL'), '/');
         $this->evolutionApiKey = env('EVOLUTION_API_KEY');
         $this->evolutionApiInstance = env('EVOLUTION_API_INSTANCE');
-
     }
 
     protected function sendWhatsappMessage(string $recipientNumber, string $messageText)
     {
         if (empty($this->evolutionApiUrl) || empty($this->evolutionApiKey) || empty($this->evolutionApiInstance)) {
-            Log::error('Evolution API URL, Key, or Instance not configured.');
+         //   Log::error('Evolution API URL, Key, or Instance not configured.');
             return false;
         }
 
@@ -84,9 +86,10 @@ class ChatController extends Controller
 
 public function handleEvolutionWebhook(Request $request)
 {
+    
     $payload = $request->all();
-    Log::info('Evolution API Webhook received: ' . json_encode($payload));
-
+   
+ //Log::info('Evolution API Webhook received: ' . json_encode($payload));
     // ---- VALIDATE THE WEBHOOK (IMPORTANT FOR SECURITY) ----
     // Evolution API might have a way to verify webhooks (e.g., a secret token in headers).
     // Implement verification if available. For example:
@@ -137,7 +140,7 @@ public function handleEvolutionWebhook(Request $request)
 
         return response()->json(['status' => 'received_and_processing']);
     } else {
-        Log::warning('Webhook received but no valid sender or message content.');
+      //  Log::warning('Webhook received but no valid sender or message content.');
         return response()->json(['status' => 'ignored_invalid_payload'], 400);
     }
 }
@@ -174,23 +177,24 @@ public function handleEvolutionWebhook(Request $request)
 
         // Define functions
         $functions = [
-            [
-                'name' => 'search_properties',
-                'description' => 'ابحث عن عقارات حسب المعايير',
-                'parameters' => [
-                    'type' => 'object',
-                    'properties' => [
-                        'location' => ['type' => 'string'],
-                        'min_bedrooms' => ['type' => 'integer'],
-                        'max_price' => ['type' => 'number'],
-                        'type' => ['type' => 'string'],
-                        'purpose' => ['type' => 'string'],
-                        'page' => ['type' => 'integer'],
-                        'per_page' => ['type' => 'integer'],
+                [
+                    'name' => 'search_properties',
+                    'description' => 'دور على عقار حسب النوع (أرض او شقة او شقة في برج أو فيلا) او حسب المدينة او الحي, او حسب عدد الغرف',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'location' => ['type' => 'string'],
+                            'min_bedrooms' => ['type' => 'integer'],
+                            'max_price' => ['type' => 'number'],
+                            'type' => ['type' => 'string'],
+                            'purpose' => ['type' => 'string'],
+                            'page' => ['type' => 'integer'],
+                            'per_page' => ['type' => 'integer'],
+                            
+                        ],
+                        'required' => ['location'],
                     ],
-                    'required' => ['location'],
                 ],
-            ],
             [
                 'name' => 'get_faq_answer',
                 'description' => 'إجابة عن الأسئلة الشائعة في إدارة العقارات',
@@ -269,7 +273,7 @@ public function handleEvolutionWebhook(Request $request)
 
     protected function handleSearchProperties(array $args): array
     {
-        $userId   = auth()->id();
+        $userId   = 922;
 
         // Base query restricted to this user
         $query = Property::with([
@@ -280,54 +284,72 @@ public function handleEvolutionWebhook(Request $request)
         ])->where('user_id', $userId);
         log::info($args);
         // Apply filters
-        if (!empty($args['location'])) {
-            $location = $args['location'];
-            $query->whereHas('contents', fn($q) =>
-                $q->where(fn($qq) =>
-                      $qq->where('city_id', $this->mapCity($location))
-                         ->orWhere('title', 'like', "%{$location}%")
-                         ->orWhere('address', 'like', "%{$location}%")
-                  )
-            );
-        }
-        if (!empty($args['min_bedrooms'])) {
-            $query->where('beds', '>=', $args['min_bedrooms']);
-        }
-        if (!empty($args['max_price'])) {
-            $query->where('price', '<=', $args['max_price']);
-        }
-        if (!empty($args['type'])) {
-            $query->where('type', $args['type']);
-        }
-        if (!empty($args['purpose'])) {
-            $query->where('purpose', $args['purpose']);
-        }
+            if (!empty($args['location'])) {
+                $location = $this->normalizeArabic($args['location']);
+                $tokens = explode(' ', preg_replace('/\s+/', ' ', trim($location)));
+            
+                $query->whereHas('contents', function ($q) use ($location, $tokens) {
+                    $q->where(function ($qq) use ($location, $tokens) {
+                        $qq->where('city_id', $this->mapCity($location))
+                           ->orWhere('state_id', $this->mapState($location))
+                           ->orWhere('title', 'like', "%{$location}%")
+                           ->orWhere(function ($qqq) use ($tokens) {
+                               foreach ($tokens as $token) {
+                                   $qqq->where('address', 'like', "%{$token}%");
+                               }
+                           });
+                    });
+                });
+            }
+            
+            if (!empty($args['min_bedrooms'])) {
+                $query->where('beds', '>=', $args['min_bedrooms']);
+            }
+            
+            if (!empty($args['max_price'])) {
+                $query->where('price', '<=', $args['max_price']);
+            }
+            
+            
+            if (!empty($args['purpose'])) {
+                $query->where('purpose', $args['purpose']);
+            }
+            
+                if (!empty($args['type'])) {
+                    log::info($args['type']);
+                    log::info($this->mapCategory($args['type']));
+                    $query->whereHas('contents', function ($q) use ($args) {
+                        $q->where('category_id', $this->mapCategory($args['type']));
+                    });
+                }
+            
+            // Pagination
+            $perPage = $args['page_size'] ?? 10;
+            $page = $args['page'] ?? 1;
+            
+            $paginated = $query->paginate($perPage, ['*'], 'page', $page);
+            
+            // Format results
+            $formatted = $paginated->getCollection()->map(fn($p) => [
+                'id'               => $p->id,
+                'title'            => optional($p->contents->first())->title ?? 'No Title',
+                'address'          => optional($p->contents->first())->address ?? 'No Address',
+                'slug'             => optional($p->contents->first())->slug,
+                'price'            => $p->price,
+                'type'             => $p->type,
+                'beds'             => $p->beds,
+                'bath'             => $p->bath,
+                'area'             => $p->area,
+                'transaction_type' => $p->purpose,
+                'features'         => $p->features,
+                'status'           => $p->status,
+                'featured_image'   => asset($p->featured_image),
+                'featured'         => (bool) $p->featured,
+                'created_at'       => $p->created_at->toISOString(),
+                'updated_at'       => $p->updated_at->toISOString(),
+            ]);
 
-        // Pagination parameters
-        $perPage = $args['page_size'] ?? 10;
-        $page    = $args['page'] ?? 1;
 
-        $paginated = $query->paginate($perPage, ['*'], 'page', $page);
-
-        // Format results
-        $formatted = $paginated->getCollection()->map(fn($p) => [
-            'id'               => $p->id,
-            'title'            => optional($p->contents->first())->title ?? 'No Title',
-            'address'          => optional($p->contents->first())->address ?? 'No Address',
-            'slug'             => optional($p->contents->first())->slug,
-            'price'            => $p->price,
-            'type'             => $p->type,
-            'beds'             => $p->beds,
-            'bath'             => $p->bath,
-            'area'             => $p->area,
-            'transaction_type' => $p->purpose,
-            'features'         => $p->features,
-            'status'           => $p->status,
-            'featured_image'   => asset($p->featured_image),
-            'featured'         => (bool) $p->featured,
-            'created_at'       => $p->created_at->toISOString(),
-            'updated_at'       => $p->updated_at->toISOString(),
-        ]);
         log::info($formatted);
         return [
             'properties' => $formatted,
@@ -341,6 +363,45 @@ public function handleEvolutionWebhook(Request $request)
             ],
         ];
     }
+
+    private function normalizeArabic($text)
+    {
+        $replacements = [
+            'أ' => 'ا',
+            'إ' => 'ا',
+            'آ' => 'ا',
+            'ى' => 'ي',
+            'ئ' => 'ي',
+            'ؤ' => 'و',
+            'ة' => 'ه',
+            'ٱ' => 'ا',
+            'گ' => 'ك',
+            'چ' => 'ج',
+            'ژ' => 'ز',
+            'ڤ' => 'ف',
+            'پ' => 'ب',
+            'بن' => 'ابن',
+        ];
+        return strtr($text, $replacements);
+    }
+
+
+private function mapCity(string $name): int
+{
+    return UserCity::where('name_ar', $name)->value('id') ?? 0;
+}
+
+private function mapState(string $name): int
+{
+    return UserDistrict::where('name_ar', $name)->value('id') ?? 0;
+}
+
+private function mapCategory(string $name): int
+{
+    return ApiUserCategory::where('name', $name)->value('id') ?? 0;
+}
+
+
 
     protected function handleFaq(array $args): array
     {
@@ -382,11 +443,7 @@ public function handleEvolutionWebhook(Request $request)
         return $resp['choices'][0]['message']['content'];
     }
 
-    private function mapCity(string $name): int
-    {
-        $map = ['الرياض' => 1, 'جدة' => 2];
-        return $map[$name] ?? 0;
-    }
+
 
     private function cosineSimilarity(array $a, array $b): float
     {
