@@ -15,6 +15,9 @@ class ApiMenuItem extends Model
     protected $fillable = [
         'user_id',
         'label',
+        'text',
+        'type',
+        'target',
         'url',
         'is_external',
         'is_active',

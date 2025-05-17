@@ -30,6 +30,9 @@ class ApiMenuController extends Controller
 
             $defaultItems = [
                 [
+                    'text' => 'الرئيسية',
+                    'type' => 'home',
+                    'target' => '_self',
                     'label' => 'الرئيسية',
                     'url' => '/',
                     'is_external' => false,
@@ -40,6 +43,9 @@ class ApiMenuController extends Controller
                     'show_on_desktop' => true,
                 ],
                 [
+                    'text' => 'من نحن',
+                    'type' => '/about',
+                    'target' => '_self',
                     'label' => 'من نحن',
                     'url' => '/about',
                     'is_external' => false,
@@ -49,6 +55,16 @@ class ApiMenuController extends Controller
                     'show_on_mobile' => true,
                     'show_on_desktop' => true,
                 ],
+                [
+                    'label' => 'اتصل بنا',
+                    'url' => '/contact',
+                    'is_external' => false,
+                    'is_active' => true,
+                    'order' => 5,
+                    'parent_id' => null,
+                    'show_on_mobile' => true,
+                    'show_on_desktop' => true,
+                ]
             ];
 
             if ($membership && $membership->package && !empty($membership->package->real_estate_limit_number)) {
@@ -75,17 +91,6 @@ class ApiMenuController extends Controller
                     'show_on_desktop' => true,
                 ];
             }
-
-            $defaultItems[] = [
-                'label' => 'اتصل بنا',
-                'url' => '/contact',
-                'is_external' => false,
-                'is_active' => true,
-                'order' => 5,
-                'parent_id' => null,
-                'show_on_mobile' => true,
-                'show_on_desktop' => true,
-            ];
 
             foreach ($defaultItems as $item) {
                 $menuItem = new ApiMenuItem($item);

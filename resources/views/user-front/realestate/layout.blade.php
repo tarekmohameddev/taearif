@@ -16,11 +16,11 @@
 
     <meta name="keywords" content="@yield('metaKeywords')">
     <meta name="description" content="@yield('metaDescription')">
+
     @yield('og:tag')
+
     {{-- fav icon --}}
-    <link rel="shortcut icon"
-        href="{{ asset($userBs->favicon) }}"
-        type="img/png" />
+    <link rel="shortcut icon" href="{{ asset($userBs->favicon) }}" type="img/png" />
 
         @php
             $primaryColor = $userBs->base_color;
@@ -60,6 +60,22 @@
             --color-secondary: {{ $secoundaryColor }};
             --color-secondary-rgb: {{ rgb(htmlspecialchars($secoundaryColor)) }};
         }
+
+        html, body {
+        height: 100%;
+        margin: 0;
+        }
+
+        body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        }
+
+        main {
+        flex: 1;
+        }
+
     </style>
 
     {{-- @dd($primaryColor); --}}
@@ -87,6 +103,9 @@
 </head>
 
 <body>
+
+    <main>
+
     {{-- preloader start --}}
     @if ($userBs->preloader == 1)
         <div id="preLoader">
@@ -132,6 +151,8 @@
     @if (!is_null($cookieAlertInfo) && $cookieAlertInfo->cookie_alert_status == 1)
         @include('frontend.cookie-alert.index')
     @endif
+
+    </main>
 
     {{-- include footer --}}
     @if ($userBs->theme == 'home13')
