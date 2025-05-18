@@ -129,7 +129,9 @@ class PropertyController extends Controller
             'latitude' => $property->latitude ? (float) $property->latitude : null,
             'longitude' => $property->longitude ? (float) $property->longitude : null,
             'featured' => (bool) $property->featured,
-            'city_id' => $property->city_id,
+            'city_id' => optional($content)->city_id,
+            'state_id' => optional($content)->state_id,
+
             'category_id' => $property->category_id,
             'size' => $property->size ?? null,
         ], $characteristics);
@@ -207,6 +209,7 @@ class PropertyController extends Controller
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
             'project_id' => 'nullable',
             'city_id' => 'nullable',
+            'state_id' => 'nullable',
             'featured' => 'nullable|boolean',
             'amenities' => 'nullable|array',
             'type' => 'nullable',
@@ -289,6 +292,7 @@ class PropertyController extends Controller
                 'category_id',
                 'project_id',
                 'city_id',
+                'state_id',
 
                 "facade_id",
                 "length",
@@ -415,7 +419,8 @@ class PropertyController extends Controller
             'contents',
             'galleryImages',
             'proertyAmenities.amenity',
-            'UserPropertyCharacteristics'
+            'UserPropertyCharacteristics',
+            'PropertyContents',
         ]);
 
         $content = $responseProperty->contents->first();
@@ -425,6 +430,8 @@ class PropertyController extends Controller
             'project_id' => $responseProperty->project_id,
             'title' => optional($content)->title ?? 'No Title',
             'address' => optional($content)->address ?? 'No Address',
+            'city_id' => optional($content)->city_id,
+            'state_id' => optional($content)->state_id,
             'price' => $responseProperty->price,
             'type' => $responseProperty->type,
             'beds' => $responseProperty->beds,
@@ -529,6 +536,7 @@ class PropertyController extends Controller
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
             'project_id' => 'nullable',
             'city_id' => 'nullable',
+            'state_id' => 'nullable',
             'amenities' => 'nullable|array',
             'category_id' => 'nullable|integer',
             // Property Characteristics
@@ -592,6 +600,7 @@ class PropertyController extends Controller
                 // 'category_id',
                 'project_id',
                 'city_id',
+                'state_id',
                 "facade_id",
                 "length",
                 "width",
@@ -666,7 +675,8 @@ class PropertyController extends Controller
             'contents',
             'galleryImages',
             'proertyAmenities.amenity',
-            'UserPropertyCharacteristics'
+            'UserPropertyCharacteristics',
+
         ])->find($property->id);
 
         $content = $responseProperty->contents->first();
@@ -690,7 +700,8 @@ class PropertyController extends Controller
             'latitude' => $responseProperty->latitude ? (float) $responseProperty->latitude : null,
             'longitude' => $responseProperty->longitude ? (float) $responseProperty->longitude : null,
             'featured' => (bool) $responseProperty->featured,
-            'city_id' => $responseProperty->city_id,
+            'city_id' => optional($content)->city_id,
+            'state_id' => optional($content)->state_id,
             'category_id' => $responseProperty->category_id,
             'size' => $responseProperty->size ?? null,
         ], $characteristics);
