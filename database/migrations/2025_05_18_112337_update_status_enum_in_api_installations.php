@@ -13,14 +13,9 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('whats_requestes', function (Blueprint $table) {
-            $table->id();
-            $table->string('username');
-            $table->string('phone_number');
-            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
-            $table->timestamps();
-        });
+        DB::statement("ALTER TABLE api_installations MODIFY COLUMN status ENUM('pending', 'installed', 'uninstalled') NOT NULL DEFAULT 'pending'");
     }
+
 
     /**
      * Reverse the migrations.
@@ -29,6 +24,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('whats_requestes');
+        DB::statement("ALTER TABLE api_installations MODIFY COLUMN status ENUM('installed', 'uninstalled') NOT NULL DEFAULT 'installed'");
     }
 };

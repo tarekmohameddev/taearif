@@ -206,11 +206,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/apps', [ApiInstallationController::class, 'index']);
     Route::post('/apps/install', [ApiInstallationController::class, 'install']);
     Route::post('/apps/uninstall/{appId}', [ApiInstallationController::class, 'uninstall']);
+
+    // whatsapp
+    Route::get('/apps/whatsapp', [ApiInstallationController::class, 'whatsapp']);
+    Route::post('/apps/whatsapp/install', [ApiInstallationController::class, 'installWhatsapp']);
+    Route::post('/apps/whatsapp/uninstall', [ApiInstallationController::class, 'uninstallWhatsapp']);
+
 });
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/embeddings', [EmbeddingController::class, 'store']);
-    Route::post('/chat', [ChatController::class, 'chat']); 
+    Route::post('/chat', [ChatController::class, 'chat']);
 });
 Route::post('/whatsapp/evolution-webhook', [ChatController::class, 'handleEvolutionWebhook']);
 

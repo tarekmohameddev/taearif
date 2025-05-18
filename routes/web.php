@@ -1686,11 +1686,11 @@ Route::domain($domain)->group(function () {
             Route::post('/subdomain/mail', 'Admin\SubdomainController@mail')->name('admin.subdomain.mail');
         });
 
-        //WhatsRequestController
-        Route::group(['middleware' => 'checkpermission:WhatsApp Request'], function () {
-            Route::get('/whatsapp-request', 'Admin\WhatsRequestController@index')->name('admin.whatsapp.request.index');
-            Route::patch('/whatsapp-request/{id}/status', 'Admin\WhatsRequestController@updateStatus')->name('admin.whatsapp.request.status');
-            Route::post('/whatsapp-request/delete', 'Admin\WhatsRequestController@delete')->name('admin.whatsapp.request.delete');
+        //AppInstallationController
+        Route::group(['middleware' => 'checkpermission:App Request'], function () {
+            Route::get('/app-request', 'Admin\AppInstallationController@index')->name('admin.app.request.index');
+            Route::patch('/app-request/{id}/status', 'Admin\AppInstallationController@updateStatus')->name('admin.app-request.updateStatus');
+            Route::post('/app-request/delete', 'Admin\AppInstallationController@delete')->name('admin.app.request.delete');
         });
 
     });

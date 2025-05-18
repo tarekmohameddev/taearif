@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\App;
 
 use App\Models\Api\ApiApp;
+use App\Models\AppRequest;
 use Illuminate\Http\Request;
 use App\Models\Api\ApiInstallation;
 use Illuminate\Support\Facades\Log;
@@ -69,13 +70,15 @@ class ApiInstallationController extends Controller
         $request->validate([
             'app_id' => 'required|exists:api_apps,id',
             'settings' => 'nullable|array',
+            'settings.phone_number' => 'nullable|string|max:20',
+            'settings.token' => 'nullable|string|max:255',
         ]);
 
 
         $installation = ApiInstallation::updateOrCreate(
             ['user_id' => $userId, 'app_id' => $request->app_id],
             [
-                'status' => 'installed',
+                'status' => 'pending',
                 'installed_at' => now(),
                 'uninstalled_at' => null,
             ]
@@ -86,6 +89,30 @@ class ApiInstallationController extends Controller
                 'settings' => $request->input('settings', []),
             ]
         );
+
+
+        $settings = $request->input('settings', []);
+        $app = ApiApp::find($request->app_id); // Assuming you have a model for the app
+        if (!$app) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'App not found.',
+            ], 404);
+        }
+        // Check if the app is already installed
+
+        AppRequest::updateOrCreate(
+            [
+                'user_id' => $userId,
+                'app_id' => $request->app_id,
+            ],
+            [
+                'phone_number' => $settings['phone_number'] ?? null,
+                'token' => $settings['token'] ?? null,
+                'status' => 'pending',
+            ]
+        );
+
         return response()->json([
             'status' => 'success',
             'message' => 'App installed successfully.',

@@ -152,11 +152,11 @@
                     </li>
                 @endif
 
-                @if (empty($admin->role) || (!empty($permissions) && in_array('WhatsApp Request', $permissions)))
-                    <li class="nav-item @if (request()->path() == 'whatsapp-request') active @endif">
-                        <a href="{{ route('admin.whatsapp.request.index') }}">
-                            <i class="fab fa-whatsapp"></i>
-                            <p>{{ __('WhatsApp Requests') }}</p>
+                @if (empty($admin->role) || (!empty($permissions) && in_array('app Request', $permissions)))
+                    <li class="nav-item @if (request()->path() == 'app-request') active @endif">
+                        <a href="{{ route('admin.app.request.index') }}">
+                            <i class="fab fa-app"></i>
+                            <p>{{ __('App Requests') }}</p>
                         </a>
                     </li>
                 @endif
