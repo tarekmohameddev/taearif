@@ -16,8 +16,8 @@ use App\Http\Controllers\User\PortfolioController;
 use App\Http\Controllers\CRM\CustcrmomerController;
 use App\Http\Controllers\CRM\ReservationController;
 use App\Http\Controllers\User\OnboardingController;
-use App\Http\Controllers\CRM\PaymentRecordController;
 // CRM
+use App\Http\Controllers\CRM\PaymentRecordController;
 use App\Http\Controllers\CRM\PaymentRecordsController;
 use App\Http\Controllers\User\HotelBooking\RoomController;
 use User\CourseManagement\Instructor\InstructorController;
@@ -29,8 +29,8 @@ use App\Http\Controllers\User\RealestateManagement\ManageProperty\CityController
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\StateController;
 use App\Http\Controllers\User\RealestateManagement\ManageProject\ProjectController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\AmenityController;
-use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryController;
 
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
@@ -1685,6 +1685,14 @@ Route::domain($domain)->group(function () {
             Route::post('/subdomain/status', 'Admin\SubdomainController@status')->name('admin.subdomain.status');
             Route::post('/subdomain/mail', 'Admin\SubdomainController@mail')->name('admin.subdomain.mail');
         });
+
+        //WhatsRequestController
+        Route::group(['middleware' => 'checkpermission:WhatsApp Request'], function () {
+            Route::get('/whatsapp-request', 'Admin\WhatsRequestController@index')->name('admin.whatsapp.request.index');
+            Route::patch('/whatsapp-request/{id}/status', 'Admin\WhatsRequestController@updateStatus')->name('admin.whatsapp.request.status');
+            Route::post('/whatsapp-request/delete', 'Admin\WhatsRequestController@delete')->name('admin.whatsapp.request.delete');
+        });
+
     });
 
     Route::group(['middleware' => ['web']], function () {
