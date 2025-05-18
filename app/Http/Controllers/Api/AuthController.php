@@ -187,7 +187,7 @@ class AuthController extends Controller
 
             $link = "https://{$user->username}.taearif.com/";
             $message = "حياك الله, شكراً على التسجيل في منصة تعاريف وهذا لينك الموقع الخاص بك : $link";
-            $this->sendWhatsAppMessage($user->phone, $message);
+            // $this->sendWhatsAppMessage($user->phone, $message);
 
             $user['onboarding_completed'] = false;
             return response()->json(['status' => 'success', 'user' => $user, 'token' => $token], 201);
