@@ -24,8 +24,8 @@ class StepProgressController extends Controller
         $stepMap = [
             'banner' => '/content/banner',
             'footer' => '/content/footer',
-            'homepage_about_update' => '/content/about',
-            'menu_builder' => '/content/menu',
+            'about' => '/content/about',
+            'menu' => '/content/menu',
             'projects' => '/projects/add',
             'properties' => '/properties/add',
         ];
@@ -48,7 +48,6 @@ class StepProgressController extends Controller
 
     public function completeStep(Request $request)
     {
-        \Log::info($request);
 
         $request->validate([
             'step' => 'required|in:banner,footer,homepage_about_update,menu_builder,projects,properties',
@@ -59,7 +58,7 @@ class StepProgressController extends Controller
 
         $steps->{$request->step} = true;
         // Optional: check if all steps are completed now
-        $stepKeys = ['banner','footer','homepage_about_update','menu_builder','projects','properties'];
+        $stepKeys = ['banner','footer','about','menu','projects','properties'];
         $remaining = collect($steps->only($stepKeys))->filter(fn($v) => !$v);
 
         if ($remaining->isEmpty() && !$steps->completed_at) {
