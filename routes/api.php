@@ -223,9 +223,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // isthara
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/isthara', [IstharaController::class, 'store']);
-});
+Route::post('/isthara', [IstharaController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/embeddings', [EmbeddingController::class, 'store']);

@@ -13,7 +13,6 @@ class IstharaController extends Controller
     //
     public function store(Request $request)
     {
-        \Log::info("message");
         // Validation Rules
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
