@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\ThemeSettingsController;
 use App\Http\Controllers\Api\DomainSettingsController;
 use App\Http\Controllers\Api\content\ApiMenuController;
 // use App\Http\Controllers\Api\content\ApiContentSection;
+use App\Http\Controllers\Api\isthara\IstharaController;
 use App\Http\Controllers\Api\project\ProjectController;
 use App\Http\Controllers\Api\content\AboutApiController;
 use App\Http\Controllers\Api\property\PropertyController;
@@ -219,6 +220,11 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/steps/progress', [StepProgressController::class, 'getSteps']);
     Route::post('/steps/complete', [StepProgressController::class, 'completeStep']);
+});
+
+// isthara
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/isthara', [IstharaController::class, 'store']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
