@@ -222,11 +222,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/steps/complete', [StepProgressController::class, 'completeStep']);
 });
 
-// isthara
-Route::post('/isthara', [IstharaController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/embeddings', [EmbeddingController::class, 'store']);
     Route::post('/chat', [ChatController::class, 'chat']);
 });
 Route::post('/whatsapp/evolution-webhook', [ChatController::class, 'handleEvolutionWebhook']);
+
+// isthara
+Route::post('/isthara', [IstharaController::class, 'store']);
