@@ -26,6 +26,12 @@ class GoogleAnalyticsService
         $this->propertyId = 'properties/' . config('services.google.analytics_property_id');
     }
 
+    protected function getSafeValue($arr, $index, $default = null)
+    {
+        return isset($arr[$index]) ? $arr[$index]->getValue() : $default;
+    }
+
+
     public function getVisitorsAndPageViews($startDate, $endDate)
     {
         $response = $this->client->runReport([
@@ -60,8 +66,8 @@ class GoogleAnalyticsService
         $metrics = $rows[0]->getMetricValues();
 
         return [
-            'pageViews' => (int) $metrics[0]->getValue(),
-            'sessions' => (int) $metrics[1]->getValue(),
+            'pageViews' => isset($metrics[0]) ? (int) $metrics[0]->getValue() : 0,
+            'sessions' => isset($metrics[1]) ? (int) $metrics[1]->getValue() : 0,
         ];
 
     }
@@ -120,12 +126,13 @@ class GoogleAnalyticsService
         $metrics = $rows[0]->getMetricValues();
 
         return [
-            'pageViews' => (int) $metrics[0]->getValue(),
-            'sessions' => (int) $metrics[1]->getValue(),
-            'users' => (int) $metrics[2]->getValue(),
-            'bounceRate' => (float) $metrics[3]->getValue(),
-            'averageSessionDuration' => (float) $metrics[4]->getValue(),
+            'pageViews' => isset($metrics[0]) ? (int) $metrics[0]->getValue() : 0,
+            'sessions' => isset($metrics[1]) ? (int) $metrics[1]->getValue() : 0,
+            'users' => isset($metrics[2]) ? (int) $metrics[2]->getValue() : 0,
+            'bounceRate' => isset($metrics[3]) ? (float) $metrics[3]->getValue() : 0,
+            'averageSessionDuration' => isset($metrics[4]) ? (float) $metrics[4]->getValue() : 0,
         ];
+
     }
 
 
@@ -152,10 +159,11 @@ class GoogleAnalyticsService
         return collect($response->getRows())->map(function ($row) {
             return [
                 'path' => $row->getDimensionValues()[0]->getValue(),
-                'title' => $row->getDimensionValues()[1]->getValue(),
+                'title' => $this->getSafeValue($row->getDimensionValues(), 1, 'N/A'),
+
                 'pageViews' => (int) $row->getMetricValues()[0]->getValue(),
                 'avgDuration' => (float) $row->getMetricValues()[1]->getValue(),
-                'bounceRate' => (float) $row->getMetricValues()[2]->getValue(),
+                // 'bounceRate' => (float) $row->getMetricValues()[2]->getValue(),
             ];
         });
 
@@ -185,10 +193,11 @@ class GoogleAnalyticsService
         return collect($response->getRows())->map(function ($row) {
             return [
                 'path' => $row->getDimensionValues()[0]->getValue(),
-                'title' => $row->getDimensionValues()[1]->getValue(),
+                'title' => $this->getSafeValue($row->getDimensionValues(), 1, 'N/A'),
+
                 'pageViews' => (int) $row->getMetricValues()[0]->getValue(),
                 'avgDuration' => (float) $row->getMetricValues()[1]->getValue(),
-                'bounceRate' => (float) $row->getMetricValues()[2]->getValue(),
+                // 'bounceRate' => (float) $row->getMetricValues()[2]->getValue(),
             ];
         });
 
@@ -226,10 +235,11 @@ class GoogleAnalyticsService
         return collect($response->getRows())->map(function ($row) {
             return [
                 'path' => $row->getDimensionValues()[0]->getValue(),
-                'title' => $row->getDimensionValues()[1]->getValue(),
+                'title' => $this->getSafeValue($row->getDimensionValues(), 1, 'N/A'),
+
                 'pageViews' => (int) $row->getMetricValues()[0]->getValue(),
                 'avgDuration' => (float) $row->getMetricValues()[1]->getValue(),
-                'bounceRate' => (float) $row->getMetricValues()[2]->getValue(),
+                // 'bounceRate' => (float) $row->getMetricValues()[2]->getValue(),
             ];
         });
 
