@@ -13,7 +13,8 @@ class TenantDashboardController extends Controller
         $startDate = Carbon::now()->subDays(7); // 7 days ago
         $endDate = Carbon::now();
 
-        $tenantId = 'lira'; // use static for now
+        // $tenantId = 'lira'; // use static for now
+        $tenantId = explode('.', request()->getHost())[0];
         $analyticsData = $analyticsService->getDashboardData($tenantId, $startDate, $endDate);
 
         return response()->json([
