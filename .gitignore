@@ -10,6 +10,8 @@
 /storage/framework/views/*
 /storage/logs/*
 !/storage/app/sa_regions_and_governorates.json
+!/public/assets/front/user/realestate/js/properties-filter.js
+
 # Environment files and backups
 .env
 .env.backup
