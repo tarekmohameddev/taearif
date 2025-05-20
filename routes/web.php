@@ -1,9 +1,12 @@
 <?php
 
 // use App\Models\Sale;
+use Spatie\Analytics\Period;
 use Admin\ItemOrderController;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
+use App\Services\GoogleAnalyticsService;
 use App\Http\Controllers\Front\RoomBooking;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\CRM\SaleController;
@@ -13,10 +16,10 @@ use App\Http\Controllers\User\RegionController;
 use App\Http\Controllers\CRM\ContractsController;
 use App\Http\Controllers\Front\CustomerController;
 use App\Http\Controllers\User\PortfolioController;
+// CRM
 use App\Http\Controllers\CRM\CustcrmomerController;
 use App\Http\Controllers\CRM\ReservationController;
 use App\Http\Controllers\User\OnboardingController;
-// CRM
 use App\Http\Controllers\CRM\PaymentRecordController;
 use App\Http\Controllers\CRM\PaymentRecordsController;
 use App\Http\Controllers\User\HotelBooking\RoomController;
@@ -26,17 +29,15 @@ use App\Http\Controllers\Front\ProjectController as FrontProjectController;
 use App\Http\Controllers\Front\PropertyController as FrontPropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProject\TypeController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CityController;
+
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\StateController;
 use App\Http\Controllers\User\RealestateManagement\ManageProject\ProjectController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\AmenityController;
-
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryController;
+// use Google\Service\Analytics;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
-// use Google\Service\Analytics;
-use Spatie\Analytics\Period;
-use App\Services\GoogleAnalyticsService;
 
 Route::get('/test-sales', function () {
     return Sale::with('property', 'user', 'contract')->get();
@@ -134,9 +135,12 @@ Route::fallback(function () {
 
 //
 Route::get('/data', function (GoogleAnalyticsService $ga) {
-    $start = now()->subDays(7);
+    $start = now()->subDays(30);
     $end = now();
-    return response()->json($ga->getVisitorsAndPageViews($start, $end));
+    $tenantUsername = 'lira'; // Replace with the actual tenant username
+    // $tenantUsername = auth()->user()->username;
+    $analyticsData = $ga->getDashboardData($tenantUsername, $start, $end);
+    return response()->json($analyticsData);
 });
 
 // onboarding steps

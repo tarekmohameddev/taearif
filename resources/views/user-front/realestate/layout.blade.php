@@ -101,13 +101,19 @@
     @endif
 
 <!-- Google tag (gtag.js) -->
+
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-RVFKM2F9ZN"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'G-RVFKM2F9ZN');
+  gtag('config', 'G-RVFKM2F9ZN', {
+    'custom_map': {
+      'dimension1': 'lira'
+    },
+    'tenant_id': 'lira'
+  });
 </script>
 
 </head>
