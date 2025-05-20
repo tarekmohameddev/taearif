@@ -38,6 +38,7 @@ use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryControl
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
+use App\Http\Controllers\TenantDashboardController;
 
 Route::get('/test-sales', function () {
     return Sale::with('property', 'user', 'contract')->get();
@@ -134,14 +135,7 @@ Route::fallback(function () {
 
 
 //
-Route::get('/data', function (GoogleAnalyticsService $ga) {
-    $start = now()->subDays(30);
-    $end = now();
-    $tenantUsername = 'lira'; // Replace with the actual tenant username
-    // $tenantUsername = auth()->user()->username;
-    $analyticsData = $ga->getDashboardData($tenantUsername, $start, $end);
-    return response()->json($analyticsData);
-});
+Route::get('/data', [TenantDashboardController::class, 'dashboard']);
 
 // onboarding steps
 
