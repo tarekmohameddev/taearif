@@ -34,6 +34,9 @@ use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryControl
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
+// use Google\Service\Analytics;
+use Spatie\Analytics\Period;
+use App\Services\GoogleAnalyticsService;
 
 Route::get('/test-sales', function () {
     return Sale::with('property', 'user', 'contract')->get();
@@ -130,6 +133,11 @@ Route::fallback(function () {
 
 
 //
+Route::get('/data', function (GoogleAnalyticsService $ga) {
+    $start = now()->subDays(7);
+    $end = now();
+    return response()->json($ga->getVisitorsAndPageViews($start, $end));
+});
 
 // onboarding steps
 
