@@ -10,12 +10,10 @@ class TenantDashboardController extends Controller
 {
     public function dashboard(Request $request, GoogleAnalyticsService $analyticsService)
     {
-        $startDate = Carbon::now()->subDays(30);
+        $startDate = Carbon::now()->subDays(7); // 7 days ago
         $endDate = Carbon::now();
 
-        // Use a static tenant for testing or dynamic later via auth()->user()->username
-        $tenantId = "lira";
-
+        $tenantId = 'lira'; // use static for now
         $analyticsData = $analyticsService->getDashboardData($tenantId, $startDate, $endDate);
 
         return response()->json([
@@ -26,6 +24,7 @@ class TenantDashboardController extends Controller
             'data' => $analyticsData
         ]);
     }
+
 }
 
 

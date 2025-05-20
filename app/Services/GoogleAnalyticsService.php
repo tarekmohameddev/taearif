@@ -102,6 +102,7 @@ class GoogleAnalyticsService
                 new Metric(['name' => 'bounceRate']),
                 new Metric(['name' => 'averageSessionDuration']),
             ],
+            // 'dimensionFilter' => $tenantFilter, // add this later when tenant_id is ready
         ]);
 
         $rows = $response->getRows();
@@ -128,6 +129,7 @@ class GoogleAnalyticsService
     }
 
 
+
     protected function getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter)
     {
         $response = $this->client->runReport([
@@ -149,11 +151,14 @@ class GoogleAnalyticsService
 
         return collect($response->getRows())->map(function ($row) {
             return [
-                'device' => $row->getDimensionValues()[0]->getValue(),
-                'sessions' => (int) $row->getMetricValues()[0]->getValue(),
-                'pageViews' => (int) $row->getMetricValues()[1]->getValue(),
+                'path' => $row->getDimensionValues()[0]->getValue(),
+                'title' => $row->getDimensionValues()[1]->getValue(),
+                'pageViews' => (int) $row->getMetricValues()[0]->getValue(),
+                'avgDuration' => (float) $row->getMetricValues()[1]->getValue(),
+                'bounceRate' => (float) $row->getMetricValues()[2]->getValue(),
             ];
         });
+
     }
 
 
@@ -179,12 +184,14 @@ class GoogleAnalyticsService
 
         return collect($response->getRows())->map(function ($row) {
             return [
-                'source' => $row->getDimensionValues()[0]->getValue(),
-                'medium' => $row->getDimensionValues()[1]->getValue(),
-                'sessions' => (int) $row->getMetricValues()[0]->getValue(),
-                'users' => (int) $row->getMetricValues()[1]->getValue(),
+                'path' => $row->getDimensionValues()[0]->getValue(),
+                'title' => $row->getDimensionValues()[1]->getValue(),
+                'pageViews' => (int) $row->getMetricValues()[0]->getValue(),
+                'avgDuration' => (float) $row->getMetricValues()[1]->getValue(),
+                'bounceRate' => (float) $row->getMetricValues()[2]->getValue(),
             ];
         });
+
     }
 
 
@@ -225,6 +232,7 @@ class GoogleAnalyticsService
                 'bounceRate' => (float) $row->getMetricValues()[2]->getValue(),
             ];
         });
+
     }
 
 
