@@ -10,7 +10,6 @@
 /storage/framework/views/*
 /storage/logs/*
 !/storage/app/sa_regions_and_governorates.json
-!/public/assets/front/user/realestate/js/properties-filter.js
 
 # Environment files and backups
 .env
@@ -29,3 +28,4 @@ yarn-error.log*
 # Composer dependencies (optional if you don’t want to include vendor files)
 /vendor/
 /public/*
+!/public/assets/front/user/realestate/js/properties-filter.js
