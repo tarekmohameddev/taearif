@@ -108,6 +108,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 })(window,document,'script','dataLayer','GTM-KS62NNTG');</script>
 <!-- End Google Tag Manager -->
 
+@php
+    $fullHost = request()->getHost();
+    $tenantId = explode('.', $fullHost)[0];
+@endphp
 <!-- Google tag (gtag.js) -->
 
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-RVFKM2F9ZN"></script>
@@ -120,9 +124,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     'custom_map': {
       'dimension1': 'tenant_id'
     },
-    'tenant_id': '{{ request()->getHost() }}'
+    'tenant_id': '{{ $tenantId }}'
   });
-  console.log('GA4 tenant_id:', '{{ request()->getHost() }}');
+  console.log('GA4 tenant_id = {{ $tenantId }}');
 </script>
 
 </head>

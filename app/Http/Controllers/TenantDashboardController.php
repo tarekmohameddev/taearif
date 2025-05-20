@@ -14,7 +14,9 @@ class TenantDashboardController extends Controller
         $endDate = Carbon::now();
 
         // $tenantId = 'lira'; // use static for now
-        $tenantId = explode('.', request()->getHost())[0];
+        $fullHost = request()->getHost();
+        \Log::info('Full Host: ' . $fullHost);
+        $tenantId = explode('.', $fullHost)[0];
         $analyticsData = $analyticsService->getDashboardData($tenantId, $startDate, $endDate);
 
         return response()->json([
