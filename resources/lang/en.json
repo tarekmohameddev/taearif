@@ -2551,7 +2551,7 @@
     "Updated At": "تم التحديث في",
     "Consultation Bookings": "حجوزات الاستشارة",
     "Booking Date": "تاريخ الحجز",
-    "Isthara Consultations": "استشارات استهارة",
+    "Consultations": "استشارات",
     "Consultation Bookings List": "قائمة حجوزات الاستشارة",
     "NO BOOKINGS FOUND": "لا توجد حجوزات",
     "Read": "مقروء",
@@ -2559,5 +2559,6 @@
     "Booking Status": "حالة الحجز",
     "Booking Details": "تفاصيل الحجز",
     "Booking Information": "معلومات الحجز",
-    "Booking Information Details": "تفاصيل معلومات الحجز"
+    "Booking Information Details": "تفاصيل معلومات الحجز",
+    "Dashboard": "لوحة التحكم"
 }

@@ -13,7 +13,7 @@
             <i class="flaticon-right-arrow"></i>
         </li>
         <li class="nav-item">
-            <a href="#">{{ __('Isthara Consultations') }}</a>
+            <a href="#">{{ __('Consultations') }}</a>
         </li>
     </ul>
 </div>
