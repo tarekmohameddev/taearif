@@ -21,7 +21,8 @@ class AnalyticsDashboardController extends Controller
         $endDate = Carbon::now();
 
         // $tenantId = $user->username ?? explode('.', request()->getHost())[0];
-        $tenantId = $user->username;
+        // $tenantId = 'ress';
+        $tenantId = auth()->user()->username;
 
         $analyticsData = $analyticsService->getDashboardData($tenantId, $startDate, $endDate);
 

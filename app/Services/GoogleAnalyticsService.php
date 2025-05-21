@@ -12,6 +12,7 @@ use Google\Analytics\Data\V1beta\Filter\StringFilter;
 use Google\Analytics\Data\V1beta\BetaAnalyticsDataClient;
 use Google\Analytics\Data\V1beta\OrderBy;
 use Google\Analytics\Data\V1beta\OrderBy\MetricOrderBy;
+use Google\Analytics\Data\V1beta\Filter\StringFilter\MatchType;
 
 class GoogleAnalyticsService
 {
@@ -27,16 +28,13 @@ class GoogleAnalyticsService
         $this->propertyId = 'properties/' . config('services.google.analytics_property_id');
     }
 
-    // protected function getSafeValue($arr, $index, $default = null)
-    // {
-    //     return isset($arr[$index]) ? $arr[$index]->getValue() : $default;
-    // }
+    // Helper for safe dimension/metric value access
     protected function getSafeValue($arr, $index, $default = null)
     {
         return ($arr && isset($arr[$index])) ? $arr[$index]->getValue() : $default;
     }
 
-
+    // Your existing simple visitors/page views without tenant filter
     public function getVisitorsAndPageViews($startDate, $endDate)
     {
         $response = $this->client->runReport([
@@ -56,10 +54,9 @@ class GoogleAnalyticsService
         $rows = $response->getRows();
 
         if (count($rows) === 0) {
-            \Log::info('No GA4 data returned for range: ' . $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d'));
-            \Log::info('GA4 response: ' . json_encode($response->serializeToJsonString()));
-            \Log::info('GA4 property ID: ' . $this->propertyId);
-            \Log::info('GA4 client: ' . json_encode($this->client));
+            Log::info('No GA4 data returned for range: ' . $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d'));
+            Log::info('GA4 response: ' . json_encode($response->serializeToJsonString()));
+            Log::info('GA4 property ID: ' . $this->propertyId);
 
             return [
                 'pageViews' => 0,
@@ -74,38 +71,39 @@ class GoogleAnalyticsService
             'pageViews' => isset($metrics[0]) ? (int) $metrics[0]->getValue() : 0,
             'sessions' => isset($metrics[1]) ? (int) $metrics[1]->getValue() : 0,
         ];
-
     }
 
+    // === MAIN FUNCTION: Pass tenantId filter to each query ===
     public function getDashboardData($tenantId, $startDate, $endDate)
     {
+        // IMPORTANT: use customEvent:tenant_id here for filter!
         $tenantFilter = new FilterExpression([
             'filter' => new Filter([
-                'field_name' => 'tenant_id',
+                'field_name' => 'customEvent:tenant_id',
                 'string_filter' => new StringFilter([
                     'value' => $tenantId,
+                    'match_type' => MatchType::CONTAINS,  // <-- specify contains match
                 ]),
             ]),
         ]);
 
+        Log::info('tenantFilter: ' . $tenantFilter->serializeToJsonString());
+
         return [
-            'overview' => $this->getOverviewMetrics($tenantId, $startDate, $endDate, $tenantFilter),
-            'devices' => $this->getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter),
-            'trafficSources' => $this->getTrafficSources($tenantId, $startDate, $endDate, $tenantFilter),
-            'topPages' => $this->getTopPages($tenantId, $startDate, $endDate, $tenantFilter),
+            'overview' => $this->getOverviewMetrics($startDate, $endDate, $tenantFilter),
+            'devices' => $this->getDeviceBreakdown($startDate, $endDate, $tenantFilter),
+            'trafficSources' => $this->getTrafficSources($startDate, $endDate, $tenantFilter),
+            'topPages' => $this->getTopPages($startDate, $endDate, $tenantFilter),
         ];
     }
 
-    protected function getOverviewMetrics($tenantId, $startDate, $endDate, $tenantFilter)
+    // === Add tenant filter to all runReport calls below ===
+
+    protected function getOverviewMetrics($startDate, $endDate, FilterExpression $tenantFilter)
     {
         $response = $this->client->runReport([
             'property' => $this->propertyId,
-            'dateRanges' => [
-                new DateRange([
-                    'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d'),
-                ]),
-            ],
+            'dateRanges' => [new DateRange(['start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')])],
             'metrics' => [
                 new Metric(['name' => 'screenPageViews']),
                 new Metric(['name' => 'sessions']),
@@ -113,188 +111,105 @@ class GoogleAnalyticsService
                 new Metric(['name' => 'bounceRate']),
                 new Metric(['name' => 'averageSessionDuration']),
             ],
-            // 'dimensionFilter' => $tenantFilter, // add this later when tenant_id is ready
+            'dimensionFilter' => $tenantFilter,  // <-- FILTER APPLIED HERE
         ]);
 
         $rows = $response->getRows();
 
         if (count($rows) === 0) {
-            return [
-                'sessions' => 0,
-                'pageViews' => 0,
-                'users' => 0,
-                'bounceRate' => 0,
-                'averageSessionDuration' => 0,
-            ];
+            return ['pageViews'=>0, 'sessions'=>0, 'users'=>0, 'bounceRate'=>0, 'averageSessionDuration'=>0];
         }
 
         $metrics = $rows[0]->getMetricValues();
 
         return [
-            'pageViews' => isset($metrics[0]) ? (int) $metrics[0]->getValue() : 0,
-            'sessions' => isset($metrics[1]) ? (int) $metrics[1]->getValue() : 0,
-            'users' => isset($metrics[2]) ? (int) $metrics[2]->getValue() : 0,
-            'bounceRate' => isset($metrics[3]) ? (float) $metrics[3]->getValue() : 0,
-            'averageSessionDuration' => isset($metrics[4]) ? (float) $metrics[4]->getValue() : 0,
+            'pageViews' => $this->getSafeValue($metrics, 0, 0),
+            'sessions' => $this->getSafeValue($metrics, 1, 0),
+            'users' => $this->getSafeValue($metrics, 2, 0),
+            'bounceRate' => $this->getSafeValue($metrics, 3, 0),
+            'averageSessionDuration' => $this->getSafeValue($metrics, 4, 0),
         ];
-
     }
 
-
-
-    protected function getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter)
+    protected function getDeviceBreakdown($startDate, $endDate, FilterExpression $tenantFilter)
     {
         $response = $this->client->runReport([
             'property' => $this->propertyId,
-            'dateRanges' => [
-                new DateRange([
-                    'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d'),
-                ]),
-            ],
-            'dimensions' => [
-                new Dimension(['name' => 'deviceCategory']),
-            ],
-            'metrics' => [
-                new Metric(['name' => 'sessions']),
-                new Metric(['name' => 'screenPageViews']),
-            ],
+            'dateRanges' => [new DateRange(['start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')])],
+            'dimensions' => [new Dimension(['name' => 'deviceCategory'])],
+            'metrics' => [new Metric(['name' => 'sessions']), new Metric(['name' => 'screenPageViews'])],
+            'dimensionFilter' => $tenantFilter,  // <-- FILTER APPLIED HERE
         ]);
 
-        return collect($response->getRows())->map(function ($row) {
+        $rows = $response->getRows();
+
+        if (count($rows) === 0) {
+            return [];
+        }
+
+        return collect($rows)->map(function ($row) {
             return [
-                'path' => $row->getDimensionValues()[0]->getValue(),
                 'deviceCategory' => $this->getSafeValue($row->getDimensionValues(), 0, 'unknown'),
-
-                'pageViews' => (int) $row->getMetricValues()[0]->getValue(),
-                'avgDuration' => (float) $row->getMetricValues()[1]->getValue(),
-                // 'bounceRate' => (float) $row->getMetricValues()[2]->getValue(),
+                'sessions' => (int)$this->getSafeValue($row->getMetricValues(), 0, 0),
+                'pageViews' => (int)$this->getSafeValue($row->getMetricValues(), 1, 0),
             ];
-        });
-
+        })->toArray();
     }
 
-
-    protected function getTrafficSources($tenantId, $startDate, $endDate, $tenantFilter)
+    protected function getTrafficSources($startDate, $endDate, FilterExpression $tenantFilter)
     {
         $response = $this->client->runReport([
             'property' => $this->propertyId,
-            'dateRanges' => [
-                new DateRange([
-                    'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d'),
-                ]),
-            ],
-            'dimensions' => [
-                new Dimension(['name' => 'sessionSource']),
-                new Dimension(['name' => 'sessionMedium']),
-            ],
-            'metrics' => [
-                new Metric(['name' => 'sessions']),
-                new Metric(['name' => 'totalUsers']),
-            ],
+            'dateRanges' => [new DateRange(['start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')])],
+            'dimensions' => [new Dimension(['name' => 'sessionSource']), new Dimension(['name' => 'sessionMedium'])],
+            'metrics' => [new Metric(['name' => 'sessions']), new Metric(['name' => 'totalUsers'])],
+            'dimensionFilter' => $tenantFilter,  // <-- FILTER APPLIED HERE
         ]);
 
-        return collect($response->getRows())->map(function ($row) {
+        $rows = $response->getRows();
+
+        if (count($rows) === 0) {
+            return [];
+        }
+
+        return collect($rows)->map(function ($row) {
             return [
-                'path' => $row->getDimensionValues()[0]->getValue(),
-                'deviceCategory' => $this->getSafeValue($row->getDimensionValues(), 0, 'unknown'),
-
-
-                'pageViews' => (int) $row->getMetricValues()[0]->getValue(),
-                'avgDuration' => (float) $row->getMetricValues()[1]->getValue(),
-                // 'bounceRate' => (float) $row->getMetricValues()[2]->getValue(),
+                'source' => $this->getSafeValue($row->getDimensionValues(), 0, 'unknown'),
+                'medium' => $this->getSafeValue($row->getDimensionValues(), 1, 'unknown'),
+                'sessions' => (int)$this->getSafeValue($row->getMetricValues(), 0, 0),
+                'users' => (int)$this->getSafeValue($row->getMetricValues(), 1, 0),
             ];
-        });
-
+        })->toArray();
     }
 
-
-    protected function getTopPages($tenantId, $startDate, $endDate, $tenantFilter)
+    protected function getTopPages($startDate, $endDate, FilterExpression $tenantFilter)
     {
         $response = $this->client->runReport([
             'property' => $this->propertyId,
-            'dateRanges' => [
-                new DateRange([
-                    'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d'),
-                ]),
-            ],
-            'dimensions' => [
-                new Dimension(['name' => 'pagePath']),
-                new Dimension(['name' => 'pageTitle']),
-            ],
-            'metrics' => [
-                new Metric(['name' => 'screenPageViews']),
-                new Metric(['name' => 'averageSessionDuration']),
-                new Metric(['name' => 'bounceRate']),
-            ],
+            'dateRanges' => [new DateRange(['start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')])],
+            'dimensions' => [new Dimension(['name' => 'pagePath']), new Dimension(['name' => 'pageTitle'])],
+            'metrics' => [new Metric(['name' => 'screenPageViews']), new Metric(['name' => 'averageSessionDuration']), new Metric(['name' => 'bounceRate'])],
+            'dimensionFilter' => $tenantFilter,  // <-- FILTER APPLIED HERE
             'orderBys' => [
-                new OrderBy([
-                    'metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']),
-                    'desc' => true,
-                ]),
+                new OrderBy(['metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']), 'desc' => true]),
             ],
             'limit' => 20,
         ]);
 
-        return collect($response->getRows())->map(function ($row) {
-            return [
-                'path' => $row->getDimensionValues()[0]->getValue(),
-                'deviceCategory' => $this->getSafeValue($row->getDimensionValues(), 0, 'unknown'),
+        $rows = $response->getRows();
 
-                'pageViews' => (int) $row->getMetricValues()[0]->getValue(),
-                'avgDuration' => (float) $row->getMetricValues()[1]->getValue(),
-                // 'bounceRate' => (float) $row->getMetricValues()[2]->getValue(),
-            ];
-        });
-
-    }
-
-    public function getRecentEvents($startDate, $endDate, $tenantId = null)
-    {
-        $params = [
-            'property' => $this->propertyId,
-            'dateRanges' => [
-                new DateRange([
-                    'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d'),
-                ]),
-            ],
-            'dimensions' => [
-                new Dimension(['name' => 'eventName']),
-            ],
-            'metrics' => [
-                new Metric(['name' => 'eventCount']),
-            ],
-            'orderBys' => [
-                new OrderBy([
-                    'metric' => new MetricOrderBy(['metric_name' => 'eventCount']),
-                    'desc' => true,
-                ]),
-            ],
-            'limit' => 10,
-        ];
-
-        if ($tenantId) {
-            $params['dimensionFilter'] = new FilterExpression([
-                'filter' => new Filter([
-                    'field_name' => 'tenant_id',
-                    'string_filter' => new StringFilter([
-                        'value' => $tenantId,
-                    ]),
-                ]),
-            ]);
+        if (count($rows) === 0) {
+            return [];
         }
 
-        $response = $this->client->runReport($params);
-
-        return collect($response->getRows())->map(function ($row) {
+        return collect($rows)->map(function ($row) {
             return [
-                'event' => $row->getDimensionValues()[0]->getValue(),
-                'count' => (int) $row->getMetricValues()[0]->getValue(),
+                'path' => $this->getSafeValue($row->getDimensionValues(), 0, 'N/A'),
+                'title' => $this->getSafeValue($row->getDimensionValues(), 1, 'N/A'),
+                'pageViews' => (int)$this->getSafeValue($row->getMetricValues(), 0, 0),
+                'avgDuration' => (float)$this->getSafeValue($row->getMetricValues(), 1, 0),
+                'bounceRate' => (float)$this->getSafeValue($row->getMetricValues(), 2, 0),
             ];
-        });
+        })->toArray();
     }
-
 }
