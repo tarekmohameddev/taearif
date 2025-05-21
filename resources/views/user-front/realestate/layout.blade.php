@@ -124,9 +124,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     'custom_map': {
       'dimension1': 'tenant_id'
     },
-    'tenant_id': '{{ $tenantId }}'
+    'tenant_id': '{{ $user->username }}'
   });
-  console.log('GA4 tenant_id = {{ $tenantId }}');
+  console.log('GA4 tenant_id = {{ $user->username }}');
 </script>
 
 </head>

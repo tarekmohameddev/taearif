@@ -30,6 +30,8 @@ use App\Http\Controllers\Api\apps\whatsapp\EmbeddingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
 use App\Http\Controllers\Api\content\ApiContentSectionsController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
+use App\Http\Controllers\Api\AnalyticsDashboardController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -63,14 +65,25 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // Dashboard routes
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/dashboard', [AnalyticsDashboardController::class, 'dashboard']);
+    Route::get('/dashboard/summary', [AnalyticsDashboardController::class, 'summary']);
+    Route::get('/dashboard/visitors', [AnalyticsDashboardController::class, 'visitors']);
+    Route::get('/dashboard/devices', [AnalyticsDashboardController::class, 'devices']);
+    Route::get('/dashboard/traffic-sources', [AnalyticsDashboardController::class, 'trafficSources']);
+    Route::get('/dashboard/most-visited-pages', [AnalyticsDashboardController::class, 'mostVisitedPages']);
+    Route::get('/dashboard/setup-progress', [AnalyticsDashboardController::class, 'setupProgress']);
+    Route::get('/dashboard/recent-activity', [AnalyticsDashboardController::class, 'getRecentActivity']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
-    Route::get('/dashboard/visitors', [DashboardController::class, 'visitors']);
-    Route::get('/dashboard/devices', [DashboardController::class, 'devices']);
-    Route::get('/dashboard/traffic-sources', [DashboardController::class, 'trafficSources']);
-    Route::get('/dashboard/most-visited-pages', [DashboardController::class, 'mostVisitedPages']);
-    Route::get('/dashboard/setup-progress', [DashboardController::class, 'setupProgress']);
-    Route::get('/dashboard/recent-activity', [DashboardController::class, 'getRecentActivity']);
+    // Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+    // Route::get('/dashboard/visitors', [DashboardController::class, 'visitors']);
+    // Route::get('/dashboard/devices', [DashboardController::class, 'devices']);
+    // Route::get('/dashboard/traffic-sources', [DashboardController::class, 'trafficSources']);
+    // Route::get('/dashboard/most-visited-pages', [DashboardController::class, 'mostVisitedPages']);
+    // Route::get('/dashboard/setup-progress', [DashboardController::class, 'setupProgress']);
+    // Route::get('/dashboard/recent-activity', [DashboardController::class, 'getRecentActivity']);
 });
 
 // blog routes
