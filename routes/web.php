@@ -1699,6 +1699,15 @@ Route::domain($domain)->group(function () {
             Route::post('/app-request/delete', 'Admin\AppInstallationController@delete')->name('admin.app.request.delete');
         });
 
+        //IstharaController
+        Route::group(['middleware' => 'checkpermission:Isthara'], function () {
+            Route::get('/isthara', 'Admin\AdminIstharaController@index')->name('admin.isthara.index');
+            //admin.isthara.show
+            Route::get('/isthara/{id}/show', 'Admin\AdminIstharaController@show')->name('admin.isthara.show');
+            Route::post('/isthara/update', 'Admin\AdminIstharaController@update')->name('admin.isthara.update');
+            Route::post('/isthara/delete', 'Admin\AdminIstharaController@delete')->name('admin.isthara.delete');
+        });
+
     });
 
     Route::group(['middleware' => ['web']], function () {
