@@ -84,9 +84,18 @@
                 <li class="nav-item @if (request()->path() == 'admin/dashboard') active @endif">
                     <a href="{{ route('admin.dashboard') }}">
                         <i class="la flaticon-paint-palette"></i>
-                        <p>Dashboard</p>
+                        <p>{{ __('Dashboard') }}</p>
                     </a>
                 </li>
+                <!-- //admin.isthara.index -->
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Isthara Consultations', $permissions)))
+                    <li class="nav-item @if (request()->path() == 'admin/isthara') active @endif">
+                        <a href="{{ route('admin.isthara.index') }}">
+                            <i class="la flaticon-paint-palette"></i>
+                            <p>{{ __('Consultation Bookings') }}</p>
+                        </a>
+                    </li>
+                @endif
 
                 {{-- Package --}}
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Packages', $permissions)))
@@ -467,7 +476,8 @@
           @elseif(request()->is('admin/blog/*/edit')) active @endif">
                         <a data-toggle="collapse" href="#blog">
                             <i class="fas fa-blog"></i>
-                            <p>Blog</p>
+                            <p>{{ __('Blog') }}</p>
+
                             <span class="caret"></span>
                         </a>
                         <div class="collapse

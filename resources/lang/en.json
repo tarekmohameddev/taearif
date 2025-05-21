@@ -2545,6 +2545,20 @@
     "No WhatsApp Requests Found": "لم يتم العثور على طلبات WhatsApp",
     "No App Requests Found": "لم يتم العثور على طلبات التطبيق",
     "No Properties Found": "لم يتم العثور على عقارات",
-
-    "No properties found": "لا يوجد عقارات متاحة"
+    "No properties found": "لا يوجد عقارات متاحة",
+    "No properties found": "لا يوجد عقارات متاحة",
+    "Created At": "تم الإنشاء في",
+    "Updated At": "تم التحديث في",
+    "Consultation Bookings": "حجوزات الاستشارة",
+    "Booking Date": "تاريخ الحجز",
+    "Consultations": "استشارات",
+    "Consultation Bookings List": "قائمة حجوزات الاستشارة",
+    "NO BOOKINGS FOUND": "لا توجد حجوزات",
+    "Read": "مقروء",
+    "Unread": "غير مقروء",
+    "Booking Status": "حالة الحجز",
+    "Booking Details": "تفاصيل الحجز",
+    "Booking Information": "معلومات الحجز",
+    "Booking Information Details": "تفاصيل معلومات الحجز",
+    "Dashboard": "لوحة التحكم"
 }

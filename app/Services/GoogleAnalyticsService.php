@@ -12,6 +12,7 @@ use Google\Analytics\Data\V1beta\Filter\StringFilter;
 use Google\Analytics\Data\V1beta\BetaAnalyticsDataClient;
 use Google\Analytics\Data\V1beta\OrderBy;
 use Google\Analytics\Data\V1beta\OrderBy\MetricOrderBy;
+
 class GoogleAnalyticsService
 {
     protected $client;
@@ -26,9 +27,13 @@ class GoogleAnalyticsService
         $this->propertyId = 'properties/' . config('services.google.analytics_property_id');
     }
 
+    // protected function getSafeValue($arr, $index, $default = null)
+    // {
+    //     return isset($arr[$index]) ? $arr[$index]->getValue() : $default;
+    // }
     protected function getSafeValue($arr, $index, $default = null)
     {
-        return isset($arr[$index]) ? $arr[$index]->getValue() : $default;
+        return ($arr && isset($arr[$index])) ? $arr[$index]->getValue() : $default;
     }
 
 
@@ -159,7 +164,7 @@ class GoogleAnalyticsService
         return collect($response->getRows())->map(function ($row) {
             return [
                 'path' => $row->getDimensionValues()[0]->getValue(),
-                'title' => $this->getSafeValue($row->getDimensionValues(), 1, 'N/A'),
+                'deviceCategory' => $this->getSafeValue($row->getDimensionValues(), 0, 'unknown'),
 
                 'pageViews' => (int) $row->getMetricValues()[0]->getValue(),
                 'avgDuration' => (float) $row->getMetricValues()[1]->getValue(),
@@ -193,7 +198,8 @@ class GoogleAnalyticsService
         return collect($response->getRows())->map(function ($row) {
             return [
                 'path' => $row->getDimensionValues()[0]->getValue(),
-                'title' => $this->getSafeValue($row->getDimensionValues(), 1, 'N/A'),
+                'deviceCategory' => $this->getSafeValue($row->getDimensionValues(), 0, 'unknown'),
+
 
                 'pageViews' => (int) $row->getMetricValues()[0]->getValue(),
                 'avgDuration' => (float) $row->getMetricValues()[1]->getValue(),
@@ -235,7 +241,7 @@ class GoogleAnalyticsService
         return collect($response->getRows())->map(function ($row) {
             return [
                 'path' => $row->getDimensionValues()[0]->getValue(),
-                'title' => $this->getSafeValue($row->getDimensionValues(), 1, 'N/A'),
+                'deviceCategory' => $this->getSafeValue($row->getDimensionValues(), 0, 'unknown'),
 
                 'pageViews' => (int) $row->getMetricValues()[0]->getValue(),
                 'avgDuration' => (float) $row->getMetricValues()[1]->getValue(),
@@ -245,5 +251,50 @@ class GoogleAnalyticsService
 
     }
 
+    public function getRecentEvents($startDate, $endDate, $tenantId = null)
+    {
+        $params = [
+            'property' => $this->propertyId,
+            'dateRanges' => [
+                new DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
+                ]),
+            ],
+            'dimensions' => [
+                new Dimension(['name' => 'eventName']),
+            ],
+            'metrics' => [
+                new Metric(['name' => 'eventCount']),
+            ],
+            'orderBys' => [
+                new OrderBy([
+                    'metric' => new MetricOrderBy(['metric_name' => 'eventCount']),
+                    'desc' => true,
+                ]),
+            ],
+            'limit' => 10,
+        ];
+
+        if ($tenantId) {
+            $params['dimensionFilter'] = new FilterExpression([
+                'filter' => new Filter([
+                    'field_name' => 'tenant_id',
+                    'string_filter' => new StringFilter([
+                        'value' => $tenantId,
+                    ]),
+                ]),
+            ]);
+        }
+
+        $response = $this->client->runReport($params);
+
+        return collect($response->getRows())->map(function ($row) {
+            return [
+                'event' => $row->getDimensionValues()[0]->getValue(),
+                'count' => (int) $row->getMetricValues()[0]->getValue(),
+            ];
+        });
+    }
 
 }

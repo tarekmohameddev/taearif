@@ -420,7 +420,6 @@ class PropertyController extends Controller
             'galleryImages',
             'proertyAmenities.amenity',
             'UserPropertyCharacteristics',
-            'PropertyContents',
         ]);
 
         $content = $responseProperty->contents->first();

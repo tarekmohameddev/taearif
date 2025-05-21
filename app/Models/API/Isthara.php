@@ -12,6 +12,7 @@ class Isthara extends Model
     protected $fillable = [
         'name',
         'phone',
+        'is_read',
     ];
     protected $hidden = [
         'created_at',
@@ -19,5 +20,6 @@ class Isthara extends Model
     ];
     protected $casts = [
         'phone' => 'string',
+        'is_read' => 'boolean',
     ];
 }
