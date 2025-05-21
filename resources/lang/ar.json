@@ -373,5 +373,18 @@
     "rented": "مؤجرة",
     "Private Parking": "موقف سيارة مخصص",
     "Similar": "متشابه",
+    "All WhatsApp Requests": "جميع طلبات WhatsApp",
+    "WhatsApp Requests": "طلبات WhatsApp",
+    "All App Requests": "طلبات تثبيت التطبيقات",
+    "App Requests": "طلبات التطبيق",
+    "Search by Username": "بحث عبر الاسم",
+    "Search by Phone": "بحث عبر الهاتف",
+    "Search": "بحث",
+    "Approved": "تم القبول",
+    "Pending": "قيد الانتظار",
+    "Declined": "مرفوض",
+    "No WhatsApp Requests Found": "لم يتم العثور على طلبات WhatsApp",
+    "No App Requests Found": "لم يتم العثور على طلبات التطبيق",
+    "No Properties Found": "لم يتم العثور على عقارات",
     "No properties found": "لا يوجد عقارات متاحة"
   }

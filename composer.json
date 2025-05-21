@@ -19,6 +19,7 @@
         "cartalyst/stripe-laravel": "14.0.0",
         "doctrine/dbal": "3.0",
         "fruitcake/laravel-cors": "^3.0",
+        "google/analytics-data": "^0.21.0",
         "guzzlehttp/guzzle": "^7.5.0",
         "instamojo/instamojo-php": "^0.4",
         "intervention/image": "^2.7",

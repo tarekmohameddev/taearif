@@ -26,6 +26,7 @@ use App\Models\User\RealestateManagement\PropertySliderImg;
 use App\Models\User\RealestateManagement\PropertySpecification;
 use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\RealestateManagement\ApiUserCategory as Category;
+use App\Models\Api\ApiMenuItem;
 
 class PropertyController extends Controller
 {
@@ -122,13 +123,15 @@ class PropertyController extends Controller
             'features' => $property->features ?? [],
             'status' => (int) $property->status,
             'featured_image' => asset($property->featured_image),
-            'floor_planning_image' => $property->floor_planning_image ?? [],
+            'floor_planning_image' => collect($property->floor_planning_image)->map(fn($img) => asset($img))->toArray(),
             'gallery' => $property->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
             'description' => optional($content)->description ?? '',
             'latitude' => $property->latitude ? (float) $property->latitude : null,
             'longitude' => $property->longitude ? (float) $property->longitude : null,
             'featured' => (bool) $property->featured,
-            'city_id' => $property->city_id,
+            'city_id' => optional($content)->city_id,
+            'state_id' => optional($content)->state_id,
+
             'category_id' => $property->category_id,
             'size' => $property->size ?? null,
         ], $characteristics);
@@ -206,6 +209,7 @@ class PropertyController extends Controller
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
             'project_id' => 'nullable',
             'city_id' => 'nullable',
+            'state_id' => 'nullable',
             'featured' => 'nullable|boolean',
             'amenities' => 'nullable|array',
             'type' => 'nullable',
@@ -288,6 +292,7 @@ class PropertyController extends Controller
                 'category_id',
                 'project_id',
                 'city_id',
+                'state_id',
 
                 "facade_id",
                 "length",
@@ -404,6 +409,8 @@ class PropertyController extends Controller
                     PropertySpecification::storeSpecification($user->id, $property->id, $spec);
                 }
             }
+
+            $this->ensureUnitsMenuItemExists($user->id); // Add properties menu item if not exists for the user
         });
 
         $responseProperty = $property->load([
@@ -412,7 +419,8 @@ class PropertyController extends Controller
             'contents',
             'galleryImages',
             'proertyAmenities.amenity',
-            'UserPropertyCharacteristics'
+            'UserPropertyCharacteristics',
+            'PropertyContents',
         ]);
 
         $content = $responseProperty->contents->first();
@@ -422,6 +430,8 @@ class PropertyController extends Controller
             'project_id' => $responseProperty->project_id,
             'title' => optional($content)->title ?? 'No Title',
             'address' => optional($content)->address ?? 'No Address',
+            'city_id' => optional($content)->city_id,
+            'state_id' => optional($content)->state_id,
             'price' => $responseProperty->price,
             'type' => $responseProperty->type,
             'beds' => $responseProperty->beds,
@@ -456,6 +466,35 @@ class PropertyController extends Controller
             'user_property' => $formattedProperty
         ], 201);
     }
+
+    /**
+     * Ensure the "properties" menu item exists for the user.
+     * If it doesn't exist, create it.
+     */
+    private function ensureUnitsMenuItemExists($userId)
+    {
+        $exists = ApiMenuItem::where('user_id', $userId)
+            ->where('url', '/properties')
+            ->exists();
+
+        if (!$exists) {
+            $maxOrder = ApiMenuItem::where('user_id', $userId)->max('order') ?? 0;
+
+            ApiMenuItem::create([
+                'user_id' => $userId,
+                'label' => 'الوحدات',
+                'url' => '/properties',
+                'is_external' => false,
+                'is_active' => true,
+                'order' => $maxOrder + 1,
+                'parent_id' => null,
+                'show_on_mobile' => true,
+                'show_on_desktop' => true,
+            ]);
+        }
+    }
+
+
 
     /*
         * Update the specified resource in storage.
@@ -497,6 +536,7 @@ class PropertyController extends Controller
             'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
             'project_id' => 'nullable',
             'city_id' => 'nullable',
+            'state_id' => 'nullable',
             'amenities' => 'nullable|array',
             'category_id' => 'nullable|integer',
             // Property Characteristics
@@ -560,6 +600,7 @@ class PropertyController extends Controller
                 // 'category_id',
                 'project_id',
                 'city_id',
+                'state_id',
                 "facade_id",
                 "length",
                 "width",
@@ -634,7 +675,8 @@ class PropertyController extends Controller
             'contents',
             'galleryImages',
             'proertyAmenities.amenity',
-            'UserPropertyCharacteristics'
+            'UserPropertyCharacteristics',
+
         ])->find($property->id);
 
         $content = $responseProperty->contents->first();
@@ -652,13 +694,14 @@ class PropertyController extends Controller
             'features' => $responseProperty->features ?? [],
             'status' => (int) $responseProperty->status,
             'featured_image' => asset($responseProperty->featured_image),
-            'floor_planning_image' => $responseProperty->floor_planning_image ?? [],
+            'floor_planning_image' => collect($responseProperty->floor_planning_image)->map(fn($img) => asset($img))->toArray(),
             'gallery' => $responseProperty->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
             'description' => optional($content)->description ?? '',
             'latitude' => $responseProperty->latitude ? (float) $responseProperty->latitude : null,
             'longitude' => $responseProperty->longitude ? (float) $responseProperty->longitude : null,
             'featured' => (bool) $responseProperty->featured,
-            'city_id' => $responseProperty->city_id,
+            'city_id' => optional($content)->city_id,
+            'state_id' => optional($content)->state_id,
             'category_id' => $responseProperty->category_id,
             'size' => $responseProperty->size ?? null,
         ], $characteristics);

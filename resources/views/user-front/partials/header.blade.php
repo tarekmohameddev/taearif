@@ -4,7 +4,7 @@
     <div class="header-nav">
         <div class="container-fluid container-1600">
             <div class="nav-container mobile-rs-nav">
-                
+
                     <!-- Site Logo -->
                     <div class="site-logo">
                         @if (isset($userBs->logo))
@@ -14,8 +14,8 @@
                         </a>
                         @endif
                     </div>
-                    
-                
+
+
 
                 <!-- Main Menu -->
                 <div class="nav-menu d-lg-flex align-items-center">
@@ -39,19 +39,17 @@
                                     $href = getUserHref($link);
                                 @endphp
                                 @if (!array_key_exists('children', $link))
-                                    <li><a href="{{ $href }}"
-                                            target="{{ $link['target'] }}">{{ $link['text'] }}</a></li>
+                                    <li><a href="{{ $href }}" target="{{ $link['target'] ?? '_self' }}">{{ $link['text'] ?? '' }}</a></li>
                                 @else
                                     <li class="has-submemu">
-                                        <a href="{{ $href }}"
-                                            target="{{ $link['target'] }}">{{ $link['text'] }}</a>
+                                    <a href="{{ $href }}" target="{{ $link['target'] ?? '_self' }}">{{ $link['text'] ?? '' }}</a>
+
                                         <ul class="submenu">
                                             @foreach ($link['children'] as $level2)
                                                 @php
                                                     $l2Href = getUserHref($level2);
                                                 @endphp
-                                                <li><a href="{{ $l2Href }}"
-                                                        target="{{ $level2['target'] }}">{{ $level2['text'] }}</a>
+                                                <li><a href="{{ $l2Href }}" target="{{ $level2['target'] ?? '_self' }}">{{ $level2['text'] ?? '' }}</a>
                                                 </li>
                                             @endforeach
                                         </ul>
@@ -72,25 +70,25 @@
     <div class="language-selection language-selection-two">
         @if ($userCurrentLang->id)
             <div class="current-language">
-                <img 
-                    src="{{ asset('assets/front/img/flags/' . $userCurrentLang->code . '.png') }}" 
-                    alt="{{ $userCurrentLang->name }}" 
-                    class="img-fluid" 
-                    style="width: 25px; height: 25px;"> 
+                <img
+                    src="{{ asset('assets/front/img/flags/' . $userCurrentLang->code . '.png') }}"
+                    alt="{{ $userCurrentLang->name }}"
+                    class="img-fluid"
+                    style="width: 25px; height: 25px;">
                 <i class="far fa-angle-down"></i>
             </div>
         @endif
         <ul class="language-list" id="language-list">
             @foreach ($userLangs as $userLang)
                 <li>
-                    <a href="javascript:void(0)" 
-                       data-value="{{ $userLang->code }}" 
+                    <a href="javascript:void(0)"
+                       data-value="{{ $userLang->code }}"
                        onclick="changeLanguage('{{ $userLang->code }}')">
-                        <img 
-                            src="{{ asset('assets/front/img/flags/' . $userLang->code . '.png') }}" 
-                            alt="{{ $userLang->name }}" 
-                            title="{{ convertUtf8($userLang->name) }}" 
-                            class="img-fluid" 
+                        <img
+                            src="{{ asset('assets/front/img/flags/' . $userLang->code . '.png') }}"
+                            alt="{{ $userLang->name }}"
+                            title="{{ convertUtf8($userLang->name) }}"
+                            class="img-fluid"
                             style="width: 25px; height: 25px;">
                             {{$userLang->name}}
                     </a>

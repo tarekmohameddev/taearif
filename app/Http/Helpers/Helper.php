@@ -197,6 +197,12 @@ if (!function_exists('getUserHref')) {
     function getUserHref($link)
     {
         $href = "#";
+
+        if (!is_array($link) || !array_key_exists('type', $link)) {
+            \Log::warning('Missing "type" key in menu item:', ['link' => $link]);
+            return $href;
+        }
+
         if ($link["type"] == 'home') {
             $href = route('front.user.detail.view', getParam());
         } else if ($link["type"] == 'properties') {

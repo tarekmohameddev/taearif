@@ -1,9 +1,12 @@
 <?php
 
 // use App\Models\Sale;
+use Spatie\Analytics\Period;
 use Admin\ItemOrderController;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
+use App\Services\GoogleAnalyticsService;
 use App\Http\Controllers\Front\RoomBooking;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\CRM\SaleController;
@@ -13,11 +16,11 @@ use App\Http\Controllers\User\RegionController;
 use App\Http\Controllers\CRM\ContractsController;
 use App\Http\Controllers\Front\CustomerController;
 use App\Http\Controllers\User\PortfolioController;
+// CRM
 use App\Http\Controllers\CRM\CustcrmomerController;
 use App\Http\Controllers\CRM\ReservationController;
 use App\Http\Controllers\User\OnboardingController;
 use App\Http\Controllers\CRM\PaymentRecordController;
-// CRM
 use App\Http\Controllers\CRM\PaymentRecordsController;
 use App\Http\Controllers\User\HotelBooking\RoomController;
 use User\CourseManagement\Instructor\InstructorController;
@@ -26,14 +29,16 @@ use App\Http\Controllers\Front\ProjectController as FrontProjectController;
 use App\Http\Controllers\Front\PropertyController as FrontPropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProject\TypeController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CityController;
+
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\StateController;
 use App\Http\Controllers\User\RealestateManagement\ManageProject\ProjectController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\AmenityController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryController;
-
+// use Google\Service\Analytics;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
+use App\Http\Controllers\TenantDashboardController;
 
 Route::get('/test-sales', function () {
     return Sale::with('property', 'user', 'contract')->get();
@@ -130,6 +135,7 @@ Route::fallback(function () {
 
 
 //
+Route::get('/data', [TenantDashboardController::class, 'dashboard']);
 
 // onboarding steps
 
@@ -1685,6 +1691,14 @@ Route::domain($domain)->group(function () {
             Route::post('/subdomain/status', 'Admin\SubdomainController@status')->name('admin.subdomain.status');
             Route::post('/subdomain/mail', 'Admin\SubdomainController@mail')->name('admin.subdomain.mail');
         });
+
+        //AppInstallationController
+        Route::group(['middleware' => 'checkpermission:App Request'], function () {
+            Route::get('/app-request', 'Admin\AppInstallationController@index')->name('admin.app.request.index');
+            Route::patch('/app-request/{id}/status', 'Admin\AppInstallationController@updateStatus')->name('admin.app-request.updateStatus');
+            Route::post('/app-request/delete', 'Admin\AppInstallationController@delete')->name('admin.app.request.delete');
+        });
+
     });
 
     Route::group(['middleware' => ['web']], function () {

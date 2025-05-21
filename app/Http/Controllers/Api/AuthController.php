@@ -10,29 +10,42 @@ use App\Models\Coupon;
 use App\Models\Package;
 use App\Models\Language;
 use App\Rules\Recaptcha;
+use App\Models\User\Blog;
 use App\Models\User\Menu;
 use App\Models\Membership;
+use App\Models\User\Member;
+use App\Models\User\Social;
 use App\Models\BasicSetting;
 use Illuminate\Http\Request;
 use App\Models\OfflineGateway;
+use App\Models\User\Portfolio;
+use App\Models\User\HeroSlider;
 use App\Http\Helpers\MegaMailer;
 use App\Models\User\HomeSection;
 use App\Models\User\UserService;
+use App\Models\User\WorkProcess;
+use App\Models\User\BlogCategory;
 use App\Models\User\HomePageText;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\Api\ApiMenuSetting;
 use Illuminate\Support\Facades\DB;
 use App\Models\User\UserPermission;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User\UserShopSetting;
+use App\Models\User\UserTestimonial;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use App\Models\User\PortfolioCategory;
 use App\Models\User\UserEmailTemplate;
 use App\Models\User\UserPaymentGeteway;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Helpers\UserPermissionHelper;
-use Illuminate\Support\Facades\Http;
+use App\Models\User\RealestateManagement\Category;
+use App\Http\Controllers\Api\OnboardingController;
+
 
 class AuthController extends Controller
 {
@@ -112,6 +125,43 @@ class AuthController extends Controller
             $user = $this->create_website($request->all(), $transaction_id, $transaction_details, $price, $be, $request->password);
             //  dd($user);
             Auth::login($user);
+            // $this->createDefaultMenu($user);
+            // $this->createDefaultMenuJson($user);
+
+            // $langId = optional($currentLang)->id;
+
+            // if (!$langId) {
+            //     $fallbackLang = Language::where('is_default', 1)->first();
+            //     $langId = optional($fallbackLang)->id;
+            // }
+            // if ($langId) {
+            //     $this->updateUserMenu($user->id, $langId);
+            // }
+            // $request = new Request();
+            // $request->replace([
+            //     "title" => "شركة الأفق للعقارات",
+            //     "category" => "realestate",
+            //     "theme" => "home13",
+            //     "colors" => [
+            //         "primary" => "#1e40af",
+            //         "secondary" => "#3b82f6",
+            //         "accent" => "#93c5fd"
+            //     ],
+            //     "logo" => "logos/20fd8e4f-ecee-41f4-aaed-b5ebc71b3fcc.jpg",
+            //     "favicon" => "logos/20fd8e4f-ecee-41f4-aaed-b5ebc71b3fcc.jpg"
+            // ]);
+
+            // 🔒 Simulate authenticated user
+            // $request->setUserResolver(function () use ($user) {
+            //     return $user;
+            // });
+
+            // 🔁 Call OnboardingController@store manually
+            // $onboardingController = app(OnboardingController::class);
+            // $response = $onboardingController->store($request);
+
+            app(\App\Services\OnboardingService::class)->applyDefaultsFor($user);
+
 
             $categories = \DB::table('api_user_categories')->get();
 
@@ -137,7 +187,7 @@ class AuthController extends Controller
 
             $link = "https://{$user->username}.taearif.com/";
             $message = "حياك الله, شكراً على التسجيل في منصة تعاريف وهذا لينك الموقع الخاص بك : $link";
-            $this->sendWhatsAppMessage($user->phone, $message);
+            // $this->sendWhatsAppMessage($user->phone, $message);
 
             $user['onboarding_completed'] = false;
             return response()->json(['status' => 'success', 'user' => $user, 'token' => $token], 201);
@@ -334,6 +384,121 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
+    private function createDefaultMenuJson(User $user)
+    {
+        $defaultMenuJson = json_encode([
+            [
+                "text" => "Home",
+                "href" => "",
+                "icon" => "empty",
+                "target" => "_self",
+                "title" => "",
+                "type" => "home"
+            ],
+            [
+                "text" => "About",
+                "href" => "",
+                "icon" => "empty",
+                "target" => "_self",
+                "title" => "",
+                "type" => "About"
+            ],
+            [
+                "text" => "Contact",
+                "href" => "",
+                "icon" => "empty",
+                "target" => "_self",
+                "title" => "",
+                "type" => "contact"
+            ]
+        ]);
+
+        // Create menu and assign it to the user
+        $menu = new \App\Models\User\Menu();
+        $menu->user_id = $user->id;
+        $menu->language_id = Language::where('is_default', 1)->value('id'); // or loop languages
+        $menu->menus = $defaultMenuJson;
+        $menu->save();
+
+        // Save setting (optional)
+        ApiMenuSetting::create([
+            'user_id' => $user->id,
+            'menu_position' => 'top',
+            'menu_style' => 'default',
+            'mobile_menu_type' => 'slide',
+            'is_sticky' => true,
+            'is_transparent' => false,
+            'status' => true,
+        ]);
+    }
+
+    private function updateUserMenu($userId, $languageId)
+    {
+        $realEstateMenu = [
+            ["text" => "الصفحة الرئيسية", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "home"],
+            ["text" => "اتصل بنا", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "contact"]
+        ];
+
+        $menuJson = json_encode($realEstateMenu, JSON_UNESCAPED_UNICODE);
+
+        $existingMenu = Menu::where([
+            'user_id' => $userId,
+            'language_id' => $languageId
+        ])->first();
+
+        if ($existingMenu) {
+            $existingMenu->menus = $menuJson;
+            $existingMenu->save();
+        } else {
+            Menu::create([
+                'user_id' => $userId,
+                'language_id' => $languageId,
+                'menus' => $menuJson
+            ]);
+        }
+    }
+
+
+
+    // private function createDefaultMenu(User $user)
+    // {
+    //     if (Menu::where('user_id', $user->id)->exists()) {
+    //         return;
+    //     }
+    //     $templateUserId = 1;
+
+    //     // Get all supported languages
+    //     $languages = Language::all();
+
+    //     // Get default menus from template user (ID = 1)
+    //     $templateMenus = Menu::where('user_id', $templateUserId)->get();
+
+    //     foreach ($templateMenus as $templateMenu) {
+    //         $clonedMenu = $templateMenu->replicate();
+    //         $clonedMenu->user_id = $user->id;
+    //         $clonedMenu->save();
+
+    //         // Clone each menu item
+    //         foreach ($templateMenu->items as $item) {
+    //             $newItem = $item->replicate();
+    //             $newItem->menu_id = $clonedMenu->id;
+    //             $newItem->user_id = $user->id;
+    //             $newItem->save();
+    //         }
+
+    //         // Create menu setting for each language (e.g., header/footer mapping)
+    //         foreach ($languages as $lang) {
+    //             ApiMenuSetting::create([
+    //                 'user_id'    => $user->id,
+    //                 'language_id'=> $lang->id,
+    //                 'menu_type'  => $clonedMenu->type,  // header or footer
+    //                 'menu_id'    => $clonedMenu->id,
+    //             ]);
+    //         }
+    //     }
+    // }
+
 
     private function invalidCurrencyResponse($message)
     {

@@ -48,5 +48,14 @@ return [
         'key' => '',
         'secret' => '',
     ],
+    // 'google' => [
+    //     'analytics_property_id' => env('GOOGLE_ANALYTICS_PROPERTY_ID'),
+    //     'analytics_view_id' => env('GOOGLE_ANALYTICS_VIEW_ID'),
+    //     'analytics_service_account_credentials_json' => storage_path('app/google/service-account.json'),
+    // ],
+
+    'google' => [
+        'analytics_property_id' => env('GOOGLE_ANALYTICS_PROPERTY_ID'),
+    ],
 
 ];

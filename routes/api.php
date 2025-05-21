@@ -11,23 +11,25 @@ use App\Http\Controllers\Api\DistrictController;
 use App\Http\Controllers\Api\blog\BlogController;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\ApiSideMenusController;
+use App\Http\Controllers\Api\StepProgressController;
 use App\Http\Controllers\Api\ThemeSettingsController;
 use App\Http\Controllers\Api\DomainSettingsController;
 use App\Http\Controllers\Api\content\ApiMenuController;
-use App\Http\Controllers\Api\project\ProjectController;
 // use App\Http\Controllers\Api\content\ApiContentSection;
+use App\Http\Controllers\Api\isthara\IstharaController;
+use App\Http\Controllers\Api\project\ProjectController;
 use App\Http\Controllers\Api\content\AboutApiController;
 use App\Http\Controllers\Api\property\PropertyController;
+use App\Http\Controllers\Api\apps\whatsapp\ChatController;
 use App\Http\Controllers\Api\App\ApiInstallationController;
 use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\Property\UserFacadeController;
 use App\Http\Controllers\Api\content\FooterSettingController;
 use App\Http\Controllers\Api\content\GeneralSettingController;
+use App\Http\Controllers\Api\apps\whatsapp\EmbeddingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
 use App\Http\Controllers\Api\content\ApiContentSectionsController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
-use App\Http\Controllers\Api\apps\whatsapp\EmbeddingController;
-use App\Http\Controllers\Api\apps\whatsapp\ChatController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -206,12 +208,26 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/apps', [ApiInstallationController::class, 'index']);
     Route::post('/apps/install', [ApiInstallationController::class, 'install']);
     Route::post('/apps/uninstall/{appId}', [ApiInstallationController::class, 'uninstall']);
+
+    // whatsapp
+    Route::get('/apps/whatsapp', [ApiInstallationController::class, 'whatsapp']);
+    Route::post('/apps/whatsapp/install', [ApiInstallationController::class, 'installWhatsapp']);
+    Route::post('/apps/whatsapp/uninstall', [ApiInstallationController::class, 'uninstallWhatsapp']);
+
 });
+
+// steps
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/steps/progress', [StepProgressController::class, 'getSteps']);
+    Route::post('/steps/complete', [StepProgressController::class, 'completeStep']);
+});
+
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/embeddings', [EmbeddingController::class, 'store']);
-    Route::post('/chat', [ChatController::class, 'chat']); 
+    Route::post('/chat', [ChatController::class, 'chat']);
 });
 Route::post('/whatsapp/evolution-webhook', [ChatController::class, 'handleEvolutionWebhook']);
 
-
+// isthara
+Route::post('/isthara', [IstharaController::class, 'store']);

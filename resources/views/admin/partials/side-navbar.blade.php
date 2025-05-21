@@ -152,6 +152,16 @@
                     </li>
                 @endif
 
+                @if (empty($admin->role) || (!empty($permissions) && in_array('app Request', $permissions)))
+                    <li class="nav-item @if (request()->path() == 'admin/app-request') active @endif">
+                        <a href="{{ route('admin.app.request.index') }}">
+                            <i class="fab fa-app"></i>
+                            <p>{{ __('App Requests') }}</p>
+                        </a>
+                    </li>
+                @endif
+
+
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Custom Domains', $permissions)))
                     <li
                         class="nav-item
