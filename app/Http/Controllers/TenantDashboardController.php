@@ -15,14 +15,17 @@ class TenantDashboardController extends Controller
 
         $tenantId = 'ress'; // Hardcoded tenant for testing
 
-        $analyticsData = $analyticsService->getDashboardData($tenantId, $startDate, $endDate);
+        // $analyticsData = $analyticsService->getEventCountsByName($tenantId, $startDate, $endDate);
+
+        $analyticsData = $analyticsService->getEventCountsByName( now()->subDays(30), now(), $tenantId);
+        $paramCounts = $analyticsService->getEventParameterCounts($startDate, $endDate, 'user_engagement', 'tenant_id', $tenantId);
 
         return response()->json([
             'status' => 'success',
             'tenant' => $tenantId,
             'start_date' => $startDate->toDateString(),
             'end_date' => $endDate->toDateString(),
-            'data' => $analyticsData
+            'data' => $paramCounts
         ]);
     }
 
