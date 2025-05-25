@@ -67,7 +67,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard', [AnalyticsDashboardController::class, 'dashboard']);
     Route::get('/dashboard/summary', [AnalyticsDashboardController::class, 'summary']);
-    Route::get('/dashboard/visitors', [AnalyticsDashboardController::class, 'visitors']);
+    Route::post('/dashboard/visitors', [AnalyticsDashboardController::class, 'visitors']);
     Route::get('/dashboard/devices', [AnalyticsDashboardController::class, 'devices']);
     Route::get('/dashboard/traffic-sources', [AnalyticsDashboardController::class, 'trafficSources']);
     Route::get('/dashboard/most-visited-pages', [AnalyticsDashboardController::class, 'mostVisitedPages']);
