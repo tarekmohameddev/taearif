@@ -92,12 +92,10 @@ class GoogleAnalyticsService
     // Helper for safe dimension/metric value access
     protected function getSafeValue($arr, $index, $default = null)
     {
-        // If the value exists, cast it to a float
-        $value = ($arr && isset($arr[$index])) ? (float) $arr[$index]->getValue() : $default;
-
-        // Return the value, ensuring it's numeric
-        return is_numeric($value) ? $value : 0;
+        $value = ($arr && isset($arr[$index])) ? $arr[$index]->getValue() : $default;
+        return !empty($value) ? $value : 'unknown'; // return 'unknown' if the value is empty
     }
+
 
     // Your existing simple visitors/page views without tenant filter
     public function getVisitorsAndPageViews($startDate, $endDate)
@@ -260,7 +258,7 @@ class GoogleAnalyticsService
                 ]),
             ],
             'dimensions' => [
-                new Dimension(['name' => 'sessionSource']), // Source of the traffic (e.g., 'google', 'direct', 'social') //217
+                new Dimension(['name' => 'sessionSource']), // Source of the traffic (e.g., 'google', 'direct', 'social')
                 new Dimension(['name' => 'sessionMedium']), // Medium (e.g., 'organic', 'cpc', 'social')
             ],
             'metrics' => [
@@ -270,14 +268,21 @@ class GoogleAnalyticsService
             'dimensionFilter' => $tenantFilter, // <-- Apply the tenant filter here
         ]);
 
-        // Process the response and map it to the expected format
+        // Log the raw response for debugging purposes
+        Log::info('GA Response: ' . json_encode($response->serializeToJsonString()));
+
         return collect($response->getRows())->map(function ($row) {
+            // Debug the dimension values
+            Log::info('Row Data: ' . json_encode($row->getDimensionValues()));
+
+            // Extract session source and medium values safely
             $source = $this->getSafeValue($row->getDimensionValues(), 0, 'unknown'); // Session source (google, direct, etc.)
             $medium = $this->getSafeValue($row->getDimensionValues(), 1, 'unknown'); // Session medium (organic, paid, etc.)
+
             $sessions = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
             $users = (int) $this->getSafeValue($row->getMetricValues(), 1, 0);
 
-            // Color-coding for sources (you can adjust the color mapping as needed)
+            // Color-coding for sources
             $color = match ($source) {
                 'google' => '#4285F4',
                 'direct' => '#34A853',
@@ -286,6 +291,9 @@ class GoogleAnalyticsService
                 default => '#6B7280',
             };
 
+            // Log the source and medium values to ensure they are being retrieved correctly
+            Log::info('Source: ' . $source . ' Medium: ' . $medium);
+
             return [
                 'name' => $this->translateSourceName($source),  // Translate source name to Arabic
                 'value' => $sessions,
@@ -293,6 +301,7 @@ class GoogleAnalyticsService
             ];
         });
     }
+
 
     protected function getTopPages($startDate, $endDate, FilterExpression $tenantFilter)
     {
