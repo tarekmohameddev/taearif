@@ -9,6 +9,7 @@ use App\Services\GoogleAnalyticsService;
 use Google\Analytics\Data\V1beta\FilterExpression;
 use Google\Analytics\Data\V1beta\Filter\StringFilter;
 use Google\Analytics\Data\V1beta\Filter;
+use Illuminate\Support\Facades\Log;
 
 
 class AnalyticsDashboardController extends Controller
@@ -195,84 +196,86 @@ public function visitors(Request $request, GoogleAnalyticsService $analytics)
     {
         $user = $request->user();
         $tenantId = $user->username;
+        // $tenantId = 'ress';
 
-        // Set the start and end date for the last 7 days (or any time range you want)
         $startDate = Carbon::now()->subDays(7);
         $endDate = Carbon::now();
 
-        // Build the tenant filter (filter by tenant_id)
         $tenantFilter = new FilterExpression([
             'filter' => new Filter([
                 'field_name' => 'customEvent:tenant_id',
                 'string_filter' => new StringFilter([
                     'value' => $tenantId,
-                    'match_type' => StringFilter\MatchType::CONTAINS,  // <-- specify contains match
+                    'match_type' => StringFilter\MatchType::CONTAINS,
                 ]),
             ]),
         ]);
 
-        // Pass the tenantFilter as the 4th argument to getDeviceBreakdown()
         $sources = $analytics->getTrafficSources($startDate, $endDate, $tenantFilter);
 
         return response()->json(['sources' => $sources]);
     }
 
 
-protected function translateSourceName($sourceName)
-{
-    $translations = [
-        'google' => 'البحث العضوي',  // 'google' becomes 'البحث العضوي' (organic search)
-        'direct' => 'الروابط المباشرة',  // 'direct' becomes 'الروابط المباشرة' (direct)
-        'social' => 'وسائل التواصل',  // 'social' becomes 'وسائل التواصل' (social media)
-        'ads' => 'الإعلانات',  // 'ads' becomes 'الإعلانات' (ads)
-        'other' => 'أخرى',  // 'other' becomes 'أخرى' (other)
-    ];
-
-    return $translations[$sourceName] ?? $sourceName;  // Default to sourceName if no translation found
-}
-
-public function mostVisitedPages(Request $request, GoogleAnalyticsService $analytics)
-{
-    $user = $request->user();
-    $tenantId = $user->username;
-
-    $startDate = Carbon::now()->subDays(7);
-    $endDate = Carbon::now();
-
-    // Fetch the top pages data from Google Analytics
-    $pages = $analytics->getDashboardData($tenantId, $startDate, $endDate)['topPages'];
-
-    // Format the pages data to match your required structure
-    $totalViews = collect($pages)->sum('pageViews'); // Calculate total views for percentage calculation
-
-    $formattedPages = collect($pages)->map(function ($page) use ($totalViews) {
-        // Calculate the percentage of total views
-        $percentage = $totalViews > 0 ? round(($page['pageViews'] / $totalViews) * 100, 2) : 0;
-
-        // Safely get average session duration, if it exists
-        $avgTime = isset($page['averageSessionDuration']) ? $this->formatDuration($page['averageSessionDuration']) : 'N/A';
-
-        // Safely get unique visitors (users), defaulting to 0 if not available
-        $uniqueVisitors = isset($page['users']) ? $page['users'] : 0;
-
-        // Safely get bounce rate, defaulting to 0 if not available
-        $bounceRate = isset($page['bounceRate']) ? (float) $page['bounceRate'] : 0;
-
-        // Apply the .toFixed() if the bounceRate is a number
-        $bounceRateFormatted = is_numeric($bounceRate) ? number_format($bounceRate, 1) : 0;
-
-        return [
-            'path' => $page['path'],
-            'views' => $page['pageViews'],
-            'unique_visitors' => $uniqueVisitors, // Use the safe value for unique visitors
-            'bounce_rate' => $bounceRateFormatted, // Format bounce rate
-            'avg_time' => $avgTime,
-            'percentage' => $percentage,
+    protected function translateSourceName($sourceName)
+    {
+        $translations = [
+            '(direct)' => 'الروابط المباشرة',
+            '(none)' => 'غير معرف',
+            'google' => 'البحث العضوي',
+            'social' => 'وسائل التواصل الاجتماعي',
+            'ads' => 'الإعلانات',
+            'other' => 'أخرى',
         ];
-    });
 
-    return response()->json(['pages' => $formattedPages]);
-}
+        return $translations[$sourceName] ?? $sourceName;
+        }
+
+
+    public function mostVisitedPages(Request $request, GoogleAnalyticsService $analytics)
+    {
+        $user = $request->user();
+        $tenantId = $user->username;
+
+        $startDate = Carbon::now()->subDays(7);
+        $endDate = Carbon::now();
+
+        $pages = $analytics->getDashboardData($tenantId, $startDate, $endDate)['topPages'];
+
+        $totalViews = collect($pages)->sum('pageViews');
+
+        $formattedPages = collect($pages)->map(function ($page) use ($totalViews) {
+            Log::info('Page Data: ' . json_encode($page));
+
+            $percentage = $totalViews > 0 ? round(($page['pageViews'] / $totalViews) * 100, 2) : 0;
+
+            $avgTime = isset($page['averageSessionDuration']) ? $this->formatDuration($page['averageSessionDuration']) : 'N/A';
+
+            $uniqueVisitors = isset($page['users']) ? $page['users'] : 0;
+
+            $bounceRate = isset($page['bounceRate']) ? $page['bounceRate'] : 0.0;
+
+            if (is_numeric($bounceRate)) {
+                $bounceRate = (float)$bounceRate;
+                $bounceRateFormatted = $bounceRate <= 1.0
+                    ? round($bounceRate * 100, 1)
+                    : round($bounceRate, 1);
+            } else {
+                $bounceRateFormatted = 0.0;
+            }
+
+            return [
+                'path' => $page['path'],
+                'views' => $page['pageViews'],
+                'unique_visitors' => $uniqueVisitors,
+                'bounce_rate' => (float) $bounceRateFormatted,
+                'avg_time' => $avgTime,
+                'percentage' => $percentage,
+            ];
+        });
+
+        return response()->json(['pages' => $formattedPages]);
+    }
 
 
 
