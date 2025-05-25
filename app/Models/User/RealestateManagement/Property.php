@@ -77,7 +77,7 @@ class Property extends Model
             'floor_planning_image' => $floorPlanningImage ?? null,
             'video_image' => $videoImage,
             'price' => $request['price'],
-            'purpose' => $request['purpose'] ?? null,
+            'purpose' => $request['type'] ?? null,
             'type' => $request['type'] ?? null,
             'beds' => $request['beds'] ?? null,
             'bath' => $request['bath'] ?? null,
