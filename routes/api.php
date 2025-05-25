@@ -23,7 +23,7 @@ use App\Http\Controllers\Api\property\PropertyController;
 use App\Http\Controllers\Api\apps\whatsapp\ChatController;
 use App\Http\Controllers\Api\App\ApiInstallationController;
 use App\Http\Controllers\Api\dashboard\DashboardController;
-use App\Http\Controllers\Api\Property\UserFacadeController;
+use App\Http\Controllers\Api\property\UserFacadeController;
 use App\Http\Controllers\Api\content\FooterSettingController;
 use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\apps\whatsapp\EmbeddingController;
