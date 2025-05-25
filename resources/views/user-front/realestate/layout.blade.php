@@ -187,7 +187,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         @include('frontend.cookie-alert.index')
     @endif
 
-    </main>
 
     {{-- include footer --}}
     @if ($userBs->theme == 'home13')
@@ -212,6 +211,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     {{-- additional script --}}
     {{-- @yield('script') --}}
+
+    </main>
+
 </body>
 
 </html>

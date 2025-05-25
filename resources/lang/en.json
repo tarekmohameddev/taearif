@@ -2490,7 +2490,6 @@
     "Sale": "بيع",
     "Rent": "إيجار",
     "House": "منزل",
-
     "Real Estate Number Limit": "الحد الأقصى لعدد العقارات",
     "Related Properties": "عقارات ذات صلة",
     "Garden": "الحديقة",
@@ -2560,5 +2559,5 @@
     "Booking Details": "تفاصيل الحجز",
     "Booking Information": "معلومات الحجز",
     "Booking Information Details": "تفاصيل معلومات الحجز",
-    "Dashboard": "لوحة التحكم"
+    "Other": "أخرى"
 }

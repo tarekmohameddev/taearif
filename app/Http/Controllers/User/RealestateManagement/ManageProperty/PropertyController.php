@@ -84,6 +84,9 @@ class PropertyController extends Controller
             ->when($title, function ($query) use ($title) {
                 return $query->where('user_property_contents.title', 'LIKE', '%' . $title . '%');
             })
+            ->when($request->filled('city_id'), function($query) use ($request) {
+                return $query->where('user_property_contents.city_id', $request->city_id);
+            })
             ->join('user_cities', 'user_property_contents.city_id', 'user_cities.id')
             ->select('user_properties.id', 'user_properties.type', 'user_properties.featured', 'user_properties.status',  'user_property_contents.title', 'user_property_contents.slug', 'user_cities.name as cityName')
             ->orderBy('user_properties.id', 'desc')
