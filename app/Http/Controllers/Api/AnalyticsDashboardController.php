@@ -196,41 +196,41 @@ public function visitors(Request $request, GoogleAnalyticsService $analytics)
     {
         $user = $request->user();
         $tenantId = $user->username;
+        // $tenantId = 'ress';
 
-        // Set the start and end date for the last 7 days (or any time range you want)
         $startDate = Carbon::now()->subDays(7);
         $endDate = Carbon::now();
 
-        // Build the tenant filter (filter by tenant_id)
         $tenantFilter = new FilterExpression([
             'filter' => new Filter([
                 'field_name' => 'customEvent:tenant_id',
                 'string_filter' => new StringFilter([
                     'value' => $tenantId,
-                    'match_type' => StringFilter\MatchType::CONTAINS,  // <-- specify contains match
+                    'match_type' => StringFilter\MatchType::CONTAINS,
                 ]),
             ]),
         ]);
 
-        // Pass the tenantFilter as the 4th argument to getDeviceBreakdown()
         $sources = $analytics->getTrafficSources($startDate, $endDate, $tenantFilter);
 
         return response()->json(['sources' => $sources]);
     }
 
 
-protected function translateSourceName($sourceName)
-{
-    $translations = [
-        'google' => 'البحث العضوي',  // 'google' becomes 'البحث العضوي' (organic search)
-        'direct' => 'الروابط المباشرة',  // 'direct' becomes 'الروابط المباشرة' (direct)
-        'social' => 'وسائل التواصل',  // 'social' becomes 'وسائل التواصل' (social media)
-        'ads' => 'الإعلانات',  // 'ads' becomes 'الإعلانات' (ads)
-        'other' => 'أخرى',  // 'other' becomes 'أخرى' (other)
-    ];
+    protected function translateSourceName($sourceName)
+    {
+        $translations = [
+            '(direct)' => 'الروابط المباشرة',
+            '(none)' => 'غير معرف',
+            'google' => 'البحث العضوي',
+            'social' => 'وسائل التواصل الاجتماعي',
+            'ads' => 'الإعلانات',
+            'other' => 'أخرى',
+        ];
 
-    return $translations[$sourceName] ?? $sourceName;  // Default to sourceName if no translation found
-}
+        return $translations[$sourceName] ?? $sourceName;
+        }
+
 
 public function mostVisitedPages(Request $request, GoogleAnalyticsService $analytics)
 {

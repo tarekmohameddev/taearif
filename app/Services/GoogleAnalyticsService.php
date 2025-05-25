@@ -92,9 +92,10 @@ class GoogleAnalyticsService
     // Helper for safe dimension/metric value access
     protected function getSafeValue($arr, $index, $default = null)
     {
-        $value = ($arr && isset($arr[$index])) ? $arr[$index]->getValue() : $default;
-        return !empty($value) ? $value : 'unknown'; // return 'unknown' if the value is empty
+        // Safely return the dimension value, or the default if not found
+        return ($arr && isset($arr[$index])) ? $arr[$index]->getValue() : $default;
     }
+
 
 
     // Your existing simple visitors/page views without tenant filter
@@ -258,8 +259,8 @@ class GoogleAnalyticsService
                 ]),
             ],
             'dimensions' => [
-                new Dimension(['name' => 'sessionSource']), // Source of the traffic (e.g., 'google', 'direct', 'social')
-                new Dimension(['name' => 'sessionMedium']), // Medium (e.g., 'organic', 'cpc', 'social')
+                new Dimension(['name' => 'sessionSource']),
+                new Dimension(['name' => 'sessionMedium']),
             ],
             'metrics' => [
                 new Metric(['name' => 'sessions']),
@@ -268,11 +269,11 @@ class GoogleAnalyticsService
             'dimensionFilter' => $tenantFilter, // <-- Apply the tenant filter here
         ]);
 
-        // Log the raw response for debugging purposes
+        // Log the raw response for debugging
         Log::info('GA Response: ' . json_encode($response->serializeToJsonString()));
 
         return collect($response->getRows())->map(function ($row) {
-            // Debug the dimension values
+            // Debugging the row data
             Log::info('Row Data: ' . json_encode($row->getDimensionValues()));
 
             // Extract session source and medium values safely
@@ -284,11 +285,12 @@ class GoogleAnalyticsService
 
             // Color-coding for sources
             $color = match ($source) {
-                'google' => '#4285F4',
-                'direct' => '#34A853',
-                'social' => '#A142F4',
-                'ads' => '#F4B400',
-                default => '#6B7280',
+                '(direct)' => '#34A853', // Direct traffic
+                '(none)' => '#F4B400', // No medium, could be used for organic, or undefined sources
+                'google' => '#4285F4', // Google search
+                'social' => '#A142F4', // Social media
+                'ads' => '#F4B400', // Ads
+                default => '#6B7280', // Unknown source
             };
 
             // Log the source and medium values to ensure they are being retrieved correctly
@@ -301,6 +303,7 @@ class GoogleAnalyticsService
             ];
         });
     }
+
 
 
     protected function getTopPages($startDate, $endDate, FilterExpression $tenantFilter)
