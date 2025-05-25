@@ -22,29 +22,13 @@ public function getSteps(Request $request)
     $steps = UserStep::firstOrCreate(['user_id' => $user->id]);
 
     $stepMap = [
-        'banner' => [
-            'path' => '/content/banner',
-            'text' => "Add a banner to catch users' attention.",
-        ],
         'footer' => [
             'path' => '/content/footer',
-            'text' => "Customize your website footer.",
-        ],
-        'about' => [
-            'path' => '/content/about',
-            'text' => "Tell visitors about your business.",
-        ],
-        'menu' => [
-            'path' => '/content/menu',
-            'text' => "Set up your website menu for navigation.",
-        ],
-        'projects' => [
-            'path' => '/projects/add',
-            'text' => "Showcase your previous projects.",
+            'text' => "قم بتخصيص التذييل الخاص بك",
         ],
         'properties' => [
             'path' => '/properties/add',
-            'text' => "List your available properties.",
+            'text' => "اضف اول عقار الآن",
         ],
     ];
 
