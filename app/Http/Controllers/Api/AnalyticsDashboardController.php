@@ -228,53 +228,51 @@ public function visitors(Request $request, GoogleAnalyticsService $analytics)
             'other' => 'أخرى',
         ];
 
-        return $translations[$sourceName] ?? $sourceName;
-        }
+    return $translations[$sourceName] ?? $sourceName;
+    }
 
 
-public function mostVisitedPages(Request $request, GoogleAnalyticsService $analytics)
-{
-    $user = $request->user();
-    $tenantId = $user->username;
+    public function mostVisitedPages(Request $request, GoogleAnalyticsService $analytics)
+    {
+        $user = $request->user();
+        $tenantId = $user->username;
 
-    $startDate = Carbon::now()->subDays(7);
-    $endDate = Carbon::now();
+        $startDate = Carbon::now()->subDays(7);
+        $endDate = Carbon::now();
 
-    // Fetch the top pages data from Google Analytics
-    $pages = $analytics->getDashboardData($tenantId, $startDate, $endDate)['topPages'];
+        $pages = $analytics->getDashboardData($tenantId, $startDate, $endDate)['topPages'];
 
-    // Format the pages data to match your required structure
-    $totalViews = collect($pages)->sum('pageViews'); // Calculate total views for percentage calculation
+        $totalViews = collect($pages)->sum('pageViews');
 
-    $formattedPages = collect($pages)->map(function ($page) use ($totalViews) {
-        // Debug: Log the page data
-        Log::info('Page Data: ' . json_encode($page));
+        $formattedPages = collect($pages)->map(function ($page) use ($totalViews) {
+            Log::info('Page Data: ' . json_encode($page));
 
-        $percentage = $totalViews > 0 ? round(($page['pageViews'] / $totalViews) * 100, 2) : 0;
+            $percentage = $totalViews > 0 ? round(($page['pageViews'] / $totalViews) * 100, 2) : 0;
 
-        $avgTime = isset($page['averageSessionDuration']) ? $this->formatDuration($page['averageSessionDuration']) : 'N/A';
+            $avgTime = isset($page['averageSessionDuration']) ? $this->formatDuration($page['averageSessionDuration']) : 'N/A';
 
-        $uniqueVisitors = isset($page['users']) ? $page['users'] : 0;
+            $uniqueVisitors = isset($page['users']) ? $page['users'] : 0;
 
-        $bounceRate = isset($page['bounceRate']) ? (float)$page['bounceRate'] : 0;
+            $bounceRate = isset($page['bounceRate']) ? $page['bounceRate'] : '0.0';
 
-        $bounceRateFormatted = number_format($bounceRate, 1);
+            if (is_numeric($bounceRate) && (float)$bounceRate <= 1.0) {
+                $bounceRateFormatted = number_format((float)$bounceRate * 100, 1);
+            } else {
+                $bounceRateFormatted = $bounceRate;
+            }
 
-        return [
-            'path' => $page['path'],
-            'views' => $page['pageViews'],
-            'unique_visitors' => $uniqueVisitors,
-            'bounce_rate' => $bounceRateFormatted,
-            'avg_time' => $avgTime,
-            'percentage' => $percentage,
-        ];
-    });
+            return [
+                'path' => $page['path'],
+                'views' => $page['pageViews'],
+                'unique_visitors' => $uniqueVisitors,
+                'bounce_rate' => $bounceRateFormatted,
+                'avg_time' => $avgTime,
+                'percentage' => $percentage,
+            ];
+        });
 
-
-    return response()->json(['pages' => $formattedPages]);
-}
-
-
+        return response()->json(['pages' => $formattedPages]);
+    }
 
 
     public function setupProgress()
