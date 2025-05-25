@@ -228,8 +228,8 @@ public function visitors(Request $request, GoogleAnalyticsService $analytics)
             'other' => 'أخرى',
         ];
 
-    return $translations[$sourceName] ?? $sourceName;
-    }
+        return $translations[$sourceName] ?? $sourceName;
+        }
 
 
     public function mostVisitedPages(Request $request, GoogleAnalyticsService $analytics)
@@ -253,19 +253,22 @@ public function visitors(Request $request, GoogleAnalyticsService $analytics)
 
             $uniqueVisitors = isset($page['users']) ? $page['users'] : 0;
 
-            $bounceRate = isset($page['bounceRate']) ? $page['bounceRate'] : '0.0';
+            $bounceRate = isset($page['bounceRate']) ? $page['bounceRate'] : 0.0;
 
-            if (is_numeric($bounceRate) && (float)$bounceRate <= 1.0) {
-                $bounceRateFormatted = number_format((float)$bounceRate * 100, 1);
+            if (is_numeric($bounceRate)) {
+                $bounceRate = (float)$bounceRate;
+                $bounceRateFormatted = $bounceRate <= 1.0
+                    ? round($bounceRate * 100, 1)
+                    : round($bounceRate, 1);
             } else {
-                $bounceRateFormatted = $bounceRate;
+                $bounceRateFormatted = 0.0;
             }
 
             return [
                 'path' => $page['path'],
                 'views' => $page['pageViews'],
                 'unique_visitors' => $uniqueVisitors,
-                'bounce_rate' => $bounceRateFormatted,
+                'bounce_rate' => (float) $bounceRateFormatted,
                 'avg_time' => $avgTime,
                 'percentage' => $percentage,
             ];
@@ -273,6 +276,8 @@ public function visitors(Request $request, GoogleAnalyticsService $analytics)
 
         return response()->json(['pages' => $formattedPages]);
     }
+
+
 
 
     public function setupProgress()
