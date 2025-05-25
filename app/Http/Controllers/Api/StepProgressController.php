@@ -16,35 +16,64 @@ class StepProgressController extends Controller
      * @param  string  $stepName
      * @return \Illuminate\Http\Response
      */
-    public function getSteps(Request $request)
-    {
-        $user = $request->user();
-        $steps = UserStep::firstOrCreate(['user_id' => $user->id]);
+public function getSteps(Request $request)
+{
+    $user = $request->user();
+    $steps = UserStep::firstOrCreate(['user_id' => $user->id]);
 
-        $stepMap = [
-            'banner' => '/content/banner',
-            'footer' => '/content/footer',
-            'about' => '/content/about',
-            'menu' => '/content/menu',
-            'projects' => '/projects/add',
-            'properties' => '/properties/add',
+    $stepMap = [
+        'banner' => [
+            'path' => '/content/banner',
+            'text' => "Add a banner to catch users' attention.",
+        ],
+        'footer' => [
+            'path' => '/content/footer',
+            'text' => "Customize your website footer.",
+        ],
+        'about' => [
+            'path' => '/content/about',
+            'text' => "Tell visitors about your business.",
+        ],
+        'menu' => [
+            'path' => '/content/menu',
+            'text' => "Set up your website menu for navigation.",
+        ],
+        'projects' => [
+            'path' => '/projects/add',
+            'text' => "Showcase your previous projects.",
+        ],
+        'properties' => [
+            'path' => '/properties/add',
+            'text' => "List your available properties.",
+        ],
+    ];
+
+    $rawData = $steps->only(array_keys($stepMap));
+
+    $stepsWithStatus = [];
+    foreach ($stepMap as $key => $info) {
+        $value = $rawData[$key] ?? null;
+        $stepsWithStatus[$key] = [
+            'status' => $value,
+            'text' => $info['text'],
         ];
-
-        $data = $steps->only(array_keys($stepMap));
-
-        $progress = collect($data)->filter(fn($v) => $v)->count();
-        $percentage = intval(($progress / count($stepMap)) * 100);
-
-        $continuePath = collect($stepMap)
-            ->filter(fn($_, $key) => empty($data[$key]))
-            ->first();
-
-        return response()->json([
-            'steps' => $data,
-            'progress' => $percentage,
-            'continue_path' => $continuePath,
-        ]);
     }
+
+    $progress = collect($stepsWithStatus)->filter(fn($step) => $step['status'])->count();
+    $percentage = intval(($progress / count($stepMap)) * 100);
+
+    $continuePath = collect($stepMap)
+        ->filter(fn($_, $key) => empty($rawData[$key]))
+        ->pluck('path')
+        ->first();
+
+    return response()->json([
+        'steps' => $stepsWithStatus,
+        'progress' => $percentage,
+        'continue_path' => $continuePath,
+    ]);
+}
+
 
     public function completeStep(Request $request)
     {
