@@ -122,9 +122,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
   gtag('config', 'G-RVFKM2F9ZN', {
     'custom_map': {
-      'dimension1': 'tenant_id'
+      'dimension1': 'tenant_id',
+      'tenant_id': '{{$user->username}}'
     },
-    'tenant_id': '{{ $user->username }}'
+    'tenant_id': '{{$user->username}}'
   });
   console.log('GA4 tenant_id = {{ $user->username }}');
 </script>

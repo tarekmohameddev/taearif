@@ -10,23 +10,25 @@ class TenantDashboardController extends Controller
 {
     public function dashboard(Request $request, GoogleAnalyticsService $analyticsService)
     {
-        $startDate = Carbon::now()->subDays(7); // 7 days ago
+        $startDate = Carbon::now()->subDays(7);
         $endDate = Carbon::now();
 
-        // $tenantId = 'lira'; // use static for now
-        $fullHost = request()->getHost();
-        \Log::info('Full Host: ' . $fullHost);
-        $tenantId = explode('.', $fullHost)[0];
-        $analyticsData = $analyticsService->getDashboardData($tenantId, $startDate, $endDate);
+        $tenantId = 'ress'; // Hardcoded tenant for testing
+
+        // $analyticsData = $analyticsService->getEventCountsByName($tenantId, $startDate, $endDate);
+
+        $analyticsData = $analyticsService->getEventCountsByName( now()->subDays(30), now(), $tenantId);
+        $paramCounts = $analyticsService->getEventParameterCounts($startDate, $endDate, 'user_engagement', 'tenant_id', $tenantId);
 
         return response()->json([
             'status' => 'success',
             'tenant' => $tenantId,
             'start_date' => $startDate->toDateString(),
             'end_date' => $endDate->toDateString(),
-            'data' => $analyticsData
+            'data' => $paramCounts
         ]);
     }
+
 
 }
 
