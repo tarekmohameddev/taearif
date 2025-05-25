@@ -9,6 +9,7 @@ use App\Services\GoogleAnalyticsService;
 use Google\Analytics\Data\V1beta\FilterExpression;
 use Google\Analytics\Data\V1beta\Filter\StringFilter;
 use Google\Analytics\Data\V1beta\Filter;
+use Illuminate\Support\Facades\Log;
 
 
 class AnalyticsDashboardController extends Controller
@@ -246,30 +247,29 @@ public function mostVisitedPages(Request $request, GoogleAnalyticsService $analy
     $totalViews = collect($pages)->sum('pageViews'); // Calculate total views for percentage calculation
 
     $formattedPages = collect($pages)->map(function ($page) use ($totalViews) {
-        // Calculate the percentage of total views
+        // Debug: Log the page data
+        Log::info('Page Data: ' . json_encode($page));
+
         $percentage = $totalViews > 0 ? round(($page['pageViews'] / $totalViews) * 100, 2) : 0;
 
-        // Safely get average session duration, if it exists
         $avgTime = isset($page['averageSessionDuration']) ? $this->formatDuration($page['averageSessionDuration']) : 'N/A';
 
-        // Safely get unique visitors (users), defaulting to 0 if not available
         $uniqueVisitors = isset($page['users']) ? $page['users'] : 0;
 
-        // Safely get bounce rate, defaulting to 0 if not available
-        $bounceRate = isset($page['bounceRate']) ? (float) $page['bounceRate'] : 0;
+        $bounceRate = isset($page['bounceRate']) ? (float)$page['bounceRate'] : 0;
 
-        // Apply the .toFixed() if the bounceRate is a number
-        $bounceRateFormatted = is_numeric($bounceRate) ? number_format($bounceRate, 1) : 0;
+        $bounceRateFormatted = number_format($bounceRate, 1);
 
         return [
             'path' => $page['path'],
             'views' => $page['pageViews'],
-            'unique_visitors' => $uniqueVisitors, // Use the safe value for unique visitors
-            'bounce_rate' => $bounceRateFormatted, // Format bounce rate
+            'unique_visitors' => $uniqueVisitors,
+            'bounce_rate' => $bounceRateFormatted,
             'avg_time' => $avgTime,
             'percentage' => $percentage,
         ];
     });
+
 
     return response()->json(['pages' => $formattedPages]);
 }
