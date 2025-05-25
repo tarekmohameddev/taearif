@@ -40,6 +40,55 @@ class GoogleAnalyticsService
 
         return $translations[$sourceName] ?? $sourceName;  // Default to sourceName if no translation found
     }
+    public function getEventCountsByName($startDate, $endDate, $tenantId = null)
+    {
+        $params = [
+            'property' => $this->propertyId,
+            'dateRanges' => [
+                new DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
+                ]),
+            ],
+            'dimensions' => [
+                new Dimension(['name' => 'eventName']), // Dimension for event name
+            ],
+            'metrics' => [
+                new Metric(['name' => 'eventCount']), // Metric for event count
+            ],
+            'orderBys' => [
+                new OrderBy([
+                    'metric' => new MetricOrderBy(['metric_name' => 'eventCount']),
+                    'desc' => true,
+                ]),
+            ],
+            'limit' => 10,
+        ];
+
+        // Optional: Apply tenant filter if tenantId is provided
+        if ($tenantId) {
+            $params['dimensionFilter'] = new FilterExpression([
+                'filter' => new Filter([
+                    'field_name' => 'customEvent:tenant_id',
+                    'string_filter' => new StringFilter([
+                        'value' => $tenantId,
+                    ]),
+                ]),
+            ]);
+        }
+
+        // Run the report using the Google Analytics client
+        $response = $this->client->runReport($params);
+
+        // Map the response to return event data
+        return collect($response->getRows())->map(function ($row) {
+            return [
+                'event' => $row->getDimensionValues()[0]->getValue(),
+                'count' => (int) $row->getMetricValues()[0]->getValue(),
+            ];
+        });
+    }
+
     // Helper for safe dimension/metric value access
     protected function getSafeValue($arr, $index, $default = null)
     {
@@ -89,58 +138,59 @@ class GoogleAnalyticsService
         ];
     }
 
-protected function translateDeviceName($deviceCategory)
-{
-    // Translate device names to Arabic
-    $translations = [
-        'mobile' => 'الهاتف المحمول',
-        'desktop' => 'الحاسوب',
-        'tablet' => 'الجهاز اللوحي',
-        'other' => 'أخرى',
-    ];
-
-    return $translations[$deviceCategory] ?? $deviceCategory; // Default to deviceCategory if no translation found
-}
-public function getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter)
-{
-    $response = $this->client->runReport([
-        'property' => $this->propertyId,
-        'dateRanges' => [
-            new DateRange([
-                'start_date' => $startDate->format('Y-m-d'),
-                'end_date' => $endDate->format('Y-m-d'),
-            ]),
-        ],
-        'dimensions' => [
-            new Dimension(['name' => 'deviceCategory']),
-        ],
-        'metrics' => [
-            new Metric(['name' => 'sessions']),
-            new Metric(['name' => 'screenPageViews']),
-        ],
-        'dimensionFilter' => $tenantFilter, // <-- Apply the tenant filter here
-    ]);
-
-    return collect($response->getRows())->map(function ($row) {
-        $deviceCategory = isset($row->getDimensionValues()[0]) ? $row->getDimensionValues()[0]->getValue() : 'Unknown Device';
-        $sessions = isset($row->getMetricValues()[0]) ? (int) $row->getMetricValues()[0]->getValue() : 0;
-        $pageViews = isset($row->getMetricValues()[1]) ? (int) $row->getMetricValues()[1]->getValue() : 0;
-
-        // Assign color based on device category
-        $color = match ($deviceCategory) {
-            'mobile' => '#4285F4',
-            'desktop' => '#34A853',
-            'tablet' => '#A142F4',
-            default => '#6B7280',
-        };
-
-        return [
-            'name' => $this->translateDeviceName($deviceCategory),
-            'value' => $sessions,
-            'color' => $color,
+    protected function translateDeviceName($deviceCategory)
+    {
+        // Translate device names to Arabic
+        $translations = [
+            'mobile' => 'الهاتف المحمول',
+            'desktop' => 'الحاسوب',
+            'tablet' => 'الجهاز اللوحي',
+            'other' => 'أخرى',
         ];
-    });
-}
+
+        return $translations[$deviceCategory] ?? $deviceCategory; // Default to deviceCategory if no translation found
+    }
+
+    public function getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter)
+    {
+        $response = $this->client->runReport([
+            'property' => $this->propertyId,
+            'dateRanges' => [
+                new DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
+                ]),
+            ],
+            'dimensions' => [
+                new Dimension(['name' => 'deviceCategory']),
+            ],
+            'metrics' => [
+                new Metric(['name' => 'sessions']),
+                new Metric(['name' => 'screenPageViews']),
+            ],
+            'dimensionFilter' => $tenantFilter, // <-- Apply the tenant filter here
+        ]);
+
+        return collect($response->getRows())->map(function ($row) {
+            $deviceCategory = isset($row->getDimensionValues()[0]) ? $row->getDimensionValues()[0]->getValue() : 'Unknown Device';
+            $sessions = isset($row->getMetricValues()[0]) ? (int) $row->getMetricValues()[0]->getValue() : 0;
+            $pageViews = isset($row->getMetricValues()[1]) ? (int) $row->getMetricValues()[1]->getValue() : 0;
+
+            // Assign color based on device category
+            $color = match ($deviceCategory) {
+                'mobile' => '#4285F4',
+                'desktop' => '#34A853',
+                'tablet' => '#A142F4',
+                default => '#6B7280',
+            };
+
+            return [
+                'name' => $this->translateDeviceName($deviceCategory),
+                'value' => $sessions,
+                'color' => $color,
+            ];
+        });
+    }
     // === MAIN FUNCTION: Pass tenantId filter to each query ===
     public function getDashboardData($tenantId, $startDate, $endDate)
     {
@@ -198,14 +248,6 @@ public function getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilte
             'averageSessionDuration' => $this->getSafeValue($metrics, 4, 0),
         ];
     }
-
-
-
-
-
-
-
-
 
     public function getTrafficSources($startDate, $endDate, FilterExpression $tenantFilter)
     {
@@ -313,54 +355,54 @@ public function getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilte
         });
     }
 
-public function getRecentEvents($startDate, $endDate, $tenantId = null)
-{
-    $params = [
-        'property' => $this->propertyId,
-        'dateRanges' => [
-            new DateRange([
-                'start_date' => $startDate->format('Y-m-d'),
-                'end_date' => $endDate->format('Y-m-d'),
-            ]),
-        ],
-        'dimensions' => [
-            new Dimension(['name' => 'eventName']), // Event name dimension
-        ],
-        'metrics' => [
-            new Metric(['name' => 'eventCount']), // Event count metric
-        ],
-        'orderBys' => [
-            new OrderBy([
-                'metric' => new MetricOrderBy(['metric_name' => 'eventCount']),
-                'desc' => true,
-            ]),
-        ],
-        'limit' => 10,
-    ];
-
-    // Optional: Apply tenant filter if tenantId is provided
-    if ($tenantId) {
-        $params['dimensionFilter'] = new FilterExpression([
-            'filter' => new Filter([
-                'field_name' => 'customEvent:tenant_id',
-                'string_filter' => new StringFilter([
-                    'value' => $tenantId,
+    public function getRecentEvents($startDate, $endDate, $tenantId = null)
+    {
+        $params = [
+            'property' => $this->propertyId,
+            'dateRanges' => [
+                new DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
                 ]),
-            ]),
-        ]);
-    }
-
-    // Run the report using the Google Analytics client
-    $response = $this->client->runReport($params);
-
-    // Map the response to return event data
-    return collect($response->getRows())->map(function ($row) {
-        return [
-            'event' => $row->getDimensionValues()[0]->getValue(),
-            'count' => (int) $row->getMetricValues()[0]->getValue(),
+            ],
+            'dimensions' => [
+                new Dimension(['name' => 'eventName']), // Event name dimension
+            ],
+            'metrics' => [
+                new Metric(['name' => 'eventCount']), // Event count metric
+            ],
+            'orderBys' => [
+                new OrderBy([
+                    'metric' => new MetricOrderBy(['metric_name' => 'eventCount']),
+                    'desc' => true,
+                ]),
+            ],
+            'limit' => 10,
         ];
-    });
-}
+
+        // Optional: Apply tenant filter if tenantId is provided
+        if ($tenantId) {
+            $params['dimensionFilter'] = new FilterExpression([
+                'filter' => new Filter([
+                    'field_name' => 'customEvent:tenant_id',
+                    'string_filter' => new StringFilter([
+                        'value' => $tenantId,
+                    ]),
+                ]),
+            ]);
+        }
+
+        // Run the report using the Google Analytics client
+        $response = $this->client->runReport($params);
+
+        // Map the response to return event data
+        return collect($response->getRows())->map(function ($row) {
+            return [
+                'event' => $row->getDimensionValues()[0]->getValue(),
+                'count' => (int) $row->getMetricValues()[0]->getValue(),
+            ];
+        });
+    }
 
 
 }
