@@ -46,6 +46,11 @@ class IstharaController extends Controller
             'phone' => $request->phone
         ]);
 
+            $phone = ltrim($request->phone, '0'); // remove leading 0 if present
+            $fullPhone = '966' . $phone;
+        $message_txt = '';
+        $result = $this->sendWhatsAppMessage($fullPhone,'شكراً على التسجيل في منصة تعاريف');
+
         return response()->json([
             'status' => 'success',
             'message' => 'تم حجز الاستشارة بنجاح',
@@ -53,6 +58,31 @@ class IstharaController extends Controller
         ], 201);
     }
 
+    public function sendWhatsAppMessage($phone, $message)
+    {
+        try {
+            $url = 'https://whatsapp-evolution-api.3dxvu8.easypanel.host/message/sendText/abdullah';
+            $apiKey = '3DE40EE7B984-4281-8080-4D9C02E84CF3';
+
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'apikey' => $apiKey,
+            ])->post($url, [
+                'number' => $phone,
+                'text' => $message,
+            ]);
+
+            if ($response->successful()) {
+                return true;
+            } else {
+                \Log::error('WhatsApp API error: ' . $response->body());
+                return false;
+            }
+        } catch (\Exception $e) {
+            \Log::error('Exception while sending WhatsApp message: ' . $e->getMessage());
+            return false;
+        }
+    }
     // public function index()
     // {
     //     $bookings = Isthara::all();
