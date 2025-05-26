@@ -203,7 +203,6 @@ class AnalyticsDashboardController extends Controller
         $totalViews = collect($pages)->sum('pageViews');
 
         $formattedPages = collect($pages)->map(function ($page) use ($totalViews) {
-            Log::info('Page Data: ' . json_encode($page));
 
             $percentage = $totalViews > 0 ? round(($page['pageViews'] / $totalViews) * 100, 2) : 0;
 
