@@ -14,6 +14,8 @@ use Google\Analytics\Data\V1beta\OrderBy;
 use Google\Analytics\Data\V1beta\OrderBy\MetricOrderBy;
 use Google\Analytics\Data\V1beta\Filter\StringFilter\MatchType;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
+
 
 class GoogleAnalyticsService
 {
@@ -327,8 +329,12 @@ class GoogleAnalyticsService
 
 
 
-    public function getVisitorData( $tenantId,  $startDate,  $endDate)
+    public function getVisitorData(string $tenantId, Carbon $startDate, Carbon $endDate)
     {
+        $propertyName = Str::startsWith($this->propertyId, 'properties/')
+            ? $this->propertyId
+            : "properties/{$this->propertyId}";
+
         $filterExpression = new FilterExpression([
             'filter' => new Filter([
                 'field_name'    => 'customEvent:tenant_id',
@@ -341,7 +347,7 @@ class GoogleAnalyticsService
         ]);
 
         $response = $this->client->runReport([
-            'property'        => "properties/{$this->propertyId}",
+            'property'        => $propertyName,
             'dateRanges'      => [
                 new DateRange([
                     'start_date' => $startDate->format('Y-m-d'),
@@ -367,6 +373,7 @@ class GoogleAnalyticsService
                 ];
             });
     }
+
 
 
 
