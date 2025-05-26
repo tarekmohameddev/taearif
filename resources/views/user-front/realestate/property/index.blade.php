@@ -379,7 +379,7 @@
                     </div>
 
 <div class="form-group">
-    <label for="project">{{ $keywords['Project'] ?? __('Project') }}</label>
+    <label for="project">{{ $keywords['Project'] ?? __('Projects') }}</label>
     <select name="project" id="project" class="form-control" onchange="updateURL('project='+this.value)">
         <option value="">{{ __('All Projects') }}</option>
         @foreach ($projects as $project)
@@ -424,20 +424,13 @@
             </div>
             <div class="col-md-6 col-lg-3">
                 <div class="dropdown w-100">
-                    <select name="city_id" id=""
-                        class="form_control form-select  city_id"
-                        onchange="updateURL('city='+$(this).val())">
-                        <option>
-                            المدينة
-                        </option>
-
-                        @foreach ($all_cities as $city)
-                        <option data-id="{{ $city->id }}"
-                            value="{{ $city->name_ar }}">
-                            {{ $city->name_ar }}
-                        </option>
+                    <select name="city_id" class="form_control form-select  city_id" onchange="updateURL('city_id='+$(this).val())">
+                        <option value="">{{ __('Select City') }}</option>
+                        @foreach($all_cities as $city)
+                            <option value="{{ $city->id }}" {{ request('city_id') == $city->id ? 'selected' : '' }}>
+                                {{ $city->name_ar }}
+                            </option>
                         @endforeach
-
                     </select>
                 </div>
             </div>
@@ -620,15 +613,13 @@
                                             <div class="form-group mb-20 city">
                                                 <label class="mb-10">{{ $keywords['City'] ?? __('City') }}</label>
                                                 <select name="city_id" id=""
-                                                    class="form_control form-select  city_id"
-                                                    onchange="updateURL('city='+$(this).val())">
-                                                    <option>
-                                                        {{ $keywords['Select City'] ?? __('Select City') }}
-                                                    </option>
+                                                    class="form_control form-select  city_id" onchange="updateURL('city_id='+$(this).val())">
+
+                                                    <option> {{ $keywords['Select City'] ?? __('Select City') }} </option>
+
                                                     @if ($userBs->property_country_status != 1 && $userBs->property_state_status != 1)
                                                     @foreach ($all_cities as $city)
-                                                    <option data-id="{{ $city->id }}"
-                                                        value="{{ $city->name_ar }}">
+                                                    <option data-id="{{ $city->id }}" value="{{ $city->id }}">
                                                         {{ $city->name_ar }}
                                                     </option>
                                                     @endforeach

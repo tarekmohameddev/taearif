@@ -178,19 +178,17 @@
             </div>
             <div class="col-md-6 col-lg-3">
                 <div class="dropdown w-100">
-                <select name="city_id" class="form_control form-select city_id"
-                    onchange="updateURL('city_id='+$(this).val())">
-                <option>المدينة</option>
-                @foreach ($all_cities as $city)
-                <option
-                    value="{{ $city->id }}"
-                    {{ request()->filled('city_id') && request('city_id') == $city->id ? 'selected' : '' }}
-                >
-                    {{ $city->name_ar }}
-                </option>
-                @endforeach
-                </select>
+                    <select name="city_id" class="form-select" onchange="updateURL('city_id='+ this.value)">
 
+                    <option value="">{{ __('Select City') }}</option>
+
+                        @foreach($all_cities as $city)
+                            <option value="{{ $city->id }}" {{ request('city_id') == $city->id ? 'selected' : '' }}>
+                                {{ $city->name_ar }}
+                            </option>
+                        @endforeach
+
+                    </select>
                 </div>
             </div>
         </div>
@@ -359,8 +357,7 @@
                                                     </option>
                                                     @if ($userBs->property_country_status != 1 && $userBs->property_state_status == 1)
                                                     @foreach ($all_states as $state)
-                                                    <option data-id="{{ $state->id }}"
-                                                        value="{{ $state->name }}">
+                                                    <option data-id="{{ $state->id }}" value="{{ $state->name }}">
                                                         {{ $state->name }}
                                                     </option>
                                                     @endforeach
@@ -369,19 +366,16 @@
                                             </div>
                                             @endif
                                             <div class="form-group mb-20 city">
-                                            <label class="mb-10">{{ $keywords['City'] ?? __('City') }}</label>
-                                            <select name="city_id" class="form_control form-select city_id"
-                                                    onchange="updateURL('city_id='+$(this).val())">
-                                                <option>{{ $keywords['Select City'] ?? __('Select City') }}</option>
-                                                @foreach($all_cities as $city)
-                                                <option
-                                                    value="{{ $city->id }}"
-                                                    {{ request()->filled('city_id') && request('city_id') == $city->id ? 'selected' : '' }}
-                                                >
-                                                    {{ $city->name_ar }}
-                                                </option>
-                                                @endforeach
-                                            </select>
+                                                <label class="mb-10">{{ $keywords['City'] ?? __('City') }}</label>
+
+                                                <select name="city_id" class="form-select" onchange="updateURL('city_id='+ this.value)">
+                                                <option value="">{{ __('Select City') }}</option>
+                                                    @foreach($all_cities as $city)
+                                                        <option value="{{ $city->id }}" {{ request('city_id') == $city->id ? 'selected' : '' }}>
+                                                            {{ $city->name_ar }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
                                             </div>
 
                                             <div class="form-group mb-20">
