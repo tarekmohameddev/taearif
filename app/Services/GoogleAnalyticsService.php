@@ -272,58 +272,58 @@ class GoogleAnalyticsService
         });
     }
 
-protected function getTopPages($startDate, $endDate, FilterExpression $tenantFilter)
-{
-    $response = $this->client->runReport([
-        'property' => $this->propertyId,
-        'dateRanges' => [
-            new DateRange([
-                'start_date' => $startDate->format('Y-m-d'),
-                'end_date' => $endDate->format('Y-m-d'),
-            ]),
-        ],
-        'dimensions' => [
-            new Dimension(['name' => 'pagePath']),
-            new Dimension(['name' => 'pageTitle']),
-        ],
-        'metrics' => [
-            new Metric(['name' => 'screenPageViews']),
-            new Metric(['name' => 'averageSessionDuration']),
-            new Metric(['name' => 'bounceRate']),
-        ],
-        'dimensionFilter' => $tenantFilter,
-        'orderBys' => [
-            new OrderBy(['metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']), 'desc' => true]),
-        ],
-        'limit' => 20,
-    ]);
+    protected function getTopPages($startDate, $endDate, FilterExpression $tenantFilter)
+    {
+        $response = $this->client->runReport([
+            'property' => $this->propertyId,
+            'dateRanges' => [
+                new DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
+                ]),
+            ],
+            'dimensions' => [
+                new Dimension(['name' => 'pagePath']),
+                new Dimension(['name' => 'pageTitle']),
+            ],
+            'metrics' => [
+                new Metric(['name' => 'screenPageViews']),
+                new Metric(['name' => 'averageSessionDuration']),
+                new Metric(['name' => 'bounceRate']),
+            ],
+            'dimensionFilter' => $tenantFilter,
+            'orderBys' => [
+                new OrderBy(['metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']), 'desc' => true]),
+            ],
+            'limit' => 20,
+        ]);
 
-    $rows = $response->getRows();
-    if (count($rows) === 0) {
-        return [];
+        $rows = $response->getRows();
+        if (count($rows) === 0) {
+            return [];
+        }
+
+        return collect($rows)->map(function ($row) {
+            $pagePath = $this->getSafeValue($row->getDimensionValues(), 0, 'Unknown Path');
+            $pageTitle = $this->getSafeValue($row->getDimensionValues(), 1, 'Unknown Title');
+
+            $pageViews = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+            $avgDuration = (float) $this->getSafeValue($row->getMetricValues(), 1, 0);
+
+            $bounceRateRaw = $this->getSafeValue($row->getMetricValues(), 2, 0);
+            $bounceRate = is_numeric($bounceRateRaw) && (float)$bounceRateRaw <= 1.0
+                ? round((float)$bounceRateRaw * 100, 1)
+                : round((float)$bounceRateRaw, 1);
+
+            return [
+                'path' => $pagePath,
+                'title' => $pageTitle,
+                'pageViews' => $pageViews,
+                'avgDuration' => $avgDuration,
+                'bounceRate' => $bounceRate, // الآن قيمة float حقيقية
+            ];
+        })->toArray();
     }
-
-    return collect($rows)->map(function ($row) {
-        $pagePath = $this->getSafeValue($row->getDimensionValues(), 0, 'Unknown Path');
-        $pageTitle = $this->getSafeValue($row->getDimensionValues(), 1, 'Unknown Title');
-
-        $pageViews = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
-        $avgDuration = (float) $this->getSafeValue($row->getMetricValues(), 1, 0);
-
-        $bounceRateRaw = $this->getSafeValue($row->getMetricValues(), 2, 0);
-        $bounceRate = is_numeric($bounceRateRaw) && (float)$bounceRateRaw <= 1.0
-            ? round((float)$bounceRateRaw * 100, 1)
-            : round((float)$bounceRateRaw, 1);
-
-        return [
-            'path' => $pagePath,
-            'title' => $pageTitle,
-            'pageViews' => $pageViews,
-            'avgDuration' => $avgDuration,
-            'bounceRate' => $bounceRate, // الآن قيمة float حقيقية
-        ];
-    })->toArray();
-}
 
 
 
