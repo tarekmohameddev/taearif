@@ -27,7 +27,16 @@ yarn-error.log*
 .idea/*
 # Composer dependencies (optional if you don’t want to include vendor files)
 /vendor/
+public/assets/front/img/hero_slider/*.jpg
+public/assets/user/img/qr/*.png
 /public/*
 !/public/assets/front/user/realestate/js/properties-filter.js
-
 composer.lock
+
+/public/properties/*
+/public/projects/*
+/public/logos/*
+/public/content/*
+/public/img/*
+/public/themes/*
+/public/footer/*
