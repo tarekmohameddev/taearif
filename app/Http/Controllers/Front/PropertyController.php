@@ -96,13 +96,8 @@ class PropertyController extends Controller
         $max = $request->filled('max') ? intval($request->max) : null;
 
         $countryId = $stateId = $cityId = null;
-        if ($request->filled('country')) {
-            $country = Country::where([
-                ['name', $request->country],
-                ['language_id', $userCurrentLang->id],
-                ['user_id', $tenantId],
-            ])->first();
-            $countryId = $country?->id;
+        if ($request->filled('city_id')) {
+            $cityId = intval($request->input('city_id'));
         }
         if ($request->filled('state')) {
             $state = State::where([
@@ -112,11 +107,11 @@ class PropertyController extends Controller
             ])->first();
             $stateId = $state?->id;
         }
-        if ($request->filled('city')) {
-            $city = UserCity::where([
-                ['name_ar', $request->city],
+        if ($request->filled('city_id')) {
+            $cityId  = UserCity::where([
+                ['id', $request->city_id],
             ])->first();
-            $cityId = $city?->id;
+            $cityId = $cityId?->id;
         }
 
         $title = $request->filled('title') ? $request->title : null;

@@ -72,7 +72,7 @@ function updateURL(data) {
             path: updatedURLq
         }, '', updatedURLq);
 
-    } else if (name == 'state') {
+    } else if (name == 'city_id') {
         requestArrayRmvfromUrl('city_id');
 
     } else if (name == 'min' || name == 'max') {
