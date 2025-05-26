@@ -100,11 +100,13 @@ $content = $property->contents->first();
     $checkWishList = false;
     @endphp
     @endif
+    <div class=" d-none">
+        <a href="{{ route('front.user.property.add-to-wishlist', [getParam(), 'id' => $property->id]) }}"
+            class="btn-wishlist {{ $checkWishList == false ? '' : 'wishlist-active' }}" data-tooltip="tooltip"
+            data-bs-placement="top"
+            title="{{ $checkWishList == false ? $keywords['Add to Wishlist'] ?? __('Add to Wishlist') : $keywords['Saved'] ?? __('Saved') }}">
+            <i class="fal fa-heart"></i>
+        </a>
+    </div>
 
-    <a href="{{ route('front.user.property.add-to-wishlist', [getParam(), 'id' => $property->id]) }}"
-        class="btn-wishlist {{ $checkWishList == false ? '' : 'wishlist-active' }}" data-tooltip="tooltip"
-        data-bs-placement="top"
-        title="{{ $checkWishList == false ? $keywords['Add to Wishlist'] ?? __('Add to Wishlist') : $keywords['Saved'] ?? __('Saved') }}">
-        <i class="fal fa-heart"></i>
-    </a>
 </div>
