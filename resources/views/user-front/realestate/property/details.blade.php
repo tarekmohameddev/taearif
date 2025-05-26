@@ -235,88 +235,81 @@
                         @php
                             $characteristics = $propertyContent->property->userPropertyCharacteristics;
                         @endphp
+                        @php
+                            // list of the fields we want to show
+                            $fields = [
+                                'facade_id', 'length', 'width',
+                                'street_width_north', 'street_width_south',
+                                'street_width_east', 'street_width_west',
+                                'building_age', 'rooms', 'bathrooms',
+                                'floors', 'floor_number', 'kitchen',
+                                'driver_room', 'maid_room', 'dining_room',
+                                'living_room', 'majlis', 'storage_room',
+                                'basement', 'swimming_pool', 'balcony',
+                                'garden', 'annex', 'elevator',
+                                'private_parking',
+                            ];
 
-                        @if (!empty($characteristics) && collect([
-                                $characteristics->facade_id ?? null,
-                                $characteristics->length ?? null,
-                                $characteristics->width ?? null,
-                                $characteristics->{'street_width_north'} ?? null,
-                                $characteristics->{'street_width_south'} ?? null,
-                                $characteristics->{'street_width_east'} ?? null,
-                                $characteristics->{'street_width_west'} ?? null,
-                                $characteristics->building_age ?? null,
-                                $characteristics->rooms ?? null,
-                                $characteristics->bathrooms ?? null,
-                                $characteristics->floors ?? null,
-                                $characteristics->floor_number ?? null,
-                                $characteristics->kitchen ?? null,
+                            // pull those values off the model, then drop nulls and zeros
+                            $nonEmpty = collect($fields)
+                                ->map(fn($key) => data_get($characteristics, $key))
+                                ->filter(fn($val) => !is_null($val) && $val !== 0);
+                        @endphp
 
-                                $characteristics->driver_room ?? null,
-                                $characteristics->maid_room ?? null,
-                                $characteristics->dining_room ?? null,
-                                $characteristics->living_room ?? null,
-                                $characteristics->majlis ?? null,
-                                $characteristics->storage_room ?? null,
-                                $characteristics->basement ?? null,
-                                $characteristics->swimming_pool ?? null,
-                                $characteristics->balcony ?? null,
-                                $characteristics->garden ?? null,
-                                $characteristics->annex ?? null,
-                                $characteristics->elevator ?? null,
-                                $characteristics->private_parking ?? null,
-                            ])->filter()->isNotEmpty())
-                        @endif
-
-                        @if (!empty($characteristics))
-
-                        <div class="product-characteristics mb-40">
-                            <h3 class="mb-20">{{ $keywords['The Characteristics'] ?? __('The Characteristics') }}</h3>
-                            <div class="row">
-                                @if (!empty($characteristics->facade_id))
-                                    <div class="col-md-4 mb-3 d-flex align-items-center">
-                                        <i class="product-info fal fa-layer-group me-2"></i>
-                                        <strong style="margin: 0 5px;" class="me-1">{{ __('Facade') }}  </strong>
-                                        <span style="margin: 0 5px;">{{ optional($characteristics->UserFacade)->name }}</span>
-                                    </div>
-                                @endif
-
-                                @foreach ([
-                                    'length' => ['label' => __('Length'), 'icon' => 'fal fa-ruler-horizontal'],
-                                    'width' => ['label' => __('Width'), 'icon' => 'fal fa-ruler-combined'],
-                                    'street_width_north' => ['label' => __('Street Width (North)'), 'icon' => 'fal fa-ruler-vertical'],
-                                    'street_width_south' => ['label' => __('Street Width (South)'), 'icon' => 'fal fa-ruler-vertical'],
-                                    'street_width_east' => ['label' => __('Street Width (East)'), 'icon' => 'fal fa-ruler-vertical'],
-                                    'street_width_west' => ['label' => __('Street Width (West)'), 'icon' => 'fal fa-ruler-vertical'],
-                                    'building_age' => ['label' => __('Building Age'), 'icon' => 'fal fa-calendar-alt'],
-                                    'rooms' => ['label' => __('Rooms'), 'icon' => 'fal fa-door-open'],
-                                    'bathrooms' => ['label' => __('Bathrooms'), 'icon' => 'fal fa-toilet'],
-                                    'floors' => ['label' => __('Floors'), 'icon' => 'fal fa-building'],
-                                    'floor_number' => ['label' => __('Floor Number'), 'icon' => 'fal fa-sort-numeric-up'],
-                                    'kitchen' => ['label' => __('Kitchens'), 'icon' => 'fal fa-utensils'],
-                                    'driver_room' => ['label' => __('Driver Room'), 'icon' => 'fal fa-user-tie'],
-                                    'maid_room' => ['label' => __('Maid Room'), 'icon' => 'fal fa-broom'],
-                                    'dining_room' => ['label' => __('Dining Room'), 'icon' => 'fal fa-utensils'],
-                                    'living_room' => ['label' => __('Living Room'), 'icon' => 'fal fa-couch'],
-                                    'majlis' => ['label' => __('Majlis'), 'icon' => 'fal fa-users'],
-                                    'storage_room' => ['label' => __('Storage Room'), 'icon' => 'fal fa-boxes'],
-                                    'basement' => ['label' => __('Basement'), 'icon' => 'fal fa-warehouse'],
-                                    'swimming_pool' => ['label' => __('Swimming Pool'), 'icon' => 'fal fa-swimmer'],
-                                    'balcony' => ['label' => __('Balcony'), 'icon' => 'fal fa-archway'],
-                                    'garden' => ['label' => __('Garden'), 'icon' => 'fal fa-tree'],
-                                    'annex' => ['label' => __('Annex'), 'icon' => 'fal fa-house-user'],
-                                    'elevator' => ['label' => __('Elevator'), 'icon' => 'fal fa-elevator'],
-                                    'private_parking' => ['label' => __('Private Parking'), 'icon' => 'fal fa-parking'],
-                                ] as $key => $meta)
-                                    @if (!is_null($characteristics->$key) && $characteristics->$key != 0)
-                                        <div class="col-md-4 mb-3 d-flex align-items-center" >
-                                            <i class="product-info {{ $meta['icon'] }} me-2 "></i>
-                                            <span style="margin: 0 2%;">{{ $characteristics->$key }}</span>
-                                            <strong class="me-1">{{ $meta['label'] }} </strong>
+                        {{-- Only show if at least one characteristic has data --}}
+                        @if($nonEmpty->isNotEmpty())
+                            <div class="product-characteristics mb-40">
+                                <h3 class="mb-20">
+                                    {{ $keywords['The Characteristics'] ?? __('The Characteristics') }}
+                                </h3>
+                                <div class="row">
+                                    {{-- Facade is a special case because it’s relational --}}
+                                    @if(!empty($characteristics->facade_id))
+                                        <div class="col-md-4 mb-3 d-flex align-items-center">
+                                            <i class="product-info fal fa-layer-group me-2"></i>
+                                            <strong class="me-1">{{ __('Facade') }}</strong>
+                                            <span>{{ optional($characteristics->UserFacade)->name }}</span>
                                         </div>
                                     @endif
-                                @endforeach
+
+                                    {{-- Loop through everything else --}}
+                                    @foreach ([
+                                        'length'             => ['label' => __('Length'),              'icon' => 'fal fa-ruler-horizontal'],
+                                        'width'              => ['label' => __('Width'),               'icon' => 'fal fa-ruler-combined'],
+                                        'street_width_north' => ['label' => __('Street Width (North)'), 'icon' => 'fal fa-ruler-vertical'],
+                                        'street_width_south' => ['label' => __('Street Width (South)'), 'icon' => 'fal fa-ruler-vertical'],
+                                        'street_width_east'  => ['label' => __('Street Width (East)'),  'icon' => 'fal fa-ruler-vertical'],
+                                        'street_width_west'  => ['label' => __('Street Width (West)'),  'icon' => 'fal fa-ruler-vertical'],
+                                        'building_age'       => ['label' => __('Building Age'),        'icon' => 'fal fa-calendar-alt'],
+                                        'rooms'              => ['label' => __('Rooms'),               'icon' => 'fal fa-door-open'],
+                                        'bathrooms'          => ['label' => __('Bathrooms'),           'icon' => 'fal fa-toilet'],
+                                        'floors'             => ['label' => __('Floors'),              'icon' => 'fal fa-building'],
+                                        'floor_number'       => ['label' => __('Floor Number'),        'icon' => 'fal fa-sort-numeric-up'],
+                                        'kitchen'            => ['label' => __('Kitchen'),             'icon' => 'fal fa-utensils'],
+                                        'driver_room'        => ['label' => __('Driver Room'),        'icon' => 'fal fa-user-tie'],
+                                        'maid_room'          => ['label' => __('Maid Room'),          'icon' => 'fal fa-broom'],
+                                        'dining_room'        => ['label' => __('Dining Room'),        'icon' => 'fal fa-utensils'],
+                                        'living_room'        => ['label' => __('Living Room'),        'icon' => 'fal fa-couch'],
+                                        'majlis'             => ['label' => __('Majlis'),              'icon' => 'fal fa-users'],
+                                        'storage_room'       => ['label' => __('Storage Room'),       'icon' => 'fal fa-boxes'],
+                                        'basement'           => ['label' => __('Basement'),            'icon' => 'fal fa-warehouse'],
+                                        'swimming_pool'      => ['label' => __('Swimming Pool'),      'icon' => 'fal fa-swimmer'],
+                                        'balcony'            => ['label' => __('Balcony'),             'icon' => 'fal fa-archway'],
+                                        'garden'             => ['label' => __('Garden'),              'icon' => 'fal fa-tree'],
+                                        'annex'              => ['label' => __('Annex'),               'icon' => 'fal fa-house-user'],
+                                        'elevator'           => ['label' => __('Elevator'),            'icon' => 'fal fa-elevator'],
+                                        'private_parking'    => ['label' => __('Private Parking'),    'icon' => 'fal fa-parking'],
+                                    ] as $key => $meta)
+                                        @if(data_get($characteristics, $key) !== null && data_get($characteristics, $key) != 0)
+                                            <div class="col-md-4 mb-3 d-flex align-items-center">
+                                                <i class="product-info {{ $meta['icon'] }} me-2"></i>
+                                                <span class="me-2">{{ data_get($characteristics, $key) }}</span>
+                                                <strong>{{ $meta['label'] }}</strong>
+                                            </div>
+                                        @endif
+                                    @endforeach
+                                </div>
                             </div>
-                        </div>
                         @endif
 
 
