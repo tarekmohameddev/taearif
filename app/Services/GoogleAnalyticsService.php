@@ -327,33 +327,48 @@ protected function getTopPages($startDate, $endDate, FilterExpression $tenantFil
 
 
 
-    public function getVisitorData($tenantId, $startDate, $endDate)
-    {
-        $response = $this->client->runReport([
-            'property' => $this->propertyId,
-            'dateRanges' => [
-                new DateRange([
-                    'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d'),
+    public function getVisitorData( string $tenantId, Carbon $startDate, Carbon $endDate ) {
+
+        $filterExpression = new FilterExpression([
+            'filter' => new Filter([
+                'field_name'    => 'customEvent:tenant_id',
+                'string_filter' => new StringFilter([
+                    'match_type'     => StringFilter::MATCH_TYPE_EXACT,
+                    'value'          => $tenantId,
+                    'case_sensitive' => false,
                 ]),
-            ],
-            'dimensions' => [
-                new Dimension(['name' => 'date']),
-            ],
-            'metrics' => [
-                new Metric(['name' => 'sessions']),
-                new Metric(['name' => 'totalUsers']),
-            ],
+            ]),
         ]);
 
-        return collect($response->getRows())->map(function ($row) {
-            return [
-                'date' => Carbon::parse($row->getDimensionValues()[0]->getValue()),
-                'sessions' => (int) $row->getMetricValues()[0]->getValue(),
-                'users' => (int) $row->getMetricValues()[1]->getValue(),
-            ];
-        });
+        $response = $this->client->runReport([
+            'property'        => "properties/{$this->propertyId}",
+            'dateRanges'      => [
+                new DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date'   => $endDate->format('Y-m-d'),
+                ]),
+            ],
+            'dimensions'      => [
+                new Dimension([ 'name' => 'date' ]),
+            ],
+            'metrics'         => [
+                new Metric([ 'name' => 'sessions'   ]),
+                new Metric([ 'name' => 'totalUsers' ]),
+            ],
+            'dimensionFilter' => $filterExpression,
+        ]);
+
+        return collect($response->getRows())
+            ->map(function ($row) {
+                return [
+                    'date'     => Carbon::parse($row->getDimensionValues()[0]->getValue()),
+                    'sessions' => (int)$row->getMetricValues()[0]->getValue(),
+                    'users'    => (int)$row->getMetricValues()[1]->getValue(),
+                ];
+            });
     }
+
+
 
     public function getRecentEvents($startDate, $endDate, $tenantId = null)
     {
