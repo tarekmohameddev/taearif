@@ -327,13 +327,13 @@ class GoogleAnalyticsService
 
 
 
-    public function getVisitorData( string $tenantId, Carbon $startDate, Carbon $endDate ) {
-
+    public function getVisitorData(string $tenantId, Carbon $startDate, Carbon $endDate)
+    {
         $filterExpression = new FilterExpression([
             'filter' => new Filter([
                 'field_name'    => 'customEvent:tenant_id',
                 'string_filter' => new StringFilter([
-                    'match_type'     => StringFilter::MATCH_TYPE_EXACT,
+                    'match_type'     => MatchType::EXACT,
                     'value'          => $tenantId,
                     'case_sensitive' => false,
                 ]),
@@ -367,6 +367,7 @@ class GoogleAnalyticsService
                 ];
             });
     }
+
 
 
 
