@@ -267,7 +267,7 @@
                             ])->filter()->isNotEmpty())
                         @endif
 
-                        @if ($characteristics)
+                        @if (!empty($characteristics))
 
                         <div class="product-characteristics mb-40">
                             <h3 class="mb-20">{{ $keywords['The Characteristics'] ?? __('The Characteristics') }}</h3>
