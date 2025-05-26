@@ -101,7 +101,7 @@ class Property extends Model
             'floor_planning_image' => $requestData['floor_planning_image'] ?? null,
             'video_image' => $requestData['video_image'] ?? null,
             'price' => $requestData['price'] ?? null,
-            'purpose' => $requestData['purpose'] ?? null,
+            'purpose' => $requestData['type'] ?? null,
             'type' => $requestData['type'] ?? null,
             'beds' => $requestData['beds'] ?? null,
             'bath' => $requestData['bath'] ?? null,
