@@ -327,7 +327,7 @@ class GoogleAnalyticsService
 
 
 
-    public function getVisitorData(string $tenantId, Carbon $startDate, Carbon $endDate)
+    public function getVisitorData( $tenantId,  $startDate,  $endDate)
     {
         $filterExpression = new FilterExpression([
             'filter' => new Filter([
