@@ -428,6 +428,7 @@ class PropertyController extends Controller
             'id' => $responseProperty->id,
             'project_id' => $responseProperty->project_id,
             'title' => optional($content)->title ?? 'No Title',
+            'slug' => optional($content)->slug ?? 'No Slug',
             'address' => optional($content)->address ?? 'No Address',
             'city_id' => optional($content)->city_id,
             'state_id' => optional($content)->state_id,
@@ -437,15 +438,7 @@ class PropertyController extends Controller
             'bath' => $responseProperty->bath,
             'area' => $responseProperty->area,
             'features' => $responseProperty->features,
-            // 'features' => $responseProperty->proertyAmenities->pluck('amenity.name')->toArray(),
             'characteristics' => $responseProperty->UserPropertyCharacteristics ?? null,
-            // 'specifications' => $responseProperty->specifications->map(function ($spec) {
-            //     return [
-            //         'key' => $spec->key,
-            //         'label' => $spec->label,
-            //         'value' => $spec->value,
-            //     ];
-            // })->toArray(),
             'status' => (bool) $responseProperty->status,
             'featured' => (bool) $responseProperty->featured,
             'featured_image' => asset($responseProperty->featured_image),
@@ -683,6 +676,7 @@ class PropertyController extends Controller
 
         $formattedProperty = array_merge([
             'title' => optional($content)->title ?? '',
+            'slug' => optional($content)->slug ?? '',
             'address' => optional($content)->address ?? '',
             'price' => $responseProperty->price ?? '0.00',
             'project_id' => $responseProperty->project_id ?? '',
