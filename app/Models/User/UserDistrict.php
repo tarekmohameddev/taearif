@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class UserDistrict extends Model
 {
     use HasFactory;
+    protected $table = 'user_districts';
 
     protected $fillable = [
         'id',
@@ -19,4 +20,12 @@ class UserDistrict extends Model
         'country_name_ar',
         'country_name_en',
     ];
+    protected $casts = [
+        'id' => 'integer',
+        'city_id' => 'integer',
+    ];
+    public function city()
+    {
+        return $this->belongsTo(UserCity::class, 'city_id', 'id');
+    }
 }

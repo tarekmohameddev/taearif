@@ -1799,6 +1799,7 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         Route::get('/state-cities', 'getStateCities')->name('front.user.get_state_cities');
         Route::get('/cities', 'getCities')->name('front.user.get_cities');
         Route::get('/categories', 'getCategories')->name('front.user.get_categories');
+        Route::get('/get-states/{city_id}', 'getStatesByCity')->name('front.user.get_states');
     });
 
     // Projects route

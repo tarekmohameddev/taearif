@@ -8,6 +8,7 @@ use App\Models\User\Language;
 use App\Models\User\UserCity;
 // use App\Models\User\RealestateManagement\Category;
 use App\Models\User\BasicSetting;
+use App\Models\User\UserDistrict;
 use Illuminate\Support\Facades\DB;
 use PHPMailer\PHPMailer\PHPMailer;
 use Illuminate\Support\Facades\Log;
@@ -18,8 +19,8 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Validator;
 // use App\Models\User\RealestateManagement\City;
+use Illuminate\Support\Facades\Validator;
 use App\Models\User\RealestateManagement\State;
 use App\Models\User\RealestateManagement\Amenity;
 use App\Models\User\RealestateManagement\Country;
@@ -34,6 +35,15 @@ use App\Models\User\RealestateManagement\ApiUserCategory as Category;
 
 class PropertyController extends Controller
 {
+
+    public function getStatesByCity($website, $city_id)
+    {
+        $states = UserDistrict::where('city_id', $city_id)
+            ->select('id', 'name_ar', 'name_en')
+            ->get();
+        return response()->json($states);
+    }
+
 
     public function index($website, Request $request)
     {
@@ -99,20 +109,9 @@ class PropertyController extends Controller
         if ($request->filled('city_id')) {
             $cityId = intval($request->input('city_id'));
         }
-        if ($request->filled('state')) {
-            $state = State::where([
-                ['name', $request->state],
-                ['language_id', $userCurrentLang->id],
-                ['user_id', $tenantId],
-            ])->first();
-            $stateId = $state?->id;
-        }
-        if ($request->filled('city_id')) {
-            $cityId  = UserCity::where([
-                ['id', $request->city_id],
-            ])->first();
-            $cityId = $cityId?->id;
-        }
+
+        $stateId = $request->filled('state_id') ? intval($request->input('state_id')) : null;
+        $cityId = $request->filled('city_id') ? intval($request->input('city_id')) : null;
 
         $title = $request->filled('title') ? $request->title : null;
         $location = $request->filled('location') ? $request->location : null;
@@ -188,8 +187,8 @@ class PropertyController extends Controller
         $allCities = UserCity::all();
         $information['all_cities'] = $allCities;
 
-        $information['all_states'] = State::where('user_id', $tenantId)->where('language_id', $userCurrentLang->id)->get();
-        $information['all_countries'] = Country::where('user_id', $tenantId)->where('language_id', $userCurrentLang->id)->get();
+        $information['all_states'] = UserDistrict::select('id', 'name_ar')->distinct()->get();
+        $information['all_countries'] = UserDistrict::select('country_name_ar')->distinct()->get();
 
         // $priceRange = Property::where('user_id', $tenantId)->where('active', 1)
         //     ->selectRaw('MIN(price) as min, MAX(price) as max')->first();
@@ -212,7 +211,7 @@ class PropertyController extends Controller
             ])->header('Cache-Control', 'no-cache, no-store, must-revalidate');
         }
 
-        return view('user-front.realestate.property.index', $information);
+        return view('user-front.realestate.property.index', $information + ['website' => $website]);
     }
 
 

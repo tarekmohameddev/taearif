@@ -5,20 +5,11 @@ namespace App\Services;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\Category;
 
-
 class PropertyFilterService
 {
     public function buildQuery($tenantId, $request, $userCurrentLang)
     {
         $cityNameColumn = $userCurrentLang->code === 'ar' ? 'user_cities.name_ar' : 'user_cities.name_en';
-
-        $type = $request->filled('type') && $request->type !== 'all' ? $request->type : null;
-        $price = $request->filled('price') && $request->price !== 'all' ? $request->price : null;
-        $purpose = $request->filled('purpose') && $request->purpose !== 'all' ? $request->purpose : null;
-        $min = $request->filled('min') ? intval($request->min) : null;
-        $max = $request->filled('max') ? intval($request->max) : null;
-        $category = $request->filled('category') && $request->category !== 'all' ? $request->category : null;
-        $propertyCategory = $category ? Category::where('id', $category)->first() : null;
 
         $sortOptions = [
             'new' => ['user_properties.id', 'desc'],
@@ -28,7 +19,7 @@ class PropertyFilterService
         ];
         [$order_by_column, $order] = $sortOptions[$request->sort] ?? ['user_properties.id', 'desc'];
 
-        $propertyQuery = Property::where([
+        $query = Property::where([
                 ['user_properties.user_id', $tenantId],
                 ['user_properties.status', 1],
             ])
@@ -37,10 +28,17 @@ class PropertyFilterService
             ->leftJoin('user_states', 'user_states.id', '=', 'user_property_contents.state_id')
             ->leftJoin('user_countries', 'user_countries.id', '=', 'user_property_contents.country_id')
             ->where('user_property_contents.language_id', $userCurrentLang->id)
-            ->when($type, fn($q) => $q->where('user_properties.type', $type))
-            ->when($purpose, fn($q) => $q->where('user_properties.purpose', $purpose))
-            ->when($category && $propertyCategory, fn($q) => $q->where('user_properties.category_id', $propertyCategory->id))
-            ->when($min && $max, fn($q) => $q->whereBetween('user_properties.price', [$min, $max]))
+            // --- Dynamic filters
+            ->when($request->filled('type') && $request->type !== 'all', fn($q) => $q->where('user_properties.type', $request->type))
+            ->when($request->filled('purpose') && $request->purpose !== 'all', fn($q) => $q->where('user_properties.purpose', $request->purpose))
+            ->when($request->filled('category') && $request->category !== 'all', fn($q) => $q->where('user_properties.category_id', $request->category))
+            ->when($request->filled('min'), fn($q) => $q->where('user_properties.price', '>=', intval($request->min)))
+            ->when($request->filled('max'), fn($q) => $q->where('user_properties.price', '<=', intval($request->max)))
+            ->when($request->filled('state_id'), fn($q) => $q->where('user_property_contents.state_id', $request->state_id))
+            ->when($request->filled('city_id'), fn($q) => $q->where('user_property_contents.city_id', $request->city_id))
+            ->when($request->filled('beds'), fn($q) => $q->where('user_properties.beds', $request->beds))
+            ->when($request->filled('baths'), fn($q) => $q->where('user_properties.bath', $request->baths))
+            // Add more filters as needed
             ->selectRaw("
                 user_properties.*,
                 user_property_contents.title,
@@ -54,6 +52,6 @@ class PropertyFilterService
             ")
             ->orderBy($order_by_column, $order);
 
-        return $propertyQuery;
+        return $query;
     }
 }

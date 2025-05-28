@@ -71,6 +71,7 @@ use App\Models\User\CourseManagement\CourseCategory;
 use App\Models\User\CourseManagement\CourseEnrolment;
 use App\Models\User\DonationManagement\DonationDetail;
 use App\Models\User\RealestateManagement\ApiUserCategory;
+use App\Services\PropertyFilterService;
 
 
 class FrontendController extends Controller
@@ -483,7 +484,7 @@ class FrontendController extends Controller
         return view('front.users', $data);
     }
 
-    public function userDetailView(Request $request,$domain)
+    public function userDetailView(Request $request,$domain , PropertyFilterService $propertyFilterService)
     {
         $user = getUser();
 
@@ -573,12 +574,15 @@ class FrontendController extends Controller
         // dd($data['visibleCategories'] );
 
 
-        $property_contents = Property::where([
-            ['user_properties.user_id', $tenantId],
-            ['user_properties.status', 1],
-        ]);
+        // $property_contents = Property::where([
+        //     ['user_properties.user_id', $tenantId],
+        //     ['user_properties.status', 1],
+        // ]);
 
-        $data['property_contents'] = $property_contents;
+        // $data['property_contents'] = $property_contents->paginate(8);
+        $propertyQuery = $propertyFilterService->buildQuery($tenantId, $request, $userCurrentLang);
+        $data['property_contents'] = $propertyQuery->paginate(12);
+
         $data['home_text'] = User\HomePageText::query()
             ->where([
                 ['user_id', $user->id],
@@ -626,6 +630,11 @@ class FrontendController extends Controller
 
         // resources\views\user-front\maintenance_mode.blade.php
         // maintenance_mode
+
+
+
+
+
         if (isset($api_general_settingsData->maintenance_mode) && $api_general_settingsData->maintenance_mode == 1) {
             return view('user-front.maintenance_mode', $data);
         }
@@ -1122,9 +1131,11 @@ class FrontendController extends Controller
                     $propertyQuery->where('user_property_contents.city_id', $request->city);
                 }
 
-                if ($request->filled('state')) {
-                    $propertyQuery->where('user_property_contents.state_id', $request->state);
+                if ($request->filled('state_id')) {
+                    $propertyQuery->where('user_property_contents.state_id', $request->state_id);
                 }
+
+
 
                 if ($request->filled('country')) {
                     $propertyQuery->where('user_property_contents.country_id', $request->country);
@@ -1159,28 +1170,31 @@ class FrontendController extends Controller
                         'user_property_contents.language_id',
                         'user_cities.name_ar as city_name',
                         'user_states.name as state_name',
-                        'user_countries.name as country_name'
+                        'user_countries.name as country_name',
+                        'user_property_contents.city_id',
+                        'user_property_contents.state_id',
                     )
-                    ->paginate(6);
-
+                    ->paginate(8);
 
             $cities = UserCity::limit(6)->get();
-
             $cities->map(function ($city) {
                 $city['propertyCount'] = $city->propertyContent()->count();
             });
 
-            $allCountries = UserDistrict::select('country_name_ar')->distinct()->get();
-            $allStates = UserDistrict::select('city_name_ar', 'city_id')->distinct()->get();
-
-            $data['all_countries'] = $allCountries;
-            $data['all_states'] = $allStates;
-
-
             $allCities = UserCity::all();
+            $allCountries = UserDistrict::select('country_name_ar')->distinct()->get();
+            $data['all_countries'] = $allCountries;
 
             $data['cities'] = $allCities;
             $data['all_cities'] = $allCities;
+
+            $selectedCityId = request('city_id');
+            if ($selectedCityId) {
+                $allStates = \App\Models\User\UserDistrict::where('city_id', $selectedCityId)->select('id', 'name_ar')->get();
+            } else {
+                $allStates = \App\Models\User\UserDistrict::select('id', 'name_ar')->get();
+            }
+            $data['all_states'] = $allStates;
 
             // dd($data['all_cities']);
 
@@ -1194,6 +1208,7 @@ class FrontendController extends Controller
             $max = Property::where([['status', 1], ['user_id', $user->id]])->max('price');
             $data['min'] = intval($min);
             $data['max'] = intval($max);
+            $data['website'] = $user->username;
             if ($userBs->theme == 'home13') {
                 $data['heroStatic'] = User\HeroStatic::where('user_id', $user->id)
                     ->where('language_id', $userCurrentLang->id)
@@ -1210,6 +1225,7 @@ class FrontendController extends Controller
                     ->get();
 
                 $data['property_categories'] = ApiUserCategory::where([['is_active', 1]])->get();
+
 
                 // user-front.realestate.home.index-v1
             return view('user-front.realestate.home.index-v1', $data);
@@ -1247,6 +1263,7 @@ class FrontendController extends Controller
 
                     // user-front.realestate.home.index-v2
             return view('user-front.realestate.home.index-v2', $data);
+
             } elseif ($userBs->theme == 'home15') {
                 $data['heroStatic'] = User\HeroStatic::where('user_id', $user->id)
                     ->where('language_id', $userCurrentLang->id)
@@ -1270,12 +1287,14 @@ class FrontendController extends Controller
                 $data['property_categories'] = ApiUserCategory::where([['is_active', 1]])->get();
 
                 // user-front.realestate.home.index-v3
-                return view('user-front.realestate.home.index-v3', $data);
+            return view('user-front.realestate.home.index-v3', $data);
             }
+
         } else {
             return view('user-front.home-page.home-one', $data);
         }
     }
+
     public function paymentInstruction(Request $request)
     {
         $offline = OfflineGateway::where('name', $request->name)
