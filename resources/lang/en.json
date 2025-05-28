@@ -2561,5 +2561,23 @@
     "Booking Information Details": "تفاصيل معلومات الحجز",
     "Other": "أخرى",
     "Select City": "اختر المدينة",
-    "Projects": "المشاريع"
+    "Projects": "المشاريع",
+    "Property purpose": "غرض العقار",
+    "rent": "إيجار",
+    "sale": "بيع",
+    "half_yearly": "نصف سنوي",
+    "quarterly": "ربع سنوي",
+    "TheLength": "الطول",
+    "ThePrice": "المبلغ",
+    "Projects": "المشاريع",
+    "Property purpose": "غرض العقار",
+    "rent": "إيجار",
+    "sale": "بيع",
+    "half_yearly": "نصف سنوي",
+    "quarterly": "ربع سنوي",
+    "TheLength": "الطول",
+    "ThePrice": "المبلغ",
+    "annual": "سنوي",
+    "semi_annual": "نصف سنوي"
+
 }

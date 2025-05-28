@@ -16,6 +16,7 @@ class ApiInstallationController extends Controller
     {
         $userId = auth()->id();
         $apps = ApiApp::all();
+
         $installations = ApiInstallation::with('settings')
             ->where('user_id', $userId)
             ->whereIn('app_id', $apps->pluck('id'))
@@ -25,6 +26,7 @@ class ApiInstallationController extends Controller
         $apps = $apps->map(function ($app) use ($installations) {
             $installation = $installations->get($app->id);
             $isInstalled = $installation && $installation->status === 'installed';
+
             return [
                 'id' => $app->id,
                 'name' => $app->name,

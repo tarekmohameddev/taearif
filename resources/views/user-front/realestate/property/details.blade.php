@@ -122,20 +122,45 @@
                             <h3 class="product-title">
                                 <a href="#">{{ $propertyContent->title }}</a>
                             </h3>
+
+                            @php
+                                $district = App\Models\User\UserDistrict::find($propertyContent->state_id);
+                                $city = $district ? $district->city : null;
+                                @endphp
+
                             <div class="product-location icon-start">
                                 <i class="fal fa-map-marker-alt"></i>
                                 <span>
-                                    {{ $propertyContent->address }}
-                                </span>
-                                <span>
-
-                                    {{ $propertyContent->city->name ?? "" }}
-
-                                    {{ $userBs->property_state_status == 1 && !is_null($propertyContent->state) ? ', ' . $propertyContent->state->name : '' }}
-                                    {{ $userBs->property_country_status == 1 && !is_null($propertyContent->country) ? ', ' . $propertyContent->country->name : '' }}
+                                {{$city->name_ar}} / {{$district->name_ar}}
                                 </span>
                             </div>
+
+
                             <ul class="product-info p-0 list-unstyled d-flex align-items-center mt-10 mb-30">
+
+                                <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
+                                title="{{ __('Area') }}">
+                                    <i class="fal fa-vector-square"></i>
+
+                                    <span > {{__('Property Type') }} </span>
+
+                                    @if($propertyContent->type ?? null)
+                                        <span > {{ __($propertyContent->type) }} </span>
+                                    @endif
+
+                                </li>
+
+                                <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
+                                title="{{ __('Area') }}">
+                                    <i class="fal fa-vector-square"></i>
+
+                                    <span > {{__('Property purpose') }} </span>
+
+                                    @if($propertyContent->purpose ?? null)
+                                        <span > {{ __($propertyContent->purpose) }} </span>
+                                    @endif
+
+                                </li>
 
                                 @if ($propertyContent->area)
                                 <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
@@ -167,11 +192,14 @@
 
                             @if ($propertyContent->price)
                             <div class="product-price mb-10">
-                                <span class="new-price">{{ ($keywords['Price'] ?? __('Price')) . ':' }}
-                                    {{ $propertyContent->price ? $propertyContent->price : $keywords['Negotiable'] ?? __('Negotiable') }}</span>
+
+                                <span class="new-price">{{ ($keywords['Price'] ?? __('ThePrice')) . ':' }} {{ $propertyContent->price ? $propertyContent->price : $keywords['Negotiable'] ?? __('Negotiable') }}</span>
                                     <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg" alt="Currency Symbol" style="width: 22px; height: 22px; vertical-align: middle;">
+                                <span class="old-price"></span>
                             </div>
                             @endif
+                            <!-- price of meter -->
+                            <!--// price of meter -->
 
                             <a class="d-none" {{-- href="{{ route('frontend.agent.details', [getParam(), 'agentusername' => $user->username, 'admin' => 'true']) }}" --}}>
 
@@ -194,13 +222,20 @@
                             </a>
 
                             <ul class="share-link list-unstyled mb-30">
-                                <li>
+                                <li class="d-none">
                                     <a class="btn blue" style="padding: 9px;" href="#" data-bs-toggle="modal"
                                         data-bs-target="#socialMediaModal">
                                         <i class="far fa-share-alt"></i>
                                     </a>
                                     <span>شارك</span>
 
+                                </li>
+
+                                <li>
+                                    <a class="btn green" style="padding: 9px;" href="https://wa.me/{{ $user->phone }}?text={{ urlencode(__('انا مهتم بهذا العقار: ') . route('front.user.property.details', [getParam(), 'slug' => $propertyContent->slug])) }}">
+                                        <i class="fab fa-whatsapp"></i>
+                                    </a>
+                                    <span>{{ __('WhatsApp') }}</span>
                                 </li>
 
                                 <li>
@@ -557,8 +592,8 @@
                                     <h6 class="product-title"><a
                                             href="{{ route('front.user.property.details', [getParam(), 'slug' => $property->slug]) }}">{{ $property->title }}</a>
                                     </h6>
-                                    <span class="product-location icon-start"> <i
-                                            class="fal fa-map-marker-alt"></i>
+                                    <span class="product-location icon-start">
+                                        <i class="fal fa-map-marker-alt"></i>
                                         {{ $property->city_name }}
                                         {{ $userBs->property_state_status == 1 && $property->state_name != null ? ', ' . $property->state_name : '' }}
                                         {{ $userBs->property_country_status == 1 && $property->country_name != null ? ', ' . $property->country_name : '' }}
@@ -571,6 +606,7 @@
                                         <span class="new-price">{{ ($keywords['Price'] ?? __('Price')) . ':' }} {{ $property->price ? $property->price : $keywords['Negotiable'] ?? __('Negotiable') }}</span>
                                             <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg" alt="Currency Symbol" style="width: 15px; height: 15px; vertical-align: middle;">
                                     </div>
+
                                     @endif
                                     <ul class="product-info p-0 list-unstyled d-flex align-items-center">
                                         <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
