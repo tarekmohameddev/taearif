@@ -38,7 +38,7 @@ function updateURL(data) {
 
     newUrlArrayq.forEach((url, index) => {
       let urlNq = url.split('=');
-      if (urlNq[0] == 'state') {
+      if (urlNq[0] == 'state_id') {
         newUrlArrayq.splice(index, 1);
 
       }
@@ -58,8 +58,8 @@ function updateURL(data) {
       path: updatedURLq
     }, '', updatedURLq);
 
-  } else if (name == 'state') {
-    requestArrayRmvfromUrl('city')
+  } else if (name == 'state_id') {
+    requestArrayRmvfromUrl('state_id')
 
   } else if (name == 'min' || name == 'max') {
     requestArrayRmvfromUrl('price')

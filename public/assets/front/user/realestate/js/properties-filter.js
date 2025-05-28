@@ -8,7 +8,12 @@ function getBasePropertiesUrl() {
 }
 
 function updateURL(data) {
-    // console.log("testt");
+    // console.log('Sending URL:', updatedURL);
+    // console.log(data);
+    // console.log(getBasePropertiesUrl());
+    // console.log(data.split('=')[0]);
+    // console.log(data.split('=')[1]);
+    console.log('data', data);
 
     $('.request-loader').addClass('show');
     let name = data.split('=')[0];
@@ -75,7 +80,12 @@ function updateURL(data) {
     } else if (name == 'city_id') {
         requestArrayRmvfromUrl('city_id');
 
-    } else if (name == 'min' || name == 'max') {
+    }
+    else if (name == 'state_id') {
+        requestArrayRmvfromUrl('state_id');
+    }
+
+     else if (name == 'min' || name == 'max') {
         requestArrayRmvfromUrl('price')
         $('#pricetype input:radio[value="all"]').prop('checked', true);
     } else if (name == 'price') {
@@ -98,7 +108,7 @@ function updateURL(data) {
     if (currentURL.indexOf('?') !== -1) {
         const prevParams = new URLSearchParams(currentURL.split('?')[1]);
         const [key, value] = data.split('=');
-        prevParams.set(key, value); // update or add param
+        prevParams.set(key, value);
         queryString = prevParams.toString();
     } else {
         queryString = data;
@@ -208,28 +218,52 @@ function updateAmenities(data, checkbox) {
 
 //     });
 // }
-function getData(currentURL, page) {
-    $('.request-loader').addClass('show');
 
+// function getData(currentURL, page) {
+//     $('.request-loader').addClass('show');
+
+//     $.ajax({
+//         type: 'GET',
+//         url: currentURL,
+//         data: {
+//             page: page,
+//         },
+//         success: function (data) {
+//             // Safely update the properties section
+//             if (data && data.propertyContents) {
+//                 $('.properties').html(data.propertyContents);
+//             } else {
+
+//                 $('.properties').html('<div class="col-lg-12"><h4 class="text-center mt-5">' + noPropertiesFoundMessageAr + '</h4></div>');
+
+//             }
+
+//             if (data && data.properties && data.properties.data) {
+//                 properties = data.properties.data;
+
+//             } else {
+//                 console.warn("Unexpected AJAX response structure:", data);
+//             }
+//         },
+//         complete: function () {
+//             $(".request-loader").removeClass('show');
+//             $("html, body").animate({ scrollTop: 0 });
+//         }
+//     });
+// }
+function getData(currentURL) {
+    $('.request-loader').addClass('show');
     $.ajax({
         type: 'GET',
-        url: currentURL,
-        data: {
-            page: page,
-        },
+        url: currentURL,    // ← The URL is already correct, no need for extra page param
         success: function (data) {
-            // Safely update the properties section
             if (data && data.propertyContents) {
                 $('.properties').html(data.propertyContents);
             } else {
-
                 $('.properties').html('<div class="col-lg-12"><h4 class="text-center mt-5">' + noPropertiesFoundMessageAr + '</h4></div>');
-
             }
-
             if (data && data.properties && data.properties.data) {
                 properties = data.properties.data;
-
             } else {
                 console.warn("Unexpected AJAX response structure:", data);
             }
@@ -240,6 +274,7 @@ function getData(currentURL, page) {
         }
     });
 }
+
 
 
 function submitRoute(url, params = {}) {
@@ -288,23 +323,23 @@ function getCategories(type) {
     });
 }
 
-function resetURL() {
-    var checkboxes = document.querySelectorAll('input[type="checkbox"]');
-    checkboxes.forEach(function (checkbox) {
-        checkbox.checked = false;
-    });
+// function resetURL() {
+//     var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+//     checkboxes.forEach(function (checkbox) {
+//         checkbox.checked = false;
+//     });
 
-    document.getElementById('searchForm').reset();
-    priceRest();
-    var currentURL = window.location.href;
-    if (currentURL.indexOf('?') != -1) {
-        let updatedURL = currentURL.split('?')[0];
-        window.history.pushState({
-            path: updatedURL
-        }, '', updatedURL);
-        getData(updatedURL)
-    }
-}
+//     document.getElementById('searchForm').reset();
+//     priceRest();
+//     var currentURL = window.location.href;
+//     if (currentURL.indexOf('?') != -1) {
+//         let updatedURL = currentURL.split('?')[0];
+//         window.history.pushState({
+//             path: updatedURL
+//         }, '', updatedURL);
+//         getData(updatedURL)
+//     }
+// }
 
 function reset() {
     var checkboxes = document.querySelectorAll('input[type="checkbox"]');
@@ -333,37 +368,6 @@ function priceRest() {
     slider.noUiSlider.set([omin, omax]);
 }
 
-function getCities(e) {
-    $('.request-loader').addClass('show');
-    let addedCity = "city_id";
-    let id = $(e).find(':selected').data('id');
-    let cityUrl = siteURL + '/cities'
-    $.ajax({
-        type: 'GET',
-        url: cityUrl,
-        data: {
-            state_id: id,
-        },
-        success: function (data) {
-            if (data.cities.length > 0) {
-                $('.city').show();
-                $('.' + addedCity).find('option').remove().end();
-                $('.' + addedCity).append($(
-                    `<option data-id="0"></option>`).val('all').html('All'));
-                $.each(data.cities, function (key, value) {
-                    $('.' + addedCity).append(
-                        $(
-                            `<option data-id="${value.id}"></option>`).val(value
-                                .city_content.name).html(value.city_content.name));
-                });
-            } else {
-                $('.' + addedCity).find('option').remove().end();
-                $('.city').hide();
-            }
-            $('.request-loader').removeClass('show');
-        }
-    });
-}
 
 $(document).ready(function () {
     'use strict';
@@ -375,15 +379,22 @@ $(document).ready(function () {
 
 
 
-    $('body').on('click', '.customPaginagte a', function (event) {
-        event.preventDefault();
-        let page = $(this).attr('href').split('page=')[1];
-        let currentURL = window.location.href;
-        getData(currentURL, page);
-    });
+    // $('body').on('click', '.customPaginagte a', function (event) {
+    //     event.preventDefault();
+    //     let page = $(this).attr('href').split('page=')[1];
+    //     let currentURL = window.location.href;
+    //     getData(currentURL, page);
+    // });
+    // $('body').on('click', '.customPaginagte a', function (event) {
+        // event.preventDefault();
+        // let url = $(this).attr('href');    // ← Use the real href!
+        // window.history.pushState({}, '', url); // (optional) updates browser address bar
+        // getData(url);                      // ← Use the real href!
+    // });
 
-    history.pushState(null, document.title, location.href);
-    window.addEventListener('popstate', function (event) {
-        history.pushState(null, document.title, location.href);
-    });
+
+    // history.pushState(null, document.title, location.href);
+    // window.addEventListener('popstate', function (event) {
+    //     history.pushState(null, document.title, location.href);
+    // });
 });

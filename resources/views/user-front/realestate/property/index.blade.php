@@ -424,15 +424,26 @@
             </div>
             <div class="col-md-6 col-lg-3">
                 <div class="dropdown w-100">
-                    <select name="city_id" class="form_control form-select  city_id" onchange="updateURL('city_id='+$(this).val())">
-                        <option value="">{{ __('Select City') }}</option>
-                        @foreach($all_cities as $city)
-                            <option value="{{ $city->id }}" {{ request('city_id') == $city->id ? 'selected' : '' }}>
-                                {{ $city->name_ar }}
-                            </option>
-                        @endforeach
-                    </select>
+                <select name="city_id" id="city_id" class="form_control form-select  city_id" onchange="updateURL('city_id='+$(this).val())">
+                    <option value="">اختر المدينة</option>
+                    @foreach($all_cities as $city)
+                        <option value="{{ $city->id }}" {{ request('city_id') == $city->id ? 'selected' : '' }}>
+                            {{ $city->name_ar }}
+                        </option>
+                    @endforeach
+                </select>
                 </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+
+                <select name="state_id" id="state_id" class="form-control state_id">
+                    <option value="">اختر الحي</option>
+                    @foreach($all_states as $state)
+                        <option value="{{ $state->id }}" {{ request('state_id') == $state->id ? 'selected' : '' }}>
+                            {{ $state->name_ar }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
         </div>
     </div>
@@ -612,8 +623,7 @@
                                             @endif
                                             <div class="form-group mb-20 city">
                                                 <label class="mb-10">{{ $keywords['City'] ?? __('City') }}</label>
-                                                <select name="city_id" id=""
-                                                    class="form_control form-select  city_id" onchange="updateURL('city_id='+$(this).val())">
+                                                <select name="city_id" id="city_id" class="form_control form-select  city_id" onchange="updateURL('city_id='+$(this).val())">
 
                                                     <option> {{ $keywords['Select City'] ?? __('Select City') }} </option>
 
@@ -937,5 +947,40 @@
         var url = "{{ route('front.user.get_cities', ':id') }}";
         url = url.replace(':id', stateId);
     }
+</script>
+
+<script>
+
+    $(document).ready(function () {
+
+        $('#city_id').on('change', function () {
+            var cityId = $(this).val();
+            var username = "{{ $website }}";
+            var url = "/"+username+"/get-states/" + cityId;
+            $('#state_id').html('<option value="">جاري التحميل...</option>');
+            if (cityId) {
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    success: function (data) {
+                        var stateOptions = '<option value="">اختر الحي</option>';
+                        $.each(data, function (i, state) {
+                            stateOptions += '<option value="' + state.id + '">' + state.name_ar + '</option>';
+                        });
+                        $('#state_id').html(stateOptions);
+                    }
+                });
+            } else {
+                $('#state_id').html('<option value="">اختر الحي</option>');
+            }
+        });
+
+    });
+
+    // trigger the filter when a state is selected
+    $(document).on('change', '#state_id', function() {
+        updateURL('state_id=' + $(this).val());
+    });
+
 </script>
 @endsection

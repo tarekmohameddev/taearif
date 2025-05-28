@@ -295,6 +295,7 @@
         <div class="categories pb-100">
             <section id="property-filter-section">
                 @include('user-front.realestate.partials.categories-filter-list', [
+                    'website' => $website,
                     'property_contents' => $properties,
                     'categories' => $all_proeprty_categories,
                     'all_cities' => $all_cities,
@@ -762,7 +763,7 @@
 @endsection
 
 <script>
-    if (typeof baseURL === 'undefined') {
-        var baseURL = "{{ getDynamicBaseUrl() }}";
-    }
+    // if (typeof baseURL === 'undefined') {
+    //     var baseURL = "{{ getDynamicBaseUrl() }}";
+    // }
 </script>

@@ -178,19 +178,29 @@
             </div>
             <div class="col-md-6 col-lg-3">
                 <div class="dropdown w-100">
-                    <select name="city_id" class="form-select" onchange="updateURL('city_id='+ this.value)">
-
+                <select name="city_id" class="form-select" id="city_id" onchange="updateURL('city_id='+ this.value)">
                     <option value="">{{ __('Select City') }}</option>
-
-                        @foreach($all_cities as $city)
-                            <option value="{{ $city->id }}" {{ request('city_id') == $city->id ? 'selected' : '' }}>
-                                {{ $city->name_ar }}
-                            </option>
-                        @endforeach
-
-                    </select>
+                    @foreach($all_cities as $city)
+                        <option value="{{ $city->id }}" {{ request('city_id') == $city->id ? 'selected' : '' }}>
+                            {{ $city->name_ar }}
+                        </option>
+                    @endforeach
+                </select>
                 </div>
             </div>
+
+            <div class="col-md-6 col-lg-3">
+                <select name="state_id" class="form-select" id="state_id" onchange="updateURL('state_id='+ this.value)>
+                    <option value="">{{ __('اختر الحي') }}</option>
+
+                    @foreach($all_states as $state)
+                        <option value="{{ $state->id }}" {{ request('state_id') == $state->id ? 'selected' : '' }}>
+                            {{ $state->name_ar }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
         </div>
     </div>
 </div>
@@ -345,26 +355,21 @@
                                                 </select>
                                             </div>
                                             @endif
-                                            @if ($userBs->property_state_status == 1)
+
                                             <div class="form-group mb-20 state">
                                                 <label
                                                     class="mb-10">{{ $keywords['State'] ?? __('State') }}</label>
-                                                <select name="state_id" id=""
-                                                    class="form_control form-select  state_id states"
-                                                    onchange="updateURL('state='+$(this).val());getCities(this)">
-                                                    <option>
-                                                        {{ $keywords['Select State'] ?? __('Select State') }}
-                                                    </option>
-                                                    @if ($userBs->property_country_status != 1 && $userBs->property_state_status == 1)
-                                                    @foreach ($all_states as $state)
-                                                    <option data-id="{{ $state->id }}" value="{{ $state->name }}">
-                                                        {{ $state->name }}
-                                                    </option>
-                                                    @endforeach
-                                                    @endif
-                                                </select>
+                                                    <select name="state_id" class="form-select" id="state_id" onchange="updateURL('state_id='+this.value)">
+                                                        <option value="">{{ __('اختر الحي') }}</option>
+                                                        @foreach($all_states as $state)
+                                                            <option value="{{ $state->id }}" {{ request('state_id') == $state->id ? 'selected' : '' }}>
+                                                                {{ $state->name_ar }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+
                                             </div>
-                                            @endif
+
                                             <div class="form-group mb-20 city">
                                                 <label class="mb-10">{{ $keywords['City'] ?? __('City') }}</label>
 
@@ -647,11 +652,14 @@
                         </h3>
                     </div>
                     @endforelse
-                    <div class="row">
-                        <div class="col-lg-12 pagination justify-content-center customPaginagte">
-                            {{ $property_contents->links() }}
+                    @if ($property_contents->hasPages())
+                        <div class="row">
+                            <div class="col-lg-12 pagination justify-content-center customPaginagte">
+                                {{ $property_contents->links() }}
+                            </div>
                         </div>
-                    </div>
+                    @endif
+
                 </div>
             </div>
         </div>
@@ -688,4 +696,43 @@
         url = url.replace(':id', stateId);
     }
 </script>
+
+<script>
+
+    $(document).ready(function () {
+
+        $(document).ready(function () {
+            $('#city_id').on('change', function () {
+                var cityId = $(this).val();
+                var website = "{{ $website }}";
+                var url = '/' + website + '/get-states/' + cityId;
+                $('#state_id').html('<option value="">جاري التحميل...</option>');
+                if (cityId) {
+                    $.ajax({
+                        url: url,
+                        type: 'GET',
+                        success: function (data) {
+                            var options = '<option value="">اختر الحي</option>';
+                            $.each(data, function (i, state) {
+                                options += '<option value="' + state.id + '">' + state.name_ar + '</option>';
+                            });
+                            $('#state_id').html(options);
+                        }
+                    });
+                } else {
+                    $('#state_id').html('<option value="">اختر الحي</option>');
+                }
+            });
+        });
+
+
+    });
+
+    // trigger the filter when a state is selected
+    $(document).on('change', '#state_id', function() {
+        updateURL('state_id=' + $(this).val());
+    });
+
+</script>
+
 @endsection

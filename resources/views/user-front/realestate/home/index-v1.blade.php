@@ -114,6 +114,7 @@
         <div class="categories pb-100">
             <section id="property-filter-section">
                 @include('user-front.realestate.partials.categories-filter-list', [
+                    'website' => $website,
                     'property_contents' => $properties,
                     'categories' => $all_proeprty_categories,
                     'all_cities' => $all_cities,
@@ -532,9 +533,9 @@
 @endsection
 
 <script>
-    if (typeof baseURL === 'undefined') {
-        var baseURL = "{{ getDynamicBaseUrl() }}";
-    }
+    // if (typeof baseURL === 'undefined') {
+    //     var baseURL = "{{ getDynamicBaseUrl() }}";
+    // }
 </script>
 
 <script>
@@ -692,17 +693,15 @@
         }
     }
 
-    var imgUrl = "{{ url('/') }}";
-    let baseURL = mainurl;
-    var property_contents = @json($property_contents);
-    var properties = property_contents.data;
-    var siteURL = "{{ route('front.user.detail.view', getParam()) }}"
-    const categoryUrl = "{{ route('front.user.get_categories', getParam()) }}";
+    // var imgUrl = "{{ url('/') }}";
+    // let baseURL = mainurl;
+    // var property_contents = @json($property_contents);
+    // var properties = property_contents.data;
+    // var siteURL = "{{ route('front.user.detail.view', getParam()) }}"
+    // const categoryUrl = "{{ route('front.user.get_categories', getParam()) }}";
 </script>
 
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<script src="{{ asset('/assets/front/user/realestate/js/map.js') }}"></script>
-<script src="{{ asset('/assets/front/user/realestate/js/properties.js') }}"></script>
 
