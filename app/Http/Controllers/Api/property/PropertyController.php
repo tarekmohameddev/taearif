@@ -194,7 +194,7 @@ class PropertyController extends Controller
             ->firstOrFail();
 
         $rules = [
-            'payment_method' => 'required|in:monthly,quarterly,semi_annual,annual',
+            'payment_method' => 'nullable|in:monthly,quarterly,semi_annual,annual',
             'title' => 'required|max:255',
             'address' => 'required',
             'description' => 'required',
@@ -520,7 +520,7 @@ class PropertyController extends Controller
             ->firstOrFail();
 
         $rules = [
-            'payment_method' => 'required|in:monthly,quarterly,semi_annual,annual',
+            'payment_method' => 'nullable|in:monthly,quarterly,semi_annual,annual',
             'title' => 'required|max:255',
             'address' => 'required',
             'description' => 'required',
