@@ -92,7 +92,7 @@ class Property extends Model
             'latitude' => $request['latitude'],
             'longitude' => $request['longitude'],
             'category_id' => $request['category_id'] ?? $defaultCategory->id,
-            'payment_method' => $request['payment_method'],
+            'payment_method' => $request['payment_method'] ?? null,
         ]);
     }
 
@@ -118,7 +118,7 @@ class Property extends Model
             'latitude' => $requestData['latitude'] ?? null,
             'longitude' => $requestData['longitude'] ?? null,
             'category_id' => $requestData['category_id'] ?? $this->category_id,
-            'payment_method' => $requestData['payment_method'] ?? $this->payment_method,
+            'payment_method' => $requestData['payment_method'] ?? $this->payment_method  ?? null,
 
         ]);
     }
