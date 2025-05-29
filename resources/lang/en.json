@@ -2579,6 +2579,8 @@
     "ThePrice": "المبلغ",
     "annual": "سنوي",
     "semi_annual": "نصف سنوي",
+    "commercial": "تجاري",
+    "residential": "سكني",
     "Meter Price": "سعر المتر"
 
 }

@@ -243,8 +243,8 @@
                                 </li>
 
                                 <li>
-                                    <a class="btn green" style="padding: 9px;" href="https://wa.me/{{ $user->phone }}?text={{ urlencode(__('انا مهتم بهذا العقار: ') . route('front.user.property.details', [getParam(), 'slug' => $propertyContent->slug])) }}">
-                                        <i class="fab fa-whatsapp"></i>
+                                    <a class="btn green" style="width: 100px !important;padding: 14px;height: 45px !important;" href="https://wa.me/{{ $user->phone }}?text={{ urlencode(__('انا مهتم بهذا العقار: ') . route('front.user.property.details', [getParam(), 'slug' => $propertyContent->slug])) }}">
+                                        <i class="fab fa-whatsapp" ></i>
                                     </a>
                                     <span>{{ __('WhatsApp') }}</span>
                                 </li>
