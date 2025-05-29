@@ -57,6 +57,8 @@ class User extends Authenticatable
      *
      * @var array
      */
+    protected $table = 'users';
+
     protected $fillable = [
         'first_name',
         'last_name',
@@ -82,6 +84,7 @@ class User extends Authenticatable
         'logo',
         'icon',
         'primary_color',
+        'show_even_if_empty',
     ];
 
     /**
@@ -101,6 +104,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'onboarding_completed' => 'boolean',
+        'show_even_if_empty' => 'boolean',
     ];
 
     public function user_custom_domains()

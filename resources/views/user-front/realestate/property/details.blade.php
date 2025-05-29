@@ -113,7 +113,7 @@
                 </div>
                 <div class="product-single-details">
                     <div class="row">
-                        <div class="col-md-8">
+                        <div class="col-md-7">
                             <div class="d-flex align-items-center justify-content-between mb-10">
                                 <span class="product-category text-sm"> <a
                                         href="{{ route('front.user.properties', [getParam(), 'category' => $propertyContent->slug]) }}">
@@ -191,15 +191,26 @@
                                 @endif
                             </ul>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-5">
 
+                            <!--  -->
                             @if ($propertyContent->price && $propertyContent->price != 0 && $propertyContent->price != 'null')
-                            <div class="product-price mb-10">
-                                <span class="new-price">{{ ($keywords['Price'] ?? __('ThePrice')) . ':' }} {{ $propertyContent->price ? $propertyContent->price : $keywords['Negotiable'] ?? __('Negotiable') }}</span>
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg" alt="Currency Symbol" style="width: 22px; height: 22px; vertical-align: middle;">
-
+                            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px; direction: rtl;">
+                                <span class="new-price" style="font-weight: 600; font-size: 1.0em;">
+                                    {{ $keywords['Price'] ?? __('ThePrice') }}: {{ $propertyContent->price ?: $keywords['Negotiable'] ?? __('Negotiable') }}
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg"
+                                    alt="Currency Symbol"
+                                    style="width: 20px; height: 20px; vertical-align: middle; margin: 0 2px;">
+                                    @if ($propertyContent->payment_method && $propertyContent->payment_method != 'null')
+                                    <span class="new-price" style="font-weight: 600; font-size: 1.0em;">
+                                        / ({{ $keywords['Payment Method'] ?? __('Payment Method') }}: {{ __($propertyContent->payment_method) }})
+                                    </span>
+                                @endif
+                                </span>
                             </div>
                             @endif
+                            <!--  -->
+
                             <!-- price of meter -->
 
                             @if ($propertyContent->meter_price && $propertyContent->meter_price != 0 && $propertyContent->meter_price != 'null')
@@ -215,9 +226,7 @@
                             @if ($propertyContent->payment_method && $propertyContent->payment_method != 'null')
                             <div class="product-price mb-10">
                                 <span class="payment-method">
-                                    <span class="text-muted">
-                                    ({{ $keywords['Payment Method'] ?? __('Payment Method') }}: {{ __($propertyContent->payment_method) }})
-                                    </span>
+
                                 </span>
                             </div>
                             @endif

@@ -104,12 +104,12 @@
         <div class="container">
             <div class="property-types-container py-3">
                 <div class="d-inline-flex">
-                    @foreach ($visibleCategories as $category)
+                @foreach ($visibleCategories as $category)
                     <div class="property-type" onclick="updateURL('category={{ $category->id }}');" data-type="{{ $category->id }}">
                         <div class="property-icon"><i class="fa-solid fa-building fa-lg"></i></div>
                         <span class="property-title">{{ __($category->name)  }}</span>
                     </div>
-                    @endforeach
+                @endforeach
                     <div class="property-type all-type active" onclick="updateURL('category=all');" data-type="all">
                         <div class="property-icon"><i class="fa-solid fa-list fa-lg"></i></div>
                         <span class="property-title">الكل</span>

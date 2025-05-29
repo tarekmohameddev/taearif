@@ -59,6 +59,7 @@ class ApiCategoryController extends Controller
 
         return response()->json([
             'status' => 'success',
+            'show_even_if_empty' => $user->show_even_if_empty,
             'categories' => $formattedCategories
         ], 200);
     }
@@ -76,9 +77,13 @@ class ApiCategoryController extends Controller
             'categories' => 'required|array',
             'categories.*.id' => 'required|exists:api_user_categories,id',
             'categories.*.is_active' => 'required|boolean',
+            // nullable field to allow for optional input
+            'show_even_if_empty' => 'nullable|boolean',
         ]);
 
         $user = Auth::user();
+        $user->show_even_if_empty = $request->show_even_if_empty;
+        $user->save();
         $categories = ApiUserCategory::all();
 
         // get user all categories
