@@ -192,10 +192,9 @@
 
                             @if ($propertyContent->price)
                             <div class="product-price mb-10">
-
                                 <span class="new-price">{{ ($keywords['Price'] ?? __('ThePrice')) . ':' }} {{ $propertyContent->price ? $propertyContent->price : $keywords['Negotiable'] ?? __('Negotiable') }}</span>
                                     <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg" alt="Currency Symbol" style="width: 22px; height: 22px; vertical-align: middle;">
-                                <span class="old-price"></span>
+                                <span class="meter-price"></span>
                             </div>
                             @endif
                             <!-- price of meter -->

@@ -113,6 +113,7 @@ class PropertyController extends Controller
         $formattedProperty = array_merge([
             'id' => $property->id,
             'project_id' => $property->project_id,
+            'payment_method' => $property->payment_method,
             'title' => optional($content)->title ?? '',
             'address' => optional($content)->address ?? '',
             'price' => $property->price ?? '0.00',
@@ -191,6 +192,7 @@ class PropertyController extends Controller
             ->firstOrFail();
 
         $rules = [
+            'payment_method' => 'required|in:monthly,quarterly,semi_annual,annual',
             'title' => 'required|max:255',
             'address' => 'required',
             'description' => 'required',
@@ -293,6 +295,7 @@ class PropertyController extends Controller
                 'project_id',
                 'city_id',
                 'state_id',
+                'payment_method',
 
                 "facade_id",
                 "length",
@@ -427,6 +430,7 @@ class PropertyController extends Controller
         $formattedProperty = [
             'id' => $responseProperty->id,
             'project_id' => $responseProperty->project_id,
+            'payment_method' => $responseProperty->payment_method,
             'title' => optional($content)->title ?? 'No Title',
             'slug' => optional($content)->slug ?? 'No Slug',
             'address' => optional($content)->address ?? 'No Address',
@@ -510,6 +514,7 @@ class PropertyController extends Controller
             ->firstOrFail();
 
         $rules = [
+            'payment_method' => 'required|in:monthly,quarterly,semi_annual,annual',
             'title' => 'required|max:255',
             'address' => 'required',
             'description' => 'required',
@@ -675,6 +680,7 @@ class PropertyController extends Controller
         $characteristics = optional($responseProperty->UserPropertyCharacteristics)->toArray() ?? [];
 
         $formattedProperty = array_merge([
+            'payment_method' => $responseProperty->payment_method,
             'title' => optional($content)->title ?? '',
             'slug' => optional($content)->slug ?? '',
             'address' => optional($content)->address ?? '',
