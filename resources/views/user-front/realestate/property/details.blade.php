@@ -200,6 +200,7 @@
 
                             </div>
                             @endif
+                            <!-- price of meter -->
 
                             @if ($propertyContent->meter_price)
                             <div class="product-price mb-10">
@@ -209,8 +210,17 @@
                             </div>
 
                             @endif
-                            <!-- price of meter -->
-                            <!--// price of meter -->
+
+                            <!-- payment_method -->
+                            @if ($propertyContent->payment_method)
+                            <div class="product-price mb-10">
+                                <span class="payment-method">
+                                    <span class="text-muted">
+                                    ({{ $keywords['Payment Method'] ?? __('Payment Method') }}: {{ __($propertyContent->payment_method) }})
+                                    </span>
+                                </span>
+                            </div>
+                            @endif
 
                             <a class="d-none" {{-- href="{{ route('frontend.agent.details', [getParam(), 'agentusername' => $user->username, 'admin' => 'true']) }}" --}}>
 
@@ -618,6 +628,15 @@
                                             <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg" alt="Currency Symbol" style="width: 15px; height: 15px; vertical-align: middle;">
                                     </div>
 
+                                    @endif
+                                    @if ($propertyContent->payment_method)
+                                    <div class="product-price mb-10">
+                                        <span class="payment-method">
+                                            <span class="text-muted">
+                                                ({{ $keywords['Payment Method'] ?? __('Payment Method') }}: {{ __($propertyContent->payment_method) }})
+                                            </span>
+                                        </span>
+                                    </div>
                                     @endif
                                     <ul class="product-info p-0 list-unstyled d-flex align-items-center">
                                         <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
