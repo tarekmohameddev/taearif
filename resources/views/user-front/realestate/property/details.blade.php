@@ -131,6 +131,9 @@
                             <div class="product-location icon-start">
                                 <i class="fal fa-map-marker-alt"></i>
                                 <span>
+                                {{ $propertyContent->address }} /
+                                </span>
+                                <span>
                                 {{$city->name_ar}} / {{$district->name_ar}}
                                 </span>
                             </div>
