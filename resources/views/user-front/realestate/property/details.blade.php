@@ -194,12 +194,17 @@
                             <div class="product-price mb-10">
                                 <span class="new-price">{{ ($keywords['Price'] ?? __('ThePrice')) . ':' }} {{ $propertyContent->price ? $propertyContent->price : $keywords['Negotiable'] ?? __('Negotiable') }}</span>
                                     <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg" alt="Currency Symbol" style="width: 22px; height: 22px; vertical-align: middle;">
-                                <span class="meter-price">
-                                    @if ($propertyContent->meter_price)
-                                    <span class="text-muted">({{ $keywords['Meter Price'] ?? __('Meter Price') }}: {{ $propertyContent->meter_price }})</span>
-                                    @else
-                                </span>
+
                             </div>
+                            @endif
+
+                            @if ($propertyContent->meter_price)
+                            <div class="product-price mb-10">
+                            <span class="meter-price">
+                                <span class="text-muted">({{ $keywords['Meter Price'] ?? __('Meter Price') }}: {{ $propertyContent->meter_price }})</span>
+                            </span>
+                            </div>
+
                             @endif
                             <!-- price of meter -->
                             <!--// price of meter -->
