@@ -193,7 +193,7 @@
                         </div>
                         <div class="col-md-4">
 
-                            @if ($propertyContent->price)
+                            @if ($propertyContent->price && $propertyContent->price != 0 && $propertyContent->price != 'null')
                             <div class="product-price mb-10">
                                 <span class="new-price">{{ ($keywords['Price'] ?? __('ThePrice')) . ':' }} {{ $propertyContent->price ? $propertyContent->price : $keywords['Negotiable'] ?? __('Negotiable') }}</span>
                                     <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg" alt="Currency Symbol" style="width: 22px; height: 22px; vertical-align: middle;">
@@ -202,7 +202,7 @@
                             @endif
                             <!-- price of meter -->
 
-                            @if ($propertyContent->meter_price)
+                            @if ($propertyContent->meter_price && $propertyContent->meter_price != 0 && $propertyContent->meter_price != 'null')
                             <div class="product-price mb-10">
                             <span class="meter-price">
                                 <span class="text-muted">({{ $keywords['Meter Price'] ?? __('Meter Price') }}: {{ $propertyContent->meter_price }})</span>
@@ -212,7 +212,7 @@
                             @endif
 
                             <!-- payment_method -->
-                            @if ($propertyContent->payment_method)
+                            @if ($propertyContent->payment_method && $propertyContent->payment_method != 'null')
                             <div class="product-price mb-10">
                                 <span class="payment-method">
                                     <span class="text-muted">
@@ -629,7 +629,7 @@
                                     </div>
 
                                     @endif
-                                    @if ($propertyContent->payment_method)
+                                    @if ($propertyContent->payment_method && $propertyContent->payment_method != 'null')
                                     <div class="product-price mb-10">
                                         <span class="payment-method">
                                             <span class="text-muted">
