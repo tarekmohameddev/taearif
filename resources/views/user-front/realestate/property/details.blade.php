@@ -128,15 +128,15 @@
                                 $city = $district ? $district->city : null;
                                 @endphp
 
-                            <div class="product-location icon-start">
-                                <i class="fal fa-map-marker-alt"></i>
-                                <span>
-                                {{ $propertyContent->address }} /
-                                </span>
-                                <span>
-                                {{$city->name_ar}} / {{$district->name_ar}}
-                                </span>
-                            </div>
+                                <div class="product-location icon-start">
+                                    <i class="fal fa-map-marker-alt"></i>
+                                    <span>
+                                        {{ $propertyContent->address }}
+                                        @if($city && $district)
+                                            / {{ $city->name_ar }} / {{ $district->name_ar }}
+                                        @endif
+                                    </span>
+                                </div>
 
 
                             <ul class="product-info p-0 list-unstyled d-flex align-items-center mt-10 mb-30">
