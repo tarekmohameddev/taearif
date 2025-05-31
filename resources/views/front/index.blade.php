@@ -991,7 +991,7 @@
                     <!-- Hero Content -->
                     <div class="flex flex-col items-center text-center">
                         <!-- Announcement Badge -->
-                        <a href="https://taearif.com/blog-details/%D8%A7%D9%86%D8%B7%D9%84%D9%82-%D9%81%D9%8A-%D8%B9%D8%A7%D9%84%D9%85-%D8%A7%D9%84%D8%AA%D8%B3%D9%88%D9%8A%D9%82-%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A-%D8%A7%D9%84%D8%AD%D8%B1-%D9%88%D8%A7%D8%B9%D8%B1%D9%81-%D9%83%D9%8A%D9%81%D9%8A%D8%A9-%D8%A7%D9%86%D8%B4%D8%A7%D8%A1-%D9%85%D9%88%D9%82%D8%B9-%D8%A7%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A-%D9%85%D8%AC%D8%A7%D9%86%D9%8A/97" class="mb-6 inline-flex items-center rounded-full border border-gray-100 bg-white/80 px-4 py-1.5 text-sm font-medium text-gray-800 shadow-sm backdrop-blur-sm transition-all duration-300 hover:shadow-md">
+                        <a href="https://taearif.com/blog-details/%D8%A7%D9%86%D8%B7%D9%84%D9%82-%D9%81%D9%8A-%D8%B9%D8%A7%D9%84%D9%85-%D8%A7%D9%84%D8%AA%D8%B3%D9%88%D9%8A%D9%82-%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A-%D8%A7%D9%84%D8%AD%D8%B1-%D9%88%D8%A7%D8%B9%D8%B1%D9%81-%D9%83%D9%8A%D9%81%D9%8A%D8%A9-%D8%A7%D9%86%D8%B4%D8%A7%D8%A1-%D9%85%D9%88%D9%82%D8%B9-%D8%A7%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A-%D9%85%D8%AC%D8%A7%D9%86%D9%8A/97" class="hidden mb-6 inline-flex items-center rounded-full border border-gray-100 bg-white/80 px-4 py-1.5 text-sm font-medium text-gray-800 shadow-sm backdrop-blur-sm transition-all duration-300 hover:shadow-md">
                             <span class="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">
                                 جديد
                             </span>
