@@ -153,7 +153,7 @@
 
                                 </li>
 
-                                <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
+                                <li class="icon-start d-none" data-tooltip="tooltip" data-bs-placement="top"
                                 title="{{ __('Area') }}">
                                     <i class="fal fa-vector-square"></i>
 
@@ -203,7 +203,7 @@
                                     style="width: 20px; height: 20px; vertical-align: middle; margin: 0 2px;">
                                     @if ($propertyContent->payment_method && $propertyContent->payment_method != 'null')
                                     <span class="new-price" style="font-weight: 600; font-size: 1.0em;">
-                                        / ({{ $keywords['Payment Method'] ?? __('Payment Method') }}: {{ __($propertyContent->payment_method) }})
+                                        / {{ __($propertyContent->payment_method) }}
                                     </span>
                                 @endif
                                 </span>
