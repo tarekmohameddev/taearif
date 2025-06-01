@@ -112,28 +112,13 @@ class PropertyController extends Controller
             // Helper function to copy image files
             $copyImageFile = function ($originalPath) {
                 if (empty($originalPath)) {
-                    \Log::warning("Empty image path given for copy.");
+                    // \Log::warning("Empty image path given for copy.");
                     return $originalPath;
                 }
 
-                $possiblePaths = [
-                    // Relative to storage/app/public (for Storage disk 'public')
-                    storage_path('app/public/' . $originalPath),
-                    // Relative to public/ folder (for direct public writes)
-                    public_path($originalPath),
-                ];
-
-                $sourceFile = null;
-
-                foreach ($possiblePaths as $path) {
-                    if (file_exists($path)) {
-                        $sourceFile = $path;
-                        break;
-                    }
-                }
-
-                if (!$sourceFile) {
-                    \Log::warning("Image not found for copy: " . $originalPath);
+                $sourcePath = public_path($originalPath);
+                if (!file_exists($sourcePath)) {
+                    // \Log::warning("Image not found in public/properties for copy: " . $originalPath);
                     return $originalPath;
                 }
 
@@ -145,22 +130,21 @@ class PropertyController extends Controller
                 $newFilename = $filename . '_copy_' . time() . '_' . uniqid() . '.' . $extension;
                 $newPath = $directory . '/' . $newFilename;
 
-                // Always store new images in storage/app/public/properties/...
-                $destination = storage_path('app/public/' . $newPath);
+                $destination = public_path($newPath);
 
                 // Ensure destination directory exists
                 if (!is_dir(dirname($destination))) {
                     mkdir(dirname($destination), 0777, true);
                 }
 
-                // Copy file
-                if (copy($sourceFile, $destination)) {
-                    return $newPath; // Save this in DB, since it is relative to 'public' disk
+                if (copy($sourcePath, $destination)) {
+                    return $newPath; // store in DB
                 } else {
-                    \Log::warning("Failed to copy $sourceFile to $destination");
+                    // \Log::warning("Failed to copy $sourcePath to $destination");
                     return $originalPath;
                 }
             };
+
 
 
             // Copy main images
