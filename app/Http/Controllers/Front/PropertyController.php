@@ -36,7 +36,7 @@ use App\Models\User\RealestateManagement\ApiUserCategory as Category;
 class PropertyController extends Controller
 {
 
-    public function getStatesByCity($website, $city_id)
+    public function getStatesByCity($city_id)
     {
         $states = UserDistrict::where('city_id', $city_id)
             ->select('id', 'name_ar', 'name_en')

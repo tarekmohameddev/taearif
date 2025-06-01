@@ -201,12 +201,12 @@
                                     {{ $keywords['Price'] ?? __('ThePrice') }}: {{ $propertyContent->price ?: $keywords['Negotiable'] ?? __('Negotiable') }}
                                     <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg"
                                     alt="Currency Symbol"
-                                    style="width: 20px; height: 20px; vertical-align: middle; margin: 0 2px;">
+                                    style="width: 12px; height: 15px; vertical-align: middle;">
                                     @if ($propertyContent->payment_method && $propertyContent->payment_method != 'null')
-                                    <span class="new-price" style="font-weight: 600; font-size: 1.0em;">
-                                        / {{ __($propertyContent->payment_method) }}
-                                    </span>
-                                @endif
+                                        <span class="new-price" style="font-weight: 600; font-size: 1.0em;">
+                                            / {{ __($propertyContent->payment_method) }}
+                                        </span>
+                                    @endif
                                 </span>
                             </div>
                             @endif
@@ -217,7 +217,13 @@
                             @if ($propertyContent->meter_price && $propertyContent->meter_price != 0 && $propertyContent->meter_price != 'null')
                             <div class="product-price mb-10">
                             <span class="meter-price">
-                                <span class="text-muted">({{ $keywords['Meter Price'] ?? __('Meter Price') }}: {{ $propertyContent->meter_price }})</span>
+                                <span class="text-muted">
+                                    ({{ $keywords['Meter Price'] ?? __('Meter Price') }}: {{ $propertyContent->meter_price }})
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg"
+                                    alt="Currency Symbol"
+                                    style="width: 12px; height: 15px; vertical-align: middle;">
+
+                                </span>
                             </span>
                             </div>
 
@@ -635,7 +641,9 @@
                                     <div class="product-price">
 
                                         <span class="new-price">{{ ($keywords['Price'] ?? __('Price')) . ':' }} {{ $property->price ? $property->price : $keywords['Negotiable'] ?? __('Negotiable') }}</span>
-                                            <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg" alt="Currency Symbol" style="width: 15px; height: 15px; vertical-align: middle;">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg"
+                                            alt="Currency Symbol"
+                                            style="width: 12px; height: 15px; vertical-align: middle;">
                                     </div>
 
                                     @endif

@@ -956,7 +956,7 @@
         $('#city_id').on('change', function () {
             var cityId = $(this).val();
             var username = "{{ $website }}";
-            var url = "/"+username+"/get-states/" + cityId;
+            var url = "/get-states/" + cityId;
             $('#state_id').html('<option value="">جاري التحميل...</option>');
             if (cityId) {
                 $.ajax({

@@ -137,6 +137,8 @@ Route::fallback(function () {
 //
 Route::get('/data', [TenantDashboardController::class, 'dashboard']);
 
+Route::get('/get-states/{city_id}', 'Front\PropertyController@getStatesByCity')->name('front.user.get_states');
+
 // onboarding steps
 
 // Onboarding Steps
@@ -1716,6 +1718,7 @@ Route::domain($domain)->group(function () {
         Route::post('/admin/contact-msg', 'Front\FrontendController@adminContactMessage')->name('front.admin.contact.message');
         Route::post('/realestate/deposit', 'Front\CustomerController@paydeposit')->name('user.pay.deposit');
 
+
         //checkout payment gateway routes
         Route::prefix('membership')->group(function () {
             Route::get('paypal/success', "Payment\PaypalController@successPayment")->name('membership.paypal.success');
@@ -1755,6 +1758,7 @@ Route::domain($domain)->group(function () {
             Route::get('/trial/success', 'Front\CheckoutController@trialSuccess')->name('membership.trial.success')->middleware('setlang');
         });
     });
+
 });
 
     $parsedUrl = parse_url(url()->current());
@@ -1799,7 +1803,6 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         Route::get('/state-cities', 'getStateCities')->name('front.user.get_state_cities');
         Route::get('/cities', 'getCities')->name('front.user.get_cities');
         Route::get('/categories', 'getCategories')->name('front.user.get_categories');
-        Route::get('/get-states/{city_id}', 'getStatesByCity')->name('front.user.get_states');
     });
 
     // Projects route
