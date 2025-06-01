@@ -169,7 +169,11 @@
                                 <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
                                     title="{{ __('Area') }}">
                                     <i class="fal fa-vector-square"></i>
-                                    <span>{{ $propertyContent->area }} {{ $keywords['Sqft'] ?? __('Sqft') }}</span>
+                                    <span>
+                                        {{ fmod($propertyContent->area, 1) == 0 ? number_format($propertyContent->area, 0) : number_format($propertyContent->area, 2) }}
+                                        {{ $keywords['Sqft'] ?? __('Sqft') }}
+                                    </span>
+
                                 </li>
                                 @endif
                                 @if ($propertyContent->beds)
