@@ -762,6 +762,19 @@ class PropertyController extends Controller
         ]);
     }
 
+    public function toggleStatus($id)
+    {
+        $property = Property::findOrFail($id);
+
+        $property->status = !$property->status;
+        $property->save();
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Property status updated successfully',
+            'data' => ['status' => $property->status]
+        ]);
+    }
+
     public function toggleFavorite($id)
     {
         $userId = Auth::id();
