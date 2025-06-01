@@ -218,10 +218,10 @@
                             <div class="product-price mb-10">
                             <span class="meter-price">
                                 <span class="text-muted">
-                                    ({{ $keywords['Meter Price'] ?? __('Meter Price') }}: {{ $propertyContent->meter_price }})
+                                    ({{ $keywords['Meter Price'] ?? __('Meter Price') }}: {{ $propertyContent->meter_price }}
                                     <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg"
                                     alt="Currency Symbol"
-                                    style="width: 12px; height: 15px; vertical-align: middle;">
+                                    style="width: 12px; height: 15px; vertical-align: middle;">)
 
                                 </span>
                             </span>
