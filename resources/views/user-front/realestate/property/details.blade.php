@@ -142,27 +142,24 @@
                             <ul class="product-info p-0 list-unstyled d-flex align-items-center mt-10 mb-30">
 
                                 <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
-                                title="{{ __('Area') }}">
+                                title="{{ __('Type') }}">
+                                    <span >
                                     <i class="fal fa-vector-square"></i>
-
-                                    <span > {{__('Property Type') }} </span>
-
-                                    @if($propertyContent->type ?? null)
-                                        <span > {{ __($propertyContent->type) }} </span>
-                                    @endif
-
+                                        @if($propertyContent->type ?? null)
+                                            {{ __($propertyContent->type) }}
+                                        @endif
+                                    </span>
                                 </li>
 
-                                <li class="icon-start d-none" data-tooltip="tooltip" data-bs-placement="top"
-                                title="{{ __('Area') }}">
-                                    <i class="fal fa-vector-square"></i>
+                                <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
+                                title="{{ __('Purpose') }}">
 
-                                    <span > {{__('Property purpose') }} </span>
-
-                                    @if($propertyContent->purpose ?? null)
-                                        <span > {{ __($propertyContent->purpose) }} </span>
-                                    @endif
-
+                                    <i class="fa-solid fa-handshake"></i>
+                                    <span >
+                                        @if($propertyContent->purpose ?? null)
+                                            {{ __($propertyContent->purpose) }}
+                                        @endif
+                                    </span>
                                 </li>
 
                                 @if ($propertyContent->area)

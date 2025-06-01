@@ -894,7 +894,7 @@
     "Package Details": "تفاصيل الحزمة",
     "Term": "شرط",
     "Purchase Type": "نوع الشراء",
-    "Type": "يكتب",
+    "Type": "نوع",
     "All Popups": "جميع النوافذ المنبثقة",
     "Only png, jpg, jpeg image is allowed": "يُسمح فقط بالصور png، jpg، jpeg",
     "Background Image": "صورة الغلاف",
@@ -2584,5 +2584,7 @@
     "residential": "سكني",
     "Meter Price": "سعر المتر",
     "monthly": "شهريا",
-    "Kitchen":"مطبخ"
+    "Kitchen":"مطبخ",
+    "Area": "المساحة"
+
 }
