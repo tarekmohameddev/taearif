@@ -22,6 +22,7 @@ class PropertyFilterService
         $query = Property::where([
                 ['user_properties.user_id', $tenantId],
                 ['user_properties.status', 1],
+                ['user_properties.featured', 1],
             ])
             ->join('user_property_contents', 'user_properties.id', '=', 'user_property_contents.property_id')
             ->leftJoin('user_cities', 'user_cities.id', '=', 'user_property_contents.city_id')

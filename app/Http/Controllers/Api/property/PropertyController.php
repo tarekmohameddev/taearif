@@ -32,6 +32,315 @@ class PropertyController extends Controller
 {
 
 
+    public function duplicate(Request $request, $propertyId)
+    {
+        $user = auth()->user();
+
+        // Check if user has active membership
+        $membership = Membership::where('user_id', $user->id)
+            ->where('status', 1)
+            ->orderBy('id', 'desc')
+            ->with('package')
+            ->first();
+
+        if (!$membership || !$membership->package) {
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'No active package found for the user.',
+            ], 403);
+        }
+
+        // Check property limit
+        $realEstateLimit = $membership->package->real_estate_limit_number;
+        $currentPropertyCount = Property::where('user_id', $user->id)->count();
+
+        if (!is_null($realEstateLimit) && $currentPropertyCount >= $realEstateLimit) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You have reached your property listing limit.',
+                'limit' => $realEstateLimit,
+                'used' => $currentPropertyCount
+            ], 403);
+        }
+
+        // Find the original property with all relations
+        $originalProperty = Property::where('id', $propertyId)
+            ->where('user_id', $user->id) // Ensure user owns the property
+            ->with([
+                'contents',
+                'galleryImages',
+                'proertyAmenities',
+                'UserPropertyCharacteristics',
+                'specifications'
+            ])
+            ->first();
+
+        if (!$originalProperty) {
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'Property not found or you do not have permission to duplicate this property.',
+            ], 404);
+        }
+
+        $defaultLanguage = Language::where('user_id', $user->id)
+            ->where('is_default', 1)
+            ->firstOrFail();
+
+        // Validation rules for optional overrides
+        $rules = [
+            'title' => 'nullable|max:255',
+            'address' => 'nullable',
+            'description' => 'nullable',
+            'price' => 'nullable|numeric',
+            'meter_price' => 'nullable|numeric',
+            'featured' => 'nullable|boolean',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'fail',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $duplicatedProperty = null;
+
+        DB::transaction(function () use ($request, $user, $defaultLanguage, $originalProperty, &$duplicatedProperty) {
+
+            // Helper function to copy image files
+            $copyImageFile = function ($originalPath) {
+                if (empty($originalPath)) {
+                    \Log::warning("Empty image path given for copy.");
+                    return $originalPath;
+                }
+
+                $possiblePaths = [
+                    // Relative to storage/app/public (for Storage disk 'public')
+                    storage_path('app/public/' . $originalPath),
+                    // Relative to public/ folder (for direct public writes)
+                    public_path($originalPath),
+                ];
+
+                $sourceFile = null;
+
+                foreach ($possiblePaths as $path) {
+                    if (file_exists($path)) {
+                        $sourceFile = $path;
+                        break;
+                    }
+                }
+
+                if (!$sourceFile) {
+                    \Log::warning("Image not found for copy: " . $originalPath);
+                    return $originalPath;
+                }
+
+                $pathInfo = pathinfo($originalPath);
+                $extension = $pathInfo['extension'] ?? '';
+                $filename = $pathInfo['filename'] ?? '';
+                $directory = $pathInfo['dirname'] ?? '';
+
+                $newFilename = $filename . '_copy_' . time() . '_' . uniqid() . '.' . $extension;
+                $newPath = $directory . '/' . $newFilename;
+
+                // Always store new images in storage/app/public/properties/...
+                $destination = storage_path('app/public/' . $newPath);
+
+                // Ensure destination directory exists
+                if (!is_dir(dirname($destination))) {
+                    mkdir(dirname($destination), 0777, true);
+                }
+
+                // Copy file
+                if (copy($sourceFile, $destination)) {
+                    return $newPath; // Save this in DB, since it is relative to 'public' disk
+                } else {
+                    \Log::warning("Failed to copy $sourceFile to $destination");
+                    return $originalPath;
+                }
+            };
+
+
+            // Copy main images
+            $newFeaturedImage = $copyImageFile($originalProperty->featured_image);
+            $newVideoImage = $copyImageFile($originalProperty->video_image);
+
+            // Copy floor planning images
+            $newFloorPlanningImages = null;
+            if ($originalProperty->floor_planning_image) {
+                $originalFloorPlans = $originalProperty->floor_planning_image; // $originalFloorPlans = json_decode($originalProperty->floor_planning_image, true); //
+                if (is_array($originalFloorPlans)) {
+                    $newFloorPlanningImages = [];
+                    foreach ($originalFloorPlans as $floorPlan) {
+                        $newFloorPlanningImages[] = $copyImageFile($floorPlan);
+                    }
+                }
+            }
+
+            // Prepare property data from original
+            $propertyData = [
+                'region_id' => $originalProperty->region_id,
+                'price' => $request->price ?? $originalProperty->price,
+                'meter_price' => $request->meter_price ?? $originalProperty->meter_price,
+                'purpose' => $originalProperty->purpose,
+                'type' => $originalProperty->type,
+                'beds' => $originalProperty->beds,
+                'bath' => $originalProperty->bath,
+                'area' => $originalProperty->area,
+                'video_url' => $originalProperty->video_url,
+                'status' => $originalProperty->status,
+                'latitude' => $originalProperty->latitude,
+                'longitude' => $originalProperty->longitude,
+                'features' => $originalProperty->features,
+                'category_id' => $originalProperty->category_id,
+                'project_id' => $originalProperty->project_id,
+                'city_id' => $originalProperty->city_id,
+                'state_id' => $originalProperty->state_id,
+                'payment_method' => $originalProperty->payment_method,
+                'facade_id' => $originalProperty->facade_id,
+                'length' => $originalProperty->length,
+                'width' => $originalProperty->width,
+                'street_width_north' => $originalProperty->street_width_north,
+                'street_width_south' => $originalProperty->street_width_south,
+                'street_width_east' => $originalProperty->street_width_east,
+                'street_width_west' => $originalProperty->street_width_west,
+                'building_age' => $originalProperty->building_age,
+                'rooms' => $originalProperty->rooms,
+                'bathrooms' => $originalProperty->bathrooms,
+                'floors' => $originalProperty->floors,
+                'floor_number' => $originalProperty->floor_number,
+                'driver_room' => $originalProperty->driver_room,
+                'maid_room' => $originalProperty->maid_room,
+                'dining_room' => $originalProperty->dining_room,
+                'living_room' => $originalProperty->living_room,
+                'majlis' => $originalProperty->majlis,
+                'storage_room' => $originalProperty->storage_room,
+                'basement' => $originalProperty->basement,
+                'swimming_pool' => $originalProperty->swimming_pool,
+                'kitchen' => $originalProperty->kitchen,
+                'balcony' => $originalProperty->balcony,
+                'garden' => $originalProperty->garden,
+                'annex' => $originalProperty->annex,
+                'elevator' => $originalProperty->elevator,
+                'private_parking' => $originalProperty->private_parking,
+            ];
+
+            // Create the duplicated property with copied images
+            $duplicatedProperty = Property::storeProperty(
+                $user->id,
+                $propertyData,
+                $newFeaturedImage,
+                $newFloorPlanningImages,
+                $newVideoImage,
+                $request->has('featured') ? $request->featured : $originalProperty->featured
+            );
+
+            // Duplicate property characteristics
+            if ($originalProperty->UserPropertyCharacteristics) {
+                $characteristics = $originalProperty->UserPropertyCharacteristics->toArray();
+                unset($characteristics['id'], $characteristics['created_at'], $characteristics['updated_at']);
+                $characteristics['property_id'] = $duplicatedProperty->id;
+                UserPropertyCharacteristic::create($characteristics);
+            }
+
+            // Duplicate gallery images with file copying
+            foreach ($originalProperty->galleryImages as $galleryImage) {
+                $newGalleryImagePath = $copyImageFile($galleryImage->image);
+                PropertySliderImg::storeSliderImage($user->id, $duplicatedProperty->id, $newGalleryImagePath);
+            }
+
+            // Duplicate amenities
+            foreach ($originalProperty->proertyAmenities as $amenity) {
+                PropertyAmenity::sotreAmenity($user->id, $duplicatedProperty->id, $amenity->amenity_id);
+            }
+
+            // Duplicate property content
+            $originalContent = $originalProperty->contents->first();
+            if ($originalContent) {
+                $contentRequest = [
+                    'language_id' => $defaultLanguage->id,
+                    'category_id' => $originalContent->category_id,
+                    'state_id' => $originalContent->state_id,
+                    'city_id' => $originalContent->city_id,
+                    'title' => $request->title ?? ($originalContent->title . ' (Copy)'),
+                    'slug' => Str::slug($request->title ?? ($originalContent->title . ' Copy')),
+                    'address' => $request->address ?? $originalContent->address,
+                    'description' => $request->description ?? $originalContent->description,
+                    'meta_keyword' => $originalContent->meta_keyword,
+                    'meta_description' => $originalContent->meta_description,
+                ];
+
+                PropertyContent::storePropertyContent($user->id, $duplicatedProperty->id, $contentRequest);
+            }
+
+            // Duplicate specifications
+            if ($originalProperty->specifications) {
+                foreach ($originalProperty->specifications as $spec) {
+                    $specData = [
+                        'language_id' => $defaultLanguage->id,
+                        'key' => $spec->key,
+                        'label' => $spec->label,
+                        'value' => $spec->value,
+                    ];
+                    PropertySpecification::storeSpecification($user->id, $duplicatedProperty->id, $specData);
+                }
+            }
+
+            $this->ensureUnitsMenuItemExists($user->id);
+        });
+
+        // Load the duplicated property with relations
+        $responseProperty = $duplicatedProperty->load([
+            'category',
+            'user',
+            'contents',
+            'galleryImages',
+            'proertyAmenities.amenity',
+            'UserPropertyCharacteristics',
+        ]);
+
+        $content = $responseProperty->contents->first();
+
+        $formattedProperty = [
+            'id' => $responseProperty->id,
+            'project_id' => $responseProperty->project_id,
+            'payment_method' => $responseProperty->payment_method,
+            'title' => optional($content)->title ?? 'No Title',
+            'slug' => optional($content)->slug ?? 'No Slug',
+            'address' => optional($content)->address ?? 'No Address',
+            'city_id' => optional($content)->city_id,
+            'state_id' => optional($content)->state_id,
+            'price' => $responseProperty->price,
+            'meter_price' => $responseProperty->meter_price,
+            'purpose' => $responseProperty->purpose,
+            'type' => $responseProperty->type,
+            'beds' => $responseProperty->beds,
+            'bath' => $responseProperty->bath,
+            'area' => $responseProperty->area,
+            'features' => $responseProperty->features,
+            'characteristics' => $responseProperty->UserPropertyCharacteristics ?? null,
+            'status' => (bool) $responseProperty->status,
+            'featured' => (bool) $responseProperty->featured,
+            'featured_image' => asset($responseProperty->featured_image),
+            'gallery' => $responseProperty->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
+            'description' => optional($content)->description ?? 'No Description',
+            'location' => [
+                'latitude' => $responseProperty->latitude,
+                'longitude' => $responseProperty->longitude,
+            ],
+            'created_at' => $responseProperty->created_at->toISOString(),
+            'updated_at' => $responseProperty->updated_at->toISOString(),
+        ];
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Property duplicated successfully',
+            'original_property_id' => $originalProperty->id,
+            'duplicated_property' => $formattedProperty
+        ], 201);
+    }
 
     public function properties_categories(Request $request)
     {
