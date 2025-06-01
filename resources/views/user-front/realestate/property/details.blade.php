@@ -198,7 +198,8 @@
                             @if ($propertyContent->price && $propertyContent->price != 0 && $propertyContent->price != 'null')
                             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px; direction: rtl;">
                                 <span class="new-price" style="font-weight: 600; font-size: 1.0em;">
-                                    {{ $keywords['Price'] ?? __('ThePrice') }}: {{ $propertyContent->price ?: $keywords['Negotiable'] ?? __('Negotiable') }}
+                                    {{ $keywords['Price'] ?? __('ThePrice') }}:
+                                     {{ fmod($propertyContent->price, 1) == 0 ? number_format($propertyContent->price, 0) : number_format($propertyContent->price, 2) }}
                                     <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg"
                                     alt="Currency Symbol"
                                     style="width: 12px; height: 15px; vertical-align: middle;">
@@ -218,7 +219,9 @@
                             <div class="product-price mb-10">
                             <span class="meter-price">
                                 <span class="text-muted">
-                                    ({{ $keywords['Meter Price'] ?? __('Meter Price') }}: {{ $propertyContent->meter_price }}
+                                    ({{ $keywords['Meter Price'] ?? __('Meter Price') }}:
+                                    {{ fmod($propertyContent->meter_price, 1) == 0 ? number_format($propertyContent->meter_price, 0) : number_format($propertyContent->meter_price, 2) }}
+
                                     <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg"
                                     alt="Currency Symbol"
                                     style="width: 12px; height: 15px; vertical-align: middle;">)
@@ -640,7 +643,9 @@
 
                                     <div class="product-price">
 
-                                        <span class="new-price">{{ ($keywords['Price'] ?? __('Price')) . ':' }} {{ $property->price ? $property->price : $keywords['Negotiable'] ?? __('Negotiable') }}</span>
+                                        <span class="new-price">{{ ($keywords['Price'] ?? __('Price')) . ':' }}
+                                            {{ fmod($propertyContent->price, 1) == 0 ? number_format($propertyContent->price, 0) : number_format($propertyContent->price, 2) }}
+                                        </span>
                                             <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg"
                                             alt="Currency Symbol"
                                             style="width: 12px; height: 15px; vertical-align: middle;">
@@ -660,7 +665,11 @@
                                         <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
                                             title="{{ $keywords['Area'] ?? __('Area') }}">
                                             <i class="fal fa-vector-square"></i>
-                                            <span>{{ $property->area }}</span>
+                                            <span>
+
+                                                {{ fmod($property->area, 1) == 0 ? number_format($property->area, 0) : number_format($property->area, 2) }}
+
+                                            </span>
                                         </li>
                                         @if ($property->type == 'residential')
                                         <li class="icon-start" data-tooltip="tooltip"
