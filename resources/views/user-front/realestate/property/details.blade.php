@@ -128,7 +128,7 @@
                                 $city = $district ? $district->city : null;
                                 @endphp
 
-                                <div class="product-location icon-start">
+                                <div class="product-location icon-start ">
                                     <i class="fal fa-map-marker-alt"></i>
                                     <span>
                                         {{ $propertyContent->address }}
@@ -141,25 +141,22 @@
 
                             <ul class="product-info p-0 list-unstyled d-flex align-items-center mt-10 mb-30">
 
-                                <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
-                                title="{{ __('Type') }}">
+                                @if($propertyContent->type ?? null)
+                                <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top" title="{{ __('Type') }}">
                                     <span >
-                                    <i class="fal fa-vector-square"></i>
-                                        @if($propertyContent->type ?? null)
+                                        <i class="fal fa-vector-square"></i>
                                             {{ __($propertyContent->type) }}
-                                        @endif
                                     </span>
                                 </li>
-
+                                @endif
+                                @if($propertyContent->purpose ?? null)
                                 <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top" title="{{ __('Purpose') }}">
-
-                                    <i class="fa-solid fa-handshake"></i>
                                     <span >
-                                        @if($propertyContent->purpose ?? null)
+                                        <i class="fa-solid fa-handshake"></i>
                                             {{ __($propertyContent->purpose) }}
-                                        @endif
                                     </span>
                                 </li>
+                                @endif
 
                                 @if ($propertyContent->area)
                                 <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
@@ -179,7 +176,6 @@
                                     <span>{{ $propertyContent->beds }}
                                         {{ $keywords['Beds'] ?? __('Beds') }}</span>
                                 </li>
-
                                 @endif
                                 @if ($propertyContent->bath)
                                 <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
@@ -693,8 +689,8 @@
                                                     </span>
                                                 </div>
                                                 @endif
-                                                <ul class="product-info p-0 list-unstyled d-flex align-items-center">
-                                                    <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
+                                                <ul class="product-info p-0 list-unstyled d-flex align-items-center ">
+                                                    <li class="icon-start " data-tooltip="tooltip" data-bs-placement="top"
                                                         title="{{ $keywords['Area'] ?? __('Area') }}">
                                                         <i class="fal fa-vector-square"></i>
                                                         <span>
