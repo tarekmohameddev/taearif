@@ -1048,7 +1048,7 @@ class FrontendController extends Controller
                 ->get() ?? collect([]);
 
             return view('user-front.home-page.home_twelve', $data);
-        } elseif ($userBs->theme == 'home13' || $userBs->theme == 'home14' || $userBs->theme == 'home15') {
+        } elseif ($userBs && $userBs->theme == 'home13' || $userBs->theme == 'home14' || $userBs->theme == 'home15') {
 
             $data['featured_properties'] = Property::where([['user_properties.status', 1], ['user_properties.featured', 1], ['user_properties.user_id', $user->id]])
                 ->leftJoin('user_property_contents', 'user_property_contents.property_id', 'user_properties.id')
@@ -1192,7 +1192,7 @@ class FrontendController extends Controller
             $data['min'] = intval($min);
             $data['max'] = intval($max);
             $data['website'] = $user->username;
-            if ($userBs->theme == 'home13') {
+            if ($userBs && $userBs->theme == 'home13') {
                 $data['heroStatic'] = User\HeroStatic::where('user_id', $user->id)
                     ->where('language_id', $userCurrentLang->id)
                     ->first();
