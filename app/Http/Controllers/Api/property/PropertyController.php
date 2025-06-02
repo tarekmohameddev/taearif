@@ -406,6 +406,7 @@ class PropertyController extends Controller
                 'featured' => (bool) $property->featured,
                 'created_at' => $property->created_at->toISOString(),
                 'updated_at' => $property->updated_at->toISOString(),
+                'payment_method' => $property->payment_method,
             ];
         });
 
