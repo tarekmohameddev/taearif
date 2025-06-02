@@ -77,8 +77,8 @@ class OnboardingController extends Controller
             $bss->favicon = $request->favicon;
             $bss->company_name = $request->title;
             $bss->industry_type = $request->category;
-            $bss->valLicense = $request->valLicense;
-            $bss->workingHours = $request->workingHours;
+            // $bss->valLicense = $request->valLicense;
+            // $bss->workingHours = $request->workingHours;
 
             $templateMapping = [
                 'realestate' => 'home13',
@@ -102,6 +102,7 @@ class OnboardingController extends Controller
                         'phone' => $user->phone,
                         'email' => $user->email,
                         'workingHours' => $request->workingHours,
+                        'valLicense' => $request->valLicense,
                         'showContactInfo' => true,
                         'showWorkingHours' => true,
                         'copyrightText' => '© ' . date('Y') . ' جميع الحقوق محفوظة',
