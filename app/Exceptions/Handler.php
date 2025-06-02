@@ -82,7 +82,7 @@ class Handler extends ExceptionHandler
                     $host = str_replace("www.", "", $host);
                     $hostArr = explode('.', $host);
                     $username = $hostArr[0];
-                    $user = User::where('username', $username);
+                    $user = User::where('username', $username)->first();
                     if ($user->count() > 0) {
                         $userBs = $user->first()->basic_setting;
                         $keywords = $this->userLocal($user);
@@ -104,7 +104,7 @@ class Handler extends ExceptionHandler
                                     ->orWhere('requested_domain', '=', str_replace("www.", "", $host));
                             });
                         // fetch the custom domain , if it matches 'with www.' URL or 'without www.' URL
-                    });
+                    })->first();
                     if ($user->count() > 0) {
                         $user = $user->first();
                         $userBs = $user->basic_setting;
