@@ -545,7 +545,6 @@
                                 @endforeach
                             </div>
                         @else
-                            {{-- optional fallback --}}
                         @endif
                     </div>
 
