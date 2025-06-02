@@ -82,12 +82,13 @@ class Handler extends ExceptionHandler
                     $host = str_replace("www.", "", $host);
                     $hostArr = explode('.', $host);
                     $username = $hostArr[0];
-                    $user = User::where('username', $username)->first();
-                    if ($user) {
-                        $userBs = $user->basic_setting;
+                    $user = User::where('username', $username);
+                    if ($user->count() > 0) {
+                        $userBs = $user->first()->basic_setting;
                         $keywords = $this->userLocal($user);
                         return response()->view('errors.user-404', ['userBs' => $userBs, 'keywords' => $keywords], 404);
-                    } else {
+                    }
+                } else {
                     $host = Request::getHost();
                     // Always include 'www.' at the begining of host
                     if (substr($host, 0, 4) == 'www.') {
