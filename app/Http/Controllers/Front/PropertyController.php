@@ -41,6 +41,7 @@ class PropertyController extends Controller
         $states = UserDistrict::where('city_id', $city_id)
             ->select('id', 'name_ar', 'name_en')
             ->get();
+            Log::info('States retrieved for city ID: ' . $city_id);
         return response()->json($states);
     }
 
@@ -48,6 +49,7 @@ class PropertyController extends Controller
     public function index($website, Request $request)
     {
         $tenantId = getUser()->id;
+        Log::info('public function index user-front.realestate.property.index: ');
 
         $userCurrentLang = session()->has('user_lang')
             ? Language::where('code', session('user_lang'))->where('user_id', $tenantId)->first()

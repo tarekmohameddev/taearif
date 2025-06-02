@@ -1186,7 +1186,7 @@ class FrontendController extends Controller
             $data['all_proeprty_categories'] = ApiUserCategory::where([['is_active', 1]])->get();
 
             // dd($data['all_proeprty_categories']);
-
+            Log::info('user-front.realestate');
             $min = Property::where([['status', 1], ['user_id', $user->id]])->min('price');
             $max = Property::where([['status', 1], ['user_id', $user->id]])->max('price');
             $data['min'] = intval($min);
