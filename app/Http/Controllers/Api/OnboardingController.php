@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\User\RealestateManagement\Amenity;
 use App\Models\User\CounterInformation;
 use App\Models\Api\GeneralSetting;
+use App\Models\Api\FooterSetting;
 
 
 class OnboardingController extends Controller
@@ -52,6 +53,8 @@ class OnboardingController extends Controller
             'colors.accent' => 'required|string|max:7',
             'logo' => 'nullable|string',
             'favicon' => 'nullable|string',
+            'valLicense' => 'nullable|string',
+            'workingHours' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -74,6 +77,8 @@ class OnboardingController extends Controller
             $bss->favicon = $request->favicon;
             $bss->company_name = $request->title;
             $bss->industry_type = $request->category;
+            $bss->valLicense = $request->valLicense;
+            $bss->workingHours = $request->workingHours;
 
             $templateMapping = [
                 'realestate' => 'home13',
@@ -86,6 +91,60 @@ class OnboardingController extends Controller
             $logoFilename = null;
             $faviconFilename = null;
             $bss->save();
+
+            //
+            FooterSetting::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'general' => [
+                        'companyName' => $request->title,
+                        'address' => $request->address,
+                        'phone' => $user->phone,
+                        'email' => $user->email,
+                        'workingHours' => $request->workingHours,
+                        'showContactInfo' => true,
+                        'showWorkingHours' => true,
+                        'copyrightText' => '© ' . date('Y') . ' جميع الحقوق محفوظة',
+                        'showCopyright' => true,
+                    ],
+                    'social' => [
+                        ['id' => '1', 'platform' => 'facebook', 'url' => 'https://facebook.com/', 'enabled' => true],
+                        ['id' => '2', 'platform' => 'twitter', 'url' => 'https://twitter.com/', 'enabled' => true],
+                        ['id' => '3', 'platform' => 'instagram', 'url' => 'https://instagram.com/', 'enabled' => true],
+                    ],
+                    'columns' => [
+                        [
+                            'id' => '1',
+                            'title' => 'روابط سريعة',
+                            'links' => [
+                                ['id' => '1-1', 'text' => 'الرئيسية', 'url' => '/'],
+                                ['id' => '1-2', 'text' => 'من نحن', 'url' => '/about'],
+                                ['id' => '1-3', 'text' => 'خدماتنا', 'url' => '/services'],
+                                ['id' => '1-4', 'text' => 'اتصل بنا', 'url' => '/contact'],
+                            ],
+                            'enabled' => true,
+                        ]
+                    ],
+                    'newsletter' => [
+                        'enabled' => true,
+                        'title' => 'اشترك في نشرتنا البريدية',
+                        'description' => 'اشترك للحصول على آخر الأخبار والعروض',
+                        'buttonText' => 'اشتراك',
+                        'placeholderText' => 'أدخل بريدك الإلكتروني',
+                    ],
+                    'style' => [
+                        'layout' => 'full-width',
+                        'backgroundColor' => '#1f2937',
+                        'textColor' => '#ffffff',
+                        'accentColor' => $request->colors['accent'],
+                        'columns' => 4,
+                        'showSocialIcons' => true,
+                        'socialIconsPosition' => 'top',
+                    ],
+                    'status' => true,
+                ]
+            );
+            //
 
             if ($request->category == 'realestate') {
                 $this->updateUserMenu($user->id, $lang->id);
@@ -108,6 +167,8 @@ class OnboardingController extends Controller
                     'logo'      => $request->logo,
                 ]
             );
+
+            $this->updateUserFooterText($user->id, $lang->id, basename($request->logo));
 
             return response()->json([
                 'status' => 'success',

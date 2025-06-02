@@ -78,6 +78,8 @@ class BasicSetting extends Model
         'short_description',
         'industry_type',
         'company_name',
+        'valLicense',
+        'workingHours',
     ];
 
 

@@ -123,7 +123,7 @@
                                 <a href="#">{{ $propertyContent->title }}</a>
                             </h3>
 
-                            @php
+                                @php
                                 $district = App\Models\User\UserDistrict::find($propertyContent->state_id);
                                 $city = $district ? $district->city : null;
                                 @endphp
@@ -151,8 +151,7 @@
                                     </span>
                                 </li>
 
-                                <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
-                                title="{{ __('Purpose') }}">
+                                <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top" title="{{ __('Purpose') }}">
 
                                     <i class="fa-solid fa-handshake"></i>
                                     <span >
@@ -591,6 +590,7 @@
 
                             <input type="hidden" name="user_id" value="{{ $user->id }}">
                             <input type="hidden" name="property_id" value="{{ $propertyContent->propertyId }}">
+
                             <div class="form-group mb-20">
                                 <input type="text" class="form-control" name="name"
                                     placeholder="{{ $keywords['Name'] ?? __('Name') }}*" required
@@ -633,9 +633,7 @@
                                             @enderror
                                         </div>
                                     @endif --}}
-                        <button type="submit" class="btn btn-md btn-primary w-100">{{ $keywords['Send message'] ?? __('Send message') }}</button>
-
-
+                            <button type="submit" class="btn btn-md btn-primary w-100">{{ $keywords['Send message'] ?? __('Send message') }}</button>
                         </form>
                     </div>
                 {{-- <x-tenant.frontend.agentContact :agent="$agent" :agentContact='false' :user="$user" :propertyContent="$propertyContent" /> --}}
