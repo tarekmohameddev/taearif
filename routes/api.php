@@ -114,6 +114,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/properties', [PropertyController::class, 'index']);
     Route::get('/properties/categories', [PropertyController::class, 'properties_categories']);
+    Route::get('/property-faqs', [PropertyController::class, 'faqs']); // Get FAQs for a property
     Route::get('/properties/{id}', [PropertyController::class, 'show']); // Get a single property
     Route::post('/properties', [PropertyController::class, 'store']);
     Route::post('/properties/{id}', [PropertyController::class, 'update']);
@@ -123,6 +124,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/properties/{id}/toggle-favorite', [PropertyController::class, 'toggleFavorite']);
 
     Route::post('/properties/{propertyId}/duplicate', [PropertyController::class, 'duplicate']); // Duplicate a property
+    // faqs
 
     Route::get('/property/facades', [UserFacadeController::class, 'index']);
 

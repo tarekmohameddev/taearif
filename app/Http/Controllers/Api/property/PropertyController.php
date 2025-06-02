@@ -32,6 +32,7 @@ class PropertyController extends Controller
 {
 
 
+
     public function duplicate(Request $request, $propertyId)
     {
         $user = auth()->user();
@@ -326,6 +327,42 @@ class PropertyController extends Controller
         ], 201);
     }
 
+    public function faqs(Request $request)
+    {
+        // $faqs = PropertyFaq::with('property')->get();
+        Log::info('Fetching FAQs for properties');
+        $faqs = [
+            "suggestedFaqs" => [
+                [
+                    "question" => "متى يمكنني معاينة هذا العقار؟",
+                    "priority" => 1
+                ],
+                [
+                    "question" => "هل العقار مفروش؟",
+                    "priority" => 2
+                ],
+                [
+                    "question" => "ما هي سياسة الحيوانات الأليفة؟",
+                    "priority" => 3
+                ],
+                [
+                    "question" => "هل تتوفر مواقف للسيارات؟",
+                    "priority" => 4
+                ],
+                [
+                    "question" => "هل يوجد بواب أو حارس أمن؟",
+                    "priority" => 5
+                ]
+            ]
+        ];
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $faqs
+        ]);
+
+    }
+
     public function properties_categories(Request $request)
     {
         $categories = ApiUserCategory::where('is_active', true)
@@ -511,13 +548,8 @@ class PropertyController extends Controller
             'featured' => 'nullable|boolean',
             'amenities' => 'nullable|array',
             'type' => 'nullable',
-            // 'transaction_type' => 'nullable',
+            'faqs' => 'nullable|array',
             'category_id' => 'nullable|integer',
-            // 'specifications' => 'nullable|array',
-            // 'specifications.*.label' => 'required_with:specifications|string',
-            // 'specifications.*.value' => 'required_with:specifications|string',
-
-            // Property Characteristics
             'facade_id' => 'nullable|numeric',
             'length' => 'nullable|numeric',
             'width' => 'nullable|numeric',
@@ -593,6 +625,7 @@ class PropertyController extends Controller
                 'city_id',
                 'state_id',
                 'payment_method',
+                'faqs',
 
                 "facade_id",
                 "length",
@@ -753,6 +786,8 @@ class PropertyController extends Controller
             ],
             'created_at' => $responseProperty->created_at->toISOString(),
             'updated_at' => $responseProperty->updated_at->toISOString(),
+            'category_id' => $responseProperty->category_id,
+            'faqs' => $responseProperty->faqs ?? [],
         ];
 
         return response()->json([
@@ -865,6 +900,7 @@ class PropertyController extends Controller
             'private_parking' => 'nullable|integer',
             'size' => 'nullable|numeric',
             'type' => 'nullable',
+            'faqs' => 'nullable|array',
             'video_url' => 'nullable|string'
         ];
 
@@ -1005,6 +1041,7 @@ class PropertyController extends Controller
             'state_id' => optional($content)->state_id,
             'category_id' => $responseProperty->category_id,
             'size' => $responseProperty->size ?? null,
+            'faqs' => $responseProperty->faqs ?? [],
         ], $characteristics);
 
         return response()->json([

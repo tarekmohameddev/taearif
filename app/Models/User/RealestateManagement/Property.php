@@ -21,6 +21,7 @@ class Property extends Model
     protected $casts = [
         'floor_planning_image' => 'array',
         'features' => 'array',
+        'faqs' => 'array',
     ];
 
 
@@ -43,6 +44,7 @@ class Property extends Model
         'status',
         'featured',
         'features',
+        'faqs',
         'latitude',
         'longitude',
         'project_id',
@@ -50,7 +52,13 @@ class Property extends Model
 
     ];
 
-
+    public function displayFaqs(): array
+    {
+        return collect($this->faqs ?? [])
+               ->where('displayOnPage', true)
+               ->values()
+               ->all();
+    }
 
     public function user()
     {
@@ -93,6 +101,7 @@ class Property extends Model
             'longitude' => $request['longitude'],
             'category_id' => $request['category_id'] ?? $defaultCategory->id,
             'payment_method' => $request['payment_method'] ?? null,
+            'faqs' => $request['faqs'] ?? [],
         ]);
     }
 
@@ -119,6 +128,7 @@ class Property extends Model
             'longitude' => $requestData['longitude'] ?? null,
             'category_id' => $requestData['category_id'] ?? $this->category_id,
             'payment_method' => $requestData['payment_method'] ?? $this->payment_method  ?? null,
+            'faqs' => $requestData['faqs'] ?? $this->faqs,
 
         ]);
     }
