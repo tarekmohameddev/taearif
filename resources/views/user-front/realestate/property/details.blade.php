@@ -515,6 +515,40 @@
                         </div>
                     </div>
                     @endif
+
+                    <div class="product-video mb-40">
+                        <!-- faqs -->
+                        @if($propertyContent->displayFaqs())
+                            <h3 class="mb-3">{{ $keywords['FAQs'] ?? __('FAQs') }}</h3>
+
+                            <div class="accordion" id="faqAccordion">
+                                @foreach($propertyContent->displayFaqs() as $i => $faq)
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="heading{{ $i }}">
+                                            <button class="accordion-button collapsed"
+                                                    type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target="#collapse{{ $i }}"
+                                                    aria-expanded="false">
+                                                {{ $faq['question'] }}
+                                            </button>
+                                        </h2>
+
+                                        <div id="collapse{{ $i }}"
+                                            class="accordion-collapse collapse"
+                                            data-bs-parent="#faqAccordion">
+                                            <div class="accordion-body">
+                                                {{ $faq['answer'] }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            {{-- optional fallback --}}
+                        @endif
+                    </div>
+
                     {{-- @if (!empty(showAd(3)))
                             <div class="text-center mb-3 mt-3">
                                 {!! showAd(3) !!}
@@ -600,100 +634,98 @@
                                             @enderror
                                         </div>
                                     @endif --}}
-                        <button type="submit"
-                            class="btn btn-md btn-primary w-100">{{ $keywords['Send message'] ?? __('Send message') }}</button>
+                        <button type="submit" class="btn btn-md btn-primary w-100">{{ $keywords['Send message'] ?? __('Send message') }}</button>
 
 
                         </form>
                     </div>
-                {{-- <x-tenant.frontend.agentContact :agent="$agent" :agentContact='false' :user="$user"
-                                :propertyContent="$propertyContent" /> --}}
+                {{-- <x-tenant.frontend.agentContact :agent="$agent" :agentContact='false' :user="$user" :propertyContent="$propertyContent" /> --}}
 
-                <div class="widget widget-recent radius-md mb-30 ">
-                    <h3 class="title">
-                        <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#products" aria-expanded="true" aria-controls="products">
-                            {{ $keywords['Related'] ?? __('Related') }}
-                        </button>
-                    </h3>
-                    <div id="products" class="collapse show">
-                        <div class="accordion-body p-0">
-                            @foreach ($relatedProperty as $property)
-                            <div class="product-default product-inline mt-20">
-                                <figure class="product-img">
-                                    <a href="{{ route('front.user.property.details', [getParam(), 'slug' => $property->slug]) }}"
-                                        class="lazy-container ratio ratio-1-1 radius-md">
-                                        <img class="lazyload"
-                                            data-src="{{ asset($property->featured_image) }}"
-                                            src="{{ asset($property->featured_image) }}">
-                                    </a>
-                                </figure>
-                                <div class="product-details">
-                                    <h6 class="product-title"><a
-                                            href="{{ route('front.user.property.details', [getParam(), 'slug' => $property->slug]) }}">{{ $property->title }}</a>
-                                    </h6>
-                                    <span class="product-location icon-start">
-                                        <i class="fal fa-map-marker-alt"></i>
-                                        {{ $property->city_name }}
-                                        {{ $userBs->property_state_status == 1 && $property->state_name != null ? ', ' . $property->state_name : '' }}
-                                        {{ $userBs->property_country_status == 1 && $property->country_name != null ? ', ' . $property->country_name : '' }}
-                                    </span>
+                            <div class="widget widget-recent radius-md mb-30 ">
+                                <h3 class="title">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#products" aria-expanded="true" aria-controls="products">
+                                        {{ $keywords['Related'] ?? __('Related') }}
+                                    </button>
+                                </h3>
+                                <div id="products" class="collapse show">
+                                    <div class="accordion-body p-0">
+                                        @foreach ($relatedProperty as $property)
+                                        <div class="product-default product-inline mt-20">
+                                            <figure class="product-img">
+                                                <a href="{{ route('front.user.property.details', [getParam(), 'slug' => $property->slug]) }}"
+                                                    class="lazy-container ratio ratio-1-1 radius-md">
+                                                    <img class="lazyload"
+                                                        data-src="{{ asset($property->featured_image) }}"
+                                                        src="{{ asset($property->featured_image) }}">
+                                                </a>
+                                            </figure>
+                                            <div class="product-details">
+                                                <h6 class="product-title"><a
+                                                        href="{{ route('front.user.property.details', [getParam(), 'slug' => $property->slug]) }}">{{ $property->title }}</a>
+                                                </h6>
+                                                <span class="product-location icon-start">
+                                                    <i class="fal fa-map-marker-alt"></i>
+                                                    {{ $property->city_name }}
+                                                    {{ $userBs->property_state_status == 1 && $property->state_name != null ? ', ' . $property->state_name : '' }}
+                                                    {{ $userBs->property_country_status == 1 && $property->country_name != null ? ', ' . $property->country_name : '' }}
+                                                </span>
 
-                                    @if (!empty($property->price))
+                                                @if (!empty($property->price))
 
-                                    <div class="product-price">
+                                                <div class="product-price">
 
-                                        <span class="new-price">{{ ($keywords['Price'] ?? __('Price')) . ':' }}
-                                            {{ fmod($propertyContent->price, 1) == 0 ? number_format($propertyContent->price, 0) : number_format($propertyContent->price, 2) }}
-                                        </span>
-                                            <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg"
-                                            alt="Currency Symbol"
-                                            style="width: 12px; height: 15px; vertical-align: middle;">
+                                                    <span class="new-price">{{ ($keywords['Price'] ?? __('Price')) . ':' }}
+                                                        {{ fmod($propertyContent->price, 1) == 0 ? number_format($propertyContent->price, 0) : number_format($propertyContent->price, 2) }}
+                                                    </span>
+                                                        <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg"
+                                                        alt="Currency Symbol"
+                                                        style="width: 12px; height: 15px; vertical-align: middle;">
+                                                </div>
+
+                                                @endif
+                                                @if ($propertyContent->payment_method && $propertyContent->payment_method != 'null')
+                                                <div class="product-price mb-10">
+                                                    <span class="payment-method">
+                                                        <span class="text-muted">
+                                                            ({{ $keywords['Payment Method'] ?? __('Payment Method') }}: {{ __($propertyContent->payment_method) }})
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                                @endif
+                                                <ul class="product-info p-0 list-unstyled d-flex align-items-center">
+                                                    <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
+                                                        title="{{ $keywords['Area'] ?? __('Area') }}">
+                                                        <i class="fal fa-vector-square"></i>
+                                                        <span>
+
+                                                            {{ fmod($property->area, 1) == 0 ? number_format($property->area, 0) : number_format($property->area, 2) }}
+
+                                                        </span>
+                                                    </li>
+                                                    @if ($property->type == 'residential')
+                                                    <li class="icon-start" data-tooltip="tooltip"
+                                                        data-bs-placement="top"
+                                                        title="{{ $keywords['Bed'] ?? __('Bed') }}">
+                                                        <i class="fal fa-bed"></i>
+                                                        <span>{{ $property->beds }} </span>
+                                                    </li>
+                                                    <li class="icon-start" data-tooltip="tooltip"
+                                                        data-bs-placement="top"
+                                                        title="{{ $keywords['Bath'] ?? __('Bath') }}">
+                                                        <i class="fal fa-bath"></i>
+                                                        <span>{{ $property->bath }} </span>
+                                                    </li>
+                                                    @endif
+
+                                                </ul>
+                                            </div>
+                                        </div><!-- product-default -->
+                                        @endforeach
                                     </div>
-
-                                    @endif
-                                    @if ($propertyContent->payment_method && $propertyContent->payment_method != 'null')
-                                    <div class="product-price mb-10">
-                                        <span class="payment-method">
-                                            <span class="text-muted">
-                                                ({{ $keywords['Payment Method'] ?? __('Payment Method') }}: {{ __($propertyContent->payment_method) }})
-                                            </span>
-                                        </span>
-                                    </div>
-                                    @endif
-                                    <ul class="product-info p-0 list-unstyled d-flex align-items-center">
-                                        <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top"
-                                            title="{{ $keywords['Area'] ?? __('Area') }}">
-                                            <i class="fal fa-vector-square"></i>
-                                            <span>
-
-                                                {{ fmod($property->area, 1) == 0 ? number_format($property->area, 0) : number_format($property->area, 2) }}
-
-                                            </span>
-                                        </li>
-                                        @if ($property->type == 'residential')
-                                        <li class="icon-start" data-tooltip="tooltip"
-                                            data-bs-placement="top"
-                                            title="{{ $keywords['Bed'] ?? __('Bed') }}">
-                                            <i class="fal fa-bed"></i>
-                                            <span>{{ $property->beds }} </span>
-                                        </li>
-                                        <li class="icon-start" data-tooltip="tooltip"
-                                            data-bs-placement="top"
-                                            title="{{ $keywords['Bath'] ?? __('Bath') }}">
-                                            <i class="fal fa-bath"></i>
-                                            <span>{{ $property->bath }} </span>
-                                        </li>
-                                        @endif
-
-                                    </ul>
                                 </div>
-                            </div><!-- product-default -->
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-                {{-- @if (!empty(showAd(2)))
+                            </div>
+                        {{-- @if (!empty(showAd(2)))
                             <div class="text-center mb-3 mt-3">
                                 {!! showAd(2) !!}
                             </div>

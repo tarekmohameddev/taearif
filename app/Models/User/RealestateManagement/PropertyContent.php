@@ -40,6 +40,14 @@ class PropertyContent extends Model
         'meta_description',
     ];
 
+    public function displayFaqs(): array
+    {
+        return $this->property ? $this->property->displayFaqs() : [];
+    }
+    public function displayFeatures(): array
+    {
+        return $this->property ? $this->property->displayFeatures() : [];
+    }
     public function slug(): Attribute
     {
         return Attribute::make(

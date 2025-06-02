@@ -59,6 +59,10 @@ class Property extends Model
                ->values()
                ->all();
     }
+    public function getFaqsAttribute($value)
+    {
+        return $value ? json_decode($value, true) : [];
+    }
 
     public function user()
     {
