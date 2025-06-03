@@ -47,6 +47,9 @@ use App\Http\Controllers\Api\AnalyticsDashboardController;
 //     return $request->user();
 // });
 
+Route::get('/auth/google/url', [AuthController::class, 'getGoogleAuthUrl'])->name('auth.google.url');
+Route::post('/auth/google/login', [AuthController::class, 'googleLogin'])->name('auth.google.login');
+
 // Auth routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'getUserProfile']);

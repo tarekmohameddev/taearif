@@ -8,25 +8,39 @@ use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Session;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class GoogleAuthController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('guest:web'); // Use 'web' guard to match LoginController
-        $this->middleware('setlang'); // Reuse setlang middleware from LoginController
+        $this->middleware('setlang'); // Keep setlang middleware for consistency
     }
 
-    public function redirectToGoogle()
+    public function getGoogleAuthUrl()
     {
-        return Socialite::driver('google')->redirect();
+        $url = Socialite::driver('google')
+            ->stateless() // Use stateless for API
+            ->redirect()
+            ->getTargetUrl();
+
+        return response()->json([
+            'url' => $url,
+        ], 200);
     }
 
-    public function handleGoogleCallback()
+    public function handleGoogleCallback(Request $request)
     {
         try {
-            $googleUser = Socialite::driver('google')->stateless()->user();
+            // Validate the code from Google
+            $request->validate([
+                'code' => 'required|string',
+            ]);
+
+            // Get Google user using the authorization code
+            $googleUser = Socialite::driver('google')->stateless()->userFromToken($request->code);
+
+            // Find or create user
             $user = User::where('google_id', $googleUser->id)->orWhere('email', $googleUser->email)->first();
 
             if ($user) {
@@ -34,12 +48,12 @@ class GoogleAuthController extends Controller
                 if (!$user->google_id) {
                     $user->update(['google_id' => $googleUser->id]);
                 }
-                // Check email verification and status
+                // Check email verification and status (matching LoginController)
                 if ($user->email_verified == 0) {
-                    return redirect()->route('user.login')->with('err', __('Your Email is not Verified!'));
+                    return response()->json(['error' => __('Your Email is not Verified!')], 403);
                 }
                 if ($user->status == 0) {
-                    return redirect()->route('user.login')->with('err', __('Your account has been banned'));
+                    return response()->json(['error' => __('Your account has been banned')], 403);
                 }
             } else {
                 // Create a new user
@@ -49,23 +63,28 @@ class GoogleAuthController extends Controller
                     'google_id' => $googleUser->id,
                     'password' => Hash::make(uniqid()), // Random password
                     'email_verified' => 1, // Google accounts are typically verified
-                    'status' => 1, // Set default status (adjust based on your logic)
+                    'status' => 1, // Adjust based on your logic
                 ]);
             }
 
-            // Log in using the 'web' guard to match LoginController
+            // Log in the user using the 'web' guard
             Auth::guard('web')->login($user, true);
 
-            // Handle redirect based on session link (mimicking LoginController)
-            if (Session::has('link')) {
-                $redirectUrl = Session::get('link');
-                Session::forget('link');
-                return redirect($redirectUrl);
-            }
+            // Create a Sanctum token
+            $token = $user->createToken('auth_token')->plainTextToken;
 
-            return redirect()->route('user-dashboard');
+            // Return token and user data
+            return response()->json([
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ],
+            ], 200);
         } catch (\Exception $e) {
-            return redirect()->route('user.login')->with('err', __('Unable to login with Google. Please try again.'));
+            return response()->json(['error' => __('Unable to login with Google. Please try again.')], 500);
         }
     }
 }

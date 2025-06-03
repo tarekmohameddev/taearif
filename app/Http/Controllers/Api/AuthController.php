@@ -45,10 +45,180 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Helpers\UserPermissionHelper;
 use App\Models\User\RealestateManagement\Category;
 use App\Http\Controllers\Api\OnboardingController;
+use Laravel\Socialite\Facades\Socialite;
 
 
 class AuthController extends Controller
 {
+
+
+
+    public function getGoogleAuthUrl()
+    {
+        try {
+            $url = Socialite::driver('google')
+                ->stateless() // Use stateless for API
+                ->redirect()
+                ->getTargetUrl();
+
+            return response()->json([
+                'status' => 'success',
+                'url' => $url,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Unable to generate Google auth URL.'),
+            ], 500);
+        }
+    }
+
+    public function googleLogin(Request $request)
+    {
+        try {
+            // Validate reCAPTCHA (matching your login/register methods)
+            $recaptchaValidator = Validator::make($request->only('recaptcha_token'), [
+                'recaptcha_token' => ['required', new Recaptcha],
+            ]);
+            if ($recaptchaValidator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'reCAPTCHA failed',
+                    'errors' => $recaptchaValidator->errors()
+                ], 422);
+            }
+
+            // Validate Google authorization code
+            $request->validate([
+                'code' => 'required|string',
+            ]);
+
+            // Get Google user
+            $googleUser = Socialite::driver('google')->stateless()->userFromToken($request->code);
+
+            // Find or create user
+            $user = User::where('google_id', $googleUser->id)->orWhere('email', $googleUser->email)->first();
+
+            if ($user) {
+                // Update google_id if not set
+                if (!$user->google_id) {
+                    $user->update(['google_id' => $googleUser->id]);
+                }
+                // Check status (matching LoginController)
+                if ($user->status == 0) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => __('Your account has been banned'),
+                    ], 403);
+                }
+            } else {
+                // Prepare data for create_website
+                $requestData = [
+                    'email' => $googleUser->email,
+                    'username' => $this->generateUniqueUsername($googleUser->name),
+                    'password' => uniqid(), // Random password
+                    'first_name' => $googleUser->name ?? 'User',
+                    'last_name' => '',
+                    'company_name' => 'N/A',
+                    'country' => 'N/A',
+                    'address' => 'N/A',
+                    'city' => 'N/A',
+                    'district' => 'N/A',
+                    'status' => 1,
+                    'mode' => 'online',
+                    'receipt_name' => null,
+                    'price' => 0,
+                    'is_receipt' => 0,
+                    'package_type' => 'trial',
+                    'package_id' => 16,
+                    'trial_days' => 300,
+                    'start_date' => '15-03-2025',
+                    'expire_date' => '09-01-2026',
+                    'payment_method' => 'google',
+                ];
+
+                // Create user using create_website
+                $transaction_id = UserPermissionHelper::uniqidReal(8);
+                $transaction_details = 'Google Login';
+                $price = 0.00;
+                $currentLang = session()->has('lang') ?
+                    Language::where('code', session()->get('lang'))->first() :
+                    Language::where('is_default', 1)->first();
+                $be = $currentLang->basic_extended;
+
+                $user = $this->create_website($requestData, $transaction_id, $transaction_details, $price, $be, $requestData['password']);
+                $user->update(['google_id' => $googleUser->id]);
+
+                // Apply onboarding defaults
+                app(\App\Services\OnboardingService::class)->applyDefaultsFor($user);
+
+                // Insert default categories
+                $categories = \DB::table('api_user_categories')->get();
+                foreach ($categories as $category) {
+                    \DB::table('api_user_category_settings')->insert([
+                        'user_id' => $user->id,
+                        'category_id' => $category->id,
+                        'is_active' => 1,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                // Send WhatsApp welcome message
+                $link = "https://{$user->username}.taearif.com/";
+                $message = "حياك الله, شكراً على التسجيل في منصة تعاريف وهذا لينك الموقع الخاص بك : $link";
+                $this->sendWhatsAppMessage($user->phone ?? 'default_phone', $message);
+            }
+
+            // Log in and create token
+            Auth::login($user);
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            // Get membership details (matching register method)
+            $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
+            $activation = Carbon::parse($lastMemb->start_date);
+            $expire = Carbon::parse($lastMemb->expire_date);
+
+            $user->onboarding_completed = false;
+
+            return response()->json([
+                'status' => 'success',
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'username' => $user->username,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'onboarding_completed' => $user->onboarding_completed,
+                ],
+                'token' => $token,
+                'membership' => [
+                    'start_date' => $activation->toDateString(),
+                    'expire_date' => $expire->toDateString(),
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Unable to login with Google. Please try again.'),
+            ], 500);
+        }
+
+
+    }
+
+    // Helper method to generate unique username
+    private function generateUniqueUsername($name)
+    {
+        $baseUsername = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($name));
+        $username = $baseUsername;
+        $counter = 1;
+        while (User::where('username', $username)->exists()) {
+            $username = $baseUsername . $counter;
+            $counter++;
+        }
+        return $username;
+    }
 
     public function register(Request $request)
     {

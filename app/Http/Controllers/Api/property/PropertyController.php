@@ -468,6 +468,7 @@ class PropertyController extends Controller
 
             'category_id' => $property->category_id,
             'size' => $property->size ?? null,
+            'faqs' => $property->faqs ?? [],
         ], $characteristics);
 
         return response()->json([
