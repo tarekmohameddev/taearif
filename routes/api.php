@@ -120,7 +120,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/properties/{id}', [PropertyController::class, 'update']);
     Route::delete('/properties/{id}', [PropertyController::class, 'destroy']);
     Route::patch('/properties/{id}/toggle-featured', [PropertyController::class, 'toggleFeatured']);
-    Route::patch('/properties/{id}/toggle-status', [PropertyController::class, 'toggleStatus']); // Toggle property status
+    Route::post('/properties/{id}/toggle-status', [PropertyController::class, 'toggleStatus']); // Toggle property status
     Route::post('/properties/{id}/toggle-favorite', [PropertyController::class, 'toggleFavorite']);
 
     Route::post('/properties/{propertyId}/duplicate', [PropertyController::class, 'duplicate']); // Duplicate a property

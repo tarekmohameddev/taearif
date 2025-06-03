@@ -173,6 +173,7 @@ return [
          * Package Service Providers...
          */
         Intervention\Image\ImageServiceProvider::class,
+        Laravel\Socialite\SocialiteServiceProvider::class,
         /*
          * Application Service Providers...
          */
@@ -234,7 +235,8 @@ return [
         'PaytmWallet' => Anand\LaravelPaytmWallet\Facades\PaytmWallet::class,
         'Excel' => Maatwebsite\Excel\Facades\Excel::class,
         'Image' => Intervention\Image\Facades\Image::class,
-        'Curl' => Ixudra\Curl\Facades\Curl::class
+        'Curl' => Ixudra\Curl\Facades\Curl::class,
+        'Socialite' => Laravel\Socialite\Facades\Socialite::class,
 
     ],
 

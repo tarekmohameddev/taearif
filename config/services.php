@@ -56,6 +56,9 @@ return [
 
     'google' => [
         'analytics_property_id' => env('GOOGLE_ANALYTICS_PROPERTY_ID'),
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URL'),
     ],
 
 ];

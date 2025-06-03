@@ -25,6 +25,7 @@ class LoginController extends Controller
 
     public function showLoginForm()
     {
+        dd('Login Form');
         if (session()->has('lang')) {
             $currentLang = Language::where('code', session()->get('lang'))->first();
         } else {

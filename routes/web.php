@@ -17,8 +17,10 @@ use App\Http\Controllers\CRM\ContractsController;
 use App\Http\Controllers\Front\CustomerController;
 use App\Http\Controllers\User\PortfolioController;
 // CRM
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\CRM\CustcrmomerController;
 use App\Http\Controllers\CRM\ReservationController;
+use App\Http\Controllers\TenantDashboardController;
 use App\Http\Controllers\User\OnboardingController;
 use App\Http\Controllers\CRM\PaymentRecordController;
 use App\Http\Controllers\CRM\PaymentRecordsController;
@@ -27,18 +29,17 @@ use User\CourseManagement\Instructor\InstructorController;
 use App\Http\Controllers\User\HotelBooking\RoomManagementController;
 use App\Http\Controllers\Front\ProjectController as FrontProjectController;
 use App\Http\Controllers\Front\PropertyController as FrontPropertyController;
+
 use App\Http\Controllers\User\RealestateManagement\ManageProject\TypeController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CityController;
-
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\StateController;
 use App\Http\Controllers\User\RealestateManagement\ManageProject\ProjectController;
+// use Google\Service\Analytics;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\AmenityController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryController;
-// use Google\Service\Analytics;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
-use App\Http\Controllers\TenantDashboardController;
 
 Route::get('/test-sales', function () {
     return Sale::with('property', 'user', 'contract')->get();
@@ -136,6 +137,10 @@ Route::fallback(function () {
 
 //
 Route::get('/data', [TenantDashboardController::class, 'dashboard']);
+
+Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+
 
 Route::get('/get-states/{city_id}', 'Front\PropertyController@getStatesByCity')->name('front.user.get_states');
 
