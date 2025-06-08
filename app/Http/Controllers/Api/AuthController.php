@@ -167,7 +167,9 @@ class AuthController extends Controller
 
                 $request['email'] = $tokenData['email'];
                 $request['google_id'] = $tokenData['google_id'];
-                $request['password'] = null; // Optional: Str::random(32)
+                // $request['password'] = null;
+                $request['password'] = $tempToken ? \Str::random(32) : $request->password;
+
 
             } else {
                 //Normal registration validation
@@ -195,8 +197,10 @@ class AuthController extends Controller
                 'package_type' => 'trial',
                 'package_id' => 16,
                 'trial_days' => 300,
-                'start_date' => '15-03-2025',
-                'expire_date' => '09-01-2026',
+                // 'start_date' => '15-03-2025',
+                // 'expire_date' => '09-01-2026',
+                'start_date' => now()->toDateString(),
+                'expire_date' => now()->addYear()->toDateString(),
                 'payment_method' => $tempToken ? 'google' : '-',
             ]);
 
