@@ -95,6 +95,7 @@ class AuthController extends Controller
             }
 
             if ($user->email === $googleUser->email && !$user->google_id) {
+                // (!$user->google_id || $user->google_id !== $googleUser->id)
                 return redirect()->away('https://app.taearif.com/oauth/login?error=not_registered_with_google');
             }
 
