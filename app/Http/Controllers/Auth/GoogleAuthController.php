@@ -19,17 +19,11 @@ class GoogleAuthController extends Controller
 
     public function getGoogleAuthUrl()
     {
-        $url = Socialite::driver('google')
-            ->stateless() // Use stateless for API
-            ->redirect()
-            ->getTargetUrl();
-
-        return response()->json([
-            'url' => $url,
-        ], 200);
+        $url = Socialite::driver('google')->stateless()->redirect()->getTargetUrl();
+        return response()->json(['url' => $url,], 200);
     }
 
-    public function handleGoogleCallback(Request $request)
+    public function Callback(Request $request)
     {
         try {
             // Validate the code from Google
@@ -38,8 +32,7 @@ class GoogleAuthController extends Controller
             ]);
 
             // Get Google user using the authorization code
-            $googleUser = Socialite::driver('google')->stateless()->userFromToken($request->code);
-
+            $googleUser = Socialite::driver('google')->stateless()->user();
             // Find or create user
             $user = User::where('google_id', $googleUser->id)->orWhere('email', $googleUser->email)->first();
 
@@ -47,7 +40,9 @@ class GoogleAuthController extends Controller
                 // Update google_id if not set
                 if (!$user->google_id) {
                     $user->update(['google_id' => $googleUser->id]);
+                    // $user->refresh();
                 }
+                \Log::info('User: ' . $user->toJson());
                 // Check email verification and status (matching LoginController)
                 if ($user->email_verified == 0) {
                     return response()->json(['error' => __('Your Email is not Verified!')], 403);
@@ -58,7 +53,8 @@ class GoogleAuthController extends Controller
             } else {
                 // Create a new user
                 $user = User::create([
-                    'name' => $googleUser->name,
+                    'first_name' => $googleUser->name,
+                    'last_name' => $googleUser->family_name,
                     'email' => $googleUser->email,
                     'google_id' => $googleUser->id,
                     'password' => Hash::make(uniqid()), // Random password
@@ -72,6 +68,8 @@ class GoogleAuthController extends Controller
 
             // Create a Sanctum token
             $token = $user->createToken('auth_token')->plainTextToken;
+            \Log::info('Google User: ' . json_encode($googleUser));
+            \Log::info('User: ' . $user);
 
             // Return token and user data
             return response()->json([
@@ -79,11 +77,13 @@ class GoogleAuthController extends Controller
                 'token_type' => 'Bearer',
                 'user' => [
                     'id' => $user->id,
-                    'name' => $user->name,
+                    'name' => $googleUser->name,
                     'email' => $user->email,
+                    'google_id' => $googleUser->id,
                 ],
             ], 200);
         } catch (\Exception $e) {
+            \Log::info('Google Auth Error: ' . $e->getMessage());
             return response()->json(['error' => __('Unable to login with Google. Please try again.')], 500);
         }
     }

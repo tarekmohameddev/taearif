@@ -2,6 +2,7 @@
 use Illuminate\Http\Request;
 use App\Models\Api\ApiThemeSettings;
 use Illuminate\Support\Facades\Route;
+use Laravel\Socialite\Facades\Socialite;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\RegionController;
@@ -14,12 +15,13 @@ use App\Http\Controllers\Api\ApiSideMenusController;
 use App\Http\Controllers\Api\StepProgressController;
 use App\Http\Controllers\Api\ThemeSettingsController;
 use App\Http\Controllers\Api\DomainSettingsController;
-use App\Http\Controllers\Api\content\ApiMenuController;
 // use App\Http\Controllers\Api\content\ApiContentSection;
+use App\Http\Controllers\Api\content\ApiMenuController;
 use App\Http\Controllers\Api\isthara\IstharaController;
 use App\Http\Controllers\Api\project\ProjectController;
 use App\Http\Controllers\Api\content\AboutApiController;
 use App\Http\Controllers\Api\property\PropertyController;
+use App\Http\Controllers\Api\AnalyticsDashboardController;
 use App\Http\Controllers\Api\apps\whatsapp\ChatController;
 use App\Http\Controllers\Api\App\ApiInstallationController;
 use App\Http\Controllers\Api\dashboard\DashboardController;
@@ -30,7 +32,7 @@ use App\Http\Controllers\Api\apps\whatsapp\EmbeddingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
 use App\Http\Controllers\Api\content\ApiContentSectionsController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
-use App\Http\Controllers\Api\AnalyticsDashboardController;
+use App\Http\Controllers\ImpersonationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,8 +49,22 @@ use App\Http\Controllers\Api\AnalyticsDashboardController;
 //     return $request->user();
 // });
 
-Route::get('/auth/google/url', [AuthController::class, 'getGoogleAuthUrl'])->name('auth.google.url');
-Route::post('/auth/google/login', [AuthController::class, 'googleLogin'])->name('auth.google.login');
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/impersonate/{user}',            [ImpersonationController::class, 'start']);
+    Route::post('/impersonate/{user}/revoke',     [ImpersonationController::class, 'stop']);
+    // Route::post('/impersonate/revoke-one',        [ImpersonationController::class, 'revokeOne']);
+});
+
+
+// Route::middleware('web')->prefix('auth/google')->group(function () {
+//     Route::get('url',      [GoogleAuthController::class, 'getGoogleAuthUrl']);
+//     Route::get('callback', [GoogleAuthController::class, 'callback']);
+// });
+
+Route::middleware('web')->group(function () {
+    Route::get('/auth/google/url', [AuthController::class, 'getGoogleAuthUrl'])->name('url');
+    Route::get('/auth/google/callback', [AuthController::class, 'callback'])->name('callback');
+});
 
 // Auth routes
 Route::middleware('auth:sanctum')->group(function () {

@@ -28,6 +28,7 @@ use App\Models\User\BlogCategory;
 use App\Models\User\HomePageText;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\Api\ApiMenuSetting;
+use App\Services\TempTokenService;
 use Illuminate\Support\Facades\DB;
 use App\Models\User\UserPermission;
 use Illuminate\Support\Facades\Log;
@@ -41,17 +42,15 @@ use App\Models\User\PortfolioCategory;
 use App\Models\User\UserEmailTemplate;
 use App\Models\User\UserPaymentGeteway;
 use Illuminate\Support\Facades\Session;
+use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Helpers\UserPermissionHelper;
-use App\Models\User\RealestateManagement\Category;
 use App\Http\Controllers\Api\OnboardingController;
-use Laravel\Socialite\Facades\Socialite;
-
+use App\Models\User\RealestateManagement\Category;
+use Illuminate\Support\Facades\Crypt;
 
 class AuthController extends Controller
 {
-
-
 
     public function getGoogleAuthUrl()
     {
@@ -73,139 +72,48 @@ class AuthController extends Controller
         }
     }
 
-    public function googleLogin(Request $request)
+    public function callback(Request $request)
     {
         try {
-            // Validate reCAPTCHA (matching your login/register methods)
-            $recaptchaValidator = Validator::make($request->only('recaptcha_token'), [
-                'recaptcha_token' => ['required', new Recaptcha],
-            ]);
-            if ($recaptchaValidator->fails()) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'reCAPTCHA failed',
-                    'errors' => $recaptchaValidator->errors()
-                ], 422);
-            }
+            $googleUser = Socialite::driver('google')->stateless()->user();
 
-            // Validate Google authorization code
-            $request->validate([
-                'code' => 'required|string',
-            ]);
+            $user = User::where('google_id', $googleUser->id)
+                        ->orWhere('email', $googleUser->email)
+                        ->first();
 
-            // Get Google user
-            $googleUser = Socialite::driver('google')->stateless()->userFromToken($request->code);
-
-            // Find or create user
-            $user = User::where('google_id', $googleUser->id)->orWhere('email', $googleUser->email)->first();
-
-            if ($user) {
-                // Update google_id if not set
-                if (!$user->google_id) {
-                    $user->update(['google_id' => $googleUser->id]);
-                }
-                // Check status (matching LoginController)
-                if ($user->status == 0) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => __('Your account has been banned'),
-                    ], 403);
-                }
-            } else {
-                // Prepare data for create_website
-                $requestData = [
+            if (!$user) {
+                $payload = [
                     'email' => $googleUser->email,
-                    'username' => $this->generateUniqueUsername($googleUser->name),
-                    'password' => uniqid(), // Random password
-                    'first_name' => $googleUser->name ?? 'User',
-                    'last_name' => '',
-                    'company_name' => 'N/A',
-                    'country' => 'N/A',
-                    'address' => 'N/A',
-                    'city' => 'N/A',
-                    'district' => 'N/A',
-                    'status' => 1,
-                    'mode' => 'online',
-                    'receipt_name' => null,
-                    'price' => 0,
-                    'is_receipt' => 0,
-                    'package_type' => 'trial',
-                    'package_id' => 16,
-                    'trial_days' => 300,
-                    'start_date' => '15-03-2025',
-                    'expire_date' => '09-01-2026',
-                    'payment_method' => 'google',
+                    'google_id' => $googleUser->id,
+                    'expires_at' => now()->addMinutes(10)->timestamp,
                 ];
 
-                // Create user using create_website
-                $transaction_id = UserPermissionHelper::uniqidReal(8);
-                $transaction_details = 'Google Login';
-                $price = 0.00;
-                $currentLang = session()->has('lang') ?
-                    Language::where('code', session()->get('lang'))->first() :
-                    Language::where('is_default', 1)->first();
-                $be = $currentLang->basic_extended;
+                $tempToken = TempTokenService::generate($payload);
 
-                $user = $this->create_website($requestData, $transaction_id, $transaction_details, $price, $be, $requestData['password']);
-                $user->update(['google_id' => $googleUser->id]);
-
-                // Apply onboarding defaults
-                app(\App\Services\OnboardingService::class)->applyDefaultsFor($user);
-
-                // Insert default categories
-                $categories = \DB::table('api_user_categories')->get();
-                foreach ($categories as $category) {
-                    \DB::table('api_user_category_settings')->insert([
-                        'user_id' => $user->id,
-                        'category_id' => $category->id,
-                        'is_active' => 1,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-
-                // Send WhatsApp welcome message
-                $link = "https://{$user->username}.taearif.com/";
-                $message = "حياك الله, شكراً على التسجيل في منصة تعاريف وهذا لينك الموقع الخاص بك : $link";
-                $this->sendWhatsAppMessage($user->phone ?? 'default_phone', $message);
+                return redirect()->away("https://app.taearif.com/oauth/social/extra-info?temp_token={$tempToken}");
             }
 
-            // Log in and create token
+            if (!$user->google_id) {
+                return redirect()->away('https://app.taearif.com/oauth/login?error=not_registered_with_google');
+            }
+
+            if ($user->status == 0) {
+                return redirect()->away('https://app.taearif.com/oauth/login?error=account_banned');
+            }
+
+            // Auth success
             Auth::login($user);
             $token = $user->createToken('auth_token')->plainTextToken;
 
-            // Get membership details (matching register method)
-            $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
-            $activation = Carbon::parse($lastMemb->start_date);
-            $expire = Carbon::parse($lastMemb->expire_date);
-
-            $user->onboarding_completed = false;
-
-            return response()->json([
-                'status' => 'success',
-                'user' => [
-                    'id' => $user->id,
-                    'email' => $user->email,
-                    'username' => $user->username,
-                    'first_name' => $user->first_name,
-                    'last_name' => $user->last_name,
-                    'onboarding_completed' => $user->onboarding_completed,
-                ],
-                'token' => $token,
-                'membership' => [
-                    'start_date' => $activation->toDateString(),
-                    'expire_date' => $expire->toDateString(),
-                ],
-            ], 200);
+            return redirect()->away("https://app.taearif.com/oauth/token/success?token={$token}");
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('Unable to login with Google. Please try again.'),
-            ], 500);
+            Log::error('Google Callback Error: ' . $e->getMessage());
+
+            return redirect()->away("https://app.taearif.com/oauth/login?error=google_auth_failed");
         }
-
-
     }
+
+
 
     // Helper method to generate unique username
     private function generateUniqueUsername($name)
@@ -223,9 +131,9 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         try {
-
+            //reCAPTCHA validation
             $recaptchaValidator = Validator::make($request->only('recaptcha_token'), [
-                'recaptcha_token' => ['required', new Recaptcha],
+                'recaptcha_token' => ['required', new \App\Rules\Recaptcha],
             ]);
             if ($recaptchaValidator->fails()) {
                 return response()->json([
@@ -234,137 +142,133 @@ class AuthController extends Controller
                     'errors' => $recaptchaValidator->errors()
                 ], 422);
             }
-            // Validate request fields
-            $request->validate([
-                'email' => 'required|email|unique:users,email',
-                'username' => 'required|string|unique:users,username',
-                'password' => 'required|string|min:6',
+
+            $tempToken = $request->input('temp_token');
+
+            if ($tempToken) {
+                //Google OAuth temp_token registration
+                $tokenData = \App\Services\TempTokenService::decrypt($tempToken);
+
+                if (!$tokenData) {
+                    return response()->json([
+                        'status' => 'error',
+                        'error' => 'invalid_or_expired_temp_token'
+                    ], 400);
+                }
+
+                if (User::where('email', $tokenData['email'])->where('google_id', $tokenData['google_id'])->exists()) {
+                    return response()->json([
+                        'status' => 'error',
+                        'error' => 'already_registered'
+                    ], 409);
+                }
+
+                $request['email'] = $tokenData['email'];
+                $request['google_id'] = $tokenData['google_id'];
+                $request['password'] = null; // Optional: Str::random(32)
+
+            } else {
+                //Normal registration validation
+                $request->validate([
+                    'email' => 'required|email|unique:users,email',
+                    'username' => 'required|string|unique:users,username',
+                    'password' => 'required|string|min:6',
+                ]);
+            }
+
+            //Static trial registration values (could be moved to config)
+            $request->merge([
+                'status' => 1,
+                'mode' => 'online',
+                'receipt_name' => null,
+                'price' => 0,
+                'first_name' => $request->input('first_name', 'User'),
+                'last_name' => $request->input('last_name', ''),
+                'company_name' => 'N/A',
+                'country' => 'N/A',
+                'is_receipt' => 0,
+                'address' => 'N/A',
+                'city' => 'N/A',
+                'district' => 'N/A',
+                'package_type' => 'trial',
+                'package_id' => 16,
+                'trial_days' => 300,
+                'start_date' => '15-03-2025',
+                'expire_date' => '09-01-2026',
+                'payment_method' => $tempToken ? 'google' : '-',
             ]);
 
-            $request['status'] = 1;
-            $request['mode'] = 'online';
-            $request['receipt_name'] = null;
-
-            $request['price'] = 0;
-            $request['first_name'] = 'dd';
-            $request['last_name'] = 'dd';
-            $request['company_name'] = 'dd';
-            $request['country'] = 'dd';
-            $request['is_receipt'] = 0;
-            $request['address'] = 'dd';
-            $request['city'] = 'dd';
-            $request['district'] = 'dd';
-            $request['country'] = 'dd';
-            $request['package_type'] = 'trial';
-            $request['package_id'] = 16;
-            $request['trial_days'] = 300;
-            $request['start_date'] = '15-03-2025';
-            $request['id'] = 16;
-            $request['expire_date'] = '09-01-2026';
-
-            // Validate Coupon
-            $coupon = Coupon::where('code', Session::get('coupon'))->first();
-            if (!empty($coupon) && $coupon->maximum_uses_limit != 999999 && $coupon->total_uses >= $coupon->maximum_uses_limit) {
+            //Coupon logic
+            $coupon = \App\Models\Coupon::where('code', Session::get('coupon'))->first();
+            if ($coupon && $coupon->maximum_uses_limit != 999999 && $coupon->total_uses >= $coupon->maximum_uses_limit) {
                 Session::forget('coupon');
-                return response()->json(['status' => 'error', 'message' => __('This coupon reached maximum limit')], 400);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => __('This coupon reached maximum limit')
+                ], 400);
             }
 
-            // Get language settings
-            $currentLang = session()->has('lang') ?
-                Language::where('code', session()->get('lang'))->first() :
-                Language::where('is_default', 1)->first();
-            $bs = $currentLang->basic_setting;
+            //Language config
+            $currentLang = session()->has('lang')
+                ? \App\Models\Language::where('code', session()->get('lang'))->first()
+                : \App\Models\Language::where('is_default', 1)->first();
             $be = $currentLang->basic_extended;
 
-            Session::put('paymentFor', 'membership');
-
-            // Retrieve package
-            $package = Package::find(16);
-            if (!$package) {
-                return response()->json(['status' => 'error', 'message' => __('Invalid package selection')], 400);
-            }
-
-            // Handle Trial / Free Package
-
-            $transaction_id = UserPermissionHelper::uniqidReal(8);
-            $transaction_details = $request->package_type == "trial" ? "Trial" : "Free";
+            //Membership and user creation
+            $transaction_id = \App\Helpers\UserPermissionHelper::uniqidReal(8);
+            $transaction_details = $request->package_type === 'trial' ? 'Trial' : 'Free';
             $price = 0.00;
-            $request['payment_method'] = "-";
 
-            // Store user and process membership
             $user = $this->create_website($request->all(), $transaction_id, $transaction_details, $price, $be, $request->password);
-            //  dd($user);
+
+            //Log in user
             Auth::login($user);
-            // $this->createDefaultMenu($user);
-            // $this->createDefaultMenuJson($user);
 
-            // $langId = optional($currentLang)->id;
-
-            // if (!$langId) {
-            //     $fallbackLang = Language::where('is_default', 1)->first();
-            //     $langId = optional($fallbackLang)->id;
-            // }
-            // if ($langId) {
-            //     $this->updateUserMenu($user->id, $langId);
-            // }
-            // $request = new Request();
-            // $request->replace([
-            //     "title" => "شركة الأفق للعقارات",
-            //     "category" => "realestate",
-            //     "theme" => "home13",
-            //     "colors" => [
-            //         "primary" => "#1e40af",
-            //         "secondary" => "#3b82f6",
-            //         "accent" => "#93c5fd"
-            //     ],
-            //     "logo" => "logos/20fd8e4f-ecee-41f4-aaed-b5ebc71b3fcc.jpg",
-            //     "favicon" => "logos/20fd8e4f-ecee-41f4-aaed-b5ebc71b3fcc.jpg"
-            // ]);
-
-            // 🔒 Simulate authenticated user
-            // $request->setUserResolver(function () use ($user) {
-            //     return $user;
-            // });
-
-            // 🔁 Call OnboardingController@store manually
-            // $onboardingController = app(OnboardingController::class);
-            // $response = $onboardingController->store($request);
-
+            //Onboarding + default categories
             app(\App\Services\OnboardingService::class)->applyDefaultsFor($user);
 
-
             $categories = \DB::table('api_user_categories')->get();
-
-            // Insert user categories into api_user_category_settings table
             foreach ($categories as $category) {
                 \DB::table('api_user_category_settings')->insert([
                     'user_id' => $user->id,
                     'category_id' => $category->id,
-                    'is_active' => 1,  // Default to active
+                    'is_active' => 1,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
             }
-            // Insert user categories into api_user_category_settings table
 
+            // Token + membership info
             $token = $user->createToken('auth_token')->plainTextToken;
+            $lastMemb = $user->memberships()->latest()->first();
+            $activation = \Carbon\Carbon::parse($lastMemb->start_date);
+            $expire = \Carbon\Carbon::parse($lastMemb->expire_date);
 
-            $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
-            $activation = Carbon::parse($lastMemb->start_date);
-            $expire = Carbon::parse($lastMemb->expire_date);
-
-            // send to new user whatsapp welcome message with his own website link
-
+            // Welcome message (optional)
             $link = "https://{$user->username}.taearif.com/";
             $message = "حياك الله, شكراً على التسجيل في منصة تعاريف وهذا لينك الموقع الخاص بك : $link";
-            // $this->sendWhatsAppMessage($user->phone, $message);
+            // $this->sendWhatsAppMessage($user->phone ?? 'default_phone', $message);
 
             $user['onboarding_completed'] = false;
-            return response()->json(['status' => 'success', 'user' => $user, 'token' => $token], 201);
+
+            return response()->json([
+                'status' => 'success',
+                'user' => $user,
+                'token' => $token,
+                'membership' => [
+                    'start_date' => $activation->toDateString(),
+                    'expire_date' => $expire->toDateString(),
+                ]
+            ], 201);
+
         } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
+
 
     //sendWhatsAppMessage
     public function sendWhatsAppMessage($phone, $message)

@@ -14,9 +14,10 @@ use App\Http\Controllers\CRM\SalesController;
 use App\Http\Controllers\CRM\BookingController;
 use App\Http\Controllers\User\RegionController;
 use App\Http\Controllers\CRM\ContractsController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\Front\CustomerController;
-use App\Http\Controllers\User\PortfolioController;
 // CRM
+use App\Http\Controllers\User\PortfolioController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\CRM\CustcrmomerController;
 use App\Http\Controllers\CRM\ReservationController;
@@ -28,18 +29,24 @@ use App\Http\Controllers\User\HotelBooking\RoomController;
 use User\CourseManagement\Instructor\InstructorController;
 use App\Http\Controllers\User\HotelBooking\RoomManagementController;
 use App\Http\Controllers\Front\ProjectController as FrontProjectController;
-use App\Http\Controllers\Front\PropertyController as FrontPropertyController;
 
+use App\Http\Controllers\Front\PropertyController as FrontPropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProject\TypeController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CityController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\StateController;
-use App\Http\Controllers\User\RealestateManagement\ManageProject\ProjectController;
 // use Google\Service\Analytics;
+use App\Http\Controllers\User\RealestateManagement\ManageProject\ProjectController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\AmenityController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
+
+// ImpersonationController
+// Route::middleware(['auth', 'can:impersonate'])->group(function () {
+// Route::get('/impersonate/{id}', [ImpersonationController::class, 'start']);
+// Route::get('/impersonate/leave',   [ImpersonationController::class, 'stop']);
+// });
 
 Route::get('/test-sales', function () {
     return Sale::with('property', 'user', 'contract')->get();
@@ -56,6 +63,9 @@ Route::fallback(function () {
 })->middleware('setlang');
 
 //
+Route::get('/debug/google', function () {
+    return Socialite::driver('google')->redirect();
+});
 
     Route::get('/all-routes', function () {
         // Basic access control: Only allow access if the user is authenticated
@@ -138,8 +148,8 @@ Route::fallback(function () {
 //
 Route::get('/data', [TenantDashboardController::class, 'dashboard']);
 
-Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google');
-Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+Route::get('/auth/google', [GoogleAuthController::class, 'getGoogleAuthUrl'])->name('auth.google');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'Callback']);
 
 
 Route::get('/get-states/{city_id}', 'Front\PropertyController@getStatesByCity')->name('front.user.get_states');
