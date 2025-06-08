@@ -77,6 +77,7 @@ class AuthController extends Controller
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
 
+            // Find user by email or google_id
             $user = User::where('google_id', $googleUser->id)
                         ->orWhere('email', $googleUser->email)
                         ->first();
@@ -93,7 +94,7 @@ class AuthController extends Controller
                 return redirect()->away("https://app.taearif.com/oauth/social/extra-info?temp_token={$tempToken}");
             }
 
-            if (!$user->google_id) {
+            if ($user->email === $googleUser->email && !$user->google_id) {
                 return redirect()->away('https://app.taearif.com/oauth/login?error=not_registered_with_google');
             }
 
@@ -101,17 +102,17 @@ class AuthController extends Controller
                 return redirect()->away('https://app.taearif.com/oauth/login?error=account_banned');
             }
 
-            // Auth success
             Auth::login($user);
             $token = $user->createToken('auth_token')->plainTextToken;
 
             return redirect()->away("https://app.taearif.com/oauth/token/success?token={$token}");
+
         } catch (\Exception $e) {
             Log::error('Google Callback Error: ' . $e->getMessage());
-
             return redirect()->away("https://app.taearif.com/oauth/login?error=google_auth_failed");
         }
     }
+
 
 
 
