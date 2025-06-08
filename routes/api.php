@@ -62,7 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // });
 
 Route::middleware('web')->group(function () {
-    Route::get('/auth/google/url', [AuthController::class, 'getGoogleAuthUrl'])->name('url');
+    Route::get('/auth/google/redirect', [AuthController::class, 'redirect'])->name('redirect');
     Route::get('/auth/google/callback', [AuthController::class, 'callback'])->name('callback');
 });
 

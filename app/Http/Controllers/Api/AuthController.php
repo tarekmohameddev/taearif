@@ -52,7 +52,7 @@ use Illuminate\Support\Facades\Crypt;
 class AuthController extends Controller
 {
 
-    public function getGoogleAuthUrl()
+    public function redirect()
     {
         try {
             $url = Socialite::driver('google')
