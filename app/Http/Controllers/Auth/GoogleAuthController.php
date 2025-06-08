@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Laravel\Socialite\Facades\Socialite;
+use App\Services\TempTokenService;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\PersonalAccessToken;
+use Laravel\Socialite\Facades\Socialite;
+
 
 class GoogleAuthController extends Controller
 {
@@ -23,68 +26,47 @@ class GoogleAuthController extends Controller
         return response()->json(['url' => $url,], 200);
     }
 
-    public function Callback(Request $request)
+    public function callback(Request $request)
     {
         try {
-            // Validate the code from Google
-            $request->validate([
-                'code' => 'required|string',
-            ]);
-
-            // Get Google user using the authorization code
             $googleUser = Socialite::driver('google')->stateless()->user();
-            // Find or create user
-            $user = User::where('google_id', $googleUser->id)->orWhere('email', $googleUser->email)->first();
 
-            if ($user) {
-                // Update google_id if not set
-                if (!$user->google_id) {
-                    $user->update(['google_id' => $googleUser->id]);
-                    // $user->refresh();
-                }
-                \Log::info('User: ' . $user->toJson());
-                // Check email verification and status (matching LoginController)
-                if ($user->email_verified == 0) {
-                    return response()->json(['error' => __('Your Email is not Verified!')], 403);
-                }
-                if ($user->status == 0) {
-                    return response()->json(['error' => __('Your account has been banned')], 403);
-                }
-            } else {
-                // Create a new user
-                $user = User::create([
-                    'first_name' => $googleUser->name,
-                    'last_name' => $googleUser->family_name,
+            // Find user by email or google_id
+            $user = User::where('google_id', $googleUser->id)
+                        ->orWhere('email', $googleUser->email)
+                        ->first();
+            // log::info($user);
+            // $user = null;
+            // log::info($user);
+            if (!$user) {
+                $payload = [
                     'email' => $googleUser->email,
                     'google_id' => $googleUser->id,
-                    'password' => Hash::make(uniqid()), // Random password
-                    'email_verified' => 1, // Google accounts are typically verified
-                    'status' => 1, // Adjust based on your logic
-                ]);
+                    'expires_at' => now()->addMinutes(10)->timestamp,
+                ];
+
+                $tempToken = TempTokenService::generate($payload);
+
+                return redirect()->away("https://app.taearif.com/oauth/social/extra-info?temp_token={$tempToken}");
             }
 
-            // Log in the user using the 'web' guard
-            Auth::guard('web')->login($user, true);
+            if ($user->email === $googleUser->email && !$user->google_id) {
+                // (!$user->google_id || $user->google_id !== $googleUser->id)
+                return redirect()->away('https://app.taearif.com/oauth/login?error=not_registered_with_google');
+            }
 
-            // Create a Sanctum token
+            if ($user->status == 0) {
+                return redirect()->away('https://app.taearif.com/oauth/login?error=account_banned');
+            }
+
+            Auth::login($user);
             $token = $user->createToken('auth_token')->plainTextToken;
-            \Log::info('Google User: ' . json_encode($googleUser));
-            \Log::info('User: ' . $user);
 
-            // Return token and user data
-            return response()->json([
-                'access_token' => $token,
-                'token_type' => 'Bearer',
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $googleUser->name,
-                    'email' => $user->email,
-                    'google_id' => $googleUser->id,
-                ],
-            ], 200);
+            return redirect()->away("https://app.taearif.com/oauth/token/success?token={$token}");
+
         } catch (\Exception $e) {
-            \Log::info('Google Auth Error: ' . $e->getMessage());
-            return response()->json(['error' => __('Unable to login with Google. Please try again.')], 500);
+            Log::error('Google Callback Error: ' . $e->getMessage());
+            return redirect()->away("https://app.taearif.com/oauth/login?error=google_auth_failed");
         }
     }
 }

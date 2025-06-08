@@ -81,7 +81,9 @@ class AuthController extends Controller
             $user = User::where('google_id', $googleUser->id)
                         ->orWhere('email', $googleUser->email)
                         ->first();
+            // log::info($user);
             $user = null;
+            // log::info($user);
             if (!$user) {
                 $payload = [
                     'email' => $googleUser->email,
