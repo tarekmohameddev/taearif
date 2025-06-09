@@ -85,6 +85,7 @@ class User extends Authenticatable
         'icon',
         'primary_color',
         'show_even_if_empty',
+        'google_id',
     ];
 
     /**

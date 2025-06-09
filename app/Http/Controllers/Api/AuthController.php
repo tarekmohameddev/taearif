@@ -74,6 +74,7 @@ class AuthController extends Controller
 
     public function callback(Request $request)
     {
+        // Log::info('Google Callback: ');
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
 
@@ -81,9 +82,7 @@ class AuthController extends Controller
             $user = User::where('google_id', $googleUser->id)
                         ->orWhere('email', $googleUser->email)
                         ->first();
-            // log::info($user);
-            $user = null;
-            // log::info($user);
+            // log::info($googleUser->id);
             if (!$user) {
                 $payload = [
                     'email' => $googleUser->email,
@@ -98,7 +97,10 @@ class AuthController extends Controller
 
             if ($user->email === $googleUser->email && !$user->google_id) {
                 // (!$user->google_id || $user->google_id !== $googleUser->id)
-                return redirect()->away('https://app.taearif.com/oauth/login?error=not_registered_with_google');
+
+                $user->update(['google_id' => $googleUser->id]);
+                $user->save();
+                // return redirect()->away('https://app.taearif.com/oauth/login?error=not_registered_with_google');
             }
 
             if ($user->status == 0) {

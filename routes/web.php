@@ -148,8 +148,8 @@ Route::get('/debug/google', function () {
 //
 Route::get('/data', [TenantDashboardController::class, 'dashboard']);
 
-Route::get('/auth/google', [GoogleAuthController::class, 'getGoogleAuthUrl'])->name('auth.google');
-Route::get('/auth/google/callback', [GoogleAuthController::class, 'Callback']);
+// Route::get('/auth/google', [GoogleAuthController::class, 'getGoogleAuthUrl'])->name('auth.google');
+// Route::get('/auth/google/callback', [GoogleAuthController::class, 'Callback']);
 
 
 Route::get('/get-states/{city_id}', 'Front\PropertyController@getStatesByCity')->name('front.user.get_states');
