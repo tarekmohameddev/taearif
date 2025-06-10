@@ -56,8 +56,10 @@ use App\Models\User\HotelBooking\Room;
 use App\Models\User\PortfolioCategory;
 use Illuminate\Support\Facades\Config;
 use App\Models\User\CounterInformation;
+use App\Services\PropertyFilterService;
 use Illuminate\Support\Facades\Session;
 use App\Http\Helpers\UserPermissionHelper;
+use App\Models\Api\ApiUserCategorySetting;
 use App\Models\User\CourseManagement\Course;
 use App\Models\User\HotelBooking\RoomContent;
 use App\Models\User\Language as UserLanguage;
@@ -71,8 +73,8 @@ use App\Models\User\CourseManagement\CourseCategory;
 use App\Models\User\CourseManagement\CourseEnrolment;
 use App\Models\User\DonationManagement\DonationDetail;
 use App\Models\User\RealestateManagement\ApiUserCategory;
-use App\Services\PropertyFilterService;
-
+use Illuminate\Database\Eloquent\Collection;
+use App\Services\CategoryVisibility;
 
 class FrontendController extends Controller
 {
@@ -484,7 +486,7 @@ class FrontendController extends Controller
         return view('front.users', $data);
     }
 
-    public function userDetailView(Request $request,$domain , PropertyFilterService $propertyFilterService)
+    public function userDetailView(Request $request,$domain , PropertyFilterService $propertyFilterService,CategoryVisibility $visibility)
     {
         $user = getUser();
 
@@ -555,25 +557,29 @@ class FrontendController extends Controller
         // Categories for filtering and display
         $showAll = $user->show_even_if_empty;
 
-        $activeCategoryIds = \App\Models\Api\ApiUserCategorySetting::where('user_id', $user->id)
-            ->where('is_active', 1)
-            ->pluck('category_id');
+        // $activeCategoryIds = \App\Models\Api\ApiUserCategorySetting::where('user_id', $user->id)
+        //     ->where('is_active', 1)
+        //     ->pluck('category_id');
 
-        if ($showAll) {
-            // Show all active categories for this user
-            $visibleCategories = \App\Models\User\RealestateManagement\ApiUserCategory::whereIn('id', $activeCategoryIds)
-                ->get();
-        } else {
-            // Only categories with properties for this user
-            $visibleCategories = \App\Models\User\RealestateManagement\ApiUserCategory::whereIn('id', $activeCategoryIds)
-                ->whereHas('properties', function ($q) use ($user) {
-                    $q->where('user_id', $user->id);
-                })
-                ->get();
-        }
+        // if ($showAll) {
+        //     // Show all active categories for this user
+        //     $visibleCategories = \App\Models\User\RealestateManagement\ApiUserCategory::whereIn('id', $activeCategoryIds)
+        //         ->get();
+        // } else {
+        //     // Only categories with properties for this user
+        //     $visibleCategories = \App\Models\User\RealestateManagement\ApiUserCategory::whereIn('id', $activeCategoryIds)
+        //         ->whereHas('properties', function ($q) use ($user) {
+        //             $q->where('user_id', $user->id);
+        //         })
+        //         ->get();
+        // }
 
-        $data['visibleCategories'] = $visibleCategories;
+        // $data['visibleCategories'] = $visibleCategories;
+        $data['visibleCategories'] = $visibility->forTenant(
+            $user->id,$request,(bool) $user->show_even_if_empty
+        );
 
+        // $data['visibleCategories'] = $this->visibleCategoriesForTenant($user->id, $request);
 
         // $data['property_contents'] = $property_contents->paginate(8);
         $propertyQuery = $propertyFilterService->buildQuery($tenantId, $request, $userCurrentLang);
@@ -1276,6 +1282,28 @@ class FrontendController extends Controller
         } else {
             return view('user-front.home-page.home-one', $data);
         }
+    }
+
+    private function visibleCategoriesForTenant(int $tenantId, Request $request): Collection
+    {
+        $activeIds = ApiUserCategorySetting::where('user_id', $tenantId)
+            ->where('is_active', 1)
+            ->pluck('category_id');
+
+        $query = ApiUserCategory::whereIn('id', $activeIds)
+            ->where('is_active', 1)
+            ->when(
+                $request->filled('type') &&
+                in_array($request->type, ['commercial', 'residential']),
+                fn ($q) => $q->where('type', $request->type)
+            );
+
+        if (! getUser()->show_even_if_empty) {
+            $query->whereHas('properties',
+                fn ($q) => $q->where('user_id', $tenantId));
+        }
+
+        return $query->get();
     }
 
     public function paymentInstruction(Request $request)
