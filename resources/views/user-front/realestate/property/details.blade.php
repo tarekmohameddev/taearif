@@ -484,6 +484,21 @@
                     </div>
                     @endif
 
+                    @if (!empty($propertyContent->virtual_tour))
+                    <div class="product-video mb-40">
+                        <h3 class="mb-20"> {{ $keywords['virtual_tour'] ?? __('virtual_tour') }}</h3>
+                        <div class="lazy-container radius-lg ratio ratio-16-11">
+                            <img class="lazyload"
+                                data-src="{{ $propertyContent->video_image ? asset('assets/img/property/video/' . $propertyContent->video_image) : asset('assets/front/images/placeholder.png') }}"
+                                src="{{ $propertyContent->video_image ? asset('assets/img/property/video/' . $propertyContent->video_image) : asset('assets/front/images/placeholder.png') }}">
+                            <a href="{{ $propertyContent->virtual_tour }}"
+                                class="video-btn youtube-popup p-absolute">
+                                <i class="fas fa-play"></i>
+                            </a>
+                        </div>
+                    </div>
+                    @endif
+
                     @if (!empty($propertyContent->floor_planning_image))
                     @php
                     $floorPlanningImages = json_decode($propertyContent->floor_planning_image, true);

@@ -2587,7 +2587,11 @@
     "Kitchen":"مطبخ",
     "Area": "المساحة",
     "Rented": "مستأجر",
-    "Planning":"المخطط"
+    "Planning":"المخطط",
+    "Planning":"المخطط",
+    "Video":"فيديو",
+    "Video_URL": "رابط الفيديو",
+    "virtual_tour": "جولة افتراضية"
 
 
 }
