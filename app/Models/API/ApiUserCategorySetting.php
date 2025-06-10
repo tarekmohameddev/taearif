@@ -23,4 +23,15 @@ class ApiUserCategorySetting extends Model
     {
         return $this->belongsTo(\App\Models\User\RealestateManagement\ApiUserCategory::class, 'category_id');
     }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', 1);
+    }
+
+    public function scopeForUser($query, $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
 }

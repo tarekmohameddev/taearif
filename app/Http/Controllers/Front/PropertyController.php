@@ -31,7 +31,8 @@ use App\Models\User\RealestateManagement\PropertyContact;
 use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\RealestateManagement\PropertyWishlist;
 use App\Models\User\RealestateManagement\ApiUserCategory as Category;
-
+use App\Models\User\RealestateManagement\ApiUserCategory;
+use App\Models\Api\ApiUserCategorySetting;
 
 class PropertyController extends Controller
 {
@@ -65,16 +66,40 @@ class PropertyController extends Controller
 
         $projectId = $request->filled('project') ? intval($request->project) : null;
 
-        if ($request->has('type') && in_array($request->type, ['commercial', 'residential'])) {
-            $information['categories'] = Category::where([
-                ['type', $request->type],
-                ['is_active', true],
-            ])->get();
-        } else {
-            $information['categories'] = Category::where([
-                ['is_active', true],
-            ])->get();
+        $user       = $request->user();
+        // $showAll    = $user->show_even_if_empty;
+        $activeCategoryIds = ApiUserCategorySetting::where('user_id', $tenantId)
+        ->where('is_active', 1)
+        ->pluck('category_id');
+
+        $categoriesQuery = Category::whereIn('id', $activeCategoryIds)
+            ->where('is_active', 1)
+            ->when(
+                $request->filled('type') &&
+                in_array($request->type, ['commercial', 'residential']),
+                fn ($q) => $q->where('type', $request->type)
+            );
+
+        if (! $user->show_even_if_empty) {
+            $categoriesQuery->whereHas('properties', fn ($q) => $q->where('user_id', $tenantId));
         }
+
+        $information['categories'] = $categoriesQuery->get();
+
+
+
+        // dd($categoriesQuery);
+
+        // if ($request->has('type') && in_array($request->type, ['commercial', 'residential'])) {
+        //     $information['categories'] = Category::where([
+        //         ['type', $request->type],
+        //         ['is_active', true],
+        //     ])->get();
+        // } else {
+        //     $information['categories'] = Category::where([
+        //         ['is_active', true],
+        //     ])->get();
+        // }
 
         $information['amenities'] = Amenity::where('user_id', $tenantId)
             ->where('language_id', $userCurrentLang->id)
