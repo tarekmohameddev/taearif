@@ -677,18 +677,15 @@
                                                         <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg"
                                                         alt="Currency Symbol"
                                                         style="width: 12px; height: 15px; vertical-align: middle;">
+                                                        @if ($propertyContent->payment_method && $propertyContent->payment_method != 'null')
+                                                            <span class="new-price" style="font-weight: 600; font-size: 1.0em;">
+                                                                / {{ __($propertyContent->payment_method) }}
+                                                            </span>
+                                                        @endif
                                                 </div>
 
                                                 @endif
-                                                @if ($propertyContent->payment_method && $propertyContent->payment_method != 'null')
-                                                <div class="product-price mb-10">
-                                                    <span class="payment-method">
-                                                        <span class="text-muted">
-                                                            ({{ $keywords['Payment Method'] ?? __('Payment Method') }}: {{ __($propertyContent->payment_method) }})
-                                                        </span>
-                                                    </span>
-                                                </div>
-                                                @endif
+
                                                 <ul class="product-info p-0 list-unstyled d-flex align-items-center ">
                                                     <li class="icon-start " data-tooltip="tooltip" data-bs-placement="top"
                                                         title="{{ $keywords['Area'] ?? __('Area') }}">
