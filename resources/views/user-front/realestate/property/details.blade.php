@@ -491,7 +491,7 @@
 
                     @if (!empty($floorPlanningImages) && is_array($floorPlanningImages))
                     <div class="product-planning mb-40">
-                        <h3 class="mb-20">{{ $keywords['Floor Planning'] ?? __('Floor Planning') }}</h3>
+                        <h3 class="mb-20">{{ $keywords['Planning'] ?? __('Planning') }}</h3>
 
                         @foreach ($floorPlanningImages as $image)
                         <div class="lazy-container radius-lg ratio ratio-16-11 border mb-3">
