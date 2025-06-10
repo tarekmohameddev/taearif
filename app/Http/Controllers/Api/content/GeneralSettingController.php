@@ -41,7 +41,7 @@ class GeneralSettingController extends Controller
         $basicSetting = BasicSetting::where('user_id', $user->id)->first();
 
         if ($basicSetting) {
-            $responseSettings['base_color'] = $basicSetting->base_color;
+            $responseSettings['primary_color'] = $basicSetting->base_color;
             $responseSettings['secondary_color'] = $basicSetting->secondary_color;
             $responseSettings['accent_color'] = $basicSetting->accent_color;
         }

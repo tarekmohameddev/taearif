@@ -15,9 +15,9 @@ class BasicSetting extends Model
         'timezone',
         'logo',
         'preloader',
-        'base_color',
-        'secondary_color',
-        'accent_color',
+        'base_color', // Base color for the website
+        'secondary_color', // Secondary color for the website
+        'accent_color', // Accent color for the website
         'theme',
         'email',
         'from_name',
