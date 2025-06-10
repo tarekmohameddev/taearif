@@ -66,7 +66,7 @@ class PropertyController extends Controller
 
         $projectId = $request->filled('project') ? intval($request->project) : null;
 
-        $user       = $request->user();
+        $user       = getUser();
         // $showAll    = $user->show_even_if_empty;
         $activeCategoryIds = ApiUserCategorySetting::where('user_id', $tenantId)
         ->where('is_active', 1)
