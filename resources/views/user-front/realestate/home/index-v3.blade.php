@@ -28,6 +28,24 @@
         font-weight: 400;
         margin-top: 10px;
     }
+    .card.product-default {
+        height: 500px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .card-img img {
+        width: 100%;
+        height: 500px;
+        object-fit: cover;
+        display: block;
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+    }
 </style>
 @endsection
 
@@ -606,11 +624,12 @@
                         <a href="{{ route('front.user.project.details', [getParam(), 'slug' => $project->slug]) }}">
                             <div class="card product-default">
                                 <div class="card-img">
-                                    <img src="{{ asset($project->featured_image) }}" alt="Product">
-                                    <span class="label">
-                                    {{ $project->complete_status == 1 ?  __('start selling') :  __('Under Construction') }}
-                                    </span>
-                                </div>
+                                            <img src="{{ asset($project->featured_image) }}"
+                                                alt="{{ $project->title ?? '' }}">
+                                            <span class="label">
+                                                {{ $project->complete_status == 1 ? __('start selling') : __('Under Construction') }}
+                                            </span>
+                                        </div>
                                 <div class="card-text product-title text-center p-3">
                                     <h3 class="card-title product-title color-white mb-1">
                                         {{ @$project->title }}
