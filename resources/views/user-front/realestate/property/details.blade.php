@@ -686,32 +686,46 @@
 
                                                 @endif
 
-                                                <ul class="product-info p-0 list-unstyled d-flex align-items-center ">
-                                                    <li class="icon-start " data-tooltip="tooltip" data-bs-placement="top"
+                                                <ul class="product-info p-0 list-unstyled d-flex align-items-center">
+
+                                                {{-- Area --}}
+                                                @if($property->area > 0)
+                                                    <li class="icon-start" data-tooltip="tooltip"
+                                                        data-bs-placement="top"
                                                         title="{{ $keywords['Area'] ?? __('Area') }}">
                                                         <i class="fal fa-vector-square"></i>
                                                         <span>
-
-                                                            {{ fmod($property->area, 1) == 0 ? number_format($property->area, 0) : number_format($property->area, 2) }}
-
+                                                            {{ fmod($property->area, 1) == 0
+                                                                    ? number_format($property->area, 0)
+                                                                    : number_format($property->area, 2) }}
                                                         </span>
                                                     </li>
-                                                    @if ($property->type == 'residential')
-                                                    <li class="icon-start" data-tooltip="tooltip"
-                                                        data-bs-placement="top"
-                                                        title="{{ $keywords['Bed'] ?? __('Bed') }}">
-                                                        <i class="fal fa-bed"></i>
-                                                        <span>{{ $property->beds }} </span>
-                                                    </li>
-                                                    <li class="icon-start" data-tooltip="tooltip"
-                                                        data-bs-placement="top"
-                                                        title="{{ $keywords['Bath'] ?? __('Bath') }}">
-                                                        <i class="fal fa-bath"></i>
-                                                        <span>{{ $property->bath }} </span>
-                                                    </li>
+                                                @endif
+
+                                                {{-- Only for residential units --}}
+                                                @if($property->type === 'residential')
+
+                                                    @if($property->beds > 0)
+                                                        <li class="icon-start" data-tooltip="tooltip"
+                                                            data-bs-placement="top"
+                                                            title="{{ $keywords['Bed'] ?? __('Bed') }}">
+                                                            <i class="fal fa-bed"></i>
+                                                            <span>{{ $property->beds }}</span>
+                                                        </li>
                                                     @endif
 
+                                                    @if($property->bath > 0)
+                                                        <li class="icon-start" data-tooltip="tooltip"
+                                                            data-bs-placement="top"
+                                                            title="{{ $keywords['Bath'] ?? __('Bath') }}">
+                                                            <i class="fal fa-bath"></i>
+                                                            <span>{{ $property->bath }}</span>
+                                                        </li>
+                                                    @endif
+
+                                                @endif
                                                 </ul>
+
                                             </div>
                                         </div><!-- product-default -->
                                         @endforeach
