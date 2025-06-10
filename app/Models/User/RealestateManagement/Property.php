@@ -41,6 +41,7 @@ class Property extends Model
         'bath',
         'area',
         'video_url',
+        'virtual_tour',
         'status',
         'featured',
         'features',
@@ -48,7 +49,6 @@ class Property extends Model
         'latitude',
         'longitude',
         'project_id',
-        'region_id',
 
     ];
 
@@ -100,6 +100,7 @@ class Property extends Model
             'featured' => $featured,
             'features' => $request['features'],
             'video_url' => $request['video_url'] ?? null,
+            'virtual_tour' => $request['virtual_tour'] ?? null,
             'status' => $request['status'],
             'latitude' => $request['latitude'],
             'longitude' => $request['longitude'],
@@ -126,6 +127,7 @@ class Property extends Model
             'area' => $requestData['area'] ?? null,
             'featured' => $requestData['featured'] ?? 0,
             'video_url' => $requestData['video_url'] ?? null,
+            'virtual_tour' => $requestData['virtual_tour'] ?? null,
             'status' => $requestData['status'] ?? 0,
             'features' => $requestData['features'] ?? [],
             'latitude' => $requestData['latitude'] ?? null,

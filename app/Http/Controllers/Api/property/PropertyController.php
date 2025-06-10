@@ -175,6 +175,7 @@ class PropertyController extends Controller
                 'bath' => $originalProperty->bath,
                 'area' => $originalProperty->area,
                 'video_url' => $originalProperty->video_url,
+                'virtual_tour' => $originalProperty->virtual_tour,
                 'status' => $originalProperty->status,
                 'latitude' => $originalProperty->latitude,
                 'longitude' => $originalProperty->longitude,
@@ -535,6 +536,8 @@ class PropertyController extends Controller
             'gallery.*' => 'string',
             'floor_planning_image' => 'nullable',
             'video_image' => 'nullable|string',
+            'video_url' => 'nullable|string',
+            'virtual_tour' => 'nullable|string',
             'price' => 'nullable|numeric',
             'meter_price' => 'nullable|numeric',
             'beds' => 'nullable',
@@ -617,6 +620,7 @@ class PropertyController extends Controller
                 'bath',
                 'area',
                 'video_url',
+                'virtual_tour',
                 'status',
                 'latitude',
                 'longitude',
@@ -790,6 +794,11 @@ class PropertyController extends Controller
             'updated_at' => $responseProperty->updated_at->toISOString(),
             'category_id' => $responseProperty->category_id,
             'faqs' => $responseProperty->faqs ?? [],
+            'size' => $responseProperty->size ?? null,
+            'floor_planning_image' => collect($responseProperty->floor_planning_image)->map(fn($img) => asset($img))->toArray(),
+            'video_image' => $responseProperty->video_image ? asset($responseProperty->video_image) : null,
+            'virtual_tour' => $responseProperty->virtual_tour,
+            'video_url' => $responseProperty->video_url,
         ];
 
         return response()->json([
@@ -903,7 +912,8 @@ class PropertyController extends Controller
             'size' => 'nullable|numeric',
             'type' => 'nullable',
             'faqs' => 'nullable|array',
-            'video_url' => 'nullable|string'
+            'video_url' => 'nullable|string',
+            'virtual_tour' => 'nullable|string'
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -1019,6 +1029,10 @@ class PropertyController extends Controller
 
         $formattedProperty = array_merge([
             'payment_method' => $responseProperty->payment_method,
+            'id' => $responseProperty->id,
+            'video_url' => $responseProperty->video_url ? asset($responseProperty->video_url) : null,
+            'virtual_tour' => $responseProperty->virtual_tour ? asset($responseProperty->virtual_tour) : null,
+            'video_image' => $responseProperty->video_image ? asset($responseProperty->video_image) : null,
             'title' => optional($content)->title ?? '',
             'slug' => optional($content)->slug ?? '',
             'address' => optional($content)->address ?? '',
