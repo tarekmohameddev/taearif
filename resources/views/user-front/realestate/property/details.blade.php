@@ -474,8 +474,8 @@
                         <h3 class="mb-20"> {{ $keywords['Video'] ?? __('Video') }}</h3>
                         <div class="lazy-container radius-lg ratio ratio-16-11">
                             <img class="lazyload"
-                                data-src="{{ $propertyContent->video_image ? asset('assets/img/property/video/' . $propertyContent->video_image) : asset('assets/front/images/placeholder.png') }}"
-                                src="{{ $propertyContent->video_image ? asset('assets/img/property/video/' . $propertyContent->video_image) : asset('assets/front/images/placeholder.png') }}">
+                                data-src="{{ $propertyContent->featured_image ? asset($propertyContent->featured_image) : asset('assets/front/images/placeholder.png') }}"
+                                src="{{ $propertyContent->featured_image ? asset($propertyContent->featured_image) : asset('assets/front/images/placeholder.png') }}">
                             <a href="{{ $propertyContent->video_url }}"
                                 class="video-btn youtube-popup p-absolute">
                                 <i class="fas fa-play"></i>
@@ -489,8 +489,8 @@
                         <h3 class="mb-20"> {{ $keywords['virtual_tour'] ?? __('virtual_tour') }}</h3>
                         <div class="lazy-container radius-lg ratio ratio-16-11">
                             <img class="lazyload"
-                                data-src="{{ $propertyContent->video_image ? asset('assets/img/property/video/' . $propertyContent->video_image) : asset('assets/front/images/placeholder.png') }}"
-                                src="{{ $propertyContent->video_image ? asset('assets/img/property/video/' . $propertyContent->video_image) : asset('assets/front/images/placeholder.png') }}">
+                                data-src="{{ $propertyContent->featured_image ? asset($propertyContent->featured_image) : asset('assets/front/images/placeholder.png') }}"
+                                src="{{ $propertyContent->featured_image ? asset($propertyContent->featured_image) : asset('assets/front/images/placeholder.png') }}">
                             <a href="{{ $propertyContent->virtual_tour }}"
                                 class="video-btn youtube-popup p-absolute">
                                 <i class="fas fa-play"></i>
