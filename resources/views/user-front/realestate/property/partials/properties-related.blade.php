@@ -56,7 +56,7 @@
 
 
                         {{-- price --}}
-                        @if(!empty($property->price) && $property->pricePerMeter > 0)
+                        @if($property->pricePerMeter > 0)
                             {{-- Price --}}
                             <div class="product-price">
                                 <span class="new-price">
