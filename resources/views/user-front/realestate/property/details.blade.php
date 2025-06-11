@@ -389,30 +389,19 @@
                         <!-- End of Characteristics Section -->
 
                         <!-- Features Section -->
-                        @if (!empty($propertyContent->features))
+                        @if(!empty($propertyContent->features))
                             @php
                                 $features = json_decode($propertyContent->features, true);
-                                // Define feature-to-icon mapping
-                                $featureIcons = [
-                                    'Garden' => 'fal fa-leaf',
-                                    'Pool' => 'fal fa-swimming-pool',
-                                    'Garage' => 'fal fa-car',
-                                    'Fireplace' => 'fal fa-fireplace',
-                                    'Air Conditioning' => 'fal fa-air-conditioner',
-                                    'Balcony' => 'fal fa-balcony',
-                                    'Security System' => 'fal fa-shield-alt',
-                                    'Gym' => 'fal fa-dumbbell',
-                                    'Parking' => 'fal fa-parking',
-                                ];
                             @endphp
-                            @if (!empty($features) && is_array($features))
+
+                            @if(!empty($features) && is_array($features))
                                 <div class="product-featured mb-40">
                                     <h3 class="mb-20">{{ $keywords['Features'] ?? __('Features') }}</h3>
+
                                     <ul class="featured-list list-unstyled p-0 m-0">
-                                        @foreach ($features as $feature)
+                                        @foreach($features as $feature)
                                             <li class="d-inline-block icon-start">
-                                                <!-- Use the icon from the mapping, fallback to a default icon if not found -->
-                                                <i class="{{ isset($featureIcons[$feature]) ? $featureIcons[$feature] : 'fal fa-star' }}"></i>
+                                                <i class="fal fa-star"></i>   {{-- always the same icon --}}
                                                 <span>{{ __($feature) }}</span>
                                             </li>
                                         @endforeach
@@ -420,6 +409,7 @@
                                 </div>
                             @endif
                         @endif
+                        <!-- End of Features Section -->
 
                     </div>
                     <div class="mb-20"></div>
