@@ -1284,27 +1284,27 @@ class FrontendController extends Controller
         }
     }
 
-    private function visibleCategoriesForTenant(int $tenantId, Request $request): Collection
-    {
-        $activeIds = ApiUserCategorySetting::where('user_id', $tenantId)
-            ->where('is_active', 1)
-            ->pluck('category_id');
+    // private function visibleCategoriesForTenant(int $tenantId, Request $request): Collection
+    // {
+    //     $activeIds = ApiUserCategorySetting::where('user_id', $tenantId)
+    //         ->where('is_active', 1)
+    //         ->pluck('category_id');
 
-        $query = ApiUserCategory::whereIn('id', $activeIds)
-            ->where('is_active', 1)
-            ->when(
-                $request->filled('type') &&
-                in_array($request->type, ['commercial', 'residential']),
-                fn ($q) => $q->where('type', $request->type)
-            );
+    //     $query = ApiUserCategory::whereIn('id', $activeIds)
+    //         ->where('is_active', 1)
+    //         ->when(
+    //             $request->filled('type') &&
+    //             in_array($request->type, ['commercial', 'residential']),
+    //             fn ($q) => $q->where('type', $request->type)
+    //         );
 
-        if (! getUser()->show_even_if_empty) {
-            $query->whereHas('properties',
-                fn ($q) => $q->where('user_id', $tenantId));
-        }
+    //     if (! getUser()->show_even_if_empty) {
+    //         $query->whereHas('properties',
+    //             fn ($q) => $q->where('user_id', $tenantId));
+    //     }
 
-        return $query->get();
-    }
+    //     return $query->get();
+    // }
 
     public function paymentInstruction(Request $request)
     {
