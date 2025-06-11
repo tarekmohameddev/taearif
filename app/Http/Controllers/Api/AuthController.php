@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 
+use Str;
 use Carbon\Carbon;
 use App\Models\Api;
 use App\Models\User;
@@ -31,6 +32,7 @@ use App\Models\Api\ApiMenuSetting;
 use App\Services\TempTokenService;
 use Illuminate\Support\Facades\DB;
 use App\Models\User\UserPermission;
+use App\Services\OnboardingService;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\Api\ApiDomainSetting;
@@ -38,6 +40,7 @@ use App\Models\User\UserShopSetting;
 use App\Models\User\UserTestimonial;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Crypt;
 use App\Models\User\PortfolioCategory;
 use App\Models\User\UserEmailTemplate;
 use App\Models\User\UserPaymentGeteway;
@@ -47,7 +50,6 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Helpers\UserPermissionHelper;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Models\User\RealestateManagement\Category;
-use Illuminate\Support\Facades\Crypt;
 
 class AuthController extends Controller
 {
@@ -172,7 +174,7 @@ class AuthController extends Controller
                 $request['email'] = $tokenData['email'];
                 $request['google_id'] = $tokenData['google_id'];
                 // $request['password'] = null;
-                $request['password'] = $tempToken ? \Str::random(32) : $request->password;
+                $request['password'] = $tempToken ? Str::random(32) : $request->password;
 
 
             } else {
@@ -225,7 +227,7 @@ class AuthController extends Controller
             $be = $currentLang->basic_extended;
 
             //Membership and user creation
-            $transaction_id = \App\Helpers\UserPermissionHelper::uniqidReal(8);
+            $transaction_id = \App\Http\Helpers\UserPermissionHelper::uniqidReal(8);
             $transaction_details = $request->package_type === 'trial' ? 'Trial' : 'Free';
             $price = 0.00;
 
