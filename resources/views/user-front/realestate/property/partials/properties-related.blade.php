@@ -56,7 +56,7 @@
 
 
                         {{-- price --}}
-                        @if(!empty($property->price) && $property->meter_price > 0)
+                        @if(!empty($property->price) && $property->pricePerMeter > 0)
                             {{-- Price --}}
                             <div class="product-price">
                                 <span class="new-price">
@@ -74,9 +74,9 @@
                             </div>
                             @endif
                             <!--  -->
-                            @if($property->meter_price > 0)
+                            @if($property->pricePerMeter > 0)
                                 <span class="text-muted">
-                                    {{ number_format($property->meter_price, fmod($property->meter_price,1)==0?0:2) }}
+                                    {{ number_format($property->pricePerMeter, fmod($property->pricePerMeter,1)==0?0:2) }}
                                     <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg"
                                     alt="SAR" style="width:12px;height:15px;vertical-align:middle;">
                                     {{ $keywords['Meter Price'] ?? __('Meter Price') }}

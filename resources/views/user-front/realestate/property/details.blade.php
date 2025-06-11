@@ -210,12 +210,12 @@
 
                             <!-- price of meter -->
 
-                            @if ($propertyContent->meter_price && $propertyContent->meter_price != 0 && $propertyContent->meter_price != 'null')
+                            @if ($propertyContent->pricePerMeter && $propertyContent->pricePerMeter != 0 && $propertyContent->pricePerMeter != 'null')
                             <div class="product-price mb-10">
                             <span class="meter-price">
                                 <span class="text-muted">
                                     ({{ $keywords['Meter Price'] ?? __('Meter Price') }}:
-                                    {{ fmod($propertyContent->meter_price, 1) == 0 ? number_format($propertyContent->meter_price, 0) : number_format($propertyContent->meter_price, 2) }}
+                                    {{ fmod($propertyContent->pricePerMeter, 1) == 0 ? number_format($propertyContent->pricePerMeter, 0) : number_format($propertyContent->meter_price, 2) }}
 
                                     <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/Saudi_Riyal_Symbol.svg"
                                     alt="Currency Symbol"
