@@ -19,6 +19,9 @@ class ApiInstallation extends Model
         'installed', // This field is used to indicate if the app is installed
         'installed_at',
         'uninstalled_at',
+        'activated_at',
+        'trial_ends_at',
+        'current_period_end',
     ];
     protected $casts = [
         'installed_at' => 'datetime',

@@ -12,7 +12,15 @@ class ApiApp extends Model
     protected $table = 'api_apps';
 
     protected $fillable = [
-        'name', 'description', 'price', 'type', 'rating',
+        'name',
+        'description',
+        'price',
+        'type',
+        'rating',
+        'img',
+        'billing_type',
+        'trial_days',
+
     ];
     protected $casts = [
         'price' => 'decimal:2',
