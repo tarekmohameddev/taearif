@@ -14,14 +14,22 @@ class ApiInstallation extends Model
     protected $table = 'api_installations';
 
     protected $fillable = [
-        'user_id', 'app_id', 'status', 'installed_at', 'uninstalled_at',
+        'user_id',
+        'app_id',
+        'status',
+        'installed', // This field is used to indicate if the app is installed
+        'installed_at',
+        'uninstalled_at',
     ];
     protected $casts = [
         'installed_at' => 'datetime',
         'uninstalled_at' => 'datetime',
+        'status' => 'string',
+        'installed' => 'boolean', // Cast installed to boolean
     ];
     protected $attributes = [
         'status' => 'installed',
+        'installed' => false, // Default to false, indicating the app is not installed
     ];
     public function app()
     {

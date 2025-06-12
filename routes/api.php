@@ -23,7 +23,7 @@ use App\Http\Controllers\Api\content\AboutApiController;
 use App\Http\Controllers\Api\property\PropertyController;
 use App\Http\Controllers\Api\AnalyticsDashboardController;
 use App\Http\Controllers\Api\apps\whatsapp\ChatController;
-use App\Http\Controllers\Api\App\AppRequestController;
+use App\Http\Controllers\Api\App\ApiInstallationController;
 use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\property\UserFacadeController;
 use App\Http\Controllers\Api\content\FooterSettingController;
@@ -243,14 +243,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // ApiInstallationController
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/apps', [AppRequestController::class, 'index']);
-    Route::post('/apps/install', [AppRequestController::class, 'install']);
-    Route::post('/apps/uninstall/{appId}', [AppRequestController::class, 'uninstall']);
+    Route::get('/apps', [ApiInstallationController::class, 'index']);
+    Route::post('/apps/install', [ApiInstallationController::class, 'install']);
+    Route::post('/apps/uninstall/{appId}', [ApiInstallationController::class, 'uninstall']);
 
     // whatsapp
-    Route::get('/apps/whatsapp', [AppRequestController::class, 'whatsapp']);
-    Route::post('/apps/whatsapp/install', [AppRequestController::class, 'installWhatsapp']);
-    Route::post('/apps/whatsapp/uninstall', [AppRequestController::class, 'uninstallWhatsapp']);
+    Route::get('/apps/whatsapp', [ApiInstallationController::class, 'whatsapp']);
+    Route::post('/apps/whatsapp/install', [ApiInstallationController::class, 'installWhatsapp']);
+    Route::post('/apps/whatsapp/uninstall', [ApiInstallationController::class, 'uninstallWhatsapp']);
 
 });
 
