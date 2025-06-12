@@ -81,6 +81,12 @@ class ApiSideMenusController extends Controller
             }
         }
 
+        $sections[] = [
+                    'title' => 'التطبيقات',
+                    'description' => 'ادارة تطبيقاتك',
+                    'path' => '/apps',
+                ];
+
         return response()->json([
             'status' => true,
             'message' => 'Side menus retrieved successfully.',
