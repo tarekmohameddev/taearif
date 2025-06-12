@@ -9,7 +9,6 @@ use App\Models\User;
 class ApiBannerSetting extends Model
 {
     use HasFactory;
-
     protected $table = 'api_banner_settings';
 
     protected $fillable = [
