@@ -30,6 +30,7 @@ class ApiInstallationController extends Controller
             return [
                 'id' => $app->id,
                 'name' => $app->name,
+                'img' => $app->img,
                 'description' => $app->description,
                 'price' => number_format($app->price, 2),
                 'type' => $app->type,
