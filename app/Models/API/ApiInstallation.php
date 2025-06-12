@@ -12,7 +12,6 @@ class ApiInstallation extends Model
 {
     use HasFactory;
     protected $table = 'api_installations';
-
     protected $fillable = [
         'user_id',
         'app_id',

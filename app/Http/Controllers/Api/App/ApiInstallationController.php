@@ -146,4 +146,5 @@ class ApiInstallationController extends Controller
             'message' => 'App uninstalled successfully.',
         ]);
     }
+
 }
