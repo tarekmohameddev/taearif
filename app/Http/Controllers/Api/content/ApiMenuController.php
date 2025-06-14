@@ -9,7 +9,7 @@ use App\Models\Api\ApiMenuSetting;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
-
+use App\Models\Api\ApiInstallation;
 class ApiMenuController extends Controller
 {
 /**
@@ -18,6 +18,15 @@ class ApiMenuController extends Controller
     public function index(Request $request)
     {
         $user_id = $request->user()->id;
+
+        $whatsappApp = \App\Models\Api\ApiApp::where('name', 'واتس اب')->first(); // Make sure this name is accurate
+        $hasWhatsappInstalled = false;
+        if ($whatsappApp) {
+            $hasWhatsappInstalled = \App\Models\Api\ApiInstallation::where('user_id', $user_id)
+                ->where('app_id', $whatsappApp->id)
+                ->whereIn('status', ['installed', 'trialing'])
+                ->exists();
+        }
 
         $menuItems = ApiMenuItem::where('user_id', $user_id)->orderBy('order')->get();
         $settings = ApiMenuSetting::where('user_id', $user_id)->first();
@@ -61,6 +70,16 @@ class ApiMenuController extends Controller
                     'is_external' => false,
                     'is_active' => true,
                     'order' => 5,
+                    'parent_id' => null,
+                    'show_on_mobile' => true,
+                    'show_on_desktop' => true,
+                ],
+                [
+                    'label' => 'واتس اب',
+                    'url' => '/whatsapp-ai',
+                    'is_external' => false,
+                    'is_active' => false,
+                    'order' => 6,
                     'parent_id' => null,
                     'show_on_mobile' => true,
                     'show_on_desktop' => true,
@@ -110,6 +129,16 @@ class ApiMenuController extends Controller
                 'is_sticky' => true,
                 'is_transparent' => false,
             ]);
+        }
+
+        foreach ($menuItems as $menuItem) {
+            if ($menuItem->url === '/whatsapp-ai') {
+                $menuItem->is_active = $hasWhatsappInstalled;
+            }
+        }
+
+        foreach ($menuItems as $item) {
+            $item->save();
         }
 
         $formattedItems = $menuItems->map(function ($item) {
