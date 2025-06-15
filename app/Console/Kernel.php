@@ -24,8 +24,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('expire:user')
-            ->daily();
+        $schedule->command('expire:user')->daily();
+        $schedule->command('app:expire-trials')->daily();
+
     }
 
     /**

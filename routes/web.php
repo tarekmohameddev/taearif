@@ -178,6 +178,8 @@ Route::get('/midtrans/cancel', 'MidtransBankNotifyController@cancel')->name('mid
 
 Route::get('/myfatoorah/callback', 'MyFatoorahController@callback')->name('myfatoorah.success');
 Route::get('myfatoorah/cancel', 'MyFatoorahController@cancel')->name('myfatoorah.cancel');
+Route::post('/mf/app/success',  [\App\Http\Controllers\Webhook\MyFatoorahWebhookController::class,'handle'])->name('mf.app.success');
+Route::post('/mf/app/cancel',   fn() => response('cancel', 200))->name('mf.app.cancel');
 
 Route::domain($domain)->group(function () {
     Route::get('/changelanguage/{lang}', 'Front\FrontendController@changeLanguage')->name('changeLanguage');

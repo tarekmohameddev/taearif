@@ -38,7 +38,7 @@ class ArbController extends Controller
         $paydata = $paymentMethod->convertAutoData();
     }
 
-    public function paymentProcess(Request $request, $_amount, $_success_url, $_cancel_url, $_title,$user_id)
+    public function paymentProcess(Request $request, $_amount, $_success_url, $_cancel_url, $_title,$user_id,string $context = 'MEMBERSHIP', int $app_id  = 0)
     {
         /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ~~~~~~~~~~~~~~~~~ Buy Plan Info ~~~~~~~~~~~~~~
@@ -59,42 +59,57 @@ class ArbController extends Controller
 
         $phone = $paymentFor == 'membership' ? $request->phone : auth()->user()->phone;
 
-        $package_id_request = (int)$request->package_id;
-    
+        // $package_id_request = (int)$request->package_id;
+        $package_id_request = (int) ($request->package_id ?? 0);
+
        // $package = Package::find($package_id_request); // Replace 1 with your package ID
-        $package = Package::where('id', $package_id_request)->first();
-
-
-        $price = $package->price;
-
+        // $package = Package::where('id', $package_id_request)->first();
+        $package = $package_id_request ? Package::find($package_id_request) : null;
+        // \Log::info('debug ' . $_amount);
+        $price = $_amount;
         if ($package) {
-
+            // Membership flow
+            $price       = $_amount;
+            $paymentFor  = 'membership';
+            $name        = $name;
+            $phone       = $phone;
         } else {
-            return 'error';
+            // App-purchase flow
+            $price       = (float) $_amount;          // ← use the param we passed in
+            $paymentFor  = 'app';
+            $name        = auth()->user()->name ?? 'Unknown';
+            $phone       = auth()->user()->phone ?? '';
         }
+        // if ($package) {
+
+        // } else {
+        //     return 'error';
+        // }
 
         //#######################################################################
         $trackId = uniqid($price * time());
         $data = [
-            'id' => $paydata['tranportal_id'],
-            'password' => $paydata['tranportal_password'],
-            'action' => '1',
-            'trackId' => $trackId,
-            'amt' => (float) $price,
-            'currencyCode' => '682',
-            'langid' => 'ar',
-            'responseURL' => route('membership.arb.success'),
-            'errorURL' => route('membership.arb.cancel'),
-            'udf1' => $package_id_request,
-            'udf2' => $user_id
+            'id'          => $paydata['tranportal_id'],
+            'password'    => $paydata['tranportal_password'],
+            'action'      => '1',
+            'trackId'     => $trackId,
+            'amt'         => (float) $price,
+            'currencyCode'=> '682',
+            'langid'      => 'ar',
+            'responseURL' => $_success_url,
+            'errorURL'    => $_cancel_url,
+            'udf1'        => $package_id_request,
+            'udf2'        => $user_id,
+            'udf3'        => $context,
+            'udf4'        => $app_id,
         ];
-      
+
        // $data = $data + $this->generateUdfs($data);
         // log::info($data);
         $data = $this->createRequestBody($this->wrapData($data));
 
         // log::info($data);
-        
+
         $configName = 'bank_hosted_endpoint';
 
         $response = Http::withBody($data, 'application/json')
@@ -115,13 +130,35 @@ class ArbController extends Controller
                 'redirect_url'=> $baseURL.$paymentID,
                 'payment_token' => $paymentID
             );
-            
-            return $return_object; 
+
+            return $return_object;
           //  return redirect($baseURL.$paymentID);
         } else {
             return 'error';
           //  return redirect(route('membership.arb.cancel'));
         }
+    }
+
+    public function paymentProcessForApp(\App\Models\User $user, \App\Models\Api\ApiApp $app): array
+    {
+        $dummyReq = new \Illuminate\Http\Request([
+            'first_name' => $user->name,
+            'last_name'  => '',
+            'phone'      => $user->phone ?? '',
+            'package_id' => 0,
+        ]);
+
+        return $this->paymentProcess(
+            $dummyReq,
+            $app->price,
+            route('mf.app.success', [], true),
+            route('mf.app.cancel',  [], true),
+            "شراء تطبيق {$app->name}",
+            $user->id,
+            'APP',
+            $app->id
+        );
+
     }
 
     // return to success page
@@ -143,7 +180,7 @@ class ArbController extends Controller
         $be = $currentLang->basic_extended;
 
         $dataArr = json_decode($request, true);
-        
+
         $decrypted = $this->decryption($request['trandata'], $paydata["resource_key"]);
 
 
@@ -153,7 +190,7 @@ class ArbController extends Controller
         log::info($dataArr);
         if (!empty($dataArr) && is_array($dataArr)) {
             $paymentData = $dataArr[0]; // Get the first element
-            
+
             if (isset($paymentData['result']) && $paymentData['result'] === 'CAPTURED') {
                 $isSuccessful = true;
                 $resultMessage = 'payment_success';
@@ -171,7 +208,7 @@ class ArbController extends Controller
                 $resultMessage = 'payment_failed';
             }
         }
-        
+
         // Now you can use $isSuccessful and $resultMessage as needed
         if ($isSuccessful) {
 
@@ -181,18 +218,18 @@ class ArbController extends Controller
             log::info($user);
             $currMembership = UserPermissionHelper::currMembOrPending($user_id);
             $nextMembership = UserPermissionHelper::nextMembership($user_id);
-    
+
             $be = BasicExtended::first();
             $bs = BasicSetting::select('website_title')->first();
-    
+
             $selectedPackage = Package::find($package_id);
-    
+
             // if the user has a next package to activate & selected package is 'lifetime' package
             // if (!empty($nextMembership) && $selectedPackage->term == 'lifetime') {
             //     Session::flash('membership_warning', 'To add a Lifetime package as Current Package, You have to remove the next package');
             //     return back();
             // }
-    
+
             // expire the current package
             log::info('ddd'.$currMembership);
             $currMembership->expire_date = Carbon::parse(Carbon::now()->subDay()->format('d-m-Y'));
@@ -201,7 +238,7 @@ class ArbController extends Controller
                 $currMembership->status = 2;
             }
             $currMembership->save();
-    
+
             // calculate expire date for selected package
             if ($selectedPackage->term == 'monthly') {
                 $exDate = Carbon::now()->addMonth()->format('d-m-Y');
@@ -231,21 +268,21 @@ class ArbController extends Controller
                 $password = $requestData['password'];
                 $checkout = new CheckoutController();
                 $user = $checkout->store($requestData, $transaction_id, $transaction_details, $amount, $be, $password);
-    
+
                 $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
                 $activation = Carbon::parse($lastMemb->start_date);
                 $expire = Carbon::parse($lastMemb->expire_date);
               //  $file_name = $this->makeInvoice($requestData, "membership", $user, $password, $amount, $requestData["payment_method"], $requestData['phone'], $be->base_currency_symbol_position, $be->base_currency_symbol, $be->base_currency_text, $transaction_id, $package->title, $lastMemb);
 
-            
+
                     return redirect(route('customer.dashboard'));
-           
+
             } elseif ($paymentFor == "extend") {
                 $amount = $price;
                 $password = uniqid('qrcode');
                 $checkout = new UserCheckoutController();
                 $user = $checkout->store($requestData, $transaction_id, $transaction_details, $amount, $be, $password);
-    
+
                 $lastMemb = $user->memberships()->orderBy('id', 'DESC')->first();
                 $activation = Carbon::parse($lastMemb->start_date);
                 $expire = Carbon::parse($lastMemb->expire_date);
@@ -254,12 +291,12 @@ class ArbController extends Controller
 
             return redirect()->route('success.page');
         } else {
-            
+
             return redirect()->route('failed.page');
         }
 
        // log::info('data back'.$request);
-       
+
 
 
     }
@@ -336,7 +373,7 @@ class ArbController extends Controller
         }
         return $udfs;
     }
-    
+
     public function handlePaymentRequest(string $data): object
     {
 

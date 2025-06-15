@@ -73,6 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/make-payment', [PaymentController::class, 'checkout']);
+    Route::post('/make-payment-app', [PaymentController::class, 'checkoutApp']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {

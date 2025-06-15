@@ -4,14 +4,23 @@ namespace App\Http\Controllers\Api\App;
 
 use App\Models\Api\ApiApp;
 use App\Models\AppRequest;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use App\Models\Api\ApiMenuItem;
 use App\Models\Api\ApiInstallation;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use App\Services\InstallationService;
 
 class ApiInstallationController extends Controller
 {
+    /**
+     * Display a listing of the installed apps for the authenticated user.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+
     public function index()
     {
         $userId = auth()->id();
@@ -22,10 +31,9 @@ class ApiInstallationController extends Controller
             ->whereIn('app_id', $apps->pluck('id'))
             ->get()
             ->keyBy('app_id');
-        // Map apps with install info
+
         $apps = $apps->map(function ($app) use ($installations) {
             $installation = $installations->get($app->id);
-            $isInstalled = $installation && $installation->status === 'installed';
 
             return [
                 'id' => $app->id,
@@ -35,10 +43,16 @@ class ApiInstallationController extends Controller
                 'price' => number_format($app->price, 2),
                 'type' => $app->type,
                 'rating' => round($app->rating, 1),
-                'installed' => $isInstalled,
-                'status' => $isInstalled ? $installation->status : null,
-                'settings' => $isInstalled ? optional($installation->settings)->settings : null,
-                'installed_at' => $isInstalled ? optional($installation->installed_at)->toIso8601String() : null,
+                'billing_type' => $app->billing_type,
+                'trial_days' => $app->trial_days ?? 0,
+                'installed' => $installation->installed ?? false,
+                'trial_ends_at' => $installation->trial_ends_at ?? null,
+                'current_period_end' => $installation->current_period_end ?? null,
+                'activated_at' => $installation->activated_at ?? null,
+                'status' => $installation->status ?? 'pending',
+                'settings' => $installation->settings ?? null,
+                'installed_at' => $installation->installed_at ?? null,
+                'uninstalled_at' => $installation->uninstalled_at ?? null,
             ];
 
         });
@@ -53,78 +67,122 @@ class ApiInstallationController extends Controller
     /**
      * Install an app for the authenticated user.
      */
-    public function install(Request $request)
+    // public function install(Request $request,InstallAppRequest $req, InstallationService $svc)
+    // {
+    //     $userId = Auth::id();
+    //     if (!$userId) {
+    //         return response()->json([
+    //             'status'  => 'error',
+    //             'message' => 'User not authenticated.',
+    //         ], 401);
+    //     }
+
+    //     $request->validate([
+    //         'app_id'                => 'required|exists:api_apps,id',
+    //         'settings'              => 'nullable|array',
+    //         'settings.phone_number' => 'nullable|string|max:20',
+    //         'settings.token'        => 'nullable|string|max:255',
+    //     ]);
+
+    //     /** @var \App\Models\ApiApp $app */
+    //     $app = ApiApp::findOrFail($request->app_id);
+
+    //     // ── Billing path ──────────────────────────────────────────────
+    //     $isTrial = $app->billing_type === 'subscription' && $app->trial_days > 0;
+    //     $isFree  = $app->billing_type === 'free';
+    //     $now     = CarbonImmutable::now();
+
+    //     $trialEndsAt       = $isTrial ? $now->addDays($app->trial_days) : null;
+    //     $currentPeriodEnd  = $isTrial ? $trialEndsAt : null;   // real value set by Stripe later
+    //     $status            = $isTrial ? 'trialing' : 'installed';
+
+    //     // ── Persist installation ─────────────────────────────────────
+    //     $installation = ApiInstallation::updateOrCreate(
+    //         ['user_id' => $userId, 'app_id' => $app->id],
+    //         [
+    //             // NEW
+    //             'status'             => $status,
+    //             'activated_at'       => $now,
+    //             'trial_ends_at'      => $trialEndsAt,
+    //             'current_period_end' => $currentPeriodEnd,
+
+    //             // LEGACY
+    //             'installed'          => 1 ,
+    //             'installed_at'       => $now,
+    //             'uninstalled_at'     => null,
+    //         ]
+    //     );
+
+    //     // settings relationship
+    //     $installation->settings()->updateOrCreate(
+    //         ['installation_id' => $installation->id],
+    //         ['settings' => $request->input('settings', [])]
+    //     );
+
+    //     // user request record (unchanged)
+    //     $settings = $request->input('settings', []);
+    //     AppRequest::updateOrCreate(
+    //         ['user_id' => $userId, 'app_id' => $app->id],
+    //         [
+    //             'phone_number' => $settings['phone_number'] ?? null,
+    //             'token'        => $settings['token']        ?? null,
+    //             'status'       => 'approved',
+    //         ]
+    //     );
+
+    //     if ($app->name === 'واتس اب') {
+    //         $menuItem = \App\Models\Api\ApiMenuItem::firstOrCreate(
+    //             ['user_id' => $userId, 'url' => '/whatsapp-ai'],
+    //             [
+    //                 'label' => 'واتس اب',
+    //                 'is_external' => false,
+    //                 'is_active' => true,
+    //                 'order' => 8,
+    //                 'parent_id' => null,
+    //                 'show_on_mobile' => true,
+    //                 'show_on_desktop' => true,
+    //             ]
+    //         );
+
+    //         // If it existed but was inactive, activate it
+    //         if (!$menuItem->is_active) {
+    //             $menuItem->is_active = true;
+    //             $menuItem->save();
+    //         }
+    //     }
+
+    //     Log::info("App installed: {$app->name} (ID: {$app->id}) for user ID: {$userId}");
+
+    //     // ── Response ─────────────────────────────────────────────────
+    //     return response()->json([
+    //         'status'  => 'success',
+    //         'message' => 'App installed successfully.',
+    //         'data'    => ['installation' => $installation],
+    //     ]);
+    // }
+    public function install(Request $req, InstallationService $svc)
     {
-        $userId = Auth::id();
-        if (!$userId) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'User not authenticated.',
-            ], 401);
-        }
-
-        \Log::info('Installing app', [
-            'user_id' => $userId,
-            'app_id' => $request->app_id,
-            'settings' => $request->input('settings', []),
-
-        ]);
-
-        $request->validate([
-            'app_id' => 'required|exists:api_apps,id',
-            'settings' => 'nullable|array',
-            'settings.phone_number' => 'nullable|string|max:20',
-            'settings.token' => 'nullable|string|max:255',
-        ]);
-
-
-        $installation = ApiInstallation::updateOrCreate(
-            ['user_id' => $userId, 'app_id' => $request->app_id],
-            [
-                'status' => 'installed', // status can be 'installed', 'uninstalled'
-                'installed' => true,
-                'installed_at' => now(),
-                'uninstalled_at' => null,
-            ]
-        );
-        $installation->settings()->updateOrCreate(
-            ['installation_id' => $installation->id],
-            [
-                'settings' => $request->input('settings', []),
-            ]
-        );
-
-
-        $settings = $request->input('settings', []);
-        $app = ApiApp::find($request->app_id); // Assuming you have a model for the app
-        if (!$app) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'App not found.',
-            ], 404);
-        }
-        // Check if the app is already installed
-
-        AppRequest::updateOrCreate(
-            [
-                'user_id' => $userId,
-                'app_id' => $request->app_id,
-            ],
-            [
-                'phone_number' => $settings['phone_number'] ?? null,
-                'token' => $settings['token'] ?? null,
-                'status' => 'approved', // dashboard will handle the status 'pending', 'approved', 'rejected', 'expired'
-            ]
-        );
+        $req->validate(['app_id' => 'required|exists:api_apps,id', 'settings' => 'array']);
+        $user   = $req->user();
+        $app    = ApiApp::findOrFail($req->app_id);
+        $result = $svc->install($user, $app, $req->input('settings', []));
 
         return response()->json([
             'status' => 'success',
-            'message' => 'App installed successfully.',
-            'data' => [
-                'installation' => $installation,
+            'data'   => [
+                'installation' => $result['installation'],
+                'app'          => [
+                    'id'           => $app->id,
+                    'billing_type' => $app->billing_type,
+                    'trial_days'   => $app->trial_days,
+                    'price'        => $app->price,
+                    'name'         => $app->name,
+                ],
+                'payment_url'  => $result['payment_url'],
             ],
         ]);
     }
+
 
     /**
      * Uninstall an app for the authenticated user.

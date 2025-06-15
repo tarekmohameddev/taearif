@@ -2,15 +2,38 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Models\User;
-use App\Http\Controllers\Payment\ArbController;
 use App\Models\Package;
+use App\Models\Api\ApiApp;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Payment\ArbController;
 
 class PaymentController extends Controller
 {
+
+    public function checkoutApp(Request $request)
+    {
+        $request->validate(['app_id' => 'required|exists:api_apps,id']);
+        $user = $request->user();
+        $app  = \App\Models\Api\ApiApp::findOrFail($request->app_id);
+
+        $arb  = app(\App\Http\Controllers\Payment\ArbController::class);
+        $resp = $arb->paymentProcessForApp($user, $app);
+
+        if ($resp === 'error') {
+            return response()->json(['status'=>'error','payment_url'=>null], 422);
+        }
+
+        return response()->json([
+            'status'        => 'success',
+            'payment_url'   => $resp['redirect_url'],
+            'payment_token' => $resp['payment_token'] ?? null,
+        ]);
+    }
+
+
     public function checkout(Request $request)
     {
         try {

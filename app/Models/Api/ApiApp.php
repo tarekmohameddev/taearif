@@ -5,6 +5,7 @@ namespace App\Models\Api;
 use App\Models\Api\ApiInstallation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Enums\BillingType;
 
 class ApiApp extends Model
 {
@@ -25,6 +26,8 @@ class ApiApp extends Model
     protected $casts = [
         'price' => 'decimal:2',
         'rating' => 'float',
+        'trial_days' => 'integer',
+        'billing_type' => BillingType::class,
     ];
     protected $attributes = [
         'type' => 'marketplace',

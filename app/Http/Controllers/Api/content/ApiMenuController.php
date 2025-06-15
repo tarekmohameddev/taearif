@@ -79,7 +79,7 @@ class ApiMenuController extends Controller
                     'url' => '/whatsapp-ai',
                     'is_external' => false,
                     'is_active' => false,
-                    'order' => 6,
+                    'order' => 8,
                     'parent_id' => null,
                     'show_on_mobile' => true,
                     'show_on_desktop' => true,
