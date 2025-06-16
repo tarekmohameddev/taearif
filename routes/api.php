@@ -133,6 +133,11 @@ Route::middleware('auth:sanctum')->group(function () {
 // property routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/properties', [PropertyController::class, 'index']);
+
+    Route::post('/properties/reorder-featured', [PropertyController::class, 'properties_reorder_featured']);
+    Route::post('/properties/reorder', [PropertyController::class, 'properties_reorder']);
+
+    
     Route::get('/properties/categories', [PropertyController::class, 'properties_categories']);
     Route::get('/property-faqs', [PropertyController::class, 'faqs']); // Get FAQs for a property
     Route::get('/properties/{id}', [PropertyController::class, 'show']); // Get a single property

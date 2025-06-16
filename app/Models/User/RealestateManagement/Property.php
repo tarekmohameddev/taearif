@@ -49,6 +49,8 @@ class Property extends Model
         'latitude',
         'longitude',
         'project_id',
+        'reorder',
+        'reorder_featured',
 
     ];
 
@@ -83,6 +85,11 @@ class Property extends Model
             ['name' => 'Other', 'type' => 'property', 'is_active' => 1]
         );
 
+        $reorderFeatured = 0;
+        if ($featured) {
+            $last = self::where('featured', 1)->max('reorder_featured');
+            $reorderFeatured = $last ? $last + 1 : 1;
+        }
         return self::create([
             'region_id' => $request['region_id'] ?? null,
             'project_id' => $request['project_id'] ?? null,
@@ -107,11 +114,18 @@ class Property extends Model
             'category_id' => $request['category_id'] ?? $defaultCategory->id,
             'payment_method' => $request['payment_method'] ?? null,
             'faqs' => $request['faqs'] ?? [],
+            'reorder_featured' => $reorderFeatured,
+            'reorder' => 0,
         ]);
     }
 
     public function updateProperty($requestData)
     {
+        if (($requestData['featured'] ?? 0) && !$this->reorder_featured) {
+            $last = self::where('featured', 1)->max('reorder_featured');
+            $updates['reorder_featured'] = $last ? $last + 1 : 1;
+        }
+        
         return $this->update([
             'project_id' => $requestData['project_id'] ?? null,
             'region_id' => $requestData['region_id'] ?? null,
@@ -135,6 +149,8 @@ class Property extends Model
             'category_id' => $requestData['category_id'] ?? $this->category_id,
             'payment_method' => $requestData['payment_method'] ?? $this->payment_method  ?? null,
             'faqs' => $requestData['faqs'] ?? $this->faqs,
+            'reorder_featured' => $requestData['reorder_featured'] ?? $this->reorder_featured,
+            'reorder' => $requestData['reorder'] ?? $this->reorder,
 
         ]);
     }

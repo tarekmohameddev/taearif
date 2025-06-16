@@ -375,8 +375,6 @@ class PropertyController extends Controller
         ]);
     }
 
-
-
     public function index(Request $request)
     {
 
@@ -386,7 +384,11 @@ class PropertyController extends Controller
             'user',
             'contents',
             'proertyAmenities.amenity'
-        ])->where('user_id', $user->id)->paginate(10);
+        ])
+        ->where('user_id', $user->id)
+        ->orderBy('reorder_featured', 'desc')
+        ->orderBy('reorder', 'asc')
+        ->paginate(10);
 
 
         $formattedProperties = $properties->map(function ($property) {
@@ -411,11 +413,16 @@ class PropertyController extends Controller
             ];
         });
 
+        $totalReorderFeatured = Property::where('user_id', $user->id)
+        ->where('featured', 1)
+        ->where('reorder_featured', '>', 0)
+        ->count();
 
         return response()->json([
             'status' => 'success',
             'data' => [
                 'properties' => $formattedProperties,
+                'total_reorder_featured' => $totalReorderFeatured,
                 'pagination' => [
                     'total' => $properties->total(),
                     'per_page' => $properties->perPage(),
@@ -427,6 +434,59 @@ class PropertyController extends Controller
             ]
         ], 200);
     }
+
+    //properties_reorder_featured
+    public function properties_reorder_featured(Request $request)
+    {
+        $user = $request->user();
+        $data = $request->all();
+    
+        // Normalize to array if it's a single object
+        if (isset($data['id']) && isset($data['reorder_featured'])) {
+            $data = [$data];
+        }
+    
+        foreach ($data as $item) {
+            if (isset($item['id'], $item['reorder_featured'])) {
+                Property::where('id', $item['id'])
+                    ->where('user_id', $user->id)
+                    ->where('featured', 1)
+                    ->update(['reorder_featured' => $item['reorder_featured']]);
+            }
+        }
+    
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Featured property reorder updated successfully.'
+        ]);
+    }
+
+    // properties_reorder
+    public function properties_reorder(Request $request)
+    {
+        $user = $request->user();
+        $data = $request->all();
+    
+        // Normalize if it's a single object
+        if (isset($data['id']) && isset($data['reorder'])) {
+            $data = [$data];
+        }
+    
+        foreach ($data as $item) {
+            if (isset($item['id'], $item['reorder'])) {
+                Property::where('id', $item['id'])
+                    ->where('user_id', $user->id)
+                    ->where('featured', 0)
+                    ->update(['reorder' => $item['reorder']]);
+            }
+        }
+    
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Non-featured property reorder updated successfully.'
+        ]);
+    }
+    
 
     public function show($id)
     {
@@ -480,7 +540,6 @@ class PropertyController extends Controller
         ]);
     }
 
-
     /*
         * Store a newly created resource in storage.
         *
@@ -491,7 +550,6 @@ class PropertyController extends Controller
         * @throws \Throwable
         * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
     */
-
 
     public function store(Request $request)
     {
@@ -834,8 +892,6 @@ class PropertyController extends Controller
             ]);
         }
     }
-
-
 
     /*
         * Update the specified resource in storage.
