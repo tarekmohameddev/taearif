@@ -1181,7 +1181,7 @@ class FrontendController extends Controller
                     $q->where('user_id', $user->id)->where('status', 1);
                 });
             })->get();
-            
+
 
             $selectedCityId = request('city_id');
             if ($selectedCityId) {
@@ -1195,7 +1195,7 @@ class FrontendController extends Controller
                     $q->where('user_id', $user->id)->where('status', 1);
                 });
             })->get();
-            
+
             // Log::info('all_states: ' . $data['all_states']);
             // Log::info('all_cities: ' . $data['all_cities']);
             // dd($data['all_cities']);

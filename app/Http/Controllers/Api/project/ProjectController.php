@@ -394,6 +394,7 @@ class ProjectController extends Controller
      * Ensure the "Projects" menu exists for the user.
      * If it doesn't exist, create it.
      */
+    
     private function ensureProjectsMenuExistsForUser($userId)
     {
         $exists = ApiMenuItem::where('user_id', $userId)
