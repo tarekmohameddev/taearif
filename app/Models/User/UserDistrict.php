@@ -28,4 +28,9 @@ class UserDistrict extends Model
     {
         return $this->belongsTo(UserCity::class, 'city_id', 'id');
     }
+    public function propertyContent()
+    {
+        return $this->hasMany(\App\Models\User\RealestateManagement\PropertyContent::class, 'state_id', 'id');
+    }
+
 }

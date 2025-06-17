@@ -1175,7 +1175,13 @@ class FrontendController extends Controller
             $data['all_countries'] = $allCountries;
 
             $data['cities'] = $allCities;
-            $data['all_cities'] = $allCities;
+            // $data['all_cities'] = $allCities;
+            $data['all_cities'] = \App\Models\User\UserCity::whereHas('propertyContent', function ($query) use ($user) {
+                $query->whereHas('property', function ($q) use ($user) {
+                    $q->where('user_id', $user->id)->where('status', 1);
+                });
+            })->get();
+            
 
             $selectedCityId = request('city_id');
             if ($selectedCityId) {
@@ -1183,7 +1189,13 @@ class FrontendController extends Controller
             } else {
                 $allStates = \App\Models\User\UserDistrict::select('id', 'name_ar')->get();
             }
-            $data['all_states'] = $allStates;
+            // $data['all_states'] = $allStates;
+            $data['all_states'] = \App\Models\User\UserDistrict::whereHas('propertyContent', function ($query) use ($user) {
+                $query->whereHas('property', function ($q) use ($user) {
+                    $q->where('user_id', $user->id)->where('status', 1);
+                });
+            })->get();
+            
 
             // dd($data['all_cities']);
 

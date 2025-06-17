@@ -123,6 +123,7 @@
     <!-- Filter Dropdowns -->
     <div class="container py-4">
         <div class="row g-3">
+            <!-- type -->
             <div class="col-md-6 col-lg-3">
                 <div class="dropdown w-100">
                     <div id="type" class="collapse show">
@@ -149,6 +150,7 @@
 
                 </div>
             </div>
+            <!-- purpose -->
             <div class="col-md-6 col-lg-3">
                 <div class="dropdown w-100">
                     <div id="purpose" aria-labelledby="propertyTypeDropdown" class="collapse show">
@@ -176,6 +178,7 @@
                     </div>
                 </div>
             </div>
+            <!-- city -->
             <div class="col-md-6 col-lg-3">
                 <div class="dropdown w-100">
                 <select name="city_id" class="form-select" id="city_id" onchange="updateURL('city_id='+ this.value)">
@@ -188,7 +191,7 @@
                 </select>
                 </div>
             </div>
-
+            <!-- state -->
             <div class="col-md-6 col-lg-3">
                 <select name="state_id" class="form-select" id="state_id" onchange="updateURL('state_id='+ this.value)>
                     <option value="">{{ __('اختر الحي') }}</option>

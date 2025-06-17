@@ -38,20 +38,34 @@ use App\Services\CategoryVisibility;
 class PropertyController extends Controller
 {
 
+    // public function getStatesByCity($city_id)
+    // {
+    //     $states = UserDistrict::where('city_id', $city_id)
+    //         ->select('id', 'name_ar', 'name_en')
+    //         ->get();
+    //         Log::info('States retrieved for city ID: ' . $city_id);
+    //     return response()->json($states);
+    // }
     public function getStatesByCity($city_id)
     {
         $states = UserDistrict::where('city_id', $city_id)
+            ->whereHas('propertyContent', function ($query) {
+                $query->whereHas('property', function ($q) {
+                    $q->where('status', 1);
+                });
+            })
             ->select('id', 'name_ar', 'name_en')
             ->get();
-            Log::info('States retrieved for city ID: ' . $city_id);
+    
         return response()->json($states);
     }
-
+    
+    
 
     public function index($website, Request $request,CategoryVisibility $visibility)
     {
-        $tenantId = getUser()->id;
-        Log::info('public function index user-front.realestate.property.index: ');
+        $user = getUser();
+        $tenantId = $user->id;
 
         $userCurrentLang = session()->has('user_lang')
             ? Language::where('code', session('user_lang'))->where('user_id', $tenantId)->first()
@@ -67,11 +81,10 @@ class PropertyController extends Controller
 
         $projectId = $request->filled('project') ? intval($request->project) : null;
 
-        $user = getUser();
         // $showAll    = $user->show_even_if_empty;
         // $information['categories'] = $this->visibleCategoriesForTenant($tenantId, $request);
         $information['categories'] = $visibility->forTenant(
-            $user->id,$request,(bool) $user->show_even_if_empty
+            $tenantId,$request,(bool) $user->show_even_if_empty
         );
 
 
