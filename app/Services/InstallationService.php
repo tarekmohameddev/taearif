@@ -22,7 +22,7 @@ class InstallationService
             if (! $user || ! $app) {
                 throw new \Exception('Invalid user or app');
             }
-
+            $trialUsedAt = null;
             $hadInstallBefore = ApiInstallation::withTrashed()
                 ->forUser($user->id)->forApp($app->id)
                 ->whereNotNull('activated_at')->exists();
@@ -36,12 +36,41 @@ class InstallationService
             }
 
             if ($app->billing_type === BillingType::PaidTrial) {
-                if ($eligibleForTrial) {
-                    $status    = InstallStatus::Trialing;
-                    $trialEnds = CarbonImmutable::now()->addDays(15);
+                $now = CarbonImmutable::now();
+
+                $previousInstall = ApiInstallation::withTrashed()
+                    ->forUser($user->id)
+                    ->forApp($app->id)
+                    ->orderByDesc('activated_at')
+                    ->first();
+
+                $alreadyUsedTrial = $previousInstall && $previousInstall->trial_used_at !== null;
+
+                if (! $alreadyUsedTrial) {
+                    // First time trial
+                    $status     = InstallStatus::Trialing;
+                    $trialEnds  = $now->addDays($app->trial_days ?? 15);
+                    $trialUsedAt = $now;
+                } elseif (
+                    $previousInstall->status === InstallStatus::Trialing &&
+                    $previousInstall->trial_ends_at &&
+                    $now->lt($previousInstall->trial_ends_at)
+                ) {
+                    // Still within previous trial
+                    $status     = InstallStatus::Trialing;
+                    $trialEnds  = $previousInstall->trial_ends_at;
+                    $trialUsedAt = $previousInstall->trial_used_at;
                 } else {
-                    $status = InstallStatus::PendingPayment;
+                    // Trial expired or already used
+                    $status     = InstallStatus::PendingPayment;
+                    $trialEnds  = null;
+                    $trialUsedAt = $previousInstall->trial_used_at;
                 }
+            }
+            if ($app->billing_type === BillingType::Free) {
+                $status = InstallStatus::Installed;
+                $trialEnds = null;
+                $trialUsedAt = null;
             }
 
 
@@ -51,6 +80,7 @@ class InstallationService
                     'status'              => $status,
                     'activated_at'        => now(),
                     'trial_ends_at'       => $trialEnds,
+                    'trial_used_at'       => $trialUsedAt ?? null,
                     'installed'           => $status === InstallStatus::Installed,
                     'installed_at'        => $status === InstallStatus::Installed ? now() : null,
                     'uninstalled_at'      => null,
