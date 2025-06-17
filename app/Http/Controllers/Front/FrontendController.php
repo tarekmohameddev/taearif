@@ -1196,7 +1196,8 @@ class FrontendController extends Controller
                 });
             })->get();
             
-
+            // Log::info('all_states: ' . $data['all_states']);
+            // Log::info('all_cities: ' . $data['all_cities']);
             // dd($data['all_cities']);
 
 

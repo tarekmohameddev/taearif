@@ -179,30 +179,36 @@
                 </div>
             </div>
             <!-- city -->
-            <div class="col-md-6 col-lg-3">
-                <div class="dropdown w-100">
-                <select name="city_id" class="form-select" id="city_id" onchange="updateURL('city_id='+ this.value)">
-                    <option value="">{{ __('Select City') }}</option>
-                    @foreach($all_cities as $city)
-                        <option value="{{ $city->id }}" {{ request('city_id') == $city->id ? 'selected' : '' }}>
-                            {{ $city->name_ar }}
-                        </option>
-                    @endforeach
-                </select>
+             
+             @if($all_cities && $all_cities->count())
+                <div class="col-md-6 col-lg-3">
+                    <div class="dropdown w-100">
+                        <select name="city_id" class="form-select" id="city_id" onchange="updateURL('city_id=' + this.value)">
+                            <option value="">{{ __('Select City') }}</option>
+                            @foreach($all_cities as $city)
+                                <option value="{{ $city->id }}" {{ request('city_id') == $city->id ? 'selected' : '' }}>
+                                    {{ $city->name_ar }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
-            </div>
-            <!-- state -->
-            <div class="col-md-6 col-lg-3">
-                <select name="state_id" class="form-select" id="state_id" onchange="updateURL('state_id='+ this.value)>
-                    <option value="">{{ __('اختر الحي') }}</option>
+            @endif
 
-                    @foreach($all_states as $state)
-                        <option value="{{ $state->id }}" {{ request('state_id') == $state->id ? 'selected' : '' }}>
-                            {{ $state->name_ar }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+            <!-- state -->
+            @if($all_states && $all_states->count())
+                <div class="col-md-6 col-lg-3">
+                    <select name="state_id" class="form-select" id="state_id" onchange="updateURL('state_id=' + this.value)">
+                        <option value="">{{ __('اختر الحي') }}</option>
+                        @foreach($all_states as $state)
+                            <option value="{{ $state->id }}" {{ request('state_id') == $state->id ? 'selected' : '' }}>
+                                {{ $state->name_ar }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
+
 
         </div>
     </div>
