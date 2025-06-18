@@ -81,7 +81,7 @@ class InstallationService
                     'activated_at'        => now(),
                     'trial_ends_at'       => $trialEnds,
                     'trial_used_at'       => $trialUsedAt ?? null,
-                    'installed'           => $status === InstallStatus::Installed,
+                    'installed'           => in_array($status, [InstallStatus::Installed, InstallStatus::Trialing]),
                     'installed_at'        => $status === InstallStatus::Installed ? now() : null,
                     'uninstalled_at'      => null,
                     'current_period_end'  => $trialEnds,
