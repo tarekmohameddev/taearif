@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 
-use Str;
+// use Str;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Models\Api;
 use App\Models\User;
@@ -186,6 +187,17 @@ class AuthController extends Controller
                 ]);
             }
 
+            $referrer = null;
+            if ($request->filled('referral_code')) {
+                $referrer = \App\Models\User::where('referral_code', $request->referral_code)->first();
+                if (!$referrer) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Invalid referral code.'
+                    ], 400);
+                }
+            }
+
             //Static trial registration values (could be moved to config)
             $request->merge([
                 'status' => 1,
@@ -208,6 +220,10 @@ class AuthController extends Controller
                 'start_date' => now()->toDateString(),
                 'expire_date' => now()->addYear()->toDateString(),
                 'payment_method' => $tempToken ? 'google' : '-',
+                'referral_code' => strtoupper(Str::random(8)),
+                'referred_by' => $referrer?->id,
+
+
             ]);
 
             //Coupon logic
@@ -230,6 +246,8 @@ class AuthController extends Controller
             $transaction_id = \App\Http\Helpers\UserPermissionHelper::uniqidReal(8);
             $transaction_details = $request->package_type === 'trial' ? 'Trial' : 'Free';
             $price = 0.00;
+
+
 
             $user = $this->create_website($request->all(), $transaction_id, $transaction_details, $price, $be, $request->password);
 
@@ -702,6 +720,8 @@ class AuthController extends Controller
                     'state' => $request["district"] ? $request["district"] : null,
                     'country' => $request["country"] ? $request["country"] : null,
                     'verification_link' => $token,
+                    'referral_code' => $request['referral_code'] ?? strtoupper(Str::random(8)),
+                    'referred_by' => $request['referred_by'] ?? null,
                 ]);
 
                 $deLang = User\Language::firstOrFail();

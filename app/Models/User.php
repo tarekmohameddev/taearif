@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Timezone;
 use App\Models\User\Brand;
 use App\Models\User\Member;
+use Illuminate\Support\Str;
 use App\Models\User\UserItem;
 use App\Models\User\Education;
 use App\Models\User\UserOrder;
@@ -86,6 +87,8 @@ class User extends Authenticatable
         'primary_color',
         'show_even_if_empty',
         'google_id',
+        'referral_code',
+        'referred_by',
     ];
 
     /**
@@ -107,6 +110,27 @@ class User extends Authenticatable
         'onboarding_completed' => 'boolean',
         'show_even_if_empty' => 'boolean',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($user) {
+            if (empty($user->referral_code)) {
+                $user->referral_code = strtoupper(Str::random(8));
+            }
+        });
+
+    }
+    public function referrer()
+    {
+        return $this->belongsTo(User::class, 'referred_by');
+    }
+
+    public function referrals()
+    {
+        return $this->hasMany(User::class, 'referred_by');
+    }
 
     public function user_custom_domains()
     {
