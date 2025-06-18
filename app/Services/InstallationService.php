@@ -24,12 +24,18 @@ class InstallationService
             }
             $trialUsedAt = null;
             $hadInstallBefore = ApiInstallation::withTrashed()
-                ->forUser($user->id)->forApp($app->id)
+                ->forUser($user->id)
+                ->forApp($app->id)
                 ->whereNotNull('activated_at')->exists();
 
             $eligibleForTrial = ! $hadInstallBefore;
             $status     = InstallStatus::Installed;
             $trialEnds  = null;
+
+            $existingInstall = ApiInstallation::withTrashed()
+            ->where('user_id', $user->id)
+            ->where('app_id', $app->id)
+            ->first();
 
             if ($app->billing_type === BillingType::Paid) {
                 $status = InstallStatus::PendingPayment;
@@ -60,12 +66,8 @@ class InstallationService
                     $status     = InstallStatus::Trialing;
                     $trialEnds  = $previousInstall->trial_ends_at;
                     $trialUsedAt = $previousInstall->trial_used_at;
-                } else {
-                    // Trial expired or already used
-                    $status     = InstallStatus::PendingPayment;
-                    $trialEnds  = null;
-                    $trialUsedAt = $previousInstall->trial_used_at;
                 }
+
             }
             if ($app->billing_type === BillingType::Free) {
                 $status = InstallStatus::Installed;
@@ -78,13 +80,13 @@ class InstallationService
                 ['user_id' => $user->id, 'app_id' => $app->id],
                 [
                     'status'              => $status,
-                    'activated_at'        => now(),
-                    'trial_ends_at'       => $trialEnds,
-                    'trial_used_at'       => $trialUsedAt ?? null,
+                    'activated_at'        => $existingInstall?->activated_at ?? now(),
+                    'trial_ends_at'       => $existingInstall?->trial_ends_at ?? $trialEnds,
+                    'trial_used_at'       => $existingInstall?->trial_used_at ?? $trialUsedAt ?? null,
                     'installed'           => in_array($status, [InstallStatus::Installed, InstallStatus::Trialing]),
-                    'installed_at'        => $status === InstallStatus::Installed ? now() : null,
+                    'installed_at'        => $existingInstall?->installed_at ?? ($status === InstallStatus::Installed ? now() : null),
                     'uninstalled_at'      => null,
-                    'current_period_end'  => $trialEnds,
+                    'current_period_end'  => $existingInstall?->current_period_end ?? $trialEnds,
                     'invoice_id'          => null,
                     'payment_subscription_id' => null,
                 ]
