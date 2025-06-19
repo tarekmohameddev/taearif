@@ -31,7 +31,7 @@ class PublicUserController extends Controller
         } else {
             $user->website = 'https://' . $user->username.'taearif.com';
         }
-        \Log::info($user->website);
+
         $footerSetting = FooterSetting::where('user_id', $user->id)->first();
 
 
