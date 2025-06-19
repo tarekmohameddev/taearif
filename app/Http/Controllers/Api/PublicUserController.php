@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\Api\FooterSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -10,7 +11,6 @@ use App\Models\User\RealestateManagement\Property;
 
 class PublicUserController extends Controller
 {
-    //
     public function show($id)
     {
         $user = User::findOrFail($id);
@@ -25,14 +25,24 @@ class PublicUserController extends Controller
         ->where('user_id', $user->id)
         ->get();
 
+        $domain = env('WEBSITE_HOST');
+        if ($domain) {
+            $user->website = str_replace('https://', '', $user->username.'.'. $domain);
+        } else {
+            $user->website = 'https://' . $user->username.'taearif.com';
+        }
+        \Log::info($user->website);
+        $footerSetting = FooterSetting::where('user_id', $user->id)->first();
+
+
         $formattedProperties = $properties->map(function ($property) {
             $content = $property->contents->first();
 
             return [
-                'id' => $property->id,
+                'title' => optional($content)->title ?? '',
+                // 'id' => $property->id,
                 'project_id' => $property->project_id,
                 'payment_method' => $property->payment_method,
-                'title' => optional($content)->title ?? '',
                 'address' => optional($content)->address ?? '',
                 'price' => $property->price ?? '0.00',
                 'pricePerMeter' => $property->pricePerMeter,
@@ -55,10 +65,21 @@ class PublicUserController extends Controller
                 'category_id' => $property->category_id,
                 'size' => $property->size ?? null,
                 'faqs' => $property->faqs ?? [],
+                'user_characteristics' => $property->userPropertyCharacteristics,
             ];
         });
 
-        return ["Properties"=> $formattedProperties->values()->all()];
+        return [
+            'website' => $user->website,
+            'footer_setting' => collect($footerSetting->general ?? [])->only([
+                'email',
+                'phone',
+                'address',
+                'companyName',
+                'workingHours'
+            ]),
+            "Properties"=> $formattedProperties->values()->all(),
+        ];
     }
 
 }
