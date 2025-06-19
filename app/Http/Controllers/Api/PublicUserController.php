@@ -40,8 +40,7 @@ class PublicUserController extends Controller
 
             return [
                 'title' => optional($content)->title ?? '',
-                // 'id' => $property->id,
-                'project_id' => $property->project_id,
+                'project' => $property->project->developer ?? '',
                 'payment_method' => $property->payment_method,
                 'address' => optional($content)->address ?? '',
                 'price' => $property->price ?? '0.00',
