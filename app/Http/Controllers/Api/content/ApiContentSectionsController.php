@@ -22,9 +22,23 @@ class ApiContentSectionsController extends Controller
     public function index()
     {
         Carbon::setLocale('ar');
+        $userId = auth()->id();
 
-        $sections = ApiContentSection::all()->map(function ($section) {
+        $hiddenSections = [];
 
+        if (ApiBannerSetting::where('user_id', $userId)->exists()) {
+            $hiddenSections[] = 'banner';
+        }
+
+        if (ApiAboutSettings::where('user_id', $userId)->exists()) {
+            $hiddenSections[] = 'about';
+        }
+
+        $sections = ApiContentSection::all()
+        ->filter(function ($section) use ($hiddenSections) {
+            return !in_array($section->section_id, $hiddenSections);
+        })
+        ->map(function ($section) {
             $status = $this->getStatusFromRelatedTable($section->section_id);
 
             return [
@@ -43,7 +57,8 @@ class ApiContentSectionsController extends Controller
                 'lastUpdate' => $section->updated_at->toIso8601String(),
                 'lastUpdateFormatted' => $section->lastUpdateFormatted,
             ];
-        });
+        })
+        ->values();
 
         return response()->json([
             'status' => 'success',
@@ -58,11 +73,11 @@ class ApiContentSectionsController extends Controller
         $userId = auth()->id();
 
         $models = [
-            'general' => \App\Models\Api\GeneralSetting::class,
-            'banner'  => \App\Models\Api\ApiBannerSetting::class,
-            'about'   => \App\Models\Api\ApiAboutSettings::class,
-            'footer'  => \App\Models\Api\FooterSetting::class,
-            'domains' => \App\Models\Api\ApiDomainSetting::class,
+            'general' => GeneralSetting::class,
+            'about'   => ApiAboutSettings::class,
+            'banner'  => ApiBannerSetting::class,
+            'footer'  => FooterSetting::class,
+            'domains' => ApiDomainSetting::class,
         ];
 
         if (!isset($models[$sectionId])) {
