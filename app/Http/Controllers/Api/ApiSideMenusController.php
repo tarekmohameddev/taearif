@@ -10,6 +10,9 @@ use App\Models\Membership;
 use App\Http\Helpers\LimitCheckerHelper;
 use App\Http\Helpers\UserPermissionHelper;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Api\ApiMenuItem;
+use Illuminate\Support\Facades\Log;
+
 class ApiSideMenusController extends Controller
 {
     /**
@@ -87,6 +90,33 @@ class ApiSideMenusController extends Controller
                     'path' => '/apps',
                 ];
 
+        $whatsappMenu = ApiMenuItem::where('user_id', $user->id)
+            ->where('url', '/whatsapp-ai')
+            ->where('is_active', true)
+            ->first();
+
+        if ($whatsappMenu) {
+            $sections[] = [
+                'title' => $whatsappMenu->label ?? 'واتس اب',
+                'description' => 'مساعد الذكاء الاصطناعي للواتس اب',
+                'icon' => 'whatsapp',
+                'path' => $whatsappMenu->url,
+            ];
+        }
+
+
+        $aiMenu = ApiMenuItem::where('user_id', $user->id)
+            ->where('url', '/ai')
+            ->where('is_active', true)
+            ->first();
+        if ($aiMenu) {
+            $sections[] = [
+                'title' => $aiMenu->label ?? 'الذكاء الاصطناعي',
+                'description' => 'مساعد الذكاء الاصطناعي',
+                'icon' => 'ai',
+                'path' => $aiMenu->url,
+            ];
+        }
         return response()->json([
             'status' => true,
             'message' => 'Side menus retrieved successfully.',
