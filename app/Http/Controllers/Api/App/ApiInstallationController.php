@@ -167,6 +167,27 @@ class ApiInstallationController extends Controller
         $app    = ApiApp::findOrFail($req->app_id);
         $result = $svc->install($user, $app, $req->input('settings', []));
 
+        if ($app->name === 'واتس اب') {
+            $menuItem = \App\Models\Api\ApiMenuItem::firstOrCreate(
+                ['user_id' => $user->id, 'url' => '/whatsapp-ai'],
+                [
+                    'label' => 'واتس اب',
+                    'is_external' => false,
+                    'is_active' => true,
+                    'order' => 8,
+                    'parent_id' => null,
+                    'show_on_mobile' => true,
+                    'show_on_desktop' => true,
+                ]
+            );
+
+            // If it existed but was inactive, activate it
+            if (!$menuItem->is_active) {
+                $menuItem->update(['is_active' => true]);
+                $menuItem->save();
+            }
+        }
+
         return response()->json([
             'status' => 'success',
             'data'   => [
@@ -200,6 +221,11 @@ class ApiInstallationController extends Controller
             'uninstalled_at' => now(),
         ]);
         $installation->settings()->delete();
+
+        \App\Models\Api\ApiMenuItem::where('user_id', $userId)
+        ->where('url', '/whatsapp-ai')
+        ->update(['is_active' => false]);
+
         return response()->json([
             'status' => 'success',
             'message' => 'App uninstalled successfully.',
