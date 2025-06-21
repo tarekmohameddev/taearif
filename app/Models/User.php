@@ -122,6 +122,12 @@ class User extends Authenticatable
         });
 
     }
+
+    public function affiliateUser()
+    {
+        return $this->hasOne(\App\Models\Api\ApiAffiliateUser::class, 'user_id');
+    }
+
     public function referrer()
     {
         return $this->belongsTo(User::class, 'referred_by');

@@ -34,7 +34,7 @@ use App\Http\Controllers\Api\content\ApiContentSectionsController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\Api\PublicUserController;
-
+use App\Http\Controllers\Api\Affiliate\AffiliateController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -51,6 +51,10 @@ use App\Http\Controllers\Api\PublicUserController;
 // });
 
 Route::get('public-user/{id}', [PublicUserController::class, 'show']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/affiliate/register', [AffiliateController::class, 'register']);
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/impersonate/{user}',            [ImpersonationController::class, 'start']);

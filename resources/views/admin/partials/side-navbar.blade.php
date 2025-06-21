@@ -170,6 +170,34 @@
                     </li>
                 @endif
 
+                <!-- Affiliate -->
+
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Affiliate Management', $permissions)))
+                    <li class="nav-item
+                    @if (request()->path() == 'admin/affiliate') active
+                    @elseif(request()->is('admin/affiliate/*/edit')) active @endif">
+                        <a data-toggle="collapse" href="#affiliateManagement">
+                            <i class="la flaticon-users"></i>
+                            <p>{{ __('Affiliate Management') }}</p>
+                            <span class="caret"></span>
+                        </a>
+                        <div class="collapse
+                        @if (request()->path() == 'admin/affiliate') show
+                        @elseif(request()->is('admin/affiliate/*/edit')) show @endif"
+                            id="affiliateManagement">
+                            <ul class="nav nav-collapse">
+                                <li class="@if (request()->path() == 'admin/affiliate') active @endif">
+                                    <a href="{{ route('admin.affiliate.index') }}">
+                                        <span class="sub-item">{{ __('All Affiliates') }}</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                @endif
+
+                {{-- Settings --}}
+
 
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Custom Domains', $permissions)))
                     <li

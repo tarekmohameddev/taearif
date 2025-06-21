@@ -1285,7 +1285,7 @@ Route::domain($domain)->group(function () {
     /*=======================================================
     ******************** Admin Routes **********************
     =======================================================*/
-
+    // start admin routes
     Route::group(['prefix' => 'admin', 'middleware' => 'guest:admin'], function () {
         Route::get('/', 'Admin\LoginController@login')->name('admin.login');
         Route::post('/login', 'Admin\LoginController@authenticate')->name('admin.auth');
@@ -1401,9 +1401,6 @@ Route::domain($domain)->group(function () {
             Route::get('/menu-builder', 'Admin\MenuBuilderController@index')->name('admin.menu_builder.index');
             Route::post('/menu-builder/update', 'Admin\MenuBuilderController@update')->name('admin.menu_builder.update');
         });
-
-
-
 
         Route::group(['middleware' => 'checkpermission:Home Page'], function () {
 
@@ -1531,7 +1528,6 @@ Route::domain($domain)->group(function () {
             Route::post('register/users/vcard/delete', 'Admin\UsersVcardsController@destroy')->name('register.user.vcard.delete');
         });
 
-
         Route::group(['middleware' => 'checkpermission:FAQ Management'], function () {
             // Admin FAQ Routes
             Route::get('/faqs', 'Admin\FaqController@index')->name('admin.faq.index');
@@ -1541,7 +1537,6 @@ Route::domain($domain)->group(function () {
             Route::post('/faq/delete', 'Admin\FaqController@delete')->name('admin.faq.delete');
             Route::post('/faq/bulk-delete', 'Admin\FaqController@bulkDelete')->name('admin.faq.bulk.delete');
         });
-
 
         Route::group(['middleware' => 'checkpermission:Blogs'], function () {
             // Admin Blog Category Routes
@@ -1725,7 +1720,16 @@ Route::domain($domain)->group(function () {
             Route::post('/isthara/update', 'Admin\AdminIstharaController@markAsRead')->name('admin.isthara.update');
         });
 
+        // affiliate
+        Route::group(['middleware' => 'checkpermission:Affiliate'], function () {
+            Route::get('/affiliate', 'Admin\AffiliateController@index')->name('admin.affiliate.index');
+            // updateStatus
+            Route::post('/affiliate/status/{id}', 'Admin\AffiliateController@updateStatus')->name('admin.affiliates.updateStatus');
+
+        });
     });
+
+    // end admin routes
 
     Route::group(['middleware' => ['web']], function () {
         Route::post('/coupon', 'Front\CheckoutController@coupon')->name('front.membership.coupon');

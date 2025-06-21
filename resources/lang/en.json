@@ -2591,7 +2591,17 @@
     "Planning":"المخطط",
     "Video":"فيديو",
     "Video_URL": "رابط الفيديو",
-    "virtual_tour": "جولة افتراضية"
+    "virtual_tour": "جولة افتراضية",
+    "Affiliate Management": "إدارة الشركاء",
+    "Affiliate Settings": "إعدادات الشركاء",
+    "NO AFFILIATE FOUND": "لم يتم العثور على أي شريك",
+    "Affiliate": "شريك",
+    "Bank Name": "اسم البنك",
+    "Account Number": "رقم حساب البنك",
+    "Bank Account Name": "اسم حساب البنك",
+    "All Affiliates": "جميع الشركاء",
+    "All Affiliate Requests": "جميع طلبات الشركاء",
+    "Search by Full Name, Bank Name, Account, IBAN, Status": "البحث بالاسم الكامل، اسم البنك، الحساب، رقم الحساب,الحالة"
 
 
 }
