@@ -54,6 +54,7 @@ Route::get('public-user/{id}', [PublicUserController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/affiliate/register', [AffiliateController::class, 'register']);
+    Route::get('/affiliate', [AffiliateController::class, 'index']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {

@@ -19,14 +19,24 @@ class ApiAffiliateUser extends Model
         'bank_account_number',
         'iban',
         'request_status',
+        'commission_percentage',
+        'total_commission',
+        'withdrawn_amount',
+        'pending_amount',
+        'total_earned',
+        'total_withdrawn',
+        'total_pending',
+        'total_refunded',
+        'total_commission_paid',
+        'total_commission_pending',
     ];
+
     // hide the user_id from the API response
     protected $hidden = [
         'user_id',
         "updated_at",
         "created_at",
         "id",
-        "request_status",
     ];
 
     /**

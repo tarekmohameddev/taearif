@@ -263,6 +263,11 @@ class ArbController extends Controller
             $package = Package::find($package_id);
             $transaction_id = UserPermissionHelper::uniqidReal(8);
             $transaction_details = '';
+            // update user subscribed
+            $user->subscribed = true;
+            $user->subscription_amount = $price;
+            $user->save();
+
             if ($paymentFor == "membership") {
                 $amount = $price;
                 $password = $requestData['password'];
