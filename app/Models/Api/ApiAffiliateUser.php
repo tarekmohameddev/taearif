@@ -12,23 +12,15 @@ class ApiAffiliateUser extends Model
     protected $table = 'api_affiliate_users';
 
     protected $fillable = [
-        'name',
         'user_id',
         'fullname',
         'bank_name',
         'bank_account_number',
         'iban',
-        'request_status',
         'commission_percentage',
-        'total_commission',
-        'withdrawn_amount',
         'pending_amount',
-        'total_earned',
-        'total_withdrawn',
-        'total_pending',
-        'total_refunded',
-        'total_commission_paid',
-        'total_commission_pending',
+        'request_status',
+        'image',
     ];
 
     // hide the user_id from the API response
@@ -45,6 +37,11 @@ class ApiAffiliateUser extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(\App\Models\AffiliateTransaction::class, 'affiliate_id');
     }
 
 }

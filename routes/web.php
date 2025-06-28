@@ -1722,9 +1722,15 @@ Route::domain($domain)->group(function () {
 
         // affiliate
         Route::group(['middleware' => 'checkpermission:Affiliate'], function () {
-            Route::get('/affiliate', 'Admin\AffiliateController@index')->name('admin.affiliate.index');
-            // updateStatus
-            Route::post('/affiliate/status/{id}', 'Admin\AffiliateController@updateStatus')->name('admin.affiliates.updateStatus');
+            Route::get('/affiliates', 'Admin\AffiliateController@index')->name('admin.affiliates.index');
+            // Status management
+            Route::post('/affiliates/status/{id}', 'Admin\AffiliateController@updateStatus')->name('admin.affiliates.updateStatus');
+            // Payment and history
+            Route::get('/affiliates/payment-history/{id}', 'Admin\AffiliateController@paymentHistory')->name('admin.affiliates.paymentHistory');
+            // Commission and balance operations
+            Route::patch('/affiliates/{affiliate}/approve-pending','Admin\AffiliateController@approvePendingAmount')->name('admin.affiliates.approvePending');
+            // AJAX endpoints
+            Route::get('/affiliates/{id}/balance-summary', 'Admin\AffiliateController@getBalanceSummary')->name('admin.affiliates.balanceSummary');
 
         });
     });

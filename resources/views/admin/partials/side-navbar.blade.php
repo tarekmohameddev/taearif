@@ -174,27 +174,39 @@
 
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Affiliate Management', $permissions)))
                     <li class="nav-item
-                    @if (request()->path() == 'admin/affiliate') active
-                    @elseif(request()->is('admin/affiliate/*/edit')) active @endif">
+                        @if (request()->path() == 'admin/affiliates') active
+                        @elseif(request()->is('admin/affiliates/*/edit')) active
+                        @elseif(request()->is('admin/affiliates/payments')) active
+                        @elseif(request()->is('admin/affiliates/payment-history/*')) active
+                        @endif">
                         <a data-toggle="collapse" href="#affiliateManagement">
                             <i class="la flaticon-users"></i>
                             <p>{{ __('Affiliate Management') }}</p>
                             <span class="caret"></span>
                         </a>
                         <div class="collapse
-                        @if (request()->path() == 'admin/affiliate') show
-                        @elseif(request()->is('admin/affiliate/*/edit')) show @endif"
+                            @if (request()->path() == 'admin/affiliates') show
+                            @elseif(request()->is('admin/affiliates/*/edit')) show
+                            @elseif(request()->is('admin/affiliates/payments')) show
+                            @elseif(request()->is('admin/affiliates/payment-history/*')) show
+                            @endif"
                             id="affiliateManagement">
                             <ul class="nav nav-collapse">
-                                <li class="@if (request()->path() == 'admin/affiliate') active @endif">
-                                    <a href="{{ route('admin.affiliate.index') }}">
+                                <li class="@if (request()->path() == 'admin/affiliates') active @endif">
+                                    <a href="{{ route('admin.affiliates.index') }}">
                                         <span class="sub-item">{{ __('All Affiliates') }}</span>
                                     </a>
                                 </li>
                             </ul>
+
                         </div>
                     </li>
                 @endif
+
+                {{-- User Management --}}
+
+                {{-- App Management --}}
+
 
                 {{-- Settings --}}
 

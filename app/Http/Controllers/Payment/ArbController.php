@@ -265,8 +265,32 @@ class ArbController extends Controller
             $transaction_details = '';
             // update user subscribed
             $user->subscribed = true;
-            $user->subscription_amount = $price;
+            $user->subscription_amount = $package->price;
             $user->save();
+
+            if ($user->referred_by) {
+                $affiliate = \App\Models\Api\ApiAffiliateUser::where('user_id', $user->referred_by)->first();
+
+                if ($affiliate) {
+                    $commissionRate = $affiliate->commission_percentage ?? 0.15;
+                    $commission = round($package->price * $commissionRate, 2);
+
+                    // Update affiliate total commission
+                    $affiliate->pending_amount += $commission;
+                    $affiliate->save();
+
+                    // Log transaction as pending — not yet withdrawable
+                    \App\Models\AffiliateTransaction::create([
+                        'affiliate_id' => $affiliate->id,
+                        'type'         => 'pending', // will require admin approval
+                        'amount'       => $commission,
+                        'note'         => "Auto commission from user #{$user->id}",
+                    ]);
+                }
+            }
+
+
+
 
             if ($paymentFor == "membership") {
                 $amount = $price;

@@ -12,12 +12,34 @@
     </ul>
 </div>
 
+<!-- Summary Cards -->
+<div class="row mt-4">
+
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="text-warning">{{ $summary['pending_count'] }}</h5>
+                <small><i class="fas fa-user-clock"></i> {{ __('Pending Requests') }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="text-info">{{ $summary['approved_count'] }}</h5>
+                <small><i class="fas fa-user-check"></i> {{ __('Approved Affiliates') }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <div class="row">
     <div class="col-md-12">
         <div class="card">
 
             <div class="card-header">
-                <form action="{{ route('admin.affiliate.index') }}" class="form-inline float-right">
+                <form action="{{ route('admin.affiliates.index') }}" class="form-inline float-right">
                     <input name="search" class="form-control mr-2" type="text"
                         placeholder="{{__('Search by Full Name, Bank Name, Account, IBAN, Status')}}"
                         value="{{ request()->input('search') }}"
@@ -38,20 +60,39 @@
                                     <th>#</th>
                                     <th>{{ __('Full Name') }}</th>
                                     <th>{{ __('Bank Name') }}</th>
+                                    <th>{{ __('Pending') }}</th>
                                     <th>{{ __('Account Number') }}</th>
                                     <th>{{ __('IBAN') }}</th>
                                     <th>{{ __('Status') }}</th>
                                     <th>{{ __('Actions') }}</th>
+                                    <th>{{ __('View Payments') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($affiliates as $affiliate)
                                     <tr>
                                         <td>{{ $loop->iteration }}</td>
-                                        <td>{{ $affiliate->fullname }}</td>
-                                        <td>{{ $affiliate->bank_name }}</td>
-                                        <td>{{ $affiliate->bank_account_number }}</td>
-                                        <td>{{ $affiliate->iban }}</td>
+                                        <td>
+                                            <span title="{{ $affiliate->fullname }}">
+                                                {{ Str::limit($affiliate->fullname, 6, '...') }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span title="{{ $affiliate->bank_name }}">
+                                                {{ Str::limit($affiliate->bank_name, 4, '...') }}
+                                            </span>
+                                        </td>
+                                        <td>{{ number_format($affiliate->pending_amount, 2) }} ريال</td>
+                                        <td>
+                                            <span title="{{ $affiliate->bank_account_number }}">
+                                                {{ Str::limit($affiliate->bank_account_number, 4, '***') }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span title="{{ $affiliate->iban }}">
+                                                {{ Str::limit($affiliate->iban, 4, '***') }}
+                                            </span>
+                                        </td>
                                         <td>
                                             @php
                                                 $status = strtolower($affiliate->request_status);
@@ -62,7 +103,8 @@
                                                 ];
                                             @endphp
 
-                                            <span class="badge badge-{{ $status == 'approved' ? 'success' : ($status == 'rejected' ? 'danger' : 'warning') }}">
+                                            <span class="badge badge-{{ $status == 'approved' ? 'success' : ($status == 'rejected' ? 'danger' : 'warning') }}"
+                                                  style="font-size: 0.65rem; padding: 0.25rem 0.5rem;">
                                                 {{ $statusLabels[$status] ?? ucfirst($status) }}
                                             </span>
                                         </td>
@@ -70,12 +112,17 @@
                                             <form action="{{ route('admin.affiliates.updateStatus', $affiliate->id) }}" method="POST" class="d-inline">
                                                 @csrf
                                                 @method('POST')
-                                                <select name="request_status" class="form-select form-select-sm" onchange="this.className = this.options[this.selectedIndex].className; this.form.submit()">
-                                                    <option class="badge bg-warning text-dark" value="pending" {{ $affiliate->request_status === 'pending' ? 'selected' : '' }}>Pending</option>
-                                                    <option class="badge bg-success" value="approved" {{ $affiliate->request_status === 'approved' ? 'selected' : '' }}>Approved</option>
-                                                    <option class="badge bg-danger" value="rejected" {{ $affiliate->request_status === 'rejected' ? 'selected' : '' }}>Rejected</option>
+                                                <select name="request_status" class="form-select form-select-sm py-0 px-1" style="font-size: 0.55rem; height: 28px; width: 85px;"
+                                                    onchange="this.className = this.options[this.selectedIndex].className + ' form-select form-select-sm py-0 px-1'; this.form.submit()">
+                                                    <option class="badge bg-warning text-dark"  value="pending" {{ $affiliate->request_status === 'pending' ? 'selected' : '' }}>Pending</option>
+                                                    <option class="badge bg-success"  value="approved" {{ $affiliate->request_status === 'approved' ? 'selected' : '' }}>Approved</option>
+                                                    <option class="badge bg-danger"  value="rejected" {{ $affiliate->request_status === 'rejected' ? 'selected' : '' }}>Rejected</option>
                                                 </select>
                                             </form>
+                                        </td>
+                                        <td>
+                                            <!-- view -->
+                                            <a href="{{ route('admin.affiliates.paymentHistory', $affiliate->id) }}" class="btn btn-xs btn-info py-1 px-2" style="font-size: 0.65rem;">{{ __('View Payments') }}</a>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -91,6 +138,7 @@
         </div>
     </div>
 </div>
+
 @endsection
 
 
@@ -102,3 +150,5 @@
         });
     });
 </script>
+
+@endsection
