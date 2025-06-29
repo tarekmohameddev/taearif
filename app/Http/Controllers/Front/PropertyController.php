@@ -56,11 +56,11 @@ class PropertyController extends Controller
             })
             ->select('id', 'name_ar', 'name_en')
             ->get();
-    
+
         return response()->json($states);
     }
-    
-    
+
+
 
     public function index($website, Request $request,CategoryVisibility $visibility)
     {
