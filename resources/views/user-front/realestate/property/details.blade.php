@@ -516,7 +516,7 @@
                     </div>
                     @endif
 
-                    <div class="product-video mb-40">
+                    <div class="product-video mb-40" style="margin-top:50px; ">
                         <!-- faqs -->
                         @if($propertyContent->displayFaqs())
                             <h3 class="mb-3">{{ $keywords['FAQs'] ?? __('FAQs') }}</h3>
