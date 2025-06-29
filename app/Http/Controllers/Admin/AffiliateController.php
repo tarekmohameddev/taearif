@@ -112,13 +112,16 @@ class AffiliateController extends Controller
             // optional receipt upload
             $imagePath = null;
             if ($request->hasFile('image')) {
-                $directory = 'affiliate_transactions';
-                $disk = 'public';
+                $directory = public_path('affiliate_transactions/');
+                $filename = uniqid() . '.' . $request->file('image')->getClientOriginalExtension();
+
                 // Ensure the directory exists
-                if (!Storage::disk($disk)->exists($directory)) {
-                    Storage::disk($disk)->makeDirectory($directory);
+                if (!file_exists($directory)) {
+                    mkdir($directory, 0755, true);
                 }
-                $imagePath = $request->file('image')->store($directory, $disk);
+
+                $request->file('image')->move($directory, $filename);
+                $imagePath = 'affiliate_transactions/' . $filename;
             }
 
             $affiliate->save();

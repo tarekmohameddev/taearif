@@ -103,7 +103,7 @@ class AffiliateController extends Controller
               'payment_history'      => $history->map(fn($t) => [
                   'id'        => $t->id,
                   'amount'    => number_format($t->amount,2),
-                  'image_url' => $t->image ? asset('storage/'.$t->image) : null,
+                  'image_url' => $t->image ? asset($t->image) : null,
                   'note'      => $t->note,
                   'date'      => $t->created_at->toDateTimeString(),
               ]),

@@ -85,8 +85,8 @@
                             <td>{{ $t->note }}</td>
                             <td>
                                 @if($t->image)
-                                    <a href="{{ asset('storage/'.$t->image) }}" target="_blank">
-                                        <img src="{{ asset('storage/'.$t->image) }}"
+                                    <a href="{{ asset($t->image) }}" target="_blank">
+                                        <img src="{{ asset($t->image) }}"
                                              class="img-thumbnail"
                                              style="width:50px;height:50px;object-fit:cover" alt="">
                                     </a>
