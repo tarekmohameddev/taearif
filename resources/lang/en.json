@@ -2591,7 +2591,30 @@
     "Planning":"المخطط",
     "Video":"فيديو",
     "Video_URL": "رابط الفيديو",
-    "virtual_tour": "جولة افتراضية"
-
-
+    "virtual_tour": "جولة افتراضية",
+    "Affiliate Management": "إدارة الشركاء",
+    "Affiliate Settings": "إعدادات الشركاء",
+    "NO AFFILIATE FOUND": "لم يتم العثور على أي شريك",
+    "Affiliate": "شريك",
+    "Bank Name": "اسم البنك",
+    "Account Number": "رقم حساب البنك",
+    "Bank Account Name": "اسم حساب البنك",
+    "All Affiliates": "جميع الشركاء",
+    "All Affiliate Requests": "جميع طلبات الشركاء",
+    "Payments": "الدفعات",
+    "Affiliate Payment Records": "سجلات دفع الشركاء",
+    "Approved Affiliates": "الشركاء المعتمدين",
+    "Transaction History": "سجل المعاملات",
+    "No transaction history available": "لا يوجد سجل معاملات متاح",
+    "Pending Amount": "المبلغ المعلق",
+    "Affiliate Payments": "المدفوعات التابعة",
+    "Search by Full Name, Bank Name, Account, IBAN, Status": "البحث بالاسم الكامل، اسم البنك، الحساب، رقم الحساب,الحالة",
+    "View Payments": "عرض المدفوعات",
+    "Approve Pending Amount": "الموافقة على المبلغ المعلق",
+    "Amount to collect": "المبلغ المراد جمعه",
+    "Note (optional)": "ملاحظة (اختياري)",
+    "Receipt (optional)": "إيصال (اختياري)",
+    "Approve": "الموافقة",
+    "Approve Pending": "الموافقة على المعلق",
+    "Enter a note (optional)": "أدخل ملاحظة (اختياري)"
 }

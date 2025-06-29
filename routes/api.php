@@ -33,7 +33,8 @@ use App\Http\Controllers\Api\content\ApiBannerSettingController;
 use App\Http\Controllers\Api\content\ApiContentSectionsController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
 use App\Http\Controllers\ImpersonationController;
-
+use App\Http\Controllers\Api\PublicUserController;
+use App\Http\Controllers\Api\Affiliate\AffiliateController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -48,6 +49,13 @@ use App\Http\Controllers\ImpersonationController;
 // Route::middleware('auth:api')->get('/user', function (Request $request) {
 //     return $request->user();
 // });
+
+Route::get('public-user/{id}', [PublicUserController::class, 'show']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/affiliate/register', [AffiliateController::class, 'register']);
+    Route::get('/affiliate', [AffiliateController::class, 'index']);
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/impersonate/{user}',            [ImpersonationController::class, 'start']);
@@ -65,6 +73,7 @@ Route::middleware('web')->group(function () {
     Route::get('/auth/google/redirect', [AuthController::class, 'redirect'])->name('redirect');
     Route::get('/auth/google/callback', [AuthController::class, 'callback'])->name('callback');
 });
+
 
 // Auth routes
 Route::middleware('auth:sanctum')->group(function () {

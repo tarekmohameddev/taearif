@@ -89,6 +89,8 @@ class User extends Authenticatable
         'google_id',
         'referral_code',
         'referred_by',
+        'subscribed',
+        'subscription_amount',
     ];
 
     /**
@@ -109,6 +111,8 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'onboarding_completed' => 'boolean',
         'show_even_if_empty' => 'boolean',
+        'subscribed' => 'boolean',
+        'subscription_amount' => 'decimal:2',
     ];
 
     protected static function boot()
@@ -122,6 +126,20 @@ class User extends Authenticatable
         });
 
     }
+
+    public function referredUsers()
+    {
+        return $this->hasMany(User::class, 'referred_by', 'id');
+    }
+    public function subscribedReferrals()
+    {
+        return $this->referredUsers()->where('subscribed', true);
+    }
+    public function affiliateUser()
+    {
+        return $this->hasOne(\App\Models\Api\ApiAffiliateUser::class, 'user_id');
+    }
+
     public function referrer()
     {
         return $this->belongsTo(User::class, 'referred_by');

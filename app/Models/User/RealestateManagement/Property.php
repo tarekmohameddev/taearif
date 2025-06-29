@@ -4,6 +4,7 @@ namespace App\Models\User\RealestateManagement;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User\RealestateManagement\Project;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -125,7 +126,7 @@ class Property extends Model
             $last = self::where('featured', 1)->max('reorder_featured');
             $updates['reorder_featured'] = $last ? $last + 1 : 1;
         }
-        
+
         return $this->update([
             'project_id' => $requestData['project_id'] ?? null,
             'region_id' => $requestData['region_id'] ?? null,
@@ -217,6 +218,9 @@ class Property extends Model
     {
         return $this->hasOne(UserPropertyCharacteristic::class, 'property_id', 'id');
     }
-
+    public function project()
+    {
+        return $this->belongsTo(Project::class, 'project_id');
+    }
 
 }
