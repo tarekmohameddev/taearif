@@ -74,7 +74,7 @@ class AffiliateController extends Controller
         $end   = Carbon::now()->endOfMonth();
         $monthly = $affiliate->transactions()->where('type','collected')->whereBetween('created_at', [$start, $end])->sum('amount');
         // history of collected payments
-        $history = $affiliate->transactions()->where('type','collected')->orderByDesc('created_at')->get(['id','amount','image','note','created_at']);
+        $history = $affiliate->transactions()->where('type','collected')->orderByDesc('created_at')->get(['id','amount','image','type','note','created_at']);
 
         // If the user has no transactions, return an empty array
         if ($history->isEmpty()) {
@@ -104,6 +104,7 @@ class AffiliateController extends Controller
                   'id'        => $t->id,
                   'amount'    => number_format($t->amount,2),
                   'image_url' => $t->image ? asset($t->image) : null,
+                  'type'      => $t->type,
                   'note'      => $t->note,
                   'date'      => $t->created_at->toDateTimeString(),
               ]),
