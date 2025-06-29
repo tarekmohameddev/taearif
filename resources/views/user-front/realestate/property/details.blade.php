@@ -277,7 +277,7 @@
                                 </li>
 
                                 <li>
-                                    <a class="btn green" style="width: 100px !important;padding: 14px;height: 45px !important;" href="https://wa.me/{{ $user->phone }}?text={{ urlencode(__('انا مهتم بهذا العقار: ') . route('front.user.property.details', [getParam(), 'slug' => $propertyContent->slug])) }}">
+                                    <a class="btn green" style="width: 100px !important;padding: 14px;height: 45px !important;" href="https://wa.me/{{ $userApi_footerData_general_phone }}?text={{ urlencode(__('انا مهتم بهذا العقار: ') . route('front.user.property.details', [getParam(), 'slug' => $propertyContent->slug])) }}">
                                         <i class="fab fa-whatsapp" ></i>
                                     </a>
                                     <span>{{ __('WhatsApp') }}</span>
@@ -587,8 +587,8 @@
                                     <a {{-- href="{{ route('frontend.agent.details', [getParam(), 'agentusername' => $user->username, 'admin' => 'true']) }}" --}}> {{ $user->first_name . ' ' . $user->last_name }}
                                     </a>
                                 </h4>
-                                <a class="d-block" href="tel:{{ $user->phone }}">
-                                    {{ $user->phone }}
+                                <a class="d-block" href="tel:{{ $userApi_footerData_general_phone }}">
+                                    {{ $userApi_footerData_general_phone }}
                                 </a>
                                 <a href="mailto:{{ $user->email }}">
                                     {{ $user->email }}

@@ -7,34 +7,36 @@ use Illuminate\Mail\Message;
 use App\Models\User\Language;
 use App\Models\User\UserCity;
 // use App\Models\User\RealestateManagement\Category;
+use App\Models\Api\FooterSetting;
 use App\Models\User\BasicSetting;
 use App\Models\User\UserDistrict;
 use Illuminate\Support\Facades\DB;
 use PHPMailer\PHPMailer\PHPMailer;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Services\CategoryVisibility;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Config;
+// use App\Models\User\RealestateManagement\City;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Response;
-// use App\Models\User\RealestateManagement\City;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Api\ApiUserCategorySetting;
+use Illuminate\Database\Eloquent\Collection;
 use App\Models\User\RealestateManagement\State;
 use App\Models\User\RealestateManagement\Amenity;
 use App\Models\User\RealestateManagement\Country;
 use App\Models\User\RealestateManagement\Project;
 use App\Models\User\RealestateManagement\Property;
+use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\User\RealestateManagement\PropertyAmenity;
 use App\Models\User\RealestateManagement\PropertyContact;
 use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\RealestateManagement\PropertyWishlist;
 use App\Models\User\RealestateManagement\ApiUserCategory as Category;
-use App\Models\User\RealestateManagement\ApiUserCategory;
-use App\Models\Api\ApiUserCategorySetting;
-use Illuminate\Database\Eloquent\Collection;
-use App\Services\CategoryVisibility;
+
 class PropertyController extends Controller
 {
 
@@ -312,6 +314,8 @@ class PropertyController extends Controller
         }])->where('property_id', $property->property_id)->get();
 
         $information['user'] = $user;
+
+        $information['userApi_footerData_general_phone'] = FooterSetting::where('user_id', $user->id)->value('general')['phone'];
 
         $categories = Category::where('is_active', 1)->get();
         $categories->map(function ($category) use ($user) {
