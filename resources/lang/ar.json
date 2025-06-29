@@ -423,6 +423,8 @@
     "Video":"فيديو",
     "Video_URL": "رابط الفيديو",
     "Location":"الموقع",
+    "real_estate_Limit":"حد العقارات",
+    "projectLimit":"حد المشروع",
     "virtual_tour": "جولة افتراضية"
 
 

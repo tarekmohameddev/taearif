@@ -2616,5 +2616,7 @@
     "Receipt (optional)": "إيصال (اختياري)",
     "Approve": "الموافقة",
     "Approve Pending": "الموافقة على المعلق",
+    "real_estate_Limit":"حد العقارات",
+    "projectLimit":"حد المشروع",
     "Enter a note (optional)": "أدخل ملاحظة (اختياري)"
 }
