@@ -557,29 +557,10 @@ class FrontendController extends Controller
         // Categories for filtering and display
         $showAll = $user->show_even_if_empty;
 
-        // $activeCategoryIds = \App\Models\Api\ApiUserCategorySetting::where('user_id', $user->id)
-        //     ->where('is_active', 1)
-        //     ->pluck('category_id');
-
-        // if ($showAll) {
-        //     // Show all active categories for this user
-        //     $visibleCategories = \App\Models\User\RealestateManagement\ApiUserCategory::whereIn('id', $activeCategoryIds)
-        //         ->get();
-        // } else {
-        //     // Only categories with properties for this user
-        //     $visibleCategories = \App\Models\User\RealestateManagement\ApiUserCategory::whereIn('id', $activeCategoryIds)
-        //         ->whereHas('properties', function ($q) use ($user) {
-        //             $q->where('user_id', $user->id);
-        //         })
-        //         ->get();
-        // }
-
-        // $data['visibleCategories'] = $visibleCategories;
         $data['visibleCategories'] = $visibility->forTenant(
             $user->id,$request,(bool) $user->show_even_if_empty
         );
 
-        // $data['visibleCategories'] = $this->visibleCategoriesForTenant($user->id, $request);
 
         // $data['property_contents'] = $property_contents->paginate(8);
         $propertyQuery = $propertyFilterService->buildQuery($tenantId, $request, $userCurrentLang);
@@ -632,10 +613,6 @@ class FrontendController extends Controller
 
         // resources\views\user-front\maintenance_mode.blade.php
         // maintenance_mode
-
-
-
-
 
         if (isset($api_general_settingsData->maintenance_mode) && $api_general_settingsData->maintenance_mode == 1) {
             return view('user-front.maintenance_mode', $data);
@@ -877,7 +854,7 @@ class FrontendController extends Controller
                 ->limit($itemlimit)
                 ->get();
             $bs = BasicSetting::where('user_id', $user->id)->first();
-            // dd($bs->timezoneinfo);
+
             Config::set('app.timezone', $bs->timezoneinfo->timezone);
             $data['flash_items'] = DB::table('user_items')->where('user_items.status', 1)->where('user_items.user_id', $user->id)
                 ->where('user_items.flash', 1)
@@ -1058,7 +1035,7 @@ class FrontendController extends Controller
 
             $data['featured_properties'] = Property::where([['user_properties.status', 1], ['user_properties.featured', 1], ['user_properties.user_id', $user->id]])
                 ->leftJoin('user_property_contents', 'user_property_contents.property_id', 'user_properties.id')
-                // ->leftJoin('user_property_categories', 'user_property_categories.id', 'user_properties.category_id')
+
                 ->leftJoin('user_cities', 'user_cities.id', '=', 'user_property_contents.city_id')
                 ->leftJoin('user_states', 'user_states.id', '=', 'user_property_contents.state_id')
                 ->leftJoin('user_countries', 'user_countries.id', '=', 'user_property_contents.country_id')
@@ -1175,7 +1152,7 @@ class FrontendController extends Controller
             $data['all_countries'] = $allCountries;
 
             $data['cities'] = $allCities;
-            // $data['all_cities'] = $allCities;
+
             $data['all_cities'] = \App\Models\User\UserCity::whereHas('propertyContent', function ($query) use ($user) {
                 $query->whereHas('property', function ($q) use ($user) {
                     $q->where('user_id', $user->id)->where('status', 1);
@@ -1189,23 +1166,15 @@ class FrontendController extends Controller
             } else {
                 $allStates = \App\Models\User\UserDistrict::select('id', 'name_ar')->get();
             }
-            // $data['all_states'] = $allStates;
+
             $data['all_states'] = \App\Models\User\UserDistrict::whereHas('propertyContent', function ($query) use ($user) {
                 $query->whereHas('property', function ($q) use ($user) {
                     $q->where('user_id', $user->id)->where('status', 1);
                 });
             })->get();
 
-            // Log::info('all_states: ' . $data['all_states']);
-            // Log::info('all_cities: ' . $data['all_cities']);
-            // dd($data['all_cities']);
-
-
-            // Category::where([['status', 1], ['user_id', $user->id], ['language_id', $userCurrentLang->id]])->orderBy('serial_number', 'asc')->get();
             $data['all_proeprty_categories'] = ApiUserCategory::where([['is_active', 1]])->get();
 
-            // dd($data['all_proeprty_categories']);
-            Log::info('user-front.realestate');
             $min = Property::where([['status', 1], ['user_id', $user->id]])->min('price');
             $max = Property::where([['status', 1], ['user_id', $user->id]])->max('price');
             $data['min'] = intval($min);
@@ -1228,8 +1197,6 @@ class FrontendController extends Controller
 
                 $data['property_categories'] = ApiUserCategory::where([['is_active', 1]])->get();
 
-
-                // user-front.realestate.home.index-v1
             return view('user-front.realestate.home.index-v1', $data);
 
             } elseif ($userBs->theme == 'home14') {
@@ -1238,8 +1205,6 @@ class FrontendController extends Controller
                     ->orderBy('serial_number', 'ASC')
                     ->where('user_id', $user->id)
                     ->get();
-                // $data['property_categories'] = Category::where([['status', 1], ['user_id', $user->id], ['featured', 1], ['language_id', $userCurrentLang->id]])->orderBy('serial_number', 'asc')->get();
-
 
                 $data['callToActionInfo'] = User\ActionSection::query()
                     ->where('user_id', $user->id)
@@ -1263,7 +1228,6 @@ class FrontendController extends Controller
 
                     $data['property_categories'] = ApiUserCategory::where([['is_active', 1]])->get();
 
-                    // user-front.realestate.home.index-v2
             return view('user-front.realestate.home.index-v2', $data);
 
             } elseif ($userBs->theme == 'home15') {
@@ -1288,7 +1252,6 @@ class FrontendController extends Controller
 
                 $data['property_categories'] = ApiUserCategory::where([['is_active', 1]])->get();
 
-                // user-front.realestate.home.index-v3
             return view('user-front.realestate.home.index-v3', $data);
             }
 
@@ -1296,28 +1259,6 @@ class FrontendController extends Controller
             return view('user-front.home-page.home-one', $data);
         }
     }
-
-    // private function visibleCategoriesForTenant(int $tenantId, Request $request): Collection
-    // {
-    //     $activeIds = ApiUserCategorySetting::where('user_id', $tenantId)
-    //         ->where('is_active', 1)
-    //         ->pluck('category_id');
-
-    //     $query = ApiUserCategory::whereIn('id', $activeIds)
-    //         ->where('is_active', 1)
-    //         ->when(
-    //             $request->filled('type') &&
-    //             in_array($request->type, ['commercial', 'residential']),
-    //             fn ($q) => $q->where('type', $request->type)
-    //         );
-
-    //     if (! getUser()->show_even_if_empty) {
-    //         $query->whereHas('properties',
-    //             fn ($q) => $q->where('user_id', $tenantId));
-    //     }
-
-    //     return $query->get();
-    // }
 
     public function paymentInstruction(Request $request)
     {
