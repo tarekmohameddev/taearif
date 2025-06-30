@@ -15,11 +15,12 @@ return new class extends Migration
     {
         Schema::create('api_customers', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id')->unique();
+            $table->unsignedBigInteger('user_id');
             $table->string('name');
             $table->string('email')->nullable()->unique();
             $table->string('phone_number')->unique();
             $table->string('password');
+            $table->string('remember_token')->nullable();
             $table->timestamps();
             // Foreign key constraint (assuming users table exists)
             // $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

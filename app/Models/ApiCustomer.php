@@ -5,8 +5,11 @@ namespace App\Models;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class ApiCustomer extends Model
+
+class ApiCustomer extends Authenticatable
+
 {
     use HasFactory;
 
@@ -28,6 +31,7 @@ class ApiCustomer extends Model
         'email',
         'phone_number',
         'password',
+        'remember_token',
     ];
 
     /**
@@ -37,6 +41,7 @@ class ApiCustomer extends Model
      */
     protected $hidden = [
         'password',
+        'remember_token',
     ];
 
 
