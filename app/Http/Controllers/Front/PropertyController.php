@@ -83,25 +83,9 @@ class PropertyController extends Controller
 
         $projectId = $request->filled('project') ? intval($request->project) : null;
 
-        // $showAll    = $user->show_even_if_empty;
-        // $information['categories'] = $this->visibleCategoriesForTenant($tenantId, $request);
         $information['categories'] = $visibility->forTenant(
             $tenantId,$request,(bool) $user->show_even_if_empty
         );
-
-
-        // dd($categoriesQuery);
-
-        // if ($request->has('type') && in_array($request->type, ['commercial', 'residential'])) {
-        //     $information['categories'] = Category::where([
-        //         ['type', $request->type],
-        //         ['is_active', true],
-        //     ])->get();
-        // } else {
-        //     $information['categories'] = Category::where([
-        //         ['is_active', true],
-        //     ])->get();
-        // }
 
         $information['amenities'] = Amenity::where('user_id', $tenantId)
             ->where('language_id', $userCurrentLang->id)
@@ -213,11 +197,36 @@ class PropertyController extends Controller
         //     ->where('status', 1)
         //     ->where('language_id', $userCurrentLang->id)
         //     ->get();
-        $allCities = UserCity::all();
-        $information['all_cities'] = $allCities;
 
-        $information['all_states'] = UserDistrict::select('id', 'name_ar')->distinct()->get();
-        $information['all_countries'] = UserDistrict::select('country_name_ar')->distinct()->get();
+        // $allCities = UserCity::all();
+        // $information['all_cities'] = $allCities;
+
+        //
+        $allCities = UserCity::all();
+        $allCountries = UserDistrict::select('country_name_ar')->distinct()->get();
+        $information['all_cities'] = $allCities;
+        $information['all_countries'] = $allCountries;
+        $information['all_cities'] = \App\Models\User\UserCity::whereHas('propertyContent', function ($query) use ($user) {
+            $query->whereHas('property', function ($q) use ($user) {
+                $q->where('user_id', $user->id)->where('status', 1);
+            });
+        })->get();
+        $selectedCityId = request('city_id');
+        if ($selectedCityId) {
+            $allStates = \App\Models\User\UserDistrict::where('city_id', $selectedCityId)->select('id', 'name_ar')->get();
+        } else {
+            $allStates = \App\Models\User\UserDistrict::select('id', 'name_ar')->get();
+        }
+        // $data['all_states'] = $allStates;
+        $information['all_states'] = \App\Models\User\UserDistrict::whereHas('propertyContent', function ($query) use ($user) {
+            $query->whereHas('property', function ($q) use ($user) {
+                $q->where('user_id', $user->id)->where('status', 1);
+            });
+        })->get();
+
+
+        // $information['all_states'] = UserDistrict::select('id', 'name_ar')->distinct()->get();
+        // $information['all_countries'] = UserDistrict::select('country_name_ar')->distinct()->get();
 
         // $priceRange = Property::where('user_id', $tenantId)->where('active', 1)
         //     ->selectRaw('MIN(price) as min, MAX(price) as max')->first();
@@ -229,7 +238,18 @@ class PropertyController extends Controller
         $information['min'] = intval($priceRange->min);
         $information['max'] = intval($priceRange->max);
 
-        $information['projects'] = Project::with(['content'])->where('user_id', $tenantId)->get();
+        // $information['projects'] = Project::with(['content'])->where('user_id', $tenantId)->get();
+        $information['projects'] = Project::with(['content'])
+            ->where('user_id', $tenantId)
+            ->whereHas('properties', function ($query) use ($tenantId, $userCurrentLang) {
+                $query->where('user_id', $tenantId)
+                    ->where('status', 1)
+                    ->whereHas('contents', function ($subQuery) use ($userCurrentLang) {
+                        $subQuery->where('language_id', $userCurrentLang->id);
+                    });
+            })
+            ->get();
+
 
         if ($request->ajax()) {
             // $viewContent = View::make('user-front.realestate.property.property', $information)->render();

@@ -378,19 +378,20 @@
                         </div>
                     </div>
 
-<div class="form-group">
-    <label for="project">{{ $keywords['Project'] ?? __('Projects') }}</label>
-    <select name="project" id="project" class="form-control" onchange="updateURL('project='+this.value)">
-        <option value="">{{ __('All Projects') }}</option>
-        @foreach ($projects as $project)
+                    @if($projects->isNotEmpty())
+                        <div class="form-group">
+                            <label for="project">{{ $keywords['Project'] ?? __('Projects') }}</label>
+                            <select name="project" id="project" class="form-control" onchange="updateURL('project='+this.value)">
+                                <option value="">{{ __('All Projects') }}</option>
+                                @foreach ($projects as $project)
 
-        <option value="{{ $project->id }}">
-            {{ optional($project->contents->first())->title ?? $project->developer }}
-        </option>
-
-        @endforeach
-    </select>
-</div>
+                                <option value="{{ $project->id }}">
+                                    {{ optional($project->contents->first())->title ?? $project->developer }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
 
 
                 </div>
@@ -436,7 +437,7 @@
             </div>
             <div class="col-md-6 col-lg-3">
 
-                <select name="state_id" id="state_id" class="form-control state_id">
+                <select name="state_id" id="state_id" class="form_control form-select state_id">
                     <option value="">اختر الحي</option>
                     @foreach($all_states as $state)
                         <option value="{{ $state->id }}" {{ request('state_id') == $state->id ? 'selected' : '' }}>
