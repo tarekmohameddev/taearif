@@ -40,14 +40,6 @@ use App\Models\User\RealestateManagement\ApiUserCategory as Category;
 class PropertyController extends Controller
 {
 
-    // public function getStatesByCity($city_id)
-    // {
-    //     $states = UserDistrict::where('city_id', $city_id)
-    //         ->select('id', 'name_ar', 'name_en')
-    //         ->get();
-    //         Log::info('States retrieved for city ID: ' . $city_id);
-    //     return response()->json($states);
-    // }
     public function getStatesByCity($city_id)
     {
         $states = UserDistrict::where('city_id', $city_id)
@@ -61,8 +53,6 @@ class PropertyController extends Controller
 
         return response()->json($states);
     }
-
-
 
     public function index($website, Request $request,CategoryVisibility $visibility)
     {
@@ -192,16 +182,6 @@ class PropertyController extends Controller
         $information['property_contents'] = $property_contents;
         $information['contents'] = $property_contents;
 
-        // $information['all_cities'] = City::where('user_id', $tenantId)->where('active', 1)->where('language_id', $userCurrentLang->id)->get();
-        // $information['all_cities'] = City::where('user_id', $tenantId)
-        //     ->where('status', 1)
-        //     ->where('language_id', $userCurrentLang->id)
-        //     ->get();
-
-        // $allCities = UserCity::all();
-        // $information['all_cities'] = $allCities;
-
-        //
         $allCities = UserCity::all();
         $allCountries = UserDistrict::select('country_name_ar')->distinct()->get();
         $information['all_cities'] = $allCities;
@@ -217,19 +197,13 @@ class PropertyController extends Controller
         } else {
             $allStates = \App\Models\User\UserDistrict::select('id', 'name_ar')->get();
         }
-        // $data['all_states'] = $allStates;
+
         $information['all_states'] = \App\Models\User\UserDistrict::whereHas('propertyContent', function ($query) use ($user) {
             $query->whereHas('property', function ($q) use ($user) {
                 $q->where('user_id', $user->id)->where('status', 1);
             });
         })->get();
 
-
-        // $information['all_states'] = UserDistrict::select('id', 'name_ar')->distinct()->get();
-        // $information['all_countries'] = UserDistrict::select('country_name_ar')->distinct()->get();
-
-        // $priceRange = Property::where('user_id', $tenantId)->where('active', 1)
-        //     ->selectRaw('MIN(price) as min, MAX(price) as max')->first();
         $priceRange = Property::where('user_id', $tenantId)
             ->where('status', 1)
             ->selectRaw('MIN(price) as min, MAX(price) as max')
@@ -238,7 +212,6 @@ class PropertyController extends Controller
         $information['min'] = intval($priceRange->min);
         $information['max'] = intval($priceRange->max);
 
-        // $information['projects'] = Project::with(['content'])->where('user_id', $tenantId)->get();
         $information['projects'] = Project::with(['content'])
             ->where('user_id', $tenantId)
             ->whereHas('properties', function ($query) use ($tenantId, $userCurrentLang) {
@@ -250,9 +223,7 @@ class PropertyController extends Controller
             })
             ->get();
 
-
         if ($request->ajax()) {
-            // $viewContent = View::make('user-front.realestate.property.property', $information)->render();
             $viewContent = View::make('user-front.realestate.property.contents', $information)->render();
             return response()->json([
                 'propertyContents' => $viewContent,
@@ -262,32 +233,6 @@ class PropertyController extends Controller
 
         return view('user-front.realestate.property.index', $information + ['website' => $website]);
     }
-
-    /**
-     * Return the category collection that the tenant is allowed
-     * to see on property-listing pages.
-     */
-    // private function visibleCategoriesForTenant(int $tenantId, Request $request): Collection
-    // {
-    //     $activeIds = ApiUserCategorySetting::where('user_id', $tenantId)
-    //         ->where('is_active', 1)
-    //         ->pluck('category_id');
-
-    //     $query = ApiUserCategory::whereIn('id', $activeIds)
-    //         ->where('is_active', 1)
-    //         ->when(
-    //             $request->filled('type') &&
-    //             in_array($request->type, ['commercial', 'residential']),
-    //             fn ($q) => $q->where('type', $request->type)
-    //         );
-
-    //     if (! getUser()->show_even_if_empty) {
-    //         $query->whereHas('properties',
-    //             fn ($q) => $q->where('user_id', $tenantId));
-    //     }
-
-    //     return $query->get();
-    // }
 
     public function details($website, $slug)
     {
@@ -603,8 +548,6 @@ class PropertyController extends Controller
     {
         $userId = getUser()?->id;
 
-        \Log::info('request');
-        \Log::info($request);
         if (session()->has('user_lang')) {
             $userCurrentLang = Language::where('code', session()->get('user_lang'))->where('user_id', $userId)->first();
             if (empty($userCurrentLang)) {
@@ -614,7 +557,7 @@ class PropertyController extends Controller
         } else {
             $userCurrentLang = Language::where('is_default', 1)->where('user_id', $userId)->first();
         }
-        // dd($request->all());
+
         if ($request->type != 'all') {
             $categories = Category::where('type', $request->type)
                 ->select('id', 'type', 'name', 'slug')
