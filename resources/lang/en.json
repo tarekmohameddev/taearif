@@ -2618,5 +2618,11 @@
     "Approve Pending": "الموافقة على المعلق",
     "real_estate_Limit":"حد العقارات",
     "projectLimit":"حد المشروع",
+    "Back to Login": "العودة إلى تسجيل الدخول",
+    "Enter Email or Phone Number": "أدخل البريد الإلكتروني أو رقم الهاتف",
+    "Forgot Password": "نسيت كلمة المرور",
+    "Email or Phone Number": "البريد الإلكتروني أو رقم الهاتف",
+    "Enter_Phone_Number": "أدخل رقم الهاتف",
+    "Enter Password Again": "أدخل كلمة المرور مرة أخرى",
     "Enter a note (optional)": "أدخل ملاحظة (اختياري)"
 }

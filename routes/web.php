@@ -24,17 +24,18 @@ use App\Http\Controllers\CRM\ReservationController;
 use App\Http\Controllers\TenantDashboardController;
 use App\Http\Controllers\User\OnboardingController;
 use App\Http\Controllers\CRM\PaymentRecordController;
+use App\Http\Controllers\Front\ApiCustomerController;
 use App\Http\Controllers\CRM\PaymentRecordsController;
 use App\Http\Controllers\User\HotelBooking\RoomController;
 use User\CourseManagement\Instructor\InstructorController;
 use App\Http\Controllers\User\HotelBooking\RoomManagementController;
-use App\Http\Controllers\Front\ProjectController as FrontProjectController;
 
+use App\Http\Controllers\Front\ProjectController as FrontProjectController;
 use App\Http\Controllers\Front\PropertyController as FrontPropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProject\TypeController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CityController;
-use App\Http\Controllers\User\RealestateManagement\ManageProperty\StateController;
 // use Google\Service\Analytics;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\StateController;
 use App\Http\Controllers\User\RealestateManagement\ManageProject\ProjectController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\AmenityController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryController;
@@ -2001,6 +2002,16 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         // Route::get('/customers', 'Front\CustomerController@crmDashboard')->name('crm.dashboard');
     });
 
+    Route::prefix('/customer')->middleware(['guest:api_customer'])->group(function () {
+        //
+        Route::get('/signup', 'Front\ApiCustomerController@signup')->name('customer.api_signup');
+        Route::post('/signup/submit', 'Front\ApiCustomerController@signupSubmit')->name('customer.api_signup.submit');
+        Route::get('/login', 'Front\ApiCustomerController@login')->name('customer.api_login');
+        Route::post('/login/submit', 'Front\ApiCustomerController@loginSubmit')->name('customer.api_login.submit');
+        Route::get('/forgot-password', 'Front\ApiCustomerController@forgotPassword')->name('customer.api_forgot_password');
+        Route::post('/forgot-password/submit', 'Front\ApiCustomerController@forgotPasswordSubmit')->name('customer.api_forgot_password.submit');
+        //
+    });
 
     Route::prefix('/user')->middleware(['accountStatus', 'checkWebsiteOwner'])->group(function () {
         // course curriculum route
