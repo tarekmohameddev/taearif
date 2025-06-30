@@ -48,24 +48,24 @@ use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessag
 // Route::get('/impersonate/leave',   [ImpersonationController::class, 'stop']);
 // });
 
-Route::get('/test-sales', function () {
-    return Sale::with('property', 'user', 'contract')->get();
-});
+    Route::get('/test-sales', function () {
+        return Sale::with('property', 'user', 'contract')->get();
+    });
 
-$domain = env('WEBSITE_HOST');
-if (!app()->runningInConsole()) {
-    if (substr($_SERVER['HTTP_HOST'], 0, 4) === 'www.') {
-        $domain = 'www.' . env('WEBSITE_HOST');
+    $domain = env('WEBSITE_HOST');
+    if (!app()->runningInConsole()) {
+        if (substr($_SERVER['HTTP_HOST'], 0, 4) === 'www.') {
+            $domain = 'www.' . env('WEBSITE_HOST');
+        }
     }
-}
-Route::fallback(function () {
-    return view('errors.404');
-})->middleware('setlang');
+    Route::fallback(function () {
+        return view('errors.404');
+    })->middleware('setlang');
 
-//
-Route::get('/debug/google', function () {
-    return Socialite::driver('google')->redirect();
-});
+    //
+    Route::get('/debug/google', function () {
+        return Socialite::driver('google')->redirect();
+    });
 
     Route::get('/all-routes', function () {
         // Basic access control: Only allow access if the user is authenticated
@@ -145,8 +145,8 @@ Route::get('/debug/google', function () {
     });
 
 
-//
-Route::get('/data', [TenantDashboardController::class, 'dashboard']);
+    //
+    Route::get('/data', [TenantDashboardController::class, 'dashboard']);
 
 // Route::get('/auth/google', [GoogleAuthController::class, 'getGoogleAuthUrl'])->name('auth.google');
 // Route::get('/auth/google/callback', [GoogleAuthController::class, 'Callback']);
