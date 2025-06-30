@@ -63,7 +63,17 @@
 @endsection
 @endif
 @include('user-front.realestate.partials.header.header-pages')
+<style>
+.product-single .slider-thumbnails {
+    bottom: 290px !important;
+}
 
+.product-single-details{
+    position: relative;
+    top: -140px;
+}
+
+</style>
 @section('content')
 <div style="margin-bottom: 15%;" class="product-single pt-100  border-top header-next">
     <div class="container">
@@ -112,7 +122,7 @@
                     </div>
                 </div>
                 <div class="product-single-details">
-                    <div class="row">
+                    <div class="row " >
                         <div class="col-md-7">
                             <div class="d-flex align-items-center justify-content-between mb-10">
                                 <span class="product-category text-sm"> <a
@@ -267,7 +277,7 @@
                                 </li>
 
                                 <li>
-                                    <a class="btn green" style="width: 100px !important;padding: 14px;height: 45px !important;" href="https://wa.me/{{ $user->phone }}?text={{ urlencode(__('انا مهتم بهذا العقار: ') . route('front.user.property.details', [getParam(), 'slug' => $propertyContent->slug])) }}">
+                                    <a class="btn green" style="width: 100px !important;padding: 14px;height: 45px !important;" href="https://wa.me/{{ $userApi_footerData_general_phone }}?text={{ urlencode(__('انا مهتم بهذا العقار: ') . route('front.user.property.details', [getParam(), 'slug' => $propertyContent->slug])) }}">
                                         <i class="fab fa-whatsapp" ></i>
                                     </a>
                                     <span>{{ __('WhatsApp') }}</span>
@@ -367,8 +377,8 @@
                                         'swimming_pool'      => ['label' => __('Swimming Pool'),       'icon' => 'fal fa-swimmer'],
                                         'balcony'            => ['label' => __('Balcony'),             'icon' => 'fal fa-archway'],
                                         'garden'             => ['label' => __('Garden'),              'icon' => 'fal fa-tree'],
-                                        'annex'              => ['label' => __('Annex'),               'icon' => 'fal fa-house-user'],
-                                        'elevator'           => ['label' => __('Elevator'),            'icon' => 'fal fa-elevator'],
+                                        'annex'              => ['label' => __('Annex'),               'icon' => 'fal fas fa-home'],
+                                        'elevator'           => ['label' => __('Elevator'),            'icon' => 'fal fas fa-arrows-v'],
                                         'private_parking'    => ['label' => __('Private Parking'),     'icon' => 'fal fa-parking'],
                                     ] as $key => $meta)
                                         @php $value = data_get($characteristics, $key); @endphp
@@ -577,8 +587,8 @@
                                     <a {{-- href="{{ route('frontend.agent.details', [getParam(), 'agentusername' => $user->username, 'admin' => 'true']) }}" --}}> {{ $user->first_name . ' ' . $user->last_name }}
                                     </a>
                                 </h4>
-                                <a class="d-block" href="tel:{{ $user->phone }}">
-                                    {{ $user->phone }}
+                                <a class="d-block" href="tel:{{ $userApi_footerData_general_phone }}">
+                                    {{ $userApi_footerData_general_phone }}
                                 </a>
                                 <a href="mailto:{{ $user->email }}">
                                     {{ $user->email }}

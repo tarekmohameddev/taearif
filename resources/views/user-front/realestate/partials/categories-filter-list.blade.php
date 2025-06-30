@@ -179,7 +179,7 @@
                 </div>
             </div>
             <!-- city -->
-             
+
              @if($all_cities && $all_cities->count())
                 <div class="col-md-6 col-lg-3">
                     <div class="dropdown w-100">

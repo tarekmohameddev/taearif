@@ -29,7 +29,7 @@
 
 <!-- footer -->
 @if (isset($userApi_footerData->status) && $userApi_footerData->status !== false)
-  <footer class="footer-area border border-primary" style="background-color: transparent !important;">
+  <footer class="footer-area border border-primary" style="background-color: transparent !important; margin-top: 30rem !important;">
       @if (!empty($userFooterData->bg_image))
           <!-- Background Image -->
           <img class="lazyload blur-up bg-img"
@@ -45,7 +45,7 @@
                     <div class="navbar-brand mb-3">
                         @if (!empty($logo))
                             <a href="{{ route('front.user.detail.view', getParam()) }}">
-                                <img style="max-height: 50px; width: auto;" src="{{ $logo }}">
+                                <img style="max-height: 50px; width: auto;" src="{{ asset($logo) }}">
                             </a>
                         @endif
                     </div>

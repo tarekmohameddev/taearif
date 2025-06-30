@@ -5,6 +5,7 @@ namespace App\Models\User\RealestateManagement;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User\RealestateManagement\Category;
+use App\Models\User\RealestateManagement\Property;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\User\RealestateManagement\ProjectContent;
 
@@ -138,6 +139,9 @@ class Project extends Model
     {
         return $query->where('published', 1);
     }
-
+    public function properties()
+    {
+        return $this->hasMany(Property::class, 'project_id');
+    }
 
 }
