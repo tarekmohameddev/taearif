@@ -61,6 +61,8 @@ class AffiliateController extends Controller
                 'message' => 'Affiliate user not registered.',
             ], 404);
         }
+
+
         // sum of all raw commissions ever generated
         $sumPending   = $affiliate->transactions()->where('type','pending')->sum('amount');
         // sum of all “collected” amounts
@@ -96,6 +98,7 @@ class AffiliateController extends Controller
         return response()->json([
             'success' => true,
             'data'    => [
+              'request_status' => $affiliate->request_status,
               'referral_code' => $user->referral_code,
               'pending_amount'       => number_format($pending, 2),
               'available_amount'     => number_format($available, 2),
