@@ -62,13 +62,13 @@ class AffiliateController extends Controller
             ], 404);
         }
         // sum of all raw commissions ever generated
-        $sumPending   = $affiliate->transactions()->where('type','pending')->sum('amount');
+        $pending   = $affiliate->transactions()->where('type','pending')->sum('amount');
         // sum of all “collected” amounts
-        $sumCollected = $affiliate->transactions()->where('type','collected')->sum('amount');
+        $available = $affiliate->transactions()->where('type','collected')->sum('amount');
         // “Cash still waiting for approval”
-        $pending   = $sumPending - $sumCollected;
+        // $pending   = $sumPending - $sumCollected;
         // “Cash that’s been approved (available for the affiliate)”
-        $available = $pending;
+        // $available = $pending;
         // end-of-the-month payment
         $start = Carbon::now()->startOfMonth();
         $end   = Carbon::now()->endOfMonth();
@@ -93,10 +93,24 @@ class AffiliateController extends Controller
             $monthly = 0;
         }
 
+        $referrals = $affiliate->referrals()
+        ->select('id','first_name','last_name','email','created_at')
+        ->get()
+        ->map(fn($u) => [
+            'id'         => $u->id,
+            'name'       => "{$u->first_name} {$u->last_name}",
+            'email'      => $u->email,
+            'joined_at'  => $u->created_at->toDateTimeString(),
+            'commission' => $affiliate->transactions()
+                                ->where('referral_user_id', $u->id)
+                                ->sum('amount'),
+        ]);
+
         return response()->json([
             'success' => true,
             'data'    => [
               'referral_code' => $user->referral_code,
+              'referrals'     => $referrals,
               'pending_amount'       => number_format($pending, 2),
               'available_amount'     => number_format($available, 2),
               'end_of_month_payment' => number_format($monthly, 2),

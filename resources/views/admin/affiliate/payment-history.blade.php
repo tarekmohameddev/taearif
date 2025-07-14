@@ -44,8 +44,9 @@
         </div>
         <div class="card-body">
             <button class="btn btn-success"
-                    data-toggle="modal"
-                    data-target="#approvePendingModal">
+            data-toggle="modal"
+        data-target="#approvePendingModal"
+        data-transaction-id="{{ $pendingTx->id ?? '' }}">
                 <i class="fas fa-check"></i> {{ __('Approve Pending Amount') }}
             </button>
         </div>
@@ -108,6 +109,10 @@
         <form action="{{ route('admin.affiliates.approvePending', ['affiliate'=>$affiliate->id]) }}"
               method="POST" enctype="multipart/form-data">
             @csrf @method('PATCH')
+            <input type="hidden"
+       id="transaction_id"
+       name="transaction_id"
+       value="{{ $pendingTx->id ?? '' }}">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">{{ __('Approve Pending Amount') }}</h5>
@@ -169,6 +174,11 @@ document.addEventListener('change', e => {
             imgBox.style.display = 'none';
         }
     }
+});
+
+$('#approvePendingModal').on('show.bs.modal', function(e) {
+  const id = $(e.relatedTarget).data('transaction-id');
+  $(this).find('input#transaction_id').val(id);
 });
 </script>
 @endsection
