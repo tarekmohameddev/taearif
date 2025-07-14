@@ -93,6 +93,8 @@ class SimulateAffiliatePaymentSeeder extends Seeder
         AffiliateTransaction::create([
             'affiliate_id' => $affiliate->id,
             'type' => 'pending',
+            'referral_user_id' => $user->referred_by, // Link to the user who made the payment
+            'image' => null, // No image for pending transactions
             'amount' => $commissionAmount,
             'note' => 'Commission for referral user #' . $user->id,
         ]);

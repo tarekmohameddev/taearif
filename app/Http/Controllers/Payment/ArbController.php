@@ -283,8 +283,10 @@ class ArbController extends Controller
                     \App\Models\AffiliateTransaction::create([
                         'affiliate_id' => $affiliate->id,
                         'type'         => 'pending', // will require admin approval
+                        'referral_user_id' => $user->referred_by, // Link to the user who made the payment
+                        'image'        => null, // No image for pending transactions
                         'amount'       => $commission,
-                        'note'         => "Auto commission from user #{$user->id}",
+                        'note'         => "Auto commission from user #{$user->id} ({$user->name}) for package {$package->title}",
                     ]);
                 }
             }
