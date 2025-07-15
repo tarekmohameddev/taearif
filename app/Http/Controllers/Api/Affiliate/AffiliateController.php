@@ -87,7 +87,10 @@ class AffiliateController extends Controller
         $collectedCount = $affiliate->transactions()->where('type','collected')->count();   // عملاء مدفوعين
 
         // total referrals
-        $totalReferrals = $affiliate->referrals()->count();                                 // اجمالي المحالين
+        $totalReferrals = $affiliate->referrals()->count(); // اجمالي المحالين
+
+        // Get subscribed users related to this affiliate
+        $Paid_Subscribers = $affiliate->referrals()->where('subscribed', true)->count(); // عملاء مدفوعين
 
         // build referrals array
         $referrals = $affiliate->referrals()
@@ -134,8 +137,9 @@ class AffiliateController extends Controller
             'data'    => [
                 'referral_code'            => $user->referral_code,
                 'total_referrals'          => $totalReferrals,       // إجمالي المحالين
+                "Paid_Subscribers"          => $Paid_Subscribers,       // عملاء مدفوعين
                 'pending_payments_count'   => $pendingCount,         // دفعات معلقه
-                'collected_payments_count' => $collectedCount,       // عملاء مدفوعين
+                'collected_payments_count' => $collectedCount,
                 'total_commissions'        => number_format($totalCommissions, 2), // إجمالي العمولات
                 'pending_amount'           => number_format($pendingSum,   2), // المبلغ المعلق
                 'available_amount'         => number_format($collectedSum, 2), // المبلغ المتاح
