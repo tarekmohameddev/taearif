@@ -1728,11 +1728,10 @@ Route::domain($domain)->group(function () {
             Route::post('/affiliates/status/{id}', 'Admin\AffiliateController@updateStatus')->name('admin.affiliates.updateStatus');
             // Payment and history
             Route::get('/affiliates/payment-history/{id}', 'Admin\AffiliateController@paymentHistory')->name('admin.affiliates.paymentHistory');
-            // Commission and balance operations
-            Route::patch('/affiliates/{affiliate}/approve-pending','Admin\AffiliateController@approvePendingAmount')->name('admin.affiliates.approvePending');
             // AJAX endpoints
             Route::get('/affiliates/{id}/balance-summary', 'Admin\AffiliateController@getBalanceSummary')->name('admin.affiliates.balanceSummary');
-
+            // approve all pending commissions
+            Route::patch('/affiliates/{affiliate}/approve-all','Admin\AffiliateController@approveAllPending')->name('admin.affiliates.approveAll');
         });
     });
 

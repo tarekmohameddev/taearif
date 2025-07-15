@@ -52,79 +52,105 @@ class AffiliateController extends Controller
     public function index()
     {
         $user = Auth::user();
-
         $affiliate = ApiAffiliateUser::where('user_id', $user->id)->first();
 
-        if (!$affiliate) {
+        if (! $affiliate) {
             return response()->json([
-                'status' => 'not_registered',
+                'status'  => 'not_registered',
                 'message' => 'Affiliate user not registered.',
             ], 404);
         }
-        // sum of all raw commissions ever generated
-        $pending   = $affiliate->transactions()->where('type','pending')->sum('amount');
-        // sum of all “collected” amounts
-        $available = $affiliate->transactions()->where('type','collected')->sum('amount');
-        // “Cash still waiting for approval”
-        // $pending   = $sumPending - $sumCollected;
-        // “Cash that’s been approved (available for the affiliate)”
-        // $available = $pending;
-        // end-of-the-month payment
-        $start = Carbon::now()->startOfMonth();
-        $end   = Carbon::now()->endOfMonth();
-        $monthly = $affiliate->transactions()->where('type','collected')->whereBetween('created_at', [$start, $end])->sum('amount');
+
+        //sum of all raw commissions ever generated
+        $pendingSum   = $affiliate->transactions()->where('type','pending')->sum('amount');
+        //sum of all “collected” amounts
+        $collectedSum = $affiliate->transactions()->where('type','collected')->sum('amount');
+
+        //total commissions = pending + collected
+        $totalCommissions = $pendingSum + $collectedSum;
+        //end-of-the-month payment
+        $start   = Carbon::now()->startOfMonth();
+        $end     = Carbon::now()->endOfMonth();
+        $monthly = $affiliate->transactions()
+                             ->where('type','collected')
+                             ->whereBetween('created_at', [$start, $end])
+                             ->sum('amount');
+
         // history of collected payments
-        $history = $affiliate->transactions()->where('type','collected')->orderByDesc('created_at')->get(['id','amount','image','type','note','created_at']);
+        $history = $affiliate->transactions()
+                             ->where('type','collected')
+                             ->orderByDesc('created_at')
+                             ->get(['id','amount','image','type','note','created_at']);
 
-        // If the user has no transactions, return an empty array
-        if ($history->isEmpty()) {
-            $history = collect([]);
-        }
-        // If the user has no pending or available amounts, set them to 0
-        if ($pending === null) {
-            $pending = 0;
-        }
-        // If the user has no available amount, set it to 0
-        if ($available === null) {
-            $available = 0;
-        }
-        // If the user has no monthly amount, set it to 0
-        if ($monthly === null) {
-            $monthly = 0;
-        }
+        // count of transactions
+        $pendingCount   = $affiliate->transactions()->where('type','pending')->count();     // دفعات معلقه
+        $collectedCount = $affiliate->transactions()->where('type','collected')->count();   // عملاء مدفوعين
 
+        // total referrals
+        $totalReferrals = $affiliate->referrals()->count();                                 // اجمالي المحالين
+
+        // build referrals array
         $referrals = $affiliate->referrals()
         ->select('id','first_name','last_name','email','created_at')
         ->get()
-        ->map(fn($u) => [
-            'id'         => $u->id,
-            'name'       => "{$u->first_name} {$u->last_name}",
-            'email'      => $u->email,
-            'joined_at'  => $u->created_at->toDateTimeString(),
-            'commission' => $affiliate->transactions()
-                                ->where('referral_user_id', $u->id)
-                                ->sum('amount'),
-        ]);
+        ->map(function($u) use ($affiliate) {
+            // total pending for this referral
+            $pendingByReferral   = $affiliate
+                ->transactions()
+                ->where('referral_user_id', $u->id)
+                ->where('type', 'pending')
+                ->sum('amount');
+
+            // total collected for this referral
+            $collectedByReferral = $affiliate
+                ->transactions()
+                ->where('referral_user_id', $u->id)
+                ->where('type', 'collected')
+                ->sum('amount');
+
+            // derive a single status
+            if ($pendingByReferral > 0) {
+                $status = 'pending';
+            } elseif ($collectedByReferral > 0) {
+                $status = 'collected';
+            } else {
+                $status = 'not_paid';
+            }
+
+            return [
+                'id'                   => $u->id,
+                'name'                 => "{$u->first_name} {$u->last_name}",
+                'email'                => $u->email,
+                'joined_at'            => $u->created_at->toDateTimeString(),
+                'pending_commission'   => number_format($pendingByReferral, 2),
+                'collected_commission' => number_format($collectedByReferral, 2),
+                'status'               => $status,  // “pending”, “collected” or “not_paid”
+            ];
+        });
+
 
         return response()->json([
             'success' => true,
             'data'    => [
-              'referral_code' => $user->referral_code,
-              'referrals'     => $referrals,
-              'pending_amount'       => number_format($pending, 2),
-              'available_amount'     => number_format($available, 2),
-              'end_of_month_payment' => number_format($monthly, 2),
-              'payment_history'      => $history->map(fn($t) => [
-                  'id'        => $t->id,
-                  'amount'    => number_format($t->amount,2),
-                  'image_url' => $t->image ? asset($t->image) : null,
-                  'type'      => $t->type,
-                  'note'      => $t->note,
-                  'date'      => $t->created_at->toDateTimeString(),
-              ]),
+                'referral_code'            => $user->referral_code,
+                'total_referrals'          => $totalReferrals,       // إجمالي المحالين
+                'pending_payments_count'   => $pendingCount,         // دفعات معلقه
+                'collected_payments_count' => $collectedCount,       // عملاء مدفوعين
+                'total_commissions'        => number_format($totalCommissions, 2), // إجمالي العمولات
+                'pending_amount'           => number_format($pendingSum,   2), // المبلغ المعلق
+                'available_amount'         => number_format($collectedSum, 2), // المبلغ المتاح
+                'end_of_month_payment'     => number_format($monthly,      2), // دفعة نهاية الشهر
+                'referrals'                => $referrals, // قائمة المحالين
+                'payment_history'          => $history->map(fn($t) => [
+                    'id'        => $t->id,
+                    'amount'    => number_format($t->amount,2),
+                    'image_url' => $t->image ? asset($t->image) : null,
+                    'type'      => $t->type,
+                    'note'      => $t->note,
+                    'date'      => $t->created_at->toDateTimeString(),
+                ]),
             ],
         ]);
-
     }
 
 }

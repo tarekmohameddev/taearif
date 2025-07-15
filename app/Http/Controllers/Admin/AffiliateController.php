@@ -9,12 +9,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-
+use App\Models\User;
 class AffiliateController extends Controller
 {
     /**
      * List affiliates with optional search.
-     */
+    */
+
     public function index(Request $request)
     {
         $query = ApiAffiliateUser::query();
@@ -61,161 +62,95 @@ class AffiliateController extends Controller
 
     /**
      * Simple payment-history page: only pending-amount & transactions.
-     */
+    */
+
     public function paymentHistory($id)
     {
         $affiliate    = ApiAffiliateUser::findOrFail($id);
-
-        // paginate all transactions…
-        $transactions = $affiliate->transactions()
-                                  ->latest()
-                                  ->paginate(10, ['*'], 'transactions_page');
-
-        // grab the one “pending” transaction (oldest first, say)
-        $pendingTx = $affiliate
-                       ->transactions()
-                       ->where('type','pending')
-                       ->oldest()
-                       ->first();
+        // paginate all transactions
+        $transactions = $affiliate->transactions()->latest()->paginate(10, ['*'], 'transactions_page');
+        // grab the one “pending” transaction
+        $pendingTx = $affiliate->transactions()->where('type','pending')->oldest()->first();
 
         return view('admin.affiliate.payment-history', [
             'affiliate'      => $affiliate,
             'pending_amount' => $affiliate->pending_amount,
             'transactions'   => $transactions,
-            'pendingTx'      => $pendingTx,    // ← add this!
+            'pendingTx'      => $pendingTx,
         ]);
     }
 
-
     /**
-     * Accept (collect) part-or-all of an affiliate’s pending balance.
-     * - Decreases pending_amount immediately.
-     * - Optionally uploads a receipt image.
-     * - Optionally adds a note.
-     * - Creates an AffiliateTransaction with type “collected”.
-     * - If the amount exceeds pending_amount, returns an error.
-     * - If successful, commits the transaction.
-     * - If fails, rolls back the transaction and logs the error.
-     * - Logs a “collected” AffiliateTransaction for auditing.
-     */
-    // public function approvePendingAmount(Request $request, $id) //payment_history.blade.php
-    // {
-    //     $request->validate([
-    //         'amount' => 'required|numeric|min:0.01',
-    //         'image'  => 'nullable|image|max:2048',   // optional receipt
-    //         'note'   => 'nullable|string', // optional note
+     * Approve all pending transactions for an affiliate.
+     * Note: This is a bulk operation, so it should be used with caution.
+    */
 
-    //     ]);
-
-    //     try {
-    //         DB::beginTransaction();
-
-    //         $affiliate = ApiAffiliateUser::lockForUpdate()->findOrFail($id);
-    //         $amount    = $request->amount;
-
-    //         if ($amount > $affiliate->pending_amount) {
-    //             return back()->with('error', __('Amount exceeds pending balance.'));
-    //         }
-
-    //         // ↓ Subtract the approved amount from the affiliate's pending balance
-    //         $affiliate->pending_amount -= $amount;
-
-    //         // optional receipt upload
-    //         $imagePath = null;
-    //         if ($request->hasFile('image')) {
-    //             $directory = public_path('affiliate_transactions/');
-    //             $filename = uniqid() . '.' . $request->file('image')->getClientOriginalExtension();
-
-    //             // Ensure the directory exists
-    //             if (!file_exists($directory)) {
-    //                 mkdir($directory, 0755, true);
-    //             }
-
-    //             $request->file('image')->move($directory, $filename);
-    //             $imagePath = 'affiliate_transactions/' . $filename;
-    //         }
-
-    //         $affiliate->save();
-    //         $noteToSave = trim($request->note) !== ''? $request->note: 'Collected by admin';
-
-    //         AffiliateTransaction::create([
-    //             'affiliate_id' => $affiliate->id,
-    //             'type'         => 'collected',      // collected | Collected | suspend
-    //             'amount'       => $amount,
-    //             'note'         => $noteToSave,
-    //             'image'        => $imagePath,
-    //         ]);
-
-    //         DB::commit();
-    //         return back()->with('success', __('Pending amount accepted successfully.'));
-    //     } catch (\Throwable $e) {
-    //         DB::rollBack();
-    //         Log::error('approvePendingAmount error: '.$e->getMessage());
-    //         return back()->with('error', __('Failed to accept pending amount.'));
-    //     }
-    // }
-
-    public function approvePendingAmount(Request $request, $affiliate)
+    public function approveAllPending(Request $request, $affiliateId)
     {
         $request->validate([
-            'transaction_id' => 'required|exists:affiliate_transactions,id',
-            'amount'         => 'required|numeric|min:0.01',
-            'image'          => 'nullable|image|max:2048',
-            'note'           => 'nullable|string',
+            'note'  => 'nullable|string|max:255',
+            'image' => 'nullable|image|max:2048',
         ]);
 
         try {
             DB::beginTransaction();
 
-            $affiliate = ApiAffiliateUser::lockForUpdate()->findOrFail($affiliate);
+            //affiliate
+            $affiliate = ApiAffiliateUser::lockForUpdate()->findOrFail($affiliateId);
 
-            // Find the exact pending transaction
-            $tx = AffiliateTransaction::where('affiliate_id', $affiliate->id)
-                    ->where('id', $request->transaction_id)
-                    ->where('type', 'pending')
-                    ->firstOrFail();
+            //fetch all pending transactions
+            $pendingTxs = AffiliateTransaction::where('affiliate_id', $affiliate->id)->where('type','pending')->with('referralUser')->get();
 
-            // Sanity check that the amounts match
-            if (round($request->amount, 2) !== round($tx->amount, 2)) {
-                return back()->with('error', __('Amount mismatch with selected transaction.'));
+            if ($pendingTxs->isEmpty()) {
+                return back()->with('error', __('No pending transactions to approve.'));
             }
 
-            // Handle optional receipt upload
-            $imagePath = $tx->image;
+            //note & image =optional
+            $baseNote = trim($request->note) !== '' ? $request->note : __('Collected');
+
+            $imagePath = null;
             if ($request->hasFile('image')) {
                 $dir = public_path('affiliate_transactions/');
-                if (!file_exists($dir)) mkdir($dir, 0755, true);
-                $fileName = uniqid() .'.'. $request->file('image')->getClientOriginalExtension();
-                $request->file('image')->move($dir, $fileName);
-                $imagePath = 'affiliate_transactions/' . $fileName;
+                if (! file_exists($dir)) mkdir($dir, 0755, true);
+                $filename = uniqid() .'.'. $request->file('image')->getClientOriginalExtension();
+                $request->file('image')->move($dir, $filename);
+                $imagePath = 'affiliate_transactions/' . $filename;
             }
 
-            $noteToSave = trim($request->note) !== '' ? $request->note : 'Collected by admin';
+            //mark each pending tx collected
+            foreach ($pendingTxs as $tx) {
+                $user = $tx->referralUser ?? User::find($tx->referral_user_id);
+                $username = $user->username ?? ($user->name ?? "user#{$tx->referral_user_id}");
 
-            // **Update** the same row
-            $tx->update([
-                'type'  => 'collected',
-                'note'  => $noteToSave,
-                'image' => $imagePath,
-            ]);
+                $tx->update([
+                    'type'  => 'collected',
+                    'note'  => sprintf(
+                        '%s (المُحيل: %s,  الشريك: %s)',
+                        $baseNote,
+                        $username,
+                        $affiliate->fullname
+                    ),
+                    'image' => $imagePath,
+                ]);
+            }
 
-            // Adjust the affiliate’s pending balance
-            $affiliate->decrement('pending_amount', $tx->amount);
-            $affiliate->save();
+            //pending balance
+            $total = $pendingTxs->sum('amount');
+            $affiliate->decrement('pending_amount', $total);
 
             DB::commit();
-            return back()->with('success', __('Transaction marked as collected.'));
+
+            return back()->with('success', __('All pending transactions have been collected'));
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('approvePendingAmount error: '.$e->getMessage());
-            return back()->with('error', __('Failed to collect the pending amount.'));
+            return back()->with('error', __('Failed to collect pending transactions'));
         }
     }
 
-
     /**
      * AJAX balance summary ( pending_amount ).
-     */
+    */
+
     public function getBalanceSummary($id)
     {
         $affiliate = ApiAffiliateUser::findOrFail($id);
