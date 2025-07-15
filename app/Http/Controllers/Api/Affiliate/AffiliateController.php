@@ -71,16 +71,10 @@ class AffiliateController extends Controller
         //end-of-the-month payment
         $start   = Carbon::now()->startOfMonth();
         $end     = Carbon::now()->endOfMonth();
-        $monthly = $affiliate->transactions()
-                             ->where('type','collected')
-                             ->whereBetween('created_at', [$start, $end])
-                             ->sum('amount');
+        $monthly = $affiliate->transactions()->where('type','collected')->whereBetween('created_at', [$start, $end])->sum('amount');
 
         // history of collected payments
-        $history = $affiliate->transactions()
-                             ->where('type','collected')
-                             ->orderByDesc('created_at')
-                             ->get(['id','amount','image','type','note','created_at']);
+        $history = $affiliate->transactions()->orderByDesc('created_at')->get(['id','amount','image','type','note','created_at']);
 
         // count of transactions
         $pendingCount   = $affiliate->transactions()->where('type','pending')->count();     // دفعات معلقه
@@ -93,23 +87,12 @@ class AffiliateController extends Controller
         $Paid_Subscribers = $affiliate->referrals()->where('subscribed', true)->count(); // عملاء مدفوعين
 
         // build referrals array
-        $referrals = $affiliate->referrals()
-        ->select('id','first_name','last_name','email','created_at')
-        ->get()
-        ->map(function($u) use ($affiliate) {
+        $referrals = $affiliate->referrals()->select('id','first_name','last_name','email','created_at')->get()->map(function($u) use ($affiliate) {
             // total pending for this referral
-            $pendingByReferral   = $affiliate
-                ->transactions()
-                ->where('referral_user_id', $u->id)
-                ->where('type', 'pending')
-                ->sum('amount');
+            $pendingByReferral   = $affiliate->transactions()->where('referral_user_id', $u->id)->where('type', 'pending')->sum('amount');
 
             // total collected for this referral
-            $collectedByReferral = $affiliate
-                ->transactions()
-                ->where('referral_user_id', $u->id)
-                ->where('type', 'collected')
-                ->sum('amount');
+            $collectedByReferral = $affiliate->transactions()->where('referral_user_id', $u->id)->where('type', 'collected')->sum('amount');
 
             // derive a single status
             if ($pendingByReferral > 0) {
