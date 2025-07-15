@@ -43,5 +43,8 @@ class ApiAffiliateUser extends Model
     {
         return $this->hasMany(\App\Models\AffiliateTransaction::class, 'affiliate_id');
     }
-
+    public function referrals()
+    {
+        return $this->hasMany(\App\Models\User::class, 'referred_by', 'user_id');
+    }
 }
