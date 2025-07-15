@@ -2624,5 +2624,13 @@
     "Email or Phone Number": "البريد الإلكتروني أو رقم الهاتف",
     "Enter_Phone_Number": "أدخل رقم الهاتف",
     "Enter Password Again": "أدخل كلمة المرور مرة أخرى",
+    "Collected": "تم جمعه",
+    "Pending": "قيد الانتظار",
+    "All pending transactions have been collected": "تم جمع جميع المعاملات المعلقة بنجاح.",
+    "Failed to collect pending transactions": "فشل في جمع المعاملات المعلقة.",
+    "Approve All Pending": "الموافقة على جميع المعلق",
+    "Quick Actions": "إجراءات سريعة",
+    "Approve All": "الموافقة على الجميع",
+    "Note": "ملاحظة",
     "Enter a note (optional)": "أدخل ملاحظة (اختياري)"
 }
