@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\content\AboutApiController;
 use App\Http\Controllers\Api\property\PropertyController;
 use App\Http\Controllers\Api\AnalyticsDashboardController;
 use App\Http\Controllers\Api\apps\whatsapp\ChatController;
+use App\Http\Controllers\Api\apps\whatsapp\WhatsappController;
 use App\Http\Controllers\Api\App\ApiInstallationController;
 use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\property\UserFacadeController;
@@ -284,3 +285,9 @@ Route::post('/whatsapp/evolution-webhook', [ChatController::class, 'handleEvolut
 
 // isthara
 Route::post('/isthara', [IstharaController::class, 'store']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/whatsapp/link', [WhatsappController::class, 'store']);
+    Route::get('/whatsapp', [WhatsappController::class, 'index']);
+});
+
