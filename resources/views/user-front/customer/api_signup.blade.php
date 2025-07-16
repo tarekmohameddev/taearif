@@ -96,7 +96,7 @@
                         </form>
                         <div class="new-user text-center">
                             <p class="text">
-                                <a href="{{ route('customer.api_login', getParam()) }}">{{ $keywords['Back_to_Login'] ?? 'Back to Login' }}</a>
+                                <a href="{{ route('customer.api_login', getParam()) }}">{{ __($keywords['Back_to_Login'] ?? 'Back to Login') }}</a>
                             </p>
                         </div>
                     </div>
