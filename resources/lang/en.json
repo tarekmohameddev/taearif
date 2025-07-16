@@ -2198,9 +2198,9 @@
     "Choose a photo": "اختر صورة",
     "Forget password": "نسيت كلمة المرور",
     "Proceed": "يتابع",
-    "Log In": "تسجيل الدخول",
+    "Log-In": "تسجيل الدخول",
     "Enter Password": "أدخل كلمة المرور",
-    "Login Now": "تسجيل الدخول الآن",
+    "Login Now": "سجل دخول الآن",
     "Order details": "تفاصيل الطلب",
     "Item Order Details": "تفاصيل طلب السلعة",
     "Download Invoice": "تحميل الفاتورة",
@@ -2632,5 +2632,8 @@
     "Quick Actions": "إجراءات سريعة",
     "Approve All": "الموافقة على الجميع",
     "Note": "ملاحظة",
+    "Back to Login": "العودة إلى تسجيل الدخول",
+    "Register": "تسجيل",
+    "Signup Now": "اشتراك الآن",
     "Enter a note (optional)": "أدخل ملاحظة (اختياري)"
 }

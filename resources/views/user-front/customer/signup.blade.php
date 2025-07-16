@@ -83,7 +83,7 @@
 
                             <div class="form_group">
                                 <button type="submit"
-                                    class="btn btn-form">{{ $keywords['Signup'] ?? __('Signup!') }}</button>
+                                    class="btn btn-form" style="color: black; background-color:gainsboro">{{ $keywords['Signup'] ?? __('Signup!') }}</button>
                             </div>
                         </form>
                     </div>

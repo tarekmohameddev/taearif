@@ -2012,6 +2012,20 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         //
     });
 
+    Route::prefix('/customer')->middleware(['auth:api_customer'])->group(function () {
+        // user redirect to dashboard route
+        Route::get('/customer-dashboard', 'Front\ApiCustomerController@redirectToApiDashboard')->name('customer.api_dashboard');
+        // Route::get('/edit-profile', 'Front\ApiCustomerController@editProfile')->name('customer.edit_profile');
+        // update profile route
+        // Route::post('/update-profile', 'Front\ApiCustomerController@updateProfile')->name('customer.update_profile');
+        // customer Panel
+        // Route::get('/change-password',  'Front\ApiCustomerController@changePassword')->name('customer.change_password');
+        // update password route
+        // Route::post('/update-password',  'Front\ApiCustomerController@updatePassword')->name('customer.update_password');
+        // user logout attempt route
+        Route::get('/customer-logout',  'Front\ApiCustomerController@logoutApiSubmit')->name('customer.api_logout');
+    });
+
     Route::prefix('/user')->middleware(['accountStatus', 'checkWebsiteOwner'])->group(function () {
         // course curriculum route
         Route::get('/my-course/{id}/curriculum', 'Front\CustomerController@curriculum')->name('customer.my_course.curriculum');

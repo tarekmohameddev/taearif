@@ -132,7 +132,7 @@ return [
         ],
         'api_customers' => [
             'provider' => 'api_customers',
-            'table' => 'password_resets',
+            'table' => 'customer_password_resets',
             'expire' => 60,
             'throttle' => 60,
         ],
