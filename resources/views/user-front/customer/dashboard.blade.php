@@ -29,8 +29,6 @@
                                             {{ $keywords['account_information'] ?? __('Account Information') }}</h4>
                                     </div>
                                     <div class="main-info">
-
-
                                         <ul class="list">
                                             <li class="py-1"><strong>{{ $keywords['Name'] ?? __('Name') }}:</strong>
                                                 {{ Auth::guard('customer')->user()->first_name }}
