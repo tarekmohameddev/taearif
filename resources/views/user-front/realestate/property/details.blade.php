@@ -65,7 +65,7 @@
 @include('user-front.realestate.partials.header.header-pages')
 <style>
 .product-single .slider-thumbnails {
-    bottom: 150px !important;
+    bottom: 0px !important;
 }
 
 .product-single-details{
