@@ -4,7 +4,7 @@
     'userBs',
     'keywords',
 ])
-
+@if($relatedProperty->isNotEmpty())
 <div class="widget widget-recent radius-md mb-30">
     <h3 class="title">
         <button class="accordion-button" type="button"
@@ -114,3 +114,4 @@
         </div>
     </div>
 </div>
+@endif
