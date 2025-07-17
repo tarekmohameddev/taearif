@@ -1728,11 +1728,10 @@ Route::domain($domain)->group(function () {
             Route::post('/affiliates/status/{id}', 'Admin\AffiliateController@updateStatus')->name('admin.affiliates.updateStatus');
             // Payment and history
             Route::get('/affiliates/payment-history/{id}', 'Admin\AffiliateController@paymentHistory')->name('admin.affiliates.paymentHistory');
-            // Commission and balance operations
-            Route::patch('/affiliates/{affiliate}/approve-pending','Admin\AffiliateController@approvePendingAmount')->name('admin.affiliates.approvePending');
             // AJAX endpoints
             Route::get('/affiliates/{id}/balance-summary', 'Admin\AffiliateController@getBalanceSummary')->name('admin.affiliates.balanceSummary');
-
+            // approve all pending commissions
+            Route::patch('/affiliates/{affiliate}/approve-all','Admin\AffiliateController@approveAllPending')->name('admin.affiliates.approveAll');
         });
     });
 
@@ -2011,6 +2010,20 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         Route::get('/forgot-password', 'Front\ApiCustomerController@forgotPassword')->name('customer.api_forgot_password');
         Route::post('/forgot-password/submit', 'Front\ApiCustomerController@forgotPasswordSubmit')->name('customer.api_forgot_password.submit');
         //
+    });
+
+    Route::prefix('/customer')->middleware(['auth:api_customer'])->group(function () {
+        // user redirect to dashboard route
+        Route::get('/customer-dashboard', 'Front\ApiCustomerController@redirectToApiDashboard')->name('customer.api_dashboard');
+        // Route::get('/edit-profile', 'Front\ApiCustomerController@editProfile')->name('customer.edit_profile');
+        // update profile route
+        // Route::post('/update-profile', 'Front\ApiCustomerController@updateProfile')->name('customer.update_profile');
+        // customer Panel
+        // Route::get('/change-password',  'Front\ApiCustomerController@changePassword')->name('customer.change_password');
+        // update password route
+        // Route::post('/update-password',  'Front\ApiCustomerController@updatePassword')->name('customer.update_password');
+        // user logout attempt route
+        Route::get('/customer-logout',  'Front\ApiCustomerController@logoutApiSubmit')->name('customer.api_logout');
     });
 
     Route::prefix('/user')->middleware(['accountStatus', 'checkWebsiteOwner'])->group(function () {

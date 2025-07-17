@@ -148,7 +148,7 @@ $general_settingsData = json_decode($userApi_general_settingsData, true);
         @if (!empty($userShop))
             @if ($userBs->theme != 'home_eight')
                 @if ($userShop->is_shop == 1 && $userBs->catalog_mode == 0)
-                    <div id="cartIconWrapper">
+                    <div id="cartIconWrapper" class=" d-none">
                         <a class="d-block" id="cartIcon" href="{{ route('front.user.cart', getParam()) }}">
                             <div class="cart-length">
                                 <i class="fal fa-shopping-bag"></i>

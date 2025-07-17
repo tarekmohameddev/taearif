@@ -70,7 +70,7 @@
                             </thead>
                             <tbody>
                                 @foreach ($affiliates as $affiliate)
-                                    <tr>
+                                    <tr class="{{ $affiliate->pending_amount > 0 ? 'table-warning' : '' }}">
                                         <td>{{ $loop->iteration }}</td>
                                         <td>
                                             <span title="{{ $affiliate->fullname }}">
@@ -82,7 +82,8 @@
                                                 {{ Str::limit($affiliate->bank_name, 4, '...') }}
                                             </span>
                                         </td>
-                                        <td>{{ number_format($affiliate->pending_amount, 2) }} ريال</td>
+                                        <td class="{{ $affiliate->pending_amount > 0 ? 'text-danger fw-bold' : '' }}">
+                                            {{ number_format($affiliate->pending_amount, 2) }} ريال</td>
                                         <td>
                                             <span title="{{ $affiliate->bank_account_number }}">
                                                 {{ Str::limit($affiliate->bank_account_number, 4, '***') }}
@@ -102,10 +103,9 @@
                                                     'rejected' => 'Rejected'
                                                 ];
                                             @endphp
-
                                             <span class="badge badge-{{ $status == 'approved' ? 'success' : ($status == 'rejected' ? 'danger' : 'warning') }}"
-                                                  style="font-size: 0.65rem; padding: 0.25rem 0.5rem;">
-                                                {{ $statusLabels[$status] ?? ucfirst($status) }}
+                                                style="font-size: 0.65rem; padding: 0.25rem 0.5rem;">
+                                                {{ __($statusLabels[$status] ?? ucfirst($status)) }}
                                             </span>
                                         </td>
                                         <td>
@@ -114,9 +114,9 @@
                                                 @method('POST')
                                                 <select name="request_status" class="form-select form-select-sm py-0 px-1" style="font-size: 0.55rem; height: 28px; width: 85px;"
                                                     onchange="this.className = this.options[this.selectedIndex].className + ' form-select form-select-sm py-0 px-1'; this.form.submit()">
-                                                    <option class="badge bg-warning text-dark"  value="pending" {{ $affiliate->request_status === 'pending' ? 'selected' : '' }}>Pending</option>
-                                                    <option class="badge bg-success"  value="approved" {{ $affiliate->request_status === 'approved' ? 'selected' : '' }}>Approved</option>
-                                                    <option class="badge bg-danger"  value="rejected" {{ $affiliate->request_status === 'rejected' ? 'selected' : '' }}>Rejected</option>
+                                                    <option class="badge bg-warning text-dark"  value="pending" {{ $affiliate->request_status === 'pending' ? 'selected' : '' }}>{{__('Pending')}}</option>
+                                                    <option class="badge bg-success" value="approved" {{ $affiliate->request_status === 'approved' ? 'selected' : '' }}>{{ __('Approved') }}</option>
+                                                    <option class="badge bg-danger"  value="rejected" {{ $affiliate->request_status === 'rejected' ? 'selected' : '' }}>{{__('Rejected')}}</option>
                                                 </select>
                                             </form>
                                         </td>

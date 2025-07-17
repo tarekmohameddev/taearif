@@ -90,3 +90,13 @@
 [07-Dec-2024 19:42:23 UTC] PHP Deprecated:  Using ${var} in strings is deprecated, use {$var} instead in /home/aqarriyadh/public_html/taearif.com/storage/framework/views/06c1600709bd5153ae6d390a5e5488c8dd5abb2d.php on line 766
 [07-Dec-2024 22:55:25 UTC] PHP Deprecated:  Using ${var} in strings is deprecated, use {$var} instead in /home/aqarriyadh/public_html/taearif.com/storage/framework/views/06c1600709bd5153ae6d390a5e5488c8dd5abb2d.php on line 766
 [09-Dec-2024 11:06:27 UTC] PHP Warning:  Version warning: Imagick was compiled against ImageMagick version 1692 but version 1693 is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
+[08-Jul-2025 12:13:46 UTC] PHP Warning:  Version warning: Imagick was compiled against ImageMagick version 1692 but version 1693 is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
+[14-Jul-2025 19:37:30 UTC] PHP Warning:  Version warning: Imagick was compiled against ImageMagick version 1692 but version 1693 is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
+[15-Jul-2025 17:06:24 UTC] PHP Warning:  Version warning: Imagick was compiled against ImageMagick version 1692 but version 1693 is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
+[15-Jul-2025 19:35:48 UTC] PHP Warning:  Version warning: Imagick was compiled against ImageMagick version 1692 but version 1693 is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
+[15-Jul-2025 19:37:14 UTC] PHP Warning:  Version warning: Imagick was compiled against ImageMagick version 1692 but version 1693 is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
+[15-Jul-2025 19:38:54 UTC] PHP Warning:  Version warning: Imagick was compiled against ImageMagick version 1692 but version 1693 is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
+[15-Jul-2025 19:42:57 UTC] PHP Warning:  Version warning: Imagick was compiled against ImageMagick version 1692 but version 1693 is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
+[15-Jul-2025 19:44:34 UTC] PHP Warning:  Version warning: Imagick was compiled against ImageMagick version 1692 but version 1693 is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
+[15-Jul-2025 19:44:42 UTC] PHP Warning:  Version warning: Imagick was compiled against ImageMagick version 1692 but version 1693 is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
+[15-Jul-2025 19:44:47 UTC] PHP Warning:  Version warning: Imagick was compiled against ImageMagick version 1692 but version 1693 is loaded. Imagick will run but may behave surprisingly in Unknown on line 0

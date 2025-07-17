@@ -440,24 +440,24 @@ class PropertyController extends Controller
     {
         $user = $request->user();
         $data = $request->all();
-    
+
         // Normalize to array if it's a single object
         if (isset($data['id']) && isset($data['reorder_featured'])) {
             $data = [$data];
         }
-    
+
         foreach ($data as $item) {
             if (isset($item['id'], $item['reorder_featured'])) {
                 Property::where('id', $item['id'])
                     ->where('user_id', $user->id)
-                    ->where('featured', 1)
+                    // ->where('featured', 1)
                     ->update(['reorder_featured' => $item['reorder_featured']]);
             }
         }
-    
+
         return response()->json([
             'status' => 'success',
-            'message' => 'Featured property reorder updated successfully.'
+            'message' => 'property reorder_featured updated successfully.'
         ]);
     }
 
@@ -466,27 +466,27 @@ class PropertyController extends Controller
     {
         $user = $request->user();
         $data = $request->all();
-    
+        Log::info('Reordering properties', ['data' => $data, 'user_id' => $user->id]);
         // Normalize if it's a single object
         if (isset($data['id']) && isset($data['reorder'])) {
             $data = [$data];
         }
-    
+
         foreach ($data as $item) {
             if (isset($item['id'], $item['reorder'])) {
                 Property::where('id', $item['id'])
                     ->where('user_id', $user->id)
-                    ->where('featured', 0)
+                    // ->where('featured', 0)
                     ->update(['reorder' => $item['reorder']]);
             }
         }
-    
+
         return response()->json([
             'status' => 'success',
-            'message' => 'Non-featured property reorder updated successfully.'
+            'message' => 'property reorder updated successfully.'
         ]);
     }
-    
+
 
     public function show($id)
     {
