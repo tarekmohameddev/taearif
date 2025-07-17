@@ -128,7 +128,7 @@ class PropertyController extends Controller
             'high-to-low' => ['user_properties.price', 'desc'],
             'low-to-high' => ['user_properties.price', 'asc'],
         ];
-        [$order_by_column, $order] = $sortOptions[$request->sort] ?? ['user_properties.id', 'desc'];
+        [$order_by_column, $order] = $sortOptions[$request->sort] ?? ['user_properties.updated_at', 'desc'];
 
         $property_contents = Property::where([
             ['user_properties.user_id', $tenantId],
@@ -176,8 +176,19 @@ class PropertyController extends Controller
                 user_states.name as state_name,
                 user_countries.name as country_name
             ")
-            ->orderBy($order_by_column, $order)
+            ->when($request->filled('sort'), function($q) use($order_by_column, $order) {
+                return $q->orderBy($order_by_column, $order);
+            })
+
+            //apply reorder_featured → reorder → updated_at DESC
+            ->when(! $request->filled('sort'), function($q) {
+                return $q
+                    ->orderByRaw('CASE WHEN user_properties.reorder_featured = 0 THEN 1 ELSE 0 END')
+                    // ->orderBy('user_properties.reorder_featured', 'asc')
+                    ->orderBy('user_properties.reorder','asc');
+            })
             ->paginate(12);
+
 
         $information['property_contents'] = $property_contents;
         $information['contents'] = $property_contents;
