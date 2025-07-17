@@ -185,7 +185,7 @@ class PropertyController extends Controller
                 return $q
                     ->orderByRaw('CASE WHEN user_properties.reorder_featured = 0 THEN 1 ELSE 0 END')
                     // ->orderBy('user_properties.reorder_featured', 'asc')
-                    ->orderBy('user_properties.reorder',          'asc');
+                    ->orderBy('user_properties.reorder','asc');
             })
             ->paginate(12);
 
