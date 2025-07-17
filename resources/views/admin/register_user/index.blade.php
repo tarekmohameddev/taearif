@@ -95,12 +95,11 @@
                         <th scope="col">
                           <input type="checkbox" class="bulk-check" data-val="all">
                         </th>
-                        <th scope="col">{{ __('Username') }}</th>
-                        <th scope="col">{{ __('Email') }}</th>
-                        <th scope="col">{{ __('Featured') }}</th>
-                        <th scope="col">{{ __('Preview Template') }}</th>
-                        <th scope="col">{{ __('Email Status') }}</th>
-                        <th scope="col">{{ __('Account') }}</th>
+                        <th scope="col">{{ __('Name') }}</th>
+                        <th scope="col">{{ __('Phone') }}</th>
+                        <th scope="col">{{ __('Web site') }}</th>
+                        <th scope="col">{{ __('Package') }}</th>
+    
                         <td scope="col">{{ __('Action') }}</td>
                       </tr>
                     </thead>
@@ -110,78 +109,59 @@
                           <td>
                             <input type="checkbox" class="bulk-check" data-val="{{ $user->id }}">
                           </td>
-                          <td>{{ $user->username }}</td>
-                          <td>{{ $user->email }}</td>
-
+                          <td>{{ \App\Models\User\BasicSetting::firstOrNew(['user_id' => $user->id])->company_name ?? '—' }}</td>
+                          <td>{{ $user->phone }}</td>
+                          <td><a href="//{{env('WEBSITE_HOST') . '/' . $user->username}}" target="_blank">{{env('WEBSITE_HOST') . '/' . $user->username}}</a></td>
+                          @php
+                              $currPackage = \App\Http\Helpers\UserPermissionHelper::currPackageOrPending($user->id);
+                              $currMemb = \App\Http\Helpers\UserPermissionHelper::currMembOrPending($user->id);
+                          @endphp
                           <td>
-                            <form id="featureForm{{ $user->id }}" class="d-inline-block"
-                              action="{{ route('register.user.featured') }}" method="post">
-                              @csrf
-                              <select class="form-control {{ $user->featured == 1 ? 'bg-success' : 'bg-danger' }}"
-                                name="featured"
-                                onchange="document.getElementById('featureForm{{ $user->id }}').submit();">
-                                <option value="1" {{ $user->featured == 1 ? 'selected' : '' }}>
-                                  {{ __('Yes') }}</option>
-                                <option value="0" {{ $user->featured == 0 ? 'selected' : '' }}>
-                                  {{ __('No') }}</option>
-                              </select>
-                              <input type="hidden" name="user_id" value="{{ $user->id }}">
+                        @if ($currPackage)
+                            <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{$currPackage->title}}</a>
+                            <span class="badge badge-secondary badge-xs mr-2">{{$currPackage->term}}</span>
+                            <button type="submit" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#editCurrentPackage"><i class="far fa-edit"></i></button>
+                            <form action="{{route('user.currPackage.remove')}}" class="d-inline-block deleteform" method="POST">
+                                @csrf
+                                <input type="hidden" name="user_id" value="{{$user->id}}">
+                                <button type="submit" class="btn btn-xs btn-danger deletebtn"><i class="fas fa-trash"></i></button>
                             </form>
-                          </td>
 
-                          <td>
-                            <div class="d-inline-block">
-                              <select data-user_id="{{ $user->id }}"
-                                class="template-select form-control form-control-sm {{ $user->preview_template == 1 ? 'bg-success' : 'bg-danger' }}"
-                                name="preview_template">
-                                <option value="1" {{ $user->preview_template == 1 ? 'selected' : '' }}>
-                                  {{ __('Yes') }}</option>
-                                <option value="0" {{ $user->preview_template == 0 ? 'selected' : '' }}>
-                                  {{ __('No') }}</option>
-                              </select>
-                            </div>
-                            @if ($user->preview_template == 1)
-                              <button type="button" class="btn btn-primary btn-sm" data-toggle="modal"
-                                data-target="#templateImgModal{{ $user->id }}">{{ __('Edit') }}</button>
-                            @endif
+                            <p class="mb-0">
+                                @if ($currMemb->is_trial == 1)
+                                    (Expire Date: {{Carbon\Carbon::parse($currMemb->expire_date)->format('M-d-Y')}})
+                                    <span class="badge badge-primary">تجريبية</span>
+                                @else
+                                    (Expire Date: {{$currPackage->term === 'lifetime' ? "Lifetime" : Carbon\Carbon::parse($currMemb->expire_date)->format('M-d-Y')}})
+                                @endif  
+                                @if ($currMemb->status == 0)
+                                    <form id="statusForm{{$currMemb->id}}" class="d-inline-block"
+                                        action="{{route('admin.payment-log.update')}}"
+                                        method="post">
+                                        @csrf
+                                        <input type="hidden" name="id" value="{{$currMemb->id}}">
+                                        <select class="form-control form-control-sm bg-warning" name="status"
+                                            onchange="document.getElementById('statusForm{{$currMemb->id}}').submit();">
+                                            <option value=0 selected>Pending</option>
+                                            <option value=1 >Success</option>
+                                            <option value=2>Rejected</option>
+                                        </select>
+                                    </form>
+                                @endif
+                            </p>
+    
+                        @else
+                            <a data-target="#addCurrentPackage" data-toggle="modal" class="btn btn-xs btn-primary text-white"><i class="fas fa-plus"></i> Add Package</a>
+                        @endif
+
                           </td>
 
                           @includeIf('admin.register_user.template-modal')
                           @includeIf('admin.register_user.template-image-modal')
-
-                          <td>
-                            <form id="emailForm{{ $user->id }}" class="d-inline-block"
-                              action="{{ route('register.user.email') }}" method="post">
-                              @csrf
-                              <select
-                                class="form-control form-control-sm {{ strtolower($user->email_verified) == 1 ? 'bg-success' : 'bg-danger' }}"
-                                name="email_verified"
-                                onchange="document.getElementById('emailForm{{ $user->id }}').submit();">
-                                <option value="1" {{ strtolower($user->email_verified) == 1 ? 'selected' : '' }}>
-                                  {{ __('Verified') }}</option>
-                                <option value="0" {{ strtolower($user->email_verified) == 0 ? 'selected' : '' }}>
-                                  {{ __('Unverified') }}</option>
-                              </select>
-                              <input type="hidden" name="user_id" value="{{ $user->id }}">
-                            </form>
-                          </td>
-
-                          <td>
-                            <form id="userFrom{{ $user->id }}" class="d-inline-block"
-                              action="{{ route('register.user.ban') }}" method="post">
-                              @csrf
-                              <select
-                                class="form-control form-control-sm {{ $user->status == 1 ? 'bg-success' : 'bg-danger' }}"
-                                name="status"
-                                onchange="document.getElementById('userFrom{{ $user->id }}').submit();">
-                                <option value="1" {{ $user->status == 1 ? 'selected' : '' }}>
-                                  {{ __('Active') }}</option>
-                                <option value="0" {{ $user->status == 0 ? 'selected' : '' }}>
-                                  {{ __('Deactive') }}</option>
-                              </select>
-                              <input type="hidden" name="user_id" value="{{ $user->id }}">
-                            </form>
-                          </td>
+                          @includeIf('admin.register_user.edit-current-package')
+                          @includeIf('admin.register_user.add-current-package')
+                          @includeIf('admin.register_user.edit-next-package')
+                          @includeIf('admin.register_user.add-next-package')
                           <td>
                             <div class="dropdown">
                               <button class="btn btn-info btn-sm dropdown-toggle" type="button" id="dropdownMenuButton"
