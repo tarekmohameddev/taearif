@@ -64,22 +64,31 @@
 @endif
 @include('user-front.realestate.partials.header.header-pages')
 <style>
-.product-single .slider-thumbnails {
-    bottom: 150px !important;
+
+.product-single-gallery {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
 }
 
-.product-single-details{
-    position: relative;
-    top: -140px;
+.swiper.product-single-slider {
+  margin-bottom: 0 !important;
 }
 
+.swiper.slider-thumbnails {
+  margin-top: 0 !important;
+}
+.product-single .product-single-gallery .slider-btn {
+    position: absolute;
+    top: 35% !important;
+    transform: translateY(-50%);
+}
 </style>
 @section('content')
-<div style="margin-bottom: 15%;" class="product-single pt-100  border-top header-next">
+<div class="product-single pt-100 border-top header-next">
     <div class="container">
         <div class="row gx-xl-5">
             <div class="col-lg-9 col-xl-8">
-                <div class="product-single-gallery mb-40">
+                <div class="product-single-gallery ">
                     <!-- Slider navigation buttons -->
                     <div class="slider-navigation">
                         <button type="button" title="Slide prev" class="slider-btn slider-btn-prev">
@@ -121,7 +130,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="product-single-details">
+                <div class="product-single-details" style="margin-top: 19px;>
                     <div class="row " >
                         <div class="col-md-7">
                             <div class="d-flex align-items-center justify-content-between mb-10">
