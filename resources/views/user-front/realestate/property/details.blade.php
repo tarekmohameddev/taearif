@@ -572,7 +572,7 @@
                             <div class="user-img">
                                 <div class="lazy-container ratio ratio-1-1 rounded-pill d-none">
 
-                                    <a {{-- href="{{ route('frontend.agent.details', [getParam(), 'agentusername' => $user->username, 'admin' => 'true']) }} --}}>
+                                    <a href="{{-- {{ route('frontend.agent.details', [getParam(), 'agentusername' => $user->username, 'admin' => 'true']) }} --}}>
 
                                         <img class="lazyload"
                                             src="{{ $user->photo ? asset('assets/front/img/user/' . $user->photo) : asset('assets/img/blank-user.jpg') }} "
