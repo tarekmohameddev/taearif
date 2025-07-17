@@ -13,45 +13,43 @@ class AffiliateController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'fullname' => 'required|string|max:255',
-            'bank_name' => 'required|string|max:255',
-            'bank_account_number' => 'required|string|max:30',
-            'iban' => 'required|string|max:34',
+            'fullname'             => 'required|string|max:255',
+            'bank_name'            => 'required|string|max:255',
+            'bank_account_number'  => 'required|string|max:30',
+            'iban'                 => 'required|string|max:34',
         ]);
 
         $user = $request->user();
 
-        // Check if the user is already registered as an affiliate
         if ($user->affiliateUser) {
             return response()->json([
-                'status' => 'info',
+                'status'  => 'info',
                 'message' => 'You have already submitted an affiliate registration.',
-                'data' => [
+                'data'    => [
                     'request_status' => $user->affiliateUser->request_status
-                ]
+                ],
             ], 200);
         }
 
-        // Create a new affiliate user record
         $affiliate = ApiAffiliateUser::create([
-            'user_id' => $user->id,
-            'fullname' => $request->fullname,
-            'bank_name' => $request->bank_name,
+            'user_id'           => $user->id,
+            'fullname'          => $request->fullname,
+            'bank_name'         => $request->bank_name,
             'bank_account_number' => $request->bank_account_number,
-            'iban' => $request->iban,
-            'request_status' => 'pending'
+            'iban'              => $request->iban,
+            'request_status'    => 'pending',
         ]);
 
         return response()->json([
-            'status' => 'success',
+            'status'  => 'success',
             'message' => 'Affiliate registration submitted successfully.',
-            'data' => $affiliate
+            'data'    => $affiliate,
         ], 201);
     }
 
     public function index()
     {
-        $user = Auth::user();
+        $user      = Auth::user();
         $affiliate = ApiAffiliateUser::where('user_id', $user->id)->first();
 
         if (! $affiliate) {
@@ -60,145 +58,107 @@ class AffiliateController extends Controller
                 'message' => 'Affiliate user not registered.',
             ], 404);
         }
-<<<<<<<<< Temporary merge branch 1
-=========
-        // sum of all raw commissions ever generated
-        $pending   = $affiliate->transactions()->where('type','pending')->sum('amount');
-        // sum of all “collected” amounts
-        $available = $affiliate->transactions()->where('type','collected')->sum('amount');
-        // “Cash still waiting for approval”
-        // $pending   = $sumPending - $sumCollected;
-        // “Cash that’s been approved (available for the affiliate)”
-        // $available = $pending;
-        // end-of-the-month payment
-        $start = Carbon::now()->startOfMonth();
-        $end   = Carbon::now()->endOfMonth();
-        $monthly = $affiliate->transactions()->where('type','collected')->whereBetween('created_at', [$start, $end])->sum('amount');
 
-        // history of collected payments
-        $history = $affiliate->transactions()->where('type','collected')->orderByDesc('created_at')->get(['id','amount','image','type','note','created_at']);
->>>>>>>>> Temporary merge branch 2
+        //  Metrics
+        $pendingSum     = $affiliate->transactions()->where('type', 'pending')->sum('amount');
+        $collectedSum   = $affiliate->transactions()->where('type', 'collected')->sum('amount');
+        $totalCommissions = $pendingSum + $collectedSum;
 
-        // Get all users registered by current user's referral code using relationship
-        $referredUsers = $user->referredUsers;
+        $startMonthly   = Carbon::now()->startOfMonth();
+        $endMonthly     = Carbon::now()->endOfMonth();
+        $monthly        = $affiliate->transactions()
+                             ->where('type', 'collected')
+                             ->whereBetween('created_at', [$startMonthly, $endMonthly])
+                             ->sum('amount');
 
-        // Get only subscribed users from referrals using the relationship
-        $subscribedReferrals = $user->subscribedReferrals()->get();
+        $history        = $affiliate->transactions()
+                             ->orderByDesc('created_at')
+                             ->get(['id','amount','image','type','note','created_at']);
 
-        // Calculate total earnings
-        $defaultCommissionRate = 0.15; // 15% default commission
-        $commissionRate = $affiliate->commission_percentage ?? $defaultCommissionRate;
+        $pendingCount   = $affiliate->transactions()->where('type', 'pending')->count();
+        $collectedCount = $affiliate->transactions()->where('type', 'collected')->count();
 
-        // Count of subscribed referrals
-        $subscribedCount = $subscribedReferrals->count();
+        $totalReferrals   = $affiliate->referrals()->count();
+        $paidSubscribers  = $affiliate->referrals()->where('subscribed', true)->count();
 
-        // Calculate earnings based on subscribed referrals
-        $totalEarnings = 0;
-        $thisMonthEarnings = 0;
+        // Build referrals overview
+        $referrals = $affiliate
+            ->referrals()
+            ->select('id','first_name','last_name','email','created_at')
+            ->get()
+            ->map(function($u) use ($affiliate) {
+                $pendingByReferral   = $affiliate->transactions()
+                    ->where('referral_user_id', $u->id)
+                    ->where('type', 'pending')
+                    ->sum('amount');
+                $collectedByReferral = $affiliate->transactions()
+                    ->where('referral_user_id', $u->id)
+                    ->where('type', 'collected')
+                    ->sum('amount');
 
-        foreach ($subscribedReferrals as $referredUser) {
-            // Use subscription_amount from users table
-            $subscriptionAmount = $referredUser->subscription_amount;
+                if ($pendingByReferral > 0) {
+                    $status = 'pending';
+                } elseif ($collectedByReferral > 0) {
+                    $status = 'collected';
+                } else {
+                    $status = 'not_paid';
+                }
 
-            if ($subscriptionAmount > 0) {
-                $commission = $subscriptionAmount * $commissionRate;
-                $totalEarnings += $commission;
-            }
+                return [
+                    'id'                   => $u->id,
+                    'name'                 => "{$u->first_name} {$u->last_name}",
+                    'email'                => $u->email,
+                    'joined_at'            => $u->created_at->toDateTimeString(),
+                    'pending_commission'   => number_format($pendingByReferral, 2),
+                    'collected_commission' => number_format($collectedByReferral, 2),
+                    'status'               => $status,
+                ];
+            });
 
-            // Get memberships that started this month for this month earnings
-            $thisMonthMemberships = $referredUser->memberships()
-                ->where('status', 1)
-                ->whereYear('start_date', now()->year)
-                ->whereMonth('start_date', now()->month)
-                ->sum('price');
-
-            if ($thisMonthMemberships > 0) {
-                $thisMonthEarnings += ($thisMonthMemberships * $commissionRate);
-            }
-        }
-
-<<<<<<<<< Temporary merge branch 1
-        // Calculate pending amount
-        // Pending = Total Earned - Already Withdrawn
-        $pendingAmount = $totalEarnings - $affiliate->withdrawn_amount;
-
-        // Update affiliate's earnings and pending amount
-        $affiliate->total_earned = $totalEarnings;
-        $affiliate->pending_amount = $pendingAmount;
-        $affiliate->save();
-
-        $messages = [
-            'pending'  => 'Your affiliate request is still under review.',
-            'approved' => 'Your affiliate request has been approved.',
-            'rejected' => 'Your affiliate request was rejected.',
-        ];
-
-        return response()->json([
-            'status' => $affiliate->request_status,
-            'message' => $messages[$affiliate->request_status] ?? 'not_found',
-            'affiliate_data' => [
-                'user_referral_code' => $user->referral_code,
-                'total_referrals' => $referredUsers->count(),
-                'subscribed_referrals' => $subscribedCount,
-                'commission_rate' => $commissionRate,
-                'total_earned' => number_format($totalEarnings, 2),
-                'this_month_earned' => number_format($thisMonthEarnings, 2),
-                'total_commission' => $affiliate->total_commission,
-                'pending_amount' => number_format($pendingAmount, 2),
-                'withdrawn_amount' => number_format($affiliate->withdrawn_amount, 2),
-
-=========
-        $referrals = $affiliate->referrals()
-        ->select('id','first_name','last_name','email','created_at')
-        ->get()
-        ->map(fn($u) => [
-            'id'         => $u->id,
-            'name'       => "{$u->first_name} {$u->last_name}",
-            'email'      => $u->email,
-            'joined_at'  => $u->created_at->toDateTimeString(),
-            'commission' => $affiliate->transactions()
-                                ->where('referral_user_id', $u->id)
-                                ->sum('amount'),
-        ]);
+        //  Referral‐details for subscribed users
+        $subscribedReferrals = $affiliate->referrals()->where('subscribed', true)->get();
+        $commissionRate       = $affiliate->commission_percentage ?? 0.15;
 
         return response()->json([
             'success' => true,
             'data'    => [
-              'referral_code' => $user->referral_code,
-              'referrals'     => $referrals,
-              'pending_amount'       => number_format($pending, 2),
-              'available_amount'     => number_format($available, 2),
-              'end_of_month_payment' => number_format($monthly, 2),
-              'payment_history'      => $history->map(fn($t) => [
-                  'id'        => $t->id,
-                  'amount'    => number_format($t->amount,2),
-                  'image_url' => $t->image ? asset($t->image) : null,
-                  'type'      => $t->type,
-                  'note'      => $t->note,
-                  'date'      => $t->created_at->toDateTimeString(),
-              ]),
->>>>>>>>> Temporary merge branch 2
+                'referral_code'            => $user->referral_code,
+                'total_referrals'          => $totalReferrals,
+                'paid_subscribers_count'   => $paidSubscribers,
+                'pending_payments_count'   => $pendingCount,
+                'collected_payments_count' => $collectedCount,
+                'total_commissions'        => number_format($totalCommissions, 2),
+                'pending_amount'           => number_format($pendingSum, 2),
+                'available_amount'         => number_format($collectedSum, 2),
+                'end_of_month_payment'     => number_format($monthly, 2),
+                'referrals'                => $referrals,
+                'payment_history'          => $history->map(fn($t) => [
+                    'id'        => $t->id,
+                    'amount'    => number_format($t->amount, 2),
+                    'image_url' => $t->image ? asset($t->image) : null,
+                    'type'      => $t->type,
+                    'note'      => $t->note,
+                    'date'      => $t->created_at->toDateTimeString(),
+                ]),
             ],
-            'referral_details' => $subscribedReferrals->map(function($referredUser) use ($commissionRate) {
-                $latestMembership = $referredUser->memberships()
-                                               ->where('status', 1)
-                                               ->orderBy('id', 'DESC')
-                                               ->first();
+            'referral_details' => $subscribedReferrals->map(function($referred) use ($commissionRate) {
+                $latestMembership = $referred->memberships()
+                    ->where('status', 1)
+                    ->orderByDesc('id')
+                    ->first();
 
                 return [
-                    'user_id' => $referredUser->id,
-                    'name' => $referredUser->first_name . ' ' . $referredUser->last_name,
-                    'email' => $referredUser->email,
-                    'username' => $referredUser->username,
-                    'subscribed' => $referredUser->subscribed == 1,
-                    'referred_by' => $referredUser->referred_by,
-                    'registered_at' => $referredUser->created_at->format('Y-m-d'),
-                    'subscription_amount' => number_format($referredUser->subscription_amount, 2),
-                    'commission_earned' => number_format($referredUser->subscription_amount * $commissionRate, 2),
+                    'user_id'             => $referred->id,
+                    'name'                => "{$referred->first_name} {$referred->last_name}",
+                    'email'               => $referred->email,
+                    'username'            => $referred->username,
+                    'subscribed'          => (bool) $referred->subscribed,
+                    'referred_by'         => $referred->referred_by,
+                    'registered_at'       => $referred->created_at->toDateString(),
+                    'subscription_amount' => number_format($referred->subscription_amount, 2),
+                    'commission_earned'   => number_format($referred->subscription_amount * $commissionRate, 2),
                 ];
-            })
-        ]);
-
+            }),
+        ], 200);
     }
-
 }
