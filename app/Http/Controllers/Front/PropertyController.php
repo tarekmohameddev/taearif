@@ -176,14 +176,14 @@ class PropertyController extends Controller
                 user_states.name as state_name,
                 user_countries.name as country_name
             ")
-            ->when($request->filled('sort'), function($q) use($order_by_column, $order) {
-                return $q->orderBy($order_by_column, $order);
-            })
+            // ->when($request->filled('sort'), function($q) use($order_by_column, $order) {
+            //     return $q->orderBy($order_by_column, $order);
+            // })
 
             //apply reorder_featured → reorder → updated_at DESC
             ->when(! $request->filled('sort'), function($q) {
                 return $q
-                    ->orderByRaw('CASE WHEN user_properties.reorder_featured = 0 THEN 1 ELSE 0 END')
+                    ->orderByRaw('CASE WHEN user_properties.reorder = 0 THEN 1 ELSE 0 END')
                     // ->orderBy('user_properties.reorder_featured', 'asc')
                     ->orderBy('user_properties.reorder','asc');
             })
