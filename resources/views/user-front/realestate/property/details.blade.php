@@ -68,13 +68,23 @@
 .product-single .slider-thumbnails {
     top: 430px;
 }
+.product-single .product-single-gallery .slider-btn {
+    top: 215px !important;
+}
+
+.product-single .slider-thumbnails {
+    height: 19% !important;
+}
+.product-single .product-single-slider  {
+height: 600px !important;
+}
 </style>
 @section('content')
-<div class="product-single pt-100 pb-100  border-top header-next">
+<div class="product-single pt-100  border-top header-next">
     <div class="container">
         <div class="row gx-xl-5">
             <div class="col-lg-9 col-xl-8">
-                <div class="product-single-gallery mb-40">
+                <div class="product-single-gallery">
                     <!-- Slider navigation buttons -->
                     <div class="slider-navigation" >
                         <button type="button" title="Slide prev" class="slider-btn slider-btn-prev">
