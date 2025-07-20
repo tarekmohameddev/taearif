@@ -462,28 +462,73 @@ class PropertyController extends Controller
     }
 
     // properties_reorder
+    // public function properties_reorder(Request $request)
+    // {
+    //     $user = $request->user();
+    //     $data = $request->all();
+    //     Log::info('Reordering properties', ['data' => $data, 'user_id' => $user->id]);
+    //     // Normalize if it's a single object
+    //     if (isset($data['id']) && isset($data['reorder'])) {
+    //         $data = [$data];
+    //     }
+
+    //     foreach ($data as $item) {
+    //         if (isset($item['id'], $item['reorder'])) {
+    //             Property::where('id', $item['id'])
+    //                 ->where('user_id', $user->id)
+    //                 ->update(['reorder' => $item['reorder']]);
+    //         }
+    //     }
+
+    //     return response()->json([
+    //         'status' => 'success',
+    //         'message' => 'property reorder updated successfully.'
+    //     ]);
+    // }
+
     public function properties_reorder(Request $request)
     {
         $user = $request->user();
-        $data = $request->all();
-        Log::info('Reordering properties', ['data' => $data, 'user_id' => $user->id]);
-        // Normalize if it's a single object
-        if (isset($data['id']) && isset($data['reorder'])) {
-            $data = [$data];
+        $payload = $request->all();
+        if (isset($payload[0])) {
+            $payload = $payload[0];
         }
 
-        foreach ($data as $item) {
-            if (isset($item['id'], $item['reorder'])) {
-                Property::where('id', $item['id'])
-                    ->where('user_id', $user->id)
-                    // ->where('featured', 0)
-                    ->update(['reorder' => $item['reorder']]);
-            }
+        $propertyId = $payload['id'] ?? null;
+        $newPosition = (int) ($payload['reorder'] ?? 0);
+
+        if (!$propertyId || $newPosition <= 0) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid input'], 400);
         }
+
+        $properties = Property::where('user_id', $user->id)
+            ->orderByRaw('COALESCE(reorder, 999999) ASC') // handle nulls
+            ->get();
+
+        $movingProperty = $properties->firstWhere('id', $propertyId);
+
+        if (!$movingProperty) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Property not found for this user'
+            ], 404);
+        }
+
+        $properties = $properties->filter(fn($p) => $p->id !== $propertyId);
+        $newPosition = max(1, min($newPosition, $properties->count() + 1));
+        $reordered = $properties->values()->toArray();
+
+        array_splice($reordered, $newPosition - 1, 0, [$movingProperty]);
+
+        DB::transaction(function () use ($reordered) {
+            foreach ($reordered as $index => $prop) {
+                Property::where('id', $prop['id'])->update(['reorder' => $index + 1]);
+            }
+        });
 
         return response()->json([
             'status' => 'success',
-            'message' => 'property reorder updated successfully.'
+            'message' => 'Property reordered successfully'
         ]);
     }
 
