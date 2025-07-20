@@ -65,32 +65,18 @@
 @include('user-front.realestate.partials.header.header-pages')
 <style>
 
-.product-single-gallery {
-  margin-bottom: 0 !important;
-  padding-bottom: 0 !important;
-}
-
-.swiper.product-single-slider {
-  margin-bottom: 0 !important;
-}
-
-.swiper.slider-thumbnails {
-  margin-top: 0 !important;
-}
-.product-single .product-single-gallery .slider-btn {
-    position: absolute;
-    top: 35% !important;
-    transform: translateY(-50%);
+.product-single .slider-thumbnails {
+    top: 430px;
 }
 </style>
 @section('content')
-<div class="product-single pt-100 border-top header-next">
+<div class="product-single pt-100 pb-100  border-top header-next">
     <div class="container">
         <div class="row gx-xl-5">
             <div class="col-lg-9 col-xl-8">
-                <div class="product-single-gallery ">
+                <div class="product-single-gallery mb-40">
                     <!-- Slider navigation buttons -->
-                    <div class="slider-navigation">
+                    <div class="slider-navigation" >
                         <button type="button" title="Slide prev" class="slider-btn slider-btn-prev">
                             <i class="fal fa-angle-left"></i>
                         </button>
@@ -105,9 +91,7 @@
                                 <figure class="radius-lg lazy-container ratio ratio-16-11">
                                     <a href="{{ asset($slider->image) }}"
                                         class="lightbox-single">
-                                        <img class="lazyload"
-                                            data-src="{{ asset($slider->image) }}"
-                                            src="{{ asset($slider->image) }}">
+                                        <img class="lazyload" data-src="{{ asset($slider->image) }}"src="{{ asset($slider->image) }}">
                                     </a>
                                 </figure>
                             </div>
@@ -116,7 +100,7 @@
                         </div>
                     </div>
 
-                    <div class="swiper slider-thumbnails">
+                    <div class="swiper slider-thumbnails" >
                         <div class="swiper-wrapper">
                             @foreach ($sliders as $slider)
                             <div class="swiper-slide">
@@ -130,7 +114,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="product-single-details" style="margin-top: 19px;>
+                <div class="product-single-details">
                     <div class="row " >
                         <div class="col-md-7">
                             <div class="d-flex align-items-center justify-content-between mb-10">
@@ -581,7 +565,7 @@
                             <div class="user-img">
                                 <div class="lazy-container ratio ratio-1-1 rounded-pill d-none">
 
-                                    <a href="{{-- {{ route('frontend.agent.details', [getParam(), 'agentusername' => $user->username, 'admin' => 'true']) }} --}}>
+                                    <a {{-- href="{{ route('frontend.agent.details', [getParam(), 'agentusername' => $user->username, 'admin' => 'true']) }} --}}>
 
                                         <img class="lazyload"
                                             src="{{ $user->photo ? asset('assets/front/img/user/' . $user->photo) : asset('assets/img/blank-user.jpg') }} "
@@ -732,4 +716,3 @@
     </div>
 </div>
 @endsection
-
