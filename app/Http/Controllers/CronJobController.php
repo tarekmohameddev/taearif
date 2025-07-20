@@ -25,11 +25,15 @@ use App\Http\Controllers\Front\DonationManagement\DonationController;
 use App\Http\Controllers\Front\CourseManagement\EnrolmentController;
 use App\Http\Controllers\Front\RoomBookingController;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Http\Request;
+use App\Services\UserPackageService;
+use Illuminate\Support\Facades\Log;
 
 class CronJobController extends Controller
 {
-    public function expired()
+    public function expired(UserPackageService $service)
     {
+      
         try {
             $bs = BasicSetting::first();
             $be = BasicExtended::first();
@@ -37,12 +41,25 @@ class CronJobController extends Controller
             Config::set('app.timezone', $bs->timezone);
             $exMembers = Membership::whereDate('expire_date', Carbon::now()->subDays(1))->get();
             foreach ($exMembers as $key => $exMember) {
+     
                 if (!empty($exMember->user)) {
                     $user = $exMember->user;
                     $currPackage = UserPermissionHelper::userPackage($user->id);
-
+        
                     if (is_null($currPackage)) {
-                        SubscriptionExpiredMail::dispatch($user, $bs, $be);
+               
+                        $userId = $user->id;
+                        $packageId = 16;
+                        $paymentMethod = '';
+
+                        $request = new Request([
+                            'user_id' => $userId,
+                            'package_id' => $packageId,
+                            'payment_method' => $paymentMethod,
+                        ]);
+
+                            $service->addCurrentPackage($request);
+                       // SubscriptionExpiredMail::dispatch($user, $bs, $be);
                     }
                 }
             }
@@ -59,7 +76,7 @@ class CronJobController extends Controller
                     ])->where('status', '<>', 2)->count();
 
                     if ($nextPackageCount == 0) {
-                        SubscriptionReminderMail::dispatch($user, $bs, $be, $rmdMember->expire_date);
+                      //  SubscriptionReminderMail::dispatch($user, $bs, $be, $rmdMember->expire_date);
                     }
                 }
             }
