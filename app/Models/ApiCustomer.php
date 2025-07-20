@@ -29,6 +29,10 @@ class ApiCustomer extends Authenticatable
         'user_id',
         'name',
         'email',
+        'note',
+        'customer_type',
+        'city_id',
+        'district_id',
         'phone_number',
         'password',
         'remember_token',
@@ -51,10 +55,6 @@ class ApiCustomer extends Authenticatable
      * @param  string  $value
      * @return void
      */
-    // public function setPasswordAttribute($value)
-    // {
-    //     $this->attributes['password'] = bcrypt($value);
-    // }
 
     /**
      * Define the relationship with the User model.
@@ -64,5 +64,15 @@ class ApiCustomer extends Authenticatable
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function city()
+    {
+        return $this->belongsTo(\App\Models\User\UserCity::class, 'city_id');
+    }
+
+    public function district()
+    {
+        return $this->belongsTo(\App\Models\User\UserDistrict::class, 'district_id');
     }
 }

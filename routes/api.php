@@ -10,32 +10,33 @@ use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\DistrictController;
 use App\Http\Controllers\Api\blog\BlogController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\Api\OnboardingController;
+use App\Http\Controllers\Api\PublicUserController;
 use App\Http\Controllers\Api\ApiSideMenusController;
 use App\Http\Controllers\Api\StepProgressController;
+// use App\Http\Controllers\Api\content\ApiContentSection;
 use App\Http\Controllers\Api\ThemeSettingsController;
 use App\Http\Controllers\Api\DomainSettingsController;
-// use App\Http\Controllers\Api\content\ApiContentSection;
 use App\Http\Controllers\Api\content\ApiMenuController;
 use App\Http\Controllers\Api\isthara\IstharaController;
 use App\Http\Controllers\Api\project\ProjectController;
 use App\Http\Controllers\Api\content\AboutApiController;
+use App\Http\Controllers\Api\Customer\CustomerController;
 use App\Http\Controllers\Api\property\PropertyController;
 use App\Http\Controllers\Api\AnalyticsDashboardController;
 use App\Http\Controllers\Api\apps\whatsapp\ChatController;
-use App\Http\Controllers\Api\apps\whatsapp\WhatsappController;
+use App\Http\Controllers\Api\Affiliate\AffiliateController;
 use App\Http\Controllers\Api\App\ApiInstallationController;
 use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\property\UserFacadeController;
 use App\Http\Controllers\Api\content\FooterSettingController;
+use App\Http\Controllers\Api\apps\whatsapp\WhatsappController;
 use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\apps\whatsapp\EmbeddingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
 use App\Http\Controllers\Api\content\ApiContentSectionsController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
-use App\Http\Controllers\ImpersonationController;
-use App\Http\Controllers\Api\PublicUserController;
-use App\Http\Controllers\Api\Affiliate\AffiliateController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -269,6 +270,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/apps/whatsapp/uninstall', [ApiInstallationController::class, 'uninstallWhatsapp']);
 
 });
+
+// Customers
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/customers', [CustomerController::class, 'index']);
+    Route::get('/customers/search', [CustomerController::class, 'search']);
+    Route::get('/customers/{id}', [CustomerController::class, 'show']);
+    Route::post('/customers', [CustomerController::class, 'store']);
+    Route::put('/customers/{id}', [CustomerController::class, 'update']);
+    Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
+
+});
+
 
 // steps
 Route::middleware('auth:sanctum')->group(function () {
