@@ -76,7 +76,7 @@
     height: 19% !important;
 }
 .product-single .product-single-slider  {
-height: 600px !important;
+    height: 600px !important;
 }
 </style>
 @section('content')
