@@ -183,7 +183,7 @@ class PropertyController extends Controller
             //apply reorder_featured → reorder → updated_at DESC
             ->when(! $request->filled('sort'), function($q) {
                 return $q
-                    ->orderByRaw('CASE WHEN user_properties.reorder_featured = 0 THEN 1 ELSE 0 END')
+                    ->orderByRaw('CASE WHEN user_properties.reorder = 0 THEN 1 ELSE 0 END')
                     // ->orderBy('user_properties.reorder_featured', 'asc')
                     ->orderBy('user_properties.reorder','asc');
             })
