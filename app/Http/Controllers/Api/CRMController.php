@@ -51,8 +51,7 @@ class CRMController extends Controller
 
         foreach ($stages as $stage) {
             // Count customers in this stage
-            $customerQuery = ApiCustomer::where('user_id', $user->id)
-                ;
+            $customerQuery = ApiCustomer::where('user_id', $user->id)->where('stage_id', $stage->id);
 
             $customerCount = $customerQuery->count();
 
