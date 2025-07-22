@@ -295,8 +295,8 @@
                         class="nav-item
                     @if (request()->path() == 'admin/register/users') active
                     @elseif(request()->is('admin/register/user/details/*')) active
-                    @elseif(request()->routeIs('register.user.vcards')) active
-                    @elseif (request()->routeIs('register.user.changePass')) active @endif">
+                    @elseif(request()->routeIs('admin.register.user.vcards')) active
+                    @elseif (request()->routeIs('admin.register.user.changePass')) active @endif">
 
                         <a data-toggle="collapse" href="#users">
                             <i class="la flaticon-users"></i>
@@ -305,8 +305,8 @@
                         </a>
                         <div class="collapse @if (request()->path() == 'admin/register/users') show
                     @elseif(request()->is('admin/register/user/details/*')) show
-                    @elseif(request()->routeIs('register.user.vcards')) show
-                    @elseif (request()->routeIs('register.user.changePass')) show @endif"
+                    @elseif(request()->routeIs('admin.register.user.vcards')) show
+                    @elseif (request()->routeIs('admin.register.user.changePass')) show @endif"
                             id="users">
                             <ul class="nav nav-collapse">
                                 <li class=" @if (request()->routeIs('admin.register.user')) active @endif">
@@ -314,7 +314,7 @@
                                         <span class="sub-item">{{ __('Registered Users') }}</span>
                                     </a>
                                 </li>
-                                <li class=" @if (request()->routeIs('register.user.vcards')) active @endif">
+                                <li class=" @if (request()->routeIs('admin.register.user.vcards')) active @endif">
                                     <a href="{{ route('admin.register.user.vcards') }}">
                                         <span class="sub-item">{{ __('Users vCards') }}</span>
                                     </a>

@@ -10,7 +10,7 @@
                 </button>
             </div>
             <div class="modal-body text-left">
-                <form action="{{ route('register.user.vcard.updateTemplate') }}"
+                <form action="{{ route('admin.register.user.vcard.updateTemplate') }}"
                     id="editTemplateForm{{ $vcard->id }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="vcard_id" value="{{ $vcard->id }}">

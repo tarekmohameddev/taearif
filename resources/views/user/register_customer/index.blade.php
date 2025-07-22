@@ -179,7 +179,7 @@
           </button>
         </div>
         <div class="modal-body">
-          <form action="{{ route('register.user.store') }}" method="POST" id="ajaxForm">
+          <form action="{{ route('admin.register.user.store') }}" method="POST" id="ajaxForm">
             @csrf
             <div class="form-group">
               <label for="">{{ __('Username') }} *</label>

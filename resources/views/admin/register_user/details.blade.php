@@ -66,7 +66,7 @@
                     $features = json_decode($features, true);
                 @endphp
 
-                @if (!empty($features) && is_array($features) && in_array('Subdomain', $features))  
+                @if (!empty($features) && is_array($features) && in_array('Subdomain', $features))
                     @php
                         $subdomain = strtolower($user->username) . '.' . env('WEBSITE_HOST');
                     @endphp
@@ -77,10 +77,10 @@
                         <div class="col-lg-6">
                             <a href="//{{$subdomain}}" target="_blank">{{$subdomain}}</a>
                         </div>
-                    </div>  
+                    </div>
                 @endif
 
-                @if (!empty($features) && is_array($features) && in_array('Custom Domain', $features))                    
+                @if (!empty($features) && is_array($features) && in_array('Custom Domain', $features))
                     @php
                         $cdomains = $user->user_custom_domains()->where('status', 1);
                     @endphp
@@ -112,7 +112,7 @@
                             <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{$currPackage->title}}</a>
                             <span class="badge badge-secondary badge-xs mr-2">{{$currPackage->term}}</span>
                             <button type="submit" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#editCurrentPackage"><i class="far fa-edit"></i></button>
-                            <form action="{{route('user.currPackage.remove')}}" class="d-inline-block deleteform" method="POST">
+                            <form action="{{route('admin.user.currPackage.remove')}}" class="d-inline-block deleteform" method="POST">
                                 @csrf
                                 <input type="hidden" name="user_id" value="{{$user->id}}">
                                 <button type="submit" class="btn btn-xs btn-danger deletebtn"><i class="fas fa-trash"></i></button>
@@ -124,7 +124,7 @@
                                     <span class="badge badge-primary">Trial</span>
                                 @else
                                     (Expire Date: {{$currPackage->term === 'lifetime' ? "Lifetime" : Carbon\Carbon::parse($currMemb->expire_date)->format('M-d-Y')}})
-                                @endif  
+                                @endif
                                 @if ($currMemb->status == 0)
                                     <form id="statusForm{{$currMemb->id}}" class="d-inline-block"
                                         action="{{route('admin.payment-log.update')}}"
@@ -140,14 +140,14 @@
                                     </form>
                                 @endif
                             </p>
-    
+
                         @else
                             <a data-target="#addCurrentPackage" data-toggle="modal" class="btn btn-xs btn-primary text-white"><i class="fas fa-plus"></i> Add Package</a>
                         @endif
                     </div>
                 </div>
 
- 
+
 
                 @php
                     $nextPackage = \App\Http\Helpers\UserPermissionHelper::nextPackage($user->id);
@@ -162,19 +162,19 @@
                             <a target="_blank" href="{{route('admin.package.edit', $nextPackage->id)}}">{{$nextPackage->title}}</a>
                             <span class="badge badge-secondary badge-xs mr-2">{{$nextPackage->term}}</span>
                             <button type="button" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#editNextPackage"><i class="far fa-edit"></i></button>
-                            <form action="{{route('user.nextPackage.remove')}}" class="d-inline-block deleteform" method="POST">
+                            <form action="{{route('admin.user.nextPackage.remove')}}" class="d-inline-block deleteform" method="POST">
                                 @csrf
                                 <input type="hidden" name="user_id" value="{{$user->id}}">
                                 <button type="submit" class="btn btn-xs btn-danger deletebtn"><i class="fas fa-trash"></i></button>
                             </form>
 
                             <p class="mb-0">
-                                @if ($currPackage->term != 'lifetime' && $nextMemb->is_trial != 1) 
+                                @if ($currPackage->term != 'lifetime' && $nextMemb->is_trial != 1)
                                     (
-                                    Activation Date: 
-                                    {{Carbon\Carbon::parse($nextMemb->start_date)->format('M-d-Y')}}, 
+                                    Activation Date:
+                                    {{Carbon\Carbon::parse($nextMemb->start_date)->format('M-d-Y')}},
                                     Expire Date: {{$nextPackage->term === 'lifetime' ?  "Lifetime" : Carbon\Carbon::parse($nextMemb->expire_date)->format('M-d-Y')}})
-                                @endif   
+                                @endif
                                 @if ($nextMemb->status == 0)
                                     <form id="statusForm{{$nextMemb->id}}" class="d-inline-block"
                                         action="{{route('admin.payment-log.update')}}"
@@ -200,7 +200,7 @@
                     </div>
                 </div>
 
-                
+
 
                 <div class="row mb-3">
                     <div class="col-lg-6">

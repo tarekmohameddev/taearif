@@ -71,7 +71,7 @@
             </div>
             <div class="col-lg-6 mt-2 mt-lg-0">
               <button class="btn btn-danger float-lg-right float-none btn-sm ml-2 mt-1 d-none bulk-delete"
-                data-href="{{ route('register.user.bulk.delete') }}"><i class="flaticon-interface-5"></i>
+                data-href="{{ route('admin.register.user.bulk.delete') }}"><i class="flaticon-interface-5"></i>
                 {{ __('Delete') }}</button>
               <button class="btn btn-primary float-lg-right float-none btn-sm ml-2 mt-1" data-toggle="modal"
                 data-target="#addUserModal"><i class="fas fa-plus"></i> {{ __('Add User') }}</button>
@@ -99,7 +99,7 @@
                         <th scope="col">{{ __('Phone') }}</th>
                         <th scope="col">{{ __('Web site') }}</th>
                         <th scope="col">{{ __('Package') }}</th>
-    
+
                         <td scope="col">{{ __('Action') }}</td>
                       </tr>
                     </thead>
@@ -121,7 +121,7 @@
                             <a target="_blank" href="{{route('admin.package.edit', $currPackage->id)}}">{{$currPackage->title}}</a>
                             <span class="badge badge-secondary badge-xs mr-2">{{$currPackage->term}}</span>
                             <button type="submit" class="btn btn-xs btn-warning" data-toggle="modal" data-target="#editCurrentPackage"><i class="far fa-edit"></i></button>
-                            <form action="{{route('user.currPackage.remove')}}" class="d-inline-block deleteform" method="POST">
+                            <form action="{{route('admin.user.currPackage.remove')}}" class="d-inline-block deleteform" method="POST">
                                 @csrf
                                 <input type="hidden" name="user_id" value="{{$user->id}}">
                                 <button type="submit" class="btn btn-xs btn-danger deletebtn"><i class="fas fa-trash"></i></button>
@@ -133,7 +133,7 @@
                                     <span class="badge badge-primary">تجريبية</span>
                                 @else
                                     (Expire Date: {{$currPackage->term === 'lifetime' ? "Lifetime" : Carbon\Carbon::parse($currMemb->expire_date)->format('M-d-Y')}})
-                                @endif  
+                                @endif
                                 @if ($currMemb->status == 0)
                                     <form id="statusForm{{$currMemb->id}}" class="d-inline-block"
                                         action="{{route('admin.payment-log.update')}}"
@@ -149,7 +149,7 @@
                                     </form>
                                 @endif
                             </p>
-    
+
                         @else
                             <a data-target="#addCurrentPackage" data-toggle="modal" class="btn btn-xs btn-primary text-white"><i class="fas fa-plus"></i> Add Package</a>
                         @endif
@@ -170,10 +170,10 @@
                               </button>
                               <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                 <a class="dropdown-item"
-                                  href="{{ route('register.user.view', $user->id) }}">{{ __('Details') }}</a>
+                                  href="{{ route('admin.register.user.view', $user->id) }}">{{ __('Details') }}</a>
                                 <a class="dropdown-item"
-                                  href="{{ route('register.user.changePass', $user->id) }}">{{ __('Change Password') }}</a>
-                                <form class="deleteform d-block" action="{{ route('register.user.delete') }}"
+                                  href="{{ route('admin.register.user.changePass', $user->id) }}">{{ __('Change Password') }}</a>
+                                <form class="deleteform d-block" action="{{ route('admin.register.user.delete') }}"
                                   method="post">
                                   @csrf
                                   <input type="hidden" name="user_id" value="{{ $user->id }}">
@@ -181,7 +181,7 @@
                                     {{ __('Delete') }}
                                   </button>
                                 </form>
-                                <form class="d-block" action="{{ route('register.user.secretLogin') }}" method="get"
+                                <form class="d-block" action="{{ route('admin.register.user.secretLogin') }}" method="get"
                                   target="_blank">
                                   @csrf
                                   <input type="hidden" name="user_id" value="{{ $user->id }}">
@@ -222,7 +222,7 @@
           </button>
         </div>
         <div class="modal-body">
-          <form action="{{ route('register.user.store') }}" method="POST" id="ajaxForm">
+          <form action="{{ route('admin.register.user.store') }}" method="POST" id="ajaxForm">
             @csrf
             <div class="form-group">
               <label for="">Username *</label>
