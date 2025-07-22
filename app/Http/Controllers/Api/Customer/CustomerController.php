@@ -86,6 +86,7 @@ class CustomerController extends Controller
                 'district_id'   => 'nullable|exists:user_districts,id',
                 'note'          => 'nullable|string',
                 'customer_type' => 'nullable|string|max:50',
+                'stage_id'      => 'nullable|exists:users_api_customers_stages,id',
                 'password'      => 'required|string|min:6',
                 "priority"      => 'nullable|integer|in:1,2,3', // 1=low, 2=medium, 3=high
 
@@ -176,6 +177,7 @@ class CustomerController extends Controller
             'note'          => 'nullable|string',
             'customer_type' => 'nullable|string',
             'priority'      => 'sometimes|integer|in:1,2,3', // 1=low, 2=medium, 3=high
+            'stage_id'      => 'nullable|exists:users_api_customers_stages,id',
             'phone_number' => 'sometimes|string|max:20|unique:api_customers,phone_number,' . $customer->id,
             'password'      => 'nullable|string|min:6',
         ]);
