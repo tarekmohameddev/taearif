@@ -36,7 +36,7 @@ class RouteServiceProvider extends ServiceProvider
         // Pattern for domain route parameter
         \Route::pattern('domain', '[a-z0-9.\-]+');
 
-        // ✅ Define a custom global API rate limiter
+        // Define a custom global API rate limiter
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(100)->by(optional($request->user())->id ?: $request->ip());
         });
@@ -53,6 +53,7 @@ class RouteServiceProvider extends ServiceProvider
     {
         $this->mapApiRoutes();
         $this->mapWebRoutes();
+        $this->mapAdminRoutes();
     }
 
     /**
@@ -82,5 +83,21 @@ class RouteServiceProvider extends ServiceProvider
             ->middleware('api') // throttle:api is applied here
             ->namespace($this->namespace)
             ->group(base_path('routes/api.php'));
+    }
+
+    /**
+     * Define the "admin" routes for the application.
+     *
+     * These routes are prefixed with 'admin' and can have specific middleware.
+     *
+     * @return void
+     */
+    protected function mapAdminRoutes()
+    {
+        Route::middleware(['web'])
+            ->prefix('admin')
+            ->name('admin.')
+            ->namespace($this->namespace . '\Admin')
+            ->group(base_path('routes/admin.php'));
     }
 }

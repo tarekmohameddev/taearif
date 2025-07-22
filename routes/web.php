@@ -1290,7 +1290,6 @@ Route::domain($domain)->group(function () {
     Route::group(['prefix' => 'admin', 'middleware' => 'guest:admin'], function () {
         Route::get('/', 'Admin\LoginController@login')->name('admin.login');
         Route::post('/login', 'Admin\LoginController@authenticate')->name('admin.auth');
-
         Route::get('/mail-form', 'Admin\ForgetController@mailForm')->name('admin.forget.form');
         Route::post('/sendmail', 'Admin\ForgetController@sendmail')->name('admin.forget.mail')->middleware('Demo');
     });
