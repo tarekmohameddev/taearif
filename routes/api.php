@@ -3,6 +3,7 @@ use Illuminate\Http\Request;
 use App\Models\Api\ApiThemeSettings;
 use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Facades\Socialite;
+use App\Http\Controllers\Api\CRMController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\RegionController;
@@ -10,32 +11,37 @@ use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\DistrictController;
 use App\Http\Controllers\Api\blog\BlogController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\Api\OnboardingController;
+use App\Http\Controllers\Api\PublicUserController;
 use App\Http\Controllers\Api\ApiSideMenusController;
+// use App\Http\Controllers\Api\content\ApiContentSection;
 use App\Http\Controllers\Api\StepProgressController;
 use App\Http\Controllers\Api\ThemeSettingsController;
 use App\Http\Controllers\Api\DomainSettingsController;
-// use App\Http\Controllers\Api\content\ApiContentSection;
 use App\Http\Controllers\Api\content\ApiMenuController;
 use App\Http\Controllers\Api\isthara\IstharaController;
 use App\Http\Controllers\Api\project\ProjectController;
 use App\Http\Controllers\Api\content\AboutApiController;
+use App\Http\Controllers\Api\Customer\CustomerController;
 use App\Http\Controllers\Api\property\PropertyController;
 use App\Http\Controllers\Api\AnalyticsDashboardController;
 use App\Http\Controllers\Api\apps\whatsapp\ChatController;
-use App\Http\Controllers\Api\apps\whatsapp\WhatsappController;
+use App\Http\Controllers\Api\Affiliate\AffiliateController;
 use App\Http\Controllers\Api\App\ApiInstallationController;
 use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\property\UserFacadeController;
 use App\Http\Controllers\Api\content\FooterSettingController;
+use App\Http\Controllers\Api\apps\whatsapp\WhatsappController;
 use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\apps\whatsapp\EmbeddingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
 use App\Http\Controllers\Api\content\ApiContentSectionsController;
+use App\Http\Controllers\Api\Customer\UserApiCustomerStageController;
+use App\Http\Controllers\Api\Customer\UserApiCustomerReminderController;
+use App\Http\Controllers\Api\Customer\UserApiCustomerAppointmentController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
-use App\Http\Controllers\ImpersonationController;
-use App\Http\Controllers\Api\PublicUserController;
-use App\Http\Controllers\Api\Affiliate\AffiliateController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -269,6 +275,36 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/apps/whatsapp/uninstall', [ApiInstallationController::class, 'uninstallWhatsapp']);
 
 });
+
+// api_customers
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/customers', [CustomerController::class, 'index']);
+    Route::get('/customers/search', [CustomerController::class, 'search']);
+    Route::get('/customers/{id}', [CustomerController::class, 'show']);
+    Route::post('/customers', [CustomerController::class, 'store']);
+    Route::put('/customers/{id}', [CustomerController::class, 'update']);
+    Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
+
+});
+
+// ApiCustomerStage
+Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
+    Route::apiResource('customer-stages', UserApiCustomerStageController::class);
+    // reorderStages
+    Route::post('customer-stages/reorder', [UserApiCustomerStageController::class, 'reorderStages']);
+
+    // Appointments
+    Route::apiResource('customer-appointments', UserApiCustomerAppointmentController::class);
+
+    // Reminders
+    Route::apiResource('customer-reminders', UserApiCustomerReminderController::class);
+
+    // CRM Dashboard
+    Route::get('/', [CRMController::class, 'index']);
+});
+
+
+
 
 // steps
 Route::middleware('auth:sanctum')->group(function () {
