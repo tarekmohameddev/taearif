@@ -1,0 +1,100 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use App\Models\ApiCustomer;
+use App\Models\Api\UserApiCustomerStage;
+use App\Models\Api\UserApiCustomerReminder;
+use App\Models\Api\UserApiCustomerAppointment;
+
+class CRMController extends Controller
+{
+    public function index(Request $request)
+    {
+        $user = $request->user();
+
+        //Check if user already has stages
+        $hasStages = UserApiCustomerStage::where('user_id', $user->id)->exists();
+
+        if (!$hasStages) {
+            // Create default stages
+            $defaultStages = [
+                ['stage_name' => 'عملاء محتملون', 'order' => 1],
+                ['stage_name' => 'مؤهلون', 'order' => 2],
+                ['stage_name' => 'مكتمل بنجاح', 'order' => 3],
+            ];
+
+            foreach ($defaultStages as $stage) {
+                UserApiCustomerStage::create([
+                    'user_id'     => $user->id,
+                    'stage_name'  => $stage['stage_name'],
+                    'order'       => $stage['order'],
+                    'is_active'   => true,
+                ]);
+            }
+        }
+
+        //total customers for this user
+        $totalCustomers = ApiCustomer::where('user_id', $user->id)->count();
+
+        //all stages with customer
+        $stages = UserApiCustomerStage::where('user_id', $user->id)
+            ->orderBy('order', 'asc')
+            ->get();
+
+        $stagesSummary = [];
+        $stagesWithCustomers = [];
+
+        foreach ($stages as $stage) {
+            // Count customers in this stage
+            $customerQuery = ApiCustomer::where('user_id', $user->id)
+                ;
+
+            $customerCount = $customerQuery->count();
+
+            $stagesSummary[] = [
+                'stage_id'       => $stage->id,
+                'stage_name'     => $stage->stage_name,
+                'color'          => $stage->color,
+                'icon'           => $stage->icon,
+                'customer_count' => $customerCount,
+            ];
+
+            // Fetch customers with info
+            $customers = $customerQuery->get()->map(function ($customer) {
+                $remindersCount = UserApiCustomerReminder::where('customer_id', $customer->id)->count();
+                $appointmentsCount = UserApiCustomerAppointment::where('customer_id', $customer->id)->count();
+
+                return [
+                    'customer_id'        => $customer->id,
+                    'name'               => $customer->name,
+                    'city'               => $customer->city,
+                    'priority'           => $customer->priority,
+                    'customer_type'      => $customer->customer_type,
+                    'reminders_count'    => $remindersCount,
+                    'appointments_count' => $appointmentsCount,
+                ];
+            });
+
+            $stagesWithCustomers[] = [
+                'stage_id'   => $stage->id,
+                'stage_name' => $stage->stage_name,
+                'customers'  => $customers,
+            ];
+        }
+
+        return response()->json([
+            'status'              => 'success',
+            'total_customers'     => $totalCustomers,
+            'stages_summary'      => $stagesSummary,
+            'stages_with_customers' => $stagesWithCustomers,
+        ]);
+    }
+
+
+
+}

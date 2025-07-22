@@ -20,20 +20,49 @@ class CustomerController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $total_of_customers = ApiCustomer::where('user_id', $user->id)->count();
 
-        $summary = [
-            'total_of_customers' => $total_of_customers,
-        ];
+        // Fetch customers with pagination
+        $customers = ApiCustomer::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
 
-        $customers = ApiCustomer::where('user_id', $user->id)->latest()->paginate(10);
-        // Log::info("message");
+        // Format the customers output (customize fields as needed)
+        $formattedCustomers = $customers->map(function ($customer) {
+            return [
+                'id' => $customer->id,
+                'name' => $customer->name,
+                'email' => $customer->email,
+                'phone_number' => $customer->phone_number,
+                'customer_type' => $customer->customer_type ?? 'unknown',
+                'district' => $customer->district ?? 'N/A',
+                'priority' => $customer->priority ?? 'normal',
+                'created_at' => $customer->created_at->toISOString(),
+                'updated_at' => $customer->updated_at->toISOString(),
+            ];
+        });
+
+        // Total customers (summary)
+        $totalCustomers = ApiCustomer::where('user_id', $user->id)->count();
+
         return response()->json([
             'status' => 'success',
-            'summary' => $summary,
-            'data' => $customers
-        ]);
+            'data' => [
+                'summary' => [
+                    'total_customers' => $totalCustomers,
+                ],
+                'customers' => $formattedCustomers,
+                'pagination' => [
+                    'total' => $customers->total(),
+                    'per_page' => $customers->perPage(),
+                    'current_page' => $customers->currentPage(),
+                    'last_page' => $customers->lastPage(),
+                    'from' => $customers->firstItem(),
+                    'to' => $customers->lastItem(),
+                ]
+            ]
+        ], 200);
     }
+
 
     /**
      * Store a newly created resource in storage.
@@ -54,6 +83,8 @@ class CustomerController extends Controller
                 'note'          => 'nullable|string',
                 'customer_type' => 'nullable|string|max:50',
                 'password'      => 'required|string|min:6',
+                "priority"      => 'nullable|integer|in:1,2,3', // 1=low, 2=medium, 3=high
+
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -73,6 +104,7 @@ class CustomerController extends Controller
             'district_id'   => $request->district_id,
             'note'          => $request->note,
             'customer_type' => $request->customer_type,
+            'priority'      => $request->priority ?? 1, // Default to medium if not provided
             'phone_number'  => $request->phone_number,
             'password'      => bcrypt($request->password),
         ]);
@@ -139,6 +171,7 @@ class CustomerController extends Controller
             'district_id'   => 'nullable|exists:user_districts,id',
             'note'          => 'nullable|string',
             'customer_type' => 'nullable|string',
+            'priority'      => 'sometimes|integer|in:1,2,3', // 1=low, 2=medium, 3=high
             'phone_number' => 'sometimes|string|max:20|unique:api_customers,phone_number,' . $customer->id,
             'password'      => 'nullable|string|min:6',
         ]);
@@ -148,6 +181,7 @@ class CustomerController extends Controller
             'email'         => $request->email ?? $customer->email,
             'note'          => $request->note ?? $customer->note,
             'customer_type' => $request->customer_type ?? $customer->customer_type,
+            'priority'      => $request->priority ?? $customer->priority,
             'city_id'       => $request->city_id ?? $customer->city_id,
             'district_id'   => $request->district_id ?? $customer->district_id,
             'phone_number'  => $request->phone_number ?? $customer->phone_number,

@@ -3,6 +3,7 @@ use Illuminate\Http\Request;
 use App\Models\Api\ApiThemeSettings;
 use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Facades\Socialite;
+use App\Http\Controllers\Api\CRMController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\RegionController;
@@ -14,8 +15,8 @@ use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\PublicUserController;
 use App\Http\Controllers\Api\ApiSideMenusController;
-use App\Http\Controllers\Api\StepProgressController;
 // use App\Http\Controllers\Api\content\ApiContentSection;
+use App\Http\Controllers\Api\StepProgressController;
 use App\Http\Controllers\Api\ThemeSettingsController;
 use App\Http\Controllers\Api\DomainSettingsController;
 use App\Http\Controllers\Api\content\ApiMenuController;
@@ -36,7 +37,11 @@ use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\apps\whatsapp\EmbeddingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
 use App\Http\Controllers\Api\content\ApiContentSectionsController;
+use App\Http\Controllers\Api\Customer\UserApiCustomerStageController;
+use App\Http\Controllers\Api\Customer\UserApiCustomerReminderController;
+use App\Http\Controllers\Api\Customer\UserApiCustomerAppointmentController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -271,7 +276,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
-// Customers
+// api_customers
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/customers', [CustomerController::class, 'index']);
     Route::get('/customers/search', [CustomerController::class, 'search']);
@@ -281,6 +286,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
 
 });
+
+// ApiCustomerStage
+Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
+    Route::apiResource('customer-stages', UserApiCustomerStageController::class);
+    // reorderStages
+    Route::post('customer-stages/reorder', [UserApiCustomerStageController::class, 'reorderStages']);
+
+    // Appointments
+    Route::apiResource('customer-appointments', UserApiCustomerAppointmentController::class);
+
+    // Reminders
+    Route::apiResource('customer-reminders', UserApiCustomerReminderController::class);
+
+    // CRM Dashboard
+    Route::get('/', [CRMController::class, 'index']);
+});
+
+
 
 
 // steps

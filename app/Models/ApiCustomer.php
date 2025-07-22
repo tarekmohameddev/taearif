@@ -31,6 +31,8 @@ class ApiCustomer extends Authenticatable
         'email',
         'note',
         'customer_type',
+        'priority',
+        'stage_id',
         'city_id',
         'district_id',
         'phone_number',
@@ -49,6 +51,17 @@ class ApiCustomer extends Authenticatable
     ];
 
 
+    const PRIORITY_LABELS = [
+        1 => 'Low',
+        2 => 'Medium',
+        3 => 'High',
+    ];
+
+    // Accessor to get readable label
+    public function getPriorityLabelAttribute(): string
+    {
+        return self::PRIORITY_LABELS[$this->priority] ?? 'Unknown';
+    }
     /**
      * Set the password attribute to be hashed.
      *
