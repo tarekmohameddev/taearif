@@ -41,6 +41,12 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(100)->by(optional($request->user())->id ?: $request->ip());
         });
 
+        Route::middleware('web')
+        ->namespace($this->namespace)
+        ->prefix('admin')
+        ->name('admin.')
+        ->group(base_path('routes/admin.php'));
+
         parent::boot();
     }
 
@@ -97,7 +103,7 @@ class RouteServiceProvider extends ServiceProvider
         Route::middleware(['web'])
             ->prefix('admin')
             ->name('admin.')
-            ->namespace($this->namespace . '\Admin')
+            ->namespace($this->namespace)
             ->group(base_path('routes/admin.php'));
     }
 }
