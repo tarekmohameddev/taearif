@@ -315,7 +315,7 @@
                                     </a>
                                 </li>
                                 <li class=" @if (request()->routeIs('register.user.vcards')) active @endif">
-                                    <a href="{{ route('register.user.vcards') }}">
+                                    <a href="{{ route('admin.register.user.vcards') }}">
                                         <span class="sub-item">{{ __('Users vCards') }}</span>
                                     </a>
                                 </li>
