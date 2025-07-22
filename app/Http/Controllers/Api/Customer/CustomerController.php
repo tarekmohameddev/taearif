@@ -36,6 +36,10 @@ class CustomerController extends Controller
                 'customer_type' => $customer->customer_type ?? 'unknown',
                 'district' => $customer->district ?? 'N/A',
                 'priority' => $customer->priority ?? 'normal',
+                'stage_id' => $customer->stage_id ?? null,
+                'note' => $customer->note ?? '',
+                'city_id' => $customer->city_id ?? null,
+                'created_by' => $customer->user_id,
                 'created_at' => $customer->created_at->toISOString(),
                 'updated_at' => $customer->updated_at->toISOString(),
             ];

@@ -8,7 +8,7 @@ use App\Models\Api\UserApiCustomerAppointment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
-use App\Models\Api\ApiCustomer;
+use App\Models\ApiCustomer;
 
 class UserApiCustomerAppointmentController extends Controller
 {
@@ -71,8 +71,8 @@ class UserApiCustomerAppointmentController extends Controller
             'duration'    => 'required|integer|min:1',
         ]);
 
-        // ✅ Check if the customer exists & belongs to the same user
-        $customer = \App\Models\Api\ApiCustomer::where('id', $validated['customer_id'])
+        // Check if the customer belongs to the user
+        $customer = ApiCustomer::where('id', $validated['customer_id'])
             ->where('user_id', $user->id)
             ->first();
 
