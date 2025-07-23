@@ -127,6 +127,11 @@ class User extends Authenticatable
 
     }
 
+
+    public function isAffiliateApproved(): bool
+    {
+        return $this->affiliateUser && $this->affiliateUser->request_status === 'approved';
+    }
     public function referredUsers()
     {
         return $this->hasMany(User::class, 'referred_by', 'id');

@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Api\ApiMenuItem;
 use Illuminate\Support\Facades\Log;
 
+use App\Models\Api\ApiAffiliateUser;
+use App\Models\User;
 class ApiSideMenusController extends Controller
 {
     /**
@@ -24,6 +26,11 @@ class ApiSideMenusController extends Controller
     {
 
         $user = Auth::user();
+        // Check if the user is accepted in affiliate program
+        $isAffiliateApproved = $user->isAffiliateApproved();
+        // \Log::info($isAffiliateApproved);
+
+
         // Load the latest active membership for the user
         $membership = Membership::where('user_id', $user->id)->where('status', 1)->orderByDesc('id')->with('package')->first();
 
@@ -104,6 +111,15 @@ class ApiSideMenusController extends Controller
             ];
         }
 
+        // Check if the user has an affiliate user record
+        if ($isAffiliateApproved > 0) {
+            $sections[] = [
+                'title' => 'برنامج الشراكة',
+                'description' => 'إدارة برنامج العمولة',
+                'icon' => 'lucide lucide-user-check h-5 w-5 text-primary',
+                'path' => '/affiliate',
+            ];
+        }
 
         $aiMenu = ApiMenuItem::where('user_id', $user->id)
             ->where('url', '/ai')
