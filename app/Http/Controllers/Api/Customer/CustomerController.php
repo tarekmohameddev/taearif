@@ -9,6 +9,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
+
 
 class CustomerController extends Controller
 {
@@ -76,19 +78,33 @@ class CustomerController extends Controller
 
     public function store(Request $request)
     {
+        $user = $request->user();
+
         try {
             $request->validate([
                 'name'          => 'required|string|max:255',
-                'email'         => 'nullable|email|unique:api_customers,email',
-                'phone_number'  => 'required|string|max:20|unique:api_customers,phone_number',
+                'email'         => [
+                    'nullable',
+                    'email',
+                    Rule::unique('api_customers', 'email')->where(function ($query) use ($user) {
+                        return $query->where('user_id', $user->id);
+                    }),
+                ],
+                'phone_number'  => [
+                    'required',
+                    'string',
+                    'max:20',
+                    Rule::unique('api_customers', 'phone_number')->where(function ($query) use ($user) {
+                        return $query->where('user_id', $user->id);
+                    }),
+                ],
                 'city_id'       => 'nullable|exists:user_cities,id',
                 'district_id'   => 'nullable|exists:user_districts,id',
                 'note'          => 'nullable|string',
                 'customer_type' => 'nullable|string|max:50',
                 'stage_id'      => 'nullable|exists:users_api_customers_stages,id',
                 'password'      => 'required|string|min:6',
-                "priority"      => 'nullable|integer|in:1,2,3', // 1=low, 2=medium, 3=high
-
+                'priority'      => 'nullable|integer|in:1,2,3',
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -97,8 +113,6 @@ class CustomerController extends Controller
                 'errors'  => $e->errors(),
             ], 422);
         }
-
-        $user = $request->user();
 
         $customer = ApiCustomer::create([
             'user_id'       => $user->id,
@@ -169,14 +183,32 @@ class CustomerController extends Controller
 
         $request->validate([
             'name'          => 'sometimes|string|max:255',
-            'email'         => 'sometimes|email|unique:api_customers,email,' . $customer->id,
+            'email'         => [
+                'sometimes',
+                'nullable',
+                'email',
+                Rule::unique('api_customers', 'email')
+                    ->where(function ($query) use ($user) {
+                        return $query->where('user_id', $user->id);
+                    })
+                    ->ignore($customer->id),
+            ],
+            'phone_number'  => [
+                'sometimes',
+                'string',
+                'max:20',
+                Rule::unique('api_customers', 'phone_number')
+                    ->where(function ($query) use ($user) {
+                        return $query->where('user_id', $user->id);
+                    })
+                    ->ignore($customer->id),
+            ],
             'city_id'       => 'nullable|exists:user_cities,id',
             'district_id'   => 'nullable|exists:user_districts,id',
             'note'          => 'nullable|string',
             'customer_type' => 'nullable|string',
             'priority'      => 'sometimes|integer|in:1,2,3', // 1=low, 2=medium, 3=high
             'stage_id'      => 'nullable|exists:users_api_customers_stages,id',
-            'phone_number' => 'sometimes|string|max:20|unique:api_customers,phone_number,' . $customer->id,
             'password'      => 'nullable|string|min:6',
         ]);
 
@@ -198,7 +230,6 @@ class CustomerController extends Controller
             'message' => 'Customer updated successfully',
             'data' => $customer->fresh()
         ]);
-
 
     }
 
