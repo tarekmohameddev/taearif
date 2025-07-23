@@ -94,6 +94,50 @@ class CRMController extends Controller
         ]);
     }
 
+    public function changeCustomerStage(Request $request, $id)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'stage_id' => 'required|integer|exists:users_api_customers_stages,id',
+        ]);
+
+        $customer = \App\Models\ApiCustomer::where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$customer) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Customer not found or does not belong to you.'
+            ], 404);
+        }
+
+        $stage = \App\Models\Api\UserApiCustomerStage::where('id', $validated['stage_id'])
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$stage) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Stage not found or does not belong to you.'
+            ], 404);
+        }
+
+        $customer->stage_id = $stage->id;
+        $customer->save();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Customer moved to new stage successfully',
+            'data'    => [
+                'customer_id' => $customer->id,
+                'customer_name' => $customer->name,
+                'new_stage_id' => $stage->id,
+                'new_stage_name' => $stage->stage_name,
+            ]
+        ]);
+    }
 
 
 }

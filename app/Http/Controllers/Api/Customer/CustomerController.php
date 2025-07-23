@@ -67,7 +67,6 @@ class CustomerController extends Controller
         ], 200);
     }
 
-
     /**
      * Store a newly created resource in storage.
      *
@@ -110,6 +109,7 @@ class CustomerController extends Controller
             'note'          => $request->note,
             'customer_type' => $request->customer_type,
             'priority'      => $request->priority ?? 1, // Default to medium if not provided
+            'stage_id'      => $request->stage_id ?? null,
             'phone_number'  => $request->phone_number,
             'password'      => bcrypt($request->password),
         ]);
@@ -120,8 +120,6 @@ class CustomerController extends Controller
             'data'    => $customer,
         ], 201);
     }
-
-
 
     /**
      * Display the specified resource.
@@ -188,6 +186,7 @@ class CustomerController extends Controller
             'note'          => $request->note ?? $customer->note,
             'customer_type' => $request->customer_type ?? $customer->customer_type,
             'priority'      => $request->priority ?? $customer->priority,
+            'stage_id'      => $request->stage_id ?? $customer->stage_id,
             'city_id'       => $request->city_id ?? $customer->city_id,
             'district_id'   => $request->district_id ?? $customer->district_id,
             'phone_number'  => $request->phone_number ?? $customer->phone_number,

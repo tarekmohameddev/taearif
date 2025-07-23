@@ -165,6 +165,13 @@ class User extends Authenticatable
         return $this->hasMany('App\Models\Membership', 'user_id');
     }
 
+    public function activeMembership()
+    {
+        return $this->hasOne('App\Models\Membership', 'user_id')
+            ->latestOfMany();
+    }
+
+
     public function permissions()
     {
         return $this->hasOne('App\Models\User\UserPermission', 'user_id');
