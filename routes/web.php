@@ -1500,32 +1500,32 @@ Route::domain($domain)->group(function () {
     //     Route::group(['middleware' => 'checkpermission:Registered Users'], function () {
     //         // Register User start
     //         Route::get('register/users', 'Admin\RegisterUserController@index')->name('admin.register.user');
-    //         Route::post('register/user/store', 'Admin\RegisterUserController@store')->name('register.user.store');
-    //         Route::post('register/users/ban', 'Admin\RegisterUserController@userban')->name('register.user.ban');
-    //         Route::post('register/users/featured', 'Admin\RegisterUserController@userFeatured')->name('register.user.featured');
-    //         Route::post('register/users/template', 'Admin\RegisterUserController@userTemplate')->name('register.user.template');
-    //         Route::post('register/users/template/update', 'Admin\RegisterUserController@userUpdateTemplate')->name('register.user.updateTemplate');
-    //         Route::post('register/users/email', 'Admin\RegisterUserController@emailStatus')->name('register.user.email');
-    //         Route::get('register/user/details/{id}', 'Admin\RegisterUserController@view')->name('register.user.view');
+    //         Route::post('register/user/store', 'Admin\RegisterUserController@store')->name('admin.register.user.store');
+    //         Route::post('register/users/ban', 'Admin\RegisterUserController@userban')->name('admin.register.user.ban');
+    //         Route::post('register/users/featured', 'Admin\RegisterUserController@userFeatured')->name('admin.register.user.featured');
+    //         Route::post('register/users/template', 'Admin\RegisterUserController@userTemplate')->name('admin.register.user.template');
+    //         Route::post('register/users/template/update', 'Admin\RegisterUserController@userUpdateTemplate')->name('admin.register.user.updateTemplate');
+    //         Route::post('register/users/email', 'Admin\RegisterUserController@emailStatus')->name('admin.register.user.email');
+    //         Route::get('register/user/details/{id}', 'Admin\RegisterUserController@view')->name('admin.register.user.view');
     //         Route::post('/user/current-package/remove', 'Admin\RegisterUserController@removeCurrPackage')->name('user.currPackage.remove');
     //         Route::post('/user/current-package/change', 'Admin\RegisterUserController@changeCurrPackage')->name('user.currPackage.change');
     //         Route::post('/user/current-package/add', 'Admin\RegisterUserController@addCurrPackage')->name('user.currPackage.add');
     //         Route::post('/user/next-package/remove', 'Admin\RegisterUserController@removeNextPackage')->name('user.nextPackage.remove');
     //         Route::post('/user/next-package/change', 'Admin\RegisterUserController@changeNextPackage')->name('user.nextPackage.change');
     //         Route::post('/user/next-package/add', 'Admin\RegisterUserController@addNextPackage')->name('user.nextPackage.add');
-    //         Route::post('register/user/delete', 'Admin\RegisterUserController@delete')->name('register.user.delete');
-    //         Route::get('register/user/secret-login', 'Admin\RegisterUserController@secretLogin')->name('register.user.secretLogin');
-    //         Route::post('register/user/bulk-delete', 'Admin\RegisterUserController@bulkDelete')->name('register.user.bulk.delete');
-    //         Route::get('register/user/{id}/changePassword', 'Admin\RegisterUserController@changePass')->name('register.user.changePass');
-    //         Route::post('register/user/updatePassword', 'Admin\RegisterUserController@updatePassword')->name('register.user.updatePassword');
+    //         Route::post('register/user/delete', 'Admin\RegisterUserController@delete')->name('admin.register.user.delete');
+    //         Route::get('register/user/secret-login', 'Admin\RegisterUserController@secretLogin')->name('admin.register.user.secretLogin');
+    //         Route::post('register/user/bulk-delete', 'Admin\RegisterUserController@bulkDelete')->name('admin.register.user.bulk.delete');
+    //         Route::get('register/user/{id}/changePassword', 'Admin\RegisterUserController@changePass')->name('admin.register.user.changePass');
+    //         Route::post('register/user/updatePassword', 'Admin\RegisterUserController@updatePassword')->name('admin.register.user.updatePassword');
     //         //Register User end
     //         // users vcards route start
-    //         Route::get('register/user/vcard', 'Admin\UsersVcardsController@index')->name('register.user.vcards');
-    //         Route::post('register/users/vcard/change-status', 'Admin\UsersVcardsController@changeStatus')->name('register.user.vcard.status');
-    //         Route::post('register/users/vcard/template', 'Admin\UsersVcardsController@vcardTemplate')->name('register.user.vcard.template');
-    //         Route::post('register/users/vcard/template/update', 'Admin\UsersVcardsController@vcardUpdateTemplate')->name('register.user.vcard.updateTemplate');
-    //         Route::post('register/users/vcard/template', 'Admin\UsersVcardsController@vcardTemplate')->name('register.user.vcard.template');
-    //         Route::post('register/users/vcard/delete', 'Admin\UsersVcardsController@destroy')->name('register.user.vcard.delete');
+    //         Route::get('register/user/vcard', 'Admin\UsersVcardsController@index')->name('admin.register.user.vcards');
+    //         Route::post('register/users/vcard/change-status', 'Admin\UsersVcardsController@changeStatus')->name('admin.register.user.vcard.status');
+    //         Route::post('register/users/vcard/template', 'Admin\UsersVcardsController@vcardTemplate')->name('admin.register.user.vcard.template');
+    //         Route::post('register/users/vcard/template/update', 'Admin\UsersVcardsController@vcardUpdateTemplate')->name('admin.register.user.vcard.updateTemplate');
+    //         Route::post('register/users/vcard/template', 'Admin\UsersVcardsController@vcardTemplate')->name('admin.register.user.vcard.template');
+    //         Route::post('register/users/vcard/delete', 'Admin\UsersVcardsController@destroy')->name('admin.register.user.vcard.delete');
     //     });
 
     //     Route::group(['middleware' => 'checkpermission:FAQ Management'], function () {

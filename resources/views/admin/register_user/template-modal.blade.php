@@ -11,7 +11,7 @@
             </div>
             <div class="modal-body">
 
-                <form action="{{route('register.user.template')}}" id="templateForm{{$user->id}}" method="POST" enctype="multipart/form-data">
+                <form action="{{route('admin.register.user.template')}}" id="templateForm{{$user->id}}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="user_id" value="{{ $user->id }}">
                     <input type="hidden" name="template" value="">

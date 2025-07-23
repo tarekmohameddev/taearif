@@ -4,16 +4,16 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::middleware(['web', 'guest:admin'])
-    // ->prefix('admin')
-    ->group(function () {
-        //
-        Route::get('/', 'Admin\LoginController@login')->name('login');
-        Route::post('/login', 'Admin\LoginController@authenticate')->name('auth');
-        Route::get('/mail-form', 'Admin\ForgetController@mailForm')->name('forget.form');
-        Route::post('/sendmail', 'Admin\ForgetController@sendmail')->name('forget.mail')->middleware('Demo');
-        //
+// ->prefix('admin')
+->group(function () {
+    //
+    Route::get('/', 'Admin\LoginController@login')->name('login');
+    Route::post('/login', 'Admin\LoginController@authenticate')->name('auth');
+    Route::get('/mail-form', 'Admin\ForgetController@mailForm')->name('forget.form');
+    Route::post('/sendmail', 'Admin\ForgetController@sendmail')->name('forget.mail')->middleware('Demo');
+    //
 
-    });
+});
 
 // Authenticated admin routes
 Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])

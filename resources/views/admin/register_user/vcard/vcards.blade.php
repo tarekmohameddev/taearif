@@ -88,7 +88,7 @@
                                                     <td>
                                                         <div class="d-inline-block">
                                                             <form id="vcardForm{{ $vcard->id }}" class="d-inline-block"
-                                                                action="{{ route('register.user.vcard.status') }}"
+                                                                action="{{ route('admin.register.user.vcard.status') }}"
                                                                 method="post">
                                                                 @csrf
                                                                 <select data-user_id="{{ $vcard->id }}"
@@ -109,7 +109,7 @@
                                                     </td>
                                                     <td>
                                                         <form class="deleteform d-block"
-                                                            action="{{ route('register.user.vcard.delete') }}"
+                                                            action="{{ route('admin.register.user.vcard.delete') }}"
                                                             method="post">
                                                             @csrf
                                                             <input type="hidden" name="vcard_id"

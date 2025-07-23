@@ -49,29 +49,94 @@ class RegisterUserController extends Controller
     public function index(Request $request)
     {
         $term = $request->term;
+        $startDate = $request->filled('start_date') ? Carbon::createFromFormat('Y-m-d', $request->start_date)->startOfDay() : null;
+        $endDate   = $request->filled('end_date') ? Carbon::createFromFormat('Y-m-d', $request->end_date)->endOfDay() : null;
+        $referredBy = $request->referred_by;
+        $subscriptionStart = $request->filled('subscription_start') ? Carbon::createFromFormat('Y-m-d', $request->subscription_start)->startOfDay() : null;
+        $subscriptionEnd = $request->filled('subscription_end') ? Carbon::createFromFormat('Y-m-d', $request->subscription_end)->endOfDay() : null;
+        $activeMembership = $request->input('active_membership');
+        $activeUsers = User::whereHas('memberships', function ($q) {
+            $q->where('status', 1) // active membership
+              ->where('expire_date', '>=', now()); // not expired
+        })->get();
+
 
         $users = User::when($term, function ($query, $term) {
-            $query->where('username', 'like', '%' . $term . '%')->orWhere('email', 'like', '%' . $term . '%');
-        })->orderBy('id', 'DESC')->paginate(10);
+            $query->where(function ($q) use ($term) {
+                $q->where('username', 'like', "%$term%")
+                  ->orWhere('email', 'like', "%$term%");
+            });
+        })
+        ->when($startDate && $endDate, fn($query) => $query->whereBetween('created_at', [$startDate, $endDate]))
+        ->when($startDate && !$endDate, fn($query) => $query->where('created_at', '>=', $startDate))
+        ->when(!$startDate && $endDate, fn($query) => $query->where('created_at', '<=', $endDate))
+        ->when($referredBy, function ($query) use ($referredBy) {$query->where('referred_by', $referredBy);})
+
+        ->when($subscriptionStart && $subscriptionEnd, function ($query) use ($subscriptionStart, $subscriptionEnd) {
+            $query->whereHas('activeMembership', function ($q) use ($subscriptionStart, $subscriptionEnd) {
+                $q->whereBetween('expire_date', [$subscriptionStart, $subscriptionEnd]);
+            });
+        })
+        ->when($subscriptionStart && !$subscriptionEnd, function ($query) use ($subscriptionStart) {
+            $query->whereHas('activeMembership', function ($q) use ($subscriptionStart) {
+                $q->where('expire_date', '>=', $subscriptionStart);
+            });
+        })
+        ->when(!$subscriptionStart && $subscriptionEnd, function ($query) use ($subscriptionEnd) {
+            $query->whereHas('activeMembership', function ($q) use ($subscriptionEnd) {
+                $q->where('expire_date', '<=', $subscriptionEnd);
+            });
+        })
+            // Filter by active membership status
+        ->when($activeMembership === '1', function ($query) {
+            // Only users who have an active subscription currently
+            $query->whereHas('memberships', function ($q) {
+                $q->where('status', 1)
+                ->where('expire_date', '>=', now());
+            });
+        })
+        ->when($activeMembership === '0', function ($query) {
+            //Users who do not have an active subscription
+            $query->whereDoesntHave('memberships', function ($q) {
+                $q->where('status', 1)
+                ->where('expire_date', '>=', now());
+            });
+        })
+        ->orderBy('id', 'DESC')
+        ->paginate(10);
+
+        $affiliateUsers = User::whereNotNull('referral_code')->get(['id','username','email']);
+
 
         $online = PaymentGateway::query()->where('status', 1)->get();
         $offline = OfflineGateway::where('status', 1)->get();
         $gateways = $online->merge($offline);
         $packages = Package::query()->where('status', '1')->get();
-        
+
         $logoUploads = UserStep::where('logo_uploaded', true)->count();
         $faviconUploads = UserStep::where('favicon_uploaded', true)->count();
         $websiteNames = UserStep::where('website_named', true)->count();
         $homepageUpdates = UserStep::where('homepage_updated', true)->count();
-    
+        $newUsersThisMonth = User::whereBetween('created_at', [
+            now()->startOfMonth(),
+            now()->endOfMonth()
+        ])->count();
+        $newUsersThisWeek = User::whereBetween('created_at', [
+            now()->startOfWeek(Carbon::SUNDAY),
+            now()->endOfWeek(Carbon::SUNDAY)
+        ])->count();
+
+
         $stats = [
             ['title' => 'رفع شعار', 'count' => $logoUploads ?? 0],
             ['title' => 'تحميل أيقونة المفضلة', 'count' => $faviconUploads ?? 0],
             ['title' => 'تحديث الاسم', 'count' => $websiteNames ?? 0],
             ['title' => 'تحديث الصفحة الرئيسية', 'count' => $homepageUpdates ?? 0],
+            ['title' => 'المسجلين الجديد في هذا الشهر', 'count' => $newUsersThisMonth ?? 0],
+            ['title' => 'المسجلين الجديد في هذا الاسبوع', 'count' => $newUsersThisWeek ?? 0],
         ];
 
-        return view('admin.register_user.index', compact('users', 'gateways', 'packages','stats'));
+        return view('admin.register_user.index', compact('users', 'gateways', 'packages','stats', 'affiliateUsers'));
     }
 
     public function view($id)

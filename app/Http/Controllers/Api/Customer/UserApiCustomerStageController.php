@@ -12,6 +12,62 @@ use Illuminate\Validation\ValidationException;
 class UserApiCustomerStageController extends Controller
 {
 
+    public function moveStage(Request $request, $id)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'direction' => 'required|in:up,down',
+        ]);
+
+        $stage = UserApiCustomerStage::where('user_id', $user->id)->findOrFail($id);
+
+        if (!$stage) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Stage not found'
+            ], 404);
+        }
+
+        // Get the current order
+        $currentOrder = $stage->order;
+
+        // Find the adjacent stage depending on direction
+        if ($validated['direction'] === 'up') { // up
+            $adjacent = UserApiCustomerStage::where('user_id', $user->id)
+                ->where('order', '<', $currentOrder)
+                ->orderBy('order', 'desc')
+                ->first();
+        } else { // down
+            $adjacent = UserApiCustomerStage::where('user_id', $user->id)
+                ->where('order', '>', $currentOrder)
+                ->orderBy('order', 'asc')
+                ->first();
+        }
+
+        if (!$adjacent) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Cannot move further ' . $validated['direction']
+            ], 400);
+        }
+
+        // Swap orders
+        $tempOrder = $stage->order;
+        $stage->order = $adjacent->order;
+        $adjacent->order = $tempOrder;
+
+        DB::transaction(function () use ($stage, $adjacent) {
+            $stage->save();
+            $adjacent->save();
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Stage moved ' . $validated['direction'] . ' successfully'
+        ]);
+    }
+
     public function reorderStages(Request $request)
     {
         $user = $request->user();

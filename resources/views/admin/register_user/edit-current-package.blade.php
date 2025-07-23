@@ -9,7 +9,7 @@
             </button>
         </div>
         <div class="modal-body">
-            <form id="changeCurrPackageForm" action="{{route('user.currPackage.change')}}" method="POST">
+            <form id="changeCurrPackageForm" action="{{route('admin.user.currPackage.change')}}" method="POST">
                 @csrf
                 <input type="hidden" name="user_id" value="{{$user->id}}">
                 <div class="form-group">

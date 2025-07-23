@@ -289,9 +289,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // ApiCustomerStage
 Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
-    Route::apiResource('customer-stages', UserApiCustomerStageController::class);
+    Route::apiResource('stages', UserApiCustomerStageController::class);
     // reorderStages
-    Route::post('customer-stages/reorder', [UserApiCustomerStageController::class, 'reorderStages']);
+    Route::post('stages/reorder', [UserApiCustomerStageController::class, 'reorderStages']); // reorder stages
+    // moveStage
+    Route::post('stages/{id}/move', [UserApiCustomerStageController::class, 'moveStage']); // move stage up or down
 
     // Appointments
     Route::apiResource('customer-appointments', UserApiCustomerAppointmentController::class);
@@ -301,6 +303,8 @@ Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
 
     // CRM Dashboard
     Route::get('/', [CRMController::class, 'index']);
+    Route::post('/customers/{id}/change-stage', [CRMController::class, 'changeCustomerStage']); // drag and drop customers to change stage
+
 });
 
 

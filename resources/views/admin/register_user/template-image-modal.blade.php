@@ -10,7 +10,7 @@
                 </button>
             </div>
             <div class="modal-body text-left">
-                <form action="{{ route('register.user.updateTemplate') }}" id="editTemplateForm{{ $user->id }}"
+                <form action="{{ route('admin.register.user.updateTemplate') }}" id="editTemplateForm{{ $user->id }}"
                     method="POST" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="user_id" value="{{ $user->id }}">
