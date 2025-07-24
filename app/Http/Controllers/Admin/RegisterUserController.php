@@ -113,7 +113,7 @@ class RegisterUserController extends Controller
         ->when($paidMember === 'trial', function ($q) {
             // only those whose membership row has payment_method = "-"
             $q->whereHas('memberships', function ($m) {
-                $m->where('payment_method', '-');
+                $m->where('transaction_details', 'Trial');
             });
         })
         ->orderBy('id', 'DESC')
