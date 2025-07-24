@@ -23,9 +23,9 @@ class CRMController extends Controller
         if (!$hasStages) {
             // Create default stages
             $defaultStages = [
-                ['stage_name' => 'عملاء محتملون', 'order' => 1],
-                ['stage_name' => 'مؤهلون', 'order' => 2],
-                ['stage_name' => 'مكتمل بنجاح', 'order' => 3],
+                ['stage_name' => 'طلب معاينه', 'order' => 1],
+                ['stage_name' => 'صفقة بيع او ايجار', 'order' => 2],
+                ['stage_name' => 'اقفال الصفقة', 'order' => 3],
             ];
 
             foreach ($defaultStages as $stage) {

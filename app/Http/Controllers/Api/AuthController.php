@@ -6,54 +6,94 @@ namespace App\Http\Controllers\Api;
 // use Str;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
-use App\Models\Api;
 use App\Models\User;
 use App\Models\Coupon;
 use App\Models\Package;
 use App\Models\Language;
 use App\Rules\Recaptcha;
-use App\Models\User\Blog;
 use App\Models\User\Menu;
 use App\Models\Membership;
-use App\Models\User\Member;
-use App\Models\User\Social;
 use App\Models\BasicSetting;
 use Illuminate\Http\Request;
-use App\Models\OfflineGateway;
-use App\Models\User\Portfolio;
-use App\Models\User\HeroSlider;
 use App\Http\Helpers\MegaMailer;
 use App\Models\User\HomeSection;
-use App\Models\User\UserService;
-use App\Models\User\WorkProcess;
-use App\Models\User\BlogCategory;
 use App\Models\User\HomePageText;
-use Laravel\Sanctum\HasApiTokens;
 use App\Models\Api\ApiMenuSetting;
 use App\Services\TempTokenService;
 use Illuminate\Support\Facades\DB;
 use App\Models\User\UserPermission;
-use App\Services\OnboardingService;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User\UserShopSetting;
-use App\Models\User\UserTestimonial;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Crypt;
-use App\Models\User\PortfolioCategory;
 use App\Models\User\UserEmailTemplate;
 use App\Models\User\UserPaymentGeteway;
 use Illuminate\Support\Facades\Session;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Api;
+use App\Models\User\UserTestimonial;
+use App\Services\OnboardingService;
+use Laravel\Sanctum\HasApiTokens;
+use App\Models\User\UserService;
+use App\Models\User\WorkProcess;
+use App\Models\User\BlogCategory;
+use App\Models\OfflineGateway;
+use App\Models\User\Portfolio;
+use App\Models\User\HeroSlider;
+use App\Models\User\Member;
+use App\Models\User\Social;
 use App\Http\Helpers\UserPermissionHelper;
+use App\Models\User\Blog;
+use Illuminate\Support\Facades\Crypt;
+use App\Models\User\PortfolioCategory;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Models\User\RealestateManagement\Category;
 
 class AuthController extends Controller
 {
+
+
+    public function verifyResetCode(Request $request)
+    {
+        $request->validate([
+            'identifier' => 'required', // email or phone
+            'code' => 'required|digits:6',
+            'new_password' => 'required|min:8|confirmed'
+        ]);
+
+        $user = User::where('email', $request->identifier)
+            ->orWhere('phone', $request->identifier)
+            ->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        $log = PasswordResetLog::where('user_id', $user->id)
+            ->where('code', $request->code)
+            ->where('used', false)
+            ->where('expires_at', '>=', now())
+            ->latest()
+            ->first();
+
+        if (!$log) {
+            return response()->json(['message' => 'Invalid or expired code'], 400);
+        }
+
+        // update password
+        $user->update(['password' => bcrypt($request->new_password)]);
+
+        // mark code as used
+        $log->update(['used' => true]);
+
+        return response()->json([
+            'message' => 'Password reset successful'
+        ]);
+    }
+
 
     public function redirect()
     {
@@ -120,9 +160,6 @@ class AuthController extends Controller
             return redirect()->away("https://app.taearif.com/oauth/login?error=google_auth_failed");
         }
     }
-
-
-
 
     // Helper method to generate unique username
     private function generateUniqueUsername($name)
@@ -299,7 +336,6 @@ class AuthController extends Controller
         }
     }
 
-
     //sendWhatsAppMessage
     public function sendWhatsAppMessage($phone, $message)
     {
@@ -377,7 +413,6 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logged out successfully']);
     }
-
 
     public function getUserProfile()
     {
@@ -562,47 +597,6 @@ class AuthController extends Controller
             ]);
         }
     }
-
-
-
-    // private function createDefaultMenu(User $user)
-    // {
-    //     if (Menu::where('user_id', $user->id)->exists()) {
-    //         return;
-    //     }
-    //     $templateUserId = 1;
-
-    //     // Get all supported languages
-    //     $languages = Language::all();
-
-    //     // Get default menus from template user (ID = 1)
-    //     $templateMenus = Menu::where('user_id', $templateUserId)->get();
-
-    //     foreach ($templateMenus as $templateMenu) {
-    //         $clonedMenu = $templateMenu->replicate();
-    //         $clonedMenu->user_id = $user->id;
-    //         $clonedMenu->save();
-
-    //         // Clone each menu item
-    //         foreach ($templateMenu->items as $item) {
-    //             $newItem = $item->replicate();
-    //             $newItem->menu_id = $clonedMenu->id;
-    //             $newItem->user_id = $user->id;
-    //             $newItem->save();
-    //         }
-
-    //         // Create menu setting for each language (e.g., header/footer mapping)
-    //         foreach ($languages as $lang) {
-    //             ApiMenuSetting::create([
-    //                 'user_id'    => $user->id,
-    //                 'language_id'=> $lang->id,
-    //                 'menu_type'  => $clonedMenu->type,  // header or footer
-    //                 'menu_id'    => $clonedMenu->id,
-    //             ]);
-    //         }
-    //     }
-    // }
-
 
     private function invalidCurrencyResponse($message)
     {

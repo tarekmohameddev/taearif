@@ -2652,5 +2652,9 @@
     "Only Non-Active / Expired": "المشتركين غير النشطين / منتهية الصلاحية فقط",
     "-- All Users --": "-- جميع المستخدمين --",
     "-- All Referrers --": "-- جميع المحيلين --",
-    "Enter a note (optional)": "أدخل ملاحظة (اختياري)"
+    "Enter a note (optional)": "أدخل ملاحظة (اختياري)",
+    "-- All Types --": "-- جميع الأنواع --",
+    "Membership_Type": "نوع العضوية",
+    "Paid_Member": "عضو مدفوع",
+    "Free_Trial": "عضو مجاني"
 }
