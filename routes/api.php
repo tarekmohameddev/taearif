@@ -41,6 +41,7 @@ use App\Http\Controllers\Api\Customer\UserApiCustomerStageController;
 use App\Http\Controllers\Api\Customer\UserApiCustomerReminderController;
 use App\Http\Controllers\Api\Customer\UserApiCustomerAppointmentController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
+use App\Http\Controllers\Api\ResetPasswordController;
 
 /*
 |--------------------------------------------------------------------------
@@ -98,6 +99,11 @@ Route::middleware('auth:sanctum')->group(function () {
 // Auth routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+// Password reset routes
+Route::post('/auth/forgot-password', [ResetPasswordController::class, 'forgotPassword']); // Send reset link
+Route::post('/auth/verify-reset-code', [ResetPasswordController::class, 'verifyResetCode']); // Verify reset code
+
+
 
 // Dashboard routes
 Route::middleware('auth:sanctum')->group(function () {
