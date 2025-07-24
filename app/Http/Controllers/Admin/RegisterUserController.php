@@ -60,7 +60,6 @@ class RegisterUserController extends Controller
               ->where('expire_date', '>=', now()); // not expired
         })->get();
 
-
         $users = User::when($term, function ($query, $term) {
             $query->where(function ($q) use ($term) {
                 $q->where('username', 'like', "%$term%")
