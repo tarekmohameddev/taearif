@@ -133,7 +133,7 @@
                                         </div>
 
                                         {{-- Active Subscription Filter --}}
-                                        <div class="form-group mr-2">
+                                        <div class="form-group mr-4">
                                             <label for="active_membership" class="small text-muted mb-1">{{ __('Active Subscription') }}</label>
                                             <select name="active_membership" id="active_membership" class="form-control form-control-sm">
                                                 <option value="">{{ __('-- All Users --') }}</option>
@@ -144,11 +144,9 @@
                                                     {{ __('Only Non-Active / Expired') }}
                                                 </option>
                                             </select>
-                                        </div>
 
                                     {{-- Paid / Trial Filter --}}
-                                        <div class="form-group mr-2">
-                                            <label for="paid_member" class="small text-muted mb-1">{{ __('Membership_Type') }}</label>
+                                             <label for="paid_member" class="small text-muted mb-1">{{ __('Membership_Type') }}</label>
                                             <select name="paid_member" id="paid_member" class="form-control form-control-sm">
                                                 <option value="">{{ __('-- All Types --') }}</option>
                                                 <option value="paid"  {{ request()->input('paid_member') == 'paid'  ? 'selected' : '' }}>
