@@ -55,12 +55,14 @@ class RegisterUserController extends Controller
         $subscriptionStart = $request->filled('subscription_start') ? Carbon::createFromFormat('Y-m-d', $request->subscription_start)->startOfDay() : null;
         $subscriptionEnd = $request->filled('subscription_end') ? Carbon::createFromFormat('Y-m-d', $request->subscription_end)->endOfDay() : null;
         $activeMembership = $request->input('active_membership');
+        $paidMember = $request->input('paid_member');
+
         $activeUsers = User::whereHas('memberships', function ($q) {
             $q->where('status', 1) // active membership
               ->where('expire_date', '>=', now()); // not expired
         })->get();
 
-        $users = User::when($term, function ($query, $term) {
+        $users = User::with('referrer')->when($term, function ($query, $term) {
             $query->where(function ($q) use ($term) {
                 $q->where('username', 'like', "%$term%")
                   ->orWhere('email', 'like', "%$term%");
@@ -69,7 +71,7 @@ class RegisterUserController extends Controller
         ->when($startDate && $endDate, fn($query) => $query->whereBetween('created_at', [$startDate, $endDate]))
         ->when($startDate && !$endDate, fn($query) => $query->where('created_at', '>=', $startDate))
         ->when(!$startDate && $endDate, fn($query) => $query->where('created_at', '<=', $endDate))
-        ->when($referredBy, function ($query) use ($referredBy) {$query->where('referred_by', $referredBy);})
+        ->when($referredBy, fn($q, $r) => $q->where('referred_by', $r))
 
         ->when($subscriptionStart && $subscriptionEnd, function ($query) use ($subscriptionStart, $subscriptionEnd) {
             $query->whereHas('activeMembership', function ($q) use ($subscriptionStart, $subscriptionEnd) {
@@ -101,11 +103,24 @@ class RegisterUserController extends Controller
                 ->where('expire_date', '>=', now());
             });
         })
+        // paid vs trial filter
+        ->when($paidMember === 'paid', function ($q) {
+            // only those whose membership row has payment_method = "Arb"
+            $q->whereHas('memberships', function ($m) {
+                $m->where('payment_method', 'Arb');
+            });
+        })
+        ->when($paidMember === 'trial', function ($q) {
+            // only those whose membership row has payment_method = "-"
+            $q->whereHas('memberships', function ($m) {
+                $m->where('payment_method', '-');
+            });
+        })
         ->orderBy('id', 'DESC')
         ->paginate(10);
 
-        $affiliateUsers = User::whereNotNull('referral_code')->get(['id','username','email']);
-
+        // $affiliateUsers = User::whereNotNull('referral_code')->get(['id','username','email']);
+        $affiliateUsers = User::whereHas('referrals')->get(['id','username','email']);
 
         $online = PaymentGateway::query()->where('status', 1)->get();
         $offline = OfflineGateway::where('status', 1)->get();
@@ -135,7 +150,15 @@ class RegisterUserController extends Controller
             ['title' => 'المسجلين الجديد في هذا الاسبوع', 'count' => $newUsersThisWeek ?? 0],
         ];
 
-        return view('admin.register_user.index', compact('users', 'gateways', 'packages','stats', 'affiliateUsers'));
+        return view('admin.register_user.index', compact(
+            'users',
+            'gateways',
+            'packages','stats',
+            'affiliateUsers',
+            'activeMembership',
+            'paidMember',
+            'activeUsers'
+        ));
     }
 
     public function view($id)

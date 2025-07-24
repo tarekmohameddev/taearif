@@ -146,6 +146,20 @@
                                             </select>
                                         </div>
 
+                                    {{-- Paid / Trial Filter --}}
+                                        <div class="form-group mr-2">
+                                            <label for="paid_member" class="small text-muted mb-1">{{ __('Membership_Type') }}</label>
+                                            <select name="paid_member" id="paid_member" class="form-control form-control-sm">
+                                                <option value="">{{ __('-- All Types --') }}</option>
+                                                <option value="paid"  {{ request()->input('paid_member') == 'paid'  ? 'selected' : '' }}>
+                                                    {{ __('Paid_Member') }}
+                                                </option>
+                                                <option value="trial" {{ request()->input('paid_member') == 'trial' ? 'selected' : '' }}>
+                                                    {{ __('Free_Trial') }}
+                                                </option>
+                                            </select>
+                                        </div>
+
                                         {{-- Referrer Dropdown --}}
                                         <div class="form-group mr-2">
                                             <label for="referred_by" class="small text-muted mb-1">{{ __('Referred By') }}</label>
@@ -314,7 +328,9 @@
                 <div class="row">
                     <div class="d-inline-block mx-auto">
 
-                        {{ $users->appends(request()->only(['term','start_date','end_date']))->links() }}
+
+                        {{ $users->appends(request()->except('page'))->links() }}
+
                     </div>
                 </div>
             </div>
