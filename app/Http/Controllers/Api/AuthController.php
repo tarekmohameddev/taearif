@@ -509,6 +509,7 @@ class AuthController extends Controller
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
                 'domain' => $domain ? $domain->custom_name : "https://{$user->username}.taearif.com/",
+                'onboarding_completed' => $user->onboarding_completed ?? false,
 
             ];
 
