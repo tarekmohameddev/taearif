@@ -6,12 +6,20 @@ use Config;
 use App\Models\ApiCustomer;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Models\User\UserOrder;
 use App\Models\User\BasicSetting;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use App\Models\User\CustomerWishList;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
+use App\Models\User\HotelBooking\RoomBooking;
+use App\Models\User\CourseManagement\CourseEnrolment;
+use App\Models\User\RealestateManagement\PropertyWishlist;
 
 class ApiCustomerController extends Controller
 {
@@ -109,7 +117,7 @@ class ApiCustomerController extends Controller
         Auth::guard('api_customer')->login($customer);
 
         Session::flash('success', 'Registration successful.');
-        return redirect()->route('customer.dashboard', getParam());
+        return redirect()->route('customer.api_dashboard', getParam());
     }
 
     /**
@@ -132,8 +140,56 @@ class ApiCustomerController extends Controller
      * @param string $domain
      * @return \Illuminate\Http\RedirectResponse
      */
+    // public function loginSubmit(Request $request, $domain)
+    // {
+    //     $rules = [
+    //         'identifier' => 'required|string',
+    //         'password' => 'required',
+    //     ];
+
+    //     $messages = [];
+    //     $ubs = BasicSetting::where('user_id', getUser()->id)->first();
+    //     if ($ubs->is_recaptcha == 1) {
+    //         $rules['g-recaptcha-response'] = 'required|captcha';
+    //         $messages = [
+    //             'g-recaptcha-response.required' => 'Please verify that you are not a robot.',
+    //             'g-recaptcha-response.captcha' => 'Captcha error! try again later or contact site admin.',
+    //         ];
+    //     }
+
+    //     $request->validate($rules, $messages);
+
+    //     // Find customer by email or phone_number
+    //     $customer = ApiCustomer::where('email', $request->identifier)
+    //         ->orWhere('phone_number', $request->identifier)
+    //         ->where('user_id', getUser()->id)
+    //         ->first();
+
+    //     if (!$customer || !Hash::check($request->password, $customer->password)) {
+    //         Session::flash('error', 'The provided credentials do not match our records!');
+    //         return redirect()->back();
+    //     }
+
+    //     // Log in customer
+    //     Auth::guard('api_customer')->login($customer);
+
+    //     // Redirect to stored URL or dashboard
+    //     if ($request->session()->has('link')) {
+    //         $redirectURL = $request->session()->get('link');
+    //         $request->session()->forget('link');
+    //         return redirect($redirectURL);
+    //     }
+
+    //     return redirect()->route('customer.api_dashboard', getParam());
+    // }
+
     public function loginSubmit(Request $request, $domain)
     {
+        \Log::info('Login attempt', [
+            'identifier' => $request->identifier,
+            'user_id' => getUser()->id,
+        ]);
+
         $rules = [
             'identifier' => 'required|string',
             'password' => 'required',
@@ -141,7 +197,7 @@ class ApiCustomerController extends Controller
 
         $messages = [];
         $ubs = BasicSetting::where('user_id', getUser()->id)->first();
-        if ($ubs->is_recaptcha == 1) {
+        if ($ubs && $ubs->is_recaptcha == 1) {
             $rules['g-recaptcha-response'] = 'required|captcha';
             $messages = [
                 'g-recaptcha-response.required' => 'Please verify that you are not a robot.',
@@ -151,28 +207,63 @@ class ApiCustomerController extends Controller
 
         $request->validate($rules, $messages);
 
-        // Find customer by email or phone_number
         $customer = ApiCustomer::where('email', $request->identifier)
             ->orWhere('phone_number', $request->identifier)
             ->where('user_id', getUser()->id)
             ->first();
 
-        if (!$customer || !Hash::check($request->password, $customer->password)) {
-            Session::flash('error', 'The provided credentials do not match our records!');
+        \Log::info('Customer query result', [
+            'customer' => $customer ? $customer->toArray() : null,
+        ]);
+
+        if ($customer && Hash::check($request->password, $customer->password)) {
+            \Log::info('Password check passed');
+            Auth::guard('api_customer')->login($customer);
+
+            \Log::info('Login successful, redirecting');
+            if ($request->session()->has('link')) {
+                $redirectURL = $request->session()->get('link');
+                $request->session()->forget('link');
+                return redirect($redirectURL);
+            }
+
+            return redirect()->route('customer.api_dashboard', getParam());
+        } else {
+            \Log::info('Credentials invalid', [
+                'customer_exists' => !is_null($customer),
+                'password_check' => $customer ? Hash::check($request->password, $customer->password) : false,
+            ]);
+            $request->session()->flash('error', 'The provided credentials do not match our records!');
             return redirect()->back();
         }
+    }
 
-        // Log in customer
-        Auth::guard('api_customer')->login($customer);
 
-        // Redirect to stored URL or dashboard
-        if ($request->session()->has('link')) {
-            $redirectURL = $request->session()->get('link');
-            $request->session()->forget('link');
-            return redirect($redirectURL);
-        }
+    // redirectToApiDashboard
+    public function redirectToApiDashboard()
+    {
+        // dd('Redirecting to API Dashboard');
+        $data['author'] = getUser();
+        $data['language'] = $this->getUserCurrentLanguage($data['author']->id);
+        $data['authUser'] = Auth::guard('api_customer')->user();
+        $data['totalorders'] = UserOrder::where('customer_id', Auth::guard('api_customer')->user()->id)->orderBy('id', 'DESC')->count();
+        $data['totalwishlist'] = CustomerWishList::where('customer_id', Auth::guard('api_customer')->user()->id)->orderBy('id', 'DESC')->count();
+        $data['orders'] = UserOrder::where('customer_id', Auth::guard('api_customer')->user()->id)->orderBy('id', 'DESC')->limit(7)->get();
+        $data['couseCount'] = CourseEnrolment::where('customer_id', Auth::guard('api_customer')->user()->id)->where('payment_status', 'completed')->count();
+        $data['roomSetting'] = DB::table('user_room_settings')->where('user_id', $data['author']->id)->first();
+        $data['roomBookingCount'] = RoomBooking::where('customer_id', Auth::guard('api_customer')->user()->id)->where('payment_status', 1)->count();
+        $data['propertyWishlistsCount'] = PropertyWishlist::where('customer_id', Auth::guard('api_customer')->user()->id)->count();
 
-        return redirect()->route('customer.dashboard', getParam());
+        return view('user-front.customer.api_dashboard', $data);
+
+    }
+
+    // logoutSubmit
+    public function logoutApiSubmit(Request $request)
+    {
+        Auth::guard('api_customer')->logout();
+        Session::flash('success', 'You have been logged out successfully.');
+        return redirect()->route('customer.api_login', getParam());
     }
     // forgotPassword
     public function forgotPassword(Request $request)

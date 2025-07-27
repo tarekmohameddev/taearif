@@ -20,12 +20,17 @@ class SimulateAffiliatePaymentSeeder extends Seeder
      */
     public function run()
     {
-        // 🔄 CHANGE THIS ID EACH TIME TO TEST NEW USER
+        // CHANGE THIS ID EACH TIME TO TEST NEW USER
         // $userId = 874; // ID of the user to simulate payment for
+        // $userId = 832;
         // $userId = 831;
-        $userId = 830;
+        // $userId = 830;
         // $userId = 829;
-        $referred_by = 833; // ID of the user who referred this user
+        // $referred_by = 833; // ID of the user who referred this user
+
+        // $userId = 868;
+        $userId = 867;
+        $referred_by = 829; // ID of the user who referred this user
 
         $user = User::find($userId);
 
@@ -40,7 +45,7 @@ class SimulateAffiliatePaymentSeeder extends Seeder
         $user->referred_by = $referred_by; // Set the user who referred this user
         $user->save();
 
-        // 2. Create simulated membership
+        // Create simulated membership
         try {
             $membership = Membership::create([
                 'user_id' => $user->id,
@@ -93,10 +98,10 @@ class SimulateAffiliatePaymentSeeder extends Seeder
         AffiliateTransaction::create([
             'affiliate_id' => $affiliate->id,
             'type' => 'pending',
-            'referral_user_id' => $user->referred_by, // Link to the user who made the payment
+            'referral_user_id' => $user->id, // Link to the user who made the payment
             'image' => null, // No image for pending transactions
             'amount' => $commissionAmount,
-            'note' => 'Commission for referral user #' . $user->id,
+            'note' => 'Commission for referral user_id: ' . $user->id . ' user_username: (' . $user->username . ') for package: ' . $membership->package->title,
         ]);
 
         $this->command->info("✅ Simulated commission of $commissionAmount SAR logged for affiliate ID: {$affiliate->id}");

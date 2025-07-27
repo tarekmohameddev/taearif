@@ -1,43 +1,42 @@
 <div class="item">
     <div class="dropdown">
         <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            @if (!Auth::guard('customer')->check())
-            {{ $keywords['Customer'] ?? __('Customer') }}
+            @if (!Auth::guard('api_customer')->check())
+                {{ $keywords['Register'] ?? __('Register') }}
             @else
-            {{ Auth::guard('customer')->user()->username }}
+                {{ Auth::guard('api_customer')->user()->name }}
             @endif
         </button>
         <ul class="dropdown-menu radius-0">
             @if (in_array('Ecommerce', $packagePermissions) ||
-            in_array('Hotel Booking', $packagePermissions) ||
-            in_array('Course Management', $packagePermissions) ||
-            in_array('Real Estate Management', $packagePermissions) ||
-            in_array('Donation Management', $packagePermissions))
-            @guest('customer')
-            <li>
-                <a class="dropdown-item" href="{{ route('customer.login', getParam()) }}">
-                    {{ $keywords['Login'] ?? __('Login') }}
-                </a>
-            </li>
-            <li>
-                <a class="dropdown-item" href="{{ route('customer.signup', getParam()) }}">
-                    {{ $keywords['Signup'] ?? __('Signup') }}
-                </a>
-            </li>
-            @endguest
-
-            @auth('customer')
-            <li>
-                <a class="dropdown-item" href="{{ route('customer.dashboard', getParam()) }}">
-                    {{ $keywords['Dashboard'] ?? __('Dashboard') }}
-                </a>
-            </li>
-            <li>
-                <a class="dropdown-item" href="{{ route('customer.logout', getParam()) }}">
-                    {{ $keywords['Logout'] ?? __('Logout') }}
-                </a>
-            </li>
-            @endauth
+                in_array('Hotel Booking', $packagePermissions) ||
+                in_array('Course Management', $packagePermissions) ||
+                in_array('Real Estate Management', $packagePermissions) ||
+                in_array('Donation Management', $packagePermissions))
+                @guest('api_customer')
+                    <li>
+                        <a class="dropdown-item" href="{{ route('customer.api_login', getParam()) }}">
+                            {{ $keywords['Log-In'] ?? __('Log-In') }}
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('customer.api_signup', getParam()) }}">
+                            {{ $keywords['Signup Now'] ?? __('Signup Now') }}
+                        </a>
+                    </li>
+                @endguest
+                @auth('api_customer')
+                    <li>
+                        <a class="dropdown-item" href="{{ route('customer.api_dashboard', getParam()) }}">
+                            {{ $keywords['Dashboard'] ?? __('Dashboard') }}
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('customer.api_logout', getParam()) }}">
+                            {{ $keywords['Logout'] ?? __('Logout') }}
+                        </a>
+                    </li>
+                @endauth
             @endif
         </ul>
     </div>

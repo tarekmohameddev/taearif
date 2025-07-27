@@ -26,7 +26,7 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-            <form action="{{route('register.user.updatePassword')}}" method="post" role="form">
+            <form action="{{route('admin.register.user.updatePassword')}}" method="post" role="form">
                 <div class="card-header">
                     <div class="row">
                         <div class="col-6">

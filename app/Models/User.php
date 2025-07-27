@@ -127,6 +127,11 @@ class User extends Authenticatable
 
     }
 
+
+    public function isAffiliateApproved(): bool
+    {
+        return $this->affiliateUser && $this->affiliateUser->request_status === 'approved';
+    }
     public function referredUsers()
     {
         return $this->hasMany(User::class, 'referred_by', 'id');
@@ -147,7 +152,7 @@ class User extends Authenticatable
 
     public function referrals()
     {
-        return $this->hasMany(User::class, 'referred_by');
+        return $this->hasMany(User::class, 'referred_by', 'id');
     }
 
     public function user_custom_domains()
@@ -164,6 +169,13 @@ class User extends Authenticatable
     {
         return $this->hasMany('App\Models\Membership', 'user_id');
     }
+
+    public function activeMembership()
+    {
+        return $this->hasOne('App\Models\Membership', 'user_id')
+            ->latestOfMany();
+    }
+
 
     public function permissions()
     {

@@ -64,24 +64,29 @@
 @endif
 @include('user-front.realestate.partials.header.header-pages')
 <style>
+
 .product-single .slider-thumbnails {
-    bottom: 290px !important;
+    top: 430px;
+}
+.product-single .product-single-gallery .slider-btn {
+    top: 215px !important;
 }
 
-.product-single-details{
-    position: relative;
-    top: -140px;
+.product-single .slider-thumbnails {
+    height: 19% !important;
 }
-
+.product-single .product-single-slider  {
+    height: 600px !important;
+}
 </style>
 @section('content')
-<div style="margin-bottom: 15%;" class="product-single pt-100  border-top header-next">
+<div class="product-single pt-100  border-top header-next">
     <div class="container">
         <div class="row gx-xl-5">
             <div class="col-lg-9 col-xl-8">
-                <div class="product-single-gallery mb-40">
+                <div class="product-single-gallery">
                     <!-- Slider navigation buttons -->
-                    <div class="slider-navigation">
+                    <div class="slider-navigation" >
                         <button type="button" title="Slide prev" class="slider-btn slider-btn-prev">
                             <i class="fal fa-angle-left"></i>
                         </button>
@@ -96,9 +101,7 @@
                                 <figure class="radius-lg lazy-container ratio ratio-16-11">
                                     <a href="{{ asset($slider->image) }}"
                                         class="lightbox-single">
-                                        <img class="lazyload"
-                                            data-src="{{ asset($slider->image) }}"
-                                            src="{{ asset($slider->image) }}">
+                                        <img class="lazyload" data-src="{{ asset($slider->image) }}"src="{{ asset($slider->image) }}">
                                     </a>
                                 </figure>
                             </div>
@@ -107,7 +110,7 @@
                         </div>
                     </div>
 
-                    <div class="swiper slider-thumbnails">
+                    <div class="swiper slider-thumbnails" >
                         <div class="swiper-wrapper">
                             @foreach ($sliders as $slider)
                             <div class="swiper-slide">

@@ -70,7 +70,7 @@
                                 @endif
                             </div>
                             <div class="form_group">
-                                <button type="submit"
+                                <button type="submit" style="color: black; background-color:gainsboro"
                                     class="btn">{{ $keywords['Login_Now'] ?? __('Login Now') }}</button>
                             </div>
                             <div class="new-user text-center">

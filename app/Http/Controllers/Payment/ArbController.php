@@ -212,8 +212,6 @@ class ArbController extends Controller
         // Now you can use $isSuccessful and $resultMessage as needed
         if ($isSuccessful) {
 
-
-
             $user = User::findOrFail($user_id);
             log::info($user);
             $currMembership = UserPermissionHelper::currMembOrPending($user_id);
@@ -279,20 +277,17 @@ class ArbController extends Controller
                     $affiliate->pending_amount += $commission;
                     $affiliate->save();
 
-                    // Log transaction as pending — not yet withdrawable
+                    // create transaction as pending
                     \App\Models\AffiliateTransaction::create([
                         'affiliate_id' => $affiliate->id,
                         'type'         => 'pending', // will require admin approval
-                        'referral_user_id' => $user->referred_by, // Link to the user who made the payment
-                        'image'        => null, // No image for pending transactions
+                        'referral_user_id' => $user->id, // Link to the user who made the payment
+                        'image'        => null,
                         'amount'       => $commission,
-                        'note'         => "Auto commission from user #{$user->id} ({$user->name}) for package {$package->title}",
+                        'note'         => "commission from username: ({$user->name}) for package: ({$package->title})",
                     ]);
                 }
             }
-
-
-
 
             if ($paymentFor == "membership") {
                 $amount = $price;
@@ -305,8 +300,7 @@ class ArbController extends Controller
                 $expire = Carbon::parse($lastMemb->expire_date);
               //  $file_name = $this->makeInvoice($requestData, "membership", $user, $password, $amount, $requestData["payment_method"], $requestData['phone'], $be->base_currency_symbol_position, $be->base_currency_symbol, $be->base_currency_text, $transaction_id, $package->title, $lastMemb);
 
-
-                    return redirect(route('customer.dashboard'));
+                return redirect(route('customer.dashboard'));
 
             } elseif ($paymentFor == "extend") {
                 $amount = $price;

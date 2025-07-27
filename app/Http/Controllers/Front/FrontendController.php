@@ -1050,7 +1050,8 @@ class FrontendController extends Controller
                     'user_states.name as state_name',
                     'user_countries.name as country_name'
                 )
-                ->inRandomOrder()
+                // ->inRandomOrder()
+                ->orderBy('user_properties.reorder_featured', 'asc')
                 ->take(10)
                 ->get();
 
@@ -1124,7 +1125,10 @@ class FrontendController extends Controller
                             break;
                     }
                 } else {
-                    $propertyQuery->orderBy('user_properties.id', 'desc');
+                    $propertyQuery->orderByRaw('CASE WHEN user_properties.reorder_featured = 0 THEN 1 ELSE 0 END')
+                    ->orderBy('user_properties.reorder_featured', 'asc')
+                    ->orderBy('user_properties.reorder','asc')
+                    ->orderBy('user_properties.updated_at','desc');
                 }
 
                 // Fetch

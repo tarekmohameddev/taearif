@@ -210,12 +210,13 @@
 @endif
 
 @include('user-front.realestate.partials.header.header-pages')
-<div class="mt-30"></div>
+<div class="mt-40"></div>
+<div class="mt-40"></div>
 
 @section('content')
 
 <!-- Map Start-->
-<div class="map-area border-top header-next pt-30">
+<div class="map-area header-next mt-40">
     <!-- Background Image -->
     <div class="container">
         <div class="lazy-container radius-md ratio border">

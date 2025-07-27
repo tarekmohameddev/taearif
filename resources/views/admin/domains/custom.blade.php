@@ -72,7 +72,7 @@
                                             <input type="checkbox" class="bulk-check" data-val="{{$rcDomain->id}}">
                                         </td>
                                         @if (!empty($rcDomain->user))
-                                        <td><a href="{{route('register.user.view', $rcDomain->user->id)}}" target="_blank">{{$rcDomain->user->username}}</a></td>
+                                        <td><a href="{{route('admin.register.user.view', $rcDomain->user->id)}}" target="_blank">{{$rcDomain->user->username}}</a></td>
                                         @else
                                         <td>-</td>
                                         @endif
