@@ -102,7 +102,7 @@ class AffiliateController extends Controller
         ->get()
         ->map(fn($u) => [
             'id'         => $u->id,
-            'name'       => "{$u->first_name} {$u->last_name}",
+            'name'       => "{$u->username}",
             'email'      => $u->email,
             'joined_at'  => $u->created_at->toDateTimeString(),
             'commission' => $affiliate->transactions()

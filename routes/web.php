@@ -1732,7 +1732,7 @@ Route::domain($domain)->group(function () {
             Route::patch('/affiliates/{affiliate}/approve-pending','Admin\AffiliateController@approvePendingAmount')->name('admin.affiliates.approvePending');
             // AJAX endpoints
             Route::get('/affiliates/{id}/balance-summary', 'Admin\AffiliateController@getBalanceSummary')->name('admin.affiliates.balanceSummary');
-
+            Route::post('/affiliates/commission', 'Admin\AffiliateController@updateCommission')->name('admin.user.commission.update');
         });
     });
 

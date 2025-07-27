@@ -61,6 +61,7 @@
                                     <th>{{ __('Full Name') }}</th>
                                     <th>{{ __('Bank Name') }}</th>
                                     <th>{{ __('Pending') }}</th>
+                                    <th>{{ __('نسبة') }}</th>
                                     <th>{{ __('Account Number') }}</th>
                                     <th>{{ __('IBAN') }}</th>
                                     <th>{{ __('Status') }}</th>
@@ -83,6 +84,8 @@
                                             </span>
                                         </td>
                                         <td>{{ number_format($affiliate->pending_amount, 2) }} ريال</td>
+                                        <td>{{ number_format($affiliate->commission_percentage * 100, 2) }}%</td>
+
                                         <td>
                                             <span title="{{ $affiliate->bank_account_number }}">
                                                 {{ Str::limit($affiliate->bank_account_number, 4, '***') }}
@@ -123,6 +126,9 @@
                                         <td>
                                             <!-- view -->
                                             <a href="{{ route('admin.affiliates.paymentHistory', $affiliate->id) }}" class="btn btn-xs btn-info py-1 px-2" style="font-size: 0.65rem;">{{ __('View Payments') }}</a>
+                                            <button type="submit" class="btn btn-xs btn-warning"     onclick="openEditCommissionModal(this)"
+ data-toggle="modal" data-target="#editCommissionModal" data-user-id="{{ $affiliate->user_id  }}"><i class="far fa-edit"></i>تعديل نسبة</button>
+
                                         </td>
                                     </tr>
                                 @endforeach
@@ -131,6 +137,36 @@
                     </div>
                 @endif
             </div>
+
+<!-- Modal -->
+<div class="modal fade" id="editCommissionModal" tabindex="-1" role="dialog" aria-labelledby="editCommissionModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h5 class="modal-title" id="editCommissionModalTitle">Edit Commission</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+              </button>
+          </div>
+          <div class="modal-body">
+              <form id="editCommissionForm" action="{{ route('admin.user.commission.update') }}" method="POST">
+                  @csrf
+                  <input type="hidden" name="user_id" id="modal_user_id">
+                  
+                  <div class="form-group">
+                      <label for="commission_value">Commission Value</label>
+                      <input type="number" name="commission_value" class="form-control" id="modal_commission_value" step="0.01" required>
+                  </div>
+              </form>
+          </div>
+          <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="submit" form="editCommissionForm" class="btn btn-primary">Save changes</button>
+          </div>
+      </div>
+  </div>
+</div>
+
 
             <div class="card-footer">
                 {{ $affiliates->appends(request()->all())->links() }}
@@ -143,6 +179,17 @@
 
 
 @section('scripts')
+<script>
+    function openEditCommissionModal(button) {
+        const userId = button.getAttribute('data-user-id');
+        const commissionValue = button.getAttribute('data-commission-value');
+
+        document.getElementById('modal_user_id').value = userId;
+        document.getElementById('modal_commission_value').value = commissionValue;
+    }
+</script>
+
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('select[name="request_status"]').forEach(function (select) {

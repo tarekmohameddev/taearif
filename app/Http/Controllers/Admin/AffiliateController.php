@@ -59,6 +59,26 @@ class AffiliateController extends Controller
         return back()->with('success', 'Affiliate status updated successfully.');
     }
 
+    public function updateCommission(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'commission_value' => 'required|numeric|min:0',
+        ]);
+        log::info('here');
+        log::info('Updating commission for user ID: ' . $request->user_id);
+        log::info($request->commission_value);
+        $decimalValue =  $request->commission_value / 100;
+
+
+        ApiAffiliateUser::where('user_id', $request->user_id)->update([
+            'commission_percentage' => $decimalValue,
+        ]);
+
+        return back()->with('success', 'Commission updated successfully.');
+    }
+
+
     /**
      * Simple payment-history page: only pending-amount & transactions.
      */
