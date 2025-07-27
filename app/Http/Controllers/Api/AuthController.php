@@ -240,7 +240,7 @@ class AuthController extends Controller
                 'status' => 1,
                 'mode' => 'online',
                 'receipt_name' => null,
-                'price' => 0,
+                'price' => 999,
                 'first_name' => $request->input('first_name', 'User'),
                 'last_name' => $request->input('last_name', ''),
                 'company_name' => 'N/A',
