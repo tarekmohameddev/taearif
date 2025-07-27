@@ -19,10 +19,23 @@ class ResetPasswordController extends Controller
 
     public function forgotPassword(Request $request)
     {
+        // Validate only reCAPTCHA first
+        $recaptchaValidator = \Validator::make(
+            $request->only('recaptcha_token'),
+            ['recaptcha_token' => ['required', new \App\Rules\Recaptcha]]
+        );
+
+        if ($recaptchaValidator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'reCAPTCHA failed',
+                'errors'  => $recaptchaValidator->errors()->toArray(),
+            ], 422);
+        }
+
         $request->validate([
             'identifier' => 'required',  // email or phone
             'method' => 'required|in:email,phone',
-            'recaptcha_token' => ['required', new Recaptcha] //Verify Google reCAPTCHA token
 
         ]);
 
@@ -99,12 +112,27 @@ class ResetPasswordController extends Controller
      */
     public function verifyResetCode(Request $request)
     {
+
+        // Validate only reCAPTCHA first
+        $recaptchaValidator = \Validator::make(
+            $request->only('recaptcha_token'),
+            ['recaptcha_token' => ['required', new \App\Rules\Recaptcha]]
+        );
+
+        if ($recaptchaValidator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'reCAPTCHA failed',
+                'errors'  => $recaptchaValidator->errors()->toArray(),
+            ], 422);
+        }
+
         $request->validate([
             'identifier' => 'required', // email or phone
             'code' => 'required|digits:6',
             'new_password' => 'required|min:8|confirmed',
-            'recaptcha_token' => ['required', new Recaptcha] //Verify Google reCAPTCHA token
         ]);
+
 
         $user = User::where('email', $request->identifier)
             ->orWhere('phone', $request->identifier)
