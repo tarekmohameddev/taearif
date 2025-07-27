@@ -68,6 +68,7 @@ class User extends Authenticatable
         'username',
         'password',
         'phone',
+        'message',
         'company_name',
         'city',
         'state',
