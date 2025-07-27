@@ -506,6 +506,7 @@ class AuthController extends Controller
                 'membership' => $membershipDetails,
                 'is_free_plan' => $isFreePlan,
                 'has_active_membership' => !$isExpired && $membership && $membership->status == 1,
+                'message' => $user->message ?? null,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
                 'domain' => $domain ? $domain->custom_name : "https://{$user->username}.taearif.com/",
@@ -523,6 +524,23 @@ class AuthController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    // Mark message as read and update user profile
+    // read_message
+    public function read_message(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        // Update message to null
+        $user->message = "null";
+        $user->save();
+
+        return response()->json(['message' => 'Message marked as read']);
     }
 
     private function createDefaultMenuJson(User $user)

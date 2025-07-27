@@ -86,6 +86,7 @@ Route::middleware('web')->group(function () {
 // Auth routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'getUserProfile']);
+    Route::post('/user-read-message', [AuthController::class, 'read_message']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
