@@ -17,6 +17,10 @@ use Illuminate\Support\Facades\Http;
 use App\Models\User\UserDistrict;
 use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\User\UserCity;
+use App\Models\ApiCustomer;
+use App\Models\WhatsappUser;
+use Illuminate\Support\Str;
+
 
 use OpenAI as OpenAIClient;
 
@@ -144,6 +148,78 @@ public function handleEvolutionWebhook(Request $request)
         return response()->json(['status' => 'ignored_invalid_payload'], 400);
     }
 }
+
+
+public function handleWhatsappWebhook(Request $request)
+{
+    try {
+        $payload = $request->all();
+
+        // Step 1: Extract the needed fields
+        $entry = $payload['entry'][0]['changes'][0]['value'] ?? null;
+        if (!$entry) {
+            return response()->json(['status' => 'ignored', 'message' => 'Invalid payload structure'], 400);
+        }
+
+        $displayPhone = $entry['metadata']['display_phone_number'] ?? null;
+        $fromNumber = $entry['messages'][0]['from'] ?? null;
+        $contactName = $entry['contacts'][0]['profile']['name'] ?? 'Unknown';
+
+        if (!$displayPhone || !$fromNumber) {
+            return response()->json(['status' => 'ignored', 'message' => 'Missing required fields'], 422);
+        }
+
+        // Step 2: Match with whatsapp_users table
+        $whatsappUser = WhatsappUser::where('number', $displayPhone)->first();
+
+        if (!$whatsappUser) {
+            return response()->json([
+                'status' => 'ignored',
+                'message' => 'Display phone number not found in whatsapp_users',
+            ], 404);
+        }
+
+        $userId = $whatsappUser->user_id;
+
+        // Step 3: Check if customer already exists
+        $existing = ApiCustomer::where('user_id', $userId)
+            ->where('phone_number', $fromNumber)
+            ->first();
+
+        if (!$existing) {
+            // Step 4: Create new ApiCustomer
+            $newCustomer = ApiCustomer::create([
+                'user_id'      => $userId,
+                'name'         => $contactName,
+                'phone_number' => $fromNumber,
+                'priority'     => 1,
+                'password'     => bcrypt(Str::random(10)), // placeholder password
+            ]);
+
+            return response()->json([
+                'status'  => 'created',
+                'message' => 'Customer created',
+                'data'    => $newCustomer,
+            ], 201);
+        }
+
+        return response()->json([
+            'status'  => 'exists',
+            'message' => 'Customer already exists',
+        ], 200);
+
+    } catch (\Throwable $e) {
+        Log::error('WhatsApp Webhook Error: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Internal error',
+        ], 500);
+    }
+}
+
 
     public function chat(Request $request)
     {
