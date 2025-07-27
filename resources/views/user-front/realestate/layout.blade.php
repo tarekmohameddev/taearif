@@ -211,8 +211,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     {{-- additional script --}}
     {{-- @yield('script') --}}
 
-    </main>
 
+
+    </main>
+    {{-- Global Login & Register Modals --}}
+    @include('user-front.realestate.partials.auth-modals')
 </body>
 
 </html>
