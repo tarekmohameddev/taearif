@@ -42,6 +42,8 @@ use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryControl
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
+use App\Http\Controllers\Admin\TokenLoginController;
+
 
 // ImpersonationController
 // Route::middleware(['auth', 'can:impersonate'])->group(function () {
@@ -152,7 +154,11 @@ use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessag
 // Route::get('/auth/google', [GoogleAuthController::class, 'getGoogleAuthUrl'])->name('auth.google');
 // Route::get('/auth/google/callback', [GoogleAuthController::class, 'Callback']);
 
+// TokenLogin
+Route::get('/token-login', 'Admin\TokenLoginController@loginByToken')->name('login.by.token');
 
+
+// get states by city
 Route::get('/get-states/{city_id}', 'Front\PropertyController@getStatesByCity')->name('front.user.get_states');
 
 // onboarding steps

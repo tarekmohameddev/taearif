@@ -36,6 +36,7 @@ use App\Models\User\UserVcard;
 use Illuminate\Support\Facades\DB;
 use App\Models\UserStep;
 use Illuminate\Support\Facades\Log;
+use Laravel\Sanctum\PersonalAccessToken;
 use App\Services\UserPackageService;
 
 
@@ -46,6 +47,7 @@ class RegisterUserController extends Controller
         $abs = BasicSetting::first();
         Config::set('app.timezone', $abs->timezone);
     }
+
 
     public function index(Request $request)
     {
@@ -413,23 +415,23 @@ class RegisterUserController extends Controller
         return "success";
     }
 
-    public function secretLogin(Request $request)
+    /**
+     * Generate invoice for membership
+     */
+    public function secretLogin($id)
     {
-        $user = User::where('id', $request->user_id)->first();
-        if (Auth::guard('web')->login($user, true)) {
-            return redirect()->route('user-dashboard')
-                ->withSuccess('You have Successfully loggedin');
-        }
-        // if (Auth::guard('web')->attempt(['email' => $user->email])) {
-        //     dd($user);
-        // }
-        // dd(23423);
-        // if (Auth::guard('web')->attempt(['username' => $user->username, 'password' => $user->password])) {
-        //     return redirect()->route('user-dashboard')
-        //         ->withSuccess('You have Successfully loggedin');
-        // }
-        return redirect("login")->withSuccess('Oppes! You have entered invalid credentials');
+        $admin = auth()->user();
+        $user  = User::findOrFail($id);
+
+        $plainTextToken = $user
+            ->createToken("impersonated-by-{$admin->id}", ['*'])
+            ->plainTextToken;
+
+        // Hard‑code the URL instead of using a named route:
+        return redirect("/token-login?token={$plainTextToken}");
     }
+
+
     public function userban(Request $request)
     {
         $user = User::where('id', $request->user_id)->first();
