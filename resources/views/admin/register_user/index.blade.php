@@ -304,11 +304,14 @@
                                                             {{ __('Delete') }}
                                                         </button>
                                                     </form>
-                                                    <form class="d-block" action="{{ route('admin.register.user.secretLogin') }}" method="get" target="_blank">
-                                                        @csrf
-                                                        <input type="hidden" name="user_id" value="{{ $user->id }}">
-                                                        <button class="dropdown-item" role="button">{{ __('Secret Login') }}</button>
-                                                    </form>
+                                                    <a
+  href="{{ route('admin.register.user.secretLogin', $user->id) }}"
+  target="_blank"
+  class="dropdown-item"
+>
+  {{ __('Secret Login') }}
+</a>
+
                                                 </div>
                                             </div>
                                         </td>
