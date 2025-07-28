@@ -103,7 +103,8 @@ class ResetPasswordController extends Controller
             'message' => "Reset code sent successfully (Attempt {$attemptNumber}/3)",
             'via' => $request->method,
             'attempts_used' => $attemptNumber,
-            'attempts_remaining' => 3 - $attemptNumber
+            'attempts_remaining' => 3 - $attemptNumber,
+            'code_for_testing' => $code // For testing purposes, remove in production
         ]);
     }
 

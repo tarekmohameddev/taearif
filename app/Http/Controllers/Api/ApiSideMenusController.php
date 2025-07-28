@@ -57,6 +57,18 @@ class ApiSideMenusController extends Controller
                 'description' => 'تكوين اعدادات الموقع',
                 'icon' => 'web-settings',
                 'path' => '/settings',
+            ],
+                        [
+                'title' => 'ادارة العملاء',
+                'description' => 'ادارة عملائك',
+                'icon' => 'web-settings',
+                'path' => '/customers',
+            ]
+            ,            [
+                'title' => 'crm',
+                'description' => 'تكوين اعدادات ادارة علاقات العملاء',
+                'icon' => 'web-settings',
+                'path' => '/settings',
             ]
         ];
 

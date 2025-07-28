@@ -37,6 +37,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\UserStep;
 use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\PersonalAccessToken;
+use App\Services\UserPackageService;
 
 
 class RegisterUserController extends Controller
@@ -1631,127 +1632,14 @@ class RegisterUserController extends Controller
     }
 
 
-    public function changeCurrPackage(Request $request)
+    public function changeCurrPackage(Request $request, UserPackageService $service)
     {
-        $userId = $request->user_id;
-        $user = User::findOrFail($userId);
-        $currMembership = UserPermissionHelper::currMembOrPending($userId);
-        $nextMembership = UserPermissionHelper::nextMembership($userId);
-
-        $be = BasicExtended::first();
-        $bs = BasicSetting::select('website_title')->first();
-
-        $selectedPackage = Package::find($request->package_id);
-
-        // if the user has a next package to activate & selected package is 'lifetime' package
-        if (!empty($nextMembership) && $selectedPackage->term == 'lifetime') {
-            Session::flash('membership_warning', 'To add a Lifetime package as Current Package, You have to remove the next package');
-            return back();
-        }
-        log::info('xxxx'.$currMembership);
-        // expire the current package
-        $currMembership->expire_date = Carbon::parse(Carbon::now()->subDay()->format('d-m-Y'));
-        $currMembership->modified = 1;
-        if ($currMembership->status == 0) {
-            $currMembership->status = 2;
-        }
-        $currMembership->save();
-
-        // calculate expire date for selected package
-        if ($selectedPackage->term == 'monthly') {
-            $exDate = Carbon::now()->addMonth()->format('d-m-Y');
-        } elseif ($selectedPackage->term == 'yearly') {
-            $exDate = Carbon::now()->addYear()->format('d-m-Y');
-        } elseif ($selectedPackage->term == 'lifetime') {
-            $exDate = Carbon::maxValue()->format('d-m-Y');
-        }
-        // store a new membership for selected package
-        $selectedMemb = Membership::create([
-            'price' => $selectedPackage->price,
-            'currency' => $be->base_currency_text,
-            'currency_symbol' => $be->base_currency_symbol,
-            'payment_method' => $request->payment_method,
-            'transaction_id' => uniqid(),
-            'status' => 1,
-            'receipt' => NULL,
-            'transaction_details' => NULL,
-            'settings' => json_encode($be),
-            'package_id' => $selectedPackage->id,
-            'user_id' => $userId,
-            'start_date' => Carbon::parse(Carbon::now()->format('d-m-Y')),
-            'expire_date' => Carbon::parse($exDate),
-            'is_trial' => 0,
-            'trial_days' => 0,
-        ]);
-
-        // if the user has a next package to activate & selected package is not 'lifetime' package
-        if (!empty($nextMembership) && $selectedPackage->term != 'lifetime') {
-            $nextPackage = Package::find($nextMembership->package_id);
-
-            // calculate & store next membership's start_date
-            $nextMembership->start_date = Carbon::parse(Carbon::parse($exDate)->addDay()->format('d-m-Y'));
-
-            // calculate & store expire date for next membership
-            if ($nextPackage->term == 'monthly') {
-                $exDate = Carbon::parse(Carbon::parse(Carbon::parse($exDate)->addDay()->format('d-m-Y'))->addMonth()->format('d-m-Y'));
-            } elseif ($nextPackage->term == 'yearly') {
-                $exDate = Carbon::parse(Carbon::parse(Carbon::parse($exDate)->addDay()->format('d-m-Y'))->addYear()->format('d-m-Y'));
-            } else {
-                $exDate = Carbon::parse(Carbon::maxValue()->format('d-m-Y'));
-            }
-            $nextMembership->expire_date = $exDate;
-            $nextMembership->save();
-        }
-
-
-        $currentPackage = Package::select('title')->findOrFail($currMembership->package_id);
-        $this->sendMail($selectedMemb, $selectedPackage, $request->payment_method, $user, $bs, $be, 'admin_changed_current_package', $currentPackage->title);
-
-
-        Session::flash('success', 'Current Package changed successfully!');
-        return back();
+        return $service->changeCurrentPackage($request);
     }
 
-    public function addCurrPackage(Request $request)
+    public function addCurrPackage(Request $request, UserPackageService $service)
     {
-        $userId = $request->user_id;
-        $user = User::findOrFail($userId);
-        $be = BasicExtended::first();
-        $bs = BasicSetting::select('website_title')->first();
-
-        $selectedPackage = Package::find($request->package_id);
-
-        // calculate expire date for selected package
-        if ($selectedPackage->term == 'monthly') {
-            $exDate = Carbon::now()->addMonth()->format('d-m-Y');
-        } elseif ($selectedPackage->term == 'yearly') {
-            $exDate = Carbon::now()->addYear()->format('d-m-Y');
-        } elseif ($selectedPackage->term == 'lifetime') {
-            $exDate = Carbon::maxValue()->format('d-m-Y');
-        }
-        // store a new membership for selected package
-        $selectedMemb = Membership::create([
-            'price' => $selectedPackage->price,
-            'currency' => $be->base_currency_text,
-            'currency_symbol' => $be->base_currency_symbol,
-            'payment_method' => $request->payment_method,
-            'transaction_id' => uniqid(),
-            'status' => 1,
-            'receipt' => NULL,
-            'transaction_details' => NULL,
-            'settings' => json_encode($be),
-            'package_id' => $selectedPackage->id,
-            'user_id' => $userId,
-            'start_date' => Carbon::parse(Carbon::now()->format('d-m-Y')),
-            'expire_date' => Carbon::parse($exDate),
-            'is_trial' => 0,
-            'trial_days' => 0,
-        ]);
-
-        $this->sendMail($selectedMemb, $selectedPackage, $request->payment_method, $user, $bs, $be, 'admin_added_current_package');
-
-        Session::flash('success', 'Current Package has been added successfully!');
-        return back();
+    return $service->addCurrentPackage($request);
     }
 
     public function removeNextPackage(Request $request)

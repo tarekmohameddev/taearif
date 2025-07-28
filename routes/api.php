@@ -329,6 +329,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/chat', [ChatController::class, 'chat']);
 });
 Route::post('/whatsapp/evolution-webhook', [ChatController::class, 'handleEvolutionWebhook']);
+Route::post('/whatsapp/webhook', [ChatController::class, 'handleWhatsappWebhook']);
 
 // isthara
 Route::post('/isthara', [IstharaController::class, 'store']);
