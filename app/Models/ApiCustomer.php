@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ApiCustomerPropertyInterested;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
@@ -88,4 +89,12 @@ class ApiCustomer extends Authenticatable
     {
         return $this->belongsTo(\App\Models\User\UserDistrict::class, 'district_id');
     }
+
+    public function interestedCategories()
+    {
+        return $this->hasMany(ApiCustomerPropertyInterested::class, 'customer_id', 'id')
+            ->select('customer_id', 'category_id')
+            ->groupBy('customer_id', 'category_id');
+    }
+
 }

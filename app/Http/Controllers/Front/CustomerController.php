@@ -88,7 +88,7 @@ class CustomerController extends Controller
             return back();
         }
 
-        // ✅ Fetch the Property with category_id
+        // Fetch the Property with category_id
         $property = Property::select('id', 'category_id')->find($id);
 
         if (!$property) {
@@ -101,7 +101,7 @@ class CustomerController extends Controller
             'user_id'     => $user->id,
             'customer_id' => $customer->id,
             'property_id' => $property->id,
-            'category_id' => $property->category_id, // ✅ Add category_id here
+            'category_id' => $property->category_id, // Add category_id here
         ]);
 
         Session::flash('success', 'Property added to interested list successfully.');
