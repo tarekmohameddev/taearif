@@ -721,9 +721,9 @@
       <div class="modal-body">
         {{-- Step 1: Ask for email or phone --}}
         <div id="step1">
-          <label>{{ __('Enter Email or Phone') }}</label>
+          <label>{{ __('Enter Email or Phone Number') }}</label>
           <input type="text" id="identifier" class="form-control mb-3">
-          <button type="button" class="btn btn-primary w-100" onclick="checkIdentifier()">{{ __('Continue') }}</button>
+          <button type="button" class="btn btn-primary w-100" onclick="checkIdentifier()">{{ __('continue') }}</button>
         </div>
 
         {{-- Step 2a: Login --}}
@@ -733,7 +733,7 @@
           <input type="hidden" name="identifier" id="login_identifier">
           <label>{{ __('Password') }}</label>
           <input type="password" name="password" class="form-control mb-3">
-          <button type="submit" class="btn btn-success w-100">{{ __('Login') }}</button>
+          <button type="submit" class="btn btn-primary w-100">{{ __('Login') }}</button>
         </form>
 
         {{-- Step 2b: Register --}}
@@ -745,7 +745,7 @@
           <input type="text" name="name" class="form-control mb-2">
           <label>{{ __('Password') }}</label>
           <input type="password" name="password" class="form-control mb-3">
-          <button type="submit" class="btn btn-success w-100">{{ __('Register') }}</button>
+          <button type="submit" class="btn btn-primary w-100">{{ __('Register') }}</button>
         </form>
       </div>
     </div>
