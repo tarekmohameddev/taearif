@@ -2177,6 +2177,14 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
         // CHECKOUT SECTION ENDS
         Route::post('/payment/instructions', 'Front\CustomerController@paymentInstruction')->name('user.front.payment.instructions');
     });
+
+    Route::post('/customer/check-identifier', 'Front\ApiCustomerController@checkIdentifier')->name('customer.api_check_identifier');
+
+    Route::middleware(['routeAccess:Real Estate Management', 'auth:api_customer'])->group(function ($q) {
+        Route::post('/property/add-to-interested/{id}', 'Front\CustomerController@addToPropertyInterested')->name('front.user.property.add-to-interested');
+        Route::get('/property/remove-to-interested/{id}', 'Front\CustomerController@removePropertyInterested')->name('customer.property.remove-to-interested');
+    });
+
     Route::middleware(['routeAccess:Real Estate Management', 'auth:customer'])->group(function ($q) {
         Route::get('/property/add-to-wishlist/{id}', 'Front\CustomerController@addToPropertyWishlist')->name('front.user.property.add-to-wishlist');
         Route::get('/property/remove-to-wishlist/{id}', 'Front\CustomerController@removePropertyWishlist')->name('customer.property.remove-to-wishlist');
