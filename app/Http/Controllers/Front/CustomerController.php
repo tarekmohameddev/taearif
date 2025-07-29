@@ -2,49 +2,52 @@
 
 namespace App\Http\Controllers\Front;
 
-use App\Constants\Constant;
 use Config;
 use App\Models\Customer;
+use App\Constants\Constant;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\User\Language;
 use App\Http\Helpers\Uploader;
 use App\Models\User\UserOrder;
+use Illuminate\Support\Carbon;
 use App\Models\User\UserContact;
 use App\Models\User\BasicSetting;
 use Illuminate\Support\Facades\DB;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
-use App\Http\Controllers\Controller;
-use App\Http\Helpers\UserPermissionHelper;
-use App\Models\User\CourseManagement\Course;
-use App\Models\User\CourseManagement\CourseEnrolment;
-use App\Models\User\CourseManagement\CourseInformation;
-use App\Models\User\CourseManagement\Lesson;
-use App\Models\User\CourseManagement\LessonComplete;
-use App\Models\User\CourseManagement\LessonContent;
-use App\Models\User\CourseManagement\LessonContentComplete;
-use App\Models\User\CourseManagement\LessonQuiz;
-use App\Models\User\CourseManagement\Module;
-use App\Models\User\CourseManagement\QuizScore;
-use App\Models\User\UserShopSetting;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use App\Models\User\UserShopSetting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User\CustomerWishList;
-use App\Models\User\DonationManagement\DonationContent;
-use App\Models\User\DonationManagement\DonationDetail;
-use App\Models\User\HomePageText as UserHomePageText;
-use App\Models\User\HotelBooking\RoomBooking;
-use App\Models\User\RealestateManagement\PropertyWishlist;
 use App\Models\User\UserEmailTemplate;
 use App\Models\User\UserOfflineGateway;
-use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Carbon;
+use App\Http\Helpers\UserPermissionHelper;
+use App\Models\User\CourseManagement\Course;
+use App\Models\User\CourseManagement\Lesson;
+use App\Models\User\CourseManagement\Module;
+use App\Models\ApiCustomerPropertyInterested;
+use App\Models\User\HotelBooking\RoomBooking;
 use App\Http\Controllers\Payment\ArbController;
+use App\Models\User\CourseManagement\QuizScore;
+use App\Models\User\CourseManagement\LessonQuiz;
+use App\Models\User\CourseManagement\LessonContent;
+use App\Models\User\CourseManagement\LessonComplete;
+use App\Models\User\CourseManagement\CourseEnrolment;
+use App\Models\User\HomePageText as UserHomePageText;
+use App\Models\User\DonationManagement\DonationDetail;
+use App\Models\User\CourseManagement\CourseInformation;
+use App\Models\User\DonationManagement\DonationContent;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Models\User\RealestateManagement\PropertyWishlist;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use App\Models\User\CourseManagement\LessonContentComplete;
+use App\Models\User\RealestateManagement\Property;
+use App\Models\User\RealestateManagement\ApiUserCategory;
 
 class CustomerController extends Controller
 {
@@ -62,6 +65,77 @@ class CustomerController extends Controller
         Config::set('captcha.secret', $userBs->google_recaptcha_secret_key);
     }
 
+
+    // addToPropertyInterested
+    public function addToPropertyInterested($domain, $id)
+    {
+        $user = getUser();
+        $customer = Auth::guard('api_customer')->user();
+
+        // OPTIONAL: Check shop settings
+        $userShop = UserShopSetting::where('user_id', $user->id)->first();
+        if (!empty($userShop) && ($userShop->is_shop == 0 || $userShop->catalog_mode == 1)) {
+            return back();
+        }
+
+        // Check if already interested
+        $existing = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
+            ->where('property_id', $id)
+            ->first();
+
+        if ($existing) {
+            Session::flash('error', 'Property already added to interested list.');
+            return back();
+        }
+
+        // Fetch the Property with category_id
+        $property = Property::select('id', 'category_id')->find($id);
+
+        if (!$property) {
+            Session::flash('error', 'Property not found.');
+            return back();
+        }
+
+        // Save to interested list
+        ApiCustomerPropertyInterested::create([
+            'user_id'     => $user->id,
+            'customer_id' => $customer->id,
+            'property_id' => $property->id,
+            'category_id' => $property->category_id, // Add category_id here
+        ]);
+
+        Session::flash('success', 'Property added to interested list successfully.');
+        return back();
+    }
+
+    // removePropertyInterested
+    public function removePropertyInterested($id)
+    {
+        $customer = Auth::guard('api_customer')->user();
+
+        if (!$customer) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized.',
+            ], 401);
+        }
+
+        $deleted = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
+            ->where('property_id', $id)
+            ->delete();
+
+        if ($deleted) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Property removed from your interested list.',
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'info',
+            'message' => 'You had not marked this property as interested.',
+        ]);
+    }
 
     public function login($domain, Request $request)
     {

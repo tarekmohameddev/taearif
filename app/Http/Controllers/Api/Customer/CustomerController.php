@@ -4,13 +4,15 @@ namespace App\Http\Controllers\Api\Customer;
 
 use App\Models\ApiCustomer;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\ApiCustomerPropertyInterested;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Validation\Rule;
-
+use Illuminate\Support\Arr;
+use Illuminate\Database\QueryException;
 
 class CustomerController extends Controller
 {
@@ -30,6 +32,13 @@ class CustomerController extends Controller
 
         // Format the customers output (customize fields as needed)
         $formattedCustomers = $customers->map(function ($customer) {
+            $interestedCategories = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
+            ->join('api_user_categories', 'api_user_categories.id', '=', 'api_customer_property_interested.category_id')
+            ->select('api_user_categories.id', 'api_user_categories.name')
+            ->distinct()
+            ->get();
+
+
             return [
                 'id' => $customer->id,
                 'name' => $customer->name,
@@ -44,6 +53,8 @@ class CustomerController extends Controller
                 'created_by' => $customer->user_id,
                 'created_at' => $customer->created_at->toISOString(),
                 'updated_at' => $customer->updated_at->toISOString(),
+                'interested_categories' => $interestedCategories,
+
             ];
         });
 
@@ -105,6 +116,8 @@ class CustomerController extends Controller
                 'stage_id'      => 'nullable|exists:users_api_customers_stages,id',
                 'password'      => 'required|string|min:6',
                 'priority'      => 'nullable|integer|in:1,2,3',
+                'interested_category_ids' => 'nullable|array',
+                'interested_category_ids.*' => 'exists:api_user_categories,id'
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -127,6 +140,23 @@ class CustomerController extends Controller
             'phone_number'  => $request->phone_number,
             'password'      => bcrypt($request->password),
         ]);
+
+        if ($request->filled('interested_category_ids')) {
+            $categories = $request->interested_category_ids;
+            foreach ($categories as $catId) {
+                ApiCustomerPropertyInterested::firstOrCreate([
+                    'user_id'     => $user->id,
+                    'customer_id' => $customer->id,
+                    'category_id' => $catId
+                ]);
+            }
+        }
+        $interestedCategories = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
+        ->join('api_user_categories', 'api_user_categories.id', '=', 'api_customer_property_interested.category_id')
+        ->select('api_user_categories.id', 'api_user_categories.name')
+        ->distinct()
+        ->get();
+        $customer->interested_categories = $interestedCategories;
 
         return response()->json([
             'status'  => 'success',
@@ -170,67 +200,116 @@ class CustomerController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
         $user = $request->user();
-        $customer = ApiCustomer::where('user_id', $user->id)->find($id);
 
-        if (!$customer) {
+        try {
+            $customer = ApiCustomer::where('user_id', $user->id)->find($id);
+
+            if (!$customer) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Customer not found'
+                ], 404);
+            }
+
+            $request->validate([
+                'name'          => 'sometimes|string|max:255',
+                'email'         => [
+                    'sometimes',
+                    'nullable',
+                    'email',
+                    Rule::unique('api_customers', 'email')
+                        ->where(fn($query) => $query->where('user_id', $user->id))
+                        ->ignore($customer->id),
+                ],
+                'phone_number'  => [
+                    'sometimes',
+                    'string',
+                    'max:20',
+                    Rule::unique('api_customers', 'phone_number')
+                        ->where(fn($query) => $query->where('user_id', $user->id))
+                        ->ignore($customer->id),
+                ],
+                'city_id'       => 'nullable|exists:user_cities,id',
+                'district_id'   => 'nullable|exists:user_districts,id',
+                'note'          => 'nullable|string',
+                'customer_type' => 'nullable|string|max:50',
+                'priority'      => 'sometimes|integer|in:1,2,3',
+                'stage_id'      => 'nullable|exists:users_api_customers_stages,id',
+                'password'      => 'nullable|string|min:6',
+                'interested_category_ids' => 'nullable|array',
+                'interested_category_ids.*' => 'exists:api_user_categories,id',
+            ]);
+
+            $data = [];
+            foreach ([
+                'name', 'email', 'note', 'customer_type', 'priority',
+                'stage_id', 'city_id', 'district_id', 'phone_number'
+            ] as $field) {
+                if (array_key_exists($field, $request->all())) {
+                    $data[$field] = $request->$field;
+                }
+            }
+
+            if ($request->filled('password')) {
+                $data['password'] = bcrypt($request->password);
+            }
+
+            $customer->update($data);
+
+            if ($request->filled('interested_category_ids')) {
+                ApiCustomerPropertyInterested::where('customer_id', $customer->id)->delete();
+
+                foreach ($request->interested_category_ids as $catId) {
+                    ApiCustomerPropertyInterested::firstOrCreate([
+                        'user_id'     => $user->id,
+                        'customer_id' => $customer->id,
+                        'category_id' => $catId,
+                    ]);
+                }
+            }
+
+            $interestedCategories = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
+                ->join('api_user_categories', 'api_user_categories.id', '=', 'api_customer_property_interested.category_id')
+                ->select('api_user_categories.id', 'api_user_categories.name')
+                ->distinct()
+                ->get();
+
+            $customer->interested_categories = $interestedCategories;
+
             return response()->json([
-                'status' => 'error',
-                'message' => 'Customer not found'
-            ], 404);
+                'status' => 'success',
+                'message' => 'Customer updated successfully',
+                'data' => $customer,
+            ]);
         }
 
-        $request->validate([
-            'name'          => 'sometimes|string|max:255',
-            'email'         => [
-                'sometimes',
-                'nullable',
-                'email',
-                Rule::unique('api_customers', 'email')
-                    ->where(function ($query) use ($user) {
-                        return $query->where('user_id', $user->id);
-                    })
-                    ->ignore($customer->id),
-            ],
-            'phone_number'  => [
-                'sometimes',
-                'string',
-                'max:20',
-                Rule::unique('api_customers', 'phone_number')
-                    ->where(function ($query) use ($user) {
-                        return $query->where('user_id', $user->id);
-                    })
-                    ->ignore($customer->id),
-            ],
-            'city_id'       => 'nullable|exists:user_cities,id',
-            'district_id'   => 'nullable|exists:user_districts,id',
-            'note'          => 'nullable|string',
-            'customer_type' => 'nullable|string',
-            'priority'      => 'sometimes|integer|in:1,2,3', // 1=low, 2=medium, 3=high
-            'stage_id'      => 'nullable|exists:users_api_customers_stages,id',
-            'password'      => 'nullable|string|min:6',
-        ]);
+        // Catch validation errors
+        catch (ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        }
 
-        $customer->update([
-            'name'          => $request->name ?? $customer->name,
-            'email'         => $request->email ?? $customer->email,
-            'note'          => $request->note ?? $customer->note,
-            'customer_type' => $request->customer_type ?? $customer->customer_type,
-            'priority'      => $request->priority ?? $customer->priority,
-            'stage_id'      => $request->stage_id ?? $customer->stage_id,
-            'city_id'       => $request->city_id ?? $customer->city_id,
-            'district_id'   => $request->district_id ?? $customer->district_id,
-            'phone_number'  => $request->phone_number ?? $customer->phone_number,
-            'password'      => $request->filled('password') ? bcrypt($request->password) : $customer->password,
-        ]);
+        // Catch DB errors
+        catch (QueryException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Database error',
+                'sql_error' => $e->getMessage(),
+            ], 500);
+        }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Customer updated successfully',
-            'data' => $customer->fresh()
-        ]);
-
+        // Catch all other exceptions
+        catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Something went wrong',
+                'exception' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

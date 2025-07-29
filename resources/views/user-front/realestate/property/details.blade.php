@@ -286,6 +286,45 @@
                                     <span>{{ __('WhatsApp') }}</span>
                                 </li>
 
+@php
+    $interested = false;
+
+    if (Auth::guard('api_customer')->check()) {
+        $interested = \App\Models\ApiCustomerPropertyInterested::where('customer_id', Auth::guard('api_customer')->id())
+            ->where('property_id', $propertyContent->propertyId)
+            ->exists();
+    }
+@endphp
+
+<li>
+  @if(Auth::guard('api_customer')->check())
+    <form action="{{ route('front.user.property.add-to-interested', [getParam(), 'id' => $propertyContent->propertyId]) }}"
+          method="POST"
+          style="display:inline;">
+      @csrf
+      <button type="submit"
+              class="btn red"
+              style="width: 100px !important; padding: 14px; height: 45px !important;"
+              @if($interested) disabled @endif>
+        <i class="{{ $interested ? 'fas' : 'fal' }} fa-heart"></i>
+      </button>
+    </form>
+    <span>
+      {{ $interested ? __('Already Interested') : __('Interested') }}
+    </span>
+  @else
+    <button
+        type="button"
+        class="btn red"
+        style="width: 100px !important; padding: 14px; height: 45px !important;"
+        data-bs-toggle="modal"
+        data-bs-target="#Interested_login_Modal">
+        <i class="fal fa-heart"></i>
+    </button>
+    <span>{{ __('Interested') }}</span>
+  @endif
+</li>
+
                                 <li>
                                     @if (Auth::guard('customer')->check())
                                     @php
@@ -669,6 +708,51 @@
     </div>
 </div>
 
+{{-- Interested login Modal --}}
+
+<div class="modal fade" id="Interested_login_Modal" tabindex="-1" aria-labelledby="Interested_login_ModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ __('Interested') }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        {{-- Step 1: Ask for email or phone --}}
+        <div id="step1">
+          <label>{{ __('Enter Email or Phone') }}</label>
+          <input type="text" id="identifier" class="form-control mb-3">
+          <button type="button" class="btn btn-primary w-100" onclick="checkIdentifier()">{{ __('Continue') }}</button>
+        </div>
+
+        {{-- Step 2a: Login --}}
+        <form id="loginForm" action="{{ route('customer.api_login.submit', getParam()) }}" method="POST" style="display: none;">
+          @csrf
+          <input type="hidden" name="property_id" value="{{ $propertyContent->propertyId }}">
+          <input type="hidden" name="identifier" id="login_identifier">
+          <label>{{ __('Password') }}</label>
+          <input type="password" name="password" class="form-control mb-3">
+          <button type="submit" class="btn btn-success w-100">{{ __('Login') }}</button>
+        </form>
+
+        {{-- Step 2b: Register --}}
+        <form id="registerForm" action="{{ route('customer.api_signup.submit', getParam()) }}" method="POST" style="display: none;">
+          @csrf
+          <input type="hidden" name="property_id" value="{{ $propertyContent->propertyId }}">
+          <input type="hidden" name="identifier" id="register_identifier">
+          <label>{{ __('Name') }}</label>
+          <input type="text" name="name" class="form-control mb-2">
+          <label>{{ __('Password') }}</label>
+          <input type="password" name="password" class="form-control mb-3">
+          <button type="submit" class="btn btn-success w-100">{{ __('Register') }}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 {{-- share on social media modal --}}
 <div class="modal fade" id="socialMediaModal" tabindex="-1" role="dialog" aria-labelledby="socialMediaModalTitle"
     aria-hidden="true">
@@ -726,3 +810,48 @@
     </div>
 </div>
 @endsection
+
+<script>
+    function checkIdentifier() {
+        const identifier = document.getElementById('identifier').value.trim();
+
+        if (!identifier) {
+            alert("{{ __('Please enter your email or phone number.') }}");
+            return;
+        }
+
+        fetch("{{ route('customer.api_check_identifier', getParam()) }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ identifier: identifier })
+        })
+        .then(res => {
+            if (!res.ok) {
+                throw new Error("Server error");
+            }
+            return res.json();
+        })
+        .then(data => {
+            document.getElementById('step1').style.display = 'none';
+
+            if (data.exists) {
+                // Show login form
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('login_identifier').value = identifier;
+            } else {
+                // Show register form
+                document.getElementById('registerForm').style.display = 'block';
+                document.getElementById('register_identifier').value = identifier;
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("{{ __('Something went wrong. Please try again.') }}");
+        });
+    }
+</script>
+
+
