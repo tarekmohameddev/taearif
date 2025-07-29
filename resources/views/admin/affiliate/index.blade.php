@@ -48,97 +48,113 @@
                 </form>
                 <div class="card-title">{{ __('All Affiliate Requests') }}</div>
             </div>
-
             <div class="card-body">
-                @if ($affiliates->isEmpty())
-                    <h4 class="text-center">{{ __('NO AFFILIATE FOUND') }}</h4>
-                @else
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>{{ __('Full Name') }}</th>
-                                    <th>{{ __('Bank Name') }}</th>
-                                    <th>{{ __('Pending') }}</th>
-                                    <th>{{ __('نسبة') }}</th>
-                                    <th>{{ __('Account Number') }}</th>
-                                    <th>{{ __('IBAN') }}</th>
-                                    <th>{{ __('Status') }}</th>
-                                    <th>{{ __('Actions') }}</th>
-                                    <th>{{ __('View Payments') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($affiliates as $affiliate)
-                                    <tr class="{{ $affiliate->pending_amount > 0 ? 'table-warning' : '' }}">
-                                        <td>{{ $loop->iteration }}</td>
-                                        <td>
-                                            <span title="{{ $affiliate->fullname }}">
-                                                {{ Str::limit($affiliate->fullname, 6, '...') }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span title="{{ $affiliate->bank_name }}">
-                                                {{ Str::limit($affiliate->bank_name, 4, '...') }}
-                                            </span>
-                                        </td>
-                                        <td class="{{ $affiliate->pending_amount > 0 ? 'text-danger fw-bold' : '' }}">
-                                            {{ number_format($affiliate->pending_amount, 2) }} ريال</td>
-                                        <td>{{ number_format($affiliate->commission_percentage * 100, 2) }}%</td>
+    @if ($affiliates->isEmpty())
+        <h4 class="text-center">{{ __('NO AFFILIATE FOUND') }}</h4>
+    @else
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>{{ __('Full Name') }}</th>
+                        <th>{{ __('Bank Name') }}</th>
+                        <th>{{ __('Pending') }}</th>
+                        <th>{{ __('نسبة') }}</th>
+                        <th>{{ __('Start Date') }}</th> <!-- New column -->
+                        <th>{{ __('To Date') }}</th> <!-- New column -->
+                        <th>{{ __('Account Number') }}</th>
+                        <th>{{ __('IBAN') }}</th>
+                        <th>{{ __('Status') }}</th>
+                        <th>{{ __('Actions') }}</th>
+                        <th>{{ __('View Payments') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($affiliates as $affiliate)
+                        <tr class="{{ $affiliate->pending_amount > 0 ? 'table-warning' : '' }}">
+                            <td>{{ $loop->iteration }}</td>
+                            <td>
+                                <span title="{{ $affiliate->fullname }}">
+                                    {{ Str::limit($affiliate->fullname, 6, '...') }}
+                                </span>
+                            </td>
+                            <td>
+                                <span title="{{ $affiliate->bank_name }}">
+                                    {{ Str::limit($affiliate->bank_name, 4, '...') }}
+                                </span>
+                            </td>
+                            <td class="{{ $affiliate->pending_amount > 0 ? 'text-danger fw-bold' : '' }}">
+                                {{ number_format($affiliate->pending_amount, 2) }} ريال
+                            </td>
+                            <td>{{ number_format($affiliate->commission_percentage * 100, 2) }}%</td>
+                            <td>
+                                <span title="{{ $affiliate->start_date_value ? $affiliate->start_date_value->format('Y-m-d') : '' }}">
+                                    {{ $affiliate->start_date_value ? Str::limit($affiliate->start_date_value->format('Y-m-d'), 10, '...') : '-' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span title="{{ $affiliate->to_date_value ? $affiliate->to_date_value->format('Y-m-d') : '' }}">
+                                    {{ $affiliate->to_date_value ? Str::limit($affiliate->to_date_value->format('Y-m-d'), 10, '...') : '-' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span title="{{ $affiliate->bank_account_number }}">
+                                    {{ Str::limit($affiliate->bank_account_number, 4, '***') }}
+                                </span>
+                            </td>
+                            <td>
+                                <span title="{{ $affiliate->iban }}">
+                                    {{ Str::limit($affiliate->iban, 4, '***') }}
+                                </span>
+                            </td>
+                            <td>
+                                @php
+                                    $status = strtolower($affiliate->request_status);
+                                    $statusLabels = [
+                                        'pending' => 'Pending',
+                                        'approved' => 'Approved',
+                                        'rejected' => 'Rejected'
+                                    ];
+                                @endphp
+                                <span class="badge badge-{{ $status == 'approved' ? 'success' : ($status == 'rejected' ? 'danger' : 'warning') }}"
+                                    style="font-size: 0.65rem; padding: 0.25rem 0.5rem;">
+                                    {{ __($statusLabels[$status] ?? ucfirst($status)) }}
+                                </span>
+                            </td>
+                            <td>
+                                <form action="{{ route('admin.affiliates.updateStatus', $affiliate->id) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    @method('POST')
+                                    <select name="request_status" class="form-select form-select-sm py-0 px-1" style="font-size: 0.55rem; height: 28px; width: 85px;"
+                                        onchange="this.className = this.options[this.selectedIndex].className + ' form-select form-select-sm py-0 px-1'; this.form.submit()">
+                                        <option class="badge bg-warning text-dark" value="pending" {{ $affiliate->request_status === 'pending' ? 'selected' : '' }}>{{ __('Pending') }}</option>
+                                        <option class="badge bg-success" value="approved" {{ $affiliate->request_status === 'approved' ? 'selected' : '' }}>{{ __('Approved') }}</option>
+                                        <option class="badge bg-danger" value="rejected" {{ $affiliate->request_status === 'rejected' ? 'selected' : '' }}>{{ __('Rejected') }}</option>
+                                    </select>
+                                </form>
+                            </td>
+                            <td>
+                                <!-- View Payments -->
+                                <a href="{{ route('admin.affiliates.paymentHistory', $affiliate->id) }}" class="btn btn-xs btn-info py-1 px-2" style="font-size: 0.65rem;">{{ __('View Payments') }}</a>
+                                <!-- Edit Commission -->
+                                <button type="button" class="btn btn-xs btn-warning" onclick="openEditCommissionModal(this)"
+                                    data-toggle="modal" data-target="#editCommissionModal" data-user-id="{{ $affiliate->user_id }}">{{ __('تعديل نسبة') }}</button>
+                                <!-- Edit Dates -->
+                                <button type="button" class="btn btn-xs btn-primary" onclick="openEditDateModal(this)"
+                                    data-toggle="modal" data-target="#edit_date_Modal" data-user-id="{{ $affiliate->user_id }}"
+                                    data-start-date="{{ $affiliate->start_date_value ? $affiliate->start_date_value->format('Y-m-d') : '' }}"
+                                    data-to-date="{{ $affiliate->to_date_value ? $affiliate->to_date_value->format('Y-m-d') : '' }}">{{ __('تعديل المدة') }}</button>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+</div>
 
-                                        <td>
-                                            <span title="{{ $affiliate->bank_account_number }}">
-                                                {{ Str::limit($affiliate->bank_account_number, 4, '***') }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span title="{{ $affiliate->iban }}">
-                                                {{ Str::limit($affiliate->iban, 4, '***') }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            @php
-                                                $status = strtolower($affiliate->request_status);
-                                                $statusLabels = [
-                                                    'pending' => 'Pending',
-                                                    'approved' => 'Approved',
-                                                    'rejected' => 'Rejected'
-                                                ];
-                                            @endphp
-                                            <span class="badge badge-{{ $status == 'approved' ? 'success' : ($status == 'rejected' ? 'danger' : 'warning') }}"
-                                                style="font-size: 0.65rem; padding: 0.25rem 0.5rem;">
-                                                {{ __($statusLabels[$status] ?? ucfirst($status)) }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <form action="{{ route('admin.affiliates.updateStatus', $affiliate->id) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @method('POST')
-                                                <select name="request_status" class="form-select form-select-sm py-0 px-1" style="font-size: 0.55rem; height: 28px; width: 85px;"
-                                                    onchange="this.className = this.options[this.selectedIndex].className + ' form-select form-select-sm py-0 px-1'; this.form.submit()">
-                                                    <option class="badge bg-warning text-dark"  value="pending" {{ $affiliate->request_status === 'pending' ? 'selected' : '' }}>{{__('Pending')}}</option>
-                                                    <option class="badge bg-success" value="approved" {{ $affiliate->request_status === 'approved' ? 'selected' : '' }}>{{ __('Approved') }}</option>
-                                                    <option class="badge bg-danger"  value="rejected" {{ $affiliate->request_status === 'rejected' ? 'selected' : '' }}>{{__('Rejected')}}</option>
-                                                </select>
-                                            </form>
-                                        </td>
-                                        <td>
-                                            <!-- view -->
-                                            <a href="{{ route('admin.affiliates.paymentHistory', $affiliate->id) }}" class="btn btn-xs btn-info py-1 px-2" style="font-size: 0.65rem;">{{ __('View Payments') }}</a>
-                                            <button type="submit" class="btn btn-xs btn-warning"     onclick="openEditCommissionModal(this)"
- data-toggle="modal" data-target="#editCommissionModal" data-user-id="{{ $affiliate->user_id  }}"><i class="far fa-edit"></i>تعديل نسبة</button>
-
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
-            </div>
-
-<!-- Modal -->
+<!-- Modal_editCommissionModalTitle -->
 <div class="modal fade" id="editCommissionModal" tabindex="-1" role="dialog" aria-labelledby="editCommissionModalTitle" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
@@ -149,10 +165,10 @@
               </button>
           </div>
           <div class="modal-body">
-              <form id="editCommissionForm" action="{{ route('admin.user.commission.update') }}" method="POST">
+              <form id="editCommissionForm" action="{{ route('admin.affiliates.commission.update') }}" method="POST">
                   @csrf
                   <input type="hidden" name="user_id" id="modal_user_id">
-                  
+
                   <div class="form-group">
                       <label for="commission_value">Commission Value</label>
                       <input type="number" name="commission_value" class="form-control" id="modal_commission_value" step="0.01" required>
@@ -162,6 +178,39 @@
           <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
               <button type="submit" form="editCommissionForm" class="btn btn-primary">Save changes</button>
+          </div>
+      </div>
+  </div>
+</div>
+
+<!-- Modal edit date Modal -->
+<div class="modal fade" id="edit_date_Modal" tabindex="-1" role="dialog" aria-labelledby="edit_date_ModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h5 class="modal-title" id="edit_date_ModalTitle">Edit date</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+              </button>
+          </div>
+          <div class="modal-body">
+              <form id="edit_date_Form" action="{{ route('admin.affiliates.date.update') }}" method="POST">
+                  @csrf
+                  <input type="hidden" name="user_id" id="editDateUserId">
+
+                  <div class="form-group">
+                      <label for="date_value">Start date Value</label>
+                      <input type="date" name="start_date_value" class="form-control" id="start_date_value" required>
+                  </div>
+                  <div class="form-group">
+                      <label for="date_value">To date Value</label>
+                      <input type="date" name="to_date_value" class="form-control" id="to_date_value" required>
+                  </div>
+              </form>
+          </div>
+          <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="submit" form="edit_date_Form" class="btn btn-primary">Save changes</button>
           </div>
       </div>
   </div>
@@ -186,6 +235,17 @@
 
         document.getElementById('modal_user_id').value = userId;
         document.getElementById('modal_commission_value').value = commissionValue;
+    }
+</script>
+<script>
+    function openEditDateModal(button) {
+        const userId = button.getAttribute('data-user-id');
+        const datastartdate = button.getAttribute('data-start-date');
+        const todatevalue = button.getAttribute('data-to-date');
+
+        document.getElementById('editDateUserId').value = userId;
+        document.getElementById('start_date_value').value = datastartdate;
+        document.getElementById('to_date_value').value = todatevalue;
     }
 </script>
 

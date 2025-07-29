@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use App\Models\User;
+
 class AffiliateController extends Controller
 {
     /**
@@ -28,6 +29,10 @@ class AffiliateController extends Controller
                   ->orWhere('bank_name', 'like', "%{$search}%")
                   ->orWhere('bank_account_number', 'like', "%{$search}%")
                   ->orWhere('iban', 'like', "%{$search}%")
+                  // start_date
+                  ->orWhere('start_date', 'like', "%{$search}%")
+                  // to_date
+                  ->orWhere('to_date', 'like', "%{$search}%")
                   ->orWhere('request_status', 'like', "%{$search}%");
             });
         }
@@ -79,7 +84,40 @@ class AffiliateController extends Controller
         return back()->with('success', 'Commission updated successfully.');
     }
 
+    // updateDate
+    public function updateDate(Request $request)
+    {
+        Log::info($request->all());
 
+        try {
+            $validated = $request->validate([
+                'user_id' => 'required|exists:api_affiliate_users,user_id',
+                'start_date_value' => 'required|date',
+                'to_date_value' => 'required|date|after_or_equal:start_date_value',
+            ]);
+
+            Log::info('Updating date for user ID: ' . $validated['user_id']);
+            Log::info('Start Date: ' . $validated['start_date_value']);
+            Log::info('To Date: ' . $validated['to_date_value']);
+
+            $affiliate = ApiAffiliateUser::where('user_id', $validated['user_id'])->firstOrFail();
+            $affiliate->update([
+                'start_date_value' => $validated['start_date_value'],
+                'to_date_value' => $validated['to_date_value'],
+            ]);
+
+            return back()->with('success', 'Date updated successfully.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Validation errors are automatically handled by Laravel and redirected back with errors
+            return back()->withErrors($e->validator)->withInput();
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error('Affiliate not found for user ID: ' . $request->user_id);
+            return back()->with('error', 'Affiliate not found.');
+        } catch (\Exception $e) {
+            Log::error('Error updating affiliate dates: ' . $e->getMessage());
+            return back()->with('error', 'An error occurred while updating the dates. Please try again.');
+        }
+    }
     /**
      * Simple payment-history page: only pending-amount & transactions.
     */

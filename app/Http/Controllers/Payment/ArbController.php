@@ -229,7 +229,7 @@ class ArbController extends Controller
             // }
 
             // expire the current package
-            log::info('ddd'.$currMembership);
+            // log::info('ddd'.$currMembership);
             $currMembership->expire_date = Carbon::parse(Carbon::now()->subDay()->format('d-m-Y'));
             $currMembership->modified = 1;
             if ($currMembership->status == 0) {
@@ -267,26 +267,35 @@ class ArbController extends Controller
             $user->save();
 
             if ($user->referred_by) {
+                // if
                 $affiliate = \App\Models\Api\ApiAffiliateUser::where('user_id', $user->referred_by)->first();
 
                 if ($affiliate) {
-                    $commissionRate = $affiliate->commission_percentage ?? 0.15;
-                    $commission = round($package->price * $commissionRate, 2);
+                    $validUntilToday = is_null($affiliate->to_date_value) || $affiliate->to_date_value->copy()->endOfDay()->gte(now());
 
-                    // Update affiliate total commission
-                    $affiliate->pending_amount += $commission;
-                    $affiliate->save();
+                    if (!$validUntilToday) {
 
-                    // create transaction as pending
-                    \App\Models\AffiliateTransaction::create([
-                        'affiliate_id' => $affiliate->id,
-                        'type'         => 'pending', // will require admin approval
-                        'referral_user_id' => $user->id, // Link to the user who made the payment
-                        'image'        => null,
-                        'amount'       => $commission,
-                        'note'         => "commission from username: ({$user->name}) for package: ({$package->title})",
-                    ]);
+                        $commissionRate = $affiliate->commission_percentage ?? 0.15;
+                        $commission = round($package->price * $commissionRate, 2);
+
+                        // Update affiliate total commission
+                        $affiliate->pending_amount += $commission;
+                        $affiliate->save();
+
+                        // create transaction as pending
+                        \App\Models\AffiliateTransaction::create([
+                            'affiliate_id' => $affiliate->id,
+                            'type'         => 'pending', // will require admin approval
+                            'referral_user_id' => $user->id, // Link to the user who made the payment
+                            'image'        => null,
+                            'amount'       => $commission,
+                            'note'         => "commission from username: ({$user->name}) for package: ({$package->title})",
+                        ]);
+
+                    }
+
                 }
+
             }
 
             if ($paymentFor == "membership") {

@@ -18,9 +18,16 @@ class ApiAffiliateUser extends Model
         'bank_account_number',
         'iban',
         'commission_percentage',
+        'start_date_value',
+        'to_date_value',
         'pending_amount',
         'request_status',
         'image',
+    ];
+
+    protected $casts = [
+        'start_date_value' => 'date',
+        'to_date_value' => 'date',
     ];
 
     // hide the user_id from the API response

@@ -37,6 +37,8 @@ class AffiliateController extends Controller
             'bank_name'         => $request->bank_name,
             'bank_account_number' => $request->bank_account_number,
             'iban'              => $request->iban,
+            'start_date_value' => Carbon::now(),
+            'to_date_value'    => Carbon::now()->addYear(),
             'request_status'    => 'pending',
         ]);
 
