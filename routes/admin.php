@@ -457,7 +457,7 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::get('/affiliates/{id}/balance-summary', 'Admin\AffiliateController@getBalanceSummary')->name('affiliates.balanceSummary');
         // approve all pending commissions
         Route::patch('/affiliates/{affiliate}/approve-all','Admin\AffiliateController@approveAllPending')->name('affiliates.approveAll');
-        Route::post('/affiliates/commission', 'Admin\AffiliateController@updateCommission')->name('admin.user.commission.update');
+        Route::post('/affiliates/commission', 'Admin\AffiliateController@updateCommission')->name('user.commission.update');
 
     });
 
