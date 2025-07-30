@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\PersonalAccessToken;
-
+use Illuminate\Support\Facades\Auth;
 class ImpersonationController extends Controller
 {
     /**
@@ -29,35 +29,28 @@ class ImpersonationController extends Controller
             ->createToken('impersonated-by-'.$admin->id, ['*'])
             ->plainTextToken;
 
-        Log::info("Admin {$admin->id} IMPERSONATE-START user {$user->id}");
-
         return response()->json([
             'impersonation_token' => $plainTextToken,
             'token_type'          => 'Bearer',
         ]);
     }
 
-    /**
-     * Revoke every impersonation token this admin issued for that user.
-     *
-     * Route: POST /api/impersonate/{user}/revoke
-     * Guard: auth:sanctum  (admin’s Bearer token again)
-     */
-    public function stop(Request $request, User $user)
+    public function consume(Request $request, User $user)
     {
-        $admin = $request->user();
+        $adminId = $request->query('adminId');
 
-        $deleted = $user->tokens()
-            ->where('name', 'like', 'impersonated-by-'.$admin->id.'%')
-            ->delete();
-
-        Log::info("Admin {$admin->id} IMPERSONATE-STOP  user {$user->id} — {$deleted} token(s) revoked");
-
-
-        return response()->json([
-            'revoked_tokens' => $deleted,
-            'message'        => 'Impersonation ended — use your admin token again.',
+        session([
+            'impersonator_admin_id'    => $adminId,
+            'impersonated_user_id'     => $user->id,
+            'impersonation_started_at' => now()->toIso8601String(),
         ]);
+
+        Auth::guard('web')->login($user, false);
+
+        $frontend = rtrim(env('FRONTEND_URL', url('/')), '/');
+
+        $to = $request->query('redirect', $frontend);
+        return redirect()->to($to);
     }
 
     /**

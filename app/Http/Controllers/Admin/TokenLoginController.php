@@ -15,18 +15,27 @@ class TokenLoginController extends Controller
      */
     public function loginByToken(Request $request)
     {
+        // Retrieve the token from the query parameter
         $token = $request->query('token');
-        if (! $token) abort(403, 'Token required');
+        if (!$token) {
+            abort(403, 'Token required');
+        }
 
         $pat = PersonalAccessToken::findToken($token);
-        if (! $pat) abort(403, 'Invalid or expired token');
+        if (!$pat) {
+            abort(403, 'Invalid or expired token');
+        }
 
-        // Log in as that user
+
         Auth::login($pat->tokenable);
+
+
         $request->session()->regenerate();
 
-        // Redirect into the user’s dashboard
-        return redirect()->route('user-dashboard');
+
+        $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
+        $login = 'https://app.taearif.com/login?token=' . $token;
+        return redirect()->to($login);
     }
 
 

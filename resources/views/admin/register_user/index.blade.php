@@ -2,11 +2,11 @@
 
 @section('content')
 <style>
-.date-range-filter {
-    background: #f8f9fa;
-    padding: 2px;
-    border-radius: 5px;
-}
+    .date-range-filter {
+        background: #f8f9fa;
+        padding: 2px;
+        border-radius: 5px;
+    }
 </style>
 <div class="page-header">
     <h4 class="page-title">
@@ -92,9 +92,7 @@
                     <div class="col-lg-12 mt-2">
                         <div class="float-lg-left float-none">
                             {{-- Collapse Toggle --}}
-                            <button class="btn btn-sm btn-outline-primary mb-2" type="button" data-toggle="collapse"
-                                data-target="#dateFilterCollapse" aria-expanded="false" aria-controls="dateFilterCollapse"
-                                id="dateFilterBtn">
+                            <button class="btn btn-sm btn-outline-primary mb-2" type="button" data-toggle="collapse" data-target="#dateFilterCollapse" aria-expanded="false" aria-controls="dateFilterCollapse" id="dateFilterBtn">
                                 <i class="fas fa-calendar mr-1"></i> {{ __('Advanced Filters') }}
                             </button>
 
@@ -106,30 +104,22 @@
                                         {{-- Date From --}}
                                         <div class="form-group mr-4">
                                             <label for="start_date" class="small text-muted mb-1">{{ __('From Date') }} ({{ __('optional') }})</label>
-                                            <input type="date" id="start_date" name="start_date"
-                                                class="form-control form-control-sm"
-                                                value="{{ request()->input('start_date') }}">
+                                            <input type="date" id="start_date" name="start_date" class="form-control form-control-sm" value="{{ request()->input('start_date') }}">
 
-                                        {{-- Date To --}}
+                                            {{-- Date To --}}
 
                                             <label for="end_date" class="small text-muted mb-1">{{ __('To Date') }} ({{ __('optional') }})</label>
-                                            <input type="date" id="end_date" name="end_date"
-                                                class="form-control form-control-sm"
-                                                value="{{ request()->input('end_date') }}">
+                                            <input type="date" id="end_date" name="end_date" class="form-control form-control-sm" value="{{ request()->input('end_date') }}">
                                         </div>
 
                                         {{-- Subscription Ends From --}}
                                         <div class="form-group mr-4">
                                             <label for="subscription_start" class="small text-muted mb-1">{{ __('Subscription Ends From') }} ({{ __('optional') }})</label>
-                                            <input type="date" id="subscription_start" name="subscription_start"
-                                                class="form-control form-control-sm"
-                                                value="{{ request()->input('subscription_start') }}">
+                                            <input type="date" id="subscription_start" name="subscription_start" class="form-control form-control-sm" value="{{ request()->input('subscription_start') }}">
 
-                                        {{-- Subscription Ends To --}}
+                                            {{-- Subscription Ends To --}}
                                             <label for="subscription_end" class="small text-muted mb-1">{{ __('Subscription Ends To') }} ({{ __('optional') }})</label>
-                                            <input type="date" id="subscription_end" name="subscription_end"
-                                                class="form-control form-control-sm"
-                                                value="{{ request()->input('subscription_end') }}">
+                                            <input type="date" id="subscription_end" name="subscription_end" class="form-control form-control-sm" value="{{ request()->input('subscription_end') }}">
                                         </div>
 
                                         {{-- Active Subscription Filter --}}
@@ -145,11 +135,11 @@
                                                 </option>
                                             </select>
 
-                                    {{-- Paid / Trial Filter --}}
-                                             <label for="paid_member" class="small text-muted mb-1">{{ __('Membership_Type') }}</label>
+                                            {{-- Paid / Trial Filter --}}
+                                            <label for="paid_member" class="small text-muted mb-1">{{ __('Membership_Type') }}</label>
                                             <select name="paid_member" id="paid_member" class="form-control form-control-sm">
                                                 <option value="">{{ __('-- All Types --') }}</option>
-                                                <option value="paid"  {{ request()->input('paid_member') == 'paid'  ? 'selected' : '' }}>
+                                                <option value="paid" {{ request()->input('paid_member') == 'paid'  ? 'selected' : '' }}>
                                                     {{ __('Paid_Member') }}
                                                 </option>
                                                 <option value="trial" {{ request()->input('paid_member') == 'trial' ? 'selected' : '' }}>
@@ -164,10 +154,9 @@
                                             <select name="referred_by" id="referred_by" class="form-control form-control-sm">
                                                 <option value="">{{ __('-- All Referrers --') }}</option>
                                                 @foreach($affiliateUsers as $affUser)
-                                                    <option value="{{ $affUser->id }}"
-                                                        {{ request()->input('referred_by') == $affUser->id ? 'selected' : '' }}>
-                                                        {{ $affUser->username }} ({{ $affUser->email }})
-                                                    </option>
+                                                <option value="{{ $affUser->id }}" {{ request()->input('referred_by') == $affUser->id ? 'selected' : '' }}>
+                                                    {{ $affUser->username }} ({{ $affUser->email }})
+                                                </option>
                                                 @endforeach
                                             </select>
                                         </div>
@@ -304,13 +293,9 @@
                                                             {{ __('Delete') }}
                                                         </button>
                                                     </form>
-                                                    <a
-  href="{{ route('admin.register.user.secretLogin', $user->id) }}"
-  target="_blank"
-  class="dropdown-item"
->
-  {{ __('Secret Login') }}
-</a>
+                                                    <a href="{{ route('admin.register.user.secretLogin', $user->id) }}" target="_blank" class="dropdown-item">
+                                                        {{ __('Secret Login') }}
+                                                    </a>
 
                                                 </div>
                                             </div>
