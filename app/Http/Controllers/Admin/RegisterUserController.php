@@ -419,42 +419,26 @@ class RegisterUserController extends Controller
     /**
      * Generate invoice for membership
      */
-    // public function secretLogin($id)
-    // {
-    //     $admin = auth()->user();
-    //     $user  = User::findOrFail($id);
-
-    //     $plainTextToken = $user
-    //         ->createToken("impersonated-by-{$admin->id}", ['*'])
-    //         ->plainTextToken;
-
-    //     // Hard‑code the URL instead of using a named route:
-    //     return redirect("/login?token={$plainTextToken}");
-    // }
-
     public function secretLogin(Request $request, User $user)
     {
-
         $admin = auth('admin')->user();
 
         $plainTextToken = $user->createToken(
             "impersonated-by-{$admin->id}",
-            ['impersonate'] // abilities
-        )->plainTextToken; // "id|token"
+            ['impersonate']
+        )->plainTextToken;
 
         if ($pat = PersonalAccessToken::findToken($plainTextToken)) {
             $pat->expires_at = now()->addMinutes(2);
             $pat->save();
         }
 
-        $frontend = rtrim(env('FRONTEND_URL', url('/')), '/'); //https://app.taearif.com
+        $frontend = rtrim(env('FRONTEND_URL', url('/')), '/'); // https://app.taearif.com
         $url = $frontend . '/login?token=' . urlencode($plainTextToken);
 
         if ($request->filled('redirect')) {
             $url .= '&redirect=' . urlencode($request->query('redirect'));
         }
-
-        // dd($url); // DEBUG: check the generated URL
 
         return redirect()->away($url);
     }
