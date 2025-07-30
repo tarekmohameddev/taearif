@@ -35,23 +35,31 @@ class ImpersonationController extends Controller
         ]);
     }
 
-    public function consume(Request $request, User $user)
+    public function consume(Request $request)
     {
-        $adminId = $request->query('adminId');
+        $token = $request->input('token');
+        if (!$token) {
+            return response()->json(['message' => 'Token required'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
-        session([
-            'impersonator_admin_id'    => $adminId,
-            'impersonated_user_id'     => $user->id,
-            'impersonation_started_at' => now()->toIso8601String(),
-        ]);
+        $pat = PersonalAccessToken::findToken($token);
+        if (!$pat) {
+            return response()->json(['message' => 'Invalid token'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $user = $pat->tokenable;
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_UNAUTHORIZED);
+        }
 
         Auth::guard('web')->login($user, false);
+        $request->session()->regenerate();
 
-        $frontend = rtrim(env('FRONTEND_URL', url('/')), '/');
+        $pat->delete();
 
-        $to = $request->query('redirect', $frontend);
-        return redirect()->to($to);
+        return response()->json(['ok' => true]);
     }
+
 
     /**
      * (Optional helper) Revoke one specific token if the client sends it back.
