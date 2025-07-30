@@ -158,7 +158,7 @@ use App\Http\Controllers\Admin\RegisterUserController;
 
 ////////////////////////////////////////
 // Admin side: must be logged in with the admin guard AND have the Gate ability
-Route::middleware(['auth:web', 'can:impersonate-users'])->group(function () {
+Route::middleware(['auth:admin', 'can:impersonate-users'])->group(function () {
     Route::get('admin/register/users/{user}/secret-login', [RegisterUserController::class, 'secretLogin'])
         ->name('admin.register.user.secretLogin');
 });
