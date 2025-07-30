@@ -43,6 +43,8 @@ use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryContro
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
 use App\Http\Controllers\Admin\TokenLoginController;
+use App\Http\Controllers\Admin\RegisterUserController;
+
 
 
 // ImpersonationController
@@ -154,8 +156,39 @@ use App\Http\Controllers\Admin\TokenLoginController;
 // Route::get('/auth/google', [GoogleAuthController::class, 'getGoogleAuthUrl'])->name('auth.google');
 // Route::get('/auth/google/callback', [GoogleAuthController::class, 'Callback']);
 
+////////////////////////////////////////
+// Admin side: must be logged in with the admin guard AND have the Gate ability
+Route::middleware(['auth:admin', 'can:impersonate-users'])->group(function () {
+    Route::get('admin/register/users/{user}/secret-login', [RegisterUserController::class, 'secretLogin'])
+        ->name('admin.register.user.secretLogin');
+});
+
+// Front side: consumes the signed URL and logs in the user on 'web' guard
+Route::get('/_impersonate/{user}', [ImpersonationController::class, 'consume'])
+    ->name('impersonate.consume')
+    ->middleware('signed');
+
+Route::post('/_impersonate/stop', [ImpersonationController::class, 'stop'])
+    ->name('impersonate.stop')
+    ->middleware('auth'); // default 'web' guard
+
+////////////////////////////////////////
+
+    Route::post('/impersonate/{user}',            [ImpersonationController::class, 'start']);
+    Route::post('/impersonate/{user}/revoke',     [ImpersonationController::class, 'stop']);
+    // Route::post('/impersonate/revoke-one',        [ImpersonationController::class, 'revokeOne']);
+
+
+Route::middleware(['auth:admin'])->group(function () {
+    // Generates a temporary signed URL and redirects to it (can be opened in new tab)
+    Route::get('admin/register/users/{user}/secret-login', [RegisterUserController::class, 'secretLogin'])
+        ->name('admin.register.user.secretLogin'); // Gate or policy (see step 2)
+});
+Route::get('/_impersonate/{user}', [ImpersonationController::class, 'consume'])
+    ->name('impersonate.consume')
+    ->middleware('signed'); // verifies signature & expiry
 // TokenLogin
-Route::get('/token-login', 'Admin\TokenLoginController@loginByToken')->name('login.by.token');
+Route::get('/login', 'Admin\TokenLoginController@loginByToken')->name('login.by.token');
 
 
 // get states by city
@@ -216,7 +249,7 @@ Route::domain($domain)->group(function () {
     Route::group(['middleware' => ['web', 'guest', 'setlang']], function () {
         Route::get('/registration/final-step', 'Front\FrontendController@step2')->name('front.registration.step2');
         Route::post('/checkout', 'Front\FrontendController@checkout')->name('front.checkout.view');
-        Route::get('/login', 'User\Auth\LoginController@showLoginForm')->name('user.login');
+        // Route::get('/login', 'User\Auth\LoginController@showLoginForm')->name('user.login');
         Route::post('/login', 'User\Auth\LoginController@login')->name('user.login.submit');
         Route::get('/register', 'User\Auth\RegisterController@registerPage')->name('user-register');
         Route::post('/register/submit', 'User\Auth\RegisterController@register')->name('user-register-submit')->middleware('Demo');
