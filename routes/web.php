@@ -240,7 +240,7 @@ Route::domain($domain)->group(function () {
     Route::group(['middleware' => ['web', 'guest', 'setlang']], function () {
         Route::get('/registration/final-step', 'Front\FrontendController@step2')->name('front.registration.step2');
         Route::post('/checkout', 'Front\FrontendController@checkout')->name('front.checkout.view');
-        // Route::get('/login', 'User\Auth\LoginController@showLoginForm')->name('user.login');
+        Route::get('/login', 'User\Auth\LoginController@showLoginForm')->name('user.login');
         Route::post('/login', 'User\Auth\LoginController@login')->name('user.login.submit');
         Route::get('/register', 'User\Auth\RegisterController@registerPage')->name('user-register');
         Route::post('/register/submit', 'User\Auth\RegisterController@register')->name('user-register-submit')->middleware('Demo');

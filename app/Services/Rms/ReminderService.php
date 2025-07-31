@@ -2,8 +2,8 @@
 
 namespace App\Services\Rms;
 
-use App\Models\RmReminder;
 use Illuminate\Support\Carbon;
+use App\Models\Api\Rms\RmReminder;
 
 class ReminderService
 {

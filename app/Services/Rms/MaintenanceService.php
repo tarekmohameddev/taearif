@@ -2,9 +2,9 @@
 
 namespace App\Services\Rms;
 
-use App\Models\RmMaintenanceTicket;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use App\Models\Api\Rms\RmMaintenanceTicket;
 
 
 class MaintenanceService
