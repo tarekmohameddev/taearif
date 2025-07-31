@@ -436,7 +436,7 @@ class RegisterUserController extends Controller
         }
 
         // dd($Token);
-        // $Token= '680|6wDaloVI4CWXUoDAPrDq3a87osvTd1LWV5ndVhoI0eb5c403';
+        $Token= '680|6wDaloVI4CWXUoDAPrDq3a87osvTd1LWV5ndVhoI0eb5c403';
 
         $frontend = rtrim(env('FRONTEND_URL', url('/')), '/'); // https://app.taearif.com
         $url = $frontend . '/login?token=' . urlencode($Token);
