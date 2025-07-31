@@ -2,8 +2,13 @@
 
 namespace App\Models\Api\Rms;
 
+use App\Models\Api\Rms\RmContract;
+use App\Models\Api\Rms\RmReminder;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Api\Rms\RmMaintenanceTicket;
+use App\Models\Api\Rms\RmPaymentInstallment;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\User\RealestateManagement\Property;
 
 class RmRental extends Model
 {
@@ -51,6 +56,17 @@ class RmRental extends Model
 
     public function property()
     {
-        return $this->belongsTo(\App\Models\Property::class, 'property_id');
+        return $this->belongsTo(Property::class, 'property_id');
     }
+
+    public function upcomingInstallments()
+    {
+        return $this->hasMany(RmPaymentInstallment::class, 'rental_id')->where('due_date', '>', now());
+    }
+
+    public function maintenanceOpen()
+    {
+        return $this->hasMany(RmMaintenanceTicket::class, 'rental_id')->where('status', 'open');
+    }
+
 }
