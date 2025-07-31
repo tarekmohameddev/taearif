@@ -440,7 +440,7 @@ class RegisterUserController extends Controller
         // dd($url);
 
         if ($request->filled('redirect')) {
-            $url .= '&redirect=' . urlencode($request->query('redirect'));
+            $url .= '&redirect=' . $request->query('redirect');
         }
 
         return redirect()->away($url);
