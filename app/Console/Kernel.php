@@ -14,6 +14,8 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         Commands\ExpiredUser::class,
+        \App\Console\Commands\ProcessRmsReminders::class,
+
     ];
 
     /**
@@ -26,6 +28,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('expire:user')->daily();
         $schedule->command('app:expire-trials')->daily();
+        $schedule->command('reminders:process')->dailyAt('04:00')->timezone('Asia/Riyadh');
 
     }
 
