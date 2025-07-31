@@ -417,8 +417,11 @@ class AuthController extends Controller
     public function getUserProfile()
     {
         try {
+
             // Get authenticated user from API token
             $user = Auth::user();
+
+            dd('user');
 
             if (!$user) {
                 return response()->json([
