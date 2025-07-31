@@ -423,21 +423,23 @@ class RegisterUserController extends Controller
     {
         $admin = auth('admin')->user();
 
-        $plainTextToken = $user->createToken(
-            "impersonated-by-{$admin->id}",
-            ['impersonate']
-        )->plainTextToken;
+        // $plainTextToken = $user->createToken(
+        //     "impersonated-by-{$admin->id}",
+        //     ['impersonate']
+        // )->plainTextToken;
+        // Create token for API authentication
+        $Token = $user->createToken('auth_token')->plainTextToken;
 
-        if ($pat = PersonalAccessToken::findToken($plainTextToken)) {
+        if ($pat = PersonalAccessToken::findToken($Token)) {
             $pat->expires_at = now()->addMinutes(2);
             $pat->save();
         }
+
         // dd($Token);
-        // $Token= '680|6wDaloVI4CWXUoDAPrDq3a87osvTd1LWV5ndVhoI0eb5c403';
+        $Token= '680|6wDaloVI4CWXUoDAPrDq3a87osvTd1LWV5ndVhoI0eb5c403';
 
         $frontend = rtrim(env('FRONTEND_URL', url('/')), '/'); // https://app.taearif.com
-        $url = $frontend . '/login?token=' . $plainTextToken;
-        // dd($url);
+        $url = $frontend . '/login?token=' . urlencode($Token);
 
         if ($request->filled('redirect')) {
             $url .= '&redirect=' . urlencode($request->query('redirect'));
