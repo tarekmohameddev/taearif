@@ -37,8 +37,7 @@ class ImpersonationController extends Controller
 
     public function consume(Request $request)
     {
-        // $token = $request->input('token');
-        $token = '680|6wDaloVI4CWXUoDAPrDq3a87osvTd1LWV5ndVhoI0eb5c403'; // Example token for testing
+        $token = $request->input('token');
         if (!$token) {
             return response()->json(['message' => 'Token required'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }

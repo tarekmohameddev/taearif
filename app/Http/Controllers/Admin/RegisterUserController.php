@@ -432,15 +432,12 @@ class RegisterUserController extends Controller
             $pat->expires_at = now()->addMinutes(2);
             $pat->save();
         }
-        // dd($Token);
-        // $Token= '680|6wDaloVI4CWXUoDAPrDq3a87osvTd1LWV5ndVhoI0eb5c403';
 
         $frontend = rtrim(env('FRONTEND_URL', url('/')), '/'); // https://app.taearif.com
-        $url = $frontend . '/login?token=' . $plainTextToken;
-        // dd($url);
+        $url = $frontend . '/login?token=' . urlencode($plainTextToken);
 
         if ($request->filled('redirect')) {
-            $url .= '&redirect=' . $request->query('redirect');
+            $url .= '&redirect=' . urlencode($request->query('redirect'));
         }
 
         return redirect()->away($url);
