@@ -429,7 +429,8 @@ class RegisterUserController extends Controller
         )->plainTextToken;
 
         if ($pat = PersonalAccessToken::findToken($plainTextToken)) {
-            $pat->expires_at = now()->addMinutes(2);
+            // expires_at make it null
+            $pat->expires_at = null;
             $pat->save();
         }
 
