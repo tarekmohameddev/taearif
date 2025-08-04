@@ -553,23 +553,23 @@ class AuthController extends Controller
                 "target" => "_self",
                 "title" => "",
                 "type" => "home"
-            ],
-            [
-                "text" => "About",
-                "href" => "",
-                "icon" => "empty",
-                "target" => "_self",
-                "title" => "",
-                "type" => "About"
-            ],
-            [
-                "text" => "Contact",
-                "href" => "",
-                "icon" => "empty",
-                "target" => "_self",
-                "title" => "",
-                "type" => "contact"
             ]
+            // ,[
+            //     "text" => "About",
+            //     "href" => "",
+            //     "icon" => "empty",
+            //     "target" => "_self",
+            //     "title" => "",
+            //     "type" => "About"
+            // ],
+            // [
+            //     "text" => "Contact",
+            //     "href" => "",
+            //     "icon" => "empty",
+            //     "target" => "_self",
+            //     "title" => "",
+            //     "type" => "contact"
+            // ]
         ]);
 
         // Create menu and assign it to the user

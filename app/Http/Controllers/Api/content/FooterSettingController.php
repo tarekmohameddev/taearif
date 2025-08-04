@@ -53,9 +53,9 @@ class FooterSettingController extends Controller
                         'title' => 'روابط سريعة',
                         'links' => [
                             ['id' => '1-1', 'text' => 'الرئيسية', 'url' => '/'],
-                            ['id' => '1-2', 'text' => 'من نحن', 'url' => '/about'],
-                            ['id' => '1-3', 'text' => 'خدماتنا', 'url' => '/services'],
-                            ['id' => '1-4', 'text' => 'اتصل بنا', 'url' => '/contact'],
+                            // ['id' => '1-2', 'text' => 'من نحن', 'url' => '/about'],
+                            // ['id' => '1-3', 'text' => 'خدماتنا', 'url' => '/services'],
+                            // ['id' => '1-4', 'text' => 'اتصل بنا', 'url' => '/contact'],
                         ],
                         'enabled' => true,
                     ],

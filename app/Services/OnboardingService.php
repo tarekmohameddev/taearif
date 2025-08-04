@@ -37,8 +37,8 @@ class OnboardingService extends Controller
                 'secondary' => '#3b82f6',
                 'accent' => '#93c5fd',
             ];
-            $logo = "logos/20fd8e4f-ecee-41f4-aaed-b5ebc71b3fcc.jpg";
-            $favicon = "logos/20fd8e4f-ecee-41f4-aaed-b5ebc71b3fcc.jpg";
+            $logo = "user-logo.jpeg";
+            $favicon = "favicon.png";
 
             // Basic settings
             $bss = BasicSetting::firstOrNew(['user_id' => $user->id]);
@@ -92,8 +92,8 @@ class OnboardingService extends Controller
     {
         $realEstateMenu = [
             ["text" => "الصفحة الرئيسية", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "home"],
-            ["text" => "اتصل بنا", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "contact"],
-            ["text" => "من نحن", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "about"]
+            // ["text" => "اتصل بنا", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "contact"],
+            // ["text" => "من نحن", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "about"]
         ];
 
         $menuJson = json_encode($realEstateMenu, JSON_UNESCAPED_UNICODE);
@@ -131,33 +131,34 @@ class OnboardingService extends Controller
                 "parent_id" => null,
                 "show_on_mobile" => true,
                 "show_on_desktop" => true,
-            ],
-            [
-                "text" => "من نحن",
-                "label" => "من نحن",
-                "type" => "about",
-                "url" => "/about",
-                "target" => "_self",
-                "is_external" => false,
-                "is_active" => true,
-                "order" => 2,
-                "parent_id" => null,
-                "show_on_mobile" => true,
-                "show_on_desktop" => true,
-            ],
-            [
-                "text" => "اتصل بنا",
-                "label" => "اتصل بنا",
-                "type" => "contact",
-                "url" => "/contact",
-                "target" => "_self",
-                "is_external" => false,
-                "is_active" => true,
-                "order" => 3,
-                "parent_id" => null,
-                "show_on_mobile" => true,
-                "show_on_desktop" => true,
-            ],
+            ]
+            // ,
+            // [
+            //     "text" => "من نحن",
+            //     "label" => "من نحن",
+            //     "type" => "about",
+            //     "url" => "/about",
+            //     "target" => "_self",
+            //     "is_external" => false,
+            //     "is_active" => true,
+            //     "order" => 2,
+            //     "parent_id" => null,
+            //     "show_on_mobile" => true,
+            //     "show_on_desktop" => true,
+            // ],
+            // [
+            //     "text" => "اتصل بنا",
+            //     "label" => "اتصل بنا",
+            //     "type" => "contact",
+            //     "url" => "/contact",
+            //     "target" => "_self",
+            //     "is_external" => false,
+            //     "is_active" => true,
+            //     "order" => 3,
+            //     "parent_id" => null,
+            //     "show_on_mobile" => true,
+            //     "show_on_desktop" => true,
+            // ],
         ];
 
         foreach ($defaultItems as $item) {
@@ -224,9 +225,9 @@ class OnboardingService extends Controller
                 "title" => "روابط سريعة",
                 "links" => [
                     ["id" => "1-1", "text" => "الرئيسية", "url" => "/"],
-                    ["id" => "1-2", "text" => "من نحن", "url" => "/about"],
-                    ["id" => "1-3", "text" => "خدماتنا", "url" => "/services"],
-                    ["id" => "1-4", "text" => "اتصل بنا", "url" => "/contact"],
+                    // ["id" => "1-2", "text" => "من نحن", "url" => "/about"],
+                    // ["id" => "1-3", "text" => "خدماتنا", "url" => "/services"],
+                    // ["id" => "1-4", "text" => "اتصل بنا", "url" => "/contact"],
                 ],
                 "enabled" => true,
             ],
