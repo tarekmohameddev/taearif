@@ -43,6 +43,15 @@ use App\Http\Controllers\Api\Customer\UserApiCustomerAppointmentController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
 use App\Http\Controllers\Api\ResetPasswordController;
 
+use App\Http\Controllers\Api\V1\Rms\{
+    RentalController,
+    ContractController,
+    InstallmentController,
+    MaintenanceController,
+    ReminderController,
+    RmsDashboardController
+};
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -337,5 +346,45 @@ Route::post('/isthara', [IstharaController::class, 'store']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/whatsapp/link', [WhatsappController::class, 'store']);
     Route::get('/whatsapp', [WhatsappController::class, 'index']);
+});
+
+
+
+
+Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+    Route::prefix('rms')->group(function () {
+
+        // Dashboard
+        Route::get('dashboard', [RmsDashboardController::class, 'index']);
+
+        // Rentals
+        Route::get('rentals', [RentalController::class, 'index']);
+        Route::post('rentals', [RentalController::class, 'store']);
+        Route::get('rentals/{id}', [RentalController::class, 'show']);
+        Route::patch('rentals/{id}', [RentalController::class, 'update']);
+        Route::delete('rentals/{id}', [RentalController::class, 'destroy']);
+
+        // Contracts
+        Route::post('rentals/{rentalId}/contracts', [ContractController::class, 'store']);
+        Route::patch('contracts/{id}', [ContractController::class, 'update']);
+        Route::post('contracts/{id}/terminate', [ContractController::class, 'terminate']);
+
+        // Installments
+        Route::get('installments', [InstallmentController::class, 'index']);
+        Route::patch('installments/{id}', [InstallmentController::class, 'update']);
+
+        // Maintenance
+        Route::get('maintenance', [MaintenanceController::class, 'index']);
+        Route::post('maintenance', [MaintenanceController::class, 'store']);
+        Route::get('maintenance/{id}', [MaintenanceController::class, 'show']);
+        Route::patch('maintenance/{id}', [MaintenanceController::class, 'update']);
+        Route::post('maintenance/{id}/status', [MaintenanceController::class, 'updateStatus']);
+        Route::delete('maintenance/{id}', [MaintenanceController::class, 'destroy']);
+
+        // Reminders
+        Route::get('reminders', [ReminderController::class, 'index']);
+        Route::post('reminders/{id}/dismiss', [ReminderController::class, 'dismiss']);
+        Route::post('reminders/{id}/snooze', [ReminderController::class, 'snooze']);
+    });
 });
 

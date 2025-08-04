@@ -43,6 +43,8 @@ use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryContro
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
 use App\Http\Controllers\Admin\TokenLoginController;
+use App\Http\Controllers\Admin\RegisterUserController;
+
 
 
 // ImpersonationController
@@ -154,8 +156,30 @@ use App\Http\Controllers\Admin\TokenLoginController;
 // Route::get('/auth/google', [GoogleAuthController::class, 'getGoogleAuthUrl'])->name('auth.google');
 // Route::get('/auth/google/callback', [GoogleAuthController::class, 'Callback']);
 
+////////////////////////////////////////
+// Admin side: must be logged in with the admin guard AND have the Gate ability
+Route::middleware(['auth:admin', 'can:impersonate-users'])->group(function () {
+    Route::get('admin/register/users/{user}/secret-login', [RegisterUserController::class, 'secretLogin'])
+        ->name('admin.register.user.secretLogin');
+});
+
+// Front side: consumes the signed URL and logs in the user on 'web' guard
+Route::get('/_impersonate/{user}', [ImpersonationController::class, 'consume'])
+    ->name('impersonate.consume')
+    ->middleware('signed');
+
+Route::post('/_impersonate/stop', [ImpersonationController::class, 'stop'])
+    ->name('impersonate.stop')
+    ->middleware('auth'); // default 'web' guard
+
+////////////////////////////////////////
+
+    Route::post('/impersonate/{user}',            [ImpersonationController::class, 'start']);
+    Route::post('/impersonate/{user}/revoke',     [ImpersonationController::class, 'stop']);
+    // Route::post('/impersonate/revoke-one',        [ImpersonationController::class, 'revokeOne']);
+
 // TokenLogin
-Route::get('/token-login', 'Admin\TokenLoginController@loginByToken')->name('login.by.token');
+Route::get('/login', 'Admin\TokenLoginController@loginByToken')->name('login.by.token');
 
 
 // get states by city

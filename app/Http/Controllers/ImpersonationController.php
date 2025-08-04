@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\PersonalAccessToken;
-
+use Illuminate\Support\Facades\Auth;
 class ImpersonationController extends Controller
 {
     /**
@@ -29,36 +29,37 @@ class ImpersonationController extends Controller
             ->createToken('impersonated-by-'.$admin->id, ['*'])
             ->plainTextToken;
 
-        Log::info("Admin {$admin->id} IMPERSONATE-START user {$user->id}");
-
         return response()->json([
             'impersonation_token' => $plainTextToken,
             'token_type'          => 'Bearer',
         ]);
     }
 
-    /**
-     * Revoke every impersonation token this admin issued for that user.
-     *
-     * Route: POST /api/impersonate/{user}/revoke
-     * Guard: auth:sanctum  (admin’s Bearer token again)
-     */
-    public function stop(Request $request, User $user)
+    public function consume(Request $request)
     {
-        $admin = $request->user();
+        $token = $request->input('token');
+        if (!$token) {
+            return response()->json(['message' => 'Token required'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
-        $deleted = $user->tokens()
-            ->where('name', 'like', 'impersonated-by-'.$admin->id.'%')
-            ->delete();
+        $pat = PersonalAccessToken::findToken($token);
+        if (!$pat) {
+            return response()->json(['message' => 'Invalid token'], Response::HTTP_UNAUTHORIZED);
+        }
 
-        Log::info("Admin {$admin->id} IMPERSONATE-STOP  user {$user->id} — {$deleted} token(s) revoked");
+        $user = $pat->tokenable;
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_UNAUTHORIZED);
+        }
 
+        Auth::guard('web')->login($user, false);
+        $request->session()->regenerate();
 
-        return response()->json([
-            'revoked_tokens' => $deleted,
-            'message'        => 'Impersonation ended — use your admin token again.',
-        ]);
+        $pat->delete();
+
+        return response()->json(['ok' => true]);
     }
+
 
     /**
      * (Optional helper) Revoke one specific token if the client sends it back.

@@ -2,42 +2,43 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Constants\Constant;
 use Hash;
 use Session;
 use Validator;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Package;
+use App\Models\UserStep;
 use App\Models\User\Menu;
 use App\Models\Membership;
+use App\Constants\Constant;
 use App\Models\BasicSetting;
 use Illuminate\Http\Request;
 use App\Models\BasicExtended;
 use App\Models\User\Language;
+use App\Http\Helpers\Uploader;
 use App\Models\OfflineGateway;
 use App\Models\PaymentGateway;
+use App\Models\User\UserVcard;
 use App\Http\Helpers\MegaMailer;
 use App\Models\User\HomeSection;
 use App\Models\User\HomePageText;
+use Illuminate\Support\Facades\DB;
 use App\Models\User\UserPermission;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use App\Http\Controllers\Controller;
-use App\Http\Helpers\Uploader;
 use App\Models\User\UserShopSetting;
+use App\Services\UserPackageService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use App\Models\User\UserEmailTemplate;
 use Illuminate\Support\Facades\Config;
 use App\Models\User\UserPaymentGeteway;
+use Laravel\Sanctum\PersonalAccessToken;
 use App\Http\Helpers\UserPermissionHelper;
 use PhpOffice\PhpSpreadsheet\Calculation\Web;
 use App\Models\User\BasicSetting as UserBasicSetting;
-use App\Models\User\UserVcard;
-use Illuminate\Support\Facades\DB;
-use App\Models\UserStep;
-use Illuminate\Support\Facades\Log;
-use Laravel\Sanctum\PersonalAccessToken;
-use App\Services\UserPackageService;
 
 
 class RegisterUserController extends Controller
@@ -418,18 +419,32 @@ class RegisterUserController extends Controller
     /**
      * Generate invoice for membership
      */
-    public function secretLogin($id)
+    public function secretLogin(Request $request, User $user)
     {
-        $admin = auth()->user();
-        $user  = User::findOrFail($id);
+        $admin = auth('admin')->user();
 
-        $plainTextToken = $user
-            ->createToken("impersonated-by-{$admin->id}", ['*'])
-            ->plainTextToken;
+        $plainTextToken = $user->createToken(
+            "impersonated-by-{$admin->id}",
+            ['impersonate']
+        )->plainTextToken;
 
-        // Hard‑code the URL instead of using a named route:
-        return redirect("/token-login?token={$plainTextToken}");
+        if ($pat = PersonalAccessToken::findToken($plainTextToken)) {
+            // expires_at make it null
+            $pat->expires_at = null;
+            $pat->save();
+        }
+
+        $frontend = rtrim(env('FRONTEND_URL', url('/')), '/'); // https://app.taearif.com
+        $url = $frontend . '/login?token=' . urlencode($plainTextToken);
+
+        if ($request->filled('redirect')) {
+            $url .= '&redirect=' . urlencode($request->query('redirect'));
+        }
+
+        return redirect()->away($url);
     }
+
+
 
 
     public function userban(Request $request)

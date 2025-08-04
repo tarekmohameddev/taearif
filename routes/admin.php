@@ -251,7 +251,7 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('register/users/vcard/delete', 'Admin\UsersVcardsController@destroy')->name('register.user.vcard.delete');
 
         // TokenLogin
-        Route::get('register/user/{id}/secret-login', 'Admin\RegisterUserController@secretLogin')->name('register.user.secretLogin');
+        // Route::get('register/user/{id}/secret-login', 'Admin\RegisterUserController@secretLogin')->name('register.user.secretLogin');
     });
 
     Route::group(['middleware' => 'checkpermission:FAQ Management'], function () {
