@@ -172,6 +172,7 @@ public function handleWhatsappWebhook(Request $request)
             // Save to inquiry table
             $inquiry = ApiCustomerInquiry::create([
                 'user_id'        => $userId,
+                'customer_id' => $customer->id,
                 'phone_number'   => $whatsappNumber,
                 'message'        => $message,
                 'inquiry_type'   => $inquiryType,
