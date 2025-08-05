@@ -497,14 +497,14 @@ class FrontendController extends Controller
             return redirect()->route('front.index');
         }
         $package = UserPermissionHelper::userPackage($user->id);
-        if (is_null($package)) {
-            Session::flash('warning', 'User membership is expired');
-            if (Auth::check()) {
-                return redirect()->route('user-dashboard')->with('error', 'User membership is expired');
-            } else {
-                return redirect()->route('front.user.view');
-            }
-        }
+        // if (is_null($package)) {
+        //     Session::flash('warning', 'User membership is expired');
+        //     if (Auth::check()) {
+        //         return redirect()->route('user-dashboard')->with('error', 'User membership is expired');
+        //     } else {
+        //         return redirect()->route('front.user.view');
+        //     }
+        // }
         if (session()->has('user_lang')) {
             $userCurrentLang = UserLanguage::where('code', session()->get('user_lang'))->where('user_id', $user->id)->first();
             if (empty($userCurrentLang)) {

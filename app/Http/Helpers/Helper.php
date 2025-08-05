@@ -334,13 +334,13 @@ if (!function_exists('getUser')) {
                 $user = User::where('username', $username)
                     ->where('online_status', 1)
                     ->where('status', 1)
-                    ->whereHas('memberships', function ($q) {
-                        $q->where('status', '=', 1)
-                            ->where('start_date', '<=', Carbon::now()->format('Y-m-d'))
-                            ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'));
-                    })
+                    // ->whereHas('memberships', function ($q) {
+                    //     $q->where('status', '=', 1)
+                    //         ->where('start_date', '<=', Carbon::now()->format('Y-m-d'))
+                    //         ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'));
+                    // })
                     ->first();
-
+// dd($user);
                 //if user expired
                 if (!$user) {
                     abort(404);
@@ -374,11 +374,12 @@ if (!function_exists('getUser')) {
                     });
                 // fetch the custom domain , if it matches 'with www.' URL or 'without www.' URL
             })
-            ->whereHas('memberships', function ($q) {
-                $q->where('status', '=', 1)
-                    ->where('start_date', '<=', Carbon::now()->format('Y-m-d'))
-                    ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'));
-            })->first();
+            // ->whereHas('memberships', function ($q) {
+            //     $q->where('status', '=', 1)
+            //         ->where('start_date', '<=', Carbon::now()->format('Y-m-d'))
+            //         ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'));
+            // })
+            ->first();
 
         if (!$user) {
             return view('errors.404');
@@ -493,11 +494,11 @@ if (!function_exists('getUser')) {
             $user = User::where('username', $username)
                 ->where('online_status', 1)
                 ->where('status', 1)
-                ->whereHas('memberships', function ($q) {
-                    $q->where('status', '=', 1)
-                        ->where('start_date', '<=', Carbon::now()->format('Y-m-d'))
-                        ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'));
-                })
+                // ->whereHas('memberships', function ($q) {
+                //     $q->where('status', '=', 1)
+                //         ->where('start_date', '<=', Carbon::now()->format('Y-m-d'))
+                //         ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'));
+                // })
                 ->firstOrFail();
             // if the current url is a subdomain
             if ($host != env('WEBSITE_HOST')) {
@@ -519,11 +520,12 @@ if (!function_exists('getUser')) {
                         ->orWhere('requested_domain', '=', str_replace("www.", "", $host));
                     // fetch the custom domain , if it matches 'with www.' URL or 'without www.' URL
                 })
-                ->whereHas('memberships', function ($q) {
-                    $q->where('status', '=', 1)
-                        ->where('start_date', '<=', Carbon::now()->format('Y-m-d'))
-                        ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'));
-                })->firstOrFail();
+                // ->whereHas('memberships', function ($q) {
+                //     $q->where('status', '=', 1)
+                //         ->where('start_date', '<=', Carbon::now()->format('Y-m-d'))
+                //         ->where('expire_date', '>=', Carbon::now()->format('Y-m-d'));
+                // })
+                ->firstOrFail();
             if (!cPackageHasCdomain($user)) {
                 return view('errors.404');
             }
