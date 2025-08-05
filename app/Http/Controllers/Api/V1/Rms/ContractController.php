@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Api\V1\Rms;
 
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Api\Rms\RmContract;
+use App\Http\Controllers\Controller;
 use App\Services\Rms\ContractService;
 
 class ContractController extends Controller
@@ -13,6 +14,16 @@ class ContractController extends Controller
     public function __construct(ContractService $contractService)
     {
         $this->contractService = $contractService;
+    }
+
+    public function listByRental($rentalId)
+    {
+        $contracts = RmContract::where('rental_id', $rentalId)
+            ->select('id', 'contract_number', 'start_date', 'end_date', 'status')
+            ->orderBy('start_date')
+            ->get();
+
+        return response()->json(['status' => true, 'data' => $contracts]);
     }
 
     public function store(Request $request, $rentalId)

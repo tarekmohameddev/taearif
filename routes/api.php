@@ -365,6 +365,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::delete('rentals/{id}', [RentalController::class, 'destroy']);
 
         // Contracts
+        Route::get('rentals/{rentalId}/contracts', [ContractController::class, 'listByRental']);
         Route::post('rentals/{rentalId}/contracts', [ContractController::class, 'store']);
         Route::patch('contracts/{id}', [ContractController::class, 'update']);
         Route::post('contracts/{id}/terminate', [ContractController::class, 'terminate']);
@@ -372,6 +373,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         // Installments
         Route::get('installments', [InstallmentController::class, 'index']);
         Route::patch('installments/{id}', [InstallmentController::class, 'update']);
+        Route::post('rentals/{rentalId}/installments/regenerate', [InstallmentController::class, 'regenerate']);
 
         // Maintenance
         Route::get('maintenance', [MaintenanceController::class, 'index']);

@@ -61,7 +61,18 @@ class LanguageController extends Controller
         if ($lang) {
             $menu = new Menu();
             $menu->language_id = $lang->id;
-            $menu->menus = '[{"text":"Home","href":"","icon":"empty","target":"_self","title":"","type":"home"},{"text":"Listings","href":"","icon":"empty","target":"_self","title":"","type":"listings"},{"text":"Pricing","href":"","icon":"empty","target":"_self","title":"","type":"pricing"},{"text":"Blog","href":"","icon":"empty","target":"_self","title":"","type":"blog"},{"type":"faq","text":"FAQ","href":"","target":"_self"},{"text":"Contact","href":"","icon":"empty","target":"_self","title":"","type":"contact"},{"text":"Templates","href":"","icon":"empty","target":"_self","title":"","type":"custom","children":[{"text":"Website Templates","href":"","icon":"empty","target":"_self","title":"","type":"templates"},{"text":"vCards Templates","href":"","icon":"empty","target":"_self","title":"","type":"vcards"}]}]';
+            $menu->menus = '[
+            {"text":"Home","href":"","icon":"empty","target":"_self","title":"","type":"home"},
+            {"text":"Listings","href":"","icon":"empty","target":"_self","title":"","type":"listings"},
+            {"text":"Pricing","href":"","icon":"empty","target":"_self","title":"","type":"pricing"},
+            // {"text":"Blog","href":"","icon":"empty","target":"_self","title":"","type":"blog"},
+            {"type":"faq","text":"FAQ","href":"","target":"_self"},
+            // {"text":"Contact","href":"","icon":"empty","target":"_self","title":"","type":"contact"},
+            {"text":"Templates","href":"","icon":"empty","target":"_self","title":"","type":"custom","children":[
+                {"text":"Website Templates","href":"","icon":"empty","target":"_self","title":"","type":"templates"},
+                {"text":"vCards Templates","href":"","icon":"empty","target":"_self","title":"","type":"vcards"}
+            ]}
+            ]';
             $menu->save();
         }
 
@@ -331,7 +342,7 @@ class LanguageController extends Controller
 
     public function editKeyword($id)
     {
-        
+
         if ($id > 0) {
             $la = Language::findOrFail($id);
             $json = file_get_contents(resource_path('lang/') . $la->code . '.json');

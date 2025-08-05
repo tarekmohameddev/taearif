@@ -208,40 +208,40 @@ class RegisterUserController extends Controller
         $menus = '[
             {"text":"Home","href":"","icon":"empty","target":"_self","title":"","type":"home"},
 
-            {"text":"About","href":"","icon":"empty","target":"_self","title":"","type":"custom","children":[{"text":"Team","href":"","icon":"empty","target":"_self","title":"","type":"team"},
+            // {"text":"About","href":"","icon":"empty","target":"_self","title":"","type":"custom","children":[{"text":"Team","href":"","icon":"empty","target":"_self","title":"","type":"team"},
             {"text":"Career","href":"","icon":"empty","target":"_self","title":"","type":"career"},
             {"text":"FAQ","href":"","icon":"empty","target":"_self","title":"","type":"faq"}]},
 
             {"text":"Services","href":"","icon":"empty","target":"_self","title":"","type":"services"},
             {"text":"Portfolios","href":"","icon":"empty","target":"_self","title":"","type":"portfolios"},
             {"type":"shop","text":"Shop","href":"","target":"_self"},
-            {"text":"Blog","href":"","icon":"empty","target":"_self","title":"","type":"blog"},
-            {"text":"Contact","href":"","icon":"empty","target":"_self","title":"","type":"contact"}]';
+            // {"text":"Blog","href":"","icon":"empty","target":"_self","title":"","type":"blog"},
+            // {"text":"Contact","href":"","icon":"empty","target":"_self","title":"","type":"contact"}]';
 
         $menus = json_decode($menus, true);
         foreach (array_column($menus, 'text')  as $key => $menu) {
             if ($menu == 'Home' && array_key_exists($menu, $deLanguageNames)) {
                 $menus[$key]['text'] = $deLanguageNames[$menu];
             }
-            if ($menu == 'About') {
-                $menus[$key]['text'] = array_key_exists('About', $deLanguageNames) ? $deLanguageNames['About'] : 'About';
-                //if children manus exits
-                if (count($menus[$key]['children']) > 0) {
-                    $arrays = $menus[$key]['children'];
-                    foreach (array_column($arrays, 'text')  as $k => $value) {
-                        if ($value == 'Team' && array_key_exists($value, $deLanguageNames)) {
-                            $menus[$key]['children'][$k]['text'] = $deLanguageNames[$value];
-                        }
-                        if ($value == 'Career' && array_key_exists($value, $deLanguageNames)) {
-                            $menus[$key]['children'][$k]['text'] = $deLanguageNames[$value];
-                        }
-                        if ($value == 'FAQ' && array_key_exists($value, $deLanguageNames)) {
-                            $menus[$key]['children'][$k]['text'] = $deLanguageNames[$value];
-                        }
-                    }
-                }
-                //end children manus exits
-            }
+            // if ($menu == 'About') {
+            //     $menus[$key]['text'] = array_key_exists('About', $deLanguageNames) ? $deLanguageNames['About'] : 'About';
+            //     //if children manus exits
+            //     if (count($menus[$key]['children']) > 0) {
+            //         $arrays = $menus[$key]['children'];
+            //         foreach (array_column($arrays, 'text')  as $k => $value) {
+            //             if ($value == 'Team' && array_key_exists($value, $deLanguageNames)) {
+            //                 $menus[$key]['children'][$k]['text'] = $deLanguageNames[$value];
+            //             }
+            //             if ($value == 'Career' && array_key_exists($value, $deLanguageNames)) {
+            //                 $menus[$key]['children'][$k]['text'] = $deLanguageNames[$value];
+            //             }
+            //             if ($value == 'FAQ' && array_key_exists($value, $deLanguageNames)) {
+            //                 $menus[$key]['children'][$k]['text'] = $deLanguageNames[$value];
+            //             }
+            //         }
+            //     }
+            //     //end children manus exits
+            // }
             if ($menu == 'Services' && array_key_exists($menu, $deLanguageNames)) {
                 $menus[$key]['text'] = $deLanguageNames[$menu];
             }

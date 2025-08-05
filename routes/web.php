@@ -1,33 +1,33 @@
 <?php
 
 // use App\Models\Sale;
-use Spatie\Analytics\Period;
-use Admin\ItemOrderController;
-use Illuminate\Support\Carbon;
+// use Spatie\Analytics\Period;
+// use Admin\ItemOrderController;
+// use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Session;
-use App\Services\GoogleAnalyticsService;
-use App\Http\Controllers\Front\RoomBooking;
+// use Illuminate\Support\Facades\Session;
+// use App\Services\GoogleAnalyticsService;
+// use App\Http\Controllers\Front\RoomBooking;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\CRM\SaleController;
-use App\Http\Controllers\CRM\SalesController;
+// use App\Http\Controllers\CRM\SalesController;
 use App\Http\Controllers\CRM\BookingController;
 use App\Http\Controllers\User\RegionController;
-use App\Http\Controllers\CRM\ContractsController;
+// use App\Http\Controllers\CRM\ContractsController;
 use App\Http\Controllers\ImpersonationController;
-use App\Http\Controllers\Front\CustomerController;
+// use App\Http\Controllers\Front\CustomerController;
 // CRM
-use App\Http\Controllers\User\PortfolioController;
-use App\Http\Controllers\Auth\GoogleAuthController;
-use App\Http\Controllers\CRM\CustcrmomerController;
+// use App\Http\Controllers\User\PortfolioController;
+// use App\Http\Controllers\Auth\GoogleAuthController;
+// use App\Http\Controllers\CRM\CustcrmomerController;
 use App\Http\Controllers\CRM\ReservationController;
 use App\Http\Controllers\TenantDashboardController;
 use App\Http\Controllers\User\OnboardingController;
 use App\Http\Controllers\CRM\PaymentRecordController;
-use App\Http\Controllers\Front\ApiCustomerController;
-use App\Http\Controllers\CRM\PaymentRecordsController;
-use App\Http\Controllers\User\HotelBooking\RoomController;
-use User\CourseManagement\Instructor\InstructorController;
+// use App\Http\Controllers\Front\ApiCustomerController;
+// use App\Http\Controllers\CRM\PaymentRecordsController;
+// use App\Http\Controllers\User\HotelBooking\RoomController;
+// use User\CourseManagement\Instructor\InstructorController;
 use App\Http\Controllers\User\HotelBooking\RoomManagementController;
 
 use App\Http\Controllers\Front\ProjectController as FrontProjectController;
@@ -42,7 +42,7 @@ use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryControl
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
-use App\Http\Controllers\Admin\TokenLoginController;
+// use App\Http\Controllers\Admin\TokenLoginController;
 use App\Http\Controllers\Admin\RegisterUserController;
 
 
