@@ -37,4 +37,23 @@ class InstallmentController extends Controller
 
         return response()->json(['status' => true, 'data' => $updated]);
     }
+
+    // regenerate
+    public function regenerate(Request $request, $rentalId)
+    {
+        try {
+            $this->installmentService->regenerateSchedule($rentalId, auth()->id());
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Installment schedule regenerated successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
 }

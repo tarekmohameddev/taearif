@@ -95,17 +95,22 @@ class InstallmentService
 
     public function regenerateSchedule($rentalId, $userId)
     {
-        $rental = \App\Models\RmRental::where('id', $rentalId)->where('user_id', $userId)->firstOrFail();
-        $contract = $rental->contracts()->where('status', 'active')->first();
+        $rental = RmRental::where('id', $rentalId)
+            ->where('user_id', $userId)
+            ->firstOrFail();
+
+        $contract = $rental->contracts()
+            ->where('status', 'active')
+            ->first();
 
         if (!$contract) {
             throw new \Exception("No active contract found for this rental.");
         }
 
-        RmPaymentInstallment::where('contract_id', $contract->id)
-            ->where('status', 'pending')
-            ->delete();
+        // Delete all installments for this contract
+        RmPaymentInstallment::where('contract_id', $contract->id)->delete();
 
         $this->generateSchedule($contract);
     }
+
 }

@@ -365,9 +365,9 @@ class CheckoutController extends Controller
                     {"text":"Career","href":"","icon":"empty","target":"_self","title":"","type":"career"},
                     {"text":"FAQ","href":"","icon":"empty","target":"_self","title":"","type":"faq"}
                 ]},
-                {"text":"Services","href":"","icon":"empty","target":"_self","title":"","type":"services"},
-                {"text":"Blog","href":"","icon":"empty","target":"_self","title":"","type":"blog"},
-                {"text":"Contact","href":"","icon":"empty","target":"_self","title":"","type":"contact"}
+                // {"text":"Services","href":"","icon":"empty","target":"_self","title":"","type":"services"},
+                // {"text":"Blog","href":"","icon":"empty","target":"_self","title":"","type":"blog"},
+                // {"text":"Contact","href":"","icon":"empty","target":"_self","title":"","type":"contact"}
             ]';
 
             $menus_ar = '[
@@ -377,9 +377,9 @@ class CheckoutController extends Controller
                     {"text":"Career","href":"","icon":"empty","target":"_self","title":"","type":"career"},
                     {"text":"FAQ","href":"","icon":"empty","target":"_self","title":"","type":"faq"}
                 ]},
-                {"text":"Services","href":"","icon":"empty","target":"_self","title":"","type":"services"},
-                {"text":"Blog","href":"","icon":"empty","target":"_self","title":"","type":"blog"},
-                {"text":"Contact","href":"","icon":"empty","target":"_self","title":"","type":"contact"}
+                // {"text":"Services","href":"","icon":"empty","target":"_self","title":"","type":"services"},
+                // {"text":"Blog","href":"","icon":"empty","target":"_self","title":"","type":"blog"},
+                // {"text":"Contact","href":"","icon":"empty","target":"_self","title":"","type":"contact"}
             ]';
 
             $menus = json_decode($menus, true);
@@ -387,16 +387,16 @@ class CheckoutController extends Controller
                 if ($menu == 'Home' && array_key_exists($menu, $deLanguageNames)) {
                     $menus[$key]['text'] = $deLanguageNames[$menu];
                 }
-                if ($menu == 'About') {
-                    $menus[$key]['text'] = array_key_exists('About', $deLanguageNames) ? $deLanguageNames['About'] : 'About';
-                    if (isset($menus[$key]['children']) && count($menus[$key]['children']) > 0) {
-                        foreach (array_column($menus[$key]['children'], 'text') as $k => $value) {
-                            if (in_array($value, ['Team', 'Career', 'FAQ']) && array_key_exists($value, $deLanguageNames)) {
-                                $menus[$key]['children'][$k]['text'] = $deLanguageNames[$value];
-                            }
-                        }
-                    }
-                }
+                // if ($menu == 'About') {
+                //     $menus[$key]['text'] = array_key_exists('About', $deLanguageNames) ? $deLanguageNames['About'] : 'About';
+                //     if (isset($menus[$key]['children']) && count($menus[$key]['children']) > 0) {
+                //         foreach (array_column($menus[$key]['children'], 'text') as $k => $value) {
+                //             if (in_array($value, ['Team', 'Career', 'FAQ']) && array_key_exists($value, $deLanguageNames)) {
+                //                 $menus[$key]['children'][$k]['text'] = $deLanguageNames[$value];
+                //             }
+                //         }
+                //     }
+                // }
                 if (in_array($menu, ['Services','Blog', 'Contact']) && array_key_exists($menu, $deLanguageNames)) {
                     $menus[$key]['text'] = $deLanguageNames[$menu];
                 }
@@ -407,16 +407,16 @@ class CheckoutController extends Controller
                 if ($menu == 'Home' && array_key_exists($menu, $deLanguageNames_arabic)) {
                     $menus_arabic[$key]['text'] = $deLanguageNames_arabic[$menu];
                 }
-                if ($menu == 'About') {
-                    $menus_arabic[$key]['text'] = array_key_exists('About', $deLanguageNames_arabic) ? $deLanguageNames_arabic['About'] : 'About';
-                    if (isset($menus_arabic[$key]['children']) && count($menus_arabic[$key]['children']) > 0) {
-                        foreach (array_column($menus_arabic[$key]['children'], 'text') as $k => $value) {
-                            if (in_array($value, ['Team', 'Career', 'FAQ']) && array_key_exists($value, $deLanguageNames_arabic)) {
-                                $menus_arabic[$key]['children'][$k]['text'] = $deLanguageNames_arabic[$value];
-                            }
-                        }
-                    }
-                }
+                // if ($menu == 'About') {
+                //     $menus_arabic[$key]['text'] = array_key_exists('About', $deLanguageNames_arabic) ? $deLanguageNames_arabic['About'] : 'About';
+                //     if (isset($menus_arabic[$key]['children']) && count($menus_arabic[$key]['children']) > 0) {
+                //         foreach (array_column($menus_arabic[$key]['children'], 'text') as $k => $value) {
+                //             if (in_array($value, ['Team', 'Career', 'FAQ']) && array_key_exists($value, $deLanguageNames_arabic)) {
+                //                 $menus_arabic[$key]['children'][$k]['text'] = $deLanguageNames_arabic[$value];
+                //             }
+                //         }
+                //     }
+                // }
                 if (in_array($menu, ['Services','Blog', 'Contact']) && array_key_exists($menu, $deLanguageNames_arabic)) {
                     $menus_arabic[$key]['text'] = $deLanguageNames_arabic[$menu];
                 }
