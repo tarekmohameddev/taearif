@@ -43,13 +43,14 @@ use App\Http\Controllers\Api\Customer\UserApiCustomerAppointmentController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
 use App\Http\Controllers\Api\ResetPasswordController;
 
-use App\Http\Controllers\Api\V1\Rms\{
-    RentalController,
-    ContractController,
-    InstallmentController,
-    MaintenanceController,
-    ReminderController,
-    RmsDashboardController
+use App\Http\Controllers\Api\V1\{
+    CustomerInquiryController,
+    Rms\RentalController,
+    Rms\ContractController,
+    Rms\InstallmentController,
+    Rms\MaintenanceController,
+    Rms\ReminderController,
+    Rms\RmsDashboardController
 };
 
 /*
@@ -349,8 +350,6 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
-
-
 Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::prefix('rms')->group(function () {
 
@@ -388,5 +387,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('reminders/{id}/dismiss', [ReminderController::class, 'dismiss']);
         Route::post('reminders/{id}/snooze', [ReminderController::class, 'snooze']);
     });
+
+    // ApiCustomerInquiry
+    Route::get('/inquiry', [CustomerInquiryController::class, 'index']);
+
 });
 
