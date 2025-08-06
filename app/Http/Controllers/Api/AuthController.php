@@ -536,7 +536,7 @@ class AuthController extends Controller
         }
 
         // Update message to null
-        $user->message = "null";
+        $user->message = null;
         $user->save();
 
         return response()->json(['message' => 'Message marked as read']);
