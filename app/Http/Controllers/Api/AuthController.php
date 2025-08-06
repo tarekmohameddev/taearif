@@ -505,7 +505,7 @@ class AuthController extends Controller
                 'membership' => $membershipDetails,
                 'is_free_plan' => $isFreePlan,
                 'has_active_membership' => !$isExpired && $membership && $membership->status == 1,
-                'message' => $user->message ?? null,
+                'message' => $user->message,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
                 'domain' => $domain ? $domain->custom_name : "https://{$user->username}.taearif.com/",
