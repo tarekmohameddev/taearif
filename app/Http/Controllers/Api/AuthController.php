@@ -317,7 +317,6 @@ class AuthController extends Controller
             // $this->sendWhatsAppMessage($user->phone ?? 'default_phone', $message);
 
             $user['onboarding_completed'] = false;
-
             return response()->json([
                 'status' => 'success',
                 'user' => $user,
@@ -718,6 +717,7 @@ class AuthController extends Controller
                 "</a>";
             $user = User::where('username', $request['username']);
 
+            $welcome_message = 'شكراً على التسجيل في منصة تعاريف انت الآن على الباقة المميزة لمدة شهر';
             if ($user->count() == 0) {
                 $user = User::create([
                     'first_name' => $request['first_name'],
@@ -728,6 +728,7 @@ class AuthController extends Controller
                     'username' => $request['username'],
                     'password' => bcrypt($password),
                     'status' => $request["status"],
+                    'message' => $welcome_message,
                     'address' => $request["address"] ? $request["address"] : null,
                     'city' => $request["city"] ? $request["city"] : null,
                     'state' => $request["district"] ? $request["district"] : null,
