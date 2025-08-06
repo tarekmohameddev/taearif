@@ -68,7 +68,7 @@ class ApiSideMenusController extends Controller
                 'title' => 'crm',
                 'description' => 'تكوين اعدادات ادارة علاقات العملاء',
                 'icon' => 'web-settings',
-                'path' => '/settings',
+                'path' => '/crm',
             ]
         ];
 
@@ -93,14 +93,14 @@ class ApiSideMenusController extends Controller
             }
 
             // You can add more conditional checks here for other modules
-            if (!empty($package->features) && str_contains($package->features, 'Blog')) {
-                $sections[] = [
-                    'title' => 'المدونة',
-                    'description' => 'ادارة المدونة',
-                    'icon' => 'blog',
-                    'path' => '/blog',
-                ];
-            }
+            // if (!empty($package->features) && str_contains($package->features, 'Blog')) {
+            //     $sections[] = [
+            //         'title' => 'المدونة',
+            //         'description' => 'ادارة المدونة',
+            //         'icon' => 'blog',
+            //         'path' => '/blog',
+            //     ];
+            // }
         }
 
         $sections[] = [
