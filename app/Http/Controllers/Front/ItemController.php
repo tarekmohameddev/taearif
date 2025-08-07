@@ -138,6 +138,9 @@ class ItemController extends Controller
     }
     public function cart($domain)
     {
+        // return to home  front.user.detail.view
+        return view('front.user.detail.view');
+
         $user = getUser();
         $userShop = UserShopSetting::where('user_id', $user->id)->first();
         if (!empty($userShop) && ($userShop->is_shop == 0 || $userShop->catalog_mode == 1)) {
