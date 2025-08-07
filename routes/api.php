@@ -42,6 +42,7 @@ use App\Http\Controllers\Api\Customer\UserApiCustomerReminderController;
 use App\Http\Controllers\Api\Customer\UserApiCustomerAppointmentController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
 use App\Http\Controllers\Api\ResetPasswordController;
+use App\Http\Controllers\Api\property\ApiPropertyRequestController;
 
 use App\Http\Controllers\Api\V1\{
     CustomerInquiryController,
@@ -391,5 +392,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     // ApiCustomerInquiry
     Route::get('/inquiry', [CustomerInquiryController::class, 'index']);
 
+    // ApiPropertyRequestController
+    Route::get('/property-requests', [ApiPropertyRequestController::class, 'index']);
+    Route::post('/property-requests', [ApiPropertyRequestController::class, 'store']);
 });
 

@@ -28,22 +28,22 @@ use App\Http\Controllers\CRM\PaymentRecordController;
 // use App\Http\Controllers\CRM\PaymentRecordsController;
 // use App\Http\Controllers\User\HotelBooking\RoomController;
 // use User\CourseManagement\Instructor\InstructorController;
+use App\Http\Controllers\Admin\RegisterUserController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyRequestController;
 use App\Http\Controllers\User\HotelBooking\RoomManagementController;
-
 use App\Http\Controllers\Front\ProjectController as FrontProjectController;
 use App\Http\Controllers\Front\PropertyController as FrontPropertyController;
+// use Google\Service\Analytics;
 use App\Http\Controllers\User\RealestateManagement\ManageProject\TypeController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CityController;
-// use Google\Service\Analytics;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\StateController;
 use App\Http\Controllers\User\RealestateManagement\ManageProject\ProjectController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\AmenityController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CountryController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryController;
+// use App\Http\Controllers\Admin\TokenLoginController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
-// use App\Http\Controllers\Admin\TokenLoginController;
-use App\Http\Controllers\Admin\RegisterUserController;
 
 
 
@@ -1852,6 +1852,11 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
     // });
     // Route::group(['middleware' => ['routeAccess:Real Estate']], function () {
     // Properties route
+    Route::prefix('property-requests')->middleware(['web'])->group(function () {
+        Route::get('/create', [PropertyRequestController::class, 'create'])->name('front.user.property-requests.create');
+        Route::post('/store', [PropertyRequestController::class, 'store'])->name('front.user.property-requests.store');
+    });
+
     Route::controller(FrontPropertyController::class)->group(function () {
         Route::get('/properties', 'index')->name('front.user.properties');
         Route::get('/property/{slug}', 'details')->name('front.user.property.details');
