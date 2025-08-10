@@ -40,7 +40,7 @@ class UserPackageService
 {
     public function changeCurrentPackage(Request $request)
     {
-        Log::info('here');
+        Log::info('here UserPackageService');
         $userId = $request->user_id;
         log::info('Changing current package for user ID: ' . $userId);
         $user = User::findOrFail($userId);
@@ -149,7 +149,7 @@ class UserPackageService
             'trial_days' => 0,
         ]);
 
-        
+
 
         Session::flash('success', 'Current Package has been added successfully!');
         return back();

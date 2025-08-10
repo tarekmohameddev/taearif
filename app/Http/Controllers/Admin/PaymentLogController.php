@@ -26,7 +26,7 @@ class PaymentLogController extends Controller
         $abs = BasicSetting::first();
         Config::set('app.timezone', $abs->timezone);
     }
-    
+
     public function index(Request $request)
     {
         $search = $request->search;
@@ -167,7 +167,7 @@ class PaymentLogController extends Controller
                     $previousMembership->save();
                 }
             }
-            
+
             if ($count_membership > 1) {
 
                 $mailTemplate = 'payment_accepted_for_membership_extension_offline_gateway';
