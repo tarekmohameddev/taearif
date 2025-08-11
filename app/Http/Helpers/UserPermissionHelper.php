@@ -52,6 +52,7 @@ class UserPermissionHelper
         ])->first();
         return isset($currentPackage) ? Package::query()->findOrFail($currentPackage->package_id) : null;
     }
+
     public static function userPackage(int $userId)
     {
         $bs = BasicSetting::first();
