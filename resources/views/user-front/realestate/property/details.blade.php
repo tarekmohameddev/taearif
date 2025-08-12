@@ -42,43 +42,94 @@
     'use-strict'
     // Product single slider
     var proSingleThumbs = new Swiper(".slider-thumbnails", {
-        loop: true,
-        spaceBetween: 20,
-        slidesPerView: 3
+    loop: true,
+    spaceBetween: 12,
+    slidesPerView: 3,
+    breakpoints: {
+        576: { slidesPerView: 4, spaceBetween: 16 },
+        992: { slidesPerView: 5, spaceBetween: 20 },
+    },
     });
+
     var proSingleSlider = new Swiper(".product-single-slider", {
-        loop: false,
-        spaceBetween: 30,
-        // Navigation arrows
-        navigation: {
-            nextEl: ".slider-btn-next",
-            prevEl: ".slider-btn-prev",
-        },
-        thumbs: {
-            swiper: proSingleThumbs,
-        },
+    loop: false,
+    spaceBetween: 16,
+    autoHeight: true, // <-- key to remove leftover gap
+    navigation: {
+        nextEl: ".slider-btn-next",
+        prevEl: ".slider-btn-prev",
+    },
+    thumbs: { swiper: proSingleThumbs },
     });
+
+
 </script>
 
 @endsection
 @endif
 @include('user-front.realestate.partials.header.header-pages')
 <style>
+/* Keep desktop defaults as-is if you want */
+/* MOBILE FIXES */
+@media (max-width: 991.98px) {
+  /* 1) Remove hard-coded heights/offsets */
+  .product-single .product-single-slider { height: auto !important; }
+  .product-single .slider-thumbnails {
+    position: static !important;   /* cancels top:430px */
+    top: auto !important;
+    height: auto !important;
+    margin-top: 12px;
+  }
+  .product-single .product-single-gallery .slider-btn {
+    top: 25% !important;
+    transform: translateY(-50%);
+  }
 
-.product-single .slider-thumbnails {
-    top: 430px;
-}
-.product-single .product-single-gallery .slider-btn {
-    top: 215px !important;
+  /* 2) Kill the big padding from .ratio on mobile & rely on natural image height */
+  .product-single .product-single-slider .ratio,
+  .product-single .slider-thumbnails .ratio {
+    padding-bottom: 0 !important;   /* stop aspect-ratio padding */
+    height: auto !important;
+  }
+
+  /* 3) Make images scale naturally */
+  .product-single .product-single-slider .swiper-slide img,
+  .product-single .slider-thumbnails .swiper-slide img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+    border-radius: 12px;
+  }
+
+  /* 4) Ensure Swiper containers don't force height */
+  .product-single .product-single-slider.swiper,
+  .product-single .slider-thumbnails.swiper,
+  .product-single .product-single-slider .swiper-wrapper,
+  .product-single .slider-thumbnails .swiper-wrapper,
+  .product-single .product-single-slider .swiper-slide,
+  .product-single .slider-thumbnails .swiper-slide {
+    height: auto !important;
+  }
+  .swiper-wrapper{
+    margin-bottom: 70px;
+
+  }
 }
 
-.product-single .slider-thumbnails {
-    height: 19% !important;
+/* Optional: always prefer arrow centering on all screens Desktop*/
+/*Desktop*/
+@media (min-width: 992px) {
+  .product-single .slider-thumbnails { top: 430px; height: 19% !important; }
+  .product-single .product-single-slider { height: 600px !important; }
+  .product-single .product-single-gallery .slider-btn {
+    top: 30% !important;
+    transform: translateY(-50%);
+  }
 }
-.product-single .product-single-slider  {
-    height: 600px !important;
-}
+
 </style>
+
 @section('content')
 <div class="product-single pt-100  border-top header-next">
     <div class="container">

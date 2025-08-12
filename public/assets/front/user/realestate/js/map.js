@@ -7,9 +7,7 @@ $(document).ready(function () {
 function mapInitialize(properties) {
     window.activeMap && window.activeMap.remove();
     var markers = [];
-    var l = !0,
-        p = mapStyle,
-        o = !0;
+    var o = !0;
     var defaultCoordinates = [51.505, -0.09]; // Default coordinates (e.g., London)
     var defaultZoom = 3;
 
@@ -39,11 +37,11 @@ function mapInitialize(properties) {
                         })
                     });
                 let propertyUrl = baseURL + '/property/' + element.slug;
-                a.bindPopup('<div class="product-default p-0"> <figure class="product-img"> <a href="' + propertyUrl + '" class="lazy-container ratio ratio-1-1"> <img class="lazyload" src="' + imgUrl + '/assets/img/property/featureds/' + element.featured_image + '" data-src="' + imgUrl + '/assets/img/property/featureds/' + element.featured_image + '" alt="Product"> </a></figure><div class="product-details"><h6 class="product-title"><a href="' + propertyUrl + '">' + element.title + '</a></h6><span class="product-location icon-start"><i class="fal fa-map-marker-alt"></i>' + element.address + '</span></div><span class="label text-capitalize">' + element.purpose + '</span></div>', jpopup_customOptions);
+                a.bindPopup('<div class="product-default p-0"> <figure class="product-img"> <a href="' + propertyUrl + '" class="lazy-container ratio ratio-1-1"> <img class="lazyload" src="' + imgUrl + '/' + element.featured_image + '" data-src="' + imgUrl + '/' + element.featured_image + '" alt="Product"> </a></figure><div class="product-details"><h6 class="product-title"><a href="' + propertyUrl + '">' + element.title + '</a></h6><span class="product-location icon-start"><i class="fal fa-map-marker-alt"></i>' + element.address + '</span></div><span class="label text-capitalize">' + element.purpose + '</span></div>', jpopup_customOptions);
                 clusters.addLayer(a);
                 markers.push(a);
-                map.addLayer(clusters);
             });
+            map.addLayer(clusters);
 
             if (markers.length) {
                 var e = [];

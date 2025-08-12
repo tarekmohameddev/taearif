@@ -4,53 +4,54 @@ namespace App\Http\Controllers\Api;
 
 
 // use Str;
-use Illuminate\Support\Str;
 use Carbon\Carbon;
+use App\Models\Api;
 use App\Models\User;
 use App\Models\Coupon;
 use App\Models\Package;
 use App\Models\Language;
 use App\Rules\Recaptcha;
+use App\Models\User\Blog;
 use App\Models\User\Menu;
 use App\Models\Membership;
-use App\Models\BasicSetting;
+use App\Models\User\Member;
+use App\Models\User\Social;
+use Illuminate\Support\Str;
+
 use Illuminate\Http\Request;
+use App\Models\OfflineGateway;
+use App\Models\User\Portfolio;
+use App\Models\User\HeroSlider;
 use App\Http\Helpers\MegaMailer;
 use App\Models\User\HomeSection;
+use App\Models\User\UserService;
+use App\Models\User\WorkProcess;
+use App\Models\User\BlogCategory;
 use App\Models\User\HomePageText;
+use Laravel\Sanctum\HasApiTokens;
 use App\Models\Api\ApiMenuSetting;
 use App\Services\TempTokenService;
 use Illuminate\Support\Facades\DB;
 use App\Models\User\UserPermission;
+use App\Services\OnboardingService;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\Api\ApiDomainSetting;
 use App\Models\User\UserShopSetting;
+use App\Models\User\UserTestimonial;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Crypt;
+use App\Models\User\PortfolioCategory;
 use App\Models\User\UserEmailTemplate;
 use App\Models\User\UserPaymentGeteway;
 use Illuminate\Support\Facades\Session;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Validator;
-use App\Models\Api;
-use App\Models\User\UserTestimonial;
-use App\Services\OnboardingService;
-use Laravel\Sanctum\HasApiTokens;
-use App\Models\User\UserService;
-use App\Models\User\WorkProcess;
-use App\Models\User\BlogCategory;
-use App\Models\OfflineGateway;
-use App\Models\User\Portfolio;
-use App\Models\User\HeroSlider;
-use App\Models\User\Member;
-use App\Models\User\Social;
 use App\Http\Helpers\UserPermissionHelper;
-use App\Models\User\Blog;
-use Illuminate\Support\Facades\Crypt;
-use App\Models\User\PortfolioCategory;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Models\User\RealestateManagement\Category;
+use App\Models\User\BasicSetting;
 
 class AuthController extends Controller
 {
@@ -441,6 +442,10 @@ class AuthController extends Controller
                 "ssl",
             ]);
 
+            // Get company_name from BasicSetting
+            $basicSetting = BasicSetting::where('user_id', $user->id)->first(['company_name']);
+            $companyName = $basicSetting ? $basicSetting->company_name : null;
+
             $membershipDetails = null;
             $isFreePlan = true;
             $isExpired = true;
@@ -510,6 +515,7 @@ class AuthController extends Controller
                 'updated_at' => $user->updated_at,
                 'domain' => $domain ? $domain->custom_name : "https://{$user->username}.taearif.com/",
                 'onboarding_completed' => $user->onboarding_completed ?? false,
+                'company_name' => $companyName,
 
             ];
 

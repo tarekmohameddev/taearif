@@ -12,7 +12,8 @@ use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\User\RealestateManagement\PropertyAmenity;
 use App\Models\User\RealestateManagement\PropertySliderImg;
 use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
-
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class Property extends Model
 {
@@ -222,5 +223,132 @@ class Property extends Model
     {
         return $this->belongsTo(Project::class, 'project_id');
     }
+
+
+       /** Canonical public dir for property images */
+    private const CANON_DIR = 'properties';
+
+    /** Legacy dirs we want to support for old rows */
+    private const LEGACY_DIRS = [
+        'properties-img',
+        'assets/img/property/featureds',
+        'storage/properties',
+    ];
+
+    /* -------------------------
+       MUTATORS (normalize on save)
+       ------------------------- */
+    protected function featuredImage(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => self::normalizeImagePath($value)
+        );
+    }
+
+    protected function videoImage(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => self::normalizeImagePath($value)
+        );
+    }
+
+    protected function floorPlanningImage(): Attribute
+    {
+        return Attribute::make(
+            set: function ($value) {
+                if (empty($value)) return null;
+                $arr = is_array($value) ? $value : [$value];
+                return array_map([self::class, 'normalizeImagePath'], $arr);
+            }
+        );
+    }
+
+    private static function normalizeImagePath($value): ?string
+    {
+        if (empty($value)) return null;
+
+        // protocol-relative => treat as https
+        if (Str::startsWith($value, '//')) {
+            $value = 'https:' . $value;
+        }
+
+        // Absolute URL?
+        if (Str::startsWith($value, ['http://', 'https://'])) {
+            $appHost = parse_url(config('app.url'), PHP_URL_HOST);
+            $urlHost = parse_url($value, PHP_URL_HOST);
+            $urlPath = parse_url($value, PHP_URL_PATH) ?: '';
+
+            // Different host (CDN etc.) => keep absolute (don’t touch)
+            if ($appHost && $urlHost && $appHost !== $urlHost) {
+                return $value;
+            }
+
+            // Same host => use path
+            $value = $urlPath;
+        }
+
+        // Now $value is a path. Canonicalize: keep only filename, store under CANON_DIR
+        $path = ltrim($value, '/');
+        $filename = basename($path);
+        if ($filename === '' || $filename === '.' || $filename === '..') {
+            return null;
+        }
+
+        return self::CANON_DIR . '/' . $filename;
+    }
+
+    /* -------------------------
+       ACCESSOR (smart URL for output)
+       ------------------------- */
+    protected $appends = ['featured_image_url'];
+
+    public function getFeaturedImageUrlAttribute(): ?string
+    {
+        return self::resolvePublicUrl($this->featured_image);
+    }
+
+    // If you expose gallery with legacy rows, you might want similar accessors
+    // public function getVideoImageUrlAttribute(): ?string { ... }
+
+    private static function resolvePublicUrl(?string $path): ?string
+    {
+        if (empty($path)) return null;
+
+        // If already absolute URL, just return it
+        if (Str::startsWith($path, ['http://', 'https://'])) {
+            return $path;
+        }
+
+        $candidates = [];
+
+        // 1) Given path as-is (already normalized for new rows)
+        $candidates[] = ltrim($path, '/');
+
+        // 2) Canonical folder + filename (handles old rows that stored full/other dirs)
+        $filename = basename($path);
+        $candidates[] = self::CANON_DIR . '/' . $filename;
+
+        // 3) Legacy dirs + filename (fallbacks for old files)
+        foreach (self::LEGACY_DIRS as $dir) {
+            $candidates[] = rtrim($dir, '/') . '/' . $filename;
+        }
+
+        // Return the first existing file URL, else fallback to asset of original
+    // inside resolvePublicUrl()
+    foreach ($candidates as $rel) {
+        // check public/ first
+        if (file_exists(public_path($rel))) {
+            return asset($rel);
+        }
+        // also check storage disk (optional)
+        $relWithoutStorage = preg_replace('#^storage/#', '', $rel);
+        if (Storage::disk('public')->exists($relWithoutStorage)) {
+            return asset('storage/'.$relWithoutStorage);
+        }
+    }
+
+        return asset(ltrim($path, '/'));
+    }
+
 
 }

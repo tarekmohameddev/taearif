@@ -31,6 +31,13 @@ use Illuminate\Support\Facades\Log;
 
 class CronJobController extends Controller
 {
+
+    /**
+     * Handle the expired memberships and send notifications.
+     *
+     * @param UserPackageService $service
+     * @return void
+     */
     public function expired(UserPackageService $service)
     {
 
