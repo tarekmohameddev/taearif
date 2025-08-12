@@ -256,12 +256,16 @@ class Property extends Model
     {
         return Attribute::make(
             set: function ($value) {
-                if (empty($value)) return null;
+                if (empty($value)) {
+                    return ['floor_planning_image' => null];
+                }
                 $arr = is_array($value) ? $value : [$value];
-                return array_map([self::class, 'normalizeImagePath'], $arr);
+                $normalized = array_map([self::class, 'normalizeImagePath'], $arr);
+                return ['floor_planning_image' => $normalized];
             }
         );
     }
+
 
     private static function normalizeImagePath($value): ?string
     {
