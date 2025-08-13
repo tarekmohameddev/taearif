@@ -14,31 +14,8 @@
     {{-- title --}}
     <title>{{ convertUtf8($userApi_general_settingsData->site_name ?? '') }} - @yield('pageHeading')</title>
 
-    @php
-    // Find the correct user & language
-    $uid = $userBs->user_id ?? ($user->id ?? null);
-    $langId = $userCurrentLang->id ?? null;
-
-    $seo = \App\Models\User\SEO::where('user_id', $uid)->first();
-
-    // Pull possible overrides from child views
-    $metaDescSection = trim($__env->yieldContent('metaDescription'));
-    $metaKeysSection = trim($__env->yieldContent('metaKeywords'));
-
-    // Robust fallbacks (work even if sections are defined but empty)
-    $metaDescription = $metaDescSection !== ''
-        ? $metaDescSection
-        : ($seo->home_meta_description ?? '');
-
-    $metaKeywords = $metaKeysSection !== ''
-        ? $metaKeysSection
-        : ($seo->home_meta_keywords ?? '');
-    @endphp
-
-    <meta name="keywords" content="{{ $metaKeywords }}">
-    <meta name="description" content="{{ $metaDescription }}">
-
-
+    <meta name="keywords" content="@yield('metaKeywords')">
+    <meta name="description" content="@yield('metaDescription')">
 
     @yield('og:tag')
 
