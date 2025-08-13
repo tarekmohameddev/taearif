@@ -15,8 +15,9 @@ class UserPropertyRequest extends Model
         'user_id',
         'region',
         'property_type',
-        'category',
-        'neighborhoods',
+        'category_id',
+        'city_id',
+        'neighborhood_id',
         'area_from',
         'area_to',
         'purchase_method',
@@ -31,21 +32,17 @@ class UserPropertyRequest extends Model
         'notes',
         'is_read',
         'is_active',
-        'created_at',
-        'updated_at',
     ];
 
     protected $casts = [
-        'neighborhoods' => 'array',
         'wants_similar_offers' => 'boolean',
-        'contact_on_whatsapp' => 'boolean',
-        'budget_from' => 'float',
-        'budget_to' => 'float',
-        'area_from' => 'integer',
-        'area_to' => 'integer',
+        'contact_on_whatsapp'  => 'boolean',
+        'budget_from'          => 'float',
+        'budget_to'            => 'float',
+        'area_from'            => 'integer',
+        'area_to'              => 'integer',
     ];
 
-    // علاقة مع المستخدم (اختياري)
     public function user()
     {
         return $this->belongsTo(User::class);
