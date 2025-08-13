@@ -13,6 +13,8 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
+        \App\Console\Commands\CustomRouteListCommand::class,
+
         Commands\ExpiredUser::class,
         \App\Console\Commands\ProcessRmsReminders::class,
 

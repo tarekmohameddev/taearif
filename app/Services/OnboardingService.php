@@ -3,23 +3,24 @@
 namespace App\Services;
 
 
+use App\Models\User;
+use App\Models\User\SEO;
 use App\Models\User\Menu;
 use App\Models\User\Language;
+use App\Models\Api\ApiMenuItem;
+use App\Models\Api\FooterSetting;
 use App\Models\User\BasicSetting;
+use App\Models\Api\ApiMenuSetting;
 use App\Models\Api\GeneralSetting;
+use Illuminate\Support\Facades\DB;
+use App\Models\Api\Menu as ApiMenu;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use App\Models\Api\ApiMenuItem;
-use App\Models\Api\ApiMenuSetting;
-use App\Models\Api\FooterSetting;
-use App\Models\User;
-use App\Models\User\BasicSetting as UserBasicSetting;
-use App\Models\User\Language as UserLanguage;
 use App\Models\User\Menu as UserMenu;
-use App\Models\User\GeneralSetting as UserGeneralSetting;
+use App\Models\User\Language as UserLanguage;
+use App\Models\User\BasicSetting as UserBasicSetting;
 use App\Models\User\FooterSetting as UserFooterSetting;
-use App\Models\Api\Menu as ApiMenu;
-use Illuminate\Support\Facades\DB;
+use App\Models\User\GeneralSetting as UserGeneralSetting;
 
 class OnboardingService extends Controller
 {
@@ -30,15 +31,22 @@ class OnboardingService extends Controller
             $lang = Language::where('is_default', 1)->first();
 
             // Default payload
-            $title = "hsl hgav;i";
+            if ($user->company_name == "" || $user->company_name == null) {
+                $user->company_name = "اسم الشركة";  //  hsl hgav;i
+            }
+
+            $short_description = $user->short_description ?: 'اهلا بك في موقعنا';
+
+
             $category = "realestate";
+            $logo = "user-logo.jpeg";
+            $favicon = "favicon.png";
             $colors = [
                 'primary' => '#1e40af',
                 'secondary' => '#3b82f6',
                 'accent' => '#93c5fd',
             ];
-            $logo = "user-logo.jpeg";
-            $favicon = "favicon.png";
+
 
             // Basic settings
             $bss = BasicSetting::firstOrNew(['user_id' => $user->id]);
@@ -47,8 +55,9 @@ class OnboardingService extends Controller
             $bss->accent_color = $colors['accent'];
             $bss->logo = $logo;
             $bss->favicon = $favicon;
-            $bss->company_name = $title;
+            $bss->company_name = $user->company_name;
             $bss->industry_type = $category;
+            $bss->short_description = $short_description;
 
             $templateMapping = [
                 'realestate' => 'home13',
@@ -78,11 +87,28 @@ class OnboardingService extends Controller
             GeneralSetting::updateOrCreate(
                 ['user_id' => $user->id],
                 [
-                    'site_name' => $title,
+                    'site_name' => $user->company_name,
                     'favicon'   => $favicon,
                     'logo'      => $logo,
                 ]
             );
+
+            // SEO settings
+            // $seo = SEO::updateOrCreate(['user_id' => $user->id]);
+            // $seo->home_meta_description = $short_description;
+            SEO::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'home_meta_description' => $short_description
+                ]
+            );
+            // $seo->home_meta_keywords = 'موقع عقارات, عقارات للبيع, عقارات للإيجار';
+            // $seo->services_meta_keywords = 'خدمات عقارية, استشارات عقارية, تسويق عقاري';
+            // $seo->services_meta_description = 'نحن نقدم مجموعة متنوعة من الخدمات العقارية بما في ذلك الاستشارات والتسويق العقاري.';
+            // $seo->blogs_meta_keywords = 'مدونة عقارية, أخبار عقارية, نصائح عقارية';
+            // $seo->blogs_meta_description = 'تابع مدونتنا للحصول على آخر الأخبار والنصائح في عالم العقارات.';
+
+
         } catch (\Exception $e) {
             Log::error("Auto onboarding failed for user {$user->id}: " . $e->getMessage());
         }
@@ -90,10 +116,16 @@ class OnboardingService extends Controller
 
     private function updateUserMenu($userId, $languageId)
     {
+        $user = \App\Models\User::find($userId);
+        $phone = '+966'.$user->phone ?? '+9665XXXXXXXX';
+        $whatsAppUrl = "https://wa.me/" . preg_replace('/\D/', '', $phone);
+
         $realEstateMenu = [
             ["text" => "الصفحة الرئيسية", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "home"],
             // ["text" => "اتصل بنا", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "contact"],
             // ["text" => "من نحن", "href" => "", "icon" => "empty", "target" => "_self", "title" => "", "type" => "about"]
+            ["text" => "اتصل بنا", "href" => $whatsAppUrl, "icon" => "fab fa-whatsapp", "target" => "_blank", "title" => "تواصل عبر واتساب", "type" => "contact"]
+
         ];
 
         $menuJson = json_encode($realEstateMenu, JSON_UNESCAPED_UNICODE);
@@ -118,6 +150,10 @@ class OnboardingService extends Controller
 
     private function seedDefaultApiMenuItems(int $userId)
     {
+        $user = \App\Models\User::find($userId);
+        $phone = '+966'.$user->phone ?? '+9665XXXXXXXX';
+        $whatsAppUrl = "https://wa.me/" . preg_replace('/\D/', '', $phone);
+
         $defaultItems = [
             [
                 "text" => "الرئيسية",
@@ -131,7 +167,20 @@ class OnboardingService extends Controller
                 "parent_id" => null,
                 "show_on_mobile" => true,
                 "show_on_desktop" => true,
-            ]
+            ],
+            [
+                "text" => "اتصل بنا",
+                "label" => "اتصل بنا",
+                "type" => "contact",
+                "url" => $whatsAppUrl,
+                "target" => "_blank",
+                "is_external" => true,
+                "is_active" => true,
+                "order" => 2,
+                "parent_id" => null,
+                "show_on_mobile" => true,
+                "show_on_desktop" => true,
+            ],
             // ,
             // [
             //     "text" => "من نحن",

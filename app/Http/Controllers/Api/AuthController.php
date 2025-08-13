@@ -10,14 +10,15 @@ use App\Models\User;
 use App\Models\Coupon;
 use App\Models\Package;
 use App\Models\Language;
+use App\Models\User\SEO;
 use App\Rules\Recaptcha;
 use App\Models\User\Blog;
 use App\Models\User\Menu;
 use App\Models\Membership;
 use App\Models\User\Member;
 use App\Models\User\Social;
-use Illuminate\Support\Str;
 
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\OfflineGateway;
 use App\Models\User\Portfolio;
@@ -26,6 +27,7 @@ use App\Http\Helpers\MegaMailer;
 use App\Models\User\HomeSection;
 use App\Models\User\UserService;
 use App\Models\User\WorkProcess;
+use App\Models\User\BasicSetting;
 use App\Models\User\BlogCategory;
 use App\Models\User\HomePageText;
 use Laravel\Sanctum\HasApiTokens;
@@ -51,7 +53,6 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Helpers\UserPermissionHelper;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Models\User\RealestateManagement\Category;
-use App\Models\User\BasicSetting;
 
 class AuthController extends Controller
 {
@@ -1982,6 +1983,12 @@ class AuthController extends Controller
                 $coupon->save();
             }
 
+            $short_description = "اهلا بك في موقعنا";
+            SEO::create(
+                [
+                    'home_meta_description' => $short_description
+                ]
+            );
             return $user;
         });
     }
