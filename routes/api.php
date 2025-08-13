@@ -43,6 +43,7 @@ use App\Http\Controllers\Api\Customer\UserApiCustomerAppointmentController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
 use App\Http\Controllers\Api\ResetPasswordController;
 use App\Http\Controllers\Api\property\ApiPropertyRequestController;
+use App\Http\Controllers\Api\property\ApiPropertyRequestSettingsController;
 
 use App\Http\Controllers\Api\V1\{
     CustomerInquiryController,
@@ -395,5 +396,15 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     // ApiPropertyRequestController
     Route::get('/property-requests', [ApiPropertyRequestController::class, 'index']);
     Route::post('/property-requests', [ApiPropertyRequestController::class, 'store']);
+
+    // ApiPropertyRequestSettingsController
+    Route::prefix('property-request-settings')->group(function () {
+        Route::get('/',        [ApiPropertyRequestSettingsController::class, 'index']);       // ?merged=true|false
+        Route::get('/defaults',[ApiPropertyRequestSettingsController::class, 'defaults']); // ?merged=true|false
+
+        Route::post('/bulk',   [ApiPropertyRequestSettingsController::class, 'bulkUpsert']);  // upsert مجموعة
+        Route::put('/{field}', [ApiPropertyRequestSettingsController::class, 'updateOne']);   // تعديل مفتاح واحد
+        Route::post('/reset',  [ApiPropertyRequestSettingsController::class, 'reset']);       // حذف إعدادات (العودة للديفولت)
+    });
 });
 
