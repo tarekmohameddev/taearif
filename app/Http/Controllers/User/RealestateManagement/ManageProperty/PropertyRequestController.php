@@ -6,19 +6,20 @@ namespace App\Http\Controllers\User\RealestateManagement\ManageProperty;
 use Illuminate\Http\Request;
 use App\Models\User\Language;
 use App\Models\User\UserCity;
+use Illuminate\Validation\Rule;
 use App\Models\User\UserDistrict;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Services\CategoryVisibility;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Api\UserPropertyRequest;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User\RealestateManagement\ApiUserCategory;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
-
+use App\Services\PropertyRequestFormSettings;
 class PropertyRequestController extends Controller
 {
-    public function create($website, Request $request, \App\Services\CategoryVisibility $visibility)
+    public function create($website, Request $request, CategoryVisibility $visibility , PropertyRequestFormSettings $frSettings)
     {
         $user = getUser();
         $tenantId = $user->id;
@@ -46,12 +47,14 @@ class PropertyRequestController extends Controller
             (bool) $user->show_even_if_empty,
             $userCurrentLang?->id
         );
+        $formSettings = $frSettings->forTenant($tenantId);
 
         return view('user-front.realestate.property.property_requests.create', [
             'cities'              => $cities,
             'availableCategories' => $availableCategories,
             'userCurrentLang'     => $userCurrentLang,
             'website'             => $website,
+            'formSettings'        => $formSettings,
         ]);
     }
 
