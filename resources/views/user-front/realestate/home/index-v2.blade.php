@@ -8,9 +8,33 @@ $hero = $sliderData->static;
 $hero = $sliderData->slider;
 }
 @endphp
+@php
+    // Find the correct user & language
+    $uid = $userBs->user_id ?? ($user->id ?? null);
+    $langId = $userCurrentLang->id ?? null;
+
+    $seo = \App\Models\User\SEO::where('user_id', $uid)->first();
+
+    // Pull possible overrides from child views
+    $metaDescSection = trim($__env->yieldContent('metaDescription'));
+    $metaKeysSection = trim($__env->yieldContent('metaKeywords'));
+
+    // Robust fallbacks (work even if sections are defined but empty)
+    $metaDescription = $metaDescSection !== ''
+        ? $metaDescSection
+        : ($seo->home_meta_description ?? '');
+
+    $metaKeywords = $metaKeysSection !== ''
+        ? $metaKeysSection
+        : ($seo->home_meta_keywords ?? '');
+@endphp
+
 
 @extends('user-front.realestate.layout')
 @section('pageHeading', $keywords['Home'] ?? 'Home')
+@section('metaDescription', !empty($seo) ? $seo->home_meta_description : '')
+@section('metaKeywords', !empty($seo) ? $seo->home_meta_keywords : '')
+
 @section('style')
 <style>
     .header-area.header-2:not(.header-static, .is-sticky) :is(.nav-link:not(:is(.active, .menu-dropdown .nav-link)), .wishlist-btn, .nice-select, .nice-select::after) {
