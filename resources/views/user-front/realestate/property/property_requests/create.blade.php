@@ -313,37 +313,118 @@
     </div>
 </div>
 
+
 <style>
+    /* ألوان المستخدم كمتغيرات CSS */
+    :root{
+        --base-color: {{ $userBs->base_color ?? '#1e40af' }};
+        --secondary-color: {{ $userBs->secondary_color ?? '#3b82f6' }};
+        --accent-color: {{ $userBs->accent_color ?? '#93c5fd' }};
+
+        /* درجات مشتقة بسيطة لثبات المظهر */
+        --accent-bg: var(--accent-color);
+        --border-color: color-mix(in srgb, var(--secondary-color) 25%, #ffffff);
+        --danger: #e74c3c;
+        --text-900:#111827; --text-700:#374151; --text-600:#4b5563; --text-500:#6b7280;
+        --white:#ffffff;
+    }
+
     *{box-sizing:border-box}
-    body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;direction:rtl}
-    .modern-form-container{margin:0 auto;background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.1);overflow:hidden;animation:fadeInUp .8s ease-out}
+    body{
+        font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+        direction:rtl;
+        color:var(--text-900);
+        background:#fff;
+    }
+
+    .modern-form-container{
+        margin:0 auto;background:var(--white);border-radius:20px;
+        box-shadow:0 20px 60px rgba(0,0,0,.1);overflow:hidden;animation:fadeInUp .8s ease-out
+    }
     @keyframes fadeInUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
-    .form-header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:30px 30px;text-align:center;position:relative;overflow:hidden}
-    .form-header::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,.1) 0%,transparent 70%);animation:float 6s ease-in-out infinite}
+
+    /* رأس النموذج */
+    .form-header{
+        background:linear-gradient(135deg,var(--base-color) 0%,var(--secondary-color) 100%);
+        color:var(--white);padding:30px 30px;text-align:center;position:relative;overflow:hidden
+    }
+    .form-header::before{
+        content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
+        background:radial-gradient(circle,rgba(255,255,255,.12) 0%,transparent 70%);
+        animation:float 6s ease-in-out infinite
+    }
     @keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-20px) rotate(180deg)}}
     .form-header h1{font-size:2.5rem;font-weight:700;margin-bottom:10px;position:relative;z-index:2}
-    .form-header p{font-size:1.1rem;opacity:.9;position:relative;z-index:2}
+    .form-header p{font-size:1.1rem;opacity:.95;position:relative;z-index:2}
+
     .form-wrapper{padding:40px 30px}
-    .form-section{margin-bottom:40px;padding:30px;background:#f8f9ff;border-radius:15px;border:1px solid #e1e8ff;transition:all .3s ease}
-    .form-section:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(102,126,234,.15)}
-    .section-title{display:flex;align-items:center;margin-bottom:25px;font-size:1.3rem;font-weight:600;color:#333}
-    .section-title i{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;width:35px;height:35px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-left:12px;font-size:.9rem}
+
+    /* أقسام */
+    .form-section{
+        margin-bottom:40px;padding:30px;background:var(--accent-bg);
+        border-radius:15px;border:1px solid var(--border-color);transition:all .3s ease
+    }
+    .form-section:hover{transform:translateY(-2px);box-shadow:0 8px 25px color-mix(in srgb, var(--secondary-color) 25%, transparent)}
+
+    .section-title{
+        display:flex;align-items:center;margin-bottom:25px;font-size:1.3rem;
+        font-weight:600;color:var(--text-900)
+    }
+    .section-title i{
+        background:linear-gradient(135deg,var(--base-color) 0%,var(--secondary-color) 100%);
+        color:var(--white);width:35px;height:35px;border-radius:50%;
+        display:flex;align-items:center;justify-content:center;margin-left:12px;font-size:.9rem
+    }
+
+    /* الشبكة */
     .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-bottom:20px}
+
     .form-group{display:flex;flex-direction:column}
-    label{font-weight:600;color:#555;margin-bottom:8px;font-size:.95rem}
-    .required::after{content:' *';color:#e74c3c}
-    input[type="text"],input[type="number"],select,textarea{padding:12px 15px;border:2px solid #e1e8ff;border-radius:10px;font-size:1rem;transition:all .3s ease;background:#fff}
-    input[type="text"]:focus,input[type="number"]:focus,select:focus,textarea:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.1);transform:translateY(-1px)}
+    label{font-weight:600;color:var(--text-700);margin-bottom:8px;font-size:.95rem}
+    .required::after{content:' *';color:var(--danger)}
+
+    /* الحقول */
+    input[type="text"],input[type="number"],select,textarea{
+        padding:12px 15px;border:2px solid var(--border-color);border-radius:10px;
+        font-size:1rem;transition:all .25s ease;background:var(--white);color:var(--text-900)
+    }
+    input[type="text"]::placeholder,input[type="number"]::placeholder,textarea::placeholder{color:var(--text-500)}
+    input[type="text"]:focus,input[type="number"]:focus,select:focus,textarea:focus{
+        outline:none;border-color:var(--secondary-color);
+        box-shadow:0 0 0 3px color-mix(in srgb, var(--secondary-color) 25%, transparent);
+        transform:translateY(-1px)
+    }
+
+    /* اختيارات */
     .radio-group,.checkbox-group{display:flex;flex-wrap:wrap;gap:15px;margin-top:10px}
-    .radio-item,.checkbox-item{display:flex;align-items:center;padding:10px 15px;background:#fff;border:2px solid #e1e8ff;border-radius:25px;cursor:pointer;transition:all .3s ease;min-width:120px;justify-content:center;position:relative}
-    .radio-item:hover,.checkbox-item:hover{border-color:#667eea;background:#f8f9ff;transform:translateY(-2px)}
-    .radio-item.selected,.checkbox-item.selected{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border-color:transparent}
+    .radio-item,.checkbox-item{
+        display:flex;align-items:center;padding:10px 15px;background:var(--white);
+        border:2px solid var(--border-color);border-radius:25px;cursor:pointer;
+        transition:all .25s ease;min-width:120px;justify-content:center;position:relative;color:var(--text-700)
+    }
+    .radio-item:hover,.checkbox-item:hover{
+        border-color:var(--secondary-color);background:color-mix(in srgb, var(--accent-color) 25%, #fff);
+        transform:translateY(-2px)
+    }
+    .radio-item.selected,.checkbox-item.selected{
+        background:linear-gradient(135deg,var(--base-color) 0%,var(--secondary-color) 100%);
+        color:var(--white);border-color:transparent
+    }
     input[type="radio"],input[type="checkbox"]{display:none}
-    .btn-submit{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:15px 40px;border:none;border-radius:50px;font-size:1.1rem;font-weight:600;cursor:pointer;transition:all .3s ease;display:block;margin:40px auto 0;min-width:200px}
-    .btn-submit:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(102,126,234,.3)}
+
+    /* زر الإرسال */
+    .btn-submit{
+        background:linear-gradient(135deg,var(--base-color) 0%,var(--secondary-color) 100%);
+        color:var(--white);padding:15px 40px;border:none;border-radius:50px;
+        font-size:1.1rem;font-weight:600;cursor:pointer;transition:all .25s ease;
+        display:block;margin:40px auto 0;min-width:200px
+    }
+    .btn-submit:hover{transform:translateY(-2px);box-shadow:0 10px 30px color-mix(in srgb, var(--secondary-color) 40%, transparent)}
     .btn-submit:active{transform:translateY(0)}
+
     textarea{resize:vertical;min-height:100px}
-    .text-danger{color:#e74c3c;font-size:.875rem;margin-top:5px}
+    .text-danger{color:var(--danger);font-size:.875rem;margin-top:5px}
+
     @media (max-width:768px){
         .modern-form-container{margin:10px;border-radius:15px}
         .form-header{padding:30px 20px}
@@ -353,9 +434,11 @@
         .radio-group,.checkbox-group{flex-direction:column}
         .radio-item,.checkbox-item{min-width:100%}
     }
+
     @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
     .shake{animation:shake .5s ease-in-out}
 </style>
+
 
 @endsection
 
