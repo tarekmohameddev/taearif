@@ -17,20 +17,19 @@ class ApiPropertyRequestController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'property_type' => 'required|in:شقة,دور,تاون هاوس,فيلا,أرض,عمارة',
+            'full_name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+            'property_type' => 'nullable',
             'category' => 'nullable|in:سكني,تجاري,صناعي,زراعي',
-            'neighborhoods' => 'nullable|array',
-            'neighborhoods.*' => 'string|max:255',
+            'districts_id'       => ['nullable','integer', Rule::exists('user_districts','id')],
             'area_from' => 'nullable|integer|min:0',
             'area_to' => 'nullable|integer|min:0',
-            'purchase_method' => 'required|in:كاش,تمويل بنكي',
-            'budget_from' => 'required|numeric|min:0',
-            'budget_to' => 'required|numeric|min:0',
+            'purchase_method' => 'nullable',
+            'budget_from' => 'nullable',
+            'budget_to' => 'nullable',
             'seriousness' => 'nullable|in:مستعد فورًا,خلال شهر,خلال 3 أشهر,لاحقًا / استكشاف فقط',
             'purchase_goal' => 'nullable|in:سكن خاص,استثمار وتأجير,بناء وبيع,مشروع تجاري',
             'wants_similar_offers' => 'nullable|boolean',
-            'full_name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
             'contact_on_whatsapp' => 'nullable|boolean',
             'notes' => 'nullable|string|max:5000',
         ]);

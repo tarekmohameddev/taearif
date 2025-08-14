@@ -42,7 +42,7 @@
     @csrf
 
     @php
-        $secProperty = $vis('category_id') || $vis('property_type') || $vis('city_id') || $vis('neighborhood_id') || $vis('area_from') || $vis('area_to');
+        $secProperty = $vis('category_id') || $vis('property_type') || $vis('city_id') || $vis('districts_id') || $vis('area_from') || $vis('area_to');
         $secBudget   = $vis('purchase_method') || $vis('budget_from') || $vis('budget_to');
         $secExtra    = $vis('seriousness') || $vis('purchase_goal') || $vis('wants_similar_offers');
         $secContact  = $vis('full_name') || $vis('phone') || $vis('contact_on_whatsapp') || $vis('notes');
@@ -60,11 +60,13 @@
             @if($vis('category_id'))
             <div class="form-group">
                 <label class="{{ $req('category_id') ? 'required' : '' }}">{{ $lbl('category_id', 'نوع العقار') }}</label>
+
                 <select name="category_id" class="form-select" {{ $req('category_id') ? 'required' : '' }}>
                     <option value="">{{ $lbl('category_id_placeholder','اختر نوع العقار') }}</option>
                     @forelse($availableCategories as $cat)
                     <option value="{{ $cat->id }}" {{ old('category_id') == $cat->id ? 'selected' : '' }}>
-                        {{ app()->getLocale()==='ar' ? ($cat->name_ar ?? $cat->name) : ($cat->name_en ?? $cat->name) }}
+                    {{ app()->getLocale()==='ar' ? ($cat->name_ar ?? $cat->name) : ($cat->name_en ?? $cat->name) }}
+
                     </option>
                     @empty
                     <option value="" disabled>{{ $lbl('category_id_empty','لا توجد أنواع متاحة حاليًا') }}</option>
@@ -94,28 +96,42 @@
         </div>
 
         <div class="form-row">
+            @php
+
+                $citiesFromDistricts = ($districts ?? collect([]))->unique('city_id');
+            @endphp
+
             @if($vis('city_id'))
             <div class="form-group">
                 <label class="{{ $req('city_id') ? 'required' : '' }}">{{ $lbl('city_id','المدينة') }}</label>
-                <select class="form-select" id="citySelect" name="city_id" data-states-base="{{ url('/get-states') }}" {{ $req('city_id') ? 'required' : '' }}>
+
+                <select class="form-select" id="citySelect" name="city_id"
+                        data-states-base="{{ url('/get-states') }}"
+                        {{ $req('city_id') ? 'required' : '' }}>
                     <option value="">{{ $lbl('city_id_placeholder','اختر المدينة') }}</option>
-                    @foreach($cities as $city)
-                    <option value="{{ $city->id }}" {{ old('city_id') == $city->id ? 'selected' : '' }}>
-                        {{ app()->getLocale() === 'ar' ? ($city->name_ar ?? $city->name_en) : ($city->name_en ?? $city->name_ar) }}
-                    </option>
+
+                    @foreach($citiesFromDistricts as $row)
+                        <option value="{{ $row->city_id }}"
+                            {{ old('city_id') == $row->city_id ? 'selected' : '' }}>
+                            {{ app()->getLocale()==='ar'
+                                ? ($row->city_name_ar ?? $row->city_name_en)
+                                : ($row->city_name_en ?? $row->city_name_ar) }}
+                        </option>
                     @endforeach
                 </select>
+
                 @error('city_id') <p class="text-danger">{{ $message }}</p> @enderror
             </div>
             @endif
 
-            @if($vis('neighborhood_id'))
+
+            @if($vis('districts_id'))
             <div class="form-group">
-                <label class="{{ $req('neighborhood_id') ? 'required' : '' }}">{{ $lbl('neighborhood_id','الحي') }}</label>
-                <select class="form-select" id="districtSelect" name="neighborhood_id" {{ $req('neighborhood_id') ? 'required' : '' }} disabled>
-                    <option value="">{{ $lbl('neighborhood_id_placeholder','اختر الحي') }}</option>
+                <label class="{{ $req('districts_id') ? 'required' : '' }}">{{ $lbl('districts_id','الحي') }}</label>
+                <select class="form-select" id="districtSelect" name="districts_id" {{ $req('districts_id') ? 'required' : '' }} disabled>
+                    <option value="">{{ $lbl('districts_id_placeholder','اختر الحي') }}</option>
                 </select>
-                @error('neighborhood_id') <p class="text-danger">{{ $message }}</p> @enderror
+                @error('districts_id') <p class="text-danger">{{ $message }}</p> @enderror
             </div>
             @endif
         </div>
@@ -500,12 +516,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const base = citySelect ? citySelect.dataset.statesBase : null;
 
     const OLD_CITY_ID = @json(old('city_id'));
-    const OLD_DISTRICT_ID = @json(old('neighborhood_id'));
+    const OLD_DISTRICT_ID = @json(old('districts_id'));
     const IS_AR = @json(app()->getLocale() === 'ar');
 
     function resetDistricts(disabled = true) {
         if (!districtSelect) return;
         districtSelect.innerHTML = `<option value="">${IS_AR ? 'اختر الحي' : 'Select District'}</option>`;
+
         districtSelect.disabled = disabled;
     }
 
