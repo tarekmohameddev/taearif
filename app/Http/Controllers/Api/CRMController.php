@@ -139,5 +139,62 @@ class CRMController extends Controller
         ]);
     }
 
+    //  search customers by name or phone + filter by stage + filter by periority
+    public function searchCustomers(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'query'     => 'nullable|string|max:255',
+            'stage_id'  => 'nullable|integer|exists:users_api_customers_stages,id',
+            'priority'  => 'nullable|integer|in:1,2,3', // 1=Low, 2=Medium, 3=High
+            'page'      => 'nullable|integer|min:1',
+            'per_page'  => 'nullable|integer|min:1|max:100',
+            'sort_by'   => 'nullable|in:name,created_at,priority',
+            'sort_dir'  => 'nullable|in:asc,desc',
+        ]);
+
+        $perPage = $validated['per_page'] ?? 10;
+        $sortBy  = $validated['sort_by']  ?? 'created_at';
+        $sortDir = $validated['sort_dir'] ?? 'desc';
+
+        $query = ApiCustomer::where('user_id', $user->id);
+
+        if (!empty($validated['query'])) {
+            $q = $validated['query'];
+            $query->where(function ($sub) use ($q) {
+                $sub->where('name', 'like', "%{$q}%")
+                    ->orWhere('phone_number', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%");
+            });
+        }
+
+        if (!empty($validated['stage_id'])) {
+            $query->where('stage_id', $validated['stage_id']);
+        }
+
+        if (!empty($validated['priority'])) {
+            $query->where('priority', (int)$validated['priority']);
+        }
+
+        $query->orderBy($sortBy, $sortDir);
+
+        $paginator = $query->paginate($perPage);
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => [
+                'customers' => $paginator->items(),
+            ],
+            'pagination' => [
+                'total'        => $paginator->total(),
+                'per_page'     => $paginator->perPage(),
+                'current_page' => $paginator->currentPage(),
+                'last_page'    => $paginator->lastPage(),
+                'from'         => $paginator->firstItem(),
+                'to'           => $paginator->lastItem(),
+            ],
+        ]);
+    }
 
 }
