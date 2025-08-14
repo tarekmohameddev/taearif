@@ -323,6 +323,8 @@ Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
     // CRM Dashboard
     Route::get('/', [CRMController::class, 'index']);
     Route::post('/customers/{id}/change-stage', [CRMController::class, 'changeCustomerStage']); // drag and drop customers to change stage
+    // searchCustomers
+    Route::get('/customers/search', [CRMController::class, 'searchCustomers']); // search customers by name or email
 
 });
 
