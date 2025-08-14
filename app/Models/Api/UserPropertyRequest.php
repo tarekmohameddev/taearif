@@ -17,7 +17,7 @@ class UserPropertyRequest extends Model
         'property_type',
         'category_id',
         'city_id',
-        'neighborhood_id',
+        'districts_id',
         'area_from',
         'area_to',
         'purchase_method',

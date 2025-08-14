@@ -13,7 +13,7 @@ class PropertyRequestFormSettings
             'category_id'         => ['is_visible' => true,  'is_required' => true],
             'property_type'       => ['is_visible' => true,  'is_required' => true],
             'city_id'             => ['is_visible' => true,  'is_required' => true],
-            'neighborhood_id'     => ['is_visible' => true,  'is_required' => true],
+            'districts_id'        => ['is_visible' => true,  'is_required' => true],
             'area_from'           => ['is_visible' => true,  'is_required' => false],
             'area_to'             => ['is_visible' => true,  'is_required' => false],
             'purchase_method'     => ['is_visible' => true,  'is_required' => true],

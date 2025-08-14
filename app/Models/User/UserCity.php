@@ -10,6 +10,7 @@ class UserCity extends Model
 {
     use HasFactory;
 
+    protected $table = 'user_cities';
     protected $fillable = [
         'id',
         'name_ar',
