@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 
+
 class ApiCustomer extends Authenticatable
 
 {
@@ -31,9 +32,10 @@ class ApiCustomer extends Authenticatable
         'name',
         'email',
         'note',
-        'customer_type',
-        'priority',
-        'stage_id',
+        'customer_type', // rent or sale
+        'priority', // 1, 2, 3
+        'stage_id', // 1, 2, 3, 4, 5
+        'procedure_id', //Procedure meeting visit
         'city_id',
         'district_id',
         'phone_number',
@@ -95,6 +97,16 @@ class ApiCustomer extends Authenticatable
         return $this->hasMany(ApiCustomerPropertyInterested::class, 'customer_id', 'id')
             ->select('customer_id', 'category_id')
             ->groupBy('customer_id', 'category_id');
+    }
+
+    public function stage()
+    {
+        return $this->belongsTo(\App\Models\Api\UserApiCustomerStage::class, 'stage_id');
+    }
+
+    public function procedure()
+    {
+        return $this->belongsTo(\App\Models\Api\UserApiCustomerProcedure::class, 'procedure_id');
     }
 
 }

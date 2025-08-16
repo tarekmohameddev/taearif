@@ -306,7 +306,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
-// ApiCustomerStage
+// Api crm Customer
 Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
     Route::apiResource('stages', UserApiCustomerStageController::class);
     // reorderStages
@@ -323,6 +323,13 @@ Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
     // CRM Dashboard
     Route::get('/', [CRMController::class, 'index']);
     Route::post('/customers/{id}/change-stage', [CRMController::class, 'changeCustomerStage']); // drag and drop customers to change stage
+    // drag and drop customers to change priority
+    Route::post('/customers/{id}/change-priority', [CRMController::class, 'changeCustomerPriority']);
+    // drag and drop customers to change type
+    Route::post('/customers/{id}/change-type', [CRMController::class, 'changeCustomerType']);
+    // drag and drop customers procedure
+    Route::post('/customers/{id}/change-procedure', [CRMController::class, 'changeCustomerProcedure']);
+
     // searchCustomers
     Route::get('/customers/search', [CRMController::class, 'searchCustomers']); // search customers by name or email
 

@@ -10,6 +10,8 @@ use App\Models\ApiCustomer;
 use App\Models\Api\UserApiCustomerStage;
 use App\Models\Api\UserApiCustomerReminder;
 use App\Models\Api\UserApiCustomerAppointment;
+use Illuminate\Validation\Rule;
+use App\Models\Api\UserApiCustomerProcedure;
 
 class CRMController extends Controller
 {
@@ -138,6 +140,123 @@ class CRMController extends Controller
             ]
         ]);
     }
+    // changeCustomerPriority
+    public function changeCustomerPriority(Request $request, $id)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'priority' => 'required|integer|in:1,2,3', // 1=Low, 2=Medium, 3=High
+        ]);
+
+        $customer = ApiCustomer::where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$customer) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Customer not found or does not belong to you.'
+            ], 404);
+        }
+
+        $customer->priority = (int) $validated['priority'];
+        $customer->save();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Customer priority updated successfully',
+            'data'    => [
+                'customer_id'    => $customer->id,
+                'customer_name'  => $customer->name,
+                'new_priority'   => $customer->priority,
+                'priority_label' => $customer->priority_label,
+            ]
+        ]);
+    }
+
+
+    // changeCustomerType rent or sale
+    public function changeCustomerType(Request $request, $id)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'customer_type' => ['required', Rule::in(['Rent','Sale','Rented','Sold','Both'])],
+        ]);
+
+        $customer = ApiCustomer::where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$customer) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Customer not found or does not belong to you.'
+            ], 404);
+        }
+
+        $customer->customer_type = $validated['customer_type'];
+        $customer->save();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Customer type updated successfully',
+            'data'    => [
+                'customer_id'       => $customer->id,
+                'customer_name'     => $customer->name,
+                'new_customer_type' => $customer->customer_type,
+            ]
+        ]);
+    }
+
+
+    // changeCustomerProcedure meeting visit
+    public function changeCustomerProcedure(Request $request, $id)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'procedure_id' => 'required|integer|exists:users_api_customers_procedures,id',
+        ]);
+
+        $customer = ApiCustomer::where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$customer) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Customer not found or does not belong to you.'
+            ], 404);
+        }
+
+        // ensure the chosen procedure belongs to the same user
+        $procedure = UserApiCustomerProcedure::where('id', $validated['procedure_id'])
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$procedure) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Procedure not found or does not belong to you.'
+            ], 404);
+        }
+
+        $customer->procedure_id = $procedure->id;
+        $customer->save();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Customer moved to new procedure successfully',
+            'data'    => [
+                'customer_id'      => $customer->id,
+                'customer_name'    => $customer->name,
+                'new_procedure_id' => $procedure->id,
+                'new_procedure'    => $procedure->procedure_name,
+            ]
+        ]);
+    }
 
     //  search customers by name or phone + filter by stage + filter by periority
     public function searchCustomers(Request $request)
@@ -196,5 +315,4 @@ class CRMController extends Controller
             ],
         ]);
     }
-
 }
