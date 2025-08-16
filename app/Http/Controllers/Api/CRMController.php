@@ -112,12 +112,90 @@ class CRMController extends Controller
                 'customers'  => $customers,
             ];
         }
+        // ===== PRIORITIES with customers =====
+        $priorities = UserApiCustomerPriority::where('user_id', $user->id)
+            ->orderBy('order', 'asc')
+            ->get();
+
+        $prioritiesWithCustomers = [];
+
+        foreach ($priorities as $priority) {
+            $customerQuery = ApiCustomer::where('user_id', $user->id)
+                ->where('priority', $priority->value);
+
+            $customerCount = $customerQuery->count();
+
+            $customers = $customerQuery->get()->map(function ($customer) {
+                $remindersCount    = UserApiCustomerReminder::where('customer_id', $customer->id)->count();
+                $appointmentsCount = UserApiCustomerAppointment::where('customer_id', $customer->id)->count();
+
+                return [
+                    'customer_id'        => $customer->id,
+                    'name'               => $customer->name,
+                    'city'               => $customer->city, // same as your current shape
+                    'priority'           => $customer->priority,
+                    'customer_type'      => $customer->customer_type,
+                    'reminders_count'    => $remindersCount,
+                    'appointments_count' => $appointmentsCount,
+                ];
+            });
+
+            $prioritiesWithCustomers[] = [
+                'priority_value'  => $priority->value,
+                'priority_name'   => $priority->name,
+                'color'           => $priority->color,
+                'icon'            => $priority->icon,
+                'customer_count'  => $customerCount,
+                'customers'       => $customers,
+            ];
+        }
+
+        // ===== PROCEDURES with customers =====
+        $procedures = UserApiCustomerProcedure::where('user_id', $user->id)
+            ->orderBy('order', 'asc')
+            ->get();
+
+        $proceduresWithCustomers = [];
+
+        foreach ($procedures as $proc) {
+            $customerQuery = ApiCustomer::where('user_id', $user->id)
+                ->where('procedure_id', $proc->id);
+
+            $customerCount = $customerQuery->count();
+
+            $customers = $customerQuery->get()->map(function ($customer) {
+                $remindersCount    = UserApiCustomerReminder::where('customer_id', $customer->id)->count();
+                $appointmentsCount = UserApiCustomerAppointment::where('customer_id', $customer->id)->count();
+
+                return [
+                    'customer_id'        => $customer->id,
+                    'name'               => $customer->name,
+                    'city'               => $customer->city,
+                    'priority'           => $customer->priority,
+                    'customer_type'      => $customer->customer_type,
+                    'reminders_count'    => $remindersCount,
+                    'appointments_count' => $appointmentsCount,
+                ];
+            });
+
+            $proceduresWithCustomers[] = [
+                'procedure_id'    => $proc->id,
+                'procedure_name'  => $proc->procedure_name,
+                'color'           => $proc->color,
+                'icon'            => $proc->icon,
+                'customer_count'  => $customerCount,
+                'customers'       => $customers,
+            ];
+        }
+
 
         return response()->json([
-            'status'              => 'success',
-            'total_customers'     => $totalCustomers,
-            'stages_summary'      => $stagesSummary,
-            'stages_with_customers' => $stagesWithCustomers,
+            'status'                   => 'success',
+            'total_customers'          => $totalCustomers,
+            'stages_summary'           => $stagesSummary,
+            'stages_with_customers'    => $stagesWithCustomers,
+            'priorities_with_customers'=> $prioritiesWithCustomers,
+            'procedures_with_customers'=> $proceduresWithCustomers,
         ]);
     }
 
