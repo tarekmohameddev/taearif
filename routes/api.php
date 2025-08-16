@@ -23,7 +23,6 @@ use App\Http\Controllers\Api\content\ApiMenuController;
 use App\Http\Controllers\Api\isthara\IstharaController;
 use App\Http\Controllers\Api\project\ProjectController;
 use App\Http\Controllers\Api\content\AboutApiController;
-use App\Http\Controllers\Api\Customer\CustomerController;
 use App\Http\Controllers\Api\property\PropertyController;
 use App\Http\Controllers\Api\AnalyticsDashboardController;
 use App\Http\Controllers\Api\apps\whatsapp\ChatController;
@@ -37,7 +36,10 @@ use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\apps\whatsapp\EmbeddingController;
 use App\Http\Controllers\Api\content\ApiBannerSettingController;
 use App\Http\Controllers\Api\content\ApiContentSectionsController;
+use App\Http\Controllers\Api\Customer\CustomerController;
 use App\Http\Controllers\Api\Customer\UserApiCustomerStageController;
+use App\Http\Controllers\Api\Customer\UserApiCustomerPriorityController;
+use App\Http\Controllers\Api\Customer\UserApiCustomerProcedureController;
 use App\Http\Controllers\Api\Customer\UserApiCustomerReminderController;
 use App\Http\Controllers\Api\Customer\UserApiCustomerAppointmentController;
 use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
@@ -306,13 +308,22 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
-// ApiCustomerStage
+// Api crm Customer
 Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
+    // STAGES
     Route::apiResource('stages', UserApiCustomerStageController::class);
     // reorderStages
     Route::post('stages/reorder', [UserApiCustomerStageController::class, 'reorderStages']); // reorder stages
     // moveStage
     Route::post('stages/{id}/move', [UserApiCustomerStageController::class, 'moveStage']); // move stage up or down
+    // PROCEDURE TYPES
+    Route::apiResource('procedures', UserApiCustomerProcedureController::class);
+    Route::post('procedures/reorder', [UserApiCustomerProcedureController::class, 'reorderProcedures']);
+    Route::post('procedures/{id}/move', [UserApiCustomerProcedureController::class, 'moveProcedure']);
+    // PRIORITIES
+    Route::apiResource('priorities', UserApiCustomerPriorityController::class);
+    Route::post('priorities/reorder', [UserApiCustomerPriorityController::class, 'reorderPriorities']);
+    Route::post('priorities/{id}/move', [UserApiCustomerPriorityController::class, 'movePriority']);
 
     // Appointments
     Route::apiResource('customer-appointments', UserApiCustomerAppointmentController::class);
@@ -323,6 +334,13 @@ Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
     // CRM Dashboard
     Route::get('/', [CRMController::class, 'index']);
     Route::post('/customers/{id}/change-stage', [CRMController::class, 'changeCustomerStage']); // drag and drop customers to change stage
+    // drag and drop customers to change priority
+    Route::post('/customers/{id}/change-priority', [CRMController::class, 'changeCustomerPriority']);
+    // drag and drop customers to change type
+    Route::post('/customers/{id}/change-type', [CRMController::class, 'changeCustomerType']);
+    // drag and drop customers procedure
+    Route::post('/customers/{id}/change-procedure', [CRMController::class, 'changeCustomerProcedure']);
+
     // searchCustomers
     Route::get('/customers/search', [CRMController::class, 'searchCustomers']); // search customers by name or email
 
