@@ -12,6 +12,7 @@ use App\Models\Api\UserApiCustomerReminder;
 use App\Models\Api\UserApiCustomerAppointment;
 use Illuminate\Validation\Rule;
 use App\Models\Api\UserApiCustomerProcedure;
+use App\Models\Api\UserApiCustomerPriority;
 
 class CRMController extends Controller
 {
@@ -19,11 +20,11 @@ class CRMController extends Controller
     {
         $user = $request->user();
 
-        //Check if user already has stages
+
         $hasStages = UserApiCustomerStage::where('user_id', $user->id)->exists();
 
         if (!$hasStages) {
-            // Create default stages
+
             $defaultStages = [
                 ['stage_name' => 'طلب معاينه', 'order' => 1],
                 ['stage_name' => 'صفقة بيع او ايجار', 'order' => 2],
@@ -40,6 +41,30 @@ class CRMController extends Controller
             }
         }
 
+        $defaultProcedures = [
+            ['procedure_name' => 'meeting', 'order' => 1, 'icon' => 'users', 'color' => '#2196f3'],
+            ['procedure_name' => 'visit',   'order' => 2, 'icon' => 'map',   'color' => '#ff9800'],
+        ];
+        foreach ($defaultProcedures as $p) {
+            UserApiCustomerProcedure ::firstOrCreate(
+                ['user_id' => $user->id, 'procedure_name' => $p['procedure_name']],
+                ['order' => $p['order'], 'icon' => $p['icon'], 'color' => $p['color'], 'is_active' => true]
+            );
+        }
+
+        $defaults = [
+            ['name'=>'Low',    'value'=>1, 'order'=>1, 'color'=>'#4caf50','icon'=>'arrow-down'],
+            ['name'=>'Medium', 'value'=>2, 'order'=>2, 'color'=>'#ff9800','icon'=>'minus'],
+            ['name'=>'High',   'value'=>3, 'order'=>3, 'color'=>'#f44336','icon'=>'arrow-up'],
+          ];
+
+          foreach ($defaults as $p) {
+              UserApiCustomerPriority::firstOrCreate(
+                  ['user_id'=>$user->id, 'value'=>$p['value']],
+                  ['name'=>$p['name'], 'order'=>$p['order'], 'color'=>$p['color'], 'icon'=>$p['icon'], 'is_active'=>true]
+              );
+          }
+
         //total customers for this user
         $totalCustomers = ApiCustomer::where('user_id', $user->id)->count();
 
@@ -52,7 +77,7 @@ class CRMController extends Controller
         $stagesWithCustomers = [];
 
         foreach ($stages as $stage) {
-            // Count customers in this stage
+
             $customerQuery = ApiCustomer::where('user_id', $user->id)->where('stage_id', $stage->id);
 
             $customerCount = $customerQuery->count();
@@ -65,7 +90,7 @@ class CRMController extends Controller
                 'customer_count' => $customerCount,
             ];
 
-            // Fetch customers with info
+
             $customers = $customerQuery->get()->map(function ($customer) {
                 $remindersCount = UserApiCustomerReminder::where('customer_id', $customer->id)->count();
                 $appointmentsCount = UserApiCustomerAppointment::where('customer_id', $customer->id)->count();
@@ -231,7 +256,6 @@ class CRMController extends Controller
             ], 404);
         }
 
-        // ensure the chosen procedure belongs to the same user
         $procedure = UserApiCustomerProcedure::where('id', $validated['procedure_id'])
             ->where('user_id', $user->id)
             ->first();
