@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="حلول مواقع احترافية تناسب جميع المستخدمين، مع دعم كامل باللغة العربية">
+    <meta name="description" content="منصة تعاريف - ابنِ موقعك العقاري باحترافية مع CRM ومساعد واتساب ذكي">
     <meta name="generator" content="تعاريف">
     <meta name="referrer" content="no-referrer">
-    <title>تعاريف - أنشئ موقعك الإلكتروني بدون برمجة</title>
+    <title>تعاريف - غير معادلة شغلك العقاري وخلك دايم سابق غيرك</title>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS (you can replace with a direct link to the CDN or your compiled CSS file) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -23,24 +23,29 @@
                     animation: {
                         float: "float 6s ease-in-out infinite",
                         "pulse-subtle": "pulse-subtle 3s ease-in-out infinite",
+                        "bounce-slow": "bounce-slow 2s ease-in-out infinite",
+                        "fade-in-up": "fade-in-up 0.8s ease-out",
                     },
                     colors: {
-                        primary: "#000000",
-                        secondary: "#FFFFFF",
-                        accent: "#000000",
-                        background: "#FFFFFF"
+                        primary: "#1F2937",
+                        secondary: "#F8F9FA",
+                        accent: "#6366F1",
+                        background: "#F8F9FA",
+                        success: "#10B981",
+                        warning: "#F59E0B",
+                        danger: "#EF4444"
                     }
                 }
             }
         }
     </script>
-    <!-- Lucide Icons (or you can use another icon library or your own icons) -->
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
         /* Base Styles */
         :root {
-            --background: 0 0% 96.1%;
+            --background: 0 0% 100%;
             --foreground: 0 0% 0%;
             --card: 0 0% 100%;
             --card-foreground: 0 0% 0%;
@@ -48,50 +53,55 @@
             --popover-foreground: 0 0% 0%;
             --primary: 0 0% 0%;
             --primary-foreground: 0 0% 100%;
-            --secondary: 0 0% 100%;
+            --secondary: 0 0% 96%;
             --secondary-foreground: 0 0% 0%;
-            --muted: 0 0% 96.1%;
-            --muted-foreground: 0 0% 45.1%;
-            --accent: 211 100% 50%;
-            --accent-foreground: 0 0% 100%;
+            --muted: 0 0% 96%;
+            --muted-foreground: 0 0% 45%;
+            --accent: 0 0% 96%;
+            --accent-foreground: 0 0% 0%;
             --destructive: 0 84.2% 60.2%;
             --destructive-foreground: 0 0% 98%;
-            --border: 0 0% 89.8%;
-            --input: 0 0% 89.8%;
+            --border: 0 0% 90%;
+            --input: 0 0% 90%;
             --ring: 0 0% 0%;
             --radius: 0.5rem;
-        }
-
-        .dark {
-            --background: 0 0% 3.9%;
-            --foreground: 0 0% 98%;
-            --card: 0 0% 3.9%;
-            --card-foreground: 0 0% 98%;
-            --popover: 0 0% 3.9%;
-            --popover-foreground: 0 0% 98%;
-            --primary: 0 0% 0%;
-            --primary-foreground: 0 0% 98%;
-            --secondary: 0 0% 100%;
-            --secondary-foreground: 0 0% 0%;
-            --muted: 0 0% 14.9%;
-            --muted-foreground: 0 0% 63.9%;
-            --accent: 211 100% 50%;
-            --accent-foreground: 0 0% 100%;
-            --destructive: 0 62.8% 30.6%;
-            --destructive-foreground: 0 0% 98%;
-            --border: 0 0% 14.9%;
-            --input: 0 0% 14.9%;
-            --ring: 0 0% 83.1%;
-        }
-
-        * {
-            border-color: hsl(var(--border));
         }
 
         body {
             background-color: hsl(var(--background));
             color: hsl(var(--foreground));
             font-family: 'Tajawal', sans-serif;
+        }
+
+        /* Adding background pattern utilities */
+        .pattern-dots {
+            background-image: radial-gradient(circle, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .pattern-grid {
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .pattern-diagonal {
+            background-image: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(0, 0, 0, 0.05) 10px,
+                rgba(0, 0, 0, 0.05) 20px
+            );
+        }
+
+        .pattern-waves {
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .pattern-hexagon {
+            background-image: url("data:image/svg+xml,%3Csvg width='28' height='49' viewBox='0 0 28 49' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.05' fill-rule='evenodd'%3E%3Cpolygon points='13.99 9.25 13.99 1.75 1.74 1.75 1.74 9.25 7.86 12.5 1.74 15.75 1.74 23.25 13.99 23.25 13.99 15.75 7.86 12.5'/%3E%3C/g%3E%3C/svg%3E");
         }
 
         /* Animation Classes */
@@ -115,39 +125,6 @@
             transform: translateY(0);
         }
 
-        .animate-slide-right {
-            opacity: 0;
-            transform: translateX(-40px);
-            transition: all 700ms ease-out;
-        }
-
-        .animate-slide-right.appear {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        .animate-slide-left {
-            opacity: 0;
-            transform: translateX(40px);
-            transition: all 700ms ease-out;
-        }
-
-        .animate-slide-left.appear {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        .animate-scale {
-            transform: scale(0.95);
-            opacity: 0;
-            transition: all 500ms ease-out;
-        }
-
-        .animate-scale.appear {
-            transform: scale(1);
-            opacity: 1;
-        }
-
         .hover-lift {
             transition: transform 300ms ease-out;
         }
@@ -156,51 +133,7 @@
             transform: translateY(-4px);
         }
 
-        .hover-scale {
-            transition: transform 300ms ease-out;
-        }
-
-        .hover-scale:hover {
-            transform: scale(1.05);
-        }
-
-        /* Keyframes Animations */
-        @keyframes blob-move {
-            0% {
-                transform: translate(0px, 0px) scale(1);
-            }
-            33% {
-                transform: translate(30px, -50px) scale(1.1);
-            }
-            66% {
-                transform: translate(-20px, 20px) scale(0.9);
-            }
-            100% {
-                transform: translate(0px, 0px) scale(1);
-            }
-        }
-
-        @keyframes glow {
-            0% {
-                opacity: 0.4;
-            }
-            50% {
-                opacity: 0.8;
-            }
-            100% {
-                opacity: 0.4;
-            }
-        }
-
-        @keyframes slow-spin {
-            from {
-                transform: rotate(0deg);
-            }
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
+        /* Keyframes */
         @keyframes float {
             0%, 100% {
                 transform: translateY(0) translateX(0);
@@ -216,40 +149,27 @@
             }
         }
 
-        .animation-delay-200 {
-            animation-delay: 200ms;
+        @keyframes bounce-slow {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-8px);
+            }
+            60% {
+                transform: translateY(-4px);
+            }
         }
 
-        .animation-delay-400 {
-            animation-delay: 400ms;
-        }
-
-        .animation-delay-600 {
-            animation-delay: 600ms;
-        }
-
-        .animation-delay-800 {
-            animation-delay: 800ms;
-        }
-
-        .animation-delay-1000 {
-            animation-delay: 1000ms;
-        }
-
-        .blob-move {
-            animation: blob-move 25s ease-in-out infinite;
-        }
-
-        .glow {
-            animation: glow 5s ease-in-out infinite;
-        }
-
-        .animate-slow-spin {
-            animation: slow-spin 20s linear infinite;
-        }
-
-        .animate-float {
-            animation: float 8s ease-in-out infinite;
+        @keyframes fade-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Button Styles */
@@ -257,511 +177,87 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border-radius: 0.375rem;
+            border-radius: 0.5rem;
             font-weight: 500;
             cursor: pointer;
-            transition-property: all;
-            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-            transition-duration: 150ms;
-        }
-
-        .btn-sm {
-            height: 2rem;
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-            font-size: 0.875rem;
-            line-height: 1.25rem;
-        }
-
-        .btn-lg {
-            height: 2.5rem;
-            padding-left: 1rem;
-            padding-right: 1rem;
-            font-size: 0.875rem;
-            line-height: 1.25rem;
+            transition: all 200ms ease;
         }
 
         .btn-primary {
-            background-color: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
+            background-color: #000000;
+            color: white;
+            padding: 0.75rem 1.5rem;
         }
 
         .btn-primary:hover {
-            background-color: hsl(var(--primary) / 0.9);
+            background-color: #374151;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        .btn-success {
+            background-color: #000000;
+            color: white;
+            padding: 0.75rem 1.5rem;
+        }
+
+        .btn-success:hover {
+            background-color: #374151;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
         }
 
         .btn-outline {
+            border: 2px solid #E5E7EB;
             background-color: transparent;
-            border: 1px solid hsl(var(--border));
-            color: hsl(var(--foreground));
+            color: #000000;
+            padding: 0.75rem 1.5rem;
         }
 
         .btn-outline:hover {
-            background-color: hsl(var(--muted));
-            color: hsl(var(--muted-foreground));
-        }
-
-        .btn-ghost {
-            background-color: transparent;
-            color: hsl(var(--foreground));
-        }
-
-        .btn-ghost:hover {
-            background-color: hsl(var(--muted));
-            color: hsl(var(--muted-foreground));
-        }
-
-        .btn-icon {
-            height: 2rem;
-            width: 2rem;
-            padding: 0;
+            background-color: #000000;
+            border-color: #000000;
+            color: white;
         }
 
         /* Gradient text */
         .gradient-text {
-            background-clip: text;
+            background: linear-gradient(135deg, #000000 0%, #374151 100%);
             -webkit-background-clip: text;
-            color: transparent;
-            background-image: linear-gradient(to left, #374151, #000000);
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .gradient-accent {
-            background-clip: text;
+        .gradient-success {
+            background: linear-gradient(135deg, #000000 0%, #374151 100%);
             -webkit-background-clip: text;
-            color: transparent;
-            background-image: linear-gradient(to left, #000000, #007BFF);
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        /* Container */
+        /* Solution cards hover effect */
+        .solution-card {
+            transition: all 300ms ease;
+            border: 1px solid #E5E7EB;
+            background: white;
+        }
+
+        .solution-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border-color: #000000;
+        }
+
+        /* Container utilities */
         .container {
-            width: 100%;
-            margin-left: auto;
-            margin-right: auto;
-            padding-left: 1rem;
-            padding-right: 1rem;
-        }
-
-        @media (min-width: 640px) {
-            .container {
-                max-width: 640px;
-            }
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
         }
 
         @media (min-width: 768px) {
             .container {
-                max-width: 768px;
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .container {
-                max-width: 1024px;
-            }
-        }
-
-        @media (min-width: 1280px) {
-            .container {
-                max-width: 1280px;
-            }
-        }
-
-        @media (min-width: 1536px) {
-            .container {
-                max-width: 1536px;
-            }
-        }
-
-        /* Utility classes */
-        .flex {
-            display: flex;
-        }
-
-        .items-center {
-            align-items: center;
-        }
-
-        .justify-between {
-            justify-content: space-between;
-        }
-
-        .gap-2 {
-            gap: 0.5rem;
-        }
-
-        .gap-4 {
-            gap: 1rem;
-        }
-
-        .gap-6 {
-            gap: 1.5rem;
-        }
-
-        .gap-8 {
-            gap: 2rem;
-        }
-
-        .text-sm {
-            font-size: 0.875rem;
-            line-height: 1.25rem;
-        }
-
-        .text-lg {
-            font-size: 1.125rem;
-            line-height: 1.75rem;
-        }
-
-        .text-xl {
-            font-size: 1.25rem;
-            line-height: 1.75rem;
-        }
-
-        .text-2xl {
-            font-size: 1.5rem;
-            line-height: 2rem;
-        }
-
-        .text-3xl {
-            font-size: 1.875rem;
-            line-height: 2.25rem;
-        }
-
-        .text
-        .font-medium {
-            font-weight: 500;
-        }
-
-        .font-bold {
-            font-weight: 700;
-        }
-
-        .font-extrabold {
-            font-weight: 800;
-        }
-
-        .py-3 {
-            padding-top: 0.75rem;
-            padding-bottom: 0.75rem;
-        }
-
-        .px-4 {
-            padding-left: 1rem;
-            padding-right: 1rem;
-        }
-
-        .py-6 {
-            padding-top: 1.5rem;
-            padding-bottom: 1.5rem;
-        }
-
-        .py-12 {
-            padding-top: 3rem;
-            padding-bottom: 3rem;
-        }
-
-        .mb-2 {
-            margin-bottom: 0.5rem;
-        }
-
-        .mb-4 {
-            margin-bottom: 1rem;
-        }
-
-        .mb-6 {
-            margin-bottom: 1.5rem;
-        }
-
-        .mb-8 {
-            margin-bottom: 2rem;
-        }
-
-        .mt-2 {
-            margin-top: 0.5rem;
-        }
-
-        .mt-4 {
-            margin-top: 1rem;
-        }
-
-        .mt-6 {
-            margin-top: 1.5rem;
-        }
-
-        .mt-8 {
-            margin-top: 2rem;
-        }
-
-        .mt-12 {
-            margin-top: 3rem;
-        }
-
-        .mt-16 {
-            margin-top: 4rem;
-        }
-
-        .grid {
-            display: grid;
-        }
-
-        .grid-cols-1 {
-            grid-template-columns: repeat(1, minmax(0, 1fr));
-        }
-
-        .grid-cols-2 {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .relative {
-            position: relative;
-        }
-
-        .absolute {
-            position: absolute;
-        }
-
-        .inset-0 {
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-        }
-
-        .z-0 {
-            z-index: 0;
-        }
-
-        .z-10 {
-            z-index: 10;
-        }
-
-        .z-40 {
-            z-index: 40;
-        }
-
-        .z-50 {
-            z-index: 50;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .block {
-            display: block;
-        }
-
-        .flex-col {
-            flex-direction: column;
-        }
-
-        .items-center {
-            align-items: center;
-        }
-
-        .justify-center {
-            justify-content: center;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .rounded-full {
-            border-radius: 9999px;
-        }
-
-        .rounded-lg {
-            border-radius: var(--radius);
-        }
-
-        .rounded-xl {
-            border-radius: 0.75rem;
-        }
-
-        .rounded-2xl {
-            border-radius: 1rem;
-        }
-
-        .border {
-            border-width: 1px;
-        }
-
-        .border-b {
-            border-bottom-width: 1px;
-        }
-
-        .shadow-sm {
-            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-        }
-
-        .shadow-lg {
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        }
-
-        .shadow-xl {
-            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-        }
-
-        .shadow-2xl {
-            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-        }
-
-        .overflow-hidden {
-            overflow: hidden;
-        }
-
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border-width: 0;
-        }
-
-        @media (min-width: 640px) {
-            .sm\:text-lg {
-                font-size: 1.125rem;
-                line-height: 1.75rem;
-            }
-
-            .sm\:text-2xl {
-                font-size: 1.5rem;
-                line-height: 2rem;
-            }
-
-            .sm\:text-3xl {
-                font-size: 1.875rem;
-                line-height: 2.25rem;
-            }
-
-            .sm\:text-4xl {
-                font-size: 2.25rem;
-                line-height: 2.5rem;
-            }
-
-            .sm\:grid-cols-2 {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .sm\:flex-row {
-                flex-direction: row;
-            }
-
-            .sm\:space-y-0 {
-                margin-top: 0;
-                margin-bottom: 0;
-            }
-
-            .sm\:space-x-4 {
-                margin-left: 1rem;
-                margin-right: 0;
-            }
-
-            .sm\:space-x-reverse {
-                --tw-space-x-reverse: 1;
-            }
-
-            .sm\:inline-flex {
-                display: inline-flex;
-            }
-        }
-
-        @media (min-width: 768px) {
-            .md\:text-xl {
-                font-size: 1.25rem;
-                line-height: 1.75rem;
-            }
-
-            .md\:text-4xl {
-                font-size: 2.25rem;
-                line-height: 2.5rem;
-            }
-
-            .md\:text-5xl {
-                font-size: 3rem;
-                line-height: 1;
-            }
-
-            .md\:text-6xl {
-                font-size: 3.75rem;
-                line-height: 1;
-            }
-
-            .md\:grid-cols-2 {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .md\:grid-cols-3 {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-            }
-
-            .md\:grid-cols-4 {
-                grid-template-columns: repeat(4, minmax(0, 1fr));
-            }
-
-            .md\:flex {
-                display: flex;
-            }
-
-            .md\:hidden {
-                display: none;
-            }
-
-            .md\:flex-row {
-                flex-direction: row;
-            }
-
-            .md\:items-center {
-                align-items: center;
-            }
-
-            .md\:py-24 {
-                padding-top: 6rem;
-                padding-bottom: 6rem;
-            }
-
-            .md\:px-6 {
-                padding-left: 1.5rem;
-                padding-right: 1.5rem;
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .lg\:text-4xl {
-                font-size: 2.25rem;
-                line-height: 2.5rem;
-            }
-
-            .lg\:grid-cols-3 {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-            }
-
-            .lg\:grid-cols-4 {
-                grid-template-columns: repeat(4, minmax(0, 1fr));
-            }
-
-            .lg\:py-32 {
-                padding-top: 8rem;
-                padding-bottom: 8rem;
-            }
-
-            .lg\:gap-16 {
-                gap: 4rem;
-            }
-
-            .lg\:order-1 {
-                order: 1;
-            }
-
-            .lg\:order-2 {
-                order: 2;
+                padding: 0 2rem;
             }
         }
     </style>
@@ -769,14 +265,12 @@
 
 <body class="min-h-screen bg-background overflow-x-hidden">
     <!-- Header -->
-    <header class="sticky top-0 z-40 w-full border-b border-gray-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 shadow-sm">
+    <header class="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 shadow-sm">
         <div class="container flex h-16 items-center justify-between">
             <!-- Logo -->
             <div class="flex items-center gap-2">
                 <div class="relative group">
-                    <div class="absolute -inset-1"></div>
-                    <div class="relative flex items-center ">
-                    <svg version="1.0" width="150" height="100" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 565.000000 162.000000" preserveAspectRatio="xMidYMid meet">
+<svg version="1.0" width="150" height="100" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 565.000000 162.000000" preserveAspectRatio="xMidYMid meet">
 
                         <g transform="translate(0.000000,162.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
                         <path d="M4182 1488 c-17 -17 -17 -1279 0 -1296 9 -9 128 -12 473 -12 l460 0
@@ -809,773 +303,642 @@
                         <path d="M1380 180 l0 -80 95 0 95 0 0 80 0 80 -95 0 -95 0 0 -80z"></path>
                         </g>
                         </svg>
-                    </div>
                 </div>
             </div>
 
             <!-- Desktop Navigation -->
             <nav class="hidden md:flex items-center gap-8">
-                <div class="group relative">
-                    <a href="{{ url('/') }}" class="text-sm font-medium text-slate-700 relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-black after:transition-all after:duration-300 group-hover:after:w-full group-hover:text-gray-600">
-                        الرئيسية
-                    </a>
-                </div>
-                <div class="group relative hidden">
-                    <button class="text-sm font-medium text-slate-700 relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-black after:transition-all after:duration-300 group-hover:after:w-full group-hover:text-gray-600 flex items-center gap-1">
-                        المواقع الإلكترونية
-                        <i data-lucide="chevron-down" class="h-4 w-4 opacity-70"></i>
-                    </button>
-                    <div class="absolute z-10 top-full mt-2 ltr:right-0 rtl:left-0 bg-white rounded-xl shadow-lg w-56 overflow-hidden opacity-0 invisible group-hover:visible group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 border border-gray-100">
-                        <a href="{{ url('/realestate') }}" class="block px-4 py-3 text-sm text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-colors duration-200 border-b border-gray-50">
-                            <i data-lucide="building-2" class="h-4 w-4 inline-block ml-2 text-gray-500"></i>
-                            مواقع العقارات
-                        </a>
-                        <div class="block px-4 py-3 text-sm text-slate-400 border-b border-gray-50">
-                            <i data-lucide="layers" class="h-4 w-4 inline-block ml-2 text-slate-300"></i>
-                            مواقع المحاماة (قريباً)
-                        </div>
-                        <div class="block px-4 py-3 text-sm text-slate-400">
-                            <i data-lucide="users" class="h-4 w-4 inline-block ml-2 text-slate-300"></i>
-                            المواقع الشخصية (قريباً)
-                        </div>
-                    </div>
-                </div>
-                <div class="group relative hidden">
-                    <a href="/pricing" class="text-sm font-medium text-slate-700 relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-black after:transition-all after:duration-300 group-hover:after:w-full group-hover:text-gray-600">
-                        الأسعار
-                    </a>
-                </div>
-                <div class="group relative hidden">
-                    <a href="#contact" class="text-sm font-medium text-slate-700 relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-black after:transition-all after:duration-300 group-hover:after:w-full group-hover:text-gray-600">
-                        تواصل معنا
-                    </a>
-                </div>
-                <div class="group relative">
-                    <a href="#" class="text-sm font-medium text-slate-700 relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-black after:transition-all after:duration-300 group-hover:after:w-full group-hover:text-gray-600">
-                        عن المنصة
-                    </a>
-                </div>
-
-                <div class="group relative">
-                    <a href="#" class="text-sm font-medium text-slate-700 relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-black after:transition-all after:duration-300 group-hover:after:w-full group-hover:text-gray-600">
-                        الحلول المقدمة
-                    </a>
-                </div>
-
-                <div class="group relative">
-                    <a href="#" class="text-sm font-medium text-slate-700 relative after:absolute after:bottom-0 after:right-0 after:h-[2px] after:w-0 after:bg-black after:transition-all after:duration-300 group-hover:after:w-full group-hover:text-gray-600">
-                        التحديثات
-                    </a>
-                </div>
-
-
+                <a href="/" class="text-sm font-medium text-slate-700 hover:text-black transition-colors">الرئيسية</a>
+                <a href="/solutions" class="text-sm font-medium text-slate-700 hover:text-black transition-colors">الحلول</a>
+                <a href="/updates" class="text-sm font-medium text-slate-700 hover:text-black transition-colors">التحديثات</a>
+                <a href="/about-us" class="text-sm font-medium text-slate-700 hover:text-black transition-colors">من نحن</a>
+                <a href="https://wa.me/966541839888" class="text-sm font-medium text-slate-700 hover:text-black transition-colors">اتصل بنا</a>
             </nav>
 
             <!-- Action Buttons -->
             <div class="flex items-center gap-2 sm:gap-4">
-                <a href="https://app.taearif.com/" class="hidden sm:inline-flex btn btn-outline btn-sm border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-800 hover:border-gray-300 transition-all duration-300">
+                <a href="https://app.taearif.com/" class="hidden sm:inline-flex btn btn-outline text-sm">
                     تسجيل الدخول
                 </a>
-                <a href="https://app.taearif.com/register" class="btn btn-sm bg-black hover:bg-gray-700 text-white transition-all duration-300 hover:scale-105 shadow-sm hover:shadow-gray-200/50">
-                   أبدأ الان
-            </a>
-                <button id="menuButton" class="md:hidden btn btn-ghost btn-icon text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-300 menu-button">
+                <a href="https://app.taearif.com/register" class="btn btn-success text-sm">
+                    جرّب مجاناً الآن
+                </a>
+                <button id="menuButton" class="md:hidden p-2 text-slate-700">
                     <i data-lucide="menu" class="h-5 w-5"></i>
-                    <span class="sr-only">القائمة</span>
                 </button>
             </div>
         </div>
     </header>
 
     <!-- Mobile Menu -->
-    <div id="mobileMenu" class="fixed inset-0 bg-white/95 backdrop-blur-md z-50 transition-all duration-300 transform translate-x-full opacity-0 md:hidden mobile-menu">
+    <div id="mobileMenu" class="fixed inset-0 bg-white/95 backdrop-blur-md z-50 transition-all duration-300 transform translate-x-full opacity-0 md:hidden">
         <div class="container h-full flex flex-col py-6">
             <div class="flex justify-between items-center mb-8">
-                <div class="flex items-center gap-2 font-bold text-xl">
-                    <i data-lucide="layers" class="h-6 w-6 text-gray-600"></i>
-                    <span class="gradient-gray-gray">تعاريف</span>
-                </div>
-                <button id="closeMenuButton" class="btn btn-ghost btn-icon text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-300">
+                <div class="text-xl font-bold">تعاريف</div>
+                <button id="closeMenuButton" class="p-2 text-slate-700">
                     <i data-lucide="x" class="h-5 w-5"></i>
-                    <span class="sr-only">إغلاق</span>
                 </button>
             </div>
-            <nav class="flex flex-col gap-2 text-right">
-                <a href="#" class="text-lg font-medium py-3 px-4 rounded-lg text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200">
-                    الرئيسية
-                </a>
-                <!-- Mobile Websites Dropdown -->
-                <div class="py-3 px-4 rounded-lg bg-gray-50/50 hidden">
-                    <div class="text-lg font-medium mb-2 text-gray-700">المواقع الإلكترونية</div>
-                    <div class="pr-4 flex flex-col gap-3">
-                        <a href="{{ url('/realestate') }}" class="text-base font-medium text-slate-700 hover:text-gray-700 transition-colors duration-200 flex items-center gap-2">
-                            <i data-lucide="building-2" class="h-4 w-4 text-gray-500"></i>
-                            <span>مواقع العقارات</span>
-                        </a>
-                        <div class="text-base font-medium text-slate-400 flex items-center gap-2">
-                            <i data-lucide="layers" class="h-4 w-4 text-slate-300"></i>
-                            <span>مواقع المحاماة (قريباً)</span>
-                        </div>
-                        <div class="text-base font-medium text-slate-400 flex items-center gap-2">
-                            <i data-lucide="users" class="h-4 w-4 text-slate-300"></i>
-                            <span>المواقع الشخصية (قريباً)</span>
-                        </div>
-                    </div>
-                </div>
-
-                <a href="#" class="text-lg font-medium py-3 px-4 rounded-lg text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200">
-                    عن المنصة
-                </a>
-                <a href="#" class="text-lg font-medium py-3 px-4 rounded-lg text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200">
-                    الحلول المقدمة
-                </a>
-                <a href="#" class="text-lg font-medium py-3 px-4 rounded-lg text-slate-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200">
-                    التحديثات
-                </a>
+            <nav class="flex flex-col gap-4 text-right">
+                <a href="#home" class="text-lg font-medium py-3 px-4 rounded-lg hover:bg-gray-50">الرئيسية</a>
+                <a href="/solutions" class="text-lg font-medium py-3 px-4 rounded-lg hover:bg-gray-50">الحلول</a>
+                <a href="/updates" class="text-lg font-medium py-3 px-4 rounded-lg hover:bg-gray-50">التحديثات</a>
+                <a href="/about-us" class="text-lg font-medium py-3 px-4 rounded-lg hover:bg-gray-50">من نحن</a>
+                <a href="https://wa.me/966541839888" class="text-lg font-medium py-3 px-4 rounded-lg hover:bg-gray-50">اتصل بنا</a>
             </nav>
-
-            <!-- Mobile Social Links -->
-            <div class="flex justify-center gap-4 mt-8">
-                <a href="#" class="text-slate-400 hover:text-gray-600 transition-colors duration-300">
-                    <i data-lucide="facebook" class="h-5 w-5"></i>
-                    <span class="sr-only">Facebook</span>
-                </a>
-                <a href="#" class="text-slate-400 hover:text-gray-600 transition-colors duration-300">
-                    <i data-lucide="twitter" class="h-5 w-5"></i>
-                    <span class="sr-only">Twitter</span>
-                </a>
-                <a href="#" class="text-slate-400 hover:text-gray-600 transition-colors duration-300">
-                    <i data-lucide="instagram" class="h-5 w-5"></i>
-                    <span class="sr-only">Instagram</span>
-                </a>
-            </div>
-
             <div class="mt-auto flex flex-col gap-4">
-                <a href="https://app.taearif.com" class="btn btn-outline w-full border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-800 hover:border-gray-300 transition-all duration-300 py-6">
-                    تسجيل الدخول
-                </a>
-                <a href="https://app.taearif.com/register" class="btn w-full bg-black hover:bg-gray-700 text-white transition-all duration-300 py-6">
-                    ابدأ الان         </a>
+                <a href="https://app.taearif.com" class="btn btn-outline w-full py-3">تسجيل الدخول</a>
+                <a href="https://app.taearif.com/register" class="btn btn-success w-full py-3">جرّب مجاناً الآن</a>
             </div>
         </div>
     </div>
 
-    <main class="flex-1">
-        <!-- Hero Section -->
-        <section class="relative w-full overflow-hidden bg-gradient-to-b from-gray-50 via-white to-white py-16 md:py-20 lg:py-24">
-            <!-- Decorative Elements -->
-            <div class="absolute inset-0 z-0 overflow-hidden">
-                <!-- Geometric Shapes -->
-                <div class="absolute -top-20 -left-20 h-64 w-64 rounded-full border border-gray-200 opacity-20"></div>
-                <div class="absolute -top-10 -left-10 h-40 w-40 rounded-full border border-gray-200 opacity-30"></div>
-                <div class="absolute top-40 -right-20 h-80 w-80 rounded-full border border-gray-200 opacity-20"></div>
-                <div class="absolute top-60 -right-10 h-40 w-40 rounded-full border border-gray-200 opacity-30"></div>
+    <!-- Hero Section -->
+    <section id="home" class="relative w-full overflow-hidden bg-gradient-to-b from-purple-50/30 via-white to-white py-16 md:py-24">
+        <!-- Background Elements -->
+        <div class="absolute inset-0 z-0">
+            <div class="absolute top-20 right-10 h-32 w-32 rounded-full bg-gray-100/30 blur-2xl"></div>
+            <div class="absolute bottom-20 left-10 h-40 w-40 rounded-full bg-cyan-100/20 blur-3xl"></div>
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-60 w-60 rounded-full bg-gray-50/50 blur-3xl"></div>
+        </div>
 
-                <!-- Gradient Blobs -->
-                <div class="absolute top-1/4 left-1/4 h-64 w-64 rounded-full bg-gradient-to-r from-gray-200/30 to-gray-200/30 blur-3xl"></div>
-                <div class="absolute bottom-1/4 right-1/4 h-64 w-64 rounded-full bg-gradient-to-r from-blue-200/30 to-cyan-200/30 blur-3xl"></div>
+        <div class="container relative z-10">
+            <div class="max-w-6xl mx-auto">
+                <div class="text-center mb-16">
+                    <!-- Badge -->
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-200 bg-gray-50 text-purple-800 text-sm font-medium mb-6 animate-fade-in">
+                        <i data-lucide="trending-up" class="h-4 w-4"></i>
+                        <span>+2000 مكتب عقاري يثق بنا</span>
+                    </div>
 
-                <!-- Animated Elements -->
-                <div class="absolute top-20 left-1/3 h-3 w-3 rounded-full bg-gray-400 opacity-70 animate-float"></div>
-                <div class="absolute top-40 right-1/4 h-2 w-2 rounded-full bg-blue-400 opacity-70 animate-float" style="animation-delay: 1s"></div>
-                <div class="absolute bottom-20 left-1/4 h-2 w-2 rounded-full bg-gray-400 opacity-70 animate-float" style="animation-delay: 2s"></div>
+                    <!-- Main Headline -->
+                    <h1 class="text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
+                        <span class="text-black">غير معادلة</span>
+                        <span class="gradient-success">شغلك العقاري</span>
+                        <br>
+                        <span class="text-black">وخلك دايم</span>
+                        <span class="gradient-text">سابق غيرك</span>
+                    </h1>
 
-                <!-- Grid Pattern -->
-                <div class="absolute inset-0 opacity-[0.02]">
-                    <img src="/960486_OFC6CF1.svg" alt="Background Pattern" class="w-full h-full">
-                </div>
-            </div>
+                    <!-- Subtitle -->
+                    <p class="text-xl md:text-2xl text-gray-600 mb-8 max-w-4xl mx-auto leading-relaxed animate-slide-up">
+                        ابنِ موقعك العقاري باحترافية، رتّب عملاءك وعقاراتك في نظام واحد، وخلي المساعد الذكي يرد على عملاءك في واتساب ويخزن بياناتهم حتى وأنت نايم.
+                    </p>
 
-            <div class="container px-4 md:px-6 relative z-10">
-                <div class="mx-auto max-w-7xl">
-                    <!-- Hero Content -->
-                    <div class="flex flex-col items-center text-center">
-                        <!-- Announcement Badge -->
-                        <a href="https://taearif.com/blog-details/%D8%A7%D9%86%D8%B7%D9%84%D9%82-%D9%81%D9%8A-%D8%B9%D8%A7%D9%84%D9%85-%D8%A7%D9%84%D8%AA%D8%B3%D9%88%D9%8A%D9%82-%D8%A7%D9%84%D8%B1%D9%82%D9%85%D9%8A-%D8%A7%D9%84%D8%AD%D8%B1-%D9%88%D8%A7%D8%B9%D8%B1%D9%81-%D9%83%D9%8A%D9%81%D9%8A%D8%A9-%D8%A7%D9%86%D8%B4%D8%A7%D8%A1-%D9%85%D9%88%D9%82%D8%B9-%D8%A7%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A-%D9%85%D8%AC%D8%A7%D9%86%D9%8A/97" class="hidden mb-6 inline-flex items-center rounded-full border border-gray-100 bg-white/80 px-4 py-1.5 text-sm font-medium text-gray-800 shadow-sm backdrop-blur-sm transition-all duration-300 hover:shadow-md">
-                            <span class="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white">
-                                جديد
-                            </span>
-                            أطلقنا للتو ميزات جديدة - تعرف عليها الآن
+                    <!-- CTA Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12 animate-slide-up">
+                        <a href="https://app.taearif.com/register" class="btn btn-success text-lg px-8 py-4 rounded-full shadow-lg hover:shadow-xl">
+                            <i data-lucide="rocket" class="ml-2 h-5 w-5"></i>
+                            جرّب مجاناً الآن
                         </a>
-
-                        <!-- Main Headline -->
-                        <h1 class="mb-6 max-w-4xl gradient-gray-gray text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
-                            موقعك العقاري في دقائق
-                        </h1>
-
-                        <!-- Subheadline -->
-                        <p class="mb-8 max-w-2xl text-lg text-slate-600 md:text-xl">
-                        ✔️بدون برمجة  ✔️سهل الاستخدام ✔️تصاميم احترافية
-                        </p>
-
-                        <!-- CTA Buttons -->
-                        <div class="mb-10 flex flex-col space-y-4 sm:flex-row sm:space-x-0 sm:space-x-reverse sm:space-y-0 sm:rtl:space-x-4">
-                            <a href="https://app.taearif.com/register" class="group relative overflow-hidden rounded-full bg-black px-8 text-white shadow-lg transition-all duration-300 hover:bg-gray-700 hover:shadow-gray-200/50 btn btn-lg">
-                                <span class="relative z-10 flex items-center">
-                                    ابني موقعك مجاناً الان
-                                    <i data-lucide="arrow-right" class="mr-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"></i>
-                                </span>
-                            </a>
-                            <a href="https://istshara.taearif.com" id="" class="rounded-full border-gray-200 px-8 text-gray-700 transition-all duration-300 hover:bg-gray-50 hover:text-gray-800 btn btn-outline btn-lg">
-                                حجز استشارة
-                            </a>
-                        </div>
-
-                        <!-- Trust Indicators -->
-                        <div class="flex flex-col items-center hidden">
-                            <div class="mb-6 flex items-center gap-3">
-                                <div class="flex -space-x-2 space-x-reverse">
-                                    <img src="https://randomuser.me/api/portraits/men/1.jpg" alt="مستخدم" class="h-8 w-8 rounded-full border-2 border-white object-cover">
-                                    <img src="https://randomuser.me/api/portraits/women/2.jpg" alt="مستخدم" class="h-8 w-8 rounded-full border-2 border-white object-cover">
-                                    <img src="https://randomuser.me/api/portraits/men/3.jpg" alt="مستخدم" class="h-8 w-8 rounded-full border-2 border-white object-cover">
-                                    <div class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-gray-100 text-xs font-medium text-gray-800">
-                                        +500
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-1 text-sm text-slate-600">
-                                    <span class="font-medium">4.9</span>
-                                    <div class="flex text-amber-400">
-                                        <i data-lucide="star" class="h-4 w-4 fill-current"></i>
-                                        <i data-lucide="star" class="h-4 w-4 fill-current"></i>
-                                        <i data-lucide="star" class="h-4 w-4 fill-current"></i>
-                                        <i data-lucide="star" class="h-4 w-4 fill-current"></i>
-                                        <i data-lucide="star" class="h-4 w-4 fill-current"></i>
-                                    </div>
-                                    <span>من 500+ تقييم</span>
-                                </div>
-                            </div>
-
-                        </div>
+                        <a href="https://wa.me/966541839888" class="btn btn-outline text-lg px-8 py-4 rounded-full flex items-center">
+                            <i data-lucide="message-circle" class="ml-2 h-5 w-5 whatsapp-icon"></i>
+                            تحدث مع المبيعات
+                        </a>
                     </div>
 
-                    <!-- Dashboard Preview -->
-                    <div class="relative mx-auto mt-16 max-w-5xl">
-                        <!-- Decorative Elements -->
-                        <div class="absolute -top-6 -left-6 h-12 w-12 rounded-full bg-gray-100 p-2 shadow-lg">
-                            <div class="flex h-full w-full items-center justify-center rounded-full bg-white">
-                                <i data-lucide="shield" class="h-5 w-5 text-gray-600"></i>
-                            </div>
-                        </div>
-                        <div class="absolute -top-6 -right-6 h-12 w-12 rounded-full bg-gray-100 p-2 shadow-lg">
-                            <div class="flex h-full w-full items-center justify-center rounded-full bg-white">
-                                <i data-lucide="zap" class="h-5 w-5 text-gray-600"></i>
-                            </div>
-                        </div>
-                        <div class="absolute -bottom-6 -left-6 h-12 w-12 rounded-full bg-blue-100 p-2 shadow-lg">
-                            <div class="flex h-full w-full items-center justify-center rounded-full bg-white">
-                                <i data-lucide="globe" class="h-5 w-5 text-blue-600"></i>
-                            </div>
-                        </div>
-
-                        <!-- Main Dashboard Image -->
-                        <div class="relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl shadow-gray-200/20">
-                            <!-- Browser-like Header -->
-                            <div class="flex h-10 items-center border-b border-slate-100 bg-slate-50 px-4">
-                                <div class="flex space-x-1.5 space-x-reverse">
-                                    <div class="h-2.5 w-2.5 rounded-full bg-red-400"></div>
-                                    <div class="h-2.5 w-2.5 rounded-full bg-amber-400"></div>
-                                    <div class="h-2.5 w-2.5 rounded-full bg-green-400"></div>
-                                </div>
-                                <div class="mx-auto flex h-6 w-1/2 items-center justify-center rounded-md bg-white text-[10px] text-slate-400 border border-slate-200">
-                                    realrealestate.taearif.com
-                                </div>
-                            </div>
-
-                            <!-- Dashboard Content -->
-                            <div class="relative">
-                                <img src="/hero-img.jpg"
-                                    alt="لوحة تحكم تعاريف"
-                                    class="w-full object-cover">
-
-                                <!-- Floating UI Elements -->
-                                <div class="absolute top-10 right-10 max-w-xs rounded-lg border border-white/80 bg-white/90 p-4 shadow-lg backdrop-blur-sm">
-                                    <div class="mb-2 h-2 w-24 rounded-full bg-gray-200"></div>
-                                    <div class="mb-3 h-2 w-32 rounded-full bg-slate-200"></div>
-                                    <div class="flex items-center gap-2">
-                                        <div class="h-8 w-8 rounded-full bg-gray-100"></div>
-                                        <div>
-                                            <div class="h-2 w-16 rounded-full bg-slate-200"></div>
-                                            <div class="mt-1 h-2 w-12 rounded-full bg-slate-200"></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="absolute bottom-10 left-10 max-w-xs rounded-lg border border-white/80 bg-white/90 p-4 shadow-lg backdrop-blur-sm">
-                                    <div class="mb-2 h-2 w-20 rounded-full bg-gray-200"></div>
-                                    <div class="mb-3 h-2 w-28 rounded-full bg-slate-200"></div>
-                                    <div class="grid grid-cols-2 gap-2">
-                                        <div class="h-10 rounded bg-gray-100"></div>
-                                        <div class="h-10 rounded bg-blue-100"></div>
-                                        <div class="h-10 rounded bg-gray-100"></div>
-                                        <div class="h-10 rounded bg-cyan-100"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Notification Badges -->
-                        <div class="absolute -left-4 top-1/3 rounded-lg border border-white bg-white p-3 shadow-lg">
-                            <div class="flex items-center gap-2">
-                                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                                    <i data-lucide="check-circle" class="h-4 w-4 text-green-600"></i>
-                                </div>
-                                <div>
-                                    <div class="text-xs font-medium">تم إنشاء الموقع</div>
-                                    <div class="text-[10px] text-slate-500">منذ 5 دقائق</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="absolute -right-4 top-2/3 rounded-lg border border-white bg-white p-3 shadow-lg">
-                            <div class="flex items-center gap-2">
-                                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-                                    <i data-lucide="users" class="h-4 w-4 text-blue-600"></i>
-                                </div>
-                                <div>
-                                    <div class="text-xs font-medium">10 زوار جدد</div>
-                                    <div class="text-[10px] text-slate-500">اليوم</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Feature Highlights -->
-                    <div class="mt-20 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                        <div class="group relative overflow-hidden rounded-xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-300 hover:border-gray-200 hover:shadow-md">
-                            <div class="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-gray-50 transition-all duration-300 group-hover:scale-110"></div>
-                            <div class="relative">
-                                <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
-                                    <i data-lucide="layout-template" class="h-6 w-6"></i>
-                                </div>
-                                <h3 class="mb-2 text-lg font-bold">سهولة الاستخدام</h3>
-                                <p class="text-sm text-slate-500">واجهة بديهية تمكنك من إنشاء موقعك بسرعة وسهولة</p>
-                            </div>
-                        </div>
-
-                        <div class="group relative overflow-hidden rounded-xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-300 hover:border-gray-200 hover:shadow-md">
-                            <div class="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-gray-50 transition-all duration-300 group-hover:scale-110"></div>
-                            <div class="relative">
-                                <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
-                                    <i data-lucide="layers" class="h-6 w-6"></i>
-                                </div>
-                                <h3 class="mb-2 text-lg font-bold">قوالب احترافية</h3>
-                                <p class="text-sm text-slate-500">الكثير من القوالب الجاهزة المصممة بأعلى معايير الجودة</p>
-                            </div>
-                        </div>
-
-                        <div class="group relative overflow-hidden rounded-xl border border-blue-100 bg-white p-6 shadow-sm transition-all duration-300 hover:border-blue-200 hover:shadow-md">
-                            <div class="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-blue-50 transition-all duration-300 group-hover:scale-110"></div>
-                            <div class="relative">
-                                <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
-                                    <i data-lucide="message-circle" class="h-6 w-6"></i>
-                                </div>
-                                <h3 class="mb-2 text-lg font-bold">دعم فني متميز</h3>
-                                <p class="text-sm text-slate-500">فريق دعم متخصص جاهز لمساعدتك على مدار الساعة</p>
-                            </div>
-                        </div>
-
-                        <div class="group relative overflow-hidden rounded-xl border border-cyan-100 bg-white p-6 shadow-sm transition-all duration-300 hover:border-cyan-200 hover:shadow-md">
-                            <div class="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-cyan-50 transition-all duration-300 group-hover:scale-110"></div>
-                            <div class="relative">
-                                <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-cyan-100 text-cyan-600">
-                                    <i data-lucide="building-2" class="h-6 w-6"></i>
-                                </div>
-                                <h3 class="mb-2 text-lg font-bold">تخصيص متقدم</h3>
-                                <p class="text-sm text-slate-500">خيارات تخصيص متقدمة لتناسب احتياجات عملك بدقة</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
-            </div>
 
-            <!-- Video Modal -->
-            <div id="videoModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden">
-                <div class="relative w-full max-w-4xl rounded-lg bg-white p-2">
-                    <button id="closeVideoButton" class="absolute -top-10 right-0 rounded-full bg-white/20 p-2 text-white backdrop-blur-sm transition-all hover:bg-white/30">
-                        <i data-lucide="x" class="h-5 w-5"></i>
-                    </button>
-                    <div class="aspect-video w-full rounded bg-slate-100">
-                        <div class="flex h-full w-full items-center justify-center">
+                <!-- Dashboard Preview -->
+                <div class="relative max-w-5xl mx-auto">
+                    <div class="relative rounded-2xl border border-gray-200 bg-white shadow-2xl overflow-hidden">
+                        <!-- Browser Header -->
+                        <div class="flex items-center border-b border-gray-200 bg-gray-50 px-4 py-3">
+                            <div class="flex gap-2">
+                                <div class="h-3 w-3 rounded-full bg-red-400"></div>
+                                <div class="h-3 w-3 rounded-full bg-yellow-400"></div>
+                                <div class="h-3 w-3 rounded-full bg-green-400"></div>
+                            </div>
+                            <div class="mx-auto flex items-center gap-2 text-sm text-gray-500">
+                                <i data-lucide="lock" class="h-4 w-4"></i>
+                                <span>taearif.taearif.com</span>
+                            </div>
+                        </div>
+
+                        <!-- Dashboard Content -->
+                        <div class="aspect-video bg-gradient-to-br from-gray-50 to-white p-8 flex items-center justify-center">
                             <div class="text-center">
-                                <i data-lucide="play" class="mx-auto h-16 w-16 text-slate-300"></i>
-                                <p class="mt-4 text-slate-400">فيديو توضيحي</p>
+                                <div class="w-20 h-20 mx-auto mb-4 bg-cyan-100 rounded-full flex items-center justify-center">
+                                    <i data-lucide="building-2" class="h-10 w-10 text-cyan-600"></i>
+                                </div>
+                                <h3 class="text-2xl font-bold text-gray-800 mb-2">موقعك العقاري الاحترافي</h3>
+                                <p class="text-gray-600">جاهز خلال دقائق مع كامل المميزات</p>
+                            </div>
+                        </div>
+
+                        <!-- Floating Elements -->
+                        <div class="absolute top-20 right-8 bg-white rounded-lg shadow-lg p-4 border border-cyan-200 max-w-xs">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-cyan-100 rounded-full flex items-center justify-center">
+                                    <i data-lucide="message-circle" class="h-5 w-5 text-cyan-600"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-sm">مساعد واتساب</div>
+                                    <div class="text-xs text-gray-500">يرد على العملاء 24/7</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="absolute bottom-20 left-8 bg-white rounded-lg shadow-lg p-4 border border-blue-200 max-w-xs">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i data-lucide="users" class="h-5 w-5 text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-sm">إدارة العملاء</div>
+                                    <div class="text-xs text-gray-500">نظام CRM متكامل</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <!-- Features Section -->
-        <section id="features" class="w-full py-12 md:py-24 lg:py-32 relative">
-            <!-- Enhanced Background -->
-            <div class="absolute inset-0 bg-gradient-to-br from-gray-50/50 via-white to-gray-50/30 z-0"></div>
-            <div class="absolute inset-0 bg-[url('/textures/dot-pattern.svg')] opacity-5 z-0"></div>
-            <div class="absolute top-0 left-0 w-80 h-80 bg-gradient-to-br from-gray-200/20 to-transparent rounded-full blur-3xl"></div>
-            <div class="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-gray-200/20 to-transparent rounded-full blur-3xl"></div>
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-gray-50/30">
+        <div class="container">
+            <div class="text-center mb-16">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-gray-800 text-sm font-medium mb-6">
+                    <i data-lucide="sparkles" class="h-4 w-4"></i>
+                    <span>مميزاتنا الأساسية</span>
+                </div>
+                <h2 class="text-3xl md:text-5xl font-bold mb-6">
+                    <span class="text-black">كل اللي تحتاجه</span>
+                    <span class="gradient-success">في مكان واحد</span>
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    منصة متكاملة تجمع كل احتياجاتك العقارية في نظام واحد سهل ومرن
+                </p>
+            </div>
 
-            <div class="container px-4 md:px-6 relative z-10">
-                <div class="flex flex-col items-center justify-center space-y-4 text-center animate-fade-in">
-                    <div class="space-y-2">
-                        <div class="inline-flex items-center rounded-full border border-gray-200 bg-white/80 px-3 py-1 text-sm font-medium text-gray-800 shadow-sm backdrop-blur-sm">
-                            <i data-lucide="sparkles" class="h-3.5 w-3.5 mr-1 text-gray-600"></i>
-                            <span>المميزات</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1: Website -->
+                <div class="feature-card rounded-2xl p-8 text-center hover-lift">
+                    <div class="w-16 h-16 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                        <i data-lucide="globe" class="h-8 w-8 text-purple-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">موقع عقاري جاهز</h3>
+                    <p class="text-gray-600 mb-4">أنشئ موقعك خلال دقائق من قوالب جاهزة ومناسبة للجوال.</p>
+                    <ul class="text-right text-sm text-gray-600 space-y-2">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-cyan-500 flex-shrink-0"></i>
+                            قوالب احترافية جاهزة
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-cyan-500 flex-shrink-0"></i>
+                            متوافق مع الجوال
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-cyan-500 flex-shrink-0"></i>
+                            سرعة تحميل عالية
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Feature 2: CRM -->
+                <div class="feature-card rounded-2xl p-8 text-center hover-lift">
+                    <div class="w-16 h-16 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i data-lucide="users" class="h-8 w-8 text-blue-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">CRM – إدارة العملاء</h3>
+                    <p class="text-gray-600 mb-4">سجل بيانات عملاءك، تابع استفساراتهم، وجدول مواعيدك.</p>
+                    <ul class="text-right text-sm text-gray-600 space-y-2">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-green-500 flex-shrink-0"></i>
+                            إدارة بيانات العملاء
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-green-500 flex-shrink-0"></i>
+                            تتبع الاستفسارات
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-green-500 flex-shrink-0"></i>
+                            جدولة المواعيد
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Feature 3: Property Management -->
+                <div class="feature-card rounded-2xl p-8 text-center hover-lift">
+                    <div class="w-16 h-16 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                        <i data-lucide="building-2" class="h-8 w-8 text-purple-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">إدارة العقارات</h3>
+                    <p class="text-gray-600 mb-4">غيّر حالة العقار (متاح، مؤجّر، مباع) وعدّل بياناته فورًا من لوحة التحكم.</p>
+                    <ul class="text-right text-sm text-gray-600 space-y-2">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-green-500 flex-shrink-0"></i>
+                            تحديث فوري للحالة
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-green-500 flex-shrink-0"></i>
+                            إدارة الصور والتفاصيل
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-green-500 flex-shrink-0"></i>
+                            تقارير مفصلة
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Feature 4: PMS -->
+                <div class="feature-card rounded-2xl p-8 text-center hover-lift">
+                    <div class="w-16 h-16 mx-auto mb-6 bg-orange-100 rounded-full flex items-center justify-center">
+                        <i data-lucide="home" class="h-8 w-8 text-orange-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">ادارة املاكك</h3>
+                    <p class="text-gray-600 mb-4">دير الايجارات الخاصة بالوحدات، وتابع تحصيل الدفعات، والعقود، وكله بأشعارات من مكان واحد</p>
+                    <ul class="text-right text-sm text-gray-600 space-y-2">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-green-500 flex-shrink-0"></i>
+                            إدارة الإيجارات
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-green-500 flex-shrink-0"></i>
+                            تتبع المدفوعات
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-green-500 flex-shrink-0"></i>
+                            إدارة العقود
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Feature 5: WhatsApp AI -->
+                <div class="feature-card rounded-2xl p-8 text-center hover-lift border-2 border-purple-200 relative">
+                    <div class="absolute -top-3 right-4 bg-gray-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                        الأكثر طلباً
+                    </div>
+                    <div class="w-16 h-16 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                        <i data-lucide="bot" class="h-8 w-8 text-purple-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">WhatsApp AI – المساعد الذكي</h3>
+                    <p class="text-gray-600 mb-4">يرد على العملاء مباشرة 24/7 ويحفظ استفساراتهم وأرقامهم تلقائي.</p>
+                    <ul class="text-right text-sm text-gray-600 space-y-2">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-green-500 flex-shrink-0"></i>
+                            ردود تلقائية ذكية
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-green-500 flex-shrink-0"></i>
+                            حفظ بيانات العملاء
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-green-500 flex-shrink-0"></i>
+                            متاح 24/7
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Feature 6: Integration -->
+                <div class="feature-card rounded-2xl p-8 text-center hover-lift">
+                    <div class="w-16 h-16 mx-auto mb-6 bg-indigo-100 rounded-full flex items-center justify-center">
+                        <i data-lucide="link" class="h-8 w-8 text-indigo-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">تكامل شامل</h3>
+                    <p class="text-gray-600 mb-4">كل الأنظمة مترابطة - موقع + CRM + PMS + مساعد ذكي في منصة واحدة.</p>
+                    <ul class="text-right text-sm text-gray-600 space-y-2">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-green-500 flex-shrink-0"></i>
+                            بيانات موحدة
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-green-500 flex-shrink-0"></i>
+                            تحديث تلقائي
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="h-4 w-4 text-green-500 flex-shrink-0"></i>
+                            تقارير شاملة
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Us Section -->
+    <section class="py-20 bg-white">
+        <div class="container">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-bold mb-6">
+                    <span class="text-black">ليش تختار</span>
+                    <span class="gradient-success">تعاريف؟</span>
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    لأننا نفهم السوق العقاري ونعرف وش تحتاج
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center group">
+                    <div class="w-20 h-20 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i data-lucide="zap" class="h-10 w-10 text-blue-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">سهولة</h3>
+                    <p class="text-gray-600">كل شيء في منصة وحدة… لا أوراق ولا برامج متفرقة.</p>
+                </div>
+
+                <div class="text-center group">
+                    <div class="w-20 h-20 mx-auto mb-6 bg-cyan-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i data-lucide="message-circle" class="h-10 w-10 text-cyan-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">تواصل أسرع مع العملاء</h3>
+                    <p class="text-gray-600">واتساب AI يخليك حاضر دايم.</p>
+                </div>
+
+                <div class="text-center group">
+                    <div class="w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i data-lucide="layers" class="h-10 w-10 text-purple-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">حلول متكاملة</h3>
+                    <p class="text-gray-600">موقع عقاري + CRM + PMS + مساعد ذكي.</p>
+                </div>
+
+                <div class="text-center group">
+                    <div class="w-20 h-20 mx-auto mb-6 bg-orange-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i data-lucide="headphones" class="h-10 w-10 text-orange-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">دعم محلي</h3>
+                    <p class="text-gray-600">فريق سعودي يساعدك خطوة بخطوة.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-20 bg-gray-50/30">
+        <div class="container">
+            <div class="text-center mb-16">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-gray-800 text-sm font-medium mb-6">
+                    <i data-lucide="play-circle" class="h-4 w-4"></i>
+                    <span>كيف تشتغل معنا؟</span>
+                </div>
+                <h2 class="text-3xl md:text-5xl font-bold mb-6">
+                    <span class="text-black">3 خطوات</span>
+                    <span class="gradient-success">وتكون شغّال</span>
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+                <!-- Connecting Line -->
+
+                <!-- Step 1 -->
+                <div class="relative z-10">
+                    <div class="text-center">
+                        <div class="w-16 h-16 mx-auto mb-6 bg-gray-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                            1
                         </div>
-                        <h2 class="text-2xl sm:text-3xl font-bold tracking-tighter md:text-4xl/tight gradient-gray-gray">
-                            كل ما تحتاجه لبناء موقع احترافي
-                        </h2>
-                        <p class="max-w-[900px] text-slate-600 text-sm sm:text-base md:text-xl/relaxed">
-                            منصتنا توفر لك جميع الأدوات اللازمة لإنشاء موقع إلكتروني احترافي بدون الحاجة لمعرفة البرمجة
-                        </p>
+                        <div class="bg-white rounded-2xl p-8 shadow-lg border border-purple-100 hover-lift">
+                            <div class="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <i data-lucide="user-plus" class="h-6 w-6 text-purple-600"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-4">سجّل حسابك في تعاريف</h3>
+                            <p class="text-gray-600">التسجيل مجاني ولا يحتاج بطاقة دفع</p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Feature Tabs -->
-                <div class="mt-12 max-w-6xl mx-auto">
-                    <!-- Tab Navigation -->
-                    <div class="flex flex-wrap justify-center gap-2 mb-8">
-                        <button class="feature-tab active flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 bg-black text-white shadow-lg shadow-gray-200/50" data-tab="0">
-                            <i data-lucide="laptop" class="h-5 w-5"></i>
-                            <span>سهولة الاستخدام</span>
+                <!-- Step 2 -->
+                <div class="relative z-10">
+                    <div class="text-center">
+                        <div class="w-16 h-16 mx-auto mb-6 bg-gray-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                            2
+                        </div>
+                        <div class="bg-white rounded-2xl p-8 shadow-lg border border-purple-100 hover-lift">
+                            <div class="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <i data-lucide="upload" class="h-6 w-6 text-purple-600"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-4">أضف عقاراتك وصورها</h3>
+                            <p class="text-gray-600">اختر القالب المناسب وأضف عقاراتك</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="relative z-10">
+                    <div class="text-center">
+                        <div class="w-16 h-16 mx-auto mb-6 bg-gray-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                            3
+                        </div>
+                        <div class="bg-white rounded-2xl p-8 shadow-lg border border-purple-100 hover-lift">
+                            <div class="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <i data-lucide="check-circle" class="h-6 w-6 text-purple-600"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-4">موقعك يصير جاهز والعميل يوصلك</h3>
+                            <p class="text-gray-600">ابدأ استقبال العملاء والاستفسارات فوراً</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-12">
+                <a href="https://app.taearif.com/register" class="btn btn-success text-lg px-8 py-4 rounded-full">
+                    ابدأ اليوم بدون بطاقة دفع
+                    <i data-lucide="arrow-left" class="mr-2 h-5 w-5"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="py-20 bg-white">
+        <div class="container">
+            <div class="text-center mb-16">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-gray-50 text-gray-800 text-sm font-medium mb-6">
+                    <i data-lucide="heart" class="h-4 w-4"></i>
+                    <span>قصص العملاء</span>
+                </div>
+                <h2 class="text-3xl md:text-5xl font-bold mb-6">
+                    <span class="text-black">وش يقولون</span>
+                    <span class="gradient-success">عملاؤنا</span>
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-gray-50 rounded-2xl p-8 hover-lift">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center ml-4">
+                            <i data-lucide="building-2" class="h-6 w-6 text-green-600"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-lg">مكتب النخبة</div>
+                            <div class="text-gray-600">الرياض</div>
+                        </div>
+                    </div>
+                    <div class="flex mb-4">
+                        <i data-lucide="star" class="h-5 w-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="h-5 w-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="h-5 w-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="h-5 w-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="h-5 w-5 text-yellow-400 fill-current"></i>
+                    </div>
+                    <blockquote class="text-gray-700 italic text-lg">
+                        "قبل تعاريف كنا ضايعين بين ملفات إكسل وواتساب… بعد تعاريف كل شيء صار مرتب، والمبيعات ارتفعت."
+                    </blockquote>
+                </div>
+
+                <div class="bg-gray-50 rounded-2xl p-8 hover-lift">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center ml-4">
+                            <i data-lucide="user" class="h-6 w-6 text-blue-600"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-lg">وسيط عقاري</div>
+                            <div class="text-gray-600">جدة</div>
+                        </div>
+                    </div>
+                    <div class="flex mb-4">
+                        <i data-lucide="star" class="h-5 w-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="h-5 w-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="h-5 w-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="h-5 w-5 text-yellow-400 fill-current"></i>
+                        <i data-lucide="star" class="h-5 w-5 text-yellow-400 fill-current"></i>
+                    </div>
+                    <blockquote class="text-gray-700 italic text-lg">
+                        "حتى وأنا نايم، المساعد يرد على العملاء ويحفظ بياناتهم."
+                    </blockquote>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- FAQ Section -->
+    <section class="py-20 bg-gray-50/30">
+        <div class="container">
+            <div class="text-center mb-16">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-gray-800 text-sm font-medium mb-6">
+                    <i data-lucide="help-circle" class="h-4 w-4"></i>
+                    <span>الأسئلة الشائعة</span>
+                </div>
+                <h2 class="text-3xl md:text-5xl font-bold mb-6">
+                    <span class="text-black">أسئلة</span>
+                    <span class="gradient-success">شائعة</span>
+                </h2>
+            </div>
+
+            <div class="max-w-4xl mx-auto">
+                <div class="space-y-6">
+                    <div class="bg-white rounded-2xl p-6 border border-gray-200 hover:border-cyan-200 transition-colors">
+                        <button class="faq-question flex items-center justify-between w-full text-right" onclick="toggleFAQ(0)">
+                            <i data-lucide="chevron-down" class="h-5 w-5 text-gray-400 transition-transform faq-icon"></i>
+                            <h3 class="text-lg font-bold text-gray-800">هل أحتاج خبرة تقنية؟</h3>
                         </button>
-                        <button class="feature-tab flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 bg-white text-slate-700 border border-slate-200 hover:border-gray-200 hover:bg-gray-50" data-tab="1">
-                            <i data-lucide="layout-template" class="h-5 w-5"></i>
-                            <span>قوالب احترافية</span>
-                        </button>
-                        <button class="feature-tab flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 bg-white text-slate-700 border border-slate-200 hover:border-gray-200 hover:bg-gray-50" data-tab="3">
-                            <i data-lucide="message-circle" class="h-5 w-5"></i>
-                            <span>دعم فني متميز</span>
-                        </button>
-                    </div>
-
-                    <!-- Tab Content -->
-                    <div class="bg-white rounded-2xl border border-gray-100 shadow-xl shadow-gray-100/10 overflow-hidden">
-                        <div class="feature-content active grid md:grid-cols-2 items-stretch" data-content="0">
-                            <!-- Content Side -->
-                            <div class="p-6 md:p-10 flex flex-col justify-center animate-fade-in">
-                                <h3 class="text-2xl font-bold mb-4 gradient-gray-gray">
-                                    واجهة سهلة الاستخدام
-                                </h3>
-                                <p class="text-slate-600 mb-6">صممنا واجهة بديهية تمكن أي شخص من إنشاء موقع احترافي بسهولة، حتى بدون خبرة تقنية سابقة.</p>
-                                <ul class="space-y-3">
-                                    <li class="flex items-start gap-3">
-                                        <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                            <i data-lucide="check-circle" class="h-3 w-3 text-gray-600"></i>
-                                        </div>
-                                        <span class="text-slate-700">تخصيص تصميم الصفحات</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                            <i data-lucide="check-circle" class="h-3 w-3 text-gray-600"></i>
-                                        </div>
-                                        <span class="text-slate-700">قوالب جاهزة للاستخدام الفوري</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                            <i data-lucide="check-circle" class="h-3 w-3 text-gray-600"></i>
-                                        </div>
-                                        <span class="text-slate-700">تخصيص سهل للمحتوى</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                            <i data-lucide="check-circle" class="h-3 w-3 text-gray-600"></i>
-                                        </div>
-                                        <span class="text-slate-700">معاينة مباشرة للتغييرات</span>
-                                    </li>
-                                </ul>
-                                <div class="mt-8">
-                                    <a href="https://app.taearif.com/register" class="rounded-full bg-black hover:bg-gray-700 text-white px-6 shadow-lg shadow-gray-200/30 transition-all duration-300 hover:shadow-gray-200/50 btn">
-                                        اكتشف المزيد
-                                        <i data-lucide="arrow-right" class="mr-2 h-4 w-4"></i>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Image Side -->
-                            <div class="relative h-64 md:h-auto overflow-hidden bg-gray-50">
-                                <div class="absolute inset-0 bg-gradient-to-br from-gray-100/30 to-gray-100/30"></div>
-                                <img src="/hero-img.jpg"
-                                    alt="واجهة سهلة الاستخدام"
-                                    class="w-full h-full object-cover">
-                                <div class="absolute inset-0 bg-gradient-to-t from-gray-900/20 to-transparent"></div>
-
-                                <!-- Floating UI Elements -->
-                                <div class="absolute bottom-6 right-6 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-white/80 max-w-[200px]">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <div class="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                            <i data-lucide="sparkles" class="h-4 w-4 text-gray-600"></i>
-                                        </div>
-                                        <div class="text-xs font-medium text-gray-900">ميزات متقدمة</div>
-                                    </div>
-                                    <div class="text-xs text-slate-600">تجربة مستخدم فريدة مع أدوات سهلة الاستخدام</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="feature-content hidden grid md:grid-cols-2 items-stretch" data-content="1">
-                            <!-- Content Side -->
-                            <div class="p-6 md:p-10 flex flex-col justify-center animate-fade-in">
-                                <h3 class="text-2xl font-bold mb-4 gradient-gray-gray">
-                                    قوالب مصممة باحترافية
-                                </h3>
-                                <p class="text-slate-600 mb-6">الكثير من القوالب الاحترافية المصممة من قبل خبراء التصميم لتناسب مختلف المجالات والصناعات.</p>
-                                <ul class="space-y-3">
-                                    <li class="flex items-start gap-3">
-                                        <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                            <i data-lucide="check-circle" class="h-3 w-3 text-gray-600"></i>
-                                        </div>
-                                        <span class="text-slate-700">قوالب متخصصة لكل مجال</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                            <i data-lucide="check-circle" class="h-3 w-3 text-gray-600"></i>
-                                        </div>
-                                        <span class="text-slate-700">تصميمات عصرية وجذابة</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                            <i data-lucide="check-circle" class="h-3 w-3 text-gray-600"></i>
-                                        </div>
-                                        <span class="text-slate-700">سرعة تحميل عالية</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                            <i data-lucide="check-circle" class="h-3 w-3 text-gray-600"></i>
-                                        </div>
-                                        <span class="text-slate-700">متوافقة مع جميع الأجهزة</span>
-                                    </li>
-                                </ul>
-                                <div class="mt-8">
-                                    <a href="https://app.taearif.com/register" class="rounded-full bg-black hover:bg-gray-700 text-white px-6 shadow-lg shadow-gray-200/30 transition-all duration-300 hover:shadow-gray-200/50 btn">
-                                        اكتشف المزيد
-                                        <i data-lucide="arrow-right" class="mr-2 h-4 w-4"></i>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <!-- Image Side -->
-                            <div class="relative h-64 md:h-auto overflow-hidden bg-gray-50">
-                                <div class="absolute inset-0 bg-gradient-to-br from-gray-100/30 to-gray-100/30"></div>
-                                <img src="https://images.unsplash.com/photo-1522542550221-31fd19575a2d?q=80&w=1470&auto=format&fit=crop"
-                                    alt="قوالب مصممة باحترافية"
-                                    class="w-full h-full object-cover">
-                                <div class="absolute inset-0 bg-gradient-to-t from-gray-900/20 to-transparent"></div>
-                            </div>
-                        </div>
-
-                        <div class="feature-content hidden grid md:grid-cols-2 items-stretch" data-content="3">
-                            <!-- Content Side -->
-                            <div class="p-6 md:p-10 flex flex-col justify-center animate-fade-in">
-                                <h3 class="text-2xl font-bold mb-4 gradient-gray-gray">
-                                    دعم فني على مدار الساعة
-                                </h3>
-                                <p class="text-slate-600 mb-6">فريق دعم فني متخصص جاهز لمساعدتك في أي وقت لضمان نجاح موقعك الإلكتروني.</p>
-                                <ul class="space-y-3">
-                                    <li class="flex items-start gap-3">
-                                        <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                            <i data-lucide="check-circle" class="h-3 w-3 text-gray-600"></i>
-                                        </div>
-                                        <span class="text-slate-700">دعم على مدار الساعة طوال أيام الأسبوع</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                            <i data-lucide="check-circle" class="h-3 w-3 text-gray-600"></i>
-                                        </div>
-                                        <span class="text-slate-700">مكتبة شاملة للمساعدة الذاتية</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                            <i data-lucide="check-circle" class="h-3 w-3 text-gray-600"></i>
-                                        </div>
-                                        <span class="text-slate-700">دروس تعليمية مفصلة</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <div class="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center mt-0.5">
-                                            <i data-lucide="check-circle" class="h-3 w-3 text-gray-600"></i>
-                                        </div>
-                                        <span class="text-slate-700">استجابة سريعة لاستفساراتك</span>
-                                    </li>
-                                </ul>
-                                <div class="mt-8">
-                                    <button class="rounded-full bg-black hover:bg-gray-700 text-white px-6 shadow-lg shadow-gray-200/30 transition-all duration-300 hover:shadow-gray-200/50 btn">
-                                        اكتشف المزيد
-                                        <i data-lucide="arrow-right" class="mr-2 h-4 w-4"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Image Side -->
-                            <div class="relative h-64 md:h-auto overflow-hidden bg-gray-50">
-                                <div class="absolute inset-0 bg-gradient-to-br from-gray-100/30 to-gray-100/30"></div>
-                                <img src="https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=1469&auto=format&fit=crop"
-                                    alt="دعم فني على مدار الساعة"
-                                    class="w-full h-full object-cover">
-                                <div class="absolute inset-0 bg-gradient-to-t from-gray-900/20 to-transparent"></div>
-                            </div>
+                        <div class="faq-answer hidden mt-4 pr-6">
+                            <p class="text-gray-600">أبداً، النظام بسيط وتقدر تبدأ بنفسك. صممناه ليكون سهل حتى للي ما يفهم في التقنية.</p>
                         </div>
                     </div>
-                </div>
 
-      <!-- Stats Section -->
+                    <div class="bg-white rounded-2xl p-6 border border-gray-200 hover:border-cyan-200 transition-colors">
+                        <button class="faq-question flex items-center justify-between w-full text-right" onclick="toggleFAQ(1)">
+                            <i data-lucide="chevron-down" class="h-5 w-5 text-gray-400 transition-transform faq-icon"></i>
+                            <h3 class="text-lg font-bold text-gray-800">هل أقدر أضيف دومين خاص بموقعي؟</h3>
+                        </button>
+                        <div class="faq-answer hidden mt-4 pr-6">
+                            <p class="text-gray-600">نعم، تقدر تربط الدومين الخاص بك بموقعك، أو تستخدم الدومين المجاني اللي نوفره لك.</p>
+                        </div>
+                    </div>
 
-            </div>
-        </section>
-        <!-- CTA Section -->
-        <section class="w-full py-12 md:py-24 lg:py-32 relative">
-            <!-- Enhanced Background -->
-            <div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-900 z-0"></div>
-            <div class="absolute inset-0 bg-[url('/textures/abstract-pattern.svg')] opacity-10 z-0"></div>
-            <div class="absolute inset-0 bg-gradient-to-br from-gray-900/80 via-gray-900 to-gray-900/80 z-0"></div>
-            <div class="absolute top-0 left-0 w-full h-full overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-20 bg-gradient-to-b from-white/5 to-transparent"></div>
-                <div class="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-white/5 to-transparent"></div>
-                <div class="absolute top-1/4 left-1/4 w-1/2 h-1/2 bg-white/5 rounded-full blur-3xl animate-pulse-subtle"></div>
-                <div class="absolute -top-20 -left-20 w-60 h-60 bg-white/5 rounded-full blur-3xl"></div>
-                <div class="absolute -bottom-20 -right-20 w-60 h-60 bg-white/5 rounded-full blur-3xl"></div>
-            </div>
+                    <div class="bg-white rounded-2xl p-6 border border-gray-200 hover:border-cyan-200 transition-colors">
+                        <button class="faq-question flex items-center justify-between w-full text-right" onclick="toggleFAQ(2)">
+                            <i data-lucide="chevron-down" class="h-5 w-5 text-gray-400 transition-transform faq-icon"></i>
+                            <h3 class="text-lg font-bold text-gray-800">هل النظام يشتغل بالجوال؟</h3>
+                        </button>
+                        <div class="faq-answer hidden mt-4 pr-6">
+                            <p class="text-gray-600">100%. كل المواقع والنظام يشتغل بشكل ممتاز على الجوال والكمبيوتر واللوحي.</p>
+                        </div>
+                    </div>
 
-            <div class="container px-4 md:px-6 relative z-10">
-                <div class="max-w-4xl mx-auto">
-                    <div class="bg-white/10 backdrop-blur-sm rounded-3xl p-8 md:p-12 border border-white/20 shadow-2xl">
-                        <div class="flex flex-col items-center justify-center space-y-6 text-center">
-                            <div class="inline-flex items-center rounded-full border border-white/30 bg-white/20 px-3 py-1 text-sm font-medium text-white shadow-sm backdrop-blur-sm">
-                                <i data-lucide="rocket" class="h-3.5 w-3.5 mr-1 text-white"></i>
-                                <span>ابدأ رحلتك الآن</span>
-                            </div>
+                    <div class="bg-white rounded-2xl p-6 border border-gray-200 hover:border-cyan-200 transition-colors">
+                        <button class="faq-question flex items-center justify-between w-full text-right" onclick="toggleFAQ(3)">
+                            <i data-lucide="chevron-down" class="h-5 w-5 text-gray-400 transition-transform faq-icon"></i>
+                            <h3 class="text-lg font-bold text-gray-800">هل التسجيل مجاني؟</h3>
+                        </button>
+                        <div class="faq-answer hidden mt-4 pr-6">
+                            <p class="text-gray-600">نعم، التسجيل مجاني تماماً ولا نطلب بطاقة دفع. تقدر تجرب المنصة لمدة 14 يوم مجاناً.</p>
+                        </div>
+                    </div>
 
-                            <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tighter text-white">
-                                انضم إلى الكثير من العملاء وابدأ في بناء موقعك الإلكتروني اليوم    
-                            </h2>
-
-                            <p class="max-w-[600px] text-white/80 text-lg leading-relaxed">
-                                مع منصة تعاريف، يمكنك إنشاء موقع احترافي بسهولة وسرعة، والبدء في جذب العملاء وتنمية أعمالك
-                            </p>
-
-                            <div class="flex flex-col sm:flex-row gap-4 mt-4">
-                                <a href="https://app.taearif.com/register" class="px-8 py-6 bg-white text-gray-900 hover:bg-gray-100 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-white/20 text-base rounded-full btn btn-lg">
-                                    ابدأ مجاناً
-                                    <i data-lucide="arrow-right" class="mr-2 h-4 w-4"></i>
-                                </a>
-                                <a href="https://wa.me/966541839888" class="px-8 py-6 border-white text-white hover:bg-white/20 transition-all duration-300 text-base rounded-full btn btn-outline btn-lg">
-                                    <i data-lucide="message-circle" class="ml-2 h-4 w-4"></i>
-                                    تواصل مع فريق المبيعات
-                                </a>
-                            </div>
-
+                    <div class="bg-white rounded-2xl p-6 border border-gray-200 hover:border-cyan-200 transition-colors">
+                        <button class="faq-question flex items-center justify-between w-full text-right" onclick="toggleFAQ(4)">
+                            <i data-lucide="chevron-down" class="h-5 w-5 text-gray-400 transition-transform faq-icon"></i>
+                            <h3 class="text-lg font-bold text-gray-800">كيف يشتغل مساعد واتساب؟</h3>
+                        </button>
+                        <div class="faq-answer hidden mt-4 pr-6">
+                            <p class="text-gray-600">المساعد الذكي يتصل بواتساب الخاص بك ويرد على العملاء تلقائياً، ويحفظ استفساراتهم وبياناتهم في النظام.</p>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
-    </main>
+        </div>
+    </section>
 
     <!-- Footer -->
-    <footer id="contact" class="w-full py-12 md:py-16 relative">
-        <!-- Enhanced Background -->
-        <div class="absolute inset-0 bg-gradient-to-br from-gray-50/50 via-white to-gray-50/30 z-0"></div>
-        <div class="absolute inset-0 bg-[url('/textures/subtle-pattern.svg')] opacity-5 z-0"></div>
-        <div class="absolute top-0 left-0 w-full h-40 bg-gradient-to-b from-white to-transparent z-0"></div>
-        <div class="absolute top-0 right-0 w-80 h-80 bg-gray-100/10 rounded-full blur-3xl z-0"></div>
-        <div class="absolute bottom-0 left-0 w-60 h-60 bg-gray-100/10 rounded-full blur-3xl z-0"></div>
-
-        <div class="container px-4 md:px-6 relative z-10">
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
-                <div class="space-y-4">
-                    <div class="flex items-center gap-2 font-bold text-xl">
-                        <i data-lucide="layers" class="h-6 w-6 transition-transform duration-300 hover:rotate-12 text-gray-600"></i>
-                        <span class="gradient-gray-gray">تعاريف</span>
+    <footer class="bg-black text-white py-16">
+        <div class="container">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                <div class="md:col-span-2">
+                    <div class="flex items-center gap-2 mb-6">
+                        <svg version="1.0" width="120" height="80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 565.000000 162.000000" preserveAspectRatio="xMidYMid meet">
+                            <g transform="translate(0.000000,162.000000) scale(0.100000,-0.100000)" fill="#FFFFFF" stroke="none">
+                            <path d="M4182 1488 c-17 -17 -17 -1279 0 -1296 9 -9 128 -12 473 -12 l460 0
+                            188 188 187 187 0 457 c0 402 -2 458 -16 472 -14 14 -86 16 -648 16 -478 0
+                            -635 -3 -644 -12z m1030 -265 c17 -15 18 -37 18 -270 l0 -253 -112 0 c-150 0
+                            -148 2 -148 -147 l0 -113 -140 0 -140 0 0 110 c0 97 -2 112 -20 130 -18 18
+                            -33 20 -130 20 l-110 0 0 260 c0 236 2 260 18 269 10 7 152 11 381 11 325 0
+                            366 -2 383 -17z"></path>
+                            <path d="M837 1274 c-4 -4 -7 -43 -7 -86 l0 -78 95 0 96 0 -3 83 -3 82 -85 3
+                            c-47 1 -89 0 -93 -4z"></path>
+                            </g>
+                        </svg>
                     </div>
-                    <p class="text-slate-600 text-sm sm:text-base">
-                        منصة بناء مواقع إلكترونية بدون برمجة، مع دعم كامل باللغة العربية
+                    <p class="text-gray-300 mb-6 leading-relaxed">
+                        منصة تعاريف هي الحل الشامل لإدارة أعمالك العقارية بكفاءة واحترافية عالية
                     </p>
-                    <div class="flex space-x-4 rtl:space-x-reverse">
-                        <a href="#" class="text-slate-500 hover:text-gray-600 transition-colors duration-300">
-                            <i data-lucide="facebook" class="h-5 w-5 hover-scale"></i>
-                            <span class="sr-only">Facebook</span>
+                    <div class="flex gap-4">
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-accent transition-colors">
+                            <i data-lucide="twitter" class="h-5 w-5"></i>
                         </a>
-                        <a href="#" class="text-slate-500 hover:text-gray-600 transition-colors duration-300">
-                            <i data-lucide="twitter" class="h-5 w-5 hover-scale"></i>
-                            <span class="sr-only">Twitter</span>
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-accent transition-colors">
+                            <i data-lucide="linkedin" class="h-5 w-5"></i>
                         </a>
-                        <a href="#" class="text-slate-500 hover:text-gray-600 transition-colors duration-300">
-                            <i data-lucide="instagram" class="h-5 w-5 hover-scale"></i>
-                            <span class="sr-only">Instagram</span>
+                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-accent transition-colors">
+                            <i data-lucide="instagram" class="h-5 w-5"></i>
                         </a>
                     </div>
                 </div>
-
-                <div class="space-y-4">
-                    <h3 class="font-bold text-lg text-slate-800">روابط سريعة</h3>
-                    <ul class="space-y-3">
-                        <li>
-                            <a href="#" class="text-slate-600 hover:text-gray-600 transition-colors duration-300 hover-lift text-sm sm:text-base flex items-center gap-1">
-                                <i data-lucide="arrow-right" class="h-3 w-3"></i>
-                                <span>الرئيسية</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#features" class="text-slate-600 hover:text-gray-600 transition-colors duration-300 hover-lift text-sm sm:text-base flex items-center gap-1">
-                                <i data-lucide="arrow-right" class="h-3 w-3"></i>
-                                <span>الخدمات</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/blog" class="text-slate-600 hover:text-gray-600 transition-colors duration-300 hover-lift text-sm sm:text-base flex items-center gap-1">
-                                <i data-lucide="arrow-right" class="h-3 w-3"></i>
-                                <span>المدونة</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/blog" class="text-slate-600 hover:text-gray-600 transition-colors duration-300 hover-lift text-sm sm:text-base flex items-center gap-1">
-                                <i data-lucide="arrow-right" class="h-3 w-3"></i>
-                                <span>الشروط والاحكام</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#contact" class="text-slate-600 hover:text-gray-600 transition-colors duration-300 hover-lift text-sm sm:text-base flex items-center gap-1">
-                                <i data-lucide="arrow-right" class="h-3 w-3"></i>
-                                <span>تواصل معنا</span>
-                            </a>
-                        </li>
+                
+                <div>
+                    <h4 class="font-bold text-lg mb-4">روابط سريعة</h4>
+                    <ul class="space-y-2">
+                        <li><a href="/" class="text-gray-300 hover:text-white transition-colors">الرئيسية</a></li>
+                        <li><a href="/solutions" class="text-gray-300 hover:text-white transition-colors">الحلول</a></li>
+                        <li><a href="/about-us" class="text-gray-300 hover:text-white transition-colors">من نحن</a></li>
+                        <li><a href="/updates" class="text-gray-300 hover:text-white transition-colors">التحديثات</a></li>
                     </ul>
                 </div>
-
-
-                <div class="space-y-4">
-                    <h3 class="font-bold text-lg text-slate-800">تواصل معنا</h3>
-                    <ul class="space-y-3">
-                        <li class="flex items-center gap-3 hover-lift group">
-                            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors duration-300">
-                                <i data-lucide="phone" class="h-4 w-4 text-gray-600 flex-shrink-0"></i>
-                            </div>
-                            <span class="text-slate-600 group-hover:text-gray-600 transition-colors duration-300 text-sm sm:text-base">
-                                +966541839888
-                            </span>
+                
+                <div>
+                    <h4 class="font-bold text-lg mb-4">تواصل معنا</h4>
+                    <ul class="space-y-2">
+                        <li class="flex items-center gap-2 text-gray-300">
+                            <i data-lucide="mail" class="h-4 w-4"></i>
+                            <span>info@taearif.com</span>
                         </li>
-                        <li class="flex items-center gap-3 hover-lift group">
-                            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors duration-300">
-                                <i data-lucide="message-circle" class="h-4 w-4 text-gray-600 flex-shrink-0"></i>
-                            </div>
-                            <span class="text-slate-600 group-hover:text-gray-600 transition-colors duration-300 text-sm sm:text-base">
-                                info@taearif.com
-                            </span>
+                        <li class="flex items-center gap-2 text-gray-300">
+                            <i data-lucide="phone" class="h-4 w-4"></i>
+                            <span>+966541839888</span>
                         </li>
-                        <li class="flex items-center gap-3 hover-lift group">
-                            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors duration-300">
-                                <i data-lucide="heart-handshake" class="h-4 w-4 text-gray-600 flex-shrink-0"></i>
-                            </div>
-                            <span class="text-slate-600 group-hover:text-gray-600 transition-colors duration-300 text-sm sm:text-base">
-                                الرياض، المملكة العربية السعودية
-                            </span>
+                        <li class="flex items-center gap-2 text-gray-300">
+                            <i data-lucide="map-pin" class="h-4 w-4"></i>
+                            <span>الرياض، المملكة العربية السعودية</span>
                         </li>
                     </ul>
                 </div>
             </div>
-
-            <div class="mt-12 pt-8 border-t border-gray-100">
-                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p class="text-sm text-slate-500">&copy; {{ date('Y') }} تعاريف. جميع الحقوق محفوظة.</p>
-                </div>
+            
+            <div class="border-t border-gray-800 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 تعاريف. جميع الحقوق محفوظة.</p>
             </div>
         </div>
     </footer>
@@ -1598,7 +961,7 @@
             );
 
             const animatedElements = document.querySelectorAll(
-                ".animate-fade-in, .animate-slide-up, .animate-slide-right, .animate-slide-left, .animate-scale"
+                ".animate-fade-in, .animate-slide-up"
             );
 
             animatedElements.forEach((el) => observer.observe(el));
@@ -1635,56 +998,77 @@
                 });
             }
 
-            // Video Modal
-            const videoButton = document.getElementById('videoButton');
-            const closeVideoButton = document.getElementById('closeVideoButton');
-            const videoModal = document.getElementById('videoModal');
-
-            if(videoButton && videoModal && closeVideoButton) {
-                videoButton.addEventListener('click', function() {
-                    videoModal.classList.remove('hidden');
-                });
-
-                closeVideoButton.addEventListener('click', function() {
-                    videoModal.classList.add('hidden');
-                });
-
-                videoModal.addEventListener('click', function(event) {
-                    if (event.target === videoModal) {
-                        videoModal.classList.add('hidden');
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
                     }
                 });
-            }
-
-            // Feature Tabs
-            const featureTabs = document.querySelectorAll('.feature-tab');
-            const featureContents = document.querySelectorAll('.feature-content');
-
-            featureTabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    const tabIndex = tab.getAttribute('data-tab');
-
-                    // Update active tab
-                    featureTabs.forEach(t => {
-                        t.classList.remove('bg-black', 'text-white', 'shadow-lg', 'shadow-gray-200/50');
-                        t.classList.add('bg-white', 'text-slate-700', 'border', 'border-slate-200', 'hover:border-gray-200', 'hover:bg-gray-50');
-                    });
-
-                    tab.classList.remove('bg-white', 'text-slate-700', 'border', 'border-slate-200', 'hover:border-gray-200', 'hover:bg-gray-50');
-                    tab.classList.add('bg-black', 'text-white', 'shadow-lg', 'shadow-gray-200/50');
-
-                    // Show active content
-                    featureContents.forEach(content => {
-                        content.classList.add('hidden');
-                        content.classList.remove('active');
-                    });
-
-                    const activeContent = document.querySelector(`.feature-content[data-content="${tabIndex}"]`);
-                    activeContent.classList.remove('hidden');
-                    activeContent.classList.add('active');
-                });
             });
+
+            // Stats counter animation
+            const statsNumbers = document.querySelectorAll('.stats-number');
+            const statsObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const target = entry.target;
+                        const finalNumber = target.textContent;
+                        const numericValue = parseInt(finalNumber.replace(/\D/g, ''));
+                        const prefix = finalNumber.charAt(0) === '+' ? '+' : '';
+                        
+                        let currentNumber = 0;
+                        const increment = numericValue / 50;
+                        
+                        const timer = setInterval(() => {
+                            currentNumber += increment;
+                            if (currentNumber >= numericValue) {
+                                target.textContent = finalNumber;
+                                clearInterval(timer);
+                            } else {
+                                target.textContent = prefix + Math.floor(currentNumber).toLocaleString();
+                            }
+                        }, 50);
+                        
+                        statsObserver.unobserve(target);
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            statsNumbers.forEach(stat => statsObserver.observe(stat));
         });
+
+        // FAQ Toggle Function
+        function toggleFAQ(index) {
+            const questions = document.querySelectorAll('.faq-question');
+            const answers = document.querySelectorAll('.faq-answer');
+            const icons = document.querySelectorAll('.faq-icon');
+            
+            const currentAnswer = answers[index];
+            const currentIcon = icons[index];
+            
+            // Close all other FAQs
+            answers.forEach((answer, i) => {
+                if (i !== index) {
+                    answer.classList.add('hidden');
+                    icons[i].style.transform = 'rotate(0deg)';
+                }
+            });
+            
+            // Toggle current FAQ
+            if (currentAnswer.classList.contains('hidden')) {
+                currentAnswer.classList.remove('hidden');
+                currentIcon.style.transform = 'rotate(180deg)';
+            } else {
+                currentAnswer.classList.add('hidden');
+                currentIcon.style.transform = 'rotate(0deg)';
+            }
+        }
     </script>
 
     <!-- Snap Pixel Code -->
@@ -1697,25 +1081,21 @@
     'https://sc-static.net/scevent.min.js');
 
     snaptr('init', '12aec193-f115-47a4-a37d-deb2f0947c08', {});
-
     snaptr('track', 'PAGE_VIEW');
-
     </script>
-<!-- End Snap Pixel Code -->
-<!-- TikTok Pixel Code Start -->
-<script>
-!function (w, d, t) {
-  w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(
-var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script")
-;n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
 
+    <!-- TikTok Pixel Code Start -->
+    <script>
+    !function (w, d, t) {
+      w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(
+    var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script")
+    ;n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
 
-  ttq.load('D092G0BC77U9CBHGPNT0');
-  ttq.page();
-}(window, document, 'ttq');
-</script>
-<!-- TikTok Pixel Code End -->
+      ttq.load('D092G0BC77U9CBHGPNT0');
+      ttq.page();
+    }(window, document, 'ttq');
+    </script>
+    <!-- TikTok Pixel Code End -->
 
 </body>
 </html>
-
