@@ -315,7 +315,7 @@
                 <a href="/solutions" class="text-sm font-medium text-slate-700 hover:text-black transition-colors">الحلول</a>
                 <a href="/updates" class="text-sm font-medium text-slate-700 hover:text-black transition-colors">التحديثات</a>
                 <a href="/about-us" class="text-sm font-medium text-slate-700 hover:text-black transition-colors">من نحن</a>
-                <a href="https://wa.me/966541839888" class="text-sm font-medium text-slate-700 hover:text-black transition-colors">اتصل بنا</a>
+                <a href="https://wa.me/966592960339" class="text-sm font-medium text-slate-700 hover:text-black transition-colors">اتصل بنا</a>
             </nav>
 
             <!-- Action Buttons -->
@@ -347,7 +347,7 @@
                 <a href="/solutions" class="text-lg font-medium py-3 px-4 rounded-lg hover:bg-gray-50">الحلول</a>
                 <a href="/updates" class="text-lg font-medium py-3 px-4 rounded-lg hover:bg-gray-50">التحديثات</a>
                 <a href="/about-us" class="text-lg font-medium py-3 px-4 rounded-lg hover:bg-gray-50">من نحن</a>
-                <a href="https://wa.me/966541839888" class="text-lg font-medium py-3 px-4 rounded-lg hover:bg-gray-50">اتصل بنا</a>
+                <a href="https://wa.me/966592960339" class="text-lg font-medium py-3 px-4 rounded-lg hover:bg-gray-50">اتصل بنا</a>
             </nav>
             <div class="mt-auto flex flex-col gap-4">
                 <a href="https://app.taearif.com" class="btn btn-outline w-full py-3">تسجيل الدخول</a>
@@ -394,7 +394,7 @@
                             <i data-lucide="rocket" class="ml-2 h-5 w-5"></i>
                             جرّب مجاناً الآن
                         </a>
-                        <a href="https://wa.me/966541839888" class="btn btn-outline text-lg px-8 py-4 rounded-full flex items-center">
+                        <a href="https://wa.me/966592960339" class="btn btn-outline text-lg px-8 py-4 rounded-full flex items-center">
                             <i data-lucide="message-circle" class="ml-2 h-5 w-5 whatsapp-icon"></i>
                             تحدث مع المبيعات
                         </a>
@@ -418,16 +418,12 @@
                             </div>
                         </div>
 
-                        <!-- Dashboard Content -->
-                        <div class="aspect-video bg-gradient-to-br from-gray-50 to-white p-8 flex items-center justify-center">
-                            <div class="text-center">
-                                <div class="w-20 h-20 mx-auto mb-4 bg-cyan-100 rounded-full flex items-center justify-center">
-                                    <i data-lucide="building-2" class="h-10 w-10 text-cyan-600"></i>
-                                </div>
-                                <h3 class="text-2xl font-bold text-gray-800 mb-2">موقعك العقاري الاحترافي</h3>
-                                <p class="text-gray-600">جاهز خلال دقائق مع كامل المميزات</p>
+                            <!-- Dashboard Content -->
+                            <div class="aspect-video bg-gray-100 flex items-center justify-center">
+                                <img src="https://e.top4top.io/p_35164j4e51.jpg" 
+                                    alt="موقعك العقاري الاحترافي"
+                                    class="w-full h-full object-contain" />
                             </div>
-                        </div>
 
                         <!-- Floating Elements -->
                         <div class="absolute top-20 right-8 bg-white rounded-lg shadow-lg p-4 border border-cyan-200 max-w-xs">
@@ -746,7 +742,7 @@
     </section>
 
     <!-- Testimonials Section -->
-    <section id="testimonials" class="py-20 bg-white">
+    <section id="testimonials" class="py-20 bg-white hidden">
         <div class="container">
             <div class="text-center mb-16">
                 <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-gray-50 text-gray-800 text-sm font-medium mb-6">
@@ -807,7 +803,7 @@
         </div>
     </section>
     <!-- FAQ Section -->
-    <section class="py-20 bg-gray-50/30">
+    <section class="py-20 bg-white">
         <div class="container">
             <div class="text-center mb-16">
                 <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-gray-800 text-sm font-medium mb-6">
@@ -934,7 +930,7 @@
                         </li>
                         <li class="flex items-center gap-2 text-gray-300">
                             <i data-lucide="phone" class="h-4 w-4"></i>
-                            <span>+966541839888</span>
+                            <span>+966592960339</span>
                         </li>
                         <li class="flex items-center gap-2 text-gray-300">
                             <i data-lucide="map-pin" class="h-4 w-4"></i>

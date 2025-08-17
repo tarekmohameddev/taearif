@@ -316,7 +316,7 @@
                 <a href="/solutions" class="text-sm font-medium text-black border-b-2 border-purple-500">الحلول</a>
                 <a href="/updates" class="text-sm font-medium text-slate-700 hover:text-black transition-colors">التحديثات</a>
                 <a href="/about-us" class="text-sm font-medium text-slate-700 hover:text-black transition-colors">من نحن</a>
-                <a href="https://wa.me/966541839888" class="text-sm font-medium text-slate-700 hover:text-black transition-colors">اتصل بنا</a>
+                <a href="https://wa.me/966592960339" class="text-sm font-medium text-slate-700 hover:text-black transition-colors">اتصل بنا</a>
             </nav>
 
             <!-- Action Buttons -->
@@ -348,7 +348,7 @@
                 <a href="/solutions" class="text-lg font-medium py-3 px-4 rounded-lg bg-purple-50 text-purple-700">الحلول</a>
                 <a href="/updates" class="text-lg font-medium py-3 px-4 rounded-lg hover:bg-gray-50">التحديثات</a>
                 <a href="/about-us" class="text-lg font-medium py-3 px-4 rounded-lg hover:bg-gray-50">من نحن</a>
-                <a href="https://wa.me/966541839888" class="text-lg font-medium py-3 px-4 rounded-lg hover:bg-gray-50">اتصل بنا</a>
+                <a href="https://wa.me/966592960339" class="text-lg font-medium py-3 px-4 rounded-lg hover:bg-gray-50">اتصل بنا</a>
             </nav>
 
             <div class="mt-auto flex flex-col gap-4">
@@ -394,7 +394,7 @@
                         <i data-lucide="play" class="ml-2 h-5 w-5"></i>
                         ابدأ رحلتك الآن
                     </a>
-                    <a href="https://wa.me/966541839888" class="btn btn-outline text-lg px-8 py-4 rounded-full flex items-center">
+                    <a href="https://wa.me/966592960339" class="btn btn-outline text-lg px-8 py-4 rounded-full flex items-center">
                         <i data-lucide="phone" class="ml-2 h-5 w-5"></i>
                         استشارة مجانية
                     </a>
@@ -827,7 +827,7 @@
                         </li>
                         <li class="flex items-center gap-2 text-gray-300">
                             <i data-lucide="phone" class="h-4 w-4"></i>
-                            <span>+966541839888</span>
+                            <span>+966592960339</span>
                         </li>
                         <li class="flex items-center gap-2 text-gray-300">
                             <i data-lucide="map-pin" class="h-4 w-4"></i>
