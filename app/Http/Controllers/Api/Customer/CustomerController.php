@@ -14,6 +14,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Arr;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use App\Models\Api\UserApiCustomerProcedure;
 
 class CustomerController extends Controller
 {
@@ -99,6 +100,11 @@ class CustomerController extends Controller
     {
         $user = $request->user();
 
+        $request->merge([
+            'interested_category_ids' => $this->normalizeIds($request->input('interested_category_ids')),
+            'interested_property_ids' => $this->normalizeIds($request->input('interested_property_ids')),
+        ]);
+
         try {
             $request->validate([
                 'name'          => 'required|string|max:255',
@@ -122,10 +128,13 @@ class CustomerController extends Controller
                 'note'          => 'nullable|string',
                 'customer_type' => 'nullable|string|max:50',
                 'stage_id'      => 'nullable|exists:users_api_customers_stages,id',
+                'procedure_id'      => 'nullable|exists:users_api_customers_procedures,id',
                 'password'      => 'required|string|min:6',
                 'priority'      => 'nullable|integer|in:1,2,3',
-                'interested_category_ids' => 'nullable|array',
-                'interested_category_ids.*' => 'exists:api_user_categories,id'
+                'interested_category_ids' => 'nullable',
+                'interested_category_ids.*' => 'integer|exists:user_properties,id',
+                'interested_property_ids' => 'nullable',
+                'interested_property_ids.*' => 'integer|exists:user_properties,id',
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -145,26 +154,46 @@ class CustomerController extends Controller
             'customer_type' => $request->customer_type,
             'priority'      => $request->priority ?? 1, // Default to medium if not provided
             'stage_id'      => $request->stage_id ?? null,
+            'procedure_id'  => $request->procedure_id ?? null,
             'phone_number'  => $request->phone_number,
             'password'      => bcrypt($request->password),
         ]);
 
-        if ($request->filled('interested_category_ids')) {
-            $categories = $request->interested_category_ids;
-            foreach ($categories as $catId) {
-                ApiCustomerPropertyInterested::firstOrCreate([
-                    'user_id'     => $user->id,
-                    'customer_id' => $customer->id,
-                    'category_id' => $catId
-                ]);
-            }
+
+        // Persist categories
+        foreach ($request->input('interested_category_ids', []) as $catId) {
+            ApiCustomerPropertyInterested::firstOrCreate([
+                'user_id'     => $user->id,
+                'customer_id' => $customer->id,
+                'category_id' => $catId,
+            ]);
         }
-        $interestedCategories = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
-        ->join('api_user_categories', 'api_user_categories.id', '=', 'api_customer_property_interested.category_id')
-        ->select('api_user_categories.id', 'api_user_categories.name')
-        ->distinct()
-        ->get();
+
+        // Persist properties
+        foreach ($request->input('interested_property_ids', []) as $propId) {
+            ApiCustomerPropertyInterested::firstOrCreate([
+                'user_id'     => $user->id,
+                'customer_id' => $customer->id,
+                'property_id' => $propId,
+            ]);
+        }
+
+
+
+        // Build response lists
+        $interestedCategories = ApiCustomerPropertyInterested::where('customer_id',$customer->id)
+            ->join('api_user_categories','api_user_categories.id','=','api_customer_property_interested.category_id')
+            ->select('api_user_categories.id','api_user_categories.name')
+            ->distinct()->get();
+
+        $interestedProperties = ApiCustomerPropertyInterested::where('customer_id',$customer->id)
+            ->join('user_properties as up','up.id','=','api_customer_property_interested.property_id')
+            ->leftJoin('user_property_contents as upc','upc.property_id','=','up.id')
+            ->select('up.id', \DB::raw('MAX(upc.title) as name'))
+            ->groupBy('up.id')->get();
+
         $customer->interested_categories = $interestedCategories;
+        $customer->interested_properties = $interestedProperties;
 
         return response()->json([
             'status'  => 'success',
@@ -210,6 +239,11 @@ class CustomerController extends Controller
     {
         $user = $request->user();
 
+        $request->merge([
+            'interested_category_ids' => $this->normalizeIds($request->input('interested_category_ids')),
+            'interested_property_ids' => $this->normalizeIds($request->input('interested_property_ids')),
+        ]);
+
         try {
             $customer = ApiCustomer::where('user_id', $user->id)->find($id);
 
@@ -244,9 +278,12 @@ class CustomerController extends Controller
                 'customer_type' => 'nullable|string|max:50',
                 'priority'      => 'sometimes|integer|in:1,2,3',
                 'stage_id'      => 'nullable|exists:users_api_customers_stages,id',
+                'procedure_id'      => 'nullable|exists:users_api_customers_procedures,id',
                 'password'      => 'nullable|string|min:6',
-                'interested_category_ids' => 'nullable|array',
-                'interested_category_ids.*' => 'exists:api_user_categories,id',
+                'interested_category_ids' => 'nullable',
+                'interested_category_ids.*' => 'integer|exists:user_properties,id',
+                'interested_property_ids' => 'nullable',
+                'interested_property_ids.*' => 'exists:user_properties,id',
             ]);
 
             $data = [];
@@ -263,27 +300,59 @@ class CustomerController extends Controller
                 $data['password'] = bcrypt($request->password);
             }
 
-            $customer->update($data);
-
-            if ($request->filled('interested_category_ids')) {
-                ApiCustomerPropertyInterested::where('customer_id', $customer->id)->delete();
-
-                foreach ($request->interested_category_ids as $catId) {
-                    ApiCustomerPropertyInterested::firstOrCreate([
-                        'user_id'     => $user->id,
-                        'customer_id' => $customer->id,
-                        'category_id' => $catId,
-                    ]);
+            \DB::transaction(function () use ($customer, $data, $request, $user) {
+                if (!empty($data)) {
+                    $customer->update($data);
                 }
-            }
 
-            $interestedCategories = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
-                ->join('api_user_categories', 'api_user_categories.id', '=', 'api_customer_property_interested.category_id')
-                ->select('api_user_categories.id', 'api_user_categories.name')
-                ->distinct()
-                ->get();
+                // Replace ONLY categories if the key is present (even empty array => clear)
+                if ($request->has('interested_category_ids')) {
+                    ApiCustomerPropertyInterested::where('customer_id',$customer->id)
+                        ->whereNotNull('category_id')
+                        ->delete();
 
+                    foreach ($request->input('interested_category_ids', []) as $catId) {
+                        ApiCustomerPropertyInterested::firstOrCreate([
+                            'user_id'     => $user->id,
+                            'customer_id' => $customer->id,
+                            'category_id' => $catId,
+                        ]);
+                    }
+                }
+
+                // Replace ONLY properties if the key is present
+                if ($request->has('interested_property_ids')) {
+                    ApiCustomerPropertyInterested::where('customer_id',$customer->id)
+                        ->whereNotNull('property_id')
+                        ->delete();
+
+                    foreach ($request->input('interested_property_ids', []) as $propId) {
+                        ApiCustomerPropertyInterested::firstOrCreate([
+                            'user_id'     => $user->id,
+                            'customer_id' => $customer->id,
+                            'property_id' => $propId,
+                        ]);
+                    }
+                }
+            });
+
+            // Rebuild response lists
+            $interestedCategories = ApiCustomerPropertyInterested::where('customer_id',$customer->id)
+                ->join('api_user_categories','api_user_categories.id','=','api_customer_property_interested.category_id')
+                ->select('api_user_categories.id','api_user_categories.name')
+                ->distinct()->get();
+
+            $interestedProperties = ApiCustomerPropertyInterested::where('customer_id',$customer->id)
+                ->join('user_properties as up','up.id','=','api_customer_property_interested.property_id')
+                ->leftJoin('user_property_contents as upc','upc.property_id','=','up.id')
+                ->select('up.id', \DB::raw('MAX(upc.title) as name'))
+                ->groupBy('up.id')->get();
+
+            $customer->refresh();
             $customer->interested_categories = $interestedCategories;
+            $customer->interested_properties = $interestedProperties;
+
+
 
             return response()->json([
                 'status' => 'success',
@@ -365,7 +434,7 @@ class CustomerController extends Controller
         $catIds  = $toIntArray($request->input('interested_category_ids'));
         $propIds = $toIntArray($request->input('interested_property_ids'));
 
-        // ---- validate simple filters (keep it light; add rules if you want) ----
+        // ---- validate simple filters ----
         $request->validate([
             'city_id'       => 'nullable|integer',
             'district_id'   => 'nullable|integer',
@@ -380,7 +449,6 @@ class CustomerController extends Controller
         $sortBy  = $request->input('sort_by', 'created_at');
         $sortDir = $request->input('sort_dir', 'desc');
 
-        // ---- base query + eager loads (to build district payload nicely) ----
         $query = \App\Models\ApiCustomer::where('user_id', $user->id)
             ->with(['district.city', 'city']);
 
@@ -404,7 +472,6 @@ class CustomerController extends Controller
             $query->where('customer_type', $request->input('customer_type'));
         }
 
-        // interested_category_ids filter (exists on pivot)
         if (!empty($catIds)) {
             $query->whereExists(function ($sub) use ($catIds) {
                 $sub->select(DB::raw(1))
@@ -414,7 +481,6 @@ class CustomerController extends Controller
             });
         }
 
-        // interested_property_ids filter (exists on pivot)
         if (!empty($propIds)) {
             $query->whereExists(function ($sub) use ($propIds) {
                 $sub->select(DB::raw(1))
@@ -424,7 +490,6 @@ class CustomerController extends Controller
             });
         }
 
-        // sort + paginate
         $query->orderBy($sortBy, $sortDir);
         $paginator = $query->paginate($perPage);
 
@@ -514,4 +579,14 @@ class CustomerController extends Controller
             ],
         ]);
     }
+
+    private function normalizeIds($v): array
+    {
+        if (is_null($v) || $v === '') return [];
+        if (is_int($v)) return [$v];
+        if (is_array($v)) return array_values(array_filter(array_map('intval', $v)));
+        if (is_string($v)) return array_values(array_filter(array_map('intval', explode(',', $v))));
+        return [];
+    }
+
 }
