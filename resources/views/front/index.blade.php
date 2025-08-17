@@ -261,6 +261,9 @@
             }
         }
     </style>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+
 </head>
 
 <body class="min-h-screen bg-background overflow-x-hidden">
@@ -896,14 +899,18 @@
                         منصة تعاريف هي الحل الشامل لإدارة أعمالك العقارية بكفاءة واحترافية عالية
                     </p>
                     <div class="flex gap-4">
-                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-accent transition-colors">
-                            <i data-lucide="twitter" class="h-5 w-5"></i>
+                        <a href="https://snapchat.com/t/WRXySyZi" class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-accent transition-colors">
+                            <i class="fa-brands fa-snapchat h-5 "></i>
                         </a>
-                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-accent transition-colors">
-                            <i data-lucide="linkedin" class="h-5 w-5"></i>
+                        <a href="https://www.facebook.com/share/1HZffKAhn2/" class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-accent transition-colors">
+                            <i data-lucide="facebook" class="h-5 w-5"></i>
                         </a>
-                        <a href="#" class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-accent transition-colors">
+                        <a href="https://www.instagram.com/taearif1" class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-accent transition-colors">
                             <i data-lucide="instagram" class="h-5 w-5"></i>
+                        </a>
+                        <a href="https://www.tiktok.com/@taearif" class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-accent transition-colors">
+                            <i class="fa-brands fa-tiktok h-5"></i>
+
                         </a>
                     </div>
                 </div>
@@ -938,7 +945,7 @@
             </div>
             
             <div class="border-t border-gray-800 pt-8 text-center text-gray-400">
-                <p>&copy; 2024 تعاريف. جميع الحقوق محفوظة.</p>
+                <p>&copy; 2025 تعاريف. جميع الحقوق محفوظة.</p>
             </div>
         </div>
     </footer>
