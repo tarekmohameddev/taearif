@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\ApiCustomer;
-use App\Models\Api\UserApiCustomerStage;
-use App\Models\Api\UserApiCustomerReminder;
-use App\Models\Api\UserApiCustomerAppointment;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use App\Models\Api\UserApiCustomerProcedure;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use App\Models\Api\UserApiCustomerType;
+use App\Models\Api\UserApiCustomerStage;
 use App\Models\Api\UserApiCustomerPriority;
+use App\Models\Api\UserApiCustomerReminder;
+use App\Models\Api\UserApiCustomerProcedure;
+use App\Models\Api\UserApiCustomerAppointment;
 
 class CRMController extends Controller
 {
@@ -187,7 +188,59 @@ class CRMController extends Controller
                 'customers'       => $customers,
             ];
         }
+        // ===== TYPES (seed defaults if missing) =====
+        $defaultTypes = [
+            ['name' => 'Rent',   'value' => 'Rent',   'order' => 1, 'icon' => 'home',      'color' => '#2196f3'],
+            ['name' => 'Sale',   'value' => 'Sale',   'order' => 2, 'icon' => 'dollar',    'color' => '#4caf50'],
+            ['name' => 'Rented', 'value' => 'Rented', 'order' => 3, 'icon' => 'check',     'color' => '#9e9e9e'],
+            ['name' => 'Sold',   'value' => 'Sold',   'order' => 4, 'icon' => 'check-all', 'color' => '#9e9e9e'],
+            ['name' => 'Both',   'value' => 'Both',   'order' => 5, 'icon' => 'arrows',    'color' => '#ff9800'],
+        ];
 
+        foreach ($defaultTypes as $t) {
+            UserApiCustomerType::firstOrCreate(
+                ['user_id' => $user->id, 'value' => $t['value']],
+                ['name' => $t['name'], 'order' => $t['order'], 'icon' => $t['icon'], 'color' => $t['color'], 'is_active' => true]
+            );
+        }
+
+        // ===== TYPES with customers =====
+        $types = UserApiCustomerType::where('user_id', $user->id)
+            ->orderBy('order', 'asc')
+            ->get();
+
+        $typesWithCustomers = [];
+
+        foreach ($types as $type) {
+            $customerQuery = ApiCustomer::where('user_id', $user->id)
+                ->where('customer_type', $type->value);
+
+            $customerCount = $customerQuery->count();
+
+            $customers = $customerQuery->get()->map(function ($customer) {
+                $remindersCount    = UserApiCustomerReminder::where('customer_id', $customer->id)->count();
+                $appointmentsCount = UserApiCustomerAppointment::where('customer_id', $customer->id)->count();
+
+                return [
+                    'customer_id'        => $customer->id,
+                    'name'               => $customer->name,
+                    'city'               => $customer->city,
+                    'priority'           => $customer->priority,
+                    'customer_type'      => $customer->customer_type,
+                    'reminders_count'    => $remindersCount,
+                    'appointments_count' => $appointmentsCount,
+                ];
+            });
+
+            $typesWithCustomers[] = [
+                'type_value'     => $type->value,
+                'type_name'      => $type->name,
+                'color'          => $type->color,
+                'icon'           => $type->icon,
+                'customer_count' => $customerCount,
+                'customers'      => $customers,
+            ];
+        }
 
         return response()->json([
             'status'                   => 'success',
@@ -196,6 +249,7 @@ class CRMController extends Controller
             'stages_with_customers'    => $stagesWithCustomers,
             'priorities_with_customers'=> $prioritiesWithCustomers,
             'procedures_with_customers'=> $proceduresWithCustomers,
+            'types_with_customers'     => $typesWithCustomers,
         ]);
     }
 
