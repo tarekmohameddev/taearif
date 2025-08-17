@@ -13,6 +13,7 @@ use App\Models\ApiCustomerPropertyInterested;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Arr;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 class CustomerController extends Controller
 {
@@ -38,6 +39,12 @@ class CustomerController extends Controller
             ->distinct()
             ->get();
 
+        $interestedProperties = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
+            ->join('user_properties as up', 'up.id', '=', 'api_customer_property_interested.property_id')
+            ->leftJoin('user_property_contents as upc', 'upc.property_id', '=', 'up.id')
+            ->select('up.id', DB::raw('MAX(upc.title) as name'))
+            ->groupBy('up.id')
+            ->get();
 
             return [
                 'id' => $customer->id,
@@ -54,6 +61,7 @@ class CustomerController extends Controller
                 'created_at' => $customer->created_at->toISOString(),
                 'updated_at' => $customer->updated_at->toISOString(),
                 'interested_categories' => $interestedCategories,
+                'interested_properties' => $interestedProperties,
 
             ];
         });
@@ -342,22 +350,168 @@ class CustomerController extends Controller
 
     /**
      * Search customers by name, email or phone
-     */
+    */
     public function search(Request $request)
     {
-        $user = $request->user();
-        $query = $request->get('q');
-        $customers = ApiCustomer::where('user_id', $user->id)
-            ->where(function ($q) use ($query) {
-                $q->where('name', 'LIKE', "%$query%")
-                    ->orWhere('email', 'LIKE', "%$query%")
-                    ->orWhere('phone_number', 'LIKE', "%$query%");
-            })
-            ->paginate(10);
+        $user  = $request->user();
+        $qText = $request->get('q');
+
+        // ---- parse arrays or CSV for category/property filters ----
+        $toIntArray = function ($v): array {
+            if (is_array($v))  return array_values(array_filter(array_map('intval', $v)));
+            if (is_string($v)) return array_values(array_filter(array_map('intval', explode(',', $v))));
+            return [];
+        };
+        $catIds  = $toIntArray($request->input('interested_category_ids'));
+        $propIds = $toIntArray($request->input('interested_property_ids'));
+
+        // ---- validate simple filters (keep it light; add rules if you want) ----
+        $request->validate([
+            'city_id'       => 'nullable|integer',
+            'district_id'   => 'nullable|integer',
+            'customer_type' => 'nullable|string|max:50',
+            'page'          => 'nullable|integer|min:1',
+            'per_page'      => 'nullable|integer|min:1|max:100',
+            'sort_by'       => 'nullable|in:name,created_at,priority',
+            'sort_dir'      => 'nullable|in:asc,desc',
+        ]);
+
+        $perPage = (int) ($request->input('per_page') ?: 10);
+        $sortBy  = $request->input('sort_by', 'created_at');
+        $sortDir = $request->input('sort_dir', 'desc');
+
+        // ---- base query + eager loads (to build district payload nicely) ----
+        $query = \App\Models\ApiCustomer::where('user_id', $user->id)
+            ->with(['district.city', 'city']);
+
+        // text search
+        if (!empty($qText)) {
+            $query->where(function ($sub) use ($qText) {
+                $sub->where('name', 'like', "%{$qText}%")
+                    ->orWhere('email', 'like', "%{$qText}%")
+                    ->orWhere('phone_number', 'like', "%{$qText}%");
+            });
+        }
+
+        // simple filters
+        if ($request->filled('city_id')) {
+            $query->where('city_id', (int)$request->input('city_id'));
+        }
+        if ($request->filled('district_id')) {
+            $query->where('district_id', (int)$request->input('district_id'));
+        }
+        if ($request->filled('customer_type')) {
+            $query->where('customer_type', $request->input('customer_type'));
+        }
+
+        // interested_category_ids filter (exists on pivot)
+        if (!empty($catIds)) {
+            $query->whereExists(function ($sub) use ($catIds) {
+                $sub->select(DB::raw(1))
+                    ->from('api_customer_property_interested as ac1')
+                    ->whereColumn('ac1.customer_id', 'api_customers.id')
+                    ->whereIn('ac1.category_id', $catIds);
+            });
+        }
+
+        // interested_property_ids filter (exists on pivot)
+        if (!empty($propIds)) {
+            $query->whereExists(function ($sub) use ($propIds) {
+                $sub->select(DB::raw(1))
+                    ->from('api_customer_property_interested as ac2')
+                    ->whereColumn('ac2.customer_id', 'api_customers.id')
+                    ->whereIn('ac2.property_id', $propIds);
+            });
+        }
+
+        // sort + paginate
+        $query->orderBy($sortBy, $sortDir);
+        $paginator = $query->paginate($perPage);
+
+        // ---- batch load interested categories/properties for current page ----
+        $customerIds = $paginator->getCollection()->pluck('id')->all();
+
+        $catRows = DB::table('api_customer_property_interested as ac')
+            ->whereIn('ac.customer_id', $customerIds)
+            ->whereNotNull('ac.category_id')
+            ->join('api_user_categories as c', 'c.id', '=', 'ac.category_id')
+            ->select('ac.customer_id', 'c.id', 'c.name')
+            ->distinct()
+            ->get()
+            ->groupBy('customer_id');
+
+
+        $propRows = DB::table('api_customer_property_interested as ac')
+            ->whereIn('ac.customer_id', $customerIds)
+            ->whereNotNull('ac.property_id')
+            ->join('user_properties as up', 'up.id', '=', 'ac.property_id')
+            ->leftJoin('user_property_contents as upc', 'upc.property_id', '=', 'up.id')
+            ->select('ac.customer_id', 'up.id as id', DB::raw('MAX(upc.title) as name'))
+            ->groupBy('ac.customer_id', 'up.id')
+            ->get()
+            ->groupBy('customer_id');
+
+        $customers = $paginator->getCollection()->map(function ($customer) use ($catRows, $propRows) {
+            $district     = $customer->district;
+            $districtCity = $district?->city;
+            $rootCity     = $customer->city;
+
+            $districtPayload = $district ? [
+                'id'              => $district->id,
+                'name_ar'         => $district->name_ar ?? null,
+                'name_en'         => $district->name_en ?? null,
+                'city_id'         => $district->city_id ?? $rootCity?->id,
+                'city_name_ar'    => $districtCity?->name_ar ?? $rootCity?->name_ar ?? null,
+                'city_name_en'    => $districtCity?->name_en ?? $rootCity?->name_en ?? null,
+                'country_name_ar' => $district->country_name_ar ?? null,
+                'country_name_en' => $district->country_name_en ?? null,
+                'created_at'      => optional($district->created_at)->toISOString(),
+                'updated_at'      => optional($district->updated_at)->toISOString(),
+            ] : 'N/A';
+
+            $cats = collect($catRows->get($customer->id) ?? [])
+                ->map(fn($r) => ['id' => (int)$r->id, 'name' => $r->name])
+                ->values();
+
+            $props = collect($propRows->get($customer->id) ?? [])
+                ->map(fn($r) => ['id' => (int)$r->id, 'name' => $r->name])
+                ->values();
+
+            return [
+                'id'                    => $customer->id,
+                'name'                  => $customer->name,
+                'email'                 => $customer->email,
+                'phone_number'          => $customer->phone_number,
+                'customer_type'         => $customer->customer_type ?? 'unknown',
+                'district'              => $districtPayload,
+                'priority'              => $customer->priority ?? 1,
+                'stage_id'              => $customer->stage_id ?? null,
+                'note'                  => $customer->note ?? '',
+                'city_id'               => $customer->city_id ?? null,
+                'created_by'            => $customer->user_id,
+                'created_at'            => optional($customer->created_at)->toISOString(),
+                'updated_at'            => optional($customer->updated_at)->toISOString(),
+                'interested_categories' => $cats,
+                'interested_properties' => $props,
+            ];
+        })->values();
+
+        $totalAll = \App\Models\ApiCustomer::where('user_id', $user->id)->count();
 
         return response()->json([
             'status' => 'success',
-            'data' => $customers
+            'data' => [
+                'summary' => ['total_customers' => $totalAll],
+                'customers' => $customers,
+                'pagination' => [
+                    'total'        => $paginator->total(),
+                    'per_page'     => $paginator->perPage(),
+                    'current_page' => $paginator->currentPage(),
+                    'last_page'    => $paginator->lastPage(),
+                    'from'         => $paginator->firstItem(),
+                    'to'           => $paginator->lastItem(),
+                ],
+            ],
         ]);
     }
 }
