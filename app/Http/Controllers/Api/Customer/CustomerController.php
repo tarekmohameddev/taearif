@@ -13,6 +13,8 @@ use App\Models\ApiCustomerPropertyInterested;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Arr;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
+use App\Models\Api\UserApiCustomerProcedure;
 
 class CustomerController extends Controller
 {
@@ -38,6 +40,12 @@ class CustomerController extends Controller
             ->distinct()
             ->get();
 
+        $interestedProperties = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
+            ->join('user_properties as up', 'up.id', '=', 'api_customer_property_interested.property_id')
+            ->leftJoin('user_property_contents as upc', 'upc.property_id', '=', 'up.id')
+            ->select('up.id', DB::raw('MAX(upc.title) as name'))
+            ->groupBy('up.id')
+            ->get();
 
             return [
                 'id' => $customer->id,
@@ -54,6 +62,7 @@ class CustomerController extends Controller
                 'created_at' => $customer->created_at->toISOString(),
                 'updated_at' => $customer->updated_at->toISOString(),
                 'interested_categories' => $interestedCategories,
+                'interested_properties' => $interestedProperties,
 
             ];
         });
@@ -91,6 +100,11 @@ class CustomerController extends Controller
     {
         $user = $request->user();
 
+        $request->merge([
+            'interested_category_ids' => $this->normalizeIds($request->input('interested_category_ids')),
+            'interested_property_ids' => $this->normalizeIds($request->input('interested_property_ids')),
+        ]);
+
         try {
             $request->validate([
                 'name'          => 'required|string|max:255',
@@ -114,10 +128,13 @@ class CustomerController extends Controller
                 'note'          => 'nullable|string',
                 'customer_type' => 'nullable|string|max:50',
                 'stage_id'      => 'nullable|exists:users_api_customers_stages,id',
+                'procedure_id'      => 'nullable|exists:users_api_customers_procedures,id',
                 'password'      => 'required|string|min:6',
                 'priority'      => 'nullable|integer|in:1,2,3',
-                'interested_category_ids' => 'nullable|array',
-                'interested_category_ids.*' => 'exists:api_user_categories,id'
+                'interested_category_ids' => 'nullable',
+                'interested_category_ids.*' => 'integer|exists:user_properties,id',
+                'interested_property_ids' => 'nullable',
+                'interested_property_ids.*' => 'integer|exists:user_properties,id',
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -137,26 +154,46 @@ class CustomerController extends Controller
             'customer_type' => $request->customer_type,
             'priority'      => $request->priority ?? 1, // Default to medium if not provided
             'stage_id'      => $request->stage_id ?? null,
+            'procedure_id'  => $request->procedure_id ?? null,
             'phone_number'  => $request->phone_number,
             'password'      => bcrypt($request->password),
         ]);
 
-        if ($request->filled('interested_category_ids')) {
-            $categories = $request->interested_category_ids;
-            foreach ($categories as $catId) {
-                ApiCustomerPropertyInterested::firstOrCreate([
-                    'user_id'     => $user->id,
-                    'customer_id' => $customer->id,
-                    'category_id' => $catId
-                ]);
-            }
+
+        // Persist categories
+        foreach ($request->input('interested_category_ids', []) as $catId) {
+            ApiCustomerPropertyInterested::firstOrCreate([
+                'user_id'     => $user->id,
+                'customer_id' => $customer->id,
+                'category_id' => $catId,
+            ]);
         }
-        $interestedCategories = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
-        ->join('api_user_categories', 'api_user_categories.id', '=', 'api_customer_property_interested.category_id')
-        ->select('api_user_categories.id', 'api_user_categories.name')
-        ->distinct()
-        ->get();
+
+        // Persist properties
+        foreach ($request->input('interested_property_ids', []) as $propId) {
+            ApiCustomerPropertyInterested::firstOrCreate([
+                'user_id'     => $user->id,
+                'customer_id' => $customer->id,
+                'property_id' => $propId,
+            ]);
+        }
+
+
+
+        // Build response lists
+        $interestedCategories = ApiCustomerPropertyInterested::where('customer_id',$customer->id)
+            ->join('api_user_categories','api_user_categories.id','=','api_customer_property_interested.category_id')
+            ->select('api_user_categories.id','api_user_categories.name')
+            ->distinct()->get();
+
+        $interestedProperties = ApiCustomerPropertyInterested::where('customer_id',$customer->id)
+            ->join('user_properties as up','up.id','=','api_customer_property_interested.property_id')
+            ->leftJoin('user_property_contents as upc','upc.property_id','=','up.id')
+            ->select('up.id', \DB::raw('MAX(upc.title) as name'))
+            ->groupBy('up.id')->get();
+
         $customer->interested_categories = $interestedCategories;
+        $customer->interested_properties = $interestedProperties;
 
         return response()->json([
             'status'  => 'success',
@@ -202,6 +239,11 @@ class CustomerController extends Controller
     {
         $user = $request->user();
 
+        $request->merge([
+            'interested_category_ids' => $this->normalizeIds($request->input('interested_category_ids')),
+            'interested_property_ids' => $this->normalizeIds($request->input('interested_property_ids')),
+        ]);
+
         try {
             $customer = ApiCustomer::where('user_id', $user->id)->find($id);
 
@@ -236,9 +278,12 @@ class CustomerController extends Controller
                 'customer_type' => 'nullable|string|max:50',
                 'priority'      => 'sometimes|integer|in:1,2,3',
                 'stage_id'      => 'nullable|exists:users_api_customers_stages,id',
+                'procedure_id'      => 'nullable|exists:users_api_customers_procedures,id',
                 'password'      => 'nullable|string|min:6',
-                'interested_category_ids' => 'nullable|array',
-                'interested_category_ids.*' => 'exists:api_user_categories,id',
+                'interested_category_ids' => 'nullable',
+                'interested_category_ids.*' => 'integer|exists:user_properties,id',
+                'interested_property_ids' => 'nullable',
+                'interested_property_ids.*' => 'exists:user_properties,id',
             ]);
 
             $data = [];
@@ -255,27 +300,59 @@ class CustomerController extends Controller
                 $data['password'] = bcrypt($request->password);
             }
 
-            $customer->update($data);
-
-            if ($request->filled('interested_category_ids')) {
-                ApiCustomerPropertyInterested::where('customer_id', $customer->id)->delete();
-
-                foreach ($request->interested_category_ids as $catId) {
-                    ApiCustomerPropertyInterested::firstOrCreate([
-                        'user_id'     => $user->id,
-                        'customer_id' => $customer->id,
-                        'category_id' => $catId,
-                    ]);
+            \DB::transaction(function () use ($customer, $data, $request, $user) {
+                if (!empty($data)) {
+                    $customer->update($data);
                 }
-            }
 
-            $interestedCategories = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
-                ->join('api_user_categories', 'api_user_categories.id', '=', 'api_customer_property_interested.category_id')
-                ->select('api_user_categories.id', 'api_user_categories.name')
-                ->distinct()
-                ->get();
+                // Replace ONLY categories if the key is present (even empty array => clear)
+                if ($request->has('interested_category_ids')) {
+                    ApiCustomerPropertyInterested::where('customer_id',$customer->id)
+                        ->whereNotNull('category_id')
+                        ->delete();
 
+                    foreach ($request->input('interested_category_ids', []) as $catId) {
+                        ApiCustomerPropertyInterested::firstOrCreate([
+                            'user_id'     => $user->id,
+                            'customer_id' => $customer->id,
+                            'category_id' => $catId,
+                        ]);
+                    }
+                }
+
+                // Replace ONLY properties if the key is present
+                if ($request->has('interested_property_ids')) {
+                    ApiCustomerPropertyInterested::where('customer_id',$customer->id)
+                        ->whereNotNull('property_id')
+                        ->delete();
+
+                    foreach ($request->input('interested_property_ids', []) as $propId) {
+                        ApiCustomerPropertyInterested::firstOrCreate([
+                            'user_id'     => $user->id,
+                            'customer_id' => $customer->id,
+                            'property_id' => $propId,
+                        ]);
+                    }
+                }
+            });
+
+            // Rebuild response lists
+            $interestedCategories = ApiCustomerPropertyInterested::where('customer_id',$customer->id)
+                ->join('api_user_categories','api_user_categories.id','=','api_customer_property_interested.category_id')
+                ->select('api_user_categories.id','api_user_categories.name')
+                ->distinct()->get();
+
+            $interestedProperties = ApiCustomerPropertyInterested::where('customer_id',$customer->id)
+                ->join('user_properties as up','up.id','=','api_customer_property_interested.property_id')
+                ->leftJoin('user_property_contents as upc','upc.property_id','=','up.id')
+                ->select('up.id', \DB::raw('MAX(upc.title) as name'))
+                ->groupBy('up.id')->get();
+
+            $customer->refresh();
             $customer->interested_categories = $interestedCategories;
+            $customer->interested_properties = $interestedProperties;
+
+
 
             return response()->json([
                 'status' => 'success',
@@ -342,22 +419,174 @@ class CustomerController extends Controller
 
     /**
      * Search customers by name, email or phone
-     */
+    */
     public function search(Request $request)
     {
-        $user = $request->user();
-        $query = $request->get('q');
-        $customers = ApiCustomer::where('user_id', $user->id)
-            ->where(function ($q) use ($query) {
-                $q->where('name', 'LIKE', "%$query%")
-                    ->orWhere('email', 'LIKE', "%$query%")
-                    ->orWhere('phone_number', 'LIKE', "%$query%");
-            })
-            ->paginate(10);
+        $user  = $request->user();
+        $qText = $request->get('q');
+
+        // ---- parse arrays or CSV for category/property filters ----
+        $toIntArray = function ($v): array {
+            if (is_array($v))  return array_values(array_filter(array_map('intval', $v)));
+            if (is_string($v)) return array_values(array_filter(array_map('intval', explode(',', $v))));
+            return [];
+        };
+        $catIds  = $toIntArray($request->input('interested_category_ids'));
+        $propIds = $toIntArray($request->input('interested_property_ids'));
+
+        // ---- validate simple filters ----
+        $request->validate([
+            'city_id'       => 'nullable|integer',
+            'district_id'   => 'nullable|integer',
+            'customer_type' => 'nullable|string|max:50',
+            'page'          => 'nullable|integer|min:1',
+            'per_page'      => 'nullable|integer|min:1|max:100',
+            'sort_by'       => 'nullable|in:name,created_at,priority',
+            'sort_dir'      => 'nullable|in:asc,desc',
+        ]);
+
+        $perPage = (int) ($request->input('per_page') ?: 10);
+        $sortBy  = $request->input('sort_by', 'created_at');
+        $sortDir = $request->input('sort_dir', 'desc');
+
+        $query = \App\Models\ApiCustomer::where('user_id', $user->id)
+            ->with(['district.city', 'city']);
+
+        // text search
+        if (!empty($qText)) {
+            $query->where(function ($sub) use ($qText) {
+                $sub->where('name', 'like', "%{$qText}%")
+                    ->orWhere('email', 'like', "%{$qText}%")
+                    ->orWhere('phone_number', 'like', "%{$qText}%");
+            });
+        }
+
+        // simple filters
+        if ($request->filled('city_id')) {
+            $query->where('city_id', (int)$request->input('city_id'));
+        }
+        if ($request->filled('district_id')) {
+            $query->where('district_id', (int)$request->input('district_id'));
+        }
+        if ($request->filled('customer_type')) {
+            $query->where('customer_type', $request->input('customer_type'));
+        }
+
+        if (!empty($catIds)) {
+            $query->whereExists(function ($sub) use ($catIds) {
+                $sub->select(DB::raw(1))
+                    ->from('api_customer_property_interested as ac1')
+                    ->whereColumn('ac1.customer_id', 'api_customers.id')
+                    ->whereIn('ac1.category_id', $catIds);
+            });
+        }
+
+        if (!empty($propIds)) {
+            $query->whereExists(function ($sub) use ($propIds) {
+                $sub->select(DB::raw(1))
+                    ->from('api_customer_property_interested as ac2')
+                    ->whereColumn('ac2.customer_id', 'api_customers.id')
+                    ->whereIn('ac2.property_id', $propIds);
+            });
+        }
+
+        $query->orderBy($sortBy, $sortDir);
+        $paginator = $query->paginate($perPage);
+
+        // ---- batch load interested categories/properties for current page ----
+        $customerIds = $paginator->getCollection()->pluck('id')->all();
+
+        $catRows = DB::table('api_customer_property_interested as ac')
+            ->whereIn('ac.customer_id', $customerIds)
+            ->whereNotNull('ac.category_id')
+            ->join('api_user_categories as c', 'c.id', '=', 'ac.category_id')
+            ->select('ac.customer_id', 'c.id', 'c.name')
+            ->distinct()
+            ->get()
+            ->groupBy('customer_id');
+
+
+        $propRows = DB::table('api_customer_property_interested as ac')
+            ->whereIn('ac.customer_id', $customerIds)
+            ->whereNotNull('ac.property_id')
+            ->join('user_properties as up', 'up.id', '=', 'ac.property_id')
+            ->leftJoin('user_property_contents as upc', 'upc.property_id', '=', 'up.id')
+            ->select('ac.customer_id', 'up.id as id', DB::raw('MAX(upc.title) as name'))
+            ->groupBy('ac.customer_id', 'up.id')
+            ->get()
+            ->groupBy('customer_id');
+
+        $customers = $paginator->getCollection()->map(function ($customer) use ($catRows, $propRows) {
+            $district     = $customer->district;
+            $districtCity = $district?->city;
+            $rootCity     = $customer->city;
+
+            $districtPayload = $district ? [
+                'id'              => $district->id,
+                'name_ar'         => $district->name_ar ?? null,
+                'name_en'         => $district->name_en ?? null,
+                'city_id'         => $district->city_id ?? $rootCity?->id,
+                'city_name_ar'    => $districtCity?->name_ar ?? $rootCity?->name_ar ?? null,
+                'city_name_en'    => $districtCity?->name_en ?? $rootCity?->name_en ?? null,
+                'country_name_ar' => $district->country_name_ar ?? null,
+                'country_name_en' => $district->country_name_en ?? null,
+                'created_at'      => optional($district->created_at)->toISOString(),
+                'updated_at'      => optional($district->updated_at)->toISOString(),
+            ] : 'N/A';
+
+            $cats = collect($catRows->get($customer->id) ?? [])
+                ->map(fn($r) => ['id' => (int)$r->id, 'name' => $r->name])
+                ->values();
+
+            $props = collect($propRows->get($customer->id) ?? [])
+                ->map(fn($r) => ['id' => (int)$r->id, 'name' => $r->name])
+                ->values();
+
+            return [
+                'id'                    => $customer->id,
+                'name'                  => $customer->name,
+                'email'                 => $customer->email,
+                'phone_number'          => $customer->phone_number,
+                'customer_type'         => $customer->customer_type ?? 'unknown',
+                'district'              => $districtPayload,
+                'priority'              => $customer->priority ?? 1,
+                'stage_id'              => $customer->stage_id ?? null,
+                'note'                  => $customer->note ?? '',
+                'city_id'               => $customer->city_id ?? null,
+                'created_by'            => $customer->user_id,
+                'created_at'            => optional($customer->created_at)->toISOString(),
+                'updated_at'            => optional($customer->updated_at)->toISOString(),
+                'interested_categories' => $cats,
+                'interested_properties' => $props,
+            ];
+        })->values();
+
+        $totalAll = \App\Models\ApiCustomer::where('user_id', $user->id)->count();
 
         return response()->json([
             'status' => 'success',
-            'data' => $customers
+            'data' => [
+                'summary' => ['total_customers' => $totalAll],
+                'customers' => $customers,
+                'pagination' => [
+                    'total'        => $paginator->total(),
+                    'per_page'     => $paginator->perPage(),
+                    'current_page' => $paginator->currentPage(),
+                    'last_page'    => $paginator->lastPage(),
+                    'from'         => $paginator->firstItem(),
+                    'to'           => $paginator->lastItem(),
+                ],
+            ],
         ]);
     }
+
+    private function normalizeIds($v): array
+    {
+        if (is_null($v) || $v === '') return [];
+        if (is_int($v)) return [$v];
+        if (is_array($v)) return array_values(array_filter(array_map('intval', $v)));
+        if (is_string($v)) return array_values(array_filter(array_map('intval', explode(',', $v))));
+        return [];
+    }
+
 }

@@ -39,6 +39,7 @@ use App\Http\Controllers\Api\content\ApiContentSectionsController;
 use App\Http\Controllers\Api\Customer\CustomerController;
 use App\Http\Controllers\Api\Customer\UserApiCustomerStageController;
 use App\Http\Controllers\Api\Customer\UserApiCustomerPriorityController;
+use App\Http\Controllers\Api\Customer\UserApiCustomerTypeController;
 use App\Http\Controllers\Api\Customer\UserApiCustomerProcedureController;
 use App\Http\Controllers\Api\Customer\UserApiCustomerReminderController;
 use App\Http\Controllers\Api\Customer\UserApiCustomerAppointmentController;
@@ -324,6 +325,11 @@ Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
     Route::apiResource('priorities', UserApiCustomerPriorityController::class);
     Route::post('priorities/reorder', [UserApiCustomerPriorityController::class, 'reorderPriorities']);
     Route::post('priorities/{id}/move', [UserApiCustomerPriorityController::class, 'movePriority']);
+    // Types
+    Route::apiResource('types', UserApiCustomerTypeController::class);
+    Route::post('types/reorder', [UserApiCustomerTypeController::class, 'reorderTypes']);
+    Route::post('types/{id}/move', [UserApiCustomerTypeController::class, 'moveTypes']);
+
 
     // Appointments
     Route::apiResource('customer-appointments', UserApiCustomerAppointmentController::class);
