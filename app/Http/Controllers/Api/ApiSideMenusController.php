@@ -103,25 +103,25 @@ class ApiSideMenusController extends Controller
             // }
         }
 
-        $sections[] = [
-                    'title' => 'التطبيقات',
-                    'description' => 'ادارة تطبيقاتك',
-                    'path' => '/apps',
-                ];
+        // $sections[] = [
+        //             'title' => 'التطبيقات',
+        //             'description' => 'ادارة تطبيقاتك',
+        //             'path' => '/apps',
+        //         ];
 
-        $whatsappMenu = ApiMenuItem::where('user_id', $user->id)
-            ->where('url', '/whatsapp-ai')
-            ->where('is_active', true)
-            ->first();
+        // $whatsappMenu = ApiMenuItem::where('user_id', $user->id)
+        //     ->where('url', '/whatsapp-ai')
+        //     ->where('is_active', true)
+        //     ->first();
 
-        if ($whatsappMenu) {
-            $sections[] = [
-                'title' => $whatsappMenu->label ?? 'واتس اب',
-                'description' => 'مساعد الذكاء الاصطناعي للواتس اب',
-                'icon' => 'whatsapp',
-                'path' => $whatsappMenu->url,
-            ];
-        }
+        // if ($whatsappMenu) {
+        //     $sections[] = [
+        //         'title' => $whatsappMenu->label ?? 'واتس اب',
+        //         'description' => 'مساعد الذكاء الاصطناعي للواتس اب',
+        //         'icon' => 'whatsapp',
+        //         'path' => $whatsappMenu->url,
+        //     ];
+        // }
 
         // Check if the user has an affiliate user record
         if ($isAffiliateApproved > 0) {
@@ -133,18 +133,18 @@ class ApiSideMenusController extends Controller
             ];
         }
 
-        $aiMenu = ApiMenuItem::where('user_id', $user->id)
-            ->where('url', '/ai')
-            ->where('is_active', true)
-            ->first();
-        if ($aiMenu) {
-            $sections[] = [
-                'title' => $aiMenu->label ?? 'الذكاء الاصطناعي',
-                'description' => 'مساعد الذكاء الاصطناعي',
-                'icon' => 'ai',
-                'path' => $aiMenu->url,
-            ];
-        }
+        // $aiMenu = ApiMenuItem::where('user_id', $user->id)
+        //     ->where('url', '/ai')
+        //     ->where('is_active', true)
+        //     ->first();
+        // if ($aiMenu) {
+        //     $sections[] = [
+        //         'title' => $aiMenu->label ?? 'الذكاء الاصطناعي',
+        //         'description' => 'مساعد الذكاء الاصطناعي',
+        //         'icon' => 'ai',
+        //         'path' => $aiMenu->url,
+        //     ];
+        // }
         return response()->json([
             'status' => true,
             'message' => 'Side menus retrieved successfully.',
