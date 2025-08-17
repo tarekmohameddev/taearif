@@ -98,87 +98,85 @@ class CustomerController extends Controller
      * @return \Illuminate\Http\Response
      */
 
-     public function store(Request $request)
-     {
-         return $this->guard(function () use ($request) {
-             $user = $request->user();
+    public function store(Request $request)
+    {
+        return $this->guard(function () use ($request) {
+            $user = $request->user();
 
-             $toIntArray = function ($v): array {
-                 if (is_null($v) || $v === '') return [];
-                 if (is_int($v) || (is_string($v) && is_numeric($v))) return [(int)$v];
-                 if (is_string($v)) return array_values(array_filter(array_map('intval', explode(',', $v))));
-                 if (is_array($v))  return array_values(array_filter(array_map('intval', $v)));
-                 return [];
-             };
-             $request->merge([
-                 'interested_category_ids' => $toIntArray($request->input('interested_category_ids')),
-                 'interested_property_ids' => $toIntArray($request->input('interested_property_ids')),
-             ]);
+            $toIntArray = function ($v): array {
+                if (is_null($v) || $v === '') return [];
+                if (is_int($v) || (is_string($v) && is_numeric($v))) return [(int)$v];
+                if (is_string($v)) return array_values(array_filter(array_map('intval', explode(',', $v))));
+                if (is_array($v))  return array_values(array_filter(array_map('intval', $v)));
+                return [];
+            };
+            $request->merge([
+                'interested_category_ids' => $toIntArray($request->input('interested_category_ids')),
+                'interested_property_ids' => $toIntArray($request->input('interested_property_ids')),
+            ]);
 
-             $request->validate([
-                 'name'         => 'required|string|max:255',
-                 'email'        => ['nullable','email',
-                     Rule::unique('api_customers','email')->where(fn($q)=>$q->where('user_id',$user->id)),
-                 ],
-                 'phone_number' => ['required','string','max:20',
-                     Rule::unique('api_customers','phone_number')->where(fn($q)=>$q->where('user_id',$user->id)),
-                 ],
-                 'city_id'      => 'nullable|exists:user_cities,id',
-                 'district_id'  => 'nullable|exists:user_districts,id',
-                 'note'         => 'nullable|string',
-                 'type_id'      => ['required', Rule::exists('users_api_customers_types','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-                 'priority_id'  => ['required', Rule::exists('users_api_customers_priorities','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-                 'stage_id'     => ['nullable', Rule::exists('users_api_customers_stages','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-                 'procedure_id' => ['nullable', Rule::exists('users_api_customers_procedures','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-                 'password'     => 'required|string|min:6',
-                 'interested_category_ids'   => 'nullable|array',
-                 'interested_category_ids.*' => 'integer|exists:api_user_categories,id',
-                 'interested_property_ids'   => 'nullable|array',
-                 'interested_property_ids.*' => 'integer|exists:user_properties,id',
-             ]);
+            $request->validate([
+                'name'         => 'required|string|max:255',
+                'email'        => ['nullable','email',
+                    Rule::unique('api_customers','email')->where(fn($q)=>$q->where('user_id',$user->id)),
+                ],
+                'phone_number' => ['required','string','max:20',
+                    Rule::unique('api_customers','phone_number')->where(fn($q)=>$q->where('user_id',$user->id)),
+                ],
+                'city_id'      => 'nullable|exists:user_cities,id',
+                'district_id'  => 'nullable|exists:user_districts,id',
+                'note'         => 'nullable|string',
+                'type_id'      => ['required', Rule::exists('users_api_customers_types','id')->where(fn($q)=>$q->where('user_id',$user->id))],
+                'priority_id'  => ['required', Rule::exists('users_api_customers_priorities','id')->where(fn($q)=>$q->where('user_id',$user->id))],
+                'stage_id'     => ['nullable', Rule::exists('users_api_customers_stages','id')->where(fn($q)=>$q->where('user_id',$user->id))],
+                'procedure_id' => ['nullable', Rule::exists('users_api_customers_procedures','id')->where(fn($q)=>$q->where('user_id',$user->id))],
+                'password'     => 'required|string|min:6',
+                'interested_category_ids'   => 'nullable|array',
+                'interested_category_ids.*' => 'integer|exists:api_user_categories,id',
+                'interested_property_ids'   => 'nullable|array',
+                'interested_property_ids.*' => 'integer|exists:user_properties,id',
+            ]);
 
-             $customer = null;
+            $customer = null;
 
-             \DB::transaction(function () use ($request, $user, &$customer) {
-                 $customer = \App\Models\ApiCustomer::create([
-                     'user_id'      => $user->id,
-                     'name'         => $request->name,
-                     'email'        => $request->email,
-                     'city_id'      => $request->city_id,
-                     'district_id'  => $request->district_id,
-                     'note'         => $request->note,
-                     'type_id'      => $request->type_id,
-                     'priority_id'  => $request->priority_id,
-                     'stage_id'     => $request->stage_id,
-                     'procedure_id' => $request->procedure_id,
-                     'phone_number' => $request->phone_number,
-                     'password'     => bcrypt($request->password),
-                 ]);
+            \DB::transaction(function () use ($request, $user, &$customer) {
+                $customer = \App\Models\ApiCustomer::create([
+                    'user_id'      => $user->id,
+                    'name'         => $request->name,
+                    'email'        => $request->email,
+                    'city_id'      => $request->city_id,
+                    'district_id'  => $request->district_id,
+                    'note'         => $request->note,
+                    'type_id'      => $request->type_id,
+                    'priority_id'  => $request->priority_id,
+                    'stage_id'     => $request->stage_id,
+                    'procedure_id' => $request->procedure_id,
+                    'phone_number' => $request->phone_number,
+                    'password'     => bcrypt($request->password),
+                ]);
 
-                 foreach (($request->interested_category_ids ?? []) as $catId) {
-                     \App\Models\ApiCustomerPropertyInterested::firstOrCreate([
-                         'user_id'     => $user->id,
-                         'customer_id' => $customer->id,
-                         'category_id' => (int)$catId,
-                     ]);
-                 }
-                 foreach (($request->interested_property_ids ?? []) as $propId) {
-                     \App\Models\ApiCustomerPropertyInterested::firstOrCreate([
-                         'user_id'     => $user->id,
-                         'customer_id' => $customer->id,
-                         'property_id' => (int)$propId,
-                     ]);
-                 }
-             });
+                foreach (($request->interested_category_ids ?? []) as $catId) {
+                    \App\Models\ApiCustomerPropertyInterested::firstOrCreate([
+                        'user_id'     => $user->id,
+                        'customer_id' => $customer->id,
+                        'category_id' => (int)$catId,
+                    ]);
+                }
+                foreach (($request->interested_property_ids ?? []) as $propId) {
+                    \App\Models\ApiCustomerPropertyInterested::firstOrCreate([
+                        'user_id'     => $user->id,
+                        'customer_id' => $customer->id,
+                        'property_id' => (int)$propId,
+                    ]);
+                }
+            });
 
-             return $this->ok([
-                 'message' => 'Customer created successfully',
-                 'data'    => $customer,
-             ], 201);
-         });
-     }
-
-
+            return $this->ok([
+                'message' => 'Customer created successfully',
+                'data'    => $customer,
+            ], 201);
+        });
+    }
 
     /**
      * Display the specified resource.
@@ -302,7 +300,6 @@ class CustomerController extends Controller
             'data'    => $customer,
         ]);
     }
-
 
     /**
      * Remove the specified resource from storage.
@@ -484,7 +481,6 @@ class CustomerController extends Controller
             ],
         ]);
     }
-
 
     private function normalizeIds($v): array
     {
