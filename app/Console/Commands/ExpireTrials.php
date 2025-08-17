@@ -13,14 +13,14 @@ class ExpireTrials extends Command
      *
      * @var string
      */
-    protected $signature = 'command:name';
+    protected $signature = 'app:expire-trials';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'Expire trial installations and move them to PendingPayment status';
 
     /**
      * Execute the console command.

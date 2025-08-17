@@ -31,25 +31,39 @@ use Illuminate\Support\Facades\Log;
 
 class CronJobController extends Controller
 {
+
+    /**
+     * Handle the expired memberships and send notifications.
+     *
+     * @param UserPackageService $service
+     * @return void
+     */
     public function expired(UserPackageService $service)
     {
-      
+
         try {
             $bs = BasicSetting::first();
             $be = BasicExtended::first();
 
             Config::set('app.timezone', $bs->timezone);
-            $exMembers = Membership::whereDate('expire_date', Carbon::now()->subDays(1))->get();
+            // $exMembers = Membership::whereDate('expire_date', Carbon::now()->subDays(1))->get();
+            $exMembers = Membership::where('status', 1)->whereDate('expire_date', '<', now()->toDateString())->get();
             foreach ($exMembers as $key => $exMember) {
-     
+
                 if (!empty($exMember->user)) {
                     $user = $exMember->user;
                     $currPackage = UserPermissionHelper::userPackage($user->id);
-        
+
                     if (is_null($currPackage)) {
-               
+
                         $userId = $user->id;
-                        $packageId = 16;
+                        // $packageId = 16;
+                        $freePackageId = Package::where('status', '1')->where('price', 0)->value('id');
+                        if (is_null($freePackageId)) {
+                            Log::error('No active free package found (price=0).');
+                            continue;
+                        }
+                        $packageId = $freePackageId;
                         $paymentMethod = '';
 
                         $request = new Request([
@@ -98,7 +112,7 @@ class CronJobController extends Controller
                 }
             }
         }
-        //donation pending payments 
+        //donation pending payments
         $iyzico_pending_donations = DonationDetail::where([['payment_method', 'Iyzico'], ['status', 'pending']])->get();
         foreach ($iyzico_pending_donations as $iyzico_pending_donation) {
             if (!is_null($iyzico_pending_donation->conversation_id)) {
@@ -108,7 +122,7 @@ class CronJobController extends Controller
                 }
             }
         }
-        //course enrolments pending payments 
+        //course enrolments pending payments
         $iyzico_pending_courses = CourseEnrolment::where([['payment_method', 'Iyzico'], ['payment_status', 'pending']])->get();
         foreach ($iyzico_pending_courses as $iyzico_pending_course) {
             if (!is_null($iyzico_pending_course->conversation_id)) {
@@ -119,7 +133,7 @@ class CronJobController extends Controller
             }
         }
 
-        //product orders pending payments 
+        //product orders pending payments
         $iyzico_pending_orders = UserOrder::where([['method', 'Iyzico'], ['payment_status', 'Pending']])->get();
         foreach ($iyzico_pending_orders as $iyzico_pending_order) {
             if (!is_null($iyzico_pending_order->conversation_id)) {
@@ -129,7 +143,7 @@ class CronJobController extends Controller
                 }
             }
         }
-        //room bookings pending payments 
+        //room bookings pending payments
         $iyzico_pending_bookings = RoomBooking::where([['payment_method', 'Iyzico'], ['payment_status', 0]])->get();
         foreach ($iyzico_pending_bookings as $iyzico_pending_booking) {
             if (!is_null($iyzico_pending_booking->conversation_id)) {

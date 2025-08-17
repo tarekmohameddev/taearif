@@ -29,8 +29,8 @@
 
 <!-- footer -->
 @if (isset($userApi_footerData->status) && $userApi_footerData->status !== false)
-  <footer class="footer-area border border-primary" style="background-color: transparent !important;margin-top: 10rem !important;">
-      @if (!empty($userFooterData->bg_image))
+<footer class="footer-area border border-primary" style="background-color: transparent !important; ">
+@if (!empty($userFooterData->bg_image))
           <!-- Background Image -->
           <img class="lazyload blur-up bg-img"
               src="https://aqar-riyadh.site/website/images/footer-bg-3.png">
