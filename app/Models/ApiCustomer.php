@@ -32,10 +32,10 @@ class ApiCustomer extends Authenticatable
         'name',
         'email',
         'note',
-        'customer_type', // rent or sale
-        'priority', // 1, 2, 3
+        'type_id',  // 1, 2,
+        'priority_id', // 1, 2, 3
         'stage_id', // 1, 2, 3, 4, 5
-        'procedure_id', //Procedure meeting visit
+        'procedure_id', // 1 meeting 2 visit
         'city_id',
         'district_id',
         'phone_number',
@@ -107,6 +107,16 @@ class ApiCustomer extends Authenticatable
     public function procedure()
     {
         return $this->belongsTo(\App\Models\Api\UserApiCustomerProcedure::class, 'procedure_id');
+    }
+
+    public function type()
+    {
+        return $this->belongsTo(\App\Models\Api\UserApiCustomerType::class, 'type_id');
+    }
+
+    public function priorityRef()
+    {
+        return $this->belongsTo(\App\Models\Api\UserApiCustomerPriority::class, 'priority_id');
     }
 
 }

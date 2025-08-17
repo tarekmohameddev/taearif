@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Throwable;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\QueryException;
+use Illuminate\Validation\ValidationException;
 
 class Handler extends ExceptionHandler
 {
@@ -23,6 +26,7 @@ class Handler extends ExceptionHandler
      * @var array
      */
     protected $dontReport = [];
+
     /**
      * A list of the inputs that are never flashed for validation exceptions.
      *
@@ -32,6 +36,7 @@ class Handler extends ExceptionHandler
         'password',
         'password_confirmation',
     ];
+
     /**
      * Report or log an exception.
      *
@@ -44,6 +49,7 @@ class Handler extends ExceptionHandler
     {
         parent::report($exception);
     }
+
     /**
      * Render an exception into an HTTP response.
      *
@@ -55,6 +61,47 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $exception)
     {
+
+        // ── JSON for API calls ──
+        if ($request->expectsJson() || $request->is('api/*')) {
+            // Validation (you also have invalidJson; this is just a safeguard)
+            if ($exception instanceof ValidationException) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Validation failed',
+                    'errors'  => $e->errors(),
+                ], 422);
+            }
+
+            // Not found (model/route)
+            if ($exception instanceof ModelNotFoundException) {
+                return response()->json(['status' => 'error', 'message' => 'Resource not found'], 404);
+            }
+            if ($exception instanceof NotFoundHttpException || $exception instanceof RouteNotFoundException) {
+                return response()->json(['status' => 'error', 'message' => 'Not found'], 404);
+            }
+
+            // Auth
+            if ($exception instanceof AuthenticationException) {
+                return response()->json(['status' => 'error', 'message' => 'Unauthenticated'], 401);
+            }
+
+            // DB
+            if ($exception instanceof QueryException) {
+                return response()->json([
+                    'status'    => 'error',
+                    'message'   => 'Database error',
+                    'sql_error' => config('app.debug') ? $exception->getMessage() : null,
+                ], 500);
+            }
+
+            // Fallback
+            return response()->json([
+                'status'    => 'error',
+                'message'   => config('app.debug') ? $e->getMessage() : 'Server error',
+                'exception' => config('app.debug') ? class_basename($e) : null,
+            ], 500);
+        }
         //check if exception is an instance of ModelNotFoundException.
         if ($exception instanceof ModelNotFoundException) {
             // normal 404 view page feedback
@@ -136,6 +183,7 @@ class Handler extends ExceptionHandler
             }
         }
     }
+
     private function userLocal($user)
     {
         if (session()->has('user_lang')) {
@@ -148,4 +196,14 @@ class Handler extends ExceptionHandler
             return json_decode($lan->keywords, true);
         }
     }
+
+    protected function invalidJson($request, ValidationException $exception)
+    {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'Validation failed',
+            'errors'  => $exception->errors(),
+        ], $exception->status);
+    }
+
 }
