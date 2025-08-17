@@ -409,13 +409,13 @@
                     </h2>
                     <div class="space-y-4 text-gray-600 text-lg leading-relaxed">
                         <p>
-                            في عام 2023، لاحظنا أن العديد من المطورين العقاريين والوسطاء يواجهون صعوبات في إدارة أعمالهم رقمياً. كانوا يحتاجون إلى حلول متعددة ومعقدة لبناء مواقعهم وإدارة عملائهم.
+                            في عام 2024، لاحظنا أن العديد من المطورين العقاريين والوسطاء يواجهون صعوبات في إدارة أعمالهم رقمياً. كانوا يحتاجون إلى حلول متعددة ومعقدة لبناء مواقعهم وإدارة عملائهم.
                         </p>
                         <p>
                             قررنا أن نغير هذا الواقع من خلال تطوير منصة واحدة تجمع كل ما يحتاجونه: موقع احترافي، نظام إدارة عملاء، ومساعد ذكي للواتساب.
                         </p>
                         <p>
-                            اليوم، نفخر بخدمة أكثر من <strong class="text-black">500+ عميل</strong> في المملكة العربية السعودية ودول الخليج.
+                            اليوم، نفخر بخدمة أكثر من <strong class="text-black">67+ عميل</strong> في المملكة العربية السعودية ودول الخليج.
                         </p>
                     </div>
                 </div>
@@ -425,7 +425,7 @@
                         <div class="relative bg-white rounded-2xl p-8 shadow-xl border">
                             <div class="grid grid-cols-2 gap-6">
                                 <div class="text-center">
-                                    <div class="text-3xl font-bold text-black mb-2">500+</div>
+                                    <div class="text-3xl font-bold text-black mb-2">67+</div>
                                     <div class="text-gray-600">عميل راضٍ</div>
                                 </div>
                                 <div class="text-center">
@@ -535,98 +535,6 @@
         </div>
     </section>
 
-    <!-- Our Team Section -->
-    <section class="py-20 bg-white pattern-grid">
-        <div class="container">
-            <div class="text-center mb-16">
-                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-gray-800 text-sm font-medium mb-6">
-                    <i data-lucide="users" class="h-4 w-4"></i>
-                    <span>فريقنا</span>
-                </div>
-                <h2 class="text-3xl md:text-5xl font-bold mb-6">
-                    <span class="text-black">تعرف على</span>
-                    <span class="gradient-success">فريق العمل</span>
-                </h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    فريق متخصص من المطورين والمصممين وخبراء التسويق الرقمي
-                </p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Team Member 1 -->
-                <div class="team-card rounded-2xl p-8 text-center hover-lift">
-                    <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-purple-400 to-cyan-400 rounded-full flex items-center justify-center">
-                        <i data-lucide="user" class="h-12 w-12 text-white"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">أحمد محمد</h3>
-                    <p class="text-purple-600 font-medium mb-4">المؤسس والرئيس التنفيذي</p>
-                    <p class="text-gray-600 text-sm">
-                        خبرة 10+ سنوات في تطوير البرمجيات والحلول التقنية للقطاع العقاري
-                    </p>
-                </div>
-
-                <!-- Team Member 2 -->
-                <div class="team-card rounded-2xl p-8 text-center hover-lift">
-                    <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full flex items-center justify-center">
-                        <i data-lucide="user" class="h-12 w-12 text-white"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">سارة أحمد</h3>
-                    <p class="text-cyan-600 font-medium mb-4">مديرة التطوير</p>
-                    <p class="text-gray-600 text-sm">
-                        متخصصة في تطوير واجهات المستخدم وتجربة المستخدم للمنصات الرقمية
-                    </p>
-                </div>
-
-                <!-- Team Member 3 -->
-                <div class="team-card rounded-2xl p-8 text-center hover-lift">
-                    <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-green-400 to-teal-400 rounded-full flex items-center justify-center">
-                        <i data-lucide="user" class="h-12 w-12 text-white"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">محمد علي</h3>
-                    <p class="text-green-600 font-medium mb-4">مدير التسويق</p>
-                    <p class="text-gray-600 text-sm">
-                        خبير في التسويق الرقمي واستراتيجيات النمو للشركات التقنية
-                    </p>
-                </div>
-
-                <!-- Team Member 4 -->
-                <div class="team-card rounded-2xl p-8 text-center hover-lift">
-                    <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center">
-                        <i data-lucide="user" class="h-12 w-12 text-white"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">فاطمة خالد</h3>
-                    <p class="text-orange-600 font-medium mb-4">مديرة خدمة العملاء</p>
-                    <p class="text-gray-600 text-sm">
-                        متخصصة في إدارة علاقات العملاء وضمان تقديم أفضل تجربة خدمة
-                    </p>
-                </div>
-
-                <!-- Team Member 5 -->
-                <div class="team-card rounded-2xl p-8 text-center hover-lift">
-                    <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-pink-400 to-purple-400 rounded-full flex items-center justify-center">
-                        <i data-lucide="user" class="h-12 w-12 text-white"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">عبدالله سعد</h3>
-                    <p class="text-pink-600 font-medium mb-4">مطور البرمجيات</p>
-                    <p class="text-gray-600 text-sm">
-                        متخصص في تطوير الأنظمة الخلفية وقواعد البيانات والأمان السيبراني
-                    </p>
-                </div>
-
-                <!-- Team Member 6 -->
-                <div class="team-card rounded-2xl p-8 text-center hover-lift">
-                    <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-indigo-400 to-blue-400 rounded-full flex items-center justify-center">
-                        <i data-lucide="user" class="h-12 w-12 text-white"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">نورا حسن</h3>
-                    <p class="text-indigo-600 font-medium mb-4">مصممة UI/UX</p>
-                    <p class="text-gray-600 text-sm">
-                        مبدعة في تصميم واجهات المستخدم وتحسين تجربة المستخدم للمنتجات الرقمية
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
 
     <!-- Mission & Vision Section -->
     <section class="py-20 bg-gray-50/30 pattern-waves">
