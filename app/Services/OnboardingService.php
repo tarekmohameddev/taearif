@@ -288,12 +288,12 @@ class OnboardingService extends Controller
                     ["id" => "3-2", "text" => "سياسة الخصوصية", "url" => "/privacy"],
                     ["id" => "3-3", "text" => "الشروط والأحكام", "url" => "/terms"],
                 ],
-                "enabled" => true,
+                "enabled" => false,
             ],
         ];
 
         $newsletter = [
-            "enabled" => true,
+            "enabled" => false,
             "title" => "اشترك في نشرتنا البريدية",
             "description" => "اشترك للحصول على آخر الأخبار والعروض",
             "buttonText" => "اشتراك",

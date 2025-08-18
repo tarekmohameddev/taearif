@@ -89,21 +89,17 @@ class PropertyRequestController extends Controller
             ],
             'property_type'      => ['nullable', Rule::in(['سكني', 'تجاري', 'صناعي', 'زراعي'])],
             'city_id'            => ['nullable', 'integer'],
-            'districts_id'    => ['nullable', 'integer'],
+            'districts_id'       => ['nullable', 'integer'],
             'area_from'          => ['nullable', 'integer', 'min:0', 'lte:area_to'],
             'area_to'            => ['nullable', 'integer', 'min:0'],
-
             'purchase_method'    => ['nullable', Rule::in(['كاش', 'تمويل بنكي'])],
             'budget_from'        => ['nullable', 'numeric', 'min:0', 'lte:budget_to'],
             'budget_to'          => ['nullable', 'numeric', 'min:0'],
-
             'seriousness'        => ['nullable', Rule::in(['مستعد فورًا', 'خلال شهر', 'خلال 3 أشهر', 'لاحقًا / استكشاف فقط'])],
             'purchase_goal'      => ['nullable', Rule::in(['سكن خاص', 'استثمار وتأجير', 'بناء وبيع', 'مشروع تجاري'])],
             'wants_similar_offers' => ['nullable', 'boolean'],
-
             'full_name'          => ['required', 'string', 'max:255'],
             'phone'              => ['required', 'string', 'max:20'],
-
             'contact_on_whatsapp' => ['nullable', 'boolean'],
             'notes'              => ['nullable', 'string', 'max:5000'],
         ];
