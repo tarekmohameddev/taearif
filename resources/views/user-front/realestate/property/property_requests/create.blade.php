@@ -97,44 +97,52 @@
 
         <div class="form-row">
             @php
+                $citiesList = $cities ?? collect([]);
+                $isAr = app()->getLocale() === 'ar';
 
-                $citiesFromDistricts = ($districts ?? collect([]))->unique('city_id');
             @endphp
 
             @if($vis('city_id'))
-            <div class="form-group">
-                <label class="{{ $req('city_id') ? 'required' : '' }}">{{ $lbl('city_id','المدينة') }}</label>
+        <div class="form-group">
+            <label class="{{ $req('city_id') ? 'required' : '' }}">{{ $lbl('city_id','المدينة') }}</label>
 
-                <select class="form-select" id="citySelect" name="city_id"
-                        data-states-base="{{ url('/get-states') }}"
-                        {{ $req('city_id') ? 'required' : '' }}>
-                    <option value="">{{ $lbl('city_id_placeholder','اختر المدينة') }}</option>
+            <select
+                class="form-select"
+                id="citySelect"
+                name="city_id"
+                data-districts-base="{{ url('/geo/districts/by-city') }}"
+                data-old-city="{{ old('city_id') }}"
+                data-old-district="{{ old('districts_id') }}"
+                {{ $req('city_id') ? 'required' : '' }}
+            >
+                <option value="">{{ $lbl('city_id_placeholder','اختر المدينة') }}</option>
+                @foreach($citiesList as $row)
+                    <option value="{{ $row->city_id }}" {{ (string)old('city_id') === (string)$row->city_id ? 'selected' : '' }}>
+                        {{ $isAr ? ($row->city_name_ar ?? $row->city_name_en) : ($row->city_name_en ?? $row->city_name_ar) }}
+                    </option>
+                @endforeach
+            </select>
 
-                    @foreach($citiesFromDistricts as $row)
-                        <option value="{{ $row->city_id }}"
-                            {{ old('city_id') == $row->city_id ? 'selected' : '' }}>
-                            {{ app()->getLocale()==='ar'
-                                ? ($row->city_name_ar ?? $row->city_name_en)
-                                : ($row->city_name_en ?? $row->city_name_ar) }}
-                        </option>
-                    @endforeach
-                </select>
-
-                @error('city_id') <p class="text-danger">{{ $message }}</p> @enderror
-            </div>
-            @endif
-
-
-            @if($vis('districts_id'))
-            <div class="form-group">
-                <label class="{{ $req('districts_id') ? 'required' : '' }}">{{ $lbl('districts_id','الحي') }}</label>
-                <select class="form-select" id="districtSelect" name="districts_id" {{ $req('districts_id') ? 'required' : '' }} disabled>
-                    <option value="">{{ $lbl('districts_id_placeholder','اختر الحي') }}</option>
-                </select>
-                @error('districts_id') <p class="text-danger">{{ $message }}</p> @enderror
-            </div>
-            @endif
+            @error('city_id') <p class="text-danger">{{ $message }}</p> @enderror
         </div>
+        @endif
+
+        @if($vis('districts_id'))
+        <div class="form-group">
+            <label class="{{ $req('districts_id') ? 'required' : '' }}">{{ $lbl('districts_id','الحي') }}</label>
+            <select
+                class="form-select"
+                id="districtSelect"
+                name="districts_id"
+                {{ $req('districts_id') ? 'required' : '' }}
+                disabled
+            >
+                <option value="">{{ $isAr ? 'اختر الحي' : 'Select District' }}</option>
+            </select>
+            @error('districts_id') <p class="text-danger">{{ $message }}</p> @enderror
+        </div>
+        @endif
+    </div>
 
         <div class="form-row">
             @if($vis('area_from'))
@@ -513,7 +521,9 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
     const citySelect = document.getElementById('citySelect');
     const districtSelect = document.getElementById('districtSelect');
-    const base = citySelect ? citySelect.dataset.statesBase : null;
+
+    // CHANGED: use data-districts-base instead of data-states-base
+    const base = citySelect ? citySelect.dataset.districtsBase : null;
 
     const OLD_CITY_ID = @json(old('city_id'));
     const OLD_DISTRICT_ID = @json(old('districts_id'));
@@ -521,17 +531,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function resetDistricts(disabled = true) {
         if (!districtSelect) return;
-        districtSelect.innerHTML = `<option value="">${IS_AR ? 'اختر الحي' : 'Select District'}</option>`;
-
+        districtSelect.innerHTML =
+          `<option value="">${IS_AR ? 'اختر الحي' : 'Select District'}</option>`;
         districtSelect.disabled = disabled;
     }
 
     async function loadDistricts(cityId, selectedId = null) {
-        if (!base || !cityId || !districtSelect) {
-            resetDistricts(true);
-            return;
-        }
-        const url = `${base}/${encodeURIComponent(cityId)}`;
+        if (!base || !cityId || !districtSelect) { resetDistricts(true); return; }
+        const baseClean = base.replace(/\/$/, '');
+        const url = `${baseClean}/${encodeURIComponent(cityId)}`; // -> /geo/districts/by-city/3
         try {
             const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
             if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -561,6 +569,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
 
 @if (!in_array($userBs->theme, ['home13', 'home14', 'home15']))
 @endsection
