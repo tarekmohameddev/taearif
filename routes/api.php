@@ -300,12 +300,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // api_customers
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/customers', [CustomerController::class, 'index']);
-    Route::get('/customers/search', [CustomerController::class, 'search']);
-    Route::get('/customers/{id}', [CustomerController::class, 'show']);
-    Route::post('/customers', [CustomerController::class, 'store']);
-    Route::put('/customers/{id}', [CustomerController::class, 'update']);
-    Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
+    Route::prefix('customers')->group(function () {
+        Route::get('/filters', [CustomerController::class, 'filterOptions']);
+
+        Route::get('/', [CustomerController::class, 'index']);
+        Route::get('/search', [CustomerController::class, 'search']);
+        Route::get('/{id}', [CustomerController::class, 'show']);
+        Route::post('/', [CustomerController::class, 'store']);
+        Route::put('/{id}', [CustomerController::class, 'update']);
+        Route::delete('/{id}', [CustomerController::class, 'destroy']);
+    });
 
 });
 
@@ -351,9 +355,6 @@ Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
     Route::get('/customers/search', [CRMController::class, 'searchCustomers']); // search customers
 
 });
-
-
-
 
 // steps
 Route::middleware('auth:sanctum')->group(function () {
