@@ -10,22 +10,22 @@ class UserPropertyRequest extends Model
     use HasFactory;
 
     protected $table = 'users_property_requests';
-
+// wants_similar_offers purchase_method region
     protected $fillable = [
         'user_id',
-        'region',
+        'region', // nullable
         'property_type',
         'category_id',
         'city_id',
         'districts_id',
         'area_from',
         'area_to',
-        'purchase_method',
+        'purchase_method', // nullable
         'budget_from',
         'budget_to',
         'seriousness',
         'purchase_goal',
-        'wants_similar_offers',
+        'wants_similar_offers', // nullable
         'full_name',
         'phone',
         'contact_on_whatsapp',

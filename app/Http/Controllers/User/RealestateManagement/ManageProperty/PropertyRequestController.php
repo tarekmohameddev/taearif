@@ -38,17 +38,29 @@ class PropertyRequestController extends Controller
             app()->setLocale('ar');
         }
 
-        $districts = UserDistrict::whereHas('propertyContent', function ($q) use ($user) {
-            // propertyContent مربوط بـ state_id على مستوى الحي
-            $q->whereHas('property', function ($qq) use ($user) {
-                $qq->where('user_id', $user->id)->where('status', 1);
-            });
-        })
-        ->select('id', 'city_name_ar', 'name_en', 'city_id', 'city_name_ar', 'city_name_en')
-        ->orderBy(app()->getLocale() === 'ar' ? 'city_name_ar' : 'city_name_en')
-        ->get();
+        // $districts = UserDistrict::whereHas('propertyContent', function ($q) use ($user) {
+        //     // propertyContent مربوط بـ state_id على مستوى الحي
+        //     $q->whereHas('property', function ($qq) use ($user) {
+        //         $qq->where('user_id', $user->id)->where('status', 1);
+        //     });
+        // })
+        // ->select('id', 'city_name_ar', 'name_en', 'city_id', 'city_name_ar', 'city_name_en')
+        // ->orderBy(app()->getLocale() === 'ar' ? 'city_name_ar' : 'city_name_en')
+        // ->get();
 
-// dd($districts);
+        // ✅ All cities from user_districts (distinct)
+        $cities = UserDistrict::query()
+            ->select('city_id', 'city_name_ar', 'city_name_en')
+            ->groupBy('city_id', 'city_name_ar', 'city_name_en')
+            ->orderBy(app()->getLocale() === 'ar' ? 'city_name_ar' : 'city_name_en')
+            ->get();
+
+        // (Optional) only needed if you want a preloaded list somewhere:
+        $districts = UserDistrict::query()
+            ->select('id', 'city_id', 'name_ar', 'name_en')
+            ->orderBy(app()->getLocale() === 'ar' ? 'name_ar' : 'name_en')
+            ->get();
+
         $availableCategories = $visibility->forTenant(
             $tenantId,
             $request,
@@ -57,17 +69,16 @@ class PropertyRequestController extends Controller
         );
         $formSettings = $frSettings->forTenant($tenantId);
 
+        // dd($cities);
         return view('user-front.realestate.property.property_requests.create', [
-            'districts'              => $districts,
+            'cities'              => $cities,
+            'districts'           => $districts,
             'availableCategories' => $availableCategories,
             'userCurrentLang'     => $userCurrentLang,
             'website'             => $website,
             'formSettings'        => $formSettings,
         ]);
     }
-
-
-
 
     public function store(Request $request)
     {
@@ -110,22 +121,22 @@ class PropertyRequestController extends Controller
         ];
         // change neighborhood_id to districts_id
         $attributes = [
-            'full_name'        => 'الاسم الكامل',
-            'phone'            => 'رقم الجوال',
-            'category_id'      => 'نوع العقار',
-            'property_type'    => 'تصنيف العقار',
-            'city_id'          => 'المدينة',
-            'districts_id'  => 'الحي',
-            'area_from'        => 'المساحة من',
-            'area_to'          => 'المساحة إلى',
-            'purchase_method'  => 'طريقة الشراء',
-            'budget_from'      => 'الميزانية من',
-            'budget_to'        => 'الميزانية إلى',
-            'seriousness'      => 'مدى الجدية',
-            'purchase_goal'    => 'هدف الشراء',
+            'full_name'            => 'الاسم الكامل',
+            'phone'                => 'رقم الجوال',
+            'category_id'          => 'نوع العقار',
+            'property_type'        => 'تصنيف العقار',
+            'city_id'              => 'المدينة',
+            'districts_id'         => 'الحي',
+            'area_from'            => 'المساحة من',
+            'area_to'              => 'المساحة إلى',
+            'purchase_method'      => 'طريقة الشراء',
+            'budget_from'          => 'الميزانية من',
+            'budget_to'            => 'الميزانية إلى',
+            'seriousness'          => 'مدى الجدية',
+            'purchase_goal'        => 'هدف الشراء',
             'wants_similar_offers' => 'استقبال عروض مشابهة',
             'contact_on_whatsapp'  => 'التواصل عبر واتساب',
-            'notes'            => 'الملاحظات',
+            'notes'                => 'الملاحظات',
         ];
 
         $validator = Validator::make($request->all(), $rules, $messages, $attributes);
@@ -143,13 +154,14 @@ class PropertyRequestController extends Controller
 
         $validated = $validator->validate();
         $tenant = getUser();
-        $validated['user_id'] = $tenant->id;
-        $validated['region'] = $request->filled('region') ? $request->input('region') : (optional(UserDistrict::find($validated['city_id']))->city_name_ar ?: 'الرياض');
+        $validated['user_id']   = $tenant->id;
+        $validated['region'] = $request->filled('region') ? $request->string('region')->toString() : null;
 
-        $validated['is_read']  = false;
+        $validated['is_read']   = false;
         $validated['is_active'] = true;
 
-        $validated['wants_similar_offers'] = $request->boolean('wants_similar_offers');
+        $validated['wants_similar_offers'] = $request->has('wants_similar_offers') ? ($request->boolean('wants_similar_offers') ? 1 : 0) : null;
+
         $validated['contact_on_whatsapp']  = $request->boolean('contact_on_whatsapp', true);
 
         UserPropertyRequest::create($validated);
