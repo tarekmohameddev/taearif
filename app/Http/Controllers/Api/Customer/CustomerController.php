@@ -347,14 +347,16 @@ class CustomerController extends Controller
         $propIds = $toIntArray($request->input('interested_property_ids'));
 
         $request->validate([
-            'city_id'     => 'nullable|integer',
-            'district_id' => 'nullable|integer',
-            'type_id'     => 'nullable|integer',
-            'priority_id' => 'nullable|integer',
-            'page'        => 'nullable|integer|min:1',
-            'per_page'    => 'nullable|integer|min:1|max:100',
-            'sort_by'     => 'nullable|in:name,created_at,priority_id',
-            'sort_dir'    => 'nullable|in:asc,desc',
+            'city_id'       => 'nullable|integer',
+            'district_id'   => 'nullable|integer',
+            'type_id'       => 'nullable|integer',
+            'priority_id'   => 'nullable|integer',
+            'procedure_id'  => 'nullable|integer',
+            'phone_number'  => 'nullable|string|max:20',
+            'page'          => 'nullable|integer|min:1',
+            'per_page'      => 'nullable|integer|min:1|max:100',
+            'sort_by'       => 'nullable|in:name,created_at,priority_id',
+            'sort_dir'      => 'nullable|in:asc,desc',
         ]);
 
         $perPage = (int) ($request->input('per_page') ?: 10);
@@ -372,10 +374,12 @@ class CustomerController extends Controller
             });
         }
 
-        if ($request->filled('city_id'))     $query->where('city_id',     (int)$request->input('city_id'));
-        if ($request->filled('district_id')) $query->where('district_id', (int)$request->input('district_id'));
-        if ($request->filled('type_id'))     $query->where('type_id',     (int)$request->input('type_id'));
-        if ($request->filled('priority_id')) $query->where('priority_id', (int)$request->input('priority_id'));
+        if ($request->filled('city_id'))       $query->where('city_id',       (int)$request->input('city_id'));
+        if ($request->filled('district_id'))   $query->where('district_id',   (int)$request->input('district_id'));
+        if ($request->filled('type_id'))       $query->where('type_id',       (int)$request->input('type_id'));
+        if ($request->filled('priority_id'))   $query->where('priority_id',   (int)$request->input('priority_id'));
+        if ($request->filled('procedure_id'))  $query->where('procedure_id',  (int)$request->input('procedure_id'));
+        if ($request->filled('phone_number'))  $query->where('phone_number', 'like', '%'.$request->input('phone_number').'%');
 
         if (!empty($catIds)) {
             $query->whereExists(function ($sub) use ($catIds) {
@@ -453,6 +457,7 @@ class CustomerController extends Controller
                 'stage_id'              => $customer->stage_id ?? null,
                 'type_id'               => $customer->type_id,
                 'priority_id'           => $customer->priority_id,
+                'procedure_id'          => $customer->procedure_id,
                 'note'                  => $customer->note ?? '',
                 'city_id'               => $customer->city_id ?? null,
                 'created_by'            => $customer->user_id,
@@ -480,15 +485,6 @@ class CustomerController extends Controller
                 ],
             ],
         ]);
-    }
-
-    private function normalizeIds($v): array
-    {
-        if (is_null($v) || $v === '') return [];
-        if (is_int($v)) return [$v];
-        if (is_array($v)) return array_values(array_filter(array_map('intval', $v)));
-        if (is_string($v)) return array_values(array_filter(array_map('intval', explode(',', $v))));
-        return [];
     }
 
     private function ok($data = [], int $code = 200)
