@@ -2,27 +2,83 @@
 
 namespace App\Http\Controllers\Api\Customer;
 
+use Throwable;
 use App\Models\ApiCustomer;
+use Illuminate\Support\Arr;
 use Illuminate\Http\Request;
+use App\Models\User\UserCity;
 use Illuminate\Validation\Rule;
+use App\Models\User\UserDistrict;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Api\UserApiCustomerType;
+use Illuminate\Database\QueryException;
+use App\Models\Api\UserApiCustomerStage;
+use App\Models\Api\UserApiCustomerPriority;
+use App\Models\Api\UserApiCustomerProcedure;
 use App\Models\ApiCustomerPropertyInterested;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Arr;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
-use App\Models\Api\UserApiCustomerProcedure;
-use App\Models\Api\UserApiCustomerType;
-use App\Models\Api\UserApiCustomerPriority;
 use App\Models\User\RealestateManagement\Property;
-use Throwable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class CustomerController extends Controller
 {
+
+    // filterOptions
+    public function filterOptions(Request $request)
+    {
+        $user = $request->user();
+
+        $usedOnly = (bool) $request->boolean('used_only', true);
+        $cityId   = $request->input('city_id');
+
+        $types = UserApiCustomerType::where('user_id', $user->id)
+            ->orderBy('order')
+            ->get(['id', 'name', 'value', 'icon', 'color']);
+
+        $priorities = UserApiCustomerPriority::where('user_id', $user->id)
+            ->orderBy('order')
+            ->get(['id', 'name', 'value', 'icon', 'color']);
+
+        $stages = UserApiCustomerStage::where('user_id', $user->id)
+            ->orderBy('order')
+            ->get(['id', 'stage_name as name', 'icon', 'color']);
+
+        $procedures = UserApiCustomerProcedure::where('user_id', $user->id)
+            ->orderBy('order')
+            ->get(['id', 'procedure_name as name', 'icon', 'color']);
+
+        if ($usedOnly) {
+            $cityIds = ApiCustomer::where('user_id', $user->id)->whereNotNull('city_id')->distinct()->pluck('city_id');
+            $cities = UserCity::whereIn('id', $cityIds)->orderBy('name_ar')->get(['id','name_ar','name_en']);
+
+            $districtQuery = UserDistrict::query()
+                ->whereIn('id', ApiCustomer::where('user_id', $user->id)->whereNotNull('district_id')->distinct()->pluck('district_id'));
+        } else {
+            $cities = UserCity::orderBy('name_ar')->get(['id','name_ar','name_en']);
+            $districtQuery = UserDistrict::query();
+        }
+        if ($cityId) {
+            $districtQuery->where('city_id', (int) $cityId);
+        }
+        $districts = $districtQuery->orderBy('name_ar')->get(['id','city_id','name_ar','name_en']);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'types'      => $types,
+                'priorities' => $priorities,
+                'stages'     => $stages,
+                'procedures' => $procedures,
+                'cities'     => $cities,
+                'districts'  => $districts,
+            ],
+        ]);
+    }
+
     /**
      * Display a listing of the resource.
      *
