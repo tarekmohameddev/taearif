@@ -348,7 +348,7 @@ Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
     Route::post('/customers/{id}/change-procedure', [CRMController::class, 'changeCustomerProcedure']);
 
     // searchCustomers
-    Route::get('/customers/search', [CRMController::class, 'searchCustomers']); // search customers by name or email
+    Route::get('/customers/search', [CRMController::class, 'searchCustomers']); // search customers
 
 });
 
