@@ -29,7 +29,7 @@ use App\Http\Controllers\CRM\PaymentRecordController;
 // use App\Http\Controllers\User\HotelBooking\RoomController;
 // use User\CourseManagement\Instructor\InstructorController;
 use App\Http\Controllers\Admin\RegisterUserController;
-use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyRequestController;
+use App\Http\Controllers\Front\UserDistrictController;
 use App\Http\Controllers\User\HotelBooking\RoomManagementController;
 use App\Http\Controllers\Front\ProjectController as FrontProjectController;
 use App\Http\Controllers\Front\PropertyController as FrontPropertyController;
@@ -44,6 +44,7 @@ use App\Http\Controllers\User\RealestateManagement\ManageProperty\CategoryContro
 // use App\Http\Controllers\Admin\TokenLoginController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyController;
 use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyMessageController;
+use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyRequestController;
 
 
 
@@ -184,6 +185,17 @@ Route::get('/login', 'Admin\TokenLoginController@loginByToken')->name('login.by.
 
 // get states by city
 Route::get('/get-states/{city_id}', 'Front\PropertyController@getStatesByCity')->name('front.user.get_states');
+
+Route::prefix('geo')->name('front.geo.')->group(function () {
+    // All cities (distinct from user_districts)
+    Route::get('cities', [UserDistrictController::class, 'cities'])->name('cities');
+
+    // All districts (optional search/pagination)
+    Route::get('districts', [UserDistrictController::class, 'index'])->name('districts.index');
+
+    // Districts by city
+    Route::get('districts/by-city/{cityId}', [UserDistrictController::class, 'districtsByCity'])->whereNumber('cityId')->name('districts.byCity');
+});
 
 // onboarding steps
 
