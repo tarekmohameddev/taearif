@@ -22,7 +22,7 @@ class CRMController extends Controller
     {
         $user = $request->user();
 
-        // ===== seed STAGES if none =====
+
         $hasStages = UserApiCustomerStage::where('user_id', $user->id)->exists();
         if (!$hasStages) {
             $defaultStages = [
@@ -40,7 +40,6 @@ class CRMController extends Controller
             }
         }
 
-        // ===== seed PROCEDURES (id-based) =====
         $defaultProcedures = [
             ['procedure_name' => 'meeting', 'order' => 1, 'icon' => 'users', 'color' => '#2196f3'],
             ['procedure_name' => 'visit',   'order' => 2, 'icon' => 'map',   'color' => '#ff9800'],
@@ -52,7 +51,7 @@ class CRMController extends Controller
             );
         }
 
-        // ===== seed PRIORITIES (id + value, but customers now use priority_id) =====
+
         $priorityDefaults = [
             ['name'=>'Low',    'value'=>1, 'order'=>1, 'color'=>'#4caf50','icon'=>'arrow-down'],
             ['name'=>'Medium', 'value'=>2, 'order'=>2, 'color'=>'#ff9800','icon'=>'minus'],
@@ -65,7 +64,7 @@ class CRMController extends Controller
             );
         }
 
-        // ===== seed TYPES (id-based; customers now use type_id) =====
+
         $defaultTypes = [
             ['name' => 'Rent',   'value' => 'Rent',   'order' => 1, 'icon' => 'home',      'color' => '#2196f3'],
             ['name' => 'Sale',   'value' => 'Sale',   'order' => 2, 'icon' => 'dollar',    'color' => '#4caf50'],
@@ -80,10 +79,8 @@ class CRMController extends Controller
             );
         }
 
-        // ===== total customers =====
         $totalCustomers = ApiCustomer::where('user_id', $user->id)->count();
 
-        // ===== STAGES summary & buckets =====
         $stages = UserApiCustomerStage::where('user_id', $user->id)->orderBy('order')->get();
         $stagesSummary = [];
         $stagesWithCustomers = [];
@@ -123,7 +120,6 @@ class CRMController extends Controller
             ];
         }
 
-        // ===== PRIORITIES (by priority_id) =====
         $priorities = UserApiCustomerPriority::where('user_id', $user->id)->orderBy('order')->get();
         $prioritiesWithCustomers = [];
         foreach ($priorities as $priority) {
@@ -158,7 +154,6 @@ class CRMController extends Controller
             ];
         }
 
-        // ===== PROCEDURES (by procedure_id) =====
         $procedures = UserApiCustomerProcedure::where('user_id', $user->id)->orderBy('order')->get();
         $proceduresWithCustomers = [];
         foreach ($procedures as $proc) {
@@ -192,7 +187,6 @@ class CRMController extends Controller
             ];
         }
 
-        // ===== TYPES (by type_id) =====
         $types = UserApiCustomerType::where('user_id', $user->id)->orderBy('order')->get();
         $typesWithCustomers = [];
         foreach ($types as $type) {
@@ -237,7 +231,6 @@ class CRMController extends Controller
             'types_with_customers'      => $typesWithCustomers,
         ]);
     }
-
 
     // changeCustomerStage
     public function changeCustomerStage(Request $request, $id)
@@ -291,7 +284,7 @@ class CRMController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'priority' => 'required|integer', // 1=Low, 2=Medium, 3=High
+            'priority_id' => 'required|integer', // 1=Low, 2=Medium, 3=High
         ]);
 
         $customer = ApiCustomer::where('id', $id)
@@ -305,7 +298,7 @@ class CRMController extends Controller
             ], 404);
         }
 
-        $customer->priority = (int) $validated['priority'];
+        $customer->priority_id = (int) $validated['priority_id'];
         $customer->save();
 
         return response()->json([
@@ -314,7 +307,7 @@ class CRMController extends Controller
             'data'    => [
                 'customer_id'    => $customer->id,
                 'customer_name'  => $customer->name,
-                'new_priority'   => $customer->priority,
+                'new_priority'   => $customer->priority_id,
                 'priority_label' => $customer->priority_label,
             ]
         ]);
@@ -326,7 +319,7 @@ class CRMController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'customer_type' => ['required', Rule::in(['Rent','Sale','Rented','Sold','Both'])],
+            'type_id' => 'required|integer',
         ]);
 
         $customer = ApiCustomer::where('id', $id)
@@ -340,7 +333,7 @@ class CRMController extends Controller
             ], 404);
         }
 
-        $customer->customer_type = $validated['customer_type'];
+        $customer->type_id = $validated['type_id'];
         $customer->save();
 
         return response()->json([
@@ -406,7 +399,6 @@ class CRMController extends Controller
         $user  = $request->user();
         $qText = trim((string)$request->get('q', ''));
 
-        // Accept array, CSV string, or single int for interested_* ids
         $toIntArray = function ($v): array {
             if (is_null($v) || $v === '') return [];
             if (is_int($v) || (is_string($v) && is_numeric($v))) return [(int)$v];
@@ -417,7 +409,6 @@ class CRMController extends Controller
         $catIds  = $toIntArray($request->input('interested_category_ids'));
         $propIds = $toIntArray($request->input('interested_property_ids'));
 
-        // Validate filters & sorting
         $request->validate([
             'name'          => 'nullable|string|max:255',
             'email'         => 'nullable|string|max:255',
@@ -442,7 +433,6 @@ class CRMController extends Controller
         $query = \App\Models\ApiCustomer::where('user_id', $user->id)
             ->with(['district.city', 'city']);
 
-        // Free-text search across name/email/phone
         if ($qText !== '') {
             $query->where(function ($sub) use ($qText) {
                 $sub->where('name', 'like', "%{$qText}%")
@@ -451,12 +441,10 @@ class CRMController extends Controller
             });
         }
 
-        // Field-specific filters (combine with q)
         if ($request->filled('name'))         $query->where('name',        'like', '%' . trim($request->input('name')) . '%');
         if ($request->filled('email'))        $query->where('email',       'like', '%' . trim($request->input('email')) . '%');
         if ($request->filled('phone_number')) $query->where('phone_number','like', '%' . trim($request->input('phone_number')) . '%');
 
-        // ID filters
         if ($request->filled('city_id'))       $query->where('city_id',       (int)$request->input('city_id'));
         if ($request->filled('district_id'))   $query->where('district_id',   (int)$request->input('district_id'));
         if ($request->filled('type_id'))       $query->where('type_id',       (int)$request->input('type_id'));
@@ -464,7 +452,6 @@ class CRMController extends Controller
         if ($request->filled('procedure_id'))  $query->where('procedure_id',  (int)$request->input('procedure_id'));
         if ($request->filled('stage_id'))      $query->where('stage_id',      (int)$request->input('stage_id'));
 
-        // Interested categories / properties
         if (!empty($catIds)) {
             $query->whereExists(function ($sub) use ($catIds) {
                 $sub->select(DB::raw(1))
@@ -485,7 +472,6 @@ class CRMController extends Controller
         $query->orderBy($sortBy, $sortDir);
         $paginator = $query->paginate($perPage);
 
-        // batch-load interests for current page
         $customerIds = $paginator->getCollection()->pluck('id')->all();
 
         $catRows = DB::table('api_customer_property_interested as ac')
