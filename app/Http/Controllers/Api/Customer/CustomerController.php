@@ -442,7 +442,14 @@ class CustomerController extends Controller
         $sortDir = $request->input('sort_dir', 'desc');
 
         $query = \App\Models\ApiCustomer::where('user_id', $user->id)
-            ->with(['district.city', 'city']);
+        ->with([
+            'district.city',
+            'city',
+            'type:id,name',
+            'stage:id,stage_name',
+            'priorityRef:id,name',
+            'procedure:id,procedure_name',
+        ]);
 
         if (!empty($qText)) {
             $query->where(function ($sub) use ($qText) {
@@ -531,11 +538,26 @@ class CustomerController extends Controller
                 'name'                  => $customer->name,
                 'email'                 => $customer->email,
                 'phone_number'          => $customer->phone_number,
+                'type' => $customer->type ? [
+                    'id' => $customer->type->id,
+                    'name' => $customer->type->name,
+                ] : null,
+
+                'stage' => $customer->stage ? [
+                    'id' => $customer->stage->id,
+                    'name' => $customer->stage->stage_name,
+                ] : null,
+
+                'priority' => $customer->priorityRef ? [
+                    'id' => $customer->priorityRef->id,
+                    'name' => $customer->priorityRef->name,
+                ] : null,
+
+                'procedure' => $customer->procedure ? [
+                    'id' => $customer->procedure->id,
+                    'name' => $customer->procedure->procedure_name,
+                ] : null,
                 'district'              => $districtPayload,
-                'stage_id'              => $customer->stage_id ?? null,
-                'type_id'               => $customer->type_id,
-                'priority_id'           => $customer->priority_id,
-                'procedure_id'          => $customer->procedure_id,
                 'note'                  => $customer->note ?? '',
                 'city_id'               => $customer->city_id ?? null,
                 'created_by'            => $customer->user_id,
