@@ -202,7 +202,7 @@ class CustomerController extends Controller
                     Rule::unique('api_customers','phone_number')->where(fn($q)=>$q->where('user_id',$user->id)),
                 ],
                 'city_id'      => 'nullable|exists:user_cities,id',
-                'district_id'  => 'nullable|exists:user_districts,id',
+                // 'district_id'  => 'nullable|exists:user_districts,id',
                 'note'         => 'nullable|string',
                 'type_id'      => ['required', Rule::exists('users_api_customers_types','id')->where(fn($q)=>$q->where('user_id',$user->id))],
                 'priority_id'  => ['required', Rule::exists('users_api_customers_priorities','id')->where(fn($q)=>$q->where('user_id',$user->id))],
@@ -443,8 +443,7 @@ class CustomerController extends Controller
 
         $query = \App\Models\ApiCustomer::where('user_id', $user->id)
         ->with([
-            'district.city',
-            'city',
+            'city:id,name_ar,name_en',
             'type:id,name',
             'stage:id,stage_name',
             'priorityRef:id,name',
@@ -460,7 +459,7 @@ class CustomerController extends Controller
         }
 
         if ($request->filled('city_id'))       $query->where('city_id',       (int)$request->input('city_id'));
-        if ($request->filled('district_id'))   $query->where('district_id',   (int)$request->input('district_id'));
+        // if ($request->filled('district_id'))   $query->where('district_id',   (int)$request->input('district_id'));
         if ($request->filled('type_id'))       $query->where('type_id',       (int)$request->input('type_id'));
         if ($request->filled('priority_id'))   $query->where('priority_id',   (int)$request->input('priority_id'));
         if ($request->filled('procedure_id'))  $query->where('procedure_id',  (int)$request->input('procedure_id'));
@@ -508,22 +507,7 @@ class CustomerController extends Controller
             ->groupBy('customer_id');
 
         $customers = $paginator->getCollection()->map(function ($customer) use ($catRows, $propRows) {
-            $district     = $customer->district;
-            $districtCity = $district?->city;
-            $rootCity     = $customer->city;
-
-            $districtPayload = $district ? [
-                'id'              => $district->id,
-                'name_ar'         => $district->name_ar ?? null,
-                'name_en'         => $district->name_en ?? null,
-                'city_id'         => $district->city_id ?? $rootCity?->id,
-                'city_name_ar'    => $districtCity?->name_ar ?? $rootCity?->name_ar ?? null,
-                'city_name_en'    => $districtCity?->name_en ?? $rootCity?->name_en ?? null,
-                'country_name_ar' => $district->country_name_ar ?? null,
-                'country_name_en' => $district->country_name_en ?? null,
-                'created_at'      => optional($district->created_at)->toISOString(),
-                'updated_at'      => optional($district->updated_at)->toISOString(),
-            ] : 'N/A';
+            $city = $customer->city;
 
             $cats = collect($catRows->get($customer->id) ?? [])
                 ->map(fn($r) => ['id' => (int)$r->id, 'name' => $r->name])
@@ -557,7 +541,12 @@ class CustomerController extends Controller
                     'id' => $customer->procedure->id,
                     'name' => $customer->procedure->procedure_name,
                 ] : null,
-                'district'              => $districtPayload,
+                // 'district'              => $districtPayload,
+                'city' => $city ? [
+                    'id'      => $city->id,
+                    'name_ar' => $city->name_ar,
+                    'name_en' => $city->name_en,
+                ] : null,
                 'note'                  => $customer->note ?? '',
                 'city_id'               => $customer->city_id ?? null,
                 'created_by'            => $customer->user_id,

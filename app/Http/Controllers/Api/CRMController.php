@@ -510,22 +510,6 @@ class CRMController extends Controller
 
         $customers = $paginator->getCollection()->map(function ($customer) use ($catRows, $propRows) {
             $city = $customer->city;
-            // $district     = $customer->district;
-            // $districtCity = $district?->city;
-            // $rootCity     = $customer->city;
-
-            // $districtPayload = $district ? [
-            //     'id'              => $district->id,
-            //     'name_ar'         => $district->name_ar ?? null,
-            //     'name_en'         => $district->name_en ?? null,
-            //     'city_id'         => $district->city_id ?? $rootCity?->id,
-            //     'city_name_ar'    => $districtCity?->name_ar ?? $rootCity?->name_ar ?? null,
-            //     'city_name_en'    => $districtCity?->name_en ?? $rootCity?->name_en ?? null,
-            //     'country_name_ar' => $district->country_name_ar ?? null,
-            //     'country_name_en' => $district->country_name_en ?? null,
-            //     'created_at'      => optional($district->created_at)->toISOString(),
-            //     'updated_at'      => optional($district->updated_at)->toISOString(),
-            // ] : 'N/A';
 
             $cats = collect($catRows->get($customer->id) ?? [])
                 ->map(fn($r) => ['id' => (int)$r->id, 'name' => $r->name])
