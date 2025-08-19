@@ -89,6 +89,12 @@ class CustomerController extends Controller
         $user = $request->user();
 
         $customers = ApiCustomer::where('user_id', $user->id)
+            ->with([
+                'type:id,name',
+                'stage:id,stage_name',
+                'priorityRef:id,name',
+                'procedure:id,procedure_name',
+            ])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -111,10 +117,26 @@ class CustomerController extends Controller
                 'name' => $customer->name,
                 'email' => $customer->email,
                 'phone_number' => $customer->phone_number,
-                'type_id' => $customer->type_id ?? null,
+                'type' => $customer->type ? [
+                    'id' => $customer->type->id,
+                    'name' => $customer->type->name,
+                ] : null,
+
+                'stage' => $customer->stage ? [
+                    'id' => $customer->stage->id,
+                    'name' => $customer->stage->stage_name,
+                ] : null,
+
+                'priority' => $customer->priorityRef ? [
+                    'id' => $customer->priorityRef->id,
+                    'name' => $customer->priorityRef->name,
+                ] : null,
+
+                'procedure' => $customer->procedure ? [
+                    'id' => $customer->procedure->id,
+                    'name' => $customer->procedure->procedure_name,
+                ] : null,
                 'district' => $customer->district ?? null,
-                'priority' => $customer->priority ?? null,
-                'stage_id' => $customer->stage_id ?? null,
                 'note' => $customer->note ?? null,
                 'city_id' => $customer->city_id ?? null,
                 'created_by' => $customer->user_id,
