@@ -103,6 +103,8 @@ class CRMController extends Controller
                 return [
                     'customer_id'        => $customer->id,
                     'name'               => $customer->name,
+                    'email'              => $customer->email,
+                    'phone_number'       => $customer->phone_number,
                     'city'               => $customer->city, // if you want names, eager-load relation instead
                     'type_id'            => $customer->type_id,
                     'priority_id'        => $customer->priority_id,
@@ -133,6 +135,8 @@ class CRMController extends Controller
                 return [
                     'customer_id'        => $customer->id,
                     'name'               => $customer->name,
+                    'email'              => $customer->email,
+                    'phone_number'       => $customer->phone_number,
                     'city'               => $customer->city,
                     'type_id'            => $customer->type_id,
                     'priority_id'        => $customer->priority_id,
@@ -167,6 +171,8 @@ class CRMController extends Controller
                 return [
                     'customer_id'        => $customer->id,
                     'name'               => $customer->name,
+                    'email'              => $customer->email,
+                    'phone_number'       => $customer->phone_number,
                     'city'               => $customer->city,
                     'type_id'            => $customer->type_id,
                     'priority_id'        => $customer->priority_id,
@@ -200,6 +206,8 @@ class CRMController extends Controller
                 return [
                     'customer_id'        => $customer->id,
                     'name'               => $customer->name,
+                    'email'              => $customer->email,
+                    'phone_number'       => $customer->phone_number,
                     'city'               => $customer->city,
                     'type_id'            => $customer->type_id,
                     'priority_id'        => $customer->priority_id,
@@ -342,7 +350,7 @@ class CRMController extends Controller
             'data'    => [
                 'customer_id'       => $customer->id,
                 'customer_name'     => $customer->name,
-                'new_customer_type' => $customer->customer_type,
+                'new_customer_type_id' => $customer->type_id,
             ]
         ]);
     }
