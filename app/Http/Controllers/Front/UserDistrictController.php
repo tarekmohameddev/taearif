@@ -51,59 +51,48 @@ class UserDistrictController extends Controller
     /**
      * Optional: searchable/paginatable districts list
      */
-    public function index(Request $request)
-    {
-        $request->validate([
-            'q'        => 'nullable|string|max:255',
-            'city_id'  => 'nullable|integer',
-            'per_page' => 'nullable|integer|min:1|max:100',
-        ]);
+     public function index(Request $request)
+     {
+         $request->validate([
+             'q'        => 'nullable|string|max:255',
+             'per_page' => 'nullable|integer|min:1|max:100',
+         ]);
 
-        $q = UserDistrict::with('city');
+         $q = UserCity::query();
 
-        if ($request->filled('city_id')) {
-            $q->where('city_id', (int) $request->city_id);
-        }
+         if ($term = trim((string) $request->q)) {
+             $like = "%{$term}%";
+             $q->where(function ($s) use ($like) {
+                 $s->where('name_ar', 'like', $like)
+                   ->orWhere('name_en', 'like', $like);
+             });
+         }
 
-        if ($term = trim((string) $request->q)) {
-            $like = "%{$term}%";
-            $q->where(function ($s) use ($like) {
-                $s->where('name_ar', 'like', $like)
-                  ->orWhere('name_en', 'like', $like)
-                  ->orWhereHas('city', function ($c) use ($like) {
-                      $c->where('name_ar', 'like', $like)
-                        ->orWhere('name_en', 'like', $like);
-                  });
-            });
-        }
+         $q->orderBy(App::getLocale() === 'ar' ? 'name_ar' : 'name_en');
 
+         $perPage = (int) ($request->per_page ?: 20);
+         $p = $q->paginate($perPage);
 
-        $q->orderBy(App::getLocale() === 'ar' ? 'name_ar' : 'name_en');
-        $perPage = (int) ($request->per_page ?: 20);
-        $p = $q->paginate($perPage);
+         $items = $p->getCollection()->map(fn ($c) => [
+             'id'       => (int) $c->id,
+             'name_ar'  => $c->name_ar,
+             'name_en'  => $c->name_en,
+         ])->values();
 
-        $items = $p->getCollection()->map(fn ($r) => [
-            'id'           => (int) $r->id,
-            'name_ar'      => $r->name_ar,
-            'name_en'      => $r->name_en,
-            'city_id'      => (int) $r->city_id,
-            'city_name_ar' => $r->city?->name_ar,
-            'city_name_en' => $r->city?->name_en,
-        ])->values();
+         return response()->json([
+             'status' => 'success',
+             'data' => [
+                 'cities' => $items,
+                 'pagination' => [
+                     'total'        => $p->total(),
+                     'per_page'     => $p->perPage(),
+                     'current_page' => $p->currentPage(),
+                     'last_page'    => $p->lastPage(),
+                     'from'         => $p->firstItem(),
+                     'to'           => $p->lastItem(),
+                 ],
+             ],
+         ]);
+     }
 
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'districts'  => $items,
-                'pagination' => [
-                    'total'        => $p->total(),
-                    'per_page'     => $p->perPage(),
-                    'current_page' => $p->currentPage(),
-                    'last_page'    => $p->lastPage(),
-                    'from'         => $p->firstItem(),
-                    'to'           => $p->lastItem(),
-                ],
-            ],
-        ]);
-    }
 }
