@@ -118,5 +118,11 @@ class ApiCustomer extends Authenticatable
     {
         return $this->belongsTo(\App\Models\Api\UserApiCustomerPriority::class, 'priority_id');
     }
+    //  type_id with name
+    public function typeWithName()
+    {
+        return $this->belongsTo(\App\Models\Api\UserApiCustomerType::class, 'type_id')
+            ->select('id', 'name');
+    }
 
 }
