@@ -26,4 +26,8 @@ class UserCity extends Model
         return $this->hasMany(PropertyContent::class, 'city_id', 'id');
     }
 
+    public function districts()
+    {
+        return $this->hasMany(UserDistrict::class, 'city_id', 'id');
+    }
 }

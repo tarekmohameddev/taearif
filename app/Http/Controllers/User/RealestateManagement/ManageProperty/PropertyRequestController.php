@@ -38,27 +38,15 @@ class PropertyRequestController extends Controller
             app()->setLocale('ar');
         }
 
-        // $districts = UserDistrict::whereHas('propertyContent', function ($q) use ($user) {
-        //     // propertyContent مربوط بـ state_id على مستوى الحي
-        //     $q->whereHas('property', function ($qq) use ($user) {
-        //         $qq->where('user_id', $user->id)->where('status', 1);
-        //     });
-        // })
-        // ->select('id', 'city_name_ar', 'name_en', 'city_id', 'city_name_ar', 'city_name_en')
-        // ->orderBy(app()->getLocale() === 'ar' ? 'city_name_ar' : 'city_name_en')
-        // ->get();
-
-        // ✅ All cities from user_districts (distinct)
-        $cities = UserDistrict::query()
-            ->select('city_id', 'city_name_ar', 'city_name_en')
-            ->groupBy('city_id', 'city_name_ar', 'city_name_en')
-            ->orderBy(app()->getLocale() === 'ar' ? 'city_name_ar' : 'city_name_en')
-            ->get();
+        $cities = UserCity::query()
+        ->select('id', 'name_ar', 'name_en')
+        // ->orderBy(app()->getLocale() === 'ar' ? 'name_ar' : 'name_en')
+        ->get();
 
         // (Optional) only needed if you want a preloaded list somewhere:
         $districts = UserDistrict::query()
             ->select('id', 'city_id', 'name_ar', 'name_en')
-            ->orderBy(app()->getLocale() === 'ar' ? 'name_ar' : 'name_en')
+            // ->orderBy(app()->getLocale() === 'ar' ? 'name_ar' : 'name_en')
             ->get();
 
         $availableCategories = $visibility->forTenant(

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User\UserDistrict;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use App\Models\User\UserCity;
 
 class UserDistrictController extends Controller
 {
@@ -14,35 +15,30 @@ class UserDistrictController extends Controller
      */
     public function cities()
     {
-        $rows = UserDistrict::query()
-            ->select('city_id', 'city_name_ar', 'city_name_en')
-            ->groupBy('city_id', 'city_name_ar', 'city_name_en')
-            // ->orderBy(App::getLocale() === 'ar' ? 'city_name_ar' : 'city_name_en')
+        $rows = UserCity::query()
+            ->select('id', 'name_ar', 'name_en')
+            // ->orderBy(App::getLocale() === 'ar' ? 'name_ar' : 'name_en')
             ->get();
 
-
-
         return response()->json(
-            $rows->map(fn ($r) => [
-                'id'       => (int) $r->city_id,
-                'name_ar'  => $r->city_name_ar,
-                'name_en'  => $r->city_name_en,
+            $rows->map(fn ($c) => [
+                'id'      => (int) $c->id,
+                'name_ar' => $c->name_ar,
+                'name_en' => $c->name_en,
             ])
         );
     }
+
 
     /**
      * Return all districts within a city (for the District dropdown)
      */
     public function districtsByCity($cityId)
     {
-        $rows = UserDistrict::query()
-            ->where('city_id', (int) $cityId)
-            // ->orderBy(App::getLocale() === 'ar' ? 'name_ar' : 'name_en')
-            ->get(['id', 'city_id', 'name_ar', 'name_en']);
+        $city = UserCity::with('districts')->findOrFail($cityId);
 
         return response()->json(
-            $rows->map(fn ($d) => [
+            $city->districts->map(fn ($d) => [
                 'id'       => (int) $d->id,
                 'city_id'  => (int) $d->city_id,
                 'name_ar'  => $d->name_ar,
@@ -50,6 +46,7 @@ class UserDistrictController extends Controller
             ])
         );
     }
+
 
     /**
      * Optional: searchable/paginatable districts list
@@ -62,20 +59,24 @@ class UserDistrictController extends Controller
             'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
-        $q = UserDistrict::query();
+        $q = UserDistrict::with('city');
 
         if ($request->filled('city_id')) {
             $q->where('city_id', (int) $request->city_id);
         }
+
         if ($term = trim((string) $request->q)) {
             $like = "%{$term}%";
             $q->where(function ($s) use ($like) {
                 $s->where('name_ar', 'like', $like)
                   ->orWhere('name_en', 'like', $like)
-                  ->orWhere('city_name_ar', 'like', $like)
-                  ->orWhere('city_name_en', 'like', $like);
+                  ->orWhereHas('city', function ($c) use ($like) {
+                      $c->where('name_ar', 'like', $like)
+                        ->orWhere('name_en', 'like', $like);
+                  });
             });
         }
+
 
         $q->orderBy(App::getLocale() === 'ar' ? 'name_ar' : 'name_en');
         $perPage = (int) ($request->per_page ?: 20);
@@ -86,8 +87,8 @@ class UserDistrictController extends Controller
             'name_ar'      => $r->name_ar,
             'name_en'      => $r->name_en,
             'city_id'      => (int) $r->city_id,
-            'city_name_ar' => $r->city_name_ar,
-            'city_name_en' => $r->city_name_en,
+            'city_name_ar' => $r->city?->name_ar,
+            'city_name_en' => $r->city?->name_en,
         ])->values();
 
         return response()->json([
