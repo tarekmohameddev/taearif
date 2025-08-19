@@ -422,7 +422,7 @@ class CRMController extends Controller
             'email'         => 'nullable|string|max:255',
             'phone_number'  => 'nullable|string|max:20',
             'city_id'       => 'nullable|integer',
-            'district_id'   => 'nullable|integer',
+            // 'district_id'   => 'nullable|integer',
             'type_id'       => 'nullable|integer',
             'priority_id'   => 'nullable|integer',
             'procedure_id'  => 'nullable|integer',
@@ -430,7 +430,7 @@ class CRMController extends Controller
 
             'page'          => 'nullable|integer|min:1',
             'per_page'      => 'nullable|integer|min:1|max:100',
-            'sort_by'       => 'nullable|in:name,email,phone_number,created_at,priority_id,type_id,stage_id,procedure_id,city_id,district_id',
+            'sort_by'       => 'nullable|in:name,email,phone_number,created_at,priority_id,type_id,stage_id,procedure_id,city_id',
             'sort_dir'      => 'nullable|in:asc,desc',
         ]);
 
@@ -440,7 +440,7 @@ class CRMController extends Controller
 
         $query = \App\Models\ApiCustomer::where('user_id', $user->id)
         ->with([
-            'district.city',
+            'city:id,name_ar,name_en',
             'city',
             'type:id,name',
             'stage:id,stage_name',
@@ -461,7 +461,7 @@ class CRMController extends Controller
         if ($request->filled('phone_number')) $query->where('phone_number','like', '%' . trim($request->input('phone_number')) . '%');
 
         if ($request->filled('city_id'))       $query->where('city_id',       (int)$request->input('city_id'));
-        if ($request->filled('district_id'))   $query->where('district_id',   (int)$request->input('district_id'));
+        // if ($request->filled('district_id'))   $query->where('district_id',   (int)$request->input('district_id'));
         if ($request->filled('type_id'))       $query->where('type_id',       (int)$request->input('type_id'));
         if ($request->filled('priority_id'))   $query->where('priority_id',   (int)$request->input('priority_id'));
         if ($request->filled('procedure_id'))  $query->where('procedure_id',  (int)$request->input('procedure_id'));
@@ -509,22 +509,23 @@ class CRMController extends Controller
             ->groupBy('customer_id');
 
         $customers = $paginator->getCollection()->map(function ($customer) use ($catRows, $propRows) {
-            $district     = $customer->district;
-            $districtCity = $district?->city;
-            $rootCity     = $customer->city;
+            $city = $customer->city;
+            // $district     = $customer->district;
+            // $districtCity = $district?->city;
+            // $rootCity     = $customer->city;
 
-            $districtPayload = $district ? [
-                'id'              => $district->id,
-                'name_ar'         => $district->name_ar ?? null,
-                'name_en'         => $district->name_en ?? null,
-                'city_id'         => $district->city_id ?? $rootCity?->id,
-                'city_name_ar'    => $districtCity?->name_ar ?? $rootCity?->name_ar ?? null,
-                'city_name_en'    => $districtCity?->name_en ?? $rootCity?->name_en ?? null,
-                'country_name_ar' => $district->country_name_ar ?? null,
-                'country_name_en' => $district->country_name_en ?? null,
-                'created_at'      => optional($district->created_at)->toISOString(),
-                'updated_at'      => optional($district->updated_at)->toISOString(),
-            ] : 'N/A';
+            // $districtPayload = $district ? [
+            //     'id'              => $district->id,
+            //     'name_ar'         => $district->name_ar ?? null,
+            //     'name_en'         => $district->name_en ?? null,
+            //     'city_id'         => $district->city_id ?? $rootCity?->id,
+            //     'city_name_ar'    => $districtCity?->name_ar ?? $rootCity?->name_ar ?? null,
+            //     'city_name_en'    => $districtCity?->name_en ?? $rootCity?->name_en ?? null,
+            //     'country_name_ar' => $district->country_name_ar ?? null,
+            //     'country_name_en' => $district->country_name_en ?? null,
+            //     'created_at'      => optional($district->created_at)->toISOString(),
+            //     'updated_at'      => optional($district->updated_at)->toISOString(),
+            // ] : 'N/A';
 
             $cats = collect($catRows->get($customer->id) ?? [])
                 ->map(fn($r) => ['id' => (int)$r->id, 'name' => $r->name])
@@ -535,38 +536,47 @@ class CRMController extends Controller
                 ->values();
 
             return [
-                'id'                    => $customer->id,
-                'name'                  => $customer->name,
-                'email'                 => $customer->email,
-                'phone_number'          => $customer->phone_number,
-                'type' => $customer->type ? [
-                    'id' => $customer->type->id,
-                    'name' => $customer->type->name,
-                ] : null,
+                    'id'           => $customer->id,
+                    'name'         => $customer->name,
+                    'email'        => $customer->email,
+                    'phone_number' => $customer->phone_number,
 
-                'stage' => $customer->stage ? [
-                    'id' => $customer->stage->id,
-                    'name' => $customer->stage->stage_name,
-                ] : null,
+                    'type' => $customer->type ? [
+                        'id'   => $customer->type->id,
+                        'name' => $customer->type->name,
+                    ] : null,
 
-                'priority' => $customer->priorityRef ? [
-                    'id' => $customer->priorityRef->id,
-                    'name' => $customer->priorityRef->name,
-                ] : null,
+                    'stage' => $customer->stage ? [
+                        'id'   => $customer->stage->id,
+                        'name' => $customer->stage->stage_name,
+                    ] : null,
 
-                'procedure' => $customer->procedure ? [
-                    'id' => $customer->procedure->id,
-                    'name' => $customer->procedure->procedure_name,
-                ] : null,                'district'              => $districtPayload,
-                'note'                  => $customer->note ?? '',
-                'city_id'               => $customer->city_id ?? null,
-                'created_by'            => $customer->user_id,
-                'created_at'            => optional($customer->created_at)->toISOString(),
-                'updated_at'            => optional($customer->updated_at)->toISOString(),
-                'interested_categories' => $cats,
-                'interested_properties' => $props,
-            ];
-        })->values();
+                    'priority' => $customer->priorityRef ? [
+                        'id'   => $customer->priorityRef->id,
+                        'name' => $customer->priorityRef->name,
+                    ] : null,
+
+                    'procedure' => $customer->procedure ? [
+                        'id'   => $customer->procedure->id,
+                        'name' => $customer->procedure->procedure_name,
+                    ] : null,
+
+                    'city' => $city ? [
+                        'id'       => $city->id,
+                        'name_ar'  => $city->name_ar,
+                        'name_en'  => $city->name_en,
+                    ] : null,
+
+                    'note'         => $customer->note ?? '',
+                    'city_id'      => $customer->city_id ?? null,
+                    'created_by'   => $customer->user_id,
+                    'created_at'   => optional($customer->created_at)->toISOString(),
+                    'updated_at'   => optional($customer->updated_at)->toISOString(),
+
+                    'interested_categories' => $cats,
+                    'interested_properties' => $props,
+                ];
+            })->values();
 
         $totalAll = \App\Models\ApiCustomer::where('user_id', $user->id)->count();
 

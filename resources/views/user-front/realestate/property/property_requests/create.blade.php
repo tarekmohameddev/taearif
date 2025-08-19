@@ -96,13 +96,12 @@
         </div>
 
         <div class="form-row">
-            @php
-                $citiesList = $cities ?? collect([]);
-                $isAr = app()->getLocale() === 'ar';
+        @php
+            $citiesList = $cities ?? collect([]);
+            $isAr = app()->getLocale() === 'ar';
+        @endphp
 
-            @endphp
-
-            @if($vis('city_id'))
+        @if($vis('city_id'))
         <div class="form-group">
             <label class="{{ $req('city_id') ? 'required' : '' }}">{{ $lbl('city_id','المدينة') }}</label>
 
@@ -116,9 +115,10 @@
                 {{ $req('city_id') ? 'required' : '' }}
             >
                 <option value="">{{ $lbl('city_id_placeholder','اختر المدينة') }}</option>
+
                 @foreach($citiesList as $row)
-                    <option value="{{ $row->city_id }}" {{ (string)old('city_id') === (string)$row->city_id ? 'selected' : '' }}>
-                        {{ $isAr ? ($row->city_name_ar ?? $row->city_name_en) : ($row->city_name_en ?? $row->city_name_ar) }}
+                    <option value="{{ $row->id }}" {{ (string)old('city_id') === (string)$row->id ? 'selected' : '' }}>
+                        {{ $isAr ? ($row->name_ar ?? $row->name_en) : ($row->name_en ?? $row->name_ar) }}
                     </option>
                 @endforeach
             </select>
@@ -126,6 +126,7 @@
             @error('city_id') <p class="text-danger">{{ $message }}</p> @enderror
         </div>
         @endif
+
 
         @if($vis('districts_id'))
         <div class="form-group">
