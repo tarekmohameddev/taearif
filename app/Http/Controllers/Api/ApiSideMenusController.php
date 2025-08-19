@@ -69,7 +69,13 @@ class ApiSideMenusController extends Controller
                 'description' => 'تكوين اعدادات ادارة علاقات العملاء',
                 'icon' => 'web-settings',
                 'path' => '/crm',
+            ]            ,            [
+                'title' => 'الطلبات العقارية',
+                'description' => 'ادارة طلبات العملاء العقارية',
+                'icon' => 'web-settings',
+                'path' => '/property-requests',
             ]
+
         ];
 
         // Conditionally add sections based on package
@@ -109,10 +115,10 @@ class ApiSideMenusController extends Controller
         //             'path' => '/apps',
         //         ];
 
-        // $whatsappMenu = ApiMenuItem::where('user_id', $user->id)
-        //     ->where('url', '/whatsapp-ai')
-        //     ->where('is_active', true)
-        //     ->first();
+        $whatsappMenu = ApiMenuItem::where('user_id', $user->id)
+            ->where('url', '/whatsapp-ai')
+            ->where('is_active', true)
+            ->first();
 
         // if ($whatsappMenu) {
         //     $sections[] = [
