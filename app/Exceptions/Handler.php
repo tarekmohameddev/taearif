@@ -69,7 +69,7 @@ class Handler extends ExceptionHandler
                 return response()->json([
                     'status'  => 'error',
                     'message' => 'Validation failed',
-                    'errors'  => $e->errors(),
+                    'errors'  => $exception->errors(),
                 ], 422);
             }
 
@@ -98,8 +98,8 @@ class Handler extends ExceptionHandler
             // Fallback
             return response()->json([
                 'status'    => 'error',
-                'message'   => config('app.debug') ? $e->getMessage() : 'Server error',
-                'exception' => config('app.debug') ? class_basename($e) : null,
+                'message'   => config('app.debug') ? $exception->getMessage() : 'Server error',
+                'exception' => config('app.debug') ? class_basename($exception) : null,
             ], 500);
         }
         //check if exception is an instance of ModelNotFoundException.
