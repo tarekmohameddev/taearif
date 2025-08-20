@@ -4,38 +4,17 @@ use App\Models\Api\ApiThemeSettings;
 use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Facades\Socialite;
 use App\Http\Controllers\Api\CRMController;
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\CityController;
-use App\Http\Controllers\Api\RegionController;
-use App\Http\Controllers\Api\UploadController;
-use App\Http\Controllers\Api\PaymentController;
-use App\Http\Controllers\Api\DistrictController;
-use App\Http\Controllers\Api\blog\BlogController;
-use App\Http\Controllers\ImpersonationController;
-use App\Http\Controllers\Api\OnboardingController;
-use App\Http\Controllers\Api\PublicUserController;
-use App\Http\Controllers\Api\ApiSideMenusController;
 // use App\Http\Controllers\Api\content\ApiContentSection;
 use App\Http\Controllers\Api\StepProgressController;
-use App\Http\Controllers\Api\ThemeSettingsController;
-use App\Http\Controllers\Api\DomainSettingsController;
-use App\Http\Controllers\Api\content\ApiMenuController;
 use App\Http\Controllers\Api\isthara\IstharaController;
-use App\Http\Controllers\Api\project\ProjectController;
 use App\Http\Controllers\Api\content\AboutApiController;
-use App\Http\Controllers\Api\property\PropertyController;
-use App\Http\Controllers\Api\AnalyticsDashboardController;
 use App\Http\Controllers\Api\apps\whatsapp\ChatController;
 use App\Http\Controllers\Api\Affiliate\AffiliateController;
 use App\Http\Controllers\Api\App\ApiInstallationController;
 use App\Http\Controllers\Api\dashboard\DashboardController;
 use App\Http\Controllers\Api\property\UserFacadeController;
-use App\Http\Controllers\Api\content\FooterSettingController;
 use App\Http\Controllers\Api\apps\whatsapp\WhatsappController;
-use App\Http\Controllers\Api\content\GeneralSettingController;
 use App\Http\Controllers\Api\apps\whatsapp\EmbeddingController;
-use App\Http\Controllers\Api\content\ApiBannerSettingController;
-use App\Http\Controllers\Api\content\ApiContentSectionsController;
 use App\Http\Controllers\Api\Customer\CustomerController;
 use App\Http\Controllers\Api\Customer\UserApiCustomerStageController;
 use App\Http\Controllers\Api\Customer\UserApiCustomerPriorityController;
@@ -47,8 +26,39 @@ use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
 use App\Http\Controllers\Api\ResetPasswordController;
 use App\Http\Controllers\Api\property\ApiPropertyRequestController;
 use App\Http\Controllers\Api\property\ApiPropertyRequestSettingsController;
+use App\Http\Controllers\Api\V1\Em\CustomerController as EmployeeCustomerController;
+use App\Http\Controllers\ImpersonationController;
+use App\Http\Controllers\Api\blog\BlogController;
+use App\Http\Controllers\Api\project\ProjectController;
+use App\Http\Controllers\Api\property\PropertyController;
+use App\Http\Controllers\Api\content\FooterSettingController;
+use App\Http\Controllers\Api\content\ApiBannerSettingController;
+use App\Http\Controllers\Api\content\ApiMenuController;
+use App\Http\Controllers\Api\content\GeneralSettingController;
+use App\Http\Controllers\Api\DomainSettingsController;
+use App\Http\Controllers\Api\ApiSideMenusController;
+
+use App\Http\Controllers\Api\content\ApiContentSectionsController;
+use App\Http\Controllers\Api\ThemeSettingsController;
+
+
+use App\Http\Controllers\Api\{
+    AuthController,
+    RegionController,
+    DistrictController,
+    CityController,
+    UploadController,
+    PaymentController,
+    AnalyticsDashboardController,
+    OnboardingController,
+    PublicUserController,
+};
 
 use App\Http\Controllers\Api\V1\{
+    EmployeeAuthController ,
+    LogController,
+    RoleController,
+    EmployeeController,
     CustomerInquiryController,
     Rms\RentalController,
     Rms\ContractController,
@@ -380,8 +390,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
-    Route::prefix('rms')->group(function () {
 
+    Route::prefix('rms')->group(function () {
         // Dashboard
         Route::get('dashboard', [RmsDashboardController::class, 'index']);
 
@@ -432,6 +442,32 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('/bulk',   [ApiPropertyRequestSettingsController::class, 'bulkUpsert']);  // upsert مجموعة
         Route::put('/{field}', [ApiPropertyRequestSettingsController::class, 'updateOne']);   // تعديل مفتاح واحد
         Route::post('/reset',  [ApiPropertyRequestSettingsController::class, 'reset']);       // حذف إعدادات (العودة للديفولت)
+    });
+
+    // ===== Employee Auth (PUBLIC) =====
+    Route::prefix('em/auth')->group(function () {
+        Route::post('login',    [EmployeeAuthController::class, 'login']);
+        Route::post('register', [EmployeeAuthController::class, 'register']);
+    });
+    // Employee API
+    Route::prefix('em')->middleware('auth:sanctum')->group(function () {
+
+        // Protected
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::get('auth/me',     [EmployeeAuthController::class, 'me']);
+            Route::post('auth/logout',[EmployeeAuthController::class, 'logout']);
+            Route::apiResource('customers', EmployeeCustomerController::class);
+                //  ->middleware('employee.can:customer.read');
+        });
+
+    });
+
+    // Tenant owner
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::apiResource('employees', EmployeeController::class);
+        Route::apiResource('roles', RoleController::class);
+        Route::post('employees/{id}/roles', [EmployeeController::class, 'syncRoles']);
+        Route::get('logs', [LogController::class, 'index']);
     });
 });
 
