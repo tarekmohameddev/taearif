@@ -31,11 +31,15 @@ return [
     | users are actually retrieved out of your database or other storage
     | mechanisms used by this application to persist your user's data.
     |
-    | Supported: "session", "token"
+    | Supported: "session", "token" ,"jwt", "sanctum"
     |
     */
 
     'guards' => [
+        'employees' => [
+            'driver' => 'sanctum',
+            'provider' => 'api_employees'
+        ],
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
@@ -84,6 +88,10 @@ return [
     */
 
     'providers' => [
+        'api_employees' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Api\Employee::class,
+        ],
         'users' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,

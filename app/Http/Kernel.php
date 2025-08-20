@@ -76,6 +76,7 @@ class Kernel extends HttpKernel
         'checkWebsiteOwner' => \App\Http\Middleware\CheckWebsiteOwner::class,
         'accountStatus' => \App\Http\Middleware\UserRegisteredUserStatus::class,
         'lfm.path' => \App\Http\Middleware\LfmPath::class,
+        'employee.can' => \App\Http\Middleware\EmployeePermission::class,
     ];
 
     /**
