@@ -65,7 +65,8 @@ use App\Http\Controllers\Api\V1\{
     Rms\InstallmentController,
     Rms\MaintenanceController,
     Rms\ReminderController,
-    Rms\RmsDashboardController
+    Rms\RmsDashboardController,
+    Crm\CrmCardController
 };
 
 /*
@@ -453,21 +454,30 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::prefix('em')->middleware('auth:sanctum')->group(function () {
 
         // Protected
-        Route::middleware('auth:sanctum')->group(function () {
+        Route::middleware(['auth:sanctum','employee.only'])->group(function () {
             Route::get('auth/me',     [EmployeeAuthController::class, 'me']);
             Route::post('auth/logout',[EmployeeAuthController::class, 'logout']);
             Route::apiResource('customers', EmployeeCustomerController::class);
-                //  ->middleware('employee.can:customer.read');
+            //  ->middleware('employee.can:customer.read');
         });
 
     });
 
     // Tenant owner
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum','tenant.only'])->group(function () {
         Route::apiResource('employees', EmployeeController::class);
         Route::apiResource('roles', RoleController::class);
         Route::post('employees/{id}/roles', [EmployeeController::class, 'syncRoles']);
         Route::get('logs', [LogController::class, 'index']);
     });
+
+    Route::prefix('crm')->group(function () {
+        Route::get('cards', [CrmCardController::class, 'index']);
+        Route::post('cards', [CrmCardController::class, 'store']);
+        Route::get('cards/{id}', [CrmCardController::class, 'show']);
+        Route::match(['put','patch'], 'cards/{id}', [CrmCardController::class, 'update']);
+        Route::delete('cards/{id}', [CrmCardController::class, 'destroy']);
+    });
+
 });
 
