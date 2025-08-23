@@ -375,18 +375,6 @@
                 </ol>
             </div>
 
-            <!-- Contact Information -->
-            <div class="privacy-section">
-                <h2>التواصل معنا</h2>
-                <p>
-                    إذا كان لديك أي استفسارات حول سياسة الخصوصية هذه أو ترغب في ممارسة حقوقك المتعلقة بالبيانات الشخصية، يرجى التواصل معنا عبر:
-                </p>
-                <div class="mt-4 p-4 bg-gray-50 rounded-lg">
-                    <p><strong>البريد الإلكتروني:</strong> privacy@taearif.com</p>
-                    <p><strong>الهاتف:</strong> +966 11 234 5678</p>
-                    <p><strong>العنوان:</strong> المملكة العربية السعودية، الرياض</p>
-                </div>
-            </div>
 
             <!-- Last Updated -->
             <div class="text-center mt-12 pt-8 border-t border-gray-200">
