@@ -667,6 +667,8 @@
                         <li><a href="/solutions" class="text-gray-300 hover:text-white transition-colors">الحلول</a></li>
                         <li><a href="/about-us" class="text-gray-300 hover:text-white transition-colors">من نحن</a></li>
                         <li><a href="/updates" class="text-gray-300 hover:text-white transition-colors">التحديثات</a></li>
+                        <li><a href="/privacy" class="text-gray-300 hover:text-white transition-colors">سياسة الخصوصية</a></li>
+
                     </ul>
                 </div>
                 

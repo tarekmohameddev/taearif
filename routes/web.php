@@ -245,6 +245,10 @@ Route::domain($domain)->group(function () {
         return view('front.about_us');
     })->name('front.about_us');
 
+        Route::get('/privacy', function () {
+        return view('front.privacy');
+    })->name('front.privacy');
+
         Route::get('/templates', 'Front\FrontendController@templates')->name('front.templates');
         Route::get('/vcards', 'Front\FrontendController@vcards')->name('front.vcards');
         Route::post('/subscribe', 'Front\FrontendController@subscribe')->name('front.subscribe');
