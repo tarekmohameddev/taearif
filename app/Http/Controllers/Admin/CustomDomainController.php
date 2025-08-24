@@ -7,6 +7,7 @@ use Validator;
 use App\Models\BasicSetting;
 use Illuminate\Http\Request;
 use App\Models\BasicExtended;
+use App\Support\TenantActivity;
 use App\Http\Helpers\MegaMailer;
 use PHPMailer\PHPMailer\PHPMailer;
 use App\Http\Controllers\Controller;
@@ -105,6 +106,7 @@ class CustomDomainController extends Controller
         $domain->save();
 
 
+        TenantActivity::emit($request, 'domain.ssl_updated', 'api_domains_settings', $domain->id, ['old_ssl' => !$domain->ssl], ['new_ssl' => $domain->ssl]);
 
         $request->session()->flash('success', 'SSL status updated.');
         return back();

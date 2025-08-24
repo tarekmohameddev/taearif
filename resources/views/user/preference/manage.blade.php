@@ -15,7 +15,7 @@
             ->first();
         $preferences = isset($preferences) ? json_decode($preferences->permissions, true) : [];
     }
-    
+
 @endphp
 @section('content')
     <div class="page-header">

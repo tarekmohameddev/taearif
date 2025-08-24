@@ -490,13 +490,37 @@ class FrontendController extends Controller
     {
         $user = getUser();
 
+        if (!empty($user) && isset($user->account_type) && $user->account_type === 'employee') {
+            $user = \App\Models\User::find($user->tenant_id);
+
+            if ($user) {
+                $host = request()->getHost();
+                $primaryHost = str_replace('www.', '', env('WEBSITE_HOST'));
+                $hostNoWww   = str_replace('www.', '', $host);
+
+                if ($hostNoWww === $primaryHost) {
+                    $target = route('front.user.detail.view', ['username' => $user->username]);
+                    return redirect()->to($target);
+                }
+
+                $scheme = request()->getScheme();
+                $target = $scheme . '://' . $user->username . '.' . $primaryHost;
+                return redirect()->to($target);
+            }
+
+            abort(404);
+        }
+
         $data['user'] = $user;
+
         if (Auth::check() && Auth::user()->id != $user->id && $user->online_status != 1) {
             return redirect()->route('front.index');
         } elseif (!Auth::check() && $user->online_status != 1) {
             return redirect()->route('front.index');
         }
+
         $package = UserPermissionHelper::userPackage($user->id);
+
         // if (is_null($package)) {
         //     Session::flash('warning', 'User membership is expired');
         //     if (Auth::check()) {
@@ -505,6 +529,8 @@ class FrontendController extends Controller
         //         return redirect()->route('front.user.view');
         //     }
         // }
+
+        //
         if (session()->has('user_lang')) {
             $userCurrentLang = UserLanguage::where('code', session()->get('user_lang'))->where('user_id', $user->id)->first();
             if (empty($userCurrentLang)) {
@@ -514,6 +540,8 @@ class FrontendController extends Controller
         } else {
             $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
         }
+        //
+
         $userBs = \App\Models\User\BasicSetting::where('user_id', $user->id)->first();
 
         if (session()->has('lang')) {

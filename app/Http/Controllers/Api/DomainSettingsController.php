@@ -7,6 +7,7 @@ use Mail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use App\Support\TenantActivity;
 use App\Http\Controllers\Controller;
 use App\Models\Api\ApiDomainSetting;
 use Illuminate\Support\Facades\Auth;
@@ -94,6 +95,8 @@ class DomainSettingsController extends Controller
         ]);
         $domain->save();
 
+        TenantActivity::emit($request, 'domain.added', 'api_domains_settings', $domain->id, null, $domain->only(['custom_name','status','primary','ssl']));
+
         return response()->json([
             'success' => true,
             'message' => 'Domain added successfully',
@@ -168,6 +171,7 @@ class DomainSettingsController extends Controller
         }
 
         $domain->delete();
+        // TenantActivity::emit($request, 'domain.deleted', 'api_domains_settings', $domain->id, $domain->toArray(), null);
 
         return response()->json([
             'success' => true,
@@ -195,6 +199,9 @@ class DomainSettingsController extends Controller
 
             $this->notifyAdminOfVerifiedDomain($domain); // Notify admin
         }
+
+        TenantActivity::emit($request, 'domain.verified', 'api_domains_settings', $domain->id, ['old_status' => 'pending'], ['new_status' => 'active']);
+
         return response()->json([
             'success' => true,
             'message' => 'Domain verification initiated',
@@ -237,6 +244,8 @@ class DomainSettingsController extends Controller
         $domain->save();
 
         $domains = $user->domains()->get();
+
+        TenantActivity::emit($request, 'domain.set_primary', 'api_domains_settings', $domain->id);
 
         return response()->json([
         'success' => true,
@@ -318,6 +327,8 @@ class DomainSettingsController extends Controller
                 'message' => 'SSL is already enabled for this domain.',
             ], 400);
         }
+
+        TenantActivity::emit($request, 'domain.ssl_requested', 'api_domains_settings', $domain->id);
 
         return response()->json([
             'success' => true,

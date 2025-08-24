@@ -52,6 +52,9 @@ class User extends Authenticatable
 {
     use HasApiTokens;
     use Notifiable;
+    use \Spatie\Permission\Traits\HasRoles;
+    // use \Spatie\Permission\Traits\HasPermissions;
+
 
     /**
      * The attributes that are mass assignable.
@@ -59,7 +62,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $table = 'users';
-
+    protected string $guard_name = 'sanctum';
     protected $fillable = [
         'first_name',
         'last_name',
@@ -92,6 +95,10 @@ class User extends Authenticatable
         'referred_by',
         'subscribed',
         'subscription_amount',
+        'tenant_id',
+        'account_type',
+        'active',
+        'last_login_at',
     ];
 
     /**
@@ -114,7 +121,42 @@ class User extends Authenticatable
         'show_even_if_empty' => 'boolean',
         'subscribed' => 'boolean',
         'subscription_amount' => 'decimal:2',
+        'active' => 'boolean',
+        'last_login_at' => 'datetime',
     ];
+
+    public function tenant() { return $this->belongsTo(User::class, 'tenant_id'); }
+    public function employees(){ return $this->hasMany(User::class, 'tenant_id'); }
+
+    public function getIsEmployeeAttribute(): bool { return $this->account_type === 'employee'; }
+    public function getIsTenantAttribute(): bool   { return $this->account_type === 'tenant'; }
+
+    // for  controllers call methods)
+
+    public function isEmployee(): bool
+    {
+        return ($this->account_type ?? 'tenant') === 'employee';
+    }
+    public function isTenant(): bool
+    {
+        return ($this->account_type ?? 'tenant') === 'tenant';
+    }
+    public function tenantOwner(): self
+    {
+        return $this->isEmployee() && $this->tenant ? $this->tenant : $this;
+    }
+    /**
+     * Returns the team/tenant id for Spatie permissions scoping.
+     * - tenants -> their own id
+     * - employees -> their tenant_id
+     */
+    public function tenantOwnerId(): int
+    {
+        return $this->isEmployee()
+            ? (int) ($this->tenant_id ?? 0)
+            : (int) $this->id;
+    }
+
 
     protected static function boot()
     {
@@ -177,8 +219,25 @@ class User extends Authenticatable
             ->latestOfMany();
     }
 
-
     public function permissions()
+    {
+        $tables = config('permission.table_names');
+        $teamFk = config('permission.column_names.team_foreign_key', 'team_id');
+
+        return $this->morphToMany(
+            \Spatie\Permission\Models\Permission::class,
+            'model',
+            $tables['model_has_permissions'],
+            'model_id',
+            'permission_id'
+        )->withPivot($teamFk);
+    }
+    // public function permissions()
+    // {
+    //     return $this->hasOne('App\Models\User\UserPermission', 'user_id');
+    // }
+
+    public function permission()
     {
         return $this->hasOne('App\Models\User\UserPermission', 'user_id');
     }
@@ -258,10 +317,7 @@ class User extends Authenticatable
         return $this->hasMany('App\Models\User\Social', 'user_id');
     }
 
-    public function permission()
-    {
-        return $this->hasOne('App\Models\User\UserPermission', 'user_id');
-    }
+
 
     public function languages()
     {
@@ -522,10 +578,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Booking::class, 'user_id');
     }
+
     public function timezoneinfo()
     {
         return $this->hasOne(Timezone::class, 'user_id', 'id'); // Adjust as per your DB structure
     }
+
     public function userbasicsettings()
     {
         return $this->hasMany('App\Models\User\BasicSetting', 'user_id');

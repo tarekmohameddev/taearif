@@ -7,6 +7,7 @@ use App\Models\ApiCustomer;
 use Illuminate\Support\Arr;
 use Illuminate\Http\Request;
 use App\Models\User\UserCity;
+use App\Support\TenantActivity;
 use Illuminate\Validation\Rule;
 use App\Models\User\UserDistrict;
 use Illuminate\Support\Facades\DB;
@@ -249,6 +250,8 @@ class CustomerController extends Controller
                 }
             });
 
+            TenantActivity::emit($request, 'customer.created', 'api_customers', $customer->id, null, $customer->only(['name','email','phone_number']));
+
             return $this->ok([
                 'message' => 'Customer created successfully',
                 'data'    => $customer,
@@ -372,6 +375,8 @@ class CustomerController extends Controller
             }
         });
 
+        TenantActivity::emit($request, 'customer.updated', 'api_customers', $customer->id, $old ?? null, $customer->only(['name','email','phone_number']));
+
         return response()->json([
             'status'  => 'success',
             'message' => 'Customer updated successfully',
@@ -398,6 +403,8 @@ class CustomerController extends Controller
         }
 
         $customer->delete();
+
+        TenantActivity::emit($request, 'customer.deleted', 'api_customers', $customer->id, $customer->toArray(), null);
 
         return response()->json([
             'status' => 'success',

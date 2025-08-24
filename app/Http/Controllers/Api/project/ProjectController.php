@@ -25,7 +25,7 @@ use App\Models\User\RealestateManagement\ProjectGalleryImg;
 use App\Models\User\RealestateManagement\ProjectFloorplanImg;
 use App\Models\User\RealestateManagement\ProjectSpecification;
 use App\Models\Api\ApiMenuItem;
-
+use App\Support\TenantActivity;
 
 class ProjectController extends Controller
 {
@@ -382,7 +382,12 @@ class ProjectController extends Controller
         });
 
         $responseProject->featured = (bool) $responseProject->featured;
-
+    
+        // Log the activity
+        TenantActivity::emit($request, 'project.created', 'user_projects', $responseProject->id, null, [
+            'id' => $responseProject->id, 'title' => optional($responseProject->contents->first())->title
+        ]);
+        
         return response()->json([
             'status' => 'success',
             'message' => 'Project created successfully',
@@ -534,6 +539,10 @@ class ProjectController extends Controller
             'types',
         ])->find($project->id);
 
+        TenantActivity::emit($request, 'project.created', 'user_projects', $responseProject->id, null, [
+            'id' => $responseProject->id, 'title' => optional($responseProject->contents->first())->title
+        ]);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Project updated successfully',
@@ -595,6 +604,8 @@ class ProjectController extends Controller
             $project->delete();
 
             DB::commit();
+
+            // TenantActivity::emit($request, 'project.deleted', 'user_projects', $id, $project->toArray(), null);
 
             return response()->json([
                 'status' => 'success',
