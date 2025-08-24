@@ -13,21 +13,29 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('api_customer_inquiry', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('customer_id');
-            $table->text('message')->nullable();
-            $table->string('inquiry_type')->nullable();
-            $table->string('property_type')->nullable();
-            $table->decimal('budget', 15, 2)->nullable();
-            $table->string('location')->nullable();
-            $table->timestamps();
+        if (!Schema::hasTable('api_customer_inquiry')) {
+            Schema::create('api_customer_inquiry', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('user_id');
+                $table->unsignedBigInteger('customer_id');
+                $table->text('message')->nullable();
+                $table->string('inquiry_type')->nullable();
+                $table->string('property_type')->nullable();
+                $table->decimal('budget', 15, 2)->nullable();
+                $table->string('location')->nullable();
+                $table->timestamps();
 
-            // Foreign key constraints (optional, remove if not needed)
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('customer_id')->references('id')->on('api_customers')->onDelete('cascade');
-        });
+                // Foreign key constraints
+                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+                $table->foreign('customer_id')->references('id')->on('api_customers')->onDelete('cascade');
+
+                // Indexes for better performance
+                $table->index('user_id');
+                $table->index('customer_id');
+                $table->index('inquiry_type');
+                $table->index('created_at');
+            });
+        }
     }
 
     /**
