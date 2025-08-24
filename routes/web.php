@@ -232,6 +232,23 @@ Route::domain($domain)->group(function () {
 
     Route::group(['middleware' => 'setlang'], function () {
         Route::get('/', 'Front\FrontendController@index')->name('front.index');
+
+    Route::get('/solutions', function () {
+        return view('front.solutions');
+    })->name('front.solutions');
+
+    Route::get('/updates', function () {
+        return view('front.updates');
+    })->name('front.updates');
+
+    Route::get('/about-us', function () {
+        return view('front.about_us');
+    })->name('front.about_us');
+
+        Route::get('/privacy', function () {
+        return view('front.privacy');
+    })->name('front.privacy');
+
         Route::get('/templates', 'Front\FrontendController@templates')->name('front.templates');
         Route::get('/vcards', 'Front\FrontendController@vcards')->name('front.vcards');
         Route::post('/subscribe', 'Front\FrontendController@subscribe')->name('front.subscribe');

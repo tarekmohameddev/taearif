@@ -46,6 +46,8 @@ class FooterSettingController extends Controller
                     ['id' => '3', 'platform' => 'instagram', 'url' => 'https://instagram.com/', 'enabled' => true],
                     ['id' => '4', 'platform' => 'linkedin', 'url' => 'https://linkedin.com/', 'enabled' => false],
                     ['id' => '5', 'platform' => 'youtube', 'url' => 'https://youtube.com/', 'enabled' => false],
+                    ['id' => '6', 'platform' => 'snapchat', 'url' => 'https://snapchat.com/', 'enabled' => false],
+                    ['id' => '7', 'platform' => 'tiktok', 'url' => 'https://tiktok.com/', 'enabled' => false],
                 ],
                 'columns' => [
                     [
@@ -141,7 +143,7 @@ class FooterSettingController extends Controller
 
             'social' => 'required|array',
             'social.*.id' => 'required|string',
-            'social.*.platform' => 'required|string|in:facebook,twitter,instagram,linkedin,youtube',
+            'social.*.platform' => 'required|string|in:facebook,twitter,instagram,linkedin,youtube,snapchat,tiktok',
             'social.*.url' => 'nullable|string|max:255',
             'social.*.enabled' => 'boolean',
 

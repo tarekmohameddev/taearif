@@ -18,6 +18,7 @@ use App\Models\User\UserDistrict;
 use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\User\UserCity;
 use App\Models\ApiCustomer;
+use App\Models\ApiCustomerInquiry;
 use App\Models\WhatsappUser;
 use Illuminate\Support\Str;
 
@@ -149,13 +150,45 @@ public function handleEvolutionWebhook(Request $request)
     }
 }
 
-
 public function handleWhatsappWebhook(Request $request)
 {
     try {
         $payload = $request->all();
 
-        // Step 1: Extract the needed fields
+     
+        if (isset($payload['whatsapp_number']) && isset($payload['message']) && isset($payload['inquiry_type'])) {
+            // Normalize data
+            $whatsappNumber = $payload['whatsapp_number'];
+            $message = $payload['message'];
+            $inquiryType = $payload['inquiry_type'];
+            $propertyType = $payload['property_type'] ?? null;
+            $budget = $payload['detected_entities']['budget'] ?? null;
+            $location = $payload['detected_entities']['location'] ?? null;
+
+            // 🔄 Find customer in ApiCustomer table to get user_id
+            $customer = ApiCustomer::where('phone_number', $whatsappNumber)->first();
+            $userId = $customer ? $customer->user_id : null;
+
+            // Save to inquiry table
+            $inquiry = ApiCustomerInquiry::create([
+                'user_id'        => $userId,
+                'customer_id' => $customer->id,
+                'phone_number'   => $whatsappNumber,
+                'message'        => $message,
+                'inquiry_type'   => $inquiryType,
+                'property_type'  => $propertyType,
+                'budget'         => $budget,
+                'location'       => $location,
+            ]);
+
+            return response()->json([
+                'status' => 'saved',
+                'message' => 'Inquiry saved successfully',
+                'data' => $inquiry,
+            ], 201);
+        }
+
+    
         $entry = $payload['entry'][0]['changes'][0]['value'] ?? null;
         if (!$entry) {
             return response()->json(['status' => 'ignored', 'message' => 'Invalid payload structure'], 400);
@@ -169,7 +202,6 @@ public function handleWhatsappWebhook(Request $request)
             return response()->json(['status' => 'ignored', 'message' => 'Missing required fields'], 422);
         }
 
-        // Step 2: Match with whatsapp_users table
         $whatsappUser = WhatsappUser::where('number', $displayPhone)->first();
 
         if (!$whatsappUser) {
@@ -181,19 +213,18 @@ public function handleWhatsappWebhook(Request $request)
 
         $userId = $whatsappUser->user_id;
 
-        // Step 3: Check if customer already exists
+        // Check if customer already exists
         $existing = ApiCustomer::where('user_id', $userId)
             ->where('phone_number', $fromNumber)
             ->first();
 
         if (!$existing) {
-            // Step 4: Create new ApiCustomer
             $newCustomer = ApiCustomer::create([
                 'user_id'      => $userId,
                 'name'         => $contactName,
                 'phone_number' => $fromNumber,
                 'priority'     => 1,
-                'password'     => bcrypt(Str::random(10)), // placeholder password
+                'password'     => bcrypt(Str::random(10)),
             ]);
 
             return response()->json([
@@ -219,6 +250,8 @@ public function handleWhatsappWebhook(Request $request)
         ], 500);
     }
 }
+
+
 
 
     public function chat(Request $request)
