@@ -71,60 +71,104 @@ class TenantRbacBootstrapper
      * Ensure all given permissions exist (prefer global/null team if present),
      * otherwise create tenant-scoped permissions, and return a Collection<Permission>.
      */
-    private function ensurePermissions(int $tenantId, Collection $names): Collection
+    protected function ensurePermissions(int $teamId, string $guard, array|Collection $names): Collection
     {
-        if ($names->isEmpty()) return collect();
+        $names = collect($names)->filter()->unique()->values();
+        if ($names->isEmpty()) {
+            return collect();
+        }
 
-        $existing = Permission::query()
+        $preferGlobal = (bool) config('rbac.prefer_global_permissions', true);
+
+        $global = Permission::query()
+            ->where('guard_name', $guard)
+            ->whereNull('team_id')
             ->whereIn('name', $names)
-            ->where(function ($q) use ($tenantId) {
-                $q->whereNull('team_id')->orWhere('team_id', $tenantId);
-            })
+            ->get()
+            ->keyBy('name');
+
+        $tenant = Permission::query()
+            ->where('guard_name', $guard)
+            ->where('team_id', $teamId)
+            ->whereIn('name', $names)
+            ->get()
+            ->keyBy('name');
+
+        $map = collect();
+
+        foreach ($names as $n) {
+            if ($preferGlobal && $global->has($n)) {
+                $map->put($n, $global->get($n));
+                continue;
+            }
+            if ($tenant->has($n)) {
+                $map->put($n, $tenant->get($n));
+                continue;
+            }
+            $perm = Permission::create([
+                'name'       => $n,
+                'guard_name' => $guard,
+                'team_id'    => $teamId,
+            ]);
+            $map->put($n, $perm);
+        }
+
+        return $map;
+    }
+
+    /**
+     * Ensure tenant roles exist and return a Collection<Role>.
+     */
+    // private function ensureRoles(int $tenantId, array $roleNames): Collection
+    // {
+    //     if (empty($roleNames)) return collect();
+
+    //     $existing = Role::query()
+    //         ->where('team_id', $tenantId)
+    //         ->whereIn('name', $roleNames)
+    //         ->get()
+    //         ->keyBy('name');
+
+    //     $created = collect();
+    //     foreach ($roleNames as $name) {
+    //         if (!$existing->has($name)) {
+    //             $created->push(
+    //                 Role::create([
+    //                     'name'       => $name,
+    //                     'guard_name' => 'sanctum',
+    //                     'team_id'    => $tenantId,
+    //                 ])
+    //             );
+    //         }
+    //     }
+
+    //     return $existing->values()->merge($created);
+    // }
+    protected function ensureRoles(int $teamId, string $guard, array|Collection $names): Collection
+    {
+        $names = collect($names)->filter()->unique()->values();
+        if ($names->isEmpty()) {
+            return collect();
+        }
+
+        $existing = Role::query()
+            ->where('guard_name', $guard)
+            ->where('team_id', $teamId)
+            ->whereIn('name', $names)
             ->get()
             ->keyBy('name');
 
         $created = collect();
         foreach ($names as $name) {
             if (!$existing->has($name)) {
-                $created->push(
-                    Permission::create([
-                        'name'       => $name,
-                        'guard_name' => 'sanctum',
-                        'team_id'    => $tenantId,
-                    ])
-                );
+                $created->push(Role::create([
+                    'name'       => $name,
+                    'guard_name' => $guard,
+                    'team_id'    => $teamId,
+                ]));
             }
         }
 
-        return $existing->values()->merge($created);
-    }
-
-    /**
-     * Ensure tenant roles exist and return a Collection<Role>.
-     */
-    private function ensureRoles(int $tenantId, array $roleNames): Collection
-    {
-        if (empty($roleNames)) return collect();
-
-        $existing = Role::query()
-            ->where('team_id', $tenantId)
-            ->whereIn('name', $roleNames)
-            ->get()
-            ->keyBy('name');
-
-        $created = collect();
-        foreach ($roleNames as $name) {
-            if (!$existing->has($name)) {
-                $created->push(
-                    Role::create([
-                        'name'       => $name,
-                        'guard_name' => 'sanctum',
-                        'team_id'    => $tenantId,
-                    ])
-                );
-            }
-        }
-
-        return $existing->values()->merge($created);
+        return $existing->values()->merge($created)->keyBy('name');
     }
 }
