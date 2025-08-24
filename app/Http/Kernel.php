@@ -41,6 +41,7 @@ class Kernel extends HttpKernel
         'api' => [
             'throttle:60,1',
             'bindings',
+            \App\Http\Middleware\SetTenantForPermissions::class,
         ],
         // 'api' => [
         //     \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
@@ -77,6 +78,12 @@ class Kernel extends HttpKernel
         'accountStatus' => \App\Http\Middleware\UserRegisteredUserStatus::class,
         'lfm.path' => \App\Http\Middleware\LfmPath::class,
         'employee.can' => \App\Http\Middleware\EmployeePermission::class,
+        'employee.only' => \App\Http\Middleware\EnsureEmployee::class,
+        'tenant.only'   => \App\Http\Middleware\EnsureTenant::class,
+        'tenant.can' => \App\Http\Middleware\TenantPermission::class,
+        // EnsureUserIsActive
+        'ensureUserIsActive' => \App\Http\Middleware\EnsureUserIsActive::class,
+
     ];
 
     /**

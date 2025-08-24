@@ -2,10 +2,14 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Event;
+use App\Events\TenantActivityOccurred;
 use Illuminate\Auth\Events\Registered;
+use App\Listeners\PersistTenantActivity;
+use App\Listeners\WriteTenantActivityLog;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Event;
+
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -18,7 +22,12 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],
+        TenantActivityOccurred::class => [
+            PersistTenantActivity::class,
+            // WriteTenantActivityLog::class,
+        ],
     ];
+
 
     /**
      * Register any events for your application.

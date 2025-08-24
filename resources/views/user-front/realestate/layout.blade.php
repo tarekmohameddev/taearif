@@ -20,8 +20,13 @@
     @yield('og:tag')
 
     {{-- fav icon --}}
-    <link rel="shortcut icon" href="{{ asset($userBs->favicon) }}" type="img/png" />
 
+    {{-- apple touch icon --}}
+    @if (is_null($userBs->favicon))
+    <link rel="icon" href="{{ asset('assets/favicons/favicon.png') }}" type="image/png">
+    @else
+    <link rel="icon" href="{{ asset($userBs->favicon) }}" type="image/png">
+    @endif
         @php
             $primaryColor = $userBs->base_color;
             $secoundaryColor = $userBs->secondary_color;

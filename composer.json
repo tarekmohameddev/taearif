@@ -48,6 +48,7 @@
         "razorpay/razorpay": "2.*",
         "simplesoftwareio/simple-qrcode": "^4.2.0",
         "spatie/laravel-cookie-consent": "^3.2.2",
+        "spatie/laravel-permission": "^6.21",
         "spatie/laravel-sitemap": "^6.2.3"
     },
     "require-dev": {

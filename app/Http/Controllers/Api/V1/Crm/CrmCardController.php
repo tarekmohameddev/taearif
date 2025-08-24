@@ -48,8 +48,8 @@ class CrmCardController extends ApiController
             ],
             'card_content'     => ['nullable','string'],
             'card_procedure'   => ['required', Rule::in(['reminder','note','interaction','appointment'])],
-            'card_project'  => ['nullable','integer'],
-            'card_property' => ['nullable','integer'],
+            'card_project'     => ['nullable','integer'],
+            'card_property'    => ['nullable','integer'],
             'card_date'        => ['nullable','date'],
         ]);
 

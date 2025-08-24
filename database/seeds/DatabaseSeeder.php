@@ -9,6 +9,7 @@ use Database\Seeders\ApiUserCategorySeeder;
 use Database\Seeders\DefaultCategorySeeder;
 use Database\Seeders\ApiContentSectionSeeder;
 use Database\Seeders\AppSeeder;
+use Database\Seeders\PermissionSeeder;
 class DatabaseSeeder extends Seeder
 {
     /**
@@ -21,7 +22,8 @@ class DatabaseSeeder extends Seeder
         // $this->call(UsersTableSeeder::class);
         // $this->call(UserFacadeSeeder::class);
         // $this->call(ApiContentSectionSeeder::class);
-        $this->call(AppSeeder::class);
+        // $this->call(AppSeeder::class);
+        $this->call(PermissionSeeder::class);
 
     }
 }

@@ -53,10 +53,26 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Helpers\UserPermissionHelper;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Models\User\RealestateManagement\Category;
+use Spatie\Permission\PermissionRegistrar;
+use App\Services\Rbac\BootstrapTenantRbac;
+
 
 class AuthController extends Controller
 {
 
+    private function guardAccountType(?string $expected, User $user): bool
+    {
+        if (!$expected) return true; // no restriction
+        return $user->account_type === $expected;
+    }
+
+    /**
+     * Use tenant for membership ownership if employee.
+     */
+    private function ownerUser(User $user): User
+    {
+        return $user->isEmployee() && $user->tenant ? $user->tenant : $user;
+    }
 
     public function verifyResetCode(Request $request)
     {
@@ -179,159 +195,226 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         try {
-            //reCAPTCHA validation
+            // --- reCAPTCHA ---
             $recaptchaValidator = Validator::make($request->only('recaptcha_token'), [
                 'recaptcha_token' => ['required', new \App\Rules\Recaptcha],
             ]);
             if ($recaptchaValidator->fails()) {
                 return response()->json([
-                    'status' => 'error',
+                    'status'  => 'error',
                     'message' => 'reCAPTCHA failed',
-                    'errors' => $recaptchaValidator->errors()
+                    'errors'  => $recaptchaValidator->errors()
                 ], 422);
             }
 
+            /**
+             * ============================================================
+             * EMPLOYEE CREATION BRANCH (no website, no membership, no subdomain)
+             * Trigger when: account_type=employee AND user_id is provided
+             * ============================================================
+             */
+            if ($request->input('account_type') === 'employee' && $request->filled('user_id')) {
+                // Validate employee fields
+                $validated = $request->validate([
+                    'user_id'    => ['required', 'integer', 'exists:users,id'],
+                    'email'      => ['required','email','unique:users,email'],
+                    'username'   => ['required','string','unique:users,username'],
+                    'password'   => ['required','string','min:6'],
+                    'first_name' => ['nullable','string','max:191'],
+                    'last_name'  => ['nullable','string','max:191'],
+                    'phone'      => ['nullable','string','max:191'],
+                ]);
+
+                // Ensure the parent is a tenant (not another employee)
+                $tenant = User::findOrFail($validated['user_id']);
+                if (($tenant->account_type ?? 'tenant') !== 'tenant') {
+                    return response()->json([
+                        'status'  => 'error',
+                        'message' => 'Provided user_id must be a tenant account.',
+                    ], 422);
+                }
+
+                // Create the employee account (NO website materials, NO memberships)
+                $employee = User::create([
+                    'first_name'   => $request->input('first_name', ''),
+                    'last_name'    => $request->input('last_name', ''),
+                    'company_name' => $tenant->company_name, // inherit if desired
+                    'email'        => $validated['email'],
+                    'username'     => $validated['username'],
+                    'password'     => bcrypt($validated['password']),
+                    'status'       => 1,
+                    'active'       => true,
+                    'tenant_id'    => $tenant->id,
+                    'account_type' => 'employee',
+                    // Do NOT set website-related fields; do NOT create languages/menus/etc.
+                ]);
+
+                // Optional role/permission assignment (Spatie compatible)
+                if ($request->filled('roles') && is_array($request->roles) && method_exists($employee, 'syncRoles')) {
+                    $employee->syncRoles($request->roles);
+                }
+                if ($request->filled('permissions') && is_array($request->permissions) && method_exists($employee, 'syncPermissions')) {
+                    $employee->syncPermissions($request->permissions);
+                }
+
+                // Never auto-login employee here; the employee will log in via the same /login route.
+                return response()->json([
+                    'status'   => 'success',
+                    'message'  => 'Employee created under tenant.',
+                    'employee' => $employee,
+                ], 201);
+            }
+
+            /**
+             * ============================================================
+             * TENANT (USER) REGISTRATION (existing behavior preserved)
+             * ============================================================
+             */
             $tempToken = $request->input('temp_token');
 
             if ($tempToken) {
-                //Google OAuth temp_token registration
+                // Google OAuth temp_token registration
                 $tokenData = \App\Services\TempTokenService::decrypt($tempToken);
 
                 if (!$tokenData) {
                     return response()->json([
                         'status' => 'error',
-                        'error' => 'invalid_or_expired_temp_token'
+                        'error'  => 'invalid_or_expired_temp_token'
                     ], 400);
                 }
 
                 if (User::where('email', $tokenData['email'])->where('google_id', $tokenData['google_id'])->exists()) {
                     return response()->json([
                         'status' => 'error',
-                        'error' => 'already_registered'
+                        'error'  => 'already_registered'
                     ], 409);
                 }
 
-                $request['email'] = $tokenData['email'];
+                $request['email']     = $tokenData['email'];
                 $request['google_id'] = $tokenData['google_id'];
-                // $request['password'] = null;
-                $request['password'] = $tempToken ? Str::random(32) : $request->password;
-
-
+                $request['password']  = Str::random(32);
             } else {
-                //Normal registration validation
+                // Normal tenant registration validation
                 $request->validate([
-                    'email' => 'required|email|unique:users,email',
+                    'email'    => 'required|email|unique:users,email',
                     'username' => 'required|string|unique:users,username',
                     'password' => 'required|string|min:6',
                 ]);
             }
 
+            // Referral code (optional)
             $referrer = null;
             if ($request->filled('referral_code')) {
                 $referrer = \App\Models\User::where('referral_code', $request->referral_code)->first();
                 if (!$referrer) {
                     return response()->json([
-                        'status' => 'error',
+                        'status'  => 'error',
                         'message' => 'Invalid referral code.'
                     ], 400);
                 }
             }
 
-            //Static trial registration values (could be moved to config)
+            // Static trial registration values
             $request->merge([
-                'status' => 1,
-                'mode' => 'online',
-                'receipt_name' => null,
-                'price' => 999,
-                'first_name' => $request->input('first_name', 'User'),
-                'last_name' => $request->input('last_name', ''),
-                'company_name' => 'N/A',
-                'country' => 'N/A',
-                'is_receipt' => 0,
-                'address' => 'N/A',
-                'city' => 'N/A',
-                'district' => 'N/A',
-                'package_type' => 'trial',
-                'package_id' => 24,
-                'trial_days' => 30,
-                // 'start_date' => '15-03-2025',
-                // 'expire_date' => '09-01-2026',
-                'start_date' => now()->toDateString(),
-                'expire_date' => now()->addMonth()->toDateString(),
+                'status'         => 1,
+                'mode'           => 'online',
+                'receipt_name'   => null,
+                'price'          => 999,
+                'first_name'     => $request->input('first_name', 'User'),
+                'last_name'      => $request->input('last_name', ''),
+                'company_name'   => 'N/A',
+                'country'        => 'N/A',
+                'is_receipt'     => 0,
+                'address'        => 'N/A',
+                'city'           => 'N/A',
+                'district'       => 'N/A',
+                'package_type'   => 'trial',
+                'package_id'     => 24,
+                'trial_days'     => 30,
+                'start_date'     => now()->toDateString(),
+                'expire_date'    => now()->addMonth()->toDateString(),
                 'payment_method' => $tempToken ? 'google' : '-',
-                'referral_code' => strtoupper(Str::random(8)),
-                'referred_by' => $referrer?->id,
-
-
+                'referral_code'  => strtoupper(Str::random(8)),
+                'referred_by'    => $referrer?->id,
+                'account_type'   => 'tenant',
+                'tenant_id'      => null,
             ]);
 
-            //Coupon logic
+            // Coupon logic
             $coupon = \App\Models\Coupon::where('code', Session::get('coupon'))->first();
             if ($coupon && $coupon->maximum_uses_limit != 999999 && $coupon->total_uses >= $coupon->maximum_uses_limit) {
                 Session::forget('coupon');
                 return response()->json([
-                    'status' => 'error',
+                    'status'  => 'error',
                     'message' => __('This coupon reached maximum limit')
                 ], 400);
             }
 
-            //Language config
+            // Language config
             $currentLang = session()->has('lang')
                 ? \App\Models\Language::where('code', session()->get('lang'))->first()
                 : \App\Models\Language::where('is_default', 1)->first();
             $be = $currentLang->basic_extended;
 
-            //Membership and user creation
-            $transaction_id = \App\Http\Helpers\UserPermissionHelper::uniqidReal(8);
+            // Membership + website creation (existing flow)
+            $transaction_id      = \App\Http\Helpers\UserPermissionHelper::uniqidReal(8);
             $transaction_details = $request->package_type === 'trial' ? 'Trial' : 'Free';
-            $price = 0.00;
+            $price               = 0.00;
 
+            $user = $this->create_website(
+                $request->all(),
+                $transaction_id,
+                $transaction_details,
+                $price,
+                $be,
+                $request->password
+            );
 
+            // Create default roles & permissions INSIDE this tenant
+            app(BootstrapTenantRbac::class)->run($user);
 
-            $user = $this->create_website($request->all(), $transaction_id, $transaction_details, $price, $be, $request->password);
-
-            //Log in user
+            // Log in tenant
             Auth::login($user);
 
-            //Onboarding + default categories
+            // Onboarding + default categories
             app(\App\Services\OnboardingService::class)->applyDefaultsFor($user);
 
             $categories = \DB::table('api_user_categories')->get();
             foreach ($categories as $category) {
                 \DB::table('api_user_category_settings')->insert([
-                    'user_id' => $user->id,
+                    'user_id'     => $user->id,
                     'category_id' => $category->id,
-                    'is_active' => 1,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'is_active'   => 1,
+                    'created_at'  => now(),
+                    'updated_at'  => now(),
                 ]);
             }
 
             // Token + membership info
-            $token = $user->createToken('auth_token')->plainTextToken;
+            $token    = $user->createToken('auth_token')->plainTextToken;
             $lastMemb = $user->memberships()->latest()->first();
             $activation = \Carbon\Carbon::parse($lastMemb->start_date);
-            $expire = \Carbon\Carbon::parse($lastMemb->expire_date);
+            $expire     = \Carbon\Carbon::parse($lastMemb->expire_date);
 
-            // Welcome message (optional)
-            $link = "https://{$user->username}.taearif.com/";
+            // Optional welcome message
+            $link    = "https://{$user->username}.taearif.com/";
             $message = "حياك الله, شكراً على التسجيل في منصة تعاريف وهذا لينك الموقع الخاص بك : $link";
             // $this->sendWhatsAppMessage($user->phone ?? 'default_phone', $message);
 
             $user['onboarding_completed'] = false;
             return response()->json([
                 'status' => 'success',
-                'user' => $user,
-                'token' => $token,
+                'user'   => $user,
+                'token'  => $token,
                 'membership' => [
-                    'start_date' => $activation->toDateString(),
+                    'start_date'  => $activation->toDateString(),
                     'expire_date' => $expire->toDateString(),
                 ]
             ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => $e->getMessage(),
             ], 500);
         }
@@ -391,7 +474,25 @@ class AuthController extends Controller
         }
 
         // Get authenticated user
+        /** @var \App\Models\User $user */
         $user = Auth::user();
+
+        // block banned/inactive accounts (works for both tenant & employee)
+        if (!$user->active || $user->status == 0) {
+            Auth::logout();
+            return response()->json(['message' => 'Account inactive or banned'], 403);
+        }
+
+        // optional: restrict employee if tenant is banned/inactive
+        if ($user->account_type === 'employee' && $user->tenant_id) {
+            $tenant = User::find($user->tenant_id);
+            if (!$tenant || !$tenant->active || $tenant->status == 0) {
+                Auth::logout();
+                return response()->json(['message' => 'Tenant is inactive; employee login disabled'], 403);
+            }
+        }
+
+        $user->forceFill(['last_login_at' => now()])->save();
 
         // Create token for API authentication
         $token = $user->createToken('auth_token')->plainTextToken;

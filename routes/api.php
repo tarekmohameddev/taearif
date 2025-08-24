@@ -1,48 +1,27 @@
 <?php
+
+use App\Http\Middleware\SetTenantForPermissions; // the middleware we added earlier
+
 use Illuminate\Http\Request;
 use App\Models\Api\ApiThemeSettings;
 use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\Api\Rbac\{
+    RoleController,
+    AssignmentController,
+    PermissionController,
+    PermissionAdminController,
+};
+
 use Laravel\Socialite\Facades\Socialite;
-use App\Http\Controllers\Api\CRMController;
 // use App\Http\Controllers\Api\content\ApiContentSection;
-use App\Http\Controllers\Api\StepProgressController;
-use App\Http\Controllers\Api\isthara\IstharaController;
-use App\Http\Controllers\Api\content\AboutApiController;
-use App\Http\Controllers\Api\apps\whatsapp\ChatController;
-use App\Http\Controllers\Api\Affiliate\AffiliateController;
-use App\Http\Controllers\Api\App\ApiInstallationController;
-use App\Http\Controllers\Api\dashboard\DashboardController;
-use App\Http\Controllers\Api\property\UserFacadeController;
-use App\Http\Controllers\Api\apps\whatsapp\WhatsappController;
-use App\Http\Controllers\Api\apps\whatsapp\EmbeddingController;
-use App\Http\Controllers\Api\Customer\CustomerController;
-use App\Http\Controllers\Api\Customer\UserApiCustomerStageController;
-use App\Http\Controllers\Api\Customer\UserApiCustomerPriorityController;
-use App\Http\Controllers\Api\Customer\UserApiCustomerTypeController;
-use App\Http\Controllers\Api\Customer\UserApiCustomerProcedureController;
-use App\Http\Controllers\Api\Customer\UserApiCustomerReminderController;
-use App\Http\Controllers\Api\Customer\UserApiCustomerAppointmentController;
-use App\Http\Controllers\Api\User\RealestateManagement\ApiCategoryController;
-use App\Http\Controllers\Api\ResetPasswordController;
-use App\Http\Controllers\Api\property\ApiPropertyRequestController;
-use App\Http\Controllers\Api\property\ApiPropertyRequestSettingsController;
-use App\Http\Controllers\Api\V1\Em\CustomerController as EmployeeCustomerController;
 use App\Http\Controllers\ImpersonationController;
-use App\Http\Controllers\Api\blog\BlogController;
-use App\Http\Controllers\Api\project\ProjectController;
-use App\Http\Controllers\Api\property\PropertyController;
-use App\Http\Controllers\Api\content\FooterSettingController;
-use App\Http\Controllers\Api\content\ApiBannerSettingController;
-use App\Http\Controllers\Api\content\ApiMenuController;
-use App\Http\Controllers\Api\content\GeneralSettingController;
-use App\Http\Controllers\Api\DomainSettingsController;
-use App\Http\Controllers\Api\ApiSideMenusController;
-
-use App\Http\Controllers\Api\content\ApiContentSectionsController;
-use App\Http\Controllers\Api\ThemeSettingsController;
-
 
 use App\Http\Controllers\Api\{
+    MeAbilitiesController,
+    CRMController,
+    content\ApiContentSectionsController,
+    ThemeSettingsController,
     AuthController,
     RegionController,
     DistrictController,
@@ -52,21 +31,58 @@ use App\Http\Controllers\Api\{
     AnalyticsDashboardController,
     OnboardingController,
     PublicUserController,
+    StepProgressController,
+    isthara\IstharaController,
+    content\AboutApiController,
+    apps\whatsapp\ChatController,
+    Affiliate\AffiliateController,
+    App\ApiInstallationController,
+    dashboard\DashboardController,
+    property\UserFacadeController,
+    apps\whatsapp\WhatsappController,
+    apps\whatsapp\EmbeddingController,
+    User\RealestateManagement\ApiCategoryController,
+    ResetPasswordController,
+    property\ApiPropertyRequestController,
+    property\ApiPropertyRequestSettingsController,
+    blog\BlogController,
+    project\ProjectController,
+    property\PropertyController,
+    content\FooterSettingController,
+    content\ApiBannerSettingController,
+    content\ApiMenuController,
+    content\GeneralSettingController,
+    DomainSettingsController,
+    ApiSideMenusController,
+};
+
+use App\Http\Controllers\Api\Customer\{
+    UserApiCustomerStageController,
+    UserApiCustomerPriorityController,
+    UserApiCustomerTypeController,
+    UserApiCustomerProcedureController,
+    UserApiCustomerReminderController,
+    UserApiCustomerAppointmentController,
+    CustomerController,
 };
 
 use App\Http\Controllers\Api\V1\{
-    EmployeeAuthController ,
+    Em\EmployeeAuthController,
     LogController,
-    RoleController,
+    // RoleController,
     EmployeeController,
     CustomerInquiryController,
-    Rms\RentalController,
-    Rms\ContractController,
-    Rms\InstallmentController,
-    Rms\MaintenanceController,
-    Rms\ReminderController,
-    Rms\RmsDashboardController,
-    Crm\CrmCardController
+    Crm\CrmCardController,
+    Em\CustomerController as EmployeeCustomerController,
+};
+
+use App\Http\Controllers\Api\V1\Rms\{
+    RentalController,
+    ContractController,
+    InstallmentController,
+    MaintenanceController,
+    ReminderController,
+    RmsDashboardController,
 };
 
 /*
@@ -167,41 +183,32 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // project routes
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/projects', [ProjectController::class, 'store']); // Create a project
-    Route::post('/projects/{id}', [ProjectController::class, 'update']); // Update a project
-    Route::delete('/projects/{id}', [ProjectController::class, 'destroy']); // Delete a project
-    Route::patch('/projects/{id}/toggle-featured', [ProjectController::class, 'toggleFeatured']); // Toggle featured status
-    Route::get('/projects', [ProjectController::class, 'index']); // Get all projects
-    Route::get('/projects/{id}', [ProjectController::class, 'show']); // Get a single project
-
-    // Route::get('/projects/categories', [ProjectController::class, 'categories']); // Get project categories
-    Route::get('/user/projects', [ProjectController::class, 'userProjects']); // Get all projects for the authenticated user
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+    Route::get   ('/projects',            [ProjectController::class, 'index'])->middleware('can:projects.view');
+    Route::get   ('/projects/{id}',       [ProjectController::class, 'show'])->middleware('can:projects.view');
+    Route::post  ('/projects',            [ProjectController::class, 'store'])->middleware('can:projects.create');
+    Route::post  ('/projects/{id}',       [ProjectController::class, 'update'])->middleware('can:projects.update');
+    Route::delete('/projects/{id}',       [ProjectController::class, 'destroy'])->middleware('can:projects.delete');
+    Route::patch ('/projects/{id}/toggle-featured', [ProjectController::class, 'toggleFeatured'])->middleware('can:projects.update');
+    Route::get   ('/user/projects',       [ProjectController::class, 'userProjects'])->middleware('can:projects.view');
 });
 
+
+
 // property routes
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/properties', [PropertyController::class, 'index']);
 
-    Route::post('/properties/reorder-featured', [PropertyController::class, 'properties_reorder_featured']);
-    Route::post('/properties/reorder', [PropertyController::class, 'properties_reorder']);
-
-
-    Route::get('/properties/categories', [PropertyController::class, 'properties_categories']);
-    Route::get('/property-faqs', [PropertyController::class, 'faqs']); // Get FAQs for a property
-    Route::get('/properties/{id}', [PropertyController::class, 'show']); // Get a single property
-    Route::post('/properties', [PropertyController::class, 'store']);
-    Route::post('/properties/{id}', [PropertyController::class, 'update']);
-    Route::delete('/properties/{id}', [PropertyController::class, 'destroy']);
-    Route::patch('/properties/{id}/toggle-featured', [PropertyController::class, 'toggleFeatured']);
-    Route::post('/properties/{id}/toggle-status', [PropertyController::class, 'toggleStatus']); // Toggle property status
-    Route::post('/properties/{id}/toggle-favorite', [PropertyController::class, 'toggleFavorite']);
-
-    Route::post('/properties/{propertyId}/duplicate', [PropertyController::class, 'duplicate']); // Duplicate a property
-    // faqs
-
-    Route::get('/property/facades', [UserFacadeController::class, 'index']);
-
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+    Route::get   ('/properties',                         [PropertyController::class, 'index'])->middleware('can:properties.view');
+    Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
+    Route::post  ('/properties',                         [PropertyController::class, 'store'])->middleware('can:properties.create');
+    Route::post  ('/properties/{id}',                    [PropertyController::class, 'update'])->middleware('can:properties.update');
+    Route::delete('/properties/{id}',                    [PropertyController::class, 'destroy'])->middleware('can:properties.delete');
+    Route::patch ('/properties/{id}/toggle-featured',    [PropertyController::class, 'toggleFeatured'])->middleware('can:properties.update');  // or properties.toggle
+    Route::post  ('/properties/{id}/toggle-status',      [PropertyController::class, 'toggleStatus'])->middleware('can:properties.update');   // or properties.toggle
+    Route::post  ('/properties/reorder-featured',        [PropertyController::class, 'properties_reorder_featured'])->middleware('can:properties.reorder');
+    Route::post  ('/properties/reorder',                 [PropertyController::class, 'properties_reorder'])->middleware('can:properties.reorder');
+    Route::post  ('/properties/{propertyId}/duplicate',  [PropertyController::class, 'duplicate'])->middleware('can:properties.create');
+    Route::get   ('/property/facades',                   [UserFacadeController::class, 'index'])->middleware('can:properties.view');
 });
 
 // Content routes
@@ -262,25 +269,25 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/settings/theme/set-active', [ThemeSettingsController::class, 'setActiveTheme']);
 });
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/settings/domain ', [DomainSettingsController::class, 'index']);
-    Route::get('/settings/domain/{id}', [DomainSettingsController::class, 'show']);
-    Route::post('/settings/domain ', [DomainSettingsController::class, 'store']);
-    Route::post('/settings/domain/verify ', [DomainSettingsController::class, 'verify']);
-    Route::patch('/settings/domain/set-primary', [DomainSettingsController::class, 'setPrimary']);
-    Route::delete('/settings/domain/{id}', [DomainSettingsController::class, 'destroy']);
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+    // (small note: remove the stray spaces in your paths like '/settings/domain ')
+    Route::get   ('/settings/domain',                 [DomainSettingsController::class, 'index'])->middleware('can:settings.update');
+    Route::get   ('/settings/domain/{id}',            [DomainSettingsController::class, 'show'])->middleware('can:settings.update');
+    Route::post  ('/settings/domain',                 [DomainSettingsController::class, 'store'])->middleware('can:settings.update');
+    Route::post  ('/settings/domain/verify',          [DomainSettingsController::class, 'verify'])->middleware('can:settings.update');
+    Route::patch ('/settings/domain/set-primary',     [DomainSettingsController::class, 'setPrimary'])->middleware('can:settings.update');
+    Route::delete('/settings/domain/{id}',            [DomainSettingsController::class, 'destroy'])->middleware('can:settings.update');
 
-    Route::patch('/settings/domain/request-ssl', [DomainSettingsController::class, 'requestSsl']);
-    Route::patch('/settings/domain/ssl-status', [DomainSettingsController::class, 'updateSslStatus']);
-
-    Route::get('/settings/payment ', [PaymentController::class, 'index']);
+    Route::patch ('/settings/domain/request-ssl',     [DomainSettingsController::class, 'requestSsl'])->middleware('can:settings.update');
+    Route::patch ('/settings/domain/ssl-status',      [DomainSettingsController::class, 'updateSslStatus'])->middleware('can:settings.update');
 });
+
 
 //ApiSideMenusController
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
     Route::get('/settings/side-menus', [ApiSideMenusController::class, 'index']);
-
 });
+
 
 // ApiCategoryController
 Route::middleware('auth:sanctum')->group(function () {
@@ -310,19 +317,18 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // api_customers
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
     Route::prefix('customers')->group(function () {
-        Route::get('/filters', [CustomerController::class, 'filterOptions']);
-
-        Route::get('/', [CustomerController::class, 'index']);
-        Route::get('/search', [CustomerController::class, 'search']);
-        Route::get('/{id}', [CustomerController::class, 'show']);
-        Route::post('/', [CustomerController::class, 'store']);
-        Route::put('/{id}', [CustomerController::class, 'update']);
-        Route::delete('/{id}', [CustomerController::class, 'destroy']);
+        Route::get   ('/filters',  [CustomerController::class, 'filterOptions'])->middleware('can:customers.view');
+        Route::get   ('/',         [CustomerController::class, 'index'])->middleware('can:customers.view');
+        Route::get   ('/search',   [CustomerController::class, 'search'])->middleware('can:customers.view');
+        Route::get   ('/{id}',     [CustomerController::class, 'show'])->middleware('can:customers.view');
+        Route::post  ('/',         [CustomerController::class, 'store'])->middleware('can:customers.create');
+        Route::put   ('/{id}',     [CustomerController::class, 'update'])->middleware('can:customers.update');
+        Route::delete('/{id}',     [CustomerController::class, 'destroy'])->middleware('can:customers.delete');
     });
-
 });
+
 
 // Api crm Customer
 Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
@@ -451,24 +457,20 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('register', [EmployeeAuthController::class, 'register']);
     });
     // Employee API
-    Route::prefix('em')->middleware('auth:sanctum')->group(function () {
-
+    Route::middleware(['auth:sanctum','employee.only'])->group(function () {
         // Protected
-        Route::middleware(['auth:sanctum','employee.only'])->group(function () {
-            Route::get('auth/me',     [EmployeeAuthController::class, 'me']);
-            Route::post('auth/logout',[EmployeeAuthController::class, 'logout']);
-            Route::apiResource('customers', EmployeeCustomerController::class);
-            //  ->middleware('employee.can:customer.read');
-        });
+        Route::get('auth/me',     [EmployeeAuthController::class, 'me']);
+        Route::post('auth/logout',[EmployeeAuthController::class, 'logout']);
+
+        Route::apiResource('customers', EmployeeCustomerController::class);
+        //  ->middleware('employee.can:customer.read');
 
     });
 
     // Tenant owner
-    Route::middleware(['auth:sanctum','tenant.only'])->group(function () {
-        Route::apiResource('employees', EmployeeController::class);
-        Route::apiResource('roles', RoleController::class);
-        Route::post('employees/{id}/roles', [EmployeeController::class, 'syncRoles']);
-        Route::get('logs', [LogController::class, 'index']);
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/v1/logs', [\App\Http\Controllers\Api\V1\LogController::class,'index'])
+            ->middleware('can:logs.read'); // owners pass via Gate::before
     });
 
     Route::prefix('crm')->group(function () {
@@ -478,6 +480,32 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::match(['put','patch'], 'cards/{id}', [CrmCardController::class, 'update']);
         Route::delete('cards/{id}', [CrmCardController::class, 'destroy']);
     });
+
+});
+
+
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+    Route::get('/v1/me/abilities', [MeAbilitiesController::class, 'index']);
+
+    Route::get('/v1/rbac/perms/me', [PermissionController::class, 'me']);
+    Route::get('/v1/rbac/employees/{employee}/perms', [PermissionController::class, 'employee']);
+
+    Route::middleware('can:settings.update')->group(function () {
+        Route::get   ('/v1/rbac/roles',           [RoleController::class, 'index']);
+        Route::post  ('/v1/rbac/roles',           [RoleController::class, 'store']);
+        Route::put   ('/v1/rbac/roles/{role}',    [RoleController::class, 'update']);
+        Route::delete('/v1/rbac/roles/{role}',    [RoleController::class, 'destroy']);
+
+        Route::get   ('/v1/rbac/permissions',                         [PermissionAdminController::class, 'index']);
+        Route::post  ('/v1/rbac/permissions',                         [PermissionAdminController::class, 'store']);
+        Route::put   ('/v1/rbac/permissions/{permission}',            [PermissionAdminController::class, 'update']);
+        Route::delete('/v1/rbac/permissions/{permission}',            [PermissionAdminController::class, 'destroy']);
+
+        Route::get   ('/v1/rbac/employees/{employee}/roles',          [AssignmentController::class, 'showRoles']);
+        Route::post  ('/v1/rbac/employees/{employee}/roles',          [AssignmentController::class, 'syncRoles']);
+        Route::post  ('/v1/rbac/employees/{employee}/perms',          [AssignmentController::class, 'syncPerms']);
+    });
+
 
 });
 

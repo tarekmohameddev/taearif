@@ -36,9 +36,13 @@ return [
     */
 
     'guards' => [
+        'sanctum' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
+        ],
         'employees' => [
             'driver' => 'sanctum',
-            'provider' => 'api_employees'
+            'provider' => 'users'
         ],
         'web' => [
             'driver' => 'session',
@@ -88,10 +92,6 @@ return [
     */
 
     'providers' => [
-        'api_employees' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\Api\Employee::class,
-        ],
         'users' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,

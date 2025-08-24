@@ -4,207 +4,130 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Package;
-use App\Models\BasicSetting;
-use App\Models\Membership;
-use App\Http\Helpers\LimitCheckerHelper;
-use App\Http\Helpers\UserPermissionHelper;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Membership;
 use App\Models\Api\ApiMenuItem;
-use Illuminate\Support\Facades\Log;
+use Spatie\Permission\PermissionRegistrar;
 
-use App\Models\Api\ApiAffiliateUser;
-use App\Models\User;
 class ApiSideMenusController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index()
     {
-
         $user = Auth::user();
-        // Check if the user is accepted in affiliate program
+
+        // ---- resolve team/tenant id and scope Spatie to it ----
+        $teamId = $this->teamIdFor($user);
+        app(PermissionRegistrar::class)->setPermissionsTeamId($teamId);
+
+        // owners bypass permission checks
+        $isOwner = method_exists($user, 'isTenant') ? $user->isTenant() : (($user->account_type ?? 'tenant') === 'tenant');
+        $can = fn(string $perm) => $isOwner || $user->can($perm);
+
+        // feature flags / package
         $isAffiliateApproved = $user->isAffiliateApproved();
-        // \Log::info($isAffiliateApproved);
-
-
-        // Load the latest active membership for the user
-        $membership = Membership::where('user_id', $user->id)->where('status', 1)->orderByDesc('id')->with('package')->first();
-
-        // Get the package features
+        $membership = Membership::where('user_id', $user->id)
+            ->where('status', 1)
+            ->orderByDesc('id')
+            ->with('package')
+            ->first();
         $package = $membership?->package;
 
-        // Default always-visible sections
-        $sections = [
-            [
-
-                'title' => 'لوحة التحكم',
-                'description' => 'نظره عامه عن الموقع',
-                'icon' => 'panel',
-                'path' => '/',
-            ],
-            [
-                'title' => 'ادارة المحتوى',
-                'description' => 'ادارة محتوى الموقع',
-                'icon' => 'content-settings',
-                'path' => '/content',
-            ],
-            [
-                'title' => 'اعدادات الموقع',
-                'description' => 'تكوين اعدادات الموقع',
-                'icon' => 'web-settings',
-                'path' => '/settings',
-            ],
-                        [
-                'title' => 'ادارة العملاء',
-                'description' => 'ادارة عملائك',
-                'icon' => 'web-settings',
-                'path' => '/customers',
-            ]
-            ,            [
-                'title' => 'crm',
-                'description' => 'تكوين اعدادات ادارة علاقات العملاء',
-                'icon' => 'web-settings',
-                'path' => '/crm',
-            ]            ,            [
-                'title' => 'الطلبات العقارية',
-                'description' => 'ادارة طلبات العملاء العقارية',
-                'icon' => 'web-settings',
-                'path' => '/property-requests',
-            ]
-
-        ];
-
-        // Conditionally add sections based on package
-        if ($package) {
-            if ($package->project_limit_number > 0) {
-                $sections[] = [
-                    'title' => 'المشاريع',
-                    'description' => 'ادارة المشاريع',
-                    'icon' => 'building',
-                    'path' => '/projects',
-                ];
-            }
-
-            if ($package->real_estate_limit_number > 0) {
-                $sections[] = [
-                    'title' => 'العقارات',
-                    'description' => 'ادارة العقارات',
-                    'icon' => 'home',
-                    'path' => '/properties',
-                ];
-            }
-
-            // You can add more conditional checks here for other modules
-            // if (!empty($package->features) && str_contains($package->features, 'Blog')) {
-            //     $sections[] = [
-            //         'title' => 'المدونة',
-            //         'description' => 'ادارة المدونة',
-            //         'icon' => 'blog',
-            //         'path' => '/blog',
-            //     ];
-            // }
-        }
-
-        // $sections[] = [
-        //             'title' => 'التطبيقات',
-        //             'description' => 'ادارة تطبيقاتك',
-        //             'path' => '/apps',
-        //         ];
-
+        // (optional feature toggles stored in DB)
         $whatsappMenu = ApiMenuItem::where('user_id', $user->id)
             ->where('url', '/whatsapp-ai')
             ->where('is_active', true)
             ->first();
 
-        // if ($whatsappMenu) {
-        //     $sections[] = [
-        //         'title' => $whatsappMenu->label ?? 'واتس اب',
-        //         'description' => 'مساعد الذكاء الاصطناعي للواتس اب',
-        //         'icon' => 'whatsapp',
-        //         'path' => $whatsappMenu->url,
-        //     ];
-        // }
+        $aiMenu = ApiMenuItem::where('user_id', $user->id)
+            ->where('url', '/ai')
+            ->where('is_active', true)
+            ->first();
 
-        // Check if the user has an affiliate user record
-        if ($isAffiliateApproved > 0) {
-            $sections[] = [
-                'title' => 'برنامج الشراكة',
-                'description' => 'إدارة برنامج العمولة',
-                'icon' => 'lucide lucide-user-check h-5 w-5 text-primary',
-                'path' => '/affiliate',
-            ];
+        // ---- declarative menu map (DRY) ----
+        $c = [
+            // Always show dashboard if permitted
+            [
+                'perm'    => 'menu.dashboard',
+                'section' => ['title' => 'لوحة التحكم', 'description' => 'نظره عامه عن الموقع', 'icon' => 'panel', 'path' => '/'],
+            ],
+            [
+                'perm'    => 'menu.content',
+                'section' => ['title' => 'ادارة المحتوى', 'description' => 'ادارة محتوى الموقع', 'icon' => 'content-settings', 'path' => '/content'],
+            ],
+            [
+                'perm'    => 'menu.settings',
+                'section' => ['title' => 'اعدادات الموقع', 'description' => 'تكوين اعدادات الموقع', 'icon' => 'web-settings', 'path' => '/settings'],
+            ],
+            [
+                'perm'    => 'menu.customers',
+                'section' => ['title' => 'ادارة العملاء', 'description' => 'ادارة عملائك', 'icon' => 'users', 'path' => '/customers'],
+            ],
+            [
+                'perm'    => 'menu.crm',
+                'section' => ['title' => 'CRM', 'description' => 'تكوين اعدادات ادارة علاقات العملاء', 'icon' => 'crm', 'path' => '/crm'],
+            ],
+            // package + permission
+            [
+                'perm'    => 'menu.projects',
+                'when'    => fn() => $package && ($package->project_limit_number > 0),
+                'section' => ['title' => 'المشاريع', 'description' => 'ادارة المشاريع', 'icon' => 'building', 'path' => '/projects'],
+            ],
+            [
+                'perm'    => 'menu.properties',
+                'when'    => fn() => $package && ($package->real_estate_limit_number > 0),
+                'section' => ['title' => 'العقارات', 'description' => 'ادارة العقارات', 'icon' => 'home', 'path' => '/properties'],
+            ],
+            [
+                'perm'    => 'menu.blog',
+                'when'    => fn() => $package && !empty($package->features) && str_contains($package->features, 'Blog'),
+                'section' => ['title' => 'المدونة', 'description' => 'ادارة المدونة', 'icon' => 'blog', 'path' => '/blog'],
+            ],
+            // Apps container
+            [
+                'perm'    => 'menu.apps',
+                'section' => ['title' => 'التطبيقات', 'description' => 'ادارة تطبيقاتك', 'icon' => 'apps', 'path' => '/apps'],
+            ],
+            // Feature switches inside Apps (still check a perm)
+            [
+                'perm'    => 'menu.apps',
+                'when'    => fn() => (bool) $whatsappMenu,
+                'section' => ['title' => $whatsappMenu?->label ?? 'واتس اب', 'description' => 'مساعد الذكاء الاصطناعي للواتس اب', 'icon' => 'whatsapp', 'path' => $whatsappMenu?->url ?? '/whatsapp-ai'],
+            ],
+            [
+                'perm'    => 'menu.apps',
+                'when'    => fn() => (bool) $aiMenu,
+                'section' => ['title' => $aiMenu?->label ?? 'الذكاء الاصطناعي', 'description' => 'مساعد الذكاء الاصطناعي', 'icon' => 'ai', 'path' => $aiMenu?->url ?? '/ai'],
+            ],
+            // Affiliate program
+            [
+                'perm'    => 'menu.affiliate',
+                'when'    => fn() => (bool) $isAffiliateApproved,
+                'section' => ['title' => 'برنامج الشراكة', 'description' => 'إدارة برنامج العمولة', 'icon' => 'lucide lucide-user-check h-5 w-5 text-primary', 'path' => '/affiliate'],
+            ],
+        ];
+
+        $sections = [];
+        foreach ($c as $item) {
+            if ($can($item['perm']) && (!isset($item['when']) || $item['when']() === true)) {
+                $sections[] = $item['section'];
+            }
         }
 
-        // $aiMenu = ApiMenuItem::where('user_id', $user->id)
-        //     ->where('url', '/ai')
-        //     ->where('is_active', true)
-        //     ->first();
-        // if ($aiMenu) {
-        //     $sections[] = [
-        //         'title' => $aiMenu->label ?? 'الذكاء الاصطناعي',
-        //         'description' => 'مساعد الذكاء الاصطناعي',
-        //         'icon' => 'ai',
-        //         'path' => $aiMenu->url,
-        //     ];
-        // }
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => 'Side menus retrieved successfully.',
-            'code' => 200,
-            'data' => [
-                'sections' => $sections,
-            ],
+            'code'    => 200,
+            'data'    => ['sections' => $sections],
         ]);
-
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
+    // ---- helpers ----
+    private function teamIdFor($user): int
     {
-        //
-
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
+        if (method_exists($user, 'isTenant') && $user->isTenant()) {
+            return (int) $user->id;
+        }
+        // employees
+        return (int) ($user->tenant_id ?? 0);
     }
 }

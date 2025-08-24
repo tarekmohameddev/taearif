@@ -6,6 +6,8 @@ use App\Models\Membership;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\User\Language;
+use App\Models\Api\ApiMenuItem;
+use App\Support\TenantActivity;
 use App\Models\User\BasicSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +28,6 @@ use App\Models\User\RealestateManagement\PropertySliderImg;
 use App\Models\User\RealestateManagement\PropertySpecification;
 use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\RealestateManagement\ApiUserCategory as Category;
-use App\Models\Api\ApiMenuItem;
 
 class PropertyController extends Controller
 {
@@ -319,6 +320,13 @@ class PropertyController extends Controller
             'created_at' => $responseProperty->created_at->toISOString(),
             'updated_at' => $responseProperty->updated_at->toISOString(),
         ];
+
+        TenantActivity::emit($request, 'property.duplicated', 'user_properties', $duplicatedProperty->id, [
+            'source_property_id' => $originalProperty->id
+        ], [
+            'duplicated_property_id' => $duplicatedProperty->id
+        ]);
+
 
         return response()->json([
             'status' => 'success',
@@ -910,6 +918,10 @@ class PropertyController extends Controller
             'video_url' => $responseProperty->video_url,
         ];
 
+        TenantActivity::emit($request, 'property.created', 'user_properties', $responseProperty->id, null, [
+            'id' => $responseProperty->id, 'title' => $formattedProperty['title'] ?? null
+        ]);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Property created successfully',
@@ -1167,6 +1179,10 @@ class PropertyController extends Controller
             'faqs' => $responseProperty->faqs ?? [],
         ], $characteristics);
 
+        TenantActivity::emit($request, 'property.updated', 'user_properties', $property->id, $old ?? null, [
+            'id' => $property->id, 'title' => optional($property->contents->first())->title
+        ]);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Property updated successfully',
@@ -1195,6 +1211,8 @@ class PropertyController extends Controller
         }
 
         $property->delete();
+
+        // TenantActivity::emit($request, 'property.deleted', 'user_properties', $property->id, $property->toArray(), null);
 
         return response()->json([
             'status' => 'success',
