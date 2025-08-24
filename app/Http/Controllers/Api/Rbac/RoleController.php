@@ -111,7 +111,7 @@ class RoleController extends Controller
         $tenantId = $this->tenantId($request);
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
 
-    
+
         $data = $request->validate([
             'name'          => ['required','string','max:191',
                 Rule::unique('api_roles','name')->where(fn($q)=>$q->where('team_id',$tenantId)),
@@ -119,21 +119,21 @@ class RoleController extends Controller
             'permissions'   => ['array'],
             'permissions.*' => ['string'],
         ]);
-    
+
         // ensure/create permissions for this tenant (or reuse global)
         $perms = $this->ensurePermissions($tenantId, $data['permissions'] ?? []);
-    
+
         $role = Role::create([
             'name'       => $data['name'],
             'guard_name' => 'sanctum',
             'team_id'    => $tenantId,
         ]);
-    
+
         if ($perms->isNotEmpty()) {
             // sync by models; team context already set
             $role->syncPermissions($perms);
         }
-    
+
         // emit activity via your single listener
         TenantActivity::emit($request, 'role.created', 'api_roles', $role->id, null, [
             'id'          => $role->id,
@@ -159,6 +159,9 @@ class RoleController extends Controller
         $tenantId = $this->tenantId($request);
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
 
+        if (array_key_exists('name', $data) && $role->name === 'owner' && $data['name'] !== 'owner') {
+            return response()->json(['status'=>'error','message'=>'Cannot rename protected role'], 422);
+        }
 
         if ((int)$role->team_id !== $tenantId) {
             return response()->json(['status' => 'error', 'message' => 'Not found'], 404);
@@ -210,6 +213,9 @@ class RoleController extends Controller
         $tenantId = $this->tenantId($request);
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
 
+        if (in_array($role->name, ['owner'], true)) {
+            return response()->json(['status'=>'error','message'=>'Cannot delete protected role'], 422);
+        }
 
         if ((int) $role->team_id !== $tenantId) {
             return response()->json(['status' => 'error', 'message' => 'Not found'], 404);

@@ -236,8 +236,8 @@ class AuthController extends Controller
 
                 // Create the employee account (NO website materials, NO memberships)
                 $employee = User::create([
-                    'first_name'   => $request->input('first_name', ''),
-                    'last_name'    => $request->input('last_name', ''),
+                    'first_name'   => $request->input('first_name', 'employee'),
+                    'last_name'    => $request->input('last_name', 'employee'),
                     'company_name' => $tenant->company_name, // inherit if desired
                     'email'        => $validated['email'],
                     'username'     => $validated['username'],
@@ -371,7 +371,8 @@ class AuthController extends Controller
             );
 
             // Create default roles & permissions INSIDE this tenant
-            app(BootstrapTenantRbac::class)->run($user);
+            DB::afterCommit(fn() => app(\App\Services\Rbac\BootstrapTenantRbac::class)->run($user));
+
 
             // Log in tenant
             Auth::login($user);
