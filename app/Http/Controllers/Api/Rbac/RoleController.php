@@ -21,39 +21,51 @@ class RoleController extends Controller
      * @param  array  $names
      * @return \Illuminate\Support\Collection<\Spatie\Permission\Models\Permission>
      */
-    private function ensurePermissions(int $tenantId, array $names)
+    protected function ensurePermissions(int $teamId, string $guard, array|Collection $names): Collection
     {
         $names = collect($names)->filter()->unique()->values();
-
         if ($names->isEmpty()) {
             return collect();
         }
 
-        // fetch existing: global (team_id null) OR tenant-scoped (team_id = $tenantId)
-        $existing = Permission::query()
+        $preferGlobal = (bool) config('rbac.prefer_global_permissions', true);
+
+        $global = Permission::query()
+            ->where('guard_name', $guard)
+            ->whereNull('team_id')
             ->whereIn('name', $names)
-            ->where(function ($q) use ($tenantId) {
-                $q->whereNull('team_id')->orWhere('team_id', $tenantId);
-            })
             ->get()
             ->keyBy('name');
 
-        // create missing as tenant-scoped
-        $created = collect();
-        foreach ($names as $name) {
-            if (!$existing->has($name)) {
-                $created->push(
-                    Permission::create([
-                        'name'       => $name,
-                        'guard_name' => 'sanctum',
-                        'team_id'    => $tenantId,
-                    ])
-                );
+        $tenant = Permission::query()
+            ->where('guard_name', $guard)
+            ->where('team_id', $teamId)
+            ->whereIn('name', $names)
+            ->get()
+            ->keyBy('name');
+
+        $map = collect();
+
+        foreach ($names as $n) {
+            if ($preferGlobal && $global->has($n)) {
+                $map->put($n, $global->get($n));
+                continue;
             }
+            if ($tenant->has($n)) {
+                $map->put($n, $tenant->get($n));
+                continue;
+            }
+            $perm = Permission::create([
+                'name'       => $n,
+                'guard_name' => $guard,
+                'team_id'    => $teamId,
+            ]);
+            $map->put($n, $perm);
         }
 
-        return $existing->values()->merge($created);
+        return $map;
     }
+
 
     private function tenantId(Request $request): int
     {
@@ -159,9 +171,7 @@ class RoleController extends Controller
         $tenantId = $this->tenantId($request);
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
 
-        if (array_key_exists('name', $data) && $role->name === 'owner' && $data['name'] !== 'owner') {
-            return response()->json(['status'=>'error','message'=>'Cannot rename protected role'], 422);
-        }
+
 
         if ((int)$role->team_id !== $tenantId) {
             return response()->json(['status' => 'error', 'message' => 'Not found'], 404);
@@ -174,6 +184,10 @@ class RoleController extends Controller
             'permissions'   => ['sometimes','array'],
             'permissions.*' => ['string'],
         ]);
+
+        if (array_key_exists('name', $data) && $role->name === 'owner' && $data['name'] !== 'owner') {
+            return response()->json(['status'=>'error','message'=>'Cannot rename protected role'], 422);
+        }
 
         $old = [
             'name'        => $role->name,
