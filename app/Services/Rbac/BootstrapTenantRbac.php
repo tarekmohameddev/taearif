@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
-
+use Illuminate\Support\Collection;
 class BootstrapTenantRbac
 {
     public function __construct(
