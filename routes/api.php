@@ -208,12 +208,14 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::post  ('/properties',                         [PropertyController::class, 'store'])->middleware('can:properties.create');
     Route::post  ('/properties/{id}',                    [PropertyController::class, 'update'])->middleware('can:properties.update');
     Route::delete('/properties/{id}',                    [PropertyController::class, 'destroy'])->middleware('can:properties.delete');
-    Route::patch ('/properties/{id}/toggle-featured',    [PropertyController::class, 'toggleFeatured'])->middleware('can:properties.update');  // or properties.toggle
-    Route::post  ('/properties/{id}/toggle-status',      [PropertyController::class, 'toggleStatus'])->middleware('can:properties.update');   // or properties.toggle
+    Route::patch ('/properties/{id}/toggle-featured',    [PropertyController::class, 'toggleFeatured'])->middleware('can:properties.update');
+    Route::post  ('/properties/{id}/toggle-status',      [PropertyController::class, 'toggleStatus'])->middleware('can:properties.update');
     Route::post  ('/properties/reorder-featured',        [PropertyController::class, 'properties_reorder_featured'])->middleware('can:properties.reorder');
     Route::post  ('/properties/reorder',                 [PropertyController::class, 'properties_reorder'])->middleware('can:properties.reorder');
     Route::post  ('/properties/{propertyId}/duplicate',  [PropertyController::class, 'duplicate'])->middleware('can:properties.create');
     Route::get   ('/property/facades',                   [UserFacadeController::class, 'index'])->middleware('can:properties.view');
+    // properties/categories
+    Route::get   ('/properties/categories',              [PropertyController::class, 'categories'])->middleware('can:properties.view');
 });
 
 // Content routes
