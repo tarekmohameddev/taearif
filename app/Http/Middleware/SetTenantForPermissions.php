@@ -99,17 +99,17 @@ class SetTenantForPermissions
                     'rbac_seeded_at' => now(),
                 ])->saveQuietly();
 
-                Log::info('RBAC bootstrapped/updated for tenant', [
-                    'tenant_id'   => $fresh->id,
-                    'to_version'  => $target,
-                ]);
+                // Log::info('RBAC bootstrapped/updated for tenant', [
+                //     'tenant_id'   => $fresh->id,
+                //     'to_version'  => $target,
+                // ]);
             });
         } catch (\Throwable $e) {
             // Never block the request; just log
-            Log::error('RBAC bootstrap failed', [
-                'tenant_id' => $owner->id,
-                'message'   => $e->getMessage(),
-            ]);
+            // Log::error('RBAC bootstrap failed', [
+            //     'tenant_id' => $owner->id,
+            //     'message'   => $e->getMessage(),
+            // ]);
         }
     }
 
