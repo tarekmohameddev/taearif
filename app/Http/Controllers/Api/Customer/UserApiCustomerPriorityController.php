@@ -74,7 +74,7 @@ class UserApiCustomerPriorityController extends Controller
         $validated = $request->validate([
             'name'  => 'required|string|max:255',
             'value' => [
-                'required','integer','in:1,2,3',
+                'required','integer',
                 Rule::unique('users_api_customers_priorities','value')->where(fn($q)=>$q->where('user_id',$user->id))
             ],
             'color' => 'nullable|string|max:50',
