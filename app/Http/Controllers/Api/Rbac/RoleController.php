@@ -70,7 +70,6 @@ class RoleController extends Controller
         return $map;
     }
 
-
     private function tenantId(Request $request): int
     {
         $u = $request->user();
@@ -184,29 +183,42 @@ class RoleController extends Controller
         ], 201);
     }
 
-
-
     public function update(Request $request, Role $role)
     {
         $tenantId = $this->tenantId($request);
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
-
-
 
         if ((int)$role->team_id !== $tenantId) {
             return response()->json(['status' => 'error', 'message' => 'Not found'], 404);
         }
 
         $data = $request->validate([
-            'name'          => ['sometimes','string','max:191',
-                Rule::unique('api_roles','name')->where(fn($q)=>$q->where('team_id',$tenantId))->ignore($role->id),
+            'name' => [
+                'sometimes',
+                'string',
+                'max:191',
+                Rule::unique('api_roles', 'name')->where(fn($q) => $q->where('team_id', $tenantId))->ignore($role->id),
             ],
-            'permissions'   => ['sometimes','array'],
-            'permissions.*' => ['string'],
+            'permissions' => [
+                'sometimes',
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if (!is_string($value) && !is_array($value)) {
+                        $fail('The permissions field must be a string or an array.');
+                    }
+                    if (is_array($value) && !empty($value)) {
+                        foreach ($value as $perm) {
+                            if (!is_string($perm)) {
+                                $fail('All permissions must be strings.');
+                            }
+                        }
+                    }
+                },
+            ],
         ]);
 
         if (array_key_exists('name', $data) && $role->name === 'owner' && $data['name'] !== 'owner') {
-            return response()->json(['status'=>'error','message'=>'Cannot rename protected role'], 422);
+            return response()->json(['status' => 'error', 'message' => 'Cannot rename protected role'], 422);
         }
 
         $old = [
@@ -220,8 +232,8 @@ class RoleController extends Controller
         }
 
         if (array_key_exists('permissions', $data)) {
-            // ensure/create permissions for this tenant (or reuse global)
-            $perms = $this->ensurePermissions($tenantId, $data['permissions'] ?? []);
+            // Ensure/create permissions for this tenant (or reuse global)
+            $perms = $this->ensurePermissions($tenantId, 'sanctum', $data['permissions'] ?? []);
             $role->syncPermissions($perms);
         }
 
@@ -241,28 +253,36 @@ class RoleController extends Controller
         ]);
     }
 
-
     public function destroy(Request $request, Role $role)
     {
         $tenantId = $this->tenantId($request);
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
 
-        if (in_array($role->name, ['owner'], true)) {
-            return response()->json(['status'=>'error','message'=>'Cannot delete protected role'], 422);
-        }
-
-        if ((int) $role->team_id !== $tenantId) {
+        if ((int)$role->team_id !== $tenantId) {
             return response()->json(['status' => 'error', 'message' => 'Not found'], 404);
         }
-        if (in_array($role->name, ['owner'], true)) {
+
+        if ($role->name === 'owner') {
             return response()->json(['status' => 'error', 'message' => 'Cannot delete protected role'], 422);
         }
 
+        $oldData = [
+            'id'          => $role->id,
+            'name'        => $role->name,
+            'permissions' => $role->permissions()->pluck('name')->values()->all(),
+        ];
+
+        $role->syncPermissions([]);
         $role->delete();
 
-        // TenantActivity
+        TenantActivity::emit($request, 'role.deleted', 'api_roles', $role->id, $oldData, null);
 
-        TenantActivity::emit($request, 'role.deleted', 'api_roles', $role->id, $role->toArray(), null);
-        return response()->json(['status' => 'success', 'message' => 'Role deleted']);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Role deleted',
+            'data' => [
+                'id' => $role->id,
+            ],
+        ]);
     }
 }
