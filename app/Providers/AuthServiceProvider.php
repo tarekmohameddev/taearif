@@ -32,7 +32,7 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('impersonate-users', function (Admin $admin) {
             return is_null($admin->role_id);
         });
-        Gate::before(function ($user, string $ability) {
+        Gate::before(function (User $user, string $ability) {
             // Treat both 'tenant' and 'user' as tenant owners
             $isTenant = method_exists($user, 'isTenant')
                 ? $user->isTenant()
