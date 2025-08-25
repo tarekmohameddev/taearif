@@ -137,6 +137,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->group(function () {
+
     Route::post('/make-payment', [PaymentController::class, 'checkout']);
     Route::post('/make-payment-app', [PaymentController::class, 'checkoutApp']);
 });
@@ -275,11 +276,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/content/menu', [ApiMenuController::class, 'update']);
 });
 Route::middleware('auth:sanctum')->group(function () {
+
     Route::get('/settings/theme', [ThemeSettingsController::class, 'index']);
     Route::post('/settings/theme/set-active', [ThemeSettingsController::class, 'setActiveTheme']);
 });
 
 Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+
+    Route::get('/settings/payment', [PaymentController::class, 'index']); //PaymentController
     // (small note: remove the stray spaces in your paths like '/settings/domain ')
     Route::get   ('/settings/domain',                 [DomainSettingsController::class, 'index'])->middleware('can:settings.update');
     Route::get   ('/settings/domain/{id}',            [DomainSettingsController::class, 'show'])->middleware('can:settings.update');
