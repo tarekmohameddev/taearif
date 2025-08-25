@@ -48,6 +48,7 @@ use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use App\Models\User\CourseManagement\LessonContentComplete;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\ApiUserCategory;
+use App\Support\Audit;
 
 class CustomerController extends Controller
 {
@@ -67,7 +68,7 @@ class CustomerController extends Controller
 
 
     // addToPropertyInterested
-    public function addToPropertyInterested($domain, $id)
+    public function addToPropertyInterested(Request $request,$domain, $id)
     {
         $user = getUser();
         $customer = Auth::guard('api_customer')->user();
@@ -95,6 +96,8 @@ class CustomerController extends Controller
             Session::flash('error', 'Property not found.');
             return back();
         }
+
+        Audit::customer($user->id, $customer->id, 'custom', 'updated interested categories', ['after'=>$request->interested_category_ids]);
 
         // Save to interested list
         ApiCustomerPropertyInterested::create([
@@ -130,6 +133,7 @@ class CustomerController extends Controller
                 'message' => 'Property removed from your interested list.',
             ]);
         }
+        Audit::customer($user->id, $customer->id, 'custom', 'updated interested categories', ['after'=>$request->interested_category_ids]);
 
         return response()->json([
             'status' => 'info',

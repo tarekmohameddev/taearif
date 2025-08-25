@@ -24,6 +24,8 @@ use App\Models\ApiCustomerPropertyInterested;
 use Illuminate\Validation\ValidationException;
 use App\Models\User\RealestateManagement\Property;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Support\Audit;
+
 
 class CustomerController extends Controller
 {

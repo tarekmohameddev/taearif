@@ -9,7 +9,14 @@ use App\Listeners\PersistTenantActivity;
 use App\Listeners\WriteTenantActivityLog;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use App\Http\Middleware\SetTenantForPermissions; // the middleware we added earlier
 
+use App\Models\ApiCustomer;
+use App\Models\User\RealestateManagement\Project;
+use App\Models\User\RealestateManagement\Property;
+use App\Observers\ApiCustomerObserver;
+use App\Observers\ProjectObserver;
+use App\Observers\PropertyObserver;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -34,10 +41,10 @@ class EventServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function boot()
+    public function boot(): void
     {
-        parent::boot();
-
-        //
+        ApiCustomer::observe(ApiCustomerObserver::class);
+        Project::observe(ProjectObserver::class);
+        Property::observe(PropertyObserver::class);
     }
 }

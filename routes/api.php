@@ -56,6 +56,11 @@ use App\Http\Controllers\Api\{
     ApiSideMenusController,
 };
 
+use App\Http\Controllers\Api\V1\Logs\{
+    CustomerLogController,
+    PropertyLogController,
+    ProjectLogController,
+};
 use App\Http\Controllers\Api\Customer\{
     UserApiCustomerStageController,
     UserApiCustomerPriorityController,
@@ -183,7 +188,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // project routes
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
     Route::get   ('/projects',            [ProjectController::class, 'index'])->middleware('can:projects.view');
     Route::get   ('/projects/{id}',       [ProjectController::class, 'show'])->middleware('can:projects.view');
     Route::post  ('/projects',            [ProjectController::class, 'store'])->middleware('can:projects.create');
@@ -197,7 +202,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(funct
 
 // property routes
 
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
     Route::get   ('/properties',                         [PropertyController::class, 'index'])->middleware('can:properties.view');
     Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
     Route::post  ('/properties',                         [PropertyController::class, 'store'])->middleware('can:properties.create');
@@ -317,7 +322,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // api_customers
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
     Route::prefix('customers')->group(function () {
         Route::get   ('/filters',  [CustomerController::class, 'filterOptions'])->middleware('can:customers.view');
         Route::get   ('/',         [CustomerController::class, 'index'])->middleware('can:customers.view');
@@ -469,7 +474,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
     // Tenant owner
     Route::middleware(['auth:sanctum'])->group(function () {
-        Route::get('/v1/logs', [\App\Http\Controllers\Api\V1\LogController::class,'index'])
+        Route::get('/logs', [\App\Http\Controllers\Api\V1\LogController::class,'index'])
             ->middleware('can:logs.read'); // owners pass via Gate::before
     });
 
@@ -480,6 +485,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::match(['put','patch'], 'cards/{id}', [CrmCardController::class, 'update']);
         Route::delete('cards/{id}', [CrmCardController::class, 'destroy']);
     });
+
 
 });
 
@@ -509,3 +515,11 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(funct
 
 });
 
+
+Route::prefix('v1')->group(function () {
+    Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
+        Route::get('/customers/{id}/logs',  [CustomerLogController::class, 'index'])->middleware('can:customers.view');
+        Route::get('/projects/{id}/logs',   [ProjectLogController::class, 'index'])->middleware('can:projects.view');
+        Route::get('/properties/{id}/logs', [PropertyLogController::class, 'index'])->middleware('can:properties.view');
+    });
+});
