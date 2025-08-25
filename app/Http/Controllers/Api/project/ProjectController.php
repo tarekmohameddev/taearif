@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Api\project;
 
+use App\Support\Audit;
 use App\Models\Membership;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\User\Language;
+use App\Models\Api\ApiMenuItem;
+use App\Support\TenantActivity;
 use App\Models\User\BasicSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -24,8 +27,6 @@ use App\Models\User\RealestateManagement\PropertyAmenity;
 use App\Models\User\RealestateManagement\ProjectGalleryImg;
 use App\Models\User\RealestateManagement\ProjectFloorplanImg;
 use App\Models\User\RealestateManagement\ProjectSpecification;
-use App\Models\Api\ApiMenuItem;
-use App\Support\TenantActivity;
 
 class ProjectController extends Controller
 {
@@ -382,12 +383,25 @@ class ProjectController extends Controller
         });
 
         $responseProject->featured = (bool) $responseProject->featured;
-    
+
         // Log the activity
         TenantActivity::emit($request, 'project.created', 'user_projects', $responseProject->id, null, [
             'id' => $responseProject->id, 'title' => optional($responseProject->contents->first())->title
         ]);
-        
+        Audit::project(
+            $userId,
+            $responseProject->id,
+            'created',
+            'Project created',
+            [
+                'after' => [
+                    'id'        => $responseProject->id,
+                    'featured'  => (bool) $responseProject->featured,
+                    'min_price' => $responseProject->min_price,
+                    'max_price' => $responseProject->max_price,
+                ],
+            ]
+        );
         return response()->json([
             'status' => 'success',
             'message' => 'Project created successfully',
@@ -399,7 +413,7 @@ class ProjectController extends Controller
      * Ensure the "Projects" menu exists for the user.
      * If it doesn't exist, create it.
      */
-    
+
     private function ensureProjectsMenuExistsForUser($userId)
     {
         $exists = ApiMenuItem::where('user_id', $userId)
@@ -543,6 +557,14 @@ class ProjectController extends Controller
             'id' => $responseProject->id, 'title' => optional($responseProject->contents->first())->title
         ]);
 
+        $after = $responseProject->toArray();
+        Audit::project(
+            $userId,
+            $responseProject->id,
+            'updated',
+            'Project updated',
+            ['before' => $before, 'after' => $after]
+        );
         return response()->json([
             'status' => 'success',
             'message' => 'Project updated successfully',
@@ -601,6 +623,14 @@ class ProjectController extends Controller
                 \Storage::disk('public')->delete($project->featured_image);
             }
 
+            Audit::project(
+                $userId,
+                $project->id,
+                'deleted',
+                'Project deleted',
+                ['before' => $project->toArray()]
+            );
+
             $project->delete();
 
             DB::commit();
@@ -637,6 +667,16 @@ class ProjectController extends Controller
 
         $project->featured = !$project->featured;
         $project->save();
+
+\Log::info($project->id);
+
+        // Audit::project(
+        //     (int) $project->user_id,
+        //     (int) $project->id,
+        //     'toggle_featured',
+        //     'Toggled project featured',
+        //     ['featured' => (bool) $project->featured]
+        // );
 
         return response()->json([
             "status" => "success",

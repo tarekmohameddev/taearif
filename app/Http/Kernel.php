@@ -83,6 +83,7 @@ class Kernel extends HttpKernel
         'tenant.can' => \App\Http\Middleware\TenantPermission::class,
         // EnsureUserIsActive
         'ensureUserIsActive' => \App\Http\Middleware\EnsureUserIsActive::class,
+        'audit.ctx' => \App\Http\Middleware\PopulateAuditContext::class,
 
     ];
 

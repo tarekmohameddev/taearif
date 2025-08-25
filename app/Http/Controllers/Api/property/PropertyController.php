@@ -28,6 +28,8 @@ use App\Models\User\RealestateManagement\PropertySliderImg;
 use App\Models\User\RealestateManagement\PropertySpecification;
 use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\RealestateManagement\ApiUserCategory as Category;
+use App\Support\Audit;
+
 
 class PropertyController extends Controller
 {
@@ -327,6 +329,7 @@ class PropertyController extends Controller
             'duplicated_property_id' => $duplicatedProperty->id
         ]);
 
+        Audit::property($user->id, $duplicatedProperty->id, 'custom', "duplicated from {$originalProperty->id}");
 
         return response()->json([
             'status' => 'success',
@@ -539,6 +542,8 @@ class PropertyController extends Controller
                 Property::where('id', $prop['id'])->update(['reorder' => $index + 1]);
             }
         });
+
+        Audit::property($user->id, (int)$propertyId, 'custom', "reordered featured list to position {$newPosition}");
 
         return response()->json([
             'status' => 'success',
@@ -1226,6 +1231,8 @@ class PropertyController extends Controller
 
         $property->featured = !$property->featured;
         $property->save();
+        Audit::property($property->user_id, $property->id, 'custom', "toggle featured -> ".($property->featured ? 'on' : 'off'));
+
         return response()->json([
             'status' => 'success',
             'message' => 'Property featured status updated',
