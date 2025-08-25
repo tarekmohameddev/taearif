@@ -77,16 +77,16 @@ class ApiSideMenusController extends Controller
                 'when'    => fn() => $package && ($package->real_estate_limit_number > 0),
                 'section' => ['title' => 'العقارات', 'description' => 'ادارة العقارات', 'icon' => 'home', 'path' => '/properties'],
             ],
-            [
-                'perm'    => 'menu.blog',
-                'when'    => fn() => $package && !empty($package->features) && str_contains($package->features, 'Blog'),
-                'section' => ['title' => 'المدونة', 'description' => 'ادارة المدونة', 'icon' => 'blog', 'path' => '/blog'],
-            ],
+            // [
+            //     'perm'    => 'menu.blog',
+            //     'when'    => fn() => $package && !empty($package->features) && str_contains($package->features, 'Blog'),
+            //     'section' => ['title' => 'المدونة', 'description' => 'ادارة المدونة', 'icon' => 'blog', 'path' => '/blog'],
+            // ],
             // Apps container
-            [
-                'perm'    => 'menu.apps',
-                'section' => ['title' => 'التطبيقات', 'description' => 'ادارة تطبيقاتك', 'icon' => 'apps', 'path' => '/apps'],
-            ],
+            // [
+            //     'perm'    => 'menu.apps',
+            //     'section' => ['title' => 'التطبيقات', 'description' => 'ادارة تطبيقاتك', 'icon' => 'apps', 'path' => '/apps'],
+            // ],
             // Feature switches inside Apps (still check a perm)
             [
                 'perm'    => 'menu.apps',
