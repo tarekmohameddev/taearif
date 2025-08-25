@@ -276,15 +276,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
     // (small note: remove the stray spaces in your paths like '/settings/domain ')
-    Route::get   ('/settings/domain',                 [DomainSettingsController::class, 'index'])->middleware('owner-or-can:settings.update');
-    Route::get   ('/settings/domain/{id}',            [DomainSettingsController::class, 'show'])->middleware('owner-or-can:settings.update');
-    Route::post  ('/settings/domain',                 [DomainSettingsController::class, 'store'])->middleware('owner-or-can:settings.update');
-    Route::post  ('/settings/domain/verify',          [DomainSettingsController::class, 'verify'])->middleware('owner-or-can:settings.update');
-    Route::patch ('/settings/domain/set-primary',     [DomainSettingsController::class, 'setPrimary'])->middleware('owner-or-can:settings.update');
-    Route::delete('/settings/domain/{id}',            [DomainSettingsController::class, 'destroy'])->middleware('owner-or-can:settings.update');
+    Route::get   ('/settings/domain',                 [DomainSettingsController::class, 'index'])->middleware('can:settings.update');
+    Route::get   ('/settings/domain/{id}',            [DomainSettingsController::class, 'show'])->middleware('can:settings.update');
+    Route::post  ('/settings/domain',                 [DomainSettingsController::class, 'store'])->middleware('can:settings.update');
+    Route::post  ('/settings/domain/verify',          [DomainSettingsController::class, 'verify'])->middleware('can:settings.update');
+    Route::patch ('/settings/domain/set-primary',     [DomainSettingsController::class, 'setPrimary'])->middleware('can:settings.update');
+    Route::delete('/settings/domain/{id}',            [DomainSettingsController::class, 'destroy'])->middleware('can:settings.update');
 
-    Route::patch ('/settings/domain/request-ssl',     [DomainSettingsController::class, 'requestSsl'])->middleware('owner-or-can:settings.update');
-    Route::patch ('/settings/domain/ssl-status',      [DomainSettingsController::class, 'updateSslStatus'])->middleware('owner-or-can:settings.update');
+    Route::patch ('/settings/domain/request-ssl',     [DomainSettingsController::class, 'requestSsl'])->middleware('can:settings.update');
+    Route::patch ('/settings/domain/ssl-status',      [DomainSettingsController::class, 'updateSslStatus'])->middleware('can:settings.update');
 });
 
 
@@ -496,7 +496,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(funct
     Route::get('/v1/rbac/perms/me', [PermissionController::class, 'me']);
     Route::get('/v1/rbac/employees/{employee}/perms', [PermissionController::class, 'employee']);
 
-    Route::middleware('owner-or-can:settings.update')->group(function () {
+    Route::middleware('can:settings.update')->group(function () {
         Route::get   ('/v1/rbac/roles',           [RoleController::class, 'index']);
         Route::post  ('/v1/rbac/roles',           [RoleController::class, 'store']);
         Route::put   ('/v1/rbac/roles/{role}',    [RoleController::class, 'update']);
@@ -512,12 +512,13 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(funct
         Route::post  ('/v1/rbac/employees/{employee}/perms',          [AssignmentController::class, 'syncPerms']);
     });
 
+
 });
 
 
 Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
-        Route::get('/customers/{id}/logs',  [CustomerLogController::class, 'index'])->middleware('can:customers.view');
+        Route::get('/customers/{id}/logs',  [CustomerLogController::class, 'index'])->middleware('can:projects.view');
         Route::get('/projects/{id}/logs',   [ProjectLogController::class, 'index'])->middleware('can:projects.view');
         Route::get('/properties/{id}/logs', [PropertyLogController::class, 'index'])->middleware('can:properties.view');
     });
