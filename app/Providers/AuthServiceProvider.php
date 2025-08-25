@@ -32,10 +32,12 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('impersonate-users', function (Admin $admin) {
             return is_null($admin->role_id);
         });
-
         Gate::before(function (User $user, string $ability) {
-
-            return null; // owners can do everything
+            // Treat both 'tenant' and 'user' as tenant owners
+            $isTenant = method_exists($user, 'isTenant')
+                ? $user->isTenant()
+                : in_array(($user->account_type ?? ''), ['tenant','user'], true);
+            return $isTenant ? true : null; // owners can do everything
         });
         /*
         // If you want to allow certain admin roles later, you can do:
