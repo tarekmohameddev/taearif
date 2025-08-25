@@ -48,13 +48,14 @@ use App\Models\User\PortfolioCategory;
 use App\Models\User\UserEmailTemplate;
 use App\Models\User\UserPaymentGeteway;
 use Illuminate\Support\Facades\Session;
+use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Helpers\UserPermissionHelper;
+use App\Services\Rbac\BootstrapTenantRbac;
+use Spatie\Permission\PermissionRegistrar;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Models\User\RealestateManagement\Category;
-use Spatie\Permission\PermissionRegistrar;
-use App\Services\Rbac\BootstrapTenantRbac;
 
 
 class AuthController extends Controller
@@ -600,6 +601,9 @@ class AuthController extends Controller
             // Compile user data
             $userData = [
                 'id' => $user->id,
+                'tenant_id' => $user->tenant_id,
+                'account_type' => $user->account_type,
+                'username' => $user->username,
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'email' => $user->email,
