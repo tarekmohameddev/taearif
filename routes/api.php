@@ -203,6 +203,9 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
 // property routes
 
 Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
+        // properties/categories
+    Route::get   ('/properties/categories',              [PropertyController::class, 'properties_categories']);
+
     Route::get   ('/properties',                         [PropertyController::class, 'index'])->middleware('can:properties.view');
     Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
     Route::post  ('/properties',                         [PropertyController::class, 'store'])->middleware('can:properties.create');
@@ -214,8 +217,8 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::post  ('/properties/reorder',                 [PropertyController::class, 'properties_reorder'])->middleware('can:properties.reorder');
     Route::post  ('/properties/{propertyId}/duplicate',  [PropertyController::class, 'duplicate'])->middleware('can:properties.create');
     Route::get   ('/property/facades',                   [UserFacadeController::class, 'index'])->middleware('can:properties.view');
-    // properties/categories
-    Route::get   ('/properties/categories',              [PropertyController::class, 'categories'])->middleware('can:properties.view');
+    // faqs
+    Route::get   ('/property-faqs',                               [PropertyController::class, 'faqs']);
 });
 
 // Content routes
