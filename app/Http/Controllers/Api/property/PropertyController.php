@@ -116,13 +116,11 @@ class PropertyController extends Controller
             // Helper function to copy image files
             $copyImageFile = function ($originalPath) {
                 if (empty($originalPath)) {
-                    // \Log::warning("Empty image path given for copy.");
                     return $originalPath;
                 }
 
                 $sourcePath = public_path($originalPath);
                 if (!file_exists($sourcePath)) {
-                    // \Log::warning("Image not found in public/properties for copy: " . $originalPath);
                     return $originalPath;
                 }
 
@@ -144,7 +142,6 @@ class PropertyController extends Controller
                 if (copy($sourcePath, $destination)) {
                     return $newPath; // store in DB
                 } else {
-                    // \Log::warning("Failed to copy $sourcePath to $destination");
                     return $originalPath;
                 }
             };
@@ -342,7 +339,6 @@ class PropertyController extends Controller
     public function faqs(Request $request)
     {
         // $faqs = PropertyFaq::with('property')->get();
-        Log::info('Fetching FAQs for properties');
         $faqs = [
             "suggestedFaqs" => [
                 [
@@ -380,6 +376,7 @@ class PropertyController extends Controller
         $categories = ApiUserCategory::where('is_active', true)
             ->where('type', 'property')
             ->get(['id', 'name']);
+
         return response()->json([
             'success' => true,
             'data' => $categories,
@@ -468,10 +465,6 @@ class PropertyController extends Controller
             ->orderByRaw('COALESCE(reorder_featured, 999999) ASC') // nulls last
             ->get();
 
-        Log::info('Featured properties for reorder', [
-            'user_id' => $user->id,
-            'featured_ids' => $properties->pluck('id')->toArray()
-        ]);
 
         $movingProperty = $properties->firstWhere('id', $propertyId);
         if (!$movingProperty) {
