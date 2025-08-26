@@ -207,7 +207,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
 Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
     Route::post  ('/properties/reorder-featured',        [PropertyController::class, 'properties_reorder_featured'])->middleware('can:properties.reorder');
     Route::post  ('/properties/reorder',                 [PropertyController::class, 'properties_reorder'])->middleware('can:properties.reorder');
-    // properties/categories
+        // properties/categories
     Route::get   ('/properties/categories',              [PropertyController::class, 'properties_categories']);
 
     Route::get   ('/properties',                         [PropertyController::class, 'index'])->middleware('can:properties.view');
@@ -500,26 +500,29 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 });
 
 
+
 Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
     Route::get('/v1/me/abilities', [MeAbilitiesController::class, 'index']);
 
     Route::get('/v1/rbac/perms/me', [PermissionController::class, 'me']);
-    Route::get('/v1/rbac/employees/{employee}/perms', [PermissionController::class, 'employee']);
+
 
     Route::middleware('can:settings.update')->group(function () {
-        Route::get   ('/v1/rbac/roles',           [RoleController::class, 'index']);
-        Route::post  ('/v1/rbac/roles',           [RoleController::class, 'store']);
-        Route::put   ('/v1/rbac/roles/{role}',    [RoleController::class, 'update']);
+        Route::get('/v1/rbac/roles',           [RoleController::class, 'index']);
+        Route::post('/v1/rbac/roles',           [RoleController::class, 'store']);
+        Route::put('/v1/rbac/roles/{role}',    [RoleController::class, 'update']);
         Route::delete('/v1/rbac/roles/{role}',    [RoleController::class, 'destroy']);
 
-        Route::get   ('/v1/rbac/permissions',                         [PermissionAdminController::class, 'index']);
-        Route::post  ('/v1/rbac/permissions',                         [PermissionAdminController::class, 'store']);
-        Route::put   ('/v1/rbac/permissions/{permission}',            [PermissionAdminController::class, 'update']);
-        Route::delete('/v1/rbac/permissions/{permission}',            [PermissionAdminController::class, 'destroy']);
+        Route::get('/v1/rbac/permissions',                         [PermissionAdminController::class, 'index']);
+        Route::post('/v1/rbac/permissions',                        [PermissionAdminController::class, 'store']);
+        Route::put('/v1/rbac/permissions/{permission}',            [PermissionAdminController::class, 'update']);
+        Route::delete('/v1/rbac/permissions/{permission}',         [PermissionAdminController::class, 'destroy']);
 
-        Route::get   ('/v1/rbac/employees/{employee}/roles',          [AssignmentController::class, 'showRoles']);
-        Route::post  ('/v1/rbac/employees/{employee}/roles',          [AssignmentController::class, 'syncRoles']);
-        Route::post  ('/v1/rbac/employees/{employee}/perms',          [AssignmentController::class, 'syncPerms']);
+        Route::get('/v1/rbac/employees-show-roles/{employee}/roles',          [AssignmentController::class, 'showRoles']);
+        Route::get('/v1/rbac/employees-perms/{employee}/perms',          [PermissionController::class, 'employee']);
+
+        Route::post('/v1/rbac/employees-sync-perms/{employee}/perms',         [AssignmentController::class, 'syncPerms']);
+        Route::post('/v1/rbac/employees-sync-roles/{employee}/roles',         [AssignmentController::class, 'syncRoles']);
     });
 
 
