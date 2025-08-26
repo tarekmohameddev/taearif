@@ -20,7 +20,7 @@ class PermissionController extends Controller
         return response()->json(['status' => 'success', 'data' => ['permissions' => $perms]]);
     }
 
-    public function employee(Request $request, User $employee)
+    public function showEmployeeData(Request $request, User $employee)
     {
         $actor  = $request->user();
         $teamId = $actor->isTenant() ? (int) $actor->id : (int) $actor->tenant_id;

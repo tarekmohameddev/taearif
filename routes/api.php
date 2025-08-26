@@ -519,7 +519,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(funct
         Route::delete('/v1/rbac/permissions/{permission}',         [PermissionAdminController::class, 'destroy']);
 
         Route::get('/v1/rbac/employees-show-roles/{employee}/roles',          [AssignmentController::class, 'showRoles']);
-        Route::get('/v1/rbac/employees-perms/{employee}/perms',          [PermissionController::class, 'employee']);
+        Route::get('/v1/rbac/show-employees-data/{employee}',          [PermissionController::class, 'showEmployeeData']);
 
         Route::post('/v1/rbac/employees-sync-perms/{employee}/perms',         [AssignmentController::class, 'syncPerms']);
         Route::post('/v1/rbac/employees-sync-roles/{employee}/roles',         [AssignmentController::class, 'syncRoles']);
