@@ -60,6 +60,7 @@ use App\Http\Controllers\Api\V1\Logs\{
     CustomerLogController,
     PropertyLogController,
     ProjectLogController,
+    CardLogController,
 };
 use App\Http\Controllers\Api\Customer\{
     UserApiCustomerStageController,
@@ -530,5 +531,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/customers/{id}/logs',  [CustomerLogController::class, 'index'])->middleware('can:projects.view');
         Route::get('/projects/{id}/logs',   [ProjectLogController::class, 'index'])->middleware('can:projects.view');
         Route::get('/properties/{id}/logs', [PropertyLogController::class, 'index'])->middleware('can:properties.view');
+        Route::get('/crm/cards/{id}/logs', [CardLogController::class, 'index'])->middleware('can:crm.cards.view');
+        // crm/cards
     });
 });
