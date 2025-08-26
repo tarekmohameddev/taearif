@@ -15,7 +15,7 @@ class Audit
         CustomerLog::create(array_merge(AuditContext::data(), [
             'tenant_id'   => $tenantId,
             'customer_id' => $customerId,
-            'action'      => $action,   // e.g. 'custom'
+            'action'      => $action,
             'note'        => $note,
             'changes'     => $changes,
         ]));
@@ -38,6 +38,17 @@ class Audit
             'action'      => $action,
             'note'        => $note,
             'changes'     => $changes,
+        ]));
+    }
+
+    public static function card(int $tenantId, int $cardId, string $action, ?string $note = null, array $changes = null): void
+    {
+        CardLog::create(array_merge(AuditContext::data(), [
+            'tenant_id' => $tenantId,
+            'card_id'   => $cardId,
+            'action'    => $action,
+            'note'      => $note,
+            'changes'   => $changes,
         ]));
     }
 }
