@@ -16,53 +16,46 @@ class TenantRbacBootstrapper
 {
     public function run(int $tenantId): void
     {
-        // lock to avoid double-seeding under concurrency
         $lock = Cache::lock("rbac:seed:{$tenantId}", 10);
 
         $lock->block(10, function () use ($tenantId) {
-            $tenant = User::findOrFail($tenantId); // tenant user has id = tenantId
+            $tenant        = User::findOrFail($tenantId);
             $targetVersion = (int) config('rbac.rbac_version', 1);
+            if ((int) $tenant->rbac_version >= $targetVersion && $tenant->rbac_seeded_at) return;
 
-            // idempotency: skip if already up-to-date
-            if ((int) $tenant->rbac_version >= $targetVersion && $tenant->rbac_seeded_at) {
-                return;
-            }
-
-            // team context for Spatie
+            $guard = (string) config('rbac.guard', 'sanctum');
             app(PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
 
-            DB::transaction(function () use ($tenant, $tenantId, $targetVersion) {
-                // 1) ensure all permissions exist (reuse global/null team if present)
+            DB::transaction(function () use ($tenant, $tenantId, $targetVersion, $guard) {
+                // 1) ensure GLOBAL permissions (see §2 below)
                 $allPermNames = collect(config('rbac.permissions', []))->filter()->unique()->values();
-                $perms = $this->ensurePermissions($tenantId, $allPermNames);
+                $perms = $this->ensurePermissions($guard, $allPermNames);
 
-                // 2) ensure roles exist for this tenant
-                $templates = collect(config('rbac.role_templates', []));
-                $roles = $this->ensureRoles($tenantId, $templates->keys()->all());
+                // 2) ensure roles for this tenant — include 'owner' explicitly
+                $templates = collect(config('rbac.role_templates', []));    // e.g. ['manager'=>[...], 'agent'=>[...]]
+                $roleNames = $templates->keys()->merge(['owner'])->unique()->values()->all();
+                $roles     = $this->ensureRoles($tenantId, $guard, $roleNames);
 
-                // 3) apply role templates (manager/supporter). Owner is fast-pathed anyway.
+                // 3) apply templates (do NOT touch owner here)
                 foreach ($templates as $roleName => $permNames) {
-                    /** @var Role $role */
-                    $role = $roles->firstWhere('name', $roleName);
+                    $role = $roles->get($roleName);
                     if (!$role) continue;
-
-                    $rolePerms = $perms->whereIn('name', $permNames)->values();
+                    $rolePerms = $perms->only($permNames)->values();
                     $role->syncPermissions($rolePerms);
                 }
 
-                // 4) assign "owner" to the tenant user (if not already)
-                /** @var User $tenant */
-                if (!$tenant->hasRole('owner')) {
-                    $tenant->assignRole('owner');
+                // 4) assign owner BY INSTANCE (prevents a create path)
+                $ownerRole = $roles->get('owner');
+                if ($ownerRole && !$tenant->hasRole($ownerRole)) {
+                    $tenant->assignRole($ownerRole);
                 }
 
-                // 5) bump version + seeded timestamp
-                $tenant->rbac_version = $targetVersion;
-                $tenant->rbac_seeded_at = Carbon::now();
-                $tenant->save();
+                $tenant->forceFill([
+                    'rbac_version'   => $targetVersion,
+                    'rbac_seeded_at' => now(),
+                ])->saveQuietly();
             });
 
-            // 6) clear spatie cache after changes
             app(PermissionRegistrar::class)->forgetCachedPermissions();
         });
     }
@@ -71,50 +64,24 @@ class TenantRbacBootstrapper
      * Ensure all given permissions exist (prefer global/null team if present),
      * otherwise create tenant-scoped permissions, and return a Collection<Permission>.
      */
-    protected function ensurePermissions(int $teamId, string $guard, array|Collection $names): Collection
+    protected function ensurePermissions(string $guard, array|Collection $names): Collection
     {
         $names = collect($names)->filter()->unique()->values();
-        if ($names->isEmpty()) {
-            return collect();
-        }
-
-        $preferGlobal = (bool) config('rbac.prefer_global_permissions', true);
-
-        $global = Permission::query()
+        if ($names->isEmpty()) return collect();
+    
+        $existing = Permission::query()
             ->where('guard_name', $guard)
-            ->whereNull('team_id')
             ->whereIn('name', $names)
             ->get()
             ->keyBy('name');
-
-        $tenant = Permission::query()
-            ->where('guard_name', $guard)
-            ->where('team_id', $teamId)
-            ->whereIn('name', $names)
-            ->get()
-            ->keyBy('name');
-
+    
         $map = collect();
-
         foreach ($names as $n) {
-            if ($preferGlobal && $global->has($n)) {
-                $map->put($n, $global->get($n));
-                continue;
-            }
-            if ($tenant->has($n)) {
-                $map->put($n, $tenant->get($n));
-                continue;
-            }
-            $perm = Permission::create([
-                'name'       => $n,
-                'guard_name' => $guard,
-                'team_id'    => $teamId,
-            ]);
-            $map->put($n, $perm);
+            $map->put($n, $existing->get($n) ?? Permission::findOrCreate($n, $guard));
         }
-
         return $map;
     }
+
 
     /**
      * Ensure tenant roles exist and return a Collection<Role>.
@@ -144,31 +111,40 @@ class TenantRbacBootstrapper
 
     //     return $existing->values()->merge($created);
     // }
-    protected function ensureRoles(int $teamId, string $guard, array|Collection $names): Collection
+    protected function ensureRoles(int $teamId, string $guard, array $names): \Illuminate\Support\Collection
     {
         $names = collect($names)->filter()->unique()->values();
-        if ($names->isEmpty()) {
-            return collect();
-        }
+        if ($names->isEmpty()) return collect();
 
-        $existing = Role::query()
-            ->where('guard_name', $guard)
-            ->where('team_id', $teamId)
-            ->whereIn('name', $names)
-            ->get()
-            ->keyBy('name');
+        $byName = collect();
 
-        $created = collect();
         foreach ($names as $name) {
-            if (!$existing->has($name)) {
-                $created->push(Role::create([
-                    'name'       => $name,
-                    'guard_name' => $guard,
-                    'team_id'    => $teamId,
-                ]));
+            $role = Role::query()
+                ->where('name', $name)
+                ->where('guard_name', $guard)
+                ->where('team_id', $teamId)
+                ->first();
+
+            if (!$role) {
+                try {
+                    $role = Role::create([
+                        'name'       => $name,
+                        'guard_name' => $guard,
+                        'team_id'    => $teamId,
+                    ]);
+                } catch (\Throwable $e) {
+                    $role = Role::query()
+                        ->where('name', $name)
+                        ->where('guard_name', $guard)
+                        ->where('team_id', $teamId)
+                        ->first();
+                }
             }
+
+            if ($role) $byName->put($name, $role);
         }
 
-        return $existing->values()->merge($created)->keyBy('name');
+        return $byName;
     }
+
 }

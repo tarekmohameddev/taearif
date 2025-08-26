@@ -133,29 +133,15 @@ class User extends Authenticatable
 
     // for  controllers call methods)
 
-    public function isEmployee(): bool
-    {
-        return ($this->account_type ?? 'tenant') === 'employee';
-    }
-    public function isTenant(): bool
-    {
-        return ($this->account_type ?? 'tenant') === 'tenant';
-    }
-    public function tenantOwner(): self
-    {
-        return $this->isEmployee() && $this->tenant ? $this->tenant : $this;
-    }
+    public function isEmployee(): bool{return ($this->account_type ?? 'tenant') === 'employee';}
+    public function isTenant(): bool{return ($this->account_type ?? 'tenant') === 'tenant';}
+    public function tenantOwner(): self{return $this->isEmployee() && $this->tenant ? $this->tenant : $this;}
     /**
      * Returns the team/tenant id for Spatie permissions scoping.
      * - tenants -> their own id
      * - employees -> their tenant_id
      */
-    public function tenantOwnerId(): int
-    {
-        return $this->isEmployee()
-            ? (int) ($this->tenant_id ?? 0)
-            : (int) $this->id;
-    }
+    public function tenantOwnerId(): int{return $this->isEmployee() ? (int) ($this->tenant_id ?? 0) : (int) $this->id;}
 
 
     protected static function boot()
