@@ -20,14 +20,44 @@ return [
     'permissions' => [
         // --- fill with your real permissions ---
         'settings.update',
-        'roles.read', 'roles.write',
-        'permissions.read', 'permissions.write',
-        'employees.roles.sync', 'employees.perms.sync',
-        'menu.dashboard', 'menu.content', 'menu.settings',
-        'menu.projects', 'menu.properties', 'menu.blog', 'menu.customers',
-        'menu.apps', 'menu.affiliate',
+        'roles.read',
+        'roles.write',
+        'permissions.read',
+        'permissions.write',
+        'menu.dashboard',
+        'menu.content',
+        'menu.settings',
+        'menu.projects',
+        'menu.properties',
+        'menu.blog',
+        'menu.customers',
+        'menu.apps',
+        'menu.affiliate',
+        'menu.whatsapp',
+    ],
+    // Permissions that are safe to show/assign in tenant UIs
+    'tenant_visible_permissions' => [
+        'settings.update',
+        'roles.read',
+        'permissions.read',
+        'menu.dashboard',
+        'menu.content',
+        'menu.settings',
+        'menu.projects',
+        'menu.properties',
+        'menu.blog',
+        'menu.customers',
+        'menu.apps',
+        'menu.affiliate',
+        'menu.whatsapp',
     ],
 
+    // Nice UI grouping (optional)
+    'groups' => [
+        'Dashboard' => ['menu.dashboard'],
+        'Projects' => ['menu.projects'],
+        'Properties' => ['menu.properties'],
+    ],
     // Role → permissions mapping (fill with your actual needs)
     'roles' => [
         'owner'     => [ // usually the superset
@@ -51,6 +81,8 @@ return [
             'menu.dashboard', 'menu.customers',
         ],
     ],
+    // Permissions that should never appear in tenant UI
+    'system_only' => ['rbac.*','tenants.manage','impersonate.*'],
 
     // // flat list of permissions you support
     // 'permissions' => [
