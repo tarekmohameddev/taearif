@@ -467,10 +467,10 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     });
 
     // ===== Employee Auth (PUBLIC) =====
-    Route::prefix('em/auth')->group(function () {
-        Route::post('login',    [EmployeeAuthController::class, 'login']);
-        Route::post('register', [EmployeeAuthController::class, 'register']);
-    });
+    // Route::prefix('em/auth')->group(function () {
+    //     Route::post('login',    [EmployeeAuthController::class, 'login']);
+    //     Route::post('register', [EmployeeAuthController::class, 'register']);
+    // });
     // Employee API
     Route::middleware(['auth:sanctum','employee.only'])->group(function () {
         // Protected
