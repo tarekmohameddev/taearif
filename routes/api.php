@@ -205,7 +205,9 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
 // property routes
 
 Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
-        // properties/categories
+    Route::post  ('/properties/reorder-featured',        [PropertyController::class, 'properties_reorder_featured'])->middleware('can:properties.reorder');
+    Route::post  ('/properties/reorder',                 [PropertyController::class, 'properties_reorder'])->middleware('can:properties.reorder');
+    // properties/categories
     Route::get   ('/properties/categories',              [PropertyController::class, 'properties_categories']);
 
     Route::get   ('/properties',                         [PropertyController::class, 'index'])->middleware('can:properties.view');
@@ -215,8 +217,6 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::delete('/properties/{id}',                    [PropertyController::class, 'destroy'])->middleware('can:properties.delete');
     Route::patch ('/properties/{id}/toggle-featured',    [PropertyController::class, 'toggleFeatured'])->middleware('can:properties.update');
     Route::post  ('/properties/{id}/toggle-status',      [PropertyController::class, 'toggleStatus'])->middleware('can:properties.update');
-    Route::post  ('/properties/reorder-featured',        [PropertyController::class, 'properties_reorder_featured'])->middleware('can:properties.reorder');
-    Route::post  ('/properties/reorder',                 [PropertyController::class, 'properties_reorder'])->middleware('can:properties.reorder');
     Route::post  ('/properties/{propertyId}/duplicate',  [PropertyController::class, 'duplicate'])->middleware('can:properties.create');
     Route::get   ('/property/facades',                   [UserFacadeController::class, 'index'])->middleware('can:properties.view');
     // faqs
