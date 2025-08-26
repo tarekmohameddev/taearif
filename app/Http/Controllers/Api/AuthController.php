@@ -252,6 +252,7 @@ class AuthController extends Controller
 
                 // Optional role/permission assignment (Spatie compatible)
                 if ($request->filled('roles') && is_array($request->roles) && method_exists($employee, 'syncRoles')) {
+                    app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
                     $employee->syncRoles($request->roles);
                 }
                 if ($request->filled('permissions') && is_array($request->permissions) && method_exists($employee, 'syncPermissions')) {
