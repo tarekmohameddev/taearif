@@ -649,7 +649,7 @@ class PropertyController extends Controller
             'featured_image' => 'required|string',
             'gallery' => 'nullable|array',
             'gallery.*' => 'string',
-            'floor_planning_image' => 'nullable',
+            'floor_planning_image' => ['nullable'],
             'video_image' => 'nullable|string',
             'video_url' => 'nullable|string',
             'virtual_tour' => 'nullable|string',
