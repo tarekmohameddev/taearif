@@ -117,12 +117,20 @@
                             </li>
                         @endif
                         @if(!empty($general['showContactInfo']))
-                            <li class="mb-2">
-                                <i class="fas fa-phone me-2"></i>
-                                <a href="tel:{{ $general['phone'] }}" class="text-muted text-decoration-none" dir="ltr">
-                                    {{ $general['phone'] ?? "" }}
-                                </a>
-                            </li>
+                        @if(!empty($general['phone']))
+                            @php
+                                $phones = explode(',', $general['phone']);
+                            @endphp
+
+                            @foreach($phones as $phone)
+                                <li class="mb-2">
+                                    <i class="fas fa-phone me-2"></i>
+                                    <a href="tel:{{ trim($phone) }}" class="text-muted text-decoration-none" dir="ltr">
+                                        {{ trim($phone) }}
+                                    </a>
+                                </li>
+                            @endforeach
+                        @endif
                             <li>
                                 <i class="fas fa-envelope me-2"></i>
                                 <a href="mailto:{{ $general['email'] }}" class="text-muted text-decoration-none">
