@@ -29,6 +29,8 @@ use App\Models\User\RealestateManagement\PropertySpecification;
 use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\RealestateManagement\ApiUserCategory as Category;
 use App\Support\Audit;
+use App\Services\GoogleAnalyticsService;
+use Carbon\Carbon;
 
 
 class PropertyController extends Controller
@@ -381,66 +383,6 @@ class PropertyController extends Controller
             'success' => true,
             'data' => $categories,
         ]);
-    }
-
-    public function index(Request $request)
-    {
-
-        $user = $request->user();
-        $properties = Property::with([
-            'category',
-            'user',
-            'contents',
-            'proertyAmenities.amenity'
-        ])
-        ->where('user_id', $user->id)
-        ->orderBy('reorder_featured', 'desc')
-        ->orderBy('reorder', 'asc')
-        ->paginate(10);
-
-
-        $formattedProperties = $properties->map(function ($property) {
-            return [
-                'id' => $property->id,
-                'title' => optional($property->contents->first())->title ?? 'No Title',
-                'address' => optional($property->contents->first())->address ?? 'No Address',
-                'slug' => optional($property->contents->first())->slug,
-                'price' => $property->price,
-                'type' => $property->type,
-                'beds' => $property->beds,
-                'bath' => $property->bath,
-                'area' => $property->area,
-                'transaction_type' => $property->purpose,
-                'features' => $property->features,
-                'status' => $property->status,
-                'featured_image' => asset($property->featured_image),
-                'featured' => (bool) $property->featured,
-                'created_at' => $property->created_at->toISOString(),
-                'updated_at' => $property->updated_at->toISOString(),
-                'payment_method' => $property->payment_method,
-            ];
-        });
-
-        $totalReorderFeatured = Property::where('user_id', $user->id)
-        ->where('featured', 1)
-        ->where('reorder_featured', '>', 0)
-        ->count();
-
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'properties' => $formattedProperties,
-                'total_reorder_featured' => $totalReorderFeatured,
-                'pagination' => [
-                    'total' => $properties->total(),
-                    'per_page' => $properties->perPage(),
-                    'current_page' => $properties->currentPage(),
-                    'last_page' => $properties->lastPage(),
-                    'from' => $properties->firstItem(),
-                    'to' => $properties->lastItem(),
-                ]
-            ]
-        ], 200);
     }
 
     //properties_reorder_featured
@@ -1294,4 +1236,93 @@ class PropertyController extends Controller
             "/storage/properties/default-3.jpg"
         ];
     }
+
+
+    public function index(Request $request, GoogleAnalyticsService $analytics)
+    {
+        $user = $request->user();
+
+        $properties = Property::with(['category', 'user', 'contents', 'proertyAmenities.amenity'])
+            ->where('user_id', $user->id)
+            ->orderBy('reorder_featured', 'desc')
+            ->orderBy('reorder', 'asc')
+            ->paginate(10);
+
+        // === GA4: views per property (last 30 days by default) ===
+        $tenantId  = $user->username;                     // you already use this in GA filters
+        $days      = (int) $request->input('days', 30);   // override with ?days=7 if you want
+        $startDate = Carbon::now()->subDays($days);
+        $endDate   = Carbon::now();
+
+        // Collect slugs for the current page
+        $slugs = $properties->getCollection()
+            ->map(fn ($p) => optional($p->contents->first())->slug)
+            ->filter()
+            ->values();
+
+        // Build candidate paths for each slug (adjust prefixes to match your frontend routes)
+        $paths = [];
+        foreach ($slugs as $slug) {
+            $paths[] = "/property/{$slug}";
+        }
+
+        // Query GA4 once for this page’s paths
+        $viewsByPath = $analytics->getPageViewsForPaths($tenantId, $startDate, $endDate, $paths);
+
+        // Summarize views by slug (sum across any matching path variants)
+        $viewsBySlug = [];
+        foreach ($slugs as $slug) {
+            $viewsBySlug[$slug] =
+                ($viewsByPath["/property/{$slug}"] ?? 0);
+        }
+
+        // === Format response ===
+        $formattedProperties = $properties->getCollection()->map(function ($property) use ($viewsBySlug) {
+            $content = optional($property->contents->first());
+            $slug    = $content->slug;
+
+            return [
+                'id'               => $property->id,
+                'visits'           => (int) ($viewsBySlug[$slug] ?? 0), // << here
+                'title'            => $content->title ?? 'No Title',
+                'address'          => $content->address ?? 'No Address',
+                'slug'             => $slug,
+                'price'            => $property->price,
+                'type'             => $property->type,
+                'beds'             => $property->beds,
+                'bath'             => $property->bath,
+                'area'             => $property->area,
+                'transaction_type' => $property->purpose,
+                'features'         => $property->features,
+                'status'           => $property->status,
+                'featured_image'   => asset($property->featured_image),
+                'featured'         => (bool) $property->featured,
+                'created_at'       => $property->created_at->toISOString(),
+                'updated_at'       => $property->updated_at->toISOString(),
+                'payment_method'   => $property->payment_method,
+            ];
+        });
+
+        $totalReorderFeatured = Property::where('user_id', $user->id)
+            ->where('featured', 1)
+            ->where('reorder_featured', '>', 0)
+            ->count();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'properties' => $formattedProperties,
+                'total_reorder_featured' => $totalReorderFeatured,
+                'pagination' => [
+                    'total'        => $properties->total(),
+                    'per_page'     => $properties->perPage(),
+                    'current_page' => $properties->currentPage(),
+                    'last_page'    => $properties->lastPage(),
+                    'from'         => $properties->firstItem(),
+                    'to'           => $properties->lastItem(),
+                ]
+            ]
+        ], 200);
+    }
+
 }
