@@ -265,7 +265,16 @@ class Property extends Model
             }
         );
     }
+    // Accept both string or array
+    public function setFloorPlanningImageAttribute($value)
+    {
+        $values = is_array($value) ? $value : (empty($value) ? [] : [$value]);
+        $normalized = array_values(array_filter(array_map([self::class, 'normalizeImagePath'], $values)));
 
+        // $casts['floor_planning_image' => 'array'], Eloquent will
+        // store this as JSON automatically
+        $this->attributes['floor_planning_image'] = json_encode($normalized);
+    }
 
     private static function normalizeImagePath($value): ?string
     {

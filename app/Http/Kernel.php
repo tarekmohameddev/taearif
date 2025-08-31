@@ -80,7 +80,7 @@ class Kernel extends HttpKernel
         'employee.can' => \App\Http\Middleware\EmployeePermission::class,
         'employee.only' => \App\Http\Middleware\EnsureEmployee::class,
         'tenant.only'   => \App\Http\Middleware\EnsureTenant::class,
-        'tenant.can' => \App\Http\Middleware\TenantPermission::class,
+        // 'tenant.can' => \App\Http\Middleware\TenantPermission::class,
         // EnsureUserIsActive
         'ensureUserIsActive' => \App\Http\Middleware\EnsureUserIsActive::class,
         'audit.ctx' => \App\Http\Middleware\PopulateAuditContext::class,
