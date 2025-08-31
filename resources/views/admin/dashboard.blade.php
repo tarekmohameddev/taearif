@@ -14,7 +14,7 @@
   </div>
   <div class="row">
 		@if (empty($admin->role) || (!empty($permissions) && in_array('Registered Users', $permissions)))
-		<div class="col-sm-6 col-md-4">
+		<div class="col-sm-4 col-md-2">
 			<a class="card card-stats card-info card-round" href="{{route('admin.register.user')}}">
 				<div class="card-body">
 					<div class="row">
@@ -37,7 +37,7 @@
 
 
 		@if (empty($admin->role) || (!empty($permissions) && in_array('Subscribers', $permissions)))
-		<div class="col-sm-6 col-md-4">
+		<div class="col-sm-4 col-md-2">
 			<a class="card card-stats card-warning card-round" href="{{route('admin.subscriber.index')}}">
 				<div class="card-body ">
 					<div class="row">
@@ -60,7 +60,7 @@
 
 
 		@if (empty($admin->role) || (!empty($permissions) && in_array('Packages', $permissions)))
-		<div class="col-sm-6 col-md-4">
+		<div class="col-sm-4 col-md-2">
 			<a class="card card-stats card-success card-round" href="{{route('admin.package.index')}}">
 				<div class="card-body ">
 					<div class="row">
@@ -83,7 +83,7 @@
 
 
 		@if (empty($admin->role) || (!empty($permissions) && in_array('Payment Log', $permissions)))
-		<div class="col-sm-6 col-md-4">
+		<div class="col-sm-4 col-md-2">
 			<a class="card card-stats card-danger card-round" href="{{route('admin.payment-log.index')}}">
 				<div class="card-body ">
 					<div class="row">
@@ -105,7 +105,7 @@
 		@endif
 
 		@if (empty($admin->role) || (!empty($permissions) && in_array('Admins Management', $permissions)))
-		<div class="col-sm-6 col-md-4">
+		<div class="col-sm-4 col-md-2">
 			<a class="card card-stats card-secondary card-round" href="{{route('admin.user.index')}}">
 				<div class="card-body ">
 					<div class="row">
@@ -127,7 +127,7 @@
 		@endif
 
 		@if (empty($admin->role) || (!empty($permissions) && in_array('Blogs', $permissions)))
-		<div class="col-sm-6 col-md-4">
+		<div class="col-sm-4 col-md-2">
 			<a class="card card-stats card-primary card-round" href="{{route('admin.blog.index', ['language' => $defaultLang->code])}}">
 				<div class="card-body ">
 					<div class="row">
@@ -147,6 +147,70 @@
 			</a>
 		</div>
 		@endif
+
+  <!--  Customers total-->
+  <div class="col-sm-4 col-md-2">
+  <a class="card card-stats card-primary card-round" href="#">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-5">
+          <div class="icon-big text-center"><i class="fas fa-user-friends"></i></div>
+        </div>
+        <div class="col-7 col-stats">
+          <div class="numbers">
+            <p class="card-category">{{ __('Customers') }}</p>
+            <h4 class="card-title">{{ number_format($customersTotal ?? 0) }}</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  </a>
+</div>
+<!--  -->
+<!--  Projects total-->
+<div class="col-sm-4 col-md-2">
+  <a class="card card-stats card-warning card-round" href="#">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-5">
+          <div class="icon-big text-center"><i class="fas fa-city"></i></div>
+        </div>
+        <div class="col-7 col-stats">
+          <div class="numbers">
+            <p class="card-category">{{ __('Projects') }}</p>
+            <h4 class="card-title">{{ number_format($projectsTotal ?? 0) }}</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  </a>
+</div>
+<!--  -->
+<!--  -->
+@foreach(($propertiesPurposeTotals ?? collect()) as $row)
+  <div class="col-sm-4 col-md-2">
+    <div class="card card-stats card-secondary card-round">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-5">
+            <div class="icon-big text-center"><i class="fas fa-exchange-alt"></i></div>
+          </div>
+          <div class="col-7 col-stats">
+            <div class="numbers">
+              <p class="card-category">
+                {{ __($row->purpose ?? 'Unknown') }}
+              </p>
+              <h4 class="card-title">{{ number_format($row->total) }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+@endforeach
+
+<!--  -->
+
 	</div>
 
 
@@ -163,7 +227,7 @@
 						<canvas id="lineChart"></canvas>
 					</div>
 				</div>
-			</div>		  
+			</div>
 		</div>
 		@endif
 
@@ -178,7 +242,7 @@
 						<canvas id="usersChart"></canvas>
 					</div>
 				</div>
-			</div>		  
+			</div>
 		</div>
 		@endif
 	  </div>
@@ -192,7 +256,7 @@
 	$months = [];
 	$inTotals = [];
 
-	for ($i=1; $i <= 12; $i++) { 
+	for ($i=1; $i <= 12; $i++) {
 		$monthNum  = $i;
 		$dateObj   = DateTime::createFromFormat('!m', $monthNum);
 		$months[] = $dateObj->format('M');
