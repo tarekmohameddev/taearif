@@ -15,7 +15,8 @@ use Google\Analytics\Data\V1beta\OrderBy\MetricOrderBy;
 use Google\Analytics\Data\V1beta\Filter\StringFilter\MatchType;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
-
+use Google\Analytics\Data\V1beta\Filter\InListFilter;
+use Google\Analytics\Data\V1beta\FilterExpressionList;
 
 class GoogleAnalyticsService
 {
@@ -327,8 +328,6 @@ class GoogleAnalyticsService
         })->toArray();
     }
 
-
-
     public function getVisitorData(string $tenantId, Carbon $startDate, Carbon $endDate)
     {
         $propertyName = Str::startsWith($this->propertyId, 'properties/')
@@ -373,10 +372,6 @@ class GoogleAnalyticsService
                 ];
             });
     }
-
-
-
-
 
     public function getRecentEvents($startDate, $endDate, $tenantId = null)
     {
@@ -423,4 +418,66 @@ class GoogleAnalyticsService
             ];
         });
     }
+
+
+    public function getPageViewsForPaths(string $tenantId, Carbon $startDate, Carbon $endDate, array $paths): array
+    {
+        // Keep unique, non-empty paths
+        $paths = array_values(array_unique(array_filter($paths)));
+        if (empty($paths)) {
+            return [];
+        }
+
+        // tenant filter (you already use this pattern elsewhere)
+        $tenantFilter = new FilterExpression([
+            'filter' => new Filter([
+                'field_name'    => 'customEvent:tenant_id',
+                'string_filter' => new StringFilter([
+                    'value'      => $tenantId,
+                    'match_type' => MatchType::CONTAINS,
+                ]),
+            ]),
+        ]);
+
+        // only the specific page paths we care about
+        $pathsFilter = new FilterExpression([
+            'filter' => new Filter([
+                'field_name'     => 'pagePath',
+                'in_list_filter' => new InListFilter([
+                    'values'         => $paths,
+                    'case_sensitive' => false,
+                ]),
+            ]),
+        ]);
+
+        $dimensionFilter = new FilterExpression([
+            'and_group' => new FilterExpressionList([
+                'expressions' => [$tenantFilter, $pathsFilter],
+            ]),
+        ]);
+
+        $response = $this->client->runReport([
+            'property'        => $this->propertyId,
+            'dateRanges'      => [new DateRange([
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date'   => $endDate->format('Y-m-d'),
+            ])],
+            'dimensions'      => [new Dimension(['name' => 'pagePath'])],
+            'metrics'         => [new Metric(['name' => 'screenPageViews'])],
+            'dimensionFilter' => $dimensionFilter,
+            'limit'           => count($paths), // enough to cover all candidates
+        ]);
+
+        $map = [];
+        foreach ($response->getRows() as $row) {
+            $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
+            $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+            if ($path !== '') {
+                $map[$path] = $views;
+            }
+        }
+        return $map;
+    }
+
+
 }
