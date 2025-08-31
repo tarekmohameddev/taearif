@@ -27,6 +27,8 @@ use App\Models\User\RealestateManagement\PropertyAmenity;
 use App\Models\User\RealestateManagement\ProjectGalleryImg;
 use App\Models\User\RealestateManagement\ProjectFloorplanImg;
 use App\Models\User\RealestateManagement\ProjectSpecification;
+use Carbon\Carbon;
+use App\Services\GoogleAnalyticsService;
 
 class ProjectController extends Controller
 {
@@ -36,96 +38,85 @@ class ProjectController extends Controller
      * @return \Illuminate\Http\Response
      */
 
-    public function index(Request $request): JsonResponse
+
+
+    public function index(Request $request, GoogleAnalyticsService $analytics): JsonResponse
     {
         $user = $request->user();
 
-        // Get user's projects with related data
         $projects = Project::with(['contents', 'specifications', 'types'])
             ->where('user_id', $user->id)
             ->paginate(10);
 
-        // If user has no projects, create a default one
-        if ($projects->isEmpty()) {
+        // ===== GA4 (last 30 days by default) =====
+        $tenantId  = $user->username;
+        $days      = (int)$request->input('days', 30);
+        $startDate = Carbon::now()->subDays($days);
+        $endDate   = Carbon::now();
 
-            //  $defaultProject = Project::create([
-            //      'user_id' => $user->id,
-            //      'featured_image' => null,
-            //      'min_price' => 0,
-            //      'max_price' => 0,
-            //      'latitude' => 0,
-            //      'longitude' => 0,
-            //      'featured' => false,
-            //      'complete_status' => 'In Progress',
-            //      'units' => 0,
-            //      'completion_date' => now()->addYear()->toDateString(),
-            //      'developer' => 'Default Developer',
-            //      'published' => false,
-            //  ]);
+        // Collect all slugs on the current page (all languages/contents)
+        $slugsPerProject = $projects->getCollection()->mapWithKeys(function ($project) {
+            $slugs = $project->contents->pluck('slug')->filter()->values()->all();
+            return [$project->id => $slugs];
+        });
 
-            //  // Create default content
-            //  ProjectContent::create([
-            //      'user_id' => $user->id,
-            //      'project_id' => $defaultProject->id,
-            //      'title' => 'Default Project Title',
-            //      'address' => 'Default Address',
-            //      'description' => 'This is a default project.',
-            //      'meta_keyword' => 'default, project',
-            //      'meta_description' => 'Default project description.',
-            //      'slug' => Str::slug('Default Project Title')
-            //  ]);
-
-            //  // Reload with fresh pagination
-            //  $projects = Project::with(['contents', 'specifications', 'types'])
-            //      ->where('user_id', $user->id)
-            //      ->paginate(10);
+        // Build GA pagePaths: /{username}/project/{slug}
+        $paths = [];
+        foreach ($slugsPerProject as $slugs) {
+            foreach ($slugs as $slug) {
+                $paths[] = "/{$tenantId}/project/{$slug}";
+            }
         }
 
-        // Format the project data
-        $formattedProjects = $projects->getCollection()->map(function ($project) {
+        // One GA call for this page
+        $viewsByPath = $analytics->getPageViewsForPaths($tenantId, $startDate, $endDate, $paths);
+
+        // Sum views per project across its content slugs
+        $visitsByProject = [];
+        foreach ($slugsPerProject as $projectId => $slugs) {
+            $sum = 0;
+            foreach ($slugs as $slug) {
+                $sum += $viewsByPath["/{$tenantId}/project/{$slug}"] ?? 0;
+            }
+            $visitsByProject[$projectId] = $sum;
+        }
+
+        // ===== Format response =====
+        $formattedProjects = $projects->getCollection()->map(function ($project) use ($visitsByProject) {
             return [
-                "id" => $project->id,
-                "featured_image" => $project->featured_image ? asset($project->featured_image) : null,
-                "price_range" => number_format($project->min_price, 2),
-                "latitude" => $project->latitude,
-                "longitude" => $project->longitude,
-                "featured" => (bool) $project->featured,
+                "id"              => $project->id,
+                "visits"          => (int)($visitsByProject[$project->id] ?? 0),   // << here
+                "featured_image"  => $project->featured_image ? asset($project->featured_image) : null,
+                "price_range"     => number_format($project->min_price, 2),
+                "latitude"        => $project->latitude,
+                "longitude"       => $project->longitude,
+                "featured"        => (bool) $project->featured,
                 "complete_status" => $project->complete_status,
-                "units" => $project->units,
+                "units"           => $project->units,
                 "completion_date" => $project->completion_date,
-                "developer" => $project->developer,
-                "published" => (bool) $project->published,
-                "created_at" => $project->created_at->toISOString(),
-                "updated_at" => $project->updated_at->toISOString(),
-                "amenities" => $project->amenities ?? [],
-                "contents" => $project->contents->map(function ($content) {
+                "developer"       => $project->developer,
+                "published"       => (bool) $project->published,
+                "created_at"      => $project->created_at->toISOString(),
+                "updated_at"      => $project->updated_at->toISOString(),
+                "amenities"       => $project->amenities ?? [],
+                "contents"        => $project->contents->map(function ($content) {
                     return [
-                        "id" => $content->id,
-                        "title" => $content->title,
-                        "address" => $content->address,
-                        "description" => $content->description,
-                        "meta_keyword" => $content->meta_keyword,
+                        "id"               => $content->id,
+                        "title"            => $content->title,
+                        "address"          => $content->address,
+                        "description"      => $content->description,
+                        "meta_keyword"     => $content->meta_keyword,
                         "meta_description" => $content->meta_description,
-                        "slug" => $content->slug,
+                        "slug"             => $content->slug,
                     ];
                 }),
-                "specifications" => $project->specifications->map(function ($spec) {
-                    return [
-                        "key" => $spec->key,
-                        "label" => $spec->label,
-                        "value" => $spec->value,
-                    ];
-                }),
-                "types" => $project->types->map(function ($type) {
-                    return [
-                        "title" => $type->title,
-                        "min_area" => $type->min_area,
-                        "max_area" => $type->max_area,
-                        "min_price" => $type->min_price,
-                        "max_price" => $type->max_price,
-                        "unit" => $type->unit,
-                    ];
-                }),
+                "specifications"  => $project->specifications->map(fn ($s) => [
+                    "key" => $s->key, "label" => $s->label, "value" => $s->value,
+                ]),
+                "types"           => $project->types->map(fn ($t) => [
+                    "title" => $t->title, "min_area" => $t->min_area, "max_area" => $t->max_area,
+                    "min_price" => $t->min_price, "max_price" => $t->max_price, "unit" => $t->unit,
+                ]),
             ];
         });
 
@@ -134,12 +125,12 @@ class ProjectController extends Controller
             "data" => [
                 "projects" => $formattedProjects,
                 "pagination" => [
-                    "total" => $projects->total(),
-                    "per_page" => $projects->perPage(),
+                    "total"        => $projects->total(),
+                    "per_page"     => $projects->perPage(),
                     "current_page" => $projects->currentPage(),
-                    "last_page" => $projects->lastPage(),
-                    "from" => $projects->firstItem(),
-                    "to" => $projects->lastItem(),
+                    "last_page"    => $projects->lastPage(),
+                    "from"         => $projects->firstItem(),
+                    "to"           => $projects->lastItem(),
                 ]
             ]
         ]);
@@ -668,7 +659,6 @@ class ProjectController extends Controller
         $project->featured = !$project->featured;
         $project->save();
 
-\Log::info($project->id);
 
         // Audit::project(
         //     (int) $project->user_id,

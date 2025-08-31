@@ -363,4 +363,57 @@ class AnalyticsDashboardController extends Controller
             'purposes' => $purposes
         ]);
     }
+
+    public function getPageViewsForPaths(string $tenantId, Carbon $startDate, Carbon $endDate, array $paths): array
+    {
+        $paths = array_values(array_unique(array_filter($paths)));
+        if (empty($paths)) return [];
+
+        $tenantFilter = new FilterExpression([
+            'filter' => new Filter([
+                'field_name'    => 'customEvent:tenant_id',
+                'string_filter' => new StringFilter([
+                    'value'      => $tenantId,
+                    'match_type' => MatchType::CONTAINS,
+                ]),
+            ]),
+        ]);
+
+        $pathsFilter = new FilterExpression([
+            'filter' => new Filter([
+                'field_name'     => 'pagePath',
+                'in_list_filter' => new InListFilter([
+                    'values'         => $paths,
+                    'case_sensitive' => false,
+                ]),
+            ]),
+        ]);
+
+        $dimensionFilter = new FilterExpression([
+            'and_group' => new FilterExpressionList([
+                'expressions' => [$tenantFilter, $pathsFilter],
+            ]),
+        ]);
+
+        $response = $this->client->runReport([
+            'property'        => $this->propertyId,
+            'dateRanges'      => [new DateRange([
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date'   => $endDate->format('Y-m-d'),
+            ])],
+            'dimensions'      => [new Dimension(['name' => 'pagePath'])],
+            'metrics'         => [new Metric(['name' => 'screenPageViews'])],
+            'dimensionFilter' => $dimensionFilter,
+            'limit'           => count($paths),
+        ]);
+
+        $map = [];
+        foreach ($response->getRows() as $row) {
+            $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
+            $views = (int)$this->getSafeValue($row->getMetricValues(), 0, 0);
+            if ($path !== '') $map[$path] = $views;
+        }
+        return $map;
+    }
+
 }
