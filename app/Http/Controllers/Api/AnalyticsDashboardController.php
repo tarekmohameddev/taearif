@@ -10,7 +10,9 @@ use Google\Analytics\Data\V1beta\FilterExpression;
 use Google\Analytics\Data\V1beta\Filter\StringFilter;
 use Google\Analytics\Data\V1beta\Filter;
 use Illuminate\Support\Facades\Log;
-
+use App\Models\User\RealestateManagement\Property;
+use App\Models\ApiCustomer;
+use Illuminate\Support\Facades\DB;
 
 class AnalyticsDashboardController extends Controller
 {
@@ -130,6 +132,18 @@ class AnalyticsDashboardController extends Controller
         // Format average session time
         $formattedAverageTime = $this->formatDuration($overview['averageSessionDuration']);
 
+        $totalcustomers = ApiCustomer::where('user_id', $user->id)->count();
+
+        $purposeCounts = DB::table('user_properties')
+        ->where('user_id', $user->id)
+        ->select('purpose', DB::raw('COUNT(*) as total'))
+        ->groupBy('purpose')
+        ->orderByDesc('total')
+        ->get();
+
+        $propertiesTotal = $purposeCounts->sum('total');
+
+
         return response()->json([
             'status' => 'success',
             'visits' => $overview['sessions'],
@@ -140,6 +154,12 @@ class AnalyticsDashboardController extends Controller
             'average_time_change' => 0,  // Add logic here if you want to compare average time between periods
             'bounce_rate' => $overview['bounceRate'],
             'bounce_rate_change' => $bounceRateChange,
+            'totalcustomers' =>$totalcustomers,
+            'properties' => [
+                'total'    => $propertiesTotal,
+                'properties_purposes' => $purposeCounts,
+            ],
+
         ]);
     }
 
@@ -314,4 +334,33 @@ class AnalyticsDashboardController extends Controller
         ]);
     }
 
+    //  user customers
+    public function userCustomers(Request $request)
+    {
+        $user = $request->user();
+
+        // Fetch customers associated with the authenticated user
+        $customers = ApiCustomer::where('user_id', $user->id)->get();
+
+        return response()->json([
+            'status' => 'success',
+            'customers' => $customers
+        ]);
+    }
+
+    // user properties purposes
+    public function userPropertiesPurposes(Request $request)
+    {
+        $user = $request->user();
+
+        // Fetch properties purposes associated with the authenticated user
+        $purposes = Property::where('user_id', $user->id)
+            ->distinct()
+            ->pluck('purpose');
+
+        return response()->json([
+            'status' => 'success',
+            'purposes' => $purposes
+        ]);
+    }
 }
