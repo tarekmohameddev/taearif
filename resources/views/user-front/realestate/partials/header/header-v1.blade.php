@@ -5,6 +5,9 @@ $favicon = $general_settingsData['favicon '] ?? [];
 
 @endphp
 
+{{-- Include pixel tracking codes --}}
+@include('user-front.realestate.partials.pixels.pixels-v1')
+
 {{-- <!-- Preloader end -->
 <div class="request-loader">
     <img src="{{ asset('assets/img/loaders.gif') }}">
