@@ -190,35 +190,35 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // project routes
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::get   ('/projects',            [ProjectController::class, 'index']);
-    Route::get   ('/projects/{id}',       [ProjectController::class, 'show']);
-    Route::post  ('/projects',            [ProjectController::class, 'store']);
-    Route::post  ('/projects/{id}',       [ProjectController::class, 'update']);
-    Route::delete('/projects/{id}',       [ProjectController::class, 'destroy']);
-    Route::patch ('/projects/{id}/toggle-featured', [ProjectController::class, 'toggleFeatured']);
-    Route::get   ('/user/projects',       [ProjectController::class, 'userProjects']);
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
+    Route::get   ('/projects',            [ProjectController::class, 'index'])->middleware('can:projects.view');
+    Route::get   ('/projects/{id}',       [ProjectController::class, 'show'])->middleware('can:projects.view');
+    Route::post  ('/projects',            [ProjectController::class, 'store'])->middleware('can:projects.create');
+    Route::post  ('/projects/{id}',       [ProjectController::class, 'update'])->middleware('can:projects.update');
+    Route::delete('/projects/{id}',       [ProjectController::class, 'destroy'])->middleware('can:projects.delete');
+    Route::patch ('/projects/{id}/toggle-featured', [ProjectController::class, 'toggleFeatured'])->middleware('can:projects.update');
+    Route::get   ('/user/projects',       [ProjectController::class, 'userProjects'])->middleware('can:projects.view');
 });
 
 
 
 // property routes
 
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::post  ('/properties/reorder-featured',        [PropertyController::class, 'properties_reorder_featured']);
-    Route::post  ('/properties/reorder',                 [PropertyController::class, 'properties_reorder']);
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
+    Route::post  ('/properties/reorder-featured',        [PropertyController::class, 'properties_reorder_featured'])->middleware('can:properties.reorder');
+    Route::post  ('/properties/reorder',                 [PropertyController::class, 'properties_reorder'])->middleware('can:properties.reorder');
         // properties/categories
     Route::get   ('/properties/categories',              [PropertyController::class, 'properties_categories']);
 
-    Route::get   ('/properties',                         [PropertyController::class, 'index']);
-    Route::get   ('/properties/{id}',                    [PropertyController::class, 'show']);
-    Route::post  ('/properties',                         [PropertyController::class, 'store']);
-    Route::post  ('/properties/{id}',                    [PropertyController::class, 'update']);
-    Route::delete('/properties/{id}',                    [PropertyController::class, 'destroy']);
-    Route::patch ('/properties/{id}/toggle-featured',    [PropertyController::class, 'toggleFeatured']);
-    Route::post  ('/properties/{id}/toggle-status',      [PropertyController::class, 'toggleStatus']);
-    Route::post  ('/properties/{propertyId}/duplicate',  [PropertyController::class, 'duplicate']);
-    Route::get   ('/property/facades',                   [UserFacadeController::class, 'index']);
+    Route::get   ('/properties',                         [PropertyController::class, 'index'])->middleware('can:properties.view');
+    Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
+    Route::post  ('/properties',                         [PropertyController::class, 'store'])->middleware('can:properties.create');
+    Route::post  ('/properties/{id}',                    [PropertyController::class, 'update'])->middleware('can:properties.update');
+    Route::delete('/properties/{id}',                    [PropertyController::class, 'destroy'])->middleware('can:properties.delete');
+    Route::patch ('/properties/{id}/toggle-featured',    [PropertyController::class, 'toggleFeatured'])->middleware('can:properties.update');
+    Route::post  ('/properties/{id}/toggle-status',      [PropertyController::class, 'toggleStatus'])->middleware('can:properties.update');
+    Route::post  ('/properties/{propertyId}/duplicate',  [PropertyController::class, 'duplicate'])->middleware('can:properties.create');
+    Route::get   ('/property/facades',                   [UserFacadeController::class, 'index'])->middleware('can:properties.view');
     // faqs
     Route::get   ('/property-faqs',                               [PropertyController::class, 'faqs']);
 });
@@ -282,24 +282,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/settings/theme/set-active', [ThemeSettingsController::class, 'setActiveTheme']);
 });
 
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
 
     Route::get('/settings/payment', [PaymentController::class, 'index']); //PaymentController
     // (small note: remove the stray spaces in your paths like '/settings/domain ')
-    Route::get   ('/settings/domain',                 [DomainSettingsController::class, 'index']);
-    Route::get   ('/settings/domain/{id}',            [DomainSettingsController::class, 'show']);
-    Route::post  ('/settings/domain',                 [DomainSettingsController::class, 'store']);
-    Route::post  ('/settings/domain/verify',          [DomainSettingsController::class, 'verify']);
-    Route::patch ('/settings/domain/set-primary',     [DomainSettingsController::class, 'setPrimary']);
-    Route::delete('/settings/domain/{id}',            [DomainSettingsController::class, 'destroy']);
+    Route::get   ('/settings/domain',                 [DomainSettingsController::class, 'index'])->middleware('can:settings.update');
+    Route::get   ('/settings/domain/{id}',            [DomainSettingsController::class, 'show'])->middleware('can:settings.update');
+    Route::post  ('/settings/domain',                 [DomainSettingsController::class, 'store'])->middleware('can:settings.update');
+    Route::post  ('/settings/domain/verify',          [DomainSettingsController::class, 'verify'])->middleware('can:settings.update');
+    Route::patch ('/settings/domain/set-primary',     [DomainSettingsController::class, 'setPrimary'])->middleware('can:settings.update');
+    Route::delete('/settings/domain/{id}',            [DomainSettingsController::class, 'destroy'])->middleware('can:settings.update');
 
-    Route::patch ('/settings/domain/request-ssl',     [DomainSettingsController::class, 'requestSsl']);
-    Route::patch ('/settings/domain/ssl-status',      [DomainSettingsController::class, 'updateSslStatus']);
+    Route::patch ('/settings/domain/request-ssl',     [DomainSettingsController::class, 'requestSsl'])->middleware('can:settings.update');
+    Route::patch ('/settings/domain/ssl-status',      [DomainSettingsController::class, 'updateSslStatus'])->middleware('can:settings.update');
 });
 
 
 //ApiSideMenusController
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
     Route::get('/settings/side-menus', [ApiSideMenusController::class, 'index']);
 });
 
@@ -332,15 +332,15 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // api_customers
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
     Route::prefix('customers')->group(function () {
-        Route::get   ('/filters',  [CustomerController::class, 'filterOptions']);
-        Route::get   ('/',         [CustomerController::class, 'index']);
-        Route::get   ('/search',   [CustomerController::class, 'search']);
-        Route::get   ('/{id}',     [CustomerController::class, 'show']);
-        Route::post  ('/',         [CustomerController::class, 'store']);
-        Route::put   ('/{id}',     [CustomerController::class, 'update']);
-        Route::delete('/{id}',     [CustomerController::class, 'destroy']);
+        Route::get   ('/filters',  [CustomerController::class, 'filterOptions'])->middleware('can:customers.view');
+        Route::get   ('/',         [CustomerController::class, 'index'])->middleware('can:customers.view');
+        Route::get   ('/search',   [CustomerController::class, 'search'])->middleware('can:customers.view');
+        Route::get   ('/{id}',     [CustomerController::class, 'show'])->middleware('can:customers.view');
+        Route::post  ('/',         [CustomerController::class, 'store'])->middleware('can:customers.create');
+        Route::put   ('/{id}',     [CustomerController::class, 'update'])->middleware('can:customers.update');
+        Route::delete('/{id}',     [CustomerController::class, 'destroy'])->middleware('can:customers.delete');
     });
 });
 
@@ -484,7 +484,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
     // Tenant owner
     Route::middleware(['auth:sanctum'])->group(function () {
-        Route::get('/logs', [\App\Http\Controllers\Api\V1\LogController::class,'index']); // owners pass via Gate::before
+        Route::get('/logs', [\App\Http\Controllers\Api\V1\LogController::class,'index'])
+            ->middleware('can:logs.read'); // owners pass via Gate::before
     });
 
     Route::prefix('crm')->group(function () {
@@ -500,7 +501,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
 
 
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
     Route::get('/v1/me/abilities', [MeAbilitiesController::class, 'index']);
 
     Route::get('/v1/rbac/perms/me', [PermissionController::class, 'me']);
@@ -529,11 +530,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
 Route::prefix('v1')->group(function () {
-    Route::middleware(['auth:sanctum'])->group(function () {
-        Route::get('/customers/{id}/logs',  [CustomerLogController::class, 'index']);
-        Route::get('/projects/{id}/logs',   [ProjectLogController::class, 'index']);
-        Route::get('/properties/{id}/logs', [PropertyLogController::class, 'index']);
-        Route::get('/crm/cards/{id}/logs', [CardLogController::class, 'index']);
+    Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
+        Route::get('/customers/{id}/logs',  [CustomerLogController::class, 'index'])->middleware('can:projects.view');
+        Route::get('/projects/{id}/logs',   [ProjectLogController::class, 'index'])->middleware('can:projects.view');
+        Route::get('/properties/{id}/logs', [PropertyLogController::class, 'index'])->middleware('can:properties.view');
+        Route::get('/crm/cards/{id}/logs', [CardLogController::class, 'index'])->middleware('can:crm.cards.view');
         // crm/cards
     });
 });
