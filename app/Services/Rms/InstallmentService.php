@@ -59,11 +59,15 @@ class InstallmentService
     {
         $rental = $contract->rental;
         $months = $rental->rental_period_months;
-        $plan = $rental->paying_plan;
-        $baseRent = $rental->base_rent_amount;
+        $plan   = $rental->paying_plan; // monthly|quarterly|semi_annual|annual
+
+        // prefer platform_contract_value if provided (>0), else fall back to rental base
+        $baseRent = $contract->platform_contract_value > 0
+            ? $contract->platform_contract_value
+            : $rental->base_rent_amount;
+
         $userId = $rental->user_id;
 
-        $installments = [];
         $periods = match ($plan) {
             'monthly' => 1,
             'quarterly' => 3,
@@ -74,17 +78,21 @@ class InstallmentService
 
         $totalPayments = (int) ceil($months / $periods);
         $amount = round($baseRent * $periods, 2);
-        $start = Carbon::parse($contract->start_date);
 
+        $start = \Carbon\Carbon::parse($contract->start_date);
+        $grace = (int) ($contract->grace_period_months ?? 0);
+
+        $installments  = [];
         for ($i = 0; $i < $totalPayments; $i++) {
-            $installments[] = [
-                'user_id' => $userId,
-                'rental_id' => $rental->id,
-                'contract_id' => $contract->id,
-                'sequence_no' => $i + 1,
-                'due_date' => $start->copy()->addMonths($i * $periods),
-                'amount' => $amount,
-                'status' => 'pending',
+            $isGrace = $i < $grace;
+            $installments [] = [
+                'user_id'    => $userId,
+                'rental_id'  => $rental->id,
+                'contract_id'=> $contract->id,
+                'sequence_no'=> $i + 1,
+                'due_date'   => $start->copy()->addMonths($i * $periods),
+                'amount'     => $isGrace ? 0 : $amount,
+                'status'     => 'pending',
                 'created_at' => now(),
                 'updated_at' => now(),
             ];

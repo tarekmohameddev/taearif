@@ -28,6 +28,15 @@ class ContractService
                 'end_date' => $data['end_date'],
                 'status' => $data['status'],
                 'file_path' => $data['file_path'] ?? null,
+                'property_id' => $data['property_id'] ?? null,
+                'project_id' => $data['project_id'] ?? null,
+                'property_name' => $data['property_name'] ?? null,
+                'project_name' => $data['project_name'] ?? null,
+                'water_fee_monthly' => $data['water_fee_monthly'] ?? 0,
+                'office_commission_type' => $data['office_commission_type'] ?? null,
+                'office_commission_value' => $data['office_commission_value'] ?? null,
+                'platform_fee' => $data['platform_fee'] ?? 0,
+                'grace_period_months' => $data['grace_period_months'] ?? 0,
             ]);
 
             if ($data['status'] === 'active') {
