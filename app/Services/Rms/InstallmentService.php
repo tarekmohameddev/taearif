@@ -92,7 +92,7 @@ class InstallmentService
                 'sequence_no'=> $i + 1,
                 'due_date'   => $start->copy()->addMonths($i * $periods),
                 'amount'     => $isGrace ? 0 : $amount,
-                'status'     => 'pending',
+                'status'     => 'active',
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
