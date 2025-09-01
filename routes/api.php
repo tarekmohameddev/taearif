@@ -91,6 +91,8 @@ use App\Http\Controllers\Api\V1\Rms\{
     RmsDashboardController,
 };
 
+use App\Http\Controllers\Api\PixelController; // Added import for PixelController
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -537,4 +539,14 @@ Route::prefix('v1')->group(function () {
         Route::get('/crm/cards/{id}/logs', [CardLogController::class, 'index'])->middleware('can:crm.cards.view');
         // crm/cards
     });
+});
+
+// Pixel routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/pixels', [PixelController::class, 'index']);
+    Route::post('/pixels', [PixelController::class, 'store']);
+    Route::get('/pixels/{id}', [PixelController::class, 'show']);
+    Route::put('/pixels/{id}', [PixelController::class, 'update']);
+    Route::delete('/pixels/{id}', [PixelController::class, 'destroy']);
+    Route::patch('/pixels/{id}/toggle-status', [PixelController::class, 'toggleStatus']);
 });

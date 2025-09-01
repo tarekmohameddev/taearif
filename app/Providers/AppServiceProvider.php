@@ -34,6 +34,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Http\Helpers\UserPermissionHelper;
 use App\Models\User\Language as UserLanguage;
+use App\Models\Api\ApiPixel;
 
 class AppServiceProvider extends ServiceProvider
 {
