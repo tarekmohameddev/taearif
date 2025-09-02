@@ -215,6 +215,9 @@ class AppServiceProvider extends ServiceProvider
                     ->first();
                 $api_footerData = FooterSetting::where('user_id', $user->id)->first();
                 $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
+                // api_pixelsData
+                $userApi_pixelsData = ApiPixel::where('user_id', $user->id)->get();
+                $view->with('userApi_pixelsData', $userApi_pixelsData);
 
                 if ($userBs && $userBs->theme == 'home_seven') {
                     $fservices = UserService::where('lang_id', $userCurrentLang->id)
