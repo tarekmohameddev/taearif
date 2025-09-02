@@ -1,7 +1,8 @@
+
 @if(isset($userApi_pixelsData) && $userApi_pixelsData->isNotEmpty())
     {{-- Facebook Pixel --}}
-    @if($userApi_pixelsData->has('facebook'))
-        @php $facebookPixel = $userApi_pixelsData->get('facebook'); @endphp
+    @php $facebookPixel = $userApi_pixelsData->where('platform', 'facebook')->where('is_active', 1)->first(); @endphp
+    @if($facebookPixel)
         <!-- Facebook Pixel Code -->
         <script>
             !function(f,b,e,v,n,t,s)
@@ -23,31 +24,30 @@
     @endif
 
     {{-- TikTok Pixel --}}
-    @if($userApi_pixelsData->has('tiktok'))
-        @php $tiktokPixel = $userApi_pixelsData->get('tiktok'); @endphp
+    @php $tiktokPixel = $userApi_pixelsData->where('platform', 'tiktok')->where('is_active', 1)->first(); @endphp
+    @if($tiktokPixel)
         <!-- TikTok Pixel Code -->
         <script>
             !function (w, d, t) {
-                w[t] = w[t] || [];
-                w[t].push({
-                    'ttq.load': '{{ $tiktokPixel->pixel_id }}',
-                    'config': {
-                        'send_page_view': true
-                    }
-                });
-                var s = d.createElement('script');
-                s.src = 'https://analytics.tiktok.com/i18n/pixel/sdk.js?sdkid={{ $tiktokPixel->pixel_id }}';
-                s.async = true;
-                var e = d.getElementsByTagName('script')[0];
-                e.parentNode.insertBefore(s, e);
+                w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];
+                ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];
+                ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};
+                for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);
+                ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e};
+                ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";
+                ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};
+                var o=document.createElement("script");o.type="text/javascript",o.async=!0,o.src=i+"?sdkid="+e+"&lib="+t;
+                var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};
+                ttq.load('{{ $tiktokPixel->pixel_id }}');
+                ttq.page();
             }(window, document, 'ttq');
         </script>
         <!-- End TikTok Pixel Code -->
     @endif
 
     {{-- Snapchat Pixel --}}
-    @if($userApi_pixelsData->has('snapchat'))
-        @php $snapchatPixel = $userApi_pixelsData->get('snapchat'); @endphp
+    @php $snapchatPixel = $userApi_pixelsData->where('platform', 'snapchat')->where('is_active', 1)->first(); @endphp
+    @if($snapchatPixel)
         <!-- Snapchat Pixel Code -->
         <script type="text/javascript">
             (function(e,t,n){
@@ -68,4 +68,4 @@
         </script>
         <!-- End Snapchat Pixel Code -->
     @endif
-@endif 
+@endif
