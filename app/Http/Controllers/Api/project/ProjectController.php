@@ -233,9 +233,13 @@ class ProjectController extends Controller
 
     public function store(Request $request)
     {
-        $userId = auth()->id();
+        $user = auth()->user();
+        
+        // Resolve tenant owner (tenant for tenant; tenant for employee)
+        $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+        $ownerId = $owner->id;
 
-        $membership = Membership::where('user_id', $userId)
+        $membership = Membership::where('user_id', $ownerId)
             ->where('status', 1)
             ->orderBy('id', 'desc')
             ->with('package')
@@ -249,7 +253,7 @@ class ProjectController extends Controller
         }
 
         $projectLimit = $membership->package->project_limit_number;
-        $currentProjectsCount = Project::where('user_id', $userId)->count();
+        $currentProjectsCount = Project::where('user_id', $ownerId)->count();
 
         if (!is_null($projectLimit) && $currentProjectsCount >= $projectLimit) {
             return response()->json([
@@ -261,7 +265,7 @@ class ProjectController extends Controller
         }
 
 
-        $defaultLang = Language::where('user_id', $userId)->where('is_default', 1)->firstOrFail();
+        $defaultLang = Language::where('user_id', $ownerId)->where('is_default', 1)->firstOrFail();
 
         $rules = [
             // 'title' => 'required|max:255',
@@ -298,18 +302,18 @@ class ProjectController extends Controller
 
         $project = null;
 
-        DB::transaction(function () use ($request, $userId, $defaultLang, &$project) {
+        DB::transaction(function () use ($request, $ownerId, $defaultLang, &$project) {
             $requestData = $request->all();
             $requestData['featured_image'] = asset($request->featured_image);
 
-            $project = Project::storeProject($userId, $requestData);
+            $project = Project::storeProject($ownerId, $requestData);
 
             foreach ($request->gallery_images as $imgPath) {
-                ProjectGalleryImg::storeGalleryImage($userId, $project->id, $imgPath);
+                ProjectGalleryImg::storeGalleryImage($ownerId, $project->id, $imgPath);
             }
 
             foreach ($request->floorplan_images as $imgPath) {
-                ProjectFloorplanImg::storeFloorplanImage($userId, $project->id, $imgPath);
+                ProjectFloorplanImg::storeFloorplanImage($ownerId, $project->id, $imgPath);
             }
 
             $firstContent = $request->input('contents.0');
@@ -329,14 +333,14 @@ class ProjectController extends Controller
                 'meta_keyword' => $request->meta_keyword,
                 'meta_description' => $request->meta_description,
             ];
-            ProjectContent::storeProjectContent($userId, $content);
+            ProjectContent::storeProjectContent($ownerId, $content);
 
             $labels = $request->input('label', []);
             $values = $request->input('value', []);
 
             foreach ($labels as $key => $label) {
                 if (!empty($values[$key])) {
-                    ProjectSpecification::storeSpecification($userId, [
+                    ProjectSpecification::storeSpecification($ownerId, [
                         'language_id' => $defaultLang->id,
                         'project_id' => $project->id,
                         'key' => $key,
@@ -346,7 +350,7 @@ class ProjectController extends Controller
                 }
             }
 
-            $this->ensureProjectsMenuExistsForUser($userId); // Add projects menu item if not exists for the user
+            $this->ensureProjectsMenuExistsForUser($ownerId); // Add projects menu item if not exists for the user
 
         });
 
@@ -435,10 +439,15 @@ class ProjectController extends Controller
 
     public function update(Request $request, $id)
     {
-        $userId = auth()->id();
-        $defaultLang = Language::where('user_id', $userId)->where('is_default', 1)->firstOrFail();
+        $user = auth()->user();
+        
+        // Resolve tenant owner (tenant for tenant; tenant for employee)
+        $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+        $ownerId = $owner->id;
+        
+        $defaultLang = Language::where('user_id', $ownerId)->where('is_default', 1)->firstOrFail();
 
-        $project = Project::where('user_id', $userId)->findOrFail($id);
+        $project = Project::where('user_id', $ownerId)->findOrFail($id);
 
         $rules = [
             // 'title' => 'required|max:255',
@@ -472,27 +481,27 @@ class ProjectController extends Controller
             ], 422);
         }
 
-        DB::transaction(function () use ($request, $userId, $defaultLang, &$project) {
+        DB::transaction(function () use ($request, $ownerId, $defaultLang, &$project) {
             $requestData = $request->all();
             $requestData['featured_image'] = $request->featured_image;
             $project->updateProject($requestData);
             if ($request->has('gallery_images')) {
                 ProjectGalleryImg::where('project_id', $project->id)->delete();
                 foreach ($request->gallery_images as $imgPath) {
-                    ProjectGalleryImg::storeGalleryImage($userId, $project->id, $imgPath);
+                    ProjectGalleryImg::storeGalleryImage($ownerId, $project->id, $imgPath);
                 }
             }
             if ($request->has('floorplan_images')) {
                 ProjectFloorplanImg::where('project_id', $project->id)->delete();
                 foreach ($request->floorplan_images as $imgPath) {
-                    ProjectFloorplanImg::storeFloorplanImage($userId, $project->id, $imgPath);
+                    ProjectFloorplanImg::storeFloorplanImage($ownerId, $project->id, $imgPath);
                 }
             }
 
             ProjectContent::where('project_id', $project->id)->delete();
 
             foreach ($request->contents as $content) {
-                ProjectContent::storeProjectContent($userId, [
+                ProjectContent::storeProjectContent($ownerId, [
                     'project_id' => $project->id,
                     'language_id' => $content['language_id'],
                     'title' => $content['title'],
@@ -507,7 +516,7 @@ class ProjectController extends Controller
             ProjectSpecification::where('project_id', $project->id)->delete();
 
             foreach ($request->specifications as $spec) {
-                ProjectSpecification::storeSpecification($userId, [
+                ProjectSpecification::storeSpecification($ownerId, [
                     'language_id' => $defaultLang->id,
                     'project_id' => $project->id,
                     'key' => $spec['key'],
@@ -520,9 +529,9 @@ class ProjectController extends Controller
 
             if ($request->has('types')) {
                 foreach ($request->types as $type) {
-                    ProjectType::storeProjectType($userId, [
+                    ProjectType::storeProjectType($ownerId, [
                         'project_id' => $project->id,
-                        'language_id' => $type['language_id'],
+                        'language_id' => $type['label'],
                         'title' => $type['title'],
                         'min_area' => $type['min_area'],
                         'max_area' => $type['max_area'],
@@ -550,11 +559,11 @@ class ProjectController extends Controller
 
         $after = $responseProject->toArray();
         Audit::project(
-            $userId,
+            $ownerId,
             $responseProject->id,
             'updated',
             'Project updated',
-            ['before' => $before, 'after' => $after]
+            ['after' => $after]
         );
         return response()->json([
             'status' => 'success',

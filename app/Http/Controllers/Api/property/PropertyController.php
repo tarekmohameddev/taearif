@@ -554,7 +554,10 @@ class PropertyController extends Controller
     {
         $user = auth()->user();
 
-        $membership = Membership::where('user_id', $user->id)
+        // Resolve tenant owner (tenant for tenant; tenant for employee)
+        $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+
+        $membership = Membership::where('user_id', $owner->id)
             ->where('status', 1)
             ->orderBy('id', 'desc')
             ->with('package')
@@ -568,7 +571,7 @@ class PropertyController extends Controller
         }
 
         $realEstateLimit = $membership->package->real_estate_limit_number;
-        $currentPropertyCount = Property::where('user_id', $user->id)->count();
+        $currentPropertyCount = Property::where('user_id', $owner->id)->count();
 
         if (!is_null($realEstateLimit) && $currentPropertyCount >= $realEstateLimit) {
             return response()->json([
@@ -579,7 +582,7 @@ class PropertyController extends Controller
             ], 403);
         }
 
-        $defaultLanguage = Language::where('user_id', $user->id)
+        $defaultLanguage = Language::where('user_id', $owner->id)
             ->where('is_default', 1)
             ->firstOrFail();
 
