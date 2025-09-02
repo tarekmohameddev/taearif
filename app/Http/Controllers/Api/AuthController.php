@@ -373,7 +373,7 @@ class AuthController extends Controller
             );
 
             // Create default roles & permissions INSIDE this tenant
-            DB::afterCommit(fn() => app(\App\Services\Rbac\BootstrapTenantRbac::class)->run($user));
+            DB::afterCommit(fn() => app(\App\Services\TenantRbacBootstrapper::class)->run($user->id));
 
 
             // Log in tenant

@@ -158,7 +158,7 @@ Route::post('/auth/verify-reset-code', [ResetPasswordController::class, 'verifyR
 
 
 // Dashboard routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'require.active.package'])->group(function () {
     Route::get('/dashboard', [AnalyticsDashboardController::class, 'dashboard']);
     Route::get('/dashboard/summary', [AnalyticsDashboardController::class, 'summary']);
     Route::post('/dashboard/visitors', [AnalyticsDashboardController::class, 'visitors']);
