@@ -85,6 +85,7 @@ class Kernel extends HttpKernel
         'ensureUserIsActive' => \App\Http\Middleware\EnsureUserIsActive::class,
         'audit.ctx' => \App\Http\Middleware\PopulateAuditContext::class,
         'owner-or-can' => \App\Http\Middleware\OwnerOrCan::class,
+        'require.active.package' => \App\Http\Middleware\RequireActiveMembership::class,
 
     ];
 
