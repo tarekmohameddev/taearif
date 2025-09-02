@@ -48,9 +48,9 @@ class ApiSideMenusController extends Controller
 
         // ---- declarative menu map (DRY) ----
         $c = [
-            // Always show dashboard if permitted
+            // Always show dashboard for all authenticated users
             [
-                'perm'    => 'menu.dashboard',
+                'perm'    => null, // no permission check needed
                 'section' => ['title' => 'لوحة التحكم', 'description' => 'نظره عامه عن الموقع', 'icon' => 'panel', 'path' => '/'],
             ],
             [
@@ -111,6 +111,13 @@ class ApiSideMenusController extends Controller
 
         $sections = [];
         foreach ($c as $item) {
+            // Dashboard shows for all users (no permission check)
+            if ($item['perm'] === null) {
+                $sections[] = $item['section'];
+                continue;
+            }
+            
+            // Other items check permission + optional conditions
             if ($can($item['perm']) && (!isset($item['when']) || $item['when']() === true)) {
                 $sections[] = $item['section'];
             }
