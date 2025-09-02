@@ -21,13 +21,18 @@ class SeedGlobalPermissions extends Command
 
 		$created = 0; $skipped = 0;
 		foreach ($names as $name) {
-			$existsGlobal = Permission::query()
+			$existing = Permission::query()
 				->where('name', $name)
 				->where('guard_name', $guard)
-				->whereNull('team_id')
 				->first();
-			if ($existsGlobal) {
-				$skipped++;
+			if ($existing) {
+				if (!is_null($existing->team_id)) {
+					$existing->team_id = null;
+					$existing->save();
+					$skipped++; // converted to global
+				} else {
+					$skipped++;
+				}
 				continue;
 			}
 
