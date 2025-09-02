@@ -532,23 +532,26 @@ class AuthController extends Controller
                 ], 401);
             }
 
+            // Resolve tenant owner (tenant for tenant; tenant for employee)
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+
             // Get current date for comparing with membership expiration
             $currentDate = now();
 
-            // Get user's latest membership from the membership table
-            $membership = Membership::where('user_id', $user->id)
+            // Get owner's latest membership from the membership table
+            $membership = Membership::where('user_id', $owner->id)
                 ->orderBy('expire_date', 'desc')
                 ->first();
 
-            $domain = ApiDomainSetting::where('user_id', $user->id)->where('status', 'active')->first([
+            $domain = ApiDomainSetting::where('user_id', $owner->id)->where('status', 'active')->first([
                 "custom_name",
                 "status",
                 "primary",
                 "ssl",
             ]);
 
-            // Get company_name from BasicSetting
-            $basicSetting = BasicSetting::where('user_id', $user->id)->first(['company_name']);
+            // Get company_name from BasicSetting (owner)
+            $basicSetting = BasicSetting::where('user_id', $owner->id)->first(['company_name']);
             $companyName = $basicSetting ? $basicSetting->company_name : null;
 
             $membershipDetails = null;
@@ -593,13 +596,12 @@ class AuthController extends Controller
                             'features' => json_decode($package->features, true),
                             'project_limit_number' => $package->project_limit_number,
                             'real_estate_limit_number' => $package->real_estate_limit_number
-                            // Add any other package details you need
                         ];
                     }
                 }
             }
 
-            // Compile user data
+            // Compile user data (keep the logged-in user's identity, but reflect owner's membership)
             $userData = [
                 'id' => $user->id,
                 'tenant_id' => $user->tenant_id,
@@ -617,14 +619,13 @@ class AuthController extends Controller
                 'profile_image' => $user->profile_image ? url('/') . '/assets/front/img/user/' . $user->profile_image : null,
                 'membership' => $membershipDetails,
                 'is_free_plan' => $isFreePlan,
-                'has_active_membership' => !$isExpired && $membership && $membership->status == 1,
+                'has_active_membership' => !$isExpired && $membership && (int) $membership->status === 1,
                 'message' => $user->message ?? null,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
-                'domain' => $domain ? $domain->custom_name : "https://{$user->username}.taearif.com/",
+                'domain' => $domain ? $domain->custom_name : "https://{$owner->username}.taearif.com/",
                 'onboarding_completed' => $user->onboarding_completed ?? false,
                 'company_name' => $companyName,
-
             ];
 
             return response()->json([
@@ -1518,7 +1519,7 @@ class AuthController extends Controller
                     "portfolio_title": "Featured Cases",
                     "portfolio_subtitle": "Take a Look at the Cases",
                     "view_all_portfolio_text": "View All",
-                    "testimonial_title": "Client’s Say",
+                    "testimonial_title": "Client's Say",
                     "testimonial_subtitle": "Lorem ipsum dolor sit",
                     "testimonial_image": "6195e2885a64b.jpg",
                     "blog_title": "Our News and Blog",
