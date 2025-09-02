@@ -19,26 +19,29 @@ class ApiSideMenusController extends Controller
         $teamId = $this->teamIdFor($user);
         app(PermissionRegistrar::class)->setPermissionsTeamId($teamId);
 
+        // resolve owner (tenant for tenant; tenant for employee)
+        $ownerId = $this->isTenant($user) ? (int) $user->id : (int) ($user->tenant_id ?? 0);
+
         // owners bypass permission checks
-        $isOwner = method_exists($user, 'isTenant') ? $user->isTenant() : (($user->account_type ?? 'tenant') === 'tenant');
+        $isOwner = $this->isTenant($user);
         $can = fn(string $perm) => $isOwner || $user->can($perm);
 
-        // feature flags / package
+        // feature flags / package (use OWNER package for both tenant & employees)
         $isAffiliateApproved = $user->isAffiliateApproved();
-        $membership = Membership::where('user_id', $user->id)
+        $membership = Membership::where('user_id', $ownerId)
             ->where('status', 1)
             ->orderByDesc('id')
             ->with('package')
             ->first();
         $package = $membership?->package;
 
-        // (optional feature toggles stored in DB)
-        $whatsappMenu = ApiMenuItem::where('user_id', $user->id)
+        // (optional feature toggles stored in DB) — resolve by OWNER id
+        $whatsappMenu = ApiMenuItem::where('user_id', $ownerId)
             ->where('url', '/whatsapp-ai')
             ->where('is_active', true)
             ->first();
 
-        $aiMenu = ApiMenuItem::where('user_id', $user->id)
+        $aiMenu = ApiMenuItem::where('user_id', $ownerId)
             ->where('url', '/ai')
             ->where('is_active', true)
             ->first();
@@ -66,11 +69,11 @@ class ApiSideMenusController extends Controller
                 'perm'    => 'menu.crm',
                 'section' => ['title' => 'CRM', 'description' => 'تكوين اعدادات ادارة علاقات العملاء', 'icon' => 'crm', 'path' => '/crm'],
             ],
-            // package + permission
+            // package + permission (package from OWNER)
             [
                 'perm'    => 'menu.projects',
                 'when'    => fn() => $package && ($package->project_limit_number > 0),
-                'section' => ['title' => 'المشاريع', 'description' => 'ادارة المشاريع', 'icon' => 'building', 'path' => '/projects'],
+                'section' => ['title' => 'المشاريع', 'description' => ' ادارة المشاريع', 'icon' => 'building', 'path' => '/projects'],
             ],
             [
                 'perm'    => 'menu.properties',
@@ -124,10 +127,15 @@ class ApiSideMenusController extends Controller
     // ---- helpers ----
     private function teamIdFor($user): int
     {
-        if (method_exists($user, 'isTenant') && $user->isTenant()) {
+        if ($this->isTenant($user)) {
             return (int) $user->id;
         }
         // employees
         return (int) ($user->tenant_id ?? 0);
+    }
+
+    private function isTenant($user): bool
+    {
+        return method_exists($user, 'isTenant') ? $user->isTenant() : (($user->account_type ?? 'tenant') === 'tenant');
     }
 }
