@@ -17,6 +17,7 @@ class Kernel extends ConsoleKernel
 
         Commands\ExpiredUser::class,
         \App\Console\Commands\ProcessRmsReminders::class,
+        \App\Console\Commands\SeedGlobalPermissions::class,
 
     ];
 
