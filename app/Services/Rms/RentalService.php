@@ -13,8 +13,10 @@ class RentalService
 {
     public function listRentals($request)
     {
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : auth()->id();
+
         return RmRental::with(['activeContract', 'property'])
-            ->where('user_id', auth()->id())
+            ->where('user_id', $ownerId)
             ->when($request->q, fn($q) => $q->where('tenant_full_name', 'like', "%{$request->q}%"))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
             ->when($request->property_id, fn($q) => $q->where('property_id', $request->property_id))
@@ -24,9 +26,11 @@ class RentalService
 
     public function createRental($userId, array $data)
     {
-        return DB::transaction(function () use ($userId, $data) {
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
+
+        return DB::transaction(function () use ($ownerId, $data) {
             $rental = RmRental::create(array_merge($data, [
-                'user_id' => $userId,
+                'user_id' => $ownerId,
                 'status' => 'draft',
             ]));
 
@@ -37,7 +41,7 @@ class RentalService
 
             if ($hasEnoughData) {
                 $contract = RmContract::create([
-                    'user_id' => $userId,
+                    'user_id' => $ownerId,
                     'rental_id' => $rental->id,
                     'contract_number' => 'CNT-' . now()->format('Y') . '-' . str_pad($rental->id, 5, '0', STR_PAD_LEFT),
                     'start_date' => $data['move_in_date'],
@@ -45,7 +49,7 @@ class RentalService
                     'status' => 'pending',
                 ]);
 
-                $this->generateInstallments($userId, $rental->id, $contract->id, $data);
+                $this->generateInstallments($ownerId, $rental->id, $contract->id, $data);
 
                 return [
                     'id' => $rental->id,
@@ -66,8 +70,10 @@ class RentalService
 
     public function getRentalDetails($userId, $id)
     {
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
+
         $rental = RmRental::with(['activeContract', 'upcomingInstallments', 'maintenanceOpen'])
-            ->where('user_id', $userId)
+            ->where('user_id', $ownerId)
             ->findOrFail($id);
 
         return $rental;
@@ -75,8 +81,10 @@ class RentalService
 
     public function updateRental($userId, $id, array $data, bool $regenerate = false)
     {
-        return DB::transaction(function () use ($userId, $id, $data, $regenerate) {
-            $rental = RmRental::where('user_id', $userId)->findOrFail($id);
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
+
+        return DB::transaction(function () use ($ownerId, $id, $data, $regenerate) {
+            $rental = RmRental::where('user_id', $ownerId)->findOrFail($id);
             $rental->update($data);
 
             if ($regenerate && $rental->activeContract) {
@@ -85,7 +93,7 @@ class RentalService
                     ->delete();
 
                 $this->generateInstallments(
-                    $userId,
+                    $ownerId,
                     $rental->id,
                     $rental->activeContract->id,
                     $rental->toArray()
@@ -98,7 +106,9 @@ class RentalService
 
     public function deleteRental($userId, $id)
     {
-        $rental = RmRental::where('user_id', $userId)->findOrFail($id);
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
+
+        $rental = RmRental::where('user_id', $ownerId)->findOrFail($id);
 
         if ($rental->activeContract) {
             throw new \Exception('Cannot delete rental with active contract');
