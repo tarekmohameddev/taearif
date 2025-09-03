@@ -917,7 +917,16 @@ class PropertyController extends Controller
         // Resolve tenant owner (tenant for tenant; tenant for employee)
         $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
 
-        $property = Property::where('user_id', $owner->id)->where('id', $id)->first();
+        // Permit updating properties owned by the tenant or any of their employees
+        $allowedUserIds = [$owner->id];
+        try {
+            $employeeIds = \App\Models\User::where('tenant_id', $owner->id)->pluck('id')->toArray();
+            $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
+        } catch (\Throwable $e) {
+            // ignore and fall back to owner-only scoping
+        }
+
+        $property = Property::whereIn('user_id', $allowedUserIds)->where('id', $id)->first();
         if (!$property) {
             return response()->json([
                 'status' => 'error',
