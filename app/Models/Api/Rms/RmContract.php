@@ -40,6 +40,10 @@ class RmContract extends Model
         'current_project_id',
     ];
 
+    protected $hidden = [
+        'rental',
+    ];
+
     public function rental()
     {
         return $this->belongsTo(RmRental::class, 'rental_id');
