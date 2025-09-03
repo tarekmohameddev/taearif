@@ -59,4 +59,28 @@ class RmContract extends Model
     {
         return optional($this->rental)->project_id;
     }
+
+    protected static function booted()
+    {
+        static::creating(function (self $contract) {
+            if (is_null($contract->property_id) || is_null($contract->project_id)) {
+                $rental = $contract->rental ?: RmRental::find($contract->rental_id);
+                if ($rental) {
+                    $contract->property_id = $contract->property_id ?? $rental->property_id;
+                    $contract->project_id  = $contract->project_id  ?? $rental->project_id;
+                }
+            }
+        });
+
+        static::saving(function (self $contract) {
+            // When moving to active, ensure snapshot identifiers exist
+            if ((is_null($contract->property_id) || is_null($contract->project_id)) && $contract->status === 'active') {
+                $rental = $contract->rental ?: RmRental::find($contract->rental_id);
+                if ($rental) {
+                    $contract->property_id = $contract->property_id ?? $rental->property_id;
+                    $contract->project_id  = $contract->project_id  ?? $rental->project_id;
+                }
+            }
+        });
+    }
 }
