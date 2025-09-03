@@ -13,7 +13,8 @@ class InstallmentService
 {
     public function listInstallments($userId, $filters = [])
     {
-        $query = RmPaymentInstallment::where('user_id', $userId);
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
+        $query = RmPaymentInstallment::where('user_id', $ownerId);
 
         if (!empty($filters['rental_id'])) {
             $query->where('rental_id', $filters['rental_id']);
@@ -40,8 +41,9 @@ class InstallmentService
 
     public function updateInstallment($installmentId, $data, $userId)
     {
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
         $installment = RmPaymentInstallment::where('id', $installmentId)
-            ->where('user_id', $userId)
+            ->where('user_id', $ownerId)
             ->firstOrFail();
 
         $installment->update([
@@ -66,7 +68,7 @@ class InstallmentService
             ? $contract->platform_contract_value
             : $rental->base_rent_amount;
 
-        $userId = $rental->user_id;
+        $userId = $rental->user_id; // already owner id on rental
 
         $periods = match ($plan) {
             'monthly' => 1,
