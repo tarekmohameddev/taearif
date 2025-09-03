@@ -26,12 +26,12 @@ class RentalService
 
     public function createRental($userId, array $data)
     {
-        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
-
-        return DB::transaction(function () use ($ownerId, $data) {
+        // Use the provided userId (which should be the tenant owner's ID)
+        // This ensures rentals are created under the correct tenant account
+        return DB::transaction(function () use ($userId, $data) {
             $rental = RmRental::create(array_merge($data, [
-                'user_id' => $ownerId,
-                'status' => 'draft',
+                'user_id' => $userId,
+                'status' => 'active',
             ]));
 
             $hasEnoughData = $data['move_in_date'] ?? null
@@ -41,7 +41,7 @@ class RentalService
 
             if ($hasEnoughData) {
                 $contract = RmContract::create([
-                    'user_id' => $ownerId,
+                    'user_id' => $userId,
                     'rental_id' => $rental->id,
                     'contract_number' => 'CNT-' . now()->format('Y') . '-' . str_pad($rental->id, 5, '0', STR_PAD_LEFT),
                     'start_date' => $data['move_in_date'],
@@ -49,11 +49,11 @@ class RentalService
                     'status' => 'pending',
                 ]);
 
-                $this->generateInstallments($ownerId, $rental->id, $contract->id, $data);
+                $this->generateInstallments($userId, $rental->id, $contract->id, $data);
 
                 return [
                     'id' => $rental->id,
-                    'status' => 'draft',
+                    'status' => 'active',
                     'contract' => [
                         'id' => $contract->id,
                         'status' => 'pending',
@@ -63,7 +63,7 @@ class RentalService
 
             return [
                 'id' => $rental->id,
-                'status' => 'draft'
+                'status' => 'active'
             ];
         });
     }
