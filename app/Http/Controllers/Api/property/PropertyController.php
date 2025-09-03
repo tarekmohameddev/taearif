@@ -914,9 +914,12 @@ class PropertyController extends Controller
     {
         $user = auth()->user();
 
-        $property = Property::where('user_id', $user->id)->findOrFail($id);
+        // Resolve tenant owner (tenant for tenant; tenant for employee)
+        $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
 
-        $defaultLanguage = Language::where('user_id', $user->id)
+        $property = Property::where('user_id', $owner->id)->findOrFail($id);
+
+        $defaultLanguage = Language::where('user_id', $owner->id)
             ->where('is_default', 1)
             ->firstOrFail();
 
