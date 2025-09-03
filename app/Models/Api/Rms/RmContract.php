@@ -35,6 +35,11 @@ class RmContract extends Model
         'grace_period_months' => 'integer',
     ];
 
+    protected $appends = [
+        'current_property_id',
+        'current_project_id',
+    ];
+
     public function rental()
     {
         return $this->belongsTo(RmRental::class, 'rental_id');
@@ -43,5 +48,15 @@ class RmContract extends Model
     public function installments()
     {
         return $this->hasMany(RmPaymentInstallment::class, 'contract_id');
+    }
+
+    public function getCurrentPropertyIdAttribute()
+    {
+        return optional($this->rental)->property_id;
+    }
+
+    public function getCurrentProjectIdAttribute()
+    {
+        return optional($this->rental)->project_id;
     }
 }

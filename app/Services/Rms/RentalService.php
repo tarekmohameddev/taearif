@@ -49,6 +49,9 @@ class RentalService
                     'start_date' => $data['move_in_date'],
                     'end_date' => Carbon::parse($data['move_in_date'])->addMonths($data['rental_period_months'])->subDay(),
                     'status' => 'pending',
+                    // Snapshot identifiers for audit/history
+                    'property_id' => $rental->property_id,
+                    'project_id' => $rental->project_id,
                 ]);
 
                 $this->generateInstallments($userId, $rental->id, $contract->id, $data);
