@@ -1340,7 +1340,7 @@ class PropertyController extends Controller
             ];
         });
 
-        $totalReorderFeatured = Property::where('user_id', $user->id)
+        $totalReorderFeatured = Property::whereIn('user_id', $allowedUserIds)
             ->where('featured', 1)
             ->where('reorder_featured', '>', 0)
             ->count();
