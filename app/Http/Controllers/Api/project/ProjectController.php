@@ -308,21 +308,23 @@ class ProjectController extends Controller
 
             $project = Project::storeProject($ownerId, $requestData);
 
-            foreach ($request->gallery_images as $imgPath) {
-                ProjectGalleryImg::storeGalleryImage($ownerId, $project->id, $imgPath);
+            if ($request->has('gallery_images') && is_array($request->gallery_images)) {
+                foreach ($request->gallery_images as $imgPath) {
+                    ProjectGalleryImg::storeGalleryImage($ownerId, $project->id, $imgPath);
+                }
             }
 
-            foreach ($request->floorplan_images as $imgPath) {
-                ProjectFloorplanImg::storeFloorplanImage($ownerId, $project->id, $imgPath);
+            if ($request->has('floorplan_images') && is_array($request->floorplan_images)) {
+                foreach ($request->floorplan_images as $imgPath) {
+                    ProjectFloorplanImg::storeFloorplanImage($ownerId, $project->id, $imgPath);
+                }
             }
 
             $firstContent = $request->input('contents.0');
 
-            if ($firstContent) {
-                $title = $firstContent['title'];
-                $address = $firstContent['address'];
-                $description = $firstContent['description'];
-            }
+            $title = $firstContent['title'] ?? '';
+            $address = $firstContent['address'] ?? '';
+            $description = $firstContent['description'] ?? '';
 
             $content = [
                 'project_id' => $project->id,
@@ -384,7 +386,7 @@ class ProjectController extends Controller
             'id' => $responseProject->id, 'title' => optional($responseProject->contents->first())->title
         ]);
         Audit::project(
-            $userId,
+            $ownerId,
             $responseProject->id,
             'created',
             'Project created',
@@ -447,7 +449,20 @@ class ProjectController extends Controller
         
         $defaultLang = Language::where('user_id', $ownerId)->where('is_default', 1)->firstOrFail();
 
-        $project = Project::where('user_id', $ownerId)->findOrFail($id);
+        // Allow updating projects owned by tenant or any employee
+        $allowedUserIds = [$ownerId];
+        try {
+            $employeeIds = \App\Models\User::where('tenant_id', $ownerId)->pluck('id')->toArray();
+            $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
+        } catch (\Throwable $e) {}
+
+        $project = Project::whereIn('user_id', $allowedUserIds)->where('id', $id)->first();
+        if (!$project) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Project not found for this tenant',
+            ], 404);
+        }
 
         $rules = [
             // 'title' => 'required|max:255',
@@ -500,7 +515,8 @@ class ProjectController extends Controller
 
             ProjectContent::where('project_id', $project->id)->delete();
 
-            foreach ($request->contents as $content) {
+            $contents = (array) $request->input('contents', []);
+            foreach ($contents as $content) {
                 ProjectContent::storeProjectContent($ownerId, [
                     'project_id' => $project->id,
                     'language_id' => $content['language_id'],
@@ -515,7 +531,8 @@ class ProjectController extends Controller
 
             ProjectSpecification::where('project_id', $project->id)->delete();
 
-            foreach ($request->specifications as $spec) {
+            $specifications = (array) $request->input('specifications', []);
+            foreach ($specifications as $spec) {
                 ProjectSpecification::storeSpecification($ownerId, [
                     'language_id' => $defaultLang->id,
                     'project_id' => $project->id,
@@ -528,7 +545,8 @@ class ProjectController extends Controller
             ProjectType::where('project_id', $project->id)->delete();
 
             if ($request->has('types')) {
-                foreach ($request->types as $type) {
+                $types = (array) $request->types;
+                foreach ($types as $type) {
                     ProjectType::storeProjectType($ownerId, [
                         'project_id' => $project->id,
                         'language_id' => $type['label'],
