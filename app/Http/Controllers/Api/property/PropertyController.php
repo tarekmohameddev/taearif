@@ -917,11 +917,23 @@ class PropertyController extends Controller
         // Resolve tenant owner (tenant for tenant; tenant for employee)
         $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
 
-        $property = Property::where('user_id', $owner->id)->findOrFail($id);
+        $property = Property::where('user_id', $owner->id)->where('id', $id)->first();
+        if (!$property) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Property not found for this tenant',
+            ], 404);
+        }
 
         $defaultLanguage = Language::where('user_id', $owner->id)
             ->where('is_default', 1)
-            ->firstOrFail();
+            ->first();
+        if (!$defaultLanguage) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Default language not configured for this tenant',
+            ], 404);
+        }
 
         $rules = [
             'payment_method' => 'nullable',
