@@ -1269,14 +1269,24 @@ class PropertyController extends Controller
     {
         $user = $request->user();
 
+        // Resolve tenant owner and include all employees under that tenant
+        $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+        $ownerId = (int) $owner->id;
+
+        $allowedUserIds = [$ownerId];
+        try {
+            $employeeIds = \App\Models\User::where('tenant_id', $ownerId)->pluck('id')->toArray();
+            $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
+        } catch (\Throwable $e) {}
+
         $properties = Property::with(['category', 'user', 'contents', 'proertyAmenities.amenity'])
-            ->where('user_id', $user->id)
+            ->whereIn('user_id', $allowedUserIds)
             ->orderBy('reorder_featured', 'desc')
             ->orderBy('reorder', 'asc')
             ->paginate(10);
 
         // === GA4: views per property (last 30 days by default) ===
-        $tenantId  = $user->username;                     // you already use this in GA filters
+        $tenantId  = $owner->username;                     // align GA context with tenant owner
         $days      = (int) $request->input('days', 30);   // override with ?days=7 if you want
         $startDate = Carbon::now()->subDays($days);
         $endDate   = Carbon::now();
