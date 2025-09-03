@@ -19,7 +19,9 @@ class RentalService
             ->where('user_id', $ownerId)
             ->when($request->q, fn($q) => $q->where('tenant_full_name', 'like', "%{$request->q}%"))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->when($request->property_number, fn($q) => $q->where('property_number', $request->property_number))
             ->when($request->property_id, fn($q) => $q->where('property_id', $request->property_id))
+            ->when($request->project_id, fn($q) => $q->where('project_id', $request->project_id))
             ->when($request->paying_plan, fn($q) => $q->where('paying_plan', $request->paying_plan))
             ->paginate($request->get('per_page', 15));
     }

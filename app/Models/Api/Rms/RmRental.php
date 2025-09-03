@@ -17,12 +17,27 @@ class RmRental extends Model
     protected $table = 'rm_rentals';
 
     protected $fillable = [
-        'user_id', 'property_id', 'unit_label',
-        'tenant_full_name', 'tenant_phone', 'tenant_email', 'tenant_job_title',
-        'tenant_social_status', 'tenant_national_id',
-        'base_rent_amount', 'currency', 'deposit_amount',
-        'move_in_date', 'paying_plan', 'rental_period_months',
-        'status', 'notes', 'created_by', 'updated_by',
+        'user_id', 
+        'property_id', 
+        'unit_label', 
+        'project_id',
+        'tenant_full_name', 
+        'property_number', 
+        'tenant_phone', 
+        'tenant_email', 
+        'tenant_job_title',
+        'tenant_social_status', 
+        'tenant_national_id',
+        'base_rent_amount', 
+        'currency', 
+        'deposit_amount',
+        'move_in_date', 
+        'paying_plan', 
+        'rental_period_months',
+        'status', 
+        'notes', 
+        'created_by', 
+        'updated_by',
     ];
 
     protected $casts = [
