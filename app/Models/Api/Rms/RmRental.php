@@ -9,6 +9,7 @@ use App\Models\Api\Rms\RmMaintenanceTicket;
 use App\Models\Api\Rms\RmPaymentInstallment;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\User\RealestateManagement\Property;
+use App\Models\User\RealestateManagement\Project;
 
 class RmRental extends Model
 {
@@ -44,6 +45,11 @@ class RmRental extends Model
         'move_in_date' => 'date',
     ];
 
+    protected $appends = [
+        'next_payment_due_date',
+        'next_payment_amount',
+    ];
+
     public function contracts()
     {
         return $this->hasMany(RmContract::class, 'rental_id');
@@ -74,6 +80,11 @@ class RmRental extends Model
         return $this->belongsTo(Property::class, 'property_id');
     }
 
+    public function project()
+    {
+        return $this->belongsTo(Project::class, 'project_id');
+    }
+
     public function upcomingInstallments()
     {
         return $this->hasMany(RmPaymentInstallment::class, 'rental_id')->where('due_date', '>', now());
@@ -82,6 +93,28 @@ class RmRental extends Model
     public function maintenanceOpen()
     {
         return $this->hasMany(RmMaintenanceTicket::class, 'rental_id')->where('status', 'open');
+    }
+
+    public function getNextPaymentDueDateAttribute()
+    {
+        $installment = $this->installments()
+            ->whereIn('status', ['pending', 'active'])
+            ->whereDate('due_date', '>=', now()->toDateString())
+            ->orderBy('due_date')
+            ->first();
+
+        return $installment?->due_date;
+    }
+
+    public function getNextPaymentAmountAttribute()
+    {
+        $installment = $this->installments()
+            ->whereIn('status', ['pending', 'active'])
+            ->whereDate('due_date', '>=', now()->toDateString())
+            ->orderBy('due_date')
+            ->first();
+
+        return $installment?->amount;
     }
 
 }

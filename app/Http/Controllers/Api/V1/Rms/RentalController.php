@@ -33,7 +33,9 @@ class RentalController extends Controller
             'tenant_social_status' => 'nullable|in:single,married,divorced,widowed,other',
             'tenant_national_id' => 'nullable|string|max:20',
             'property_id' => 'nullable|integer',
+            'project_id' => 'nullable|integer',
             'unit_label' => 'nullable|string|max:100',
+            'property_number' => 'nullable|string|max:100',
             'move_in_date' => 'nullable|date',
             'rental_period_months' => 'nullable|integer',
             'paying_plan' => 'nullable|in:monthly,quarterly,semi_annual,annual',
@@ -58,7 +60,7 @@ class RentalController extends Controller
     {
         $data = $request->only([
             'tenant_full_name', 'tenant_phone', 'tenant_email', 'tenant_job_title',
-            'tenant_social_status', 'tenant_national_id', 'property_id', 'unit_label',
+            'tenant_social_status', 'tenant_national_id', 'property_id', 'project_id', 'unit_label', 'property_number',
             'move_in_date', 'rental_period_months', 'paying_plan',
             'base_rent_amount', 'currency', 'deposit_amount', 'notes'
         ]);
