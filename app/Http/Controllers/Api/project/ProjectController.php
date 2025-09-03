@@ -44,12 +44,23 @@ class ProjectController extends Controller
     {
         $user = $request->user();
 
+        // Resolve tenant owner and allow visibility for owner + employees
+        $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+        $ownerId = (int) $owner->id;
+
+        $allowedUserIds = [$ownerId];
+        try {
+            $employeeIds = \App\Models\User::where('tenant_id', $ownerId)->pluck('id')->toArray();
+            $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
+        } catch (\Throwable $e) {}
+
         $projects = Project::with(['contents', 'specifications', 'types'])
-            ->where('user_id', $user->id)
+            ->whereIn('user_id', $allowedUserIds)
+            ->orderBy('id', 'desc')
             ->paginate(10);
 
         // ===== GA4 (last 30 days by default) =====
-        $tenantId  = $user->username;
+        $tenantId  = $owner->username;
         $days      = (int)$request->input('days', 30);
         $startDate = Carbon::now()->subDays($days);
         $endDate   = Carbon::now();
