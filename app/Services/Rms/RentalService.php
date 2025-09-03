@@ -15,7 +15,7 @@ class RentalService
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : auth()->id();
 
-        return RmRental::with(['activeContract', 'property'])
+        return RmRental::with(['activeContract', 'property', 'project'])
             ->where('user_id', $ownerId)
             ->when($request->q, fn($q) => $q->where('tenant_full_name', 'like', "%{$request->q}%"))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
