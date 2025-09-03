@@ -46,15 +46,35 @@ class InstallmentService
             ->where('user_id', $ownerId)
             ->firstOrFail();
 
-        $installment->update([
-            'status' => $data['status'],
-            'paid_amount' => $data['paid_amount'] ?? $installment->paid_amount,
-            'paid_at' => $data['paid_at'] ?? $installment->paid_at,
-            'reference' => $data['reference'] ?? $installment->reference,
-            'notes' => $data['notes'] ?? $installment->notes,
-        ]);
+        // Normalize incoming fields
+        $newPaidAmount = array_key_exists('paid_amount', $data)
+            ? (float) $data['paid_amount']
+            : (float) ($installment->paid_amount ?? 0);
 
-        return $installment;
+        $explicitStatus = $data['status'] ?? null;
+
+        // Update base fields first
+        $installment->reference = $data['reference'] ?? $installment->reference;
+        $installment->notes = $data['notes'] ?? $installment->notes;
+        $installment->paid_at = $data['paid_at'] ?? $installment->paid_at;
+        $installment->paid_amount = $newPaidAmount;
+
+        // Determine status automatically if not explicitly set
+        if ($explicitStatus === null) {
+            $installment->status = $this->determineStatus($installment->amount, $newPaidAmount, $installment->due_date);
+        } else {
+            $installment->status = $explicitStatus;
+        }
+
+        $installment->save();
+
+        // Handle overpayment: carry forward to next installments of the same contract
+        $overflow = max(0, $newPaidAmount - (float) $installment->amount);
+        if ($overflow > 0) {
+            $this->applyOverflowToSubsequentInstallments($installment, $overflow);
+        }
+
+        return $installment->fresh();
     }
 
     public function generateSchedule(RmContract $contract)
@@ -123,4 +143,61 @@ class InstallmentService
         $this->generateSchedule($contract);
     }
 
+    protected function determineStatus($amount, $paidAmount, $dueDate)
+    {
+        $amount = (float) $amount;
+        $paidAmount = (float) ($paidAmount ?? 0);
+        $today = now()->toDateString();
+
+        if ($paidAmount >= $amount && $amount > 0) {
+            return 'paid';
+        }
+
+        if ($paidAmount > 0 && $paidAmount < $amount) {
+            // If partially paid and due date passed => still overdue until fully paid
+            return (\Carbon\Carbon::parse($dueDate)->lt(\Carbon\Carbon::parse($today))) ? 'overdue' : 'partial';
+        }
+
+        // No payment yet
+        return (\Carbon\Carbon::parse($dueDate)->lt(\Carbon\Carbon::parse($today))) ? 'overdue' : 'active';
+    }
+
+    protected function applyOverflowToSubsequentInstallments(RmPaymentInstallment $current, float $overflow)
+    {
+        $subsequent = RmPaymentInstallment::where('contract_id', $current->contract_id)
+            ->where('id', '!=', $current->id)
+            ->orderBy('due_date')
+            ->orderBy('sequence_no')
+            ->get();
+
+        foreach ($subsequent as $next) {
+            if ($overflow <= 0) {
+                break;
+            }
+
+            $nextPaid = (float) ($next->paid_amount ?? 0);
+            $nextAmount = (float) $next->amount;
+            $remainingForNext = max(0, $nextAmount - $nextPaid);
+
+            if ($remainingForNext <= 0) {
+                // already fully covered
+                if ($next->status !== 'paid') {
+                    $next->status = 'paid';
+                    $next->save();
+                }
+                continue;
+            }
+
+            $applied = min($overflow, $remainingForNext);
+            $nextPaid += $applied;
+            $overflow -= $applied;
+
+            $next->paid_amount = $nextPaid;
+            $next->status = $this->determineStatus($nextAmount, $nextPaid, $next->due_date);
+            if (!$next->paid_at && $next->status === 'paid') {
+                $next->paid_at = now();
+            }
+            $next->save();
+        }
+    }
 }

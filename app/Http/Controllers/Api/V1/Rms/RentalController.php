@@ -76,4 +76,10 @@ class RentalController extends Controller
         $this->rentalService->deleteRental(auth()->id(), $id);
         return response()->json(null, 204);
     }
+
+    public function propertyDetails($id)
+    {
+        $details = $this->rentalService->getPropertyDetails(auth()->id(), $id);
+        return response()->json(['status' => true, 'data' => $details]);
+    }
 }

@@ -23,6 +23,15 @@ class RentalService
             ->when($request->property_id, fn($q) => $q->where('property_id', $request->property_id))
             ->when($request->project_id, fn($q) => $q->where('project_id', $request->project_id))
             ->when($request->paying_plan, fn($q) => $q->where('paying_plan', $request->paying_plan))
+            ->when($request->filter_by_month, function($q) use ($request) {
+                $q->whereMonth('move_in_date', $request->filter_by_month)
+                  ->whereYear('move_in_date', $request->filter_by_year ?? now()->year);
+            })
+            ->when($request->filter_by_day, function($q) use ($request) {
+                $q->whereDate('move_in_date', $request->filter_by_day);
+            })
+            ->when($request->from_date, fn($q) => $q->whereDate('move_in_date', '>=', $request->from_date))
+            ->when($request->to_date, fn($q) => $q->whereDate('move_in_date', '<=', $request->to_date))
             ->paginate($request->get('per_page', 15));
     }
 
@@ -120,6 +129,70 @@ class RentalService
         }
 
         $rental->delete();
+    }
+
+    public function getPropertyDetails($userId, $rentalId)
+    {
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
+
+        $rental = RmRental::with(['property.contents', 'project', 'contracts', 'installments'])
+            ->where('user_id', $ownerId)
+            ->findOrFail($rentalId);
+
+        $activeContract = $rental->contracts()->whereIn('status', ['active', 'pending'])->orderByDesc('status')->orderBy('start_date')->first();
+
+        $payments = $rental->installments()->orderBy('due_date')->get()->map(function ($i) {
+            return [
+                'id' => $i->id,
+                'sequence_no' => $i->sequence_no,
+                'due_date' => $i->due_date,
+                'amount' => (float) $i->amount,
+                'paid_amount' => (float) ($i->paid_amount ?? 0),
+                'status' => $i->status,
+                'reference' => $i->reference,
+                'paid_at' => $i->paid_at,
+            ];
+        });
+
+        return [
+            'rental' => [
+                'id' => $rental->id,
+                'tenant_full_name' => $rental->tenant_full_name,
+                'tenant_phone' => $rental->tenant_phone,
+                'tenant_email' => $rental->tenant_email,
+                'tenant_job_title' => $rental->tenant_job_title,
+                'tenant_social_status' => $rental->tenant_social_status,
+                'tenant_national_id' => $rental->tenant_national_id,
+                'base_rent_amount' => (float) $rental->base_rent_amount,
+                'deposit_amount' => (float) ($rental->deposit_amount ?? 0),
+                'currency' => $rental->currency,
+                'move_in_date' => $rental->move_in_date,
+                'paying_plan' => $rental->paying_plan,
+                'rental_period_months' => (int) $rental->rental_period_months,
+                'status' => $rental->status,
+                'notes' => $rental->notes,
+            ],
+            'property' => [
+                'id' => $rental->property_id,
+                'name' => optional($rental->property->firstContent)->title,
+                'unit_label' => $rental->unit_label,
+                'property_number' => $rental->property_number,
+                'project' => [
+                    'id' => $rental->project_id,
+                    'name' => optional($rental->project)->name,
+                ],
+            ],
+            'contract' => $activeContract ? [
+                'id' => $activeContract->id,
+                'contract_number' => $activeContract->contract_number,
+                'start_date' => $activeContract->start_date,
+                'end_date' => $activeContract->end_date,
+                'status' => $activeContract->status,
+            ] : null,
+            'payment_details' => [
+                'items' => $payments,
+            ],
+        ];
     }
 
     private function generateInstallments($userId, $rentalId, $contractId, array $data)
