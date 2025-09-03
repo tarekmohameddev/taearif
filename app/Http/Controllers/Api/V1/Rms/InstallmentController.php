@@ -26,7 +26,7 @@ class InstallmentController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'status' => 'required|in:pending,paid,partial,overdue,void',
+            'status' => 'sometimes|in:pending,paid,partial,overdue,void',
             'paid_amount' => 'nullable|numeric|min:0',
             'paid_at' => 'nullable|date',
             'reference' => 'nullable|string|max:100',
