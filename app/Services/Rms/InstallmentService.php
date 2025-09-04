@@ -66,6 +66,10 @@ class InstallmentService
             $installment->status = $explicitStatus;
         }
 
+        // Set payment_type and payment_status
+        $installment->payment_type = $this->determinePaymentType($installment->amount, $newPaidAmount);
+        $installment->payment_status = $this->determinePaymentStatus($installment->amount, $newPaidAmount, $installment->due_date);
+
         $installment->save();
 
         // Handle overpayment: carry forward to next installments of the same contract
@@ -115,6 +119,8 @@ class InstallmentService
                 'due_date'   => $start->copy()->addMonths($i * $periods),
                 'amount'     => $isGrace ? 0 : $amount,
                 'status'     => 'active',
+                'payment_type' => 'none',
+                'payment_status' => 'not_due',
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -162,6 +168,36 @@ class InstallmentService
         return (\Carbon\Carbon::parse($dueDate)->lt(\Carbon\Carbon::parse($today))) ? 'overdue' : 'active';
     }
 
+    protected function determinePaymentType($amount, $paidAmount)
+    {
+        $amount = (float) $amount;
+        $paidAmount = (float) ($paidAmount ?? 0);
+
+        if ($paidAmount >= $amount && $amount > 0) {
+            return 'full';
+        } elseif ($paidAmount > 0) {
+            return 'partial';
+        } else {
+            return 'none';
+        }
+    }
+
+    protected function determinePaymentStatus($amount, $paidAmount, $dueDate)
+    {
+        $amount = (float) $amount;
+        $paidAmount = (float) ($paidAmount ?? 0);
+        $today = now()->toDateString();
+
+        if ($paidAmount >= $amount && $amount > 0) {
+            return 'paid_in_full';
+        } elseif ($paidAmount > 0) {
+            return 'paid_in_part';
+        } else {
+            // Check if payment is overdue
+            return (\Carbon\Carbon::parse($dueDate)->lt(\Carbon\Carbon::parse($today))) ? 'late' : 'not_due';
+        }
+    }
+
     protected function applyOverflowToSubsequentInstallments(RmPaymentInstallment $current, float $overflow)
     {
         $subsequent = RmPaymentInstallment::where('contract_id', $current->contract_id)
@@ -194,6 +230,8 @@ class InstallmentService
 
             $next->paid_amount = $nextPaid;
             $next->status = $this->determineStatus($nextAmount, $nextPaid, $next->due_date);
+            $next->payment_type = $this->determinePaymentType($nextAmount, $nextPaid);
+            $next->payment_status = $this->determinePaymentStatus($nextAmount, $nextPaid, $next->due_date);
             if (!$next->paid_at && $next->status === 'paid') {
                 $next->paid_at = now();
             }
