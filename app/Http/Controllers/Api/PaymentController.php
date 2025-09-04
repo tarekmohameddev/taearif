@@ -90,9 +90,10 @@ class PaymentController extends Controller
     {
         $user = Auth::user();
 
-        $plans = Package::with(['memberships' => function ($query) {
-            $query->where('expire_date', '>=', now());
-        }])
+        $plans = Package::where('is_active', true)
+            ->with(['memberships' => function ($query) {
+                $query->where('expire_date', '>=', now());
+            }])
             ->get()
             ->map(function ($package) use ($user) {
                 $isCurrent = $package->memberships->contains('user_id', $user->id);
