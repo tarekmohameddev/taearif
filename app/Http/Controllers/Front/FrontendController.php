@@ -558,6 +558,9 @@ class FrontendController extends Controller
         $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
         $api_about_settingsData = ApiAboutSettings::where('user_id', $user->id)->first();
         $api_menu_settingsData = ApiMenuSetting::where('user_id', $user->id)->first();
+        
+        // Get customer dropdown settings
+        $api_customer_dropdown_settingsData = \App\Models\Api\CustomerDropdownSetting::where('user_id', $user->id)->first();
 
         if ($api_Banner_settingsData && is_string($api_Banner_settingsData)) {
             $api_Banner_settingsData = json_decode($api_Banner_settingsData);
@@ -567,6 +570,13 @@ class FrontendController extends Controller
         $data['api_general_settingsData'] = $api_general_settingsData;
         $data['api_about_settingsData'] = $api_about_settingsData;
         $data['api_menu_settingsData'] = $api_menu_settingsData;
+        
+        // Process customer dropdown settings and pass only the final values
+        $data['customer_dropdown_visible'] = $api_customer_dropdown_settingsData ? $api_customer_dropdown_settingsData->is_visible : true;
+        $data['customer_dropdown_show_login'] = $api_customer_dropdown_settingsData ? $api_customer_dropdown_settingsData->show_login : true;
+        $data['customer_dropdown_show_register'] = $api_customer_dropdown_settingsData ? $api_customer_dropdown_settingsData->show_register : true;
+        $data['customer_dropdown_show_dashboard'] = $api_customer_dropdown_settingsData ? $api_customer_dropdown_settingsData->show_dashboard : true;
+        $data['customer_dropdown_show_logout'] = $api_customer_dropdown_settingsData ? $api_customer_dropdown_settingsData->show_logout : true;
 
         $data['home_sections'] = User\HomeSection::where('user_id', $user->id)->first();
 

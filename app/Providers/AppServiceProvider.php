@@ -35,6 +35,7 @@ use Illuminate\Support\ServiceProvider;
 use App\Http\Helpers\UserPermissionHelper;
 use App\Models\User\Language as UserLanguage;
 use App\Models\Api\ApiPixel;
+use App\Models\Api\CustomerDropdownSetting;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -328,6 +329,32 @@ class AppServiceProvider extends ServiceProvider
             }
 
             $view->with('steps', $progressSteps);
+        });
+
+        // View composer for customer dropdown - provides variables to all views that include it
+        View::composer('user-front.realestate.partials.customer-dropdown', function ($view) {
+            $user = getUser();
+            
+            if ($user) {
+                $dropdownSettings = CustomerDropdownSetting::where('user_id', $user->id)->first();
+                
+                $view->with([
+                    'customer_dropdown_visible' => $dropdownSettings ? $dropdownSettings->is_visible : true,
+                    'customer_dropdown_show_login' => $dropdownSettings ? $dropdownSettings->show_login : true,
+                    'customer_dropdown_show_register' => $dropdownSettings ? $dropdownSettings->show_register : true,
+                    'customer_dropdown_show_dashboard' => $dropdownSettings ? $dropdownSettings->show_dashboard : true,
+                    'customer_dropdown_show_logout' => $dropdownSettings ? $dropdownSettings->show_logout : true,
+                ]);
+            } else {
+                // Default values when no user is available
+                $view->with([
+                    'customer_dropdown_visible' => true,
+                    'customer_dropdown_show_login' => true,
+                    'customer_dropdown_show_register' => true,
+                    'customer_dropdown_show_dashboard' => true,
+                    'customer_dropdown_show_logout' => true,
+                ]);
+            }
         });
 
     }

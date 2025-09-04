@@ -46,6 +46,47 @@ class CustomerDropdownSettingController extends Controller
     }
 
     /**
+     * Get dropdown settings for a specific user (public method for blade templates)
+     *
+     * @param int $userId
+     * @return array
+     */
+    public static function getDropdownSettings($userId)
+    {
+        try {
+            $settings = CustomerDropdownSetting::where('user_id', $userId)->first();
+            
+            if (!$settings) {
+                // Return default settings if none exist
+                return [
+                    'is_visible' => true,
+                    'show_login' => true,
+                    'show_register' => true,
+                    'show_dashboard' => true,
+                    'show_logout' => true,
+                ];
+            }
+
+            return [
+                'is_visible' => $settings->is_visible,
+                'show_login' => $settings->show_login,
+                'show_register' => $settings->show_register,
+                'show_dashboard' => $settings->show_dashboard,
+                'show_logout' => $settings->show_logout,
+            ];
+        } catch (\Exception $e) {
+            // Fallback to default settings if there's an error
+            return [
+                'is_visible' => true,
+                'show_login' => true,
+                'show_register' => true,
+                'show_dashboard' => true,
+                'show_logout' => true,
+            ];
+        }
+    }
+
+    /**
      * Update customer dropdown settings
      *
      * @param Request $request
