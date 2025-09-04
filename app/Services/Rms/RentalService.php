@@ -131,6 +131,8 @@ class RentalService
         $rental->delete();
     }
 
+
+
     public function getPropertyDetails($userId, $rentalId)
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
@@ -149,6 +151,8 @@ class RentalService
                 'amount' => (float) $i->amount,
                 'paid_amount' => (float) ($i->paid_amount ?? 0),
                 'status' => $i->status,
+                'payment_type' => $i->payment_type,
+                'payment_status' => $i->payment_status,
                 'reference' => $i->reference,
                 'paid_at' => $i->paid_at,
             ];
@@ -221,6 +225,9 @@ class RentalService
                 'sequence_no' => $i + 1,
                 'due_date' => $start->copy()->addMonths($i * $chunks),
                 'amount' => $installmentAmount,
+                'status' => 'pending',
+                'payment_type' => 'none',
+                'payment_status' => 'not_due',
             ]);
         }
     }
