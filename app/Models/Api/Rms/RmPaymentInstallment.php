@@ -10,7 +10,7 @@ class RmPaymentInstallment extends Model
 
     protected $fillable = [
         'user_id', 'rental_id', 'contract_id', 'sequence_no',
-        'due_date', 'amount', 'status',
+        'due_date', 'amount', 'status', 'payment_type', 'payment_status',
         'paid_amount', 'paid_at', 'reference', 'notes'
     ];
 
