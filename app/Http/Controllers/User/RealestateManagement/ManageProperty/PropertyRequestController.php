@@ -11,7 +11,7 @@ use App\Models\User\UserDistrict;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use App\Services\CategoryVisibility;
+
 use Illuminate\Support\Facades\Auth;
 use App\Models\Api\UserPropertyRequest;
 use Illuminate\Support\Facades\Validator;
@@ -20,7 +20,7 @@ use App\Services\PropertyRequestFormSettings;
 
 class PropertyRequestController extends Controller
 {
-    public function create($website, Request $request, CategoryVisibility $visibility, PropertyRequestFormSettings $frSettings)
+    public function create($website, Request $request, PropertyRequestFormSettings $frSettings)
     {
         $user = getUser();
         $tenantId = $user->id ?? null;
@@ -49,19 +49,22 @@ class PropertyRequestController extends Controller
             // ->orderBy(app()->getLocale() === 'ar' ? 'name_ar' : 'name_en')
             ->get();
 
-        $availableCategories = $visibility->forTenant(
-            $tenantId,
-            $request,
-            (bool) $user->show_even_if_empty,
-            $userCurrentLang?->id
-        );
+        // Get all categories instead of filtered ones
+        $allCategories = \App\Models\User\RealestateManagement\ApiUserCategory::query()
+            ->where('is_active', 1)
+            ->when(
+                $request->filled('type') && in_array($request->type, ['commercial', 'residential']),
+                fn ($q) => $q->where('type', $request->type)
+            )
+            ->orderBy('name')
+            ->get();
         $formSettings = $frSettings->forTenant($tenantId);
 
         // dd($cities);
         return view('user-front.realestate.property.property_requests.create', [
             'cities'              => $cities,
             'districts'           => $districts,
-            'availableCategories' => $availableCategories,
+            'allCategories'       => $allCategories,
             'userCurrentLang'     => $userCurrentLang,
             'website'             => $website,
             'formSettings'        => $formSettings,
