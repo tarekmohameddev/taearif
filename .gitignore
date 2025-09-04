@@ -42,3 +42,4 @@ composer.lock
 /public/footer/*
 API_CONTROLLERS_OVERVIEW.md
 API_ENDPOINTS_QUICK_REFERENCE.md
+*.md
