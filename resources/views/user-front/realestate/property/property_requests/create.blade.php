@@ -63,7 +63,7 @@
 
                 <select name="category_id" class="form-select" {{ $req('category_id') ? 'required' : '' }}>
                     <option value="">{{ $lbl('category_id_placeholder','اختر نوع العقار') }}</option>
-                    @forelse($availableCategories as $cat)
+                    @forelse($allCategories as $cat)
                     <option value="{{ $cat->id }}" {{ old('category_id') == $cat->id ? 'selected' : '' }}>
                     {{ app()->getLocale()==='ar' ? ($cat->name_ar ?? $cat->name) : ($cat->name_en ?? $cat->name) }}
 
