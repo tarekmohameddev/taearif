@@ -52,6 +52,7 @@ use App\Http\Controllers\Api\{
     content\ApiBannerSettingController,
     content\ApiMenuController,
     content\GeneralSettingController,
+    content\CustomerDropdownSettingController,
     DomainSettingsController,
     ApiSideMenusController,
 };
@@ -266,6 +267,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/content/banner', [ApiBannerSettingController::class, 'index']);
     Route::post('/content/banner', [ApiBannerSettingController::class, 'update']);
 });
+
+// customer dropdown routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/content/customer-dropdown', [CustomerDropdownSettingController::class, 'index']);
+    Route::put('/content/customer-dropdown', [CustomerDropdownSettingController::class, 'update']);
+    Route::post('/content/customer-dropdown/toggle-visibility', [CustomerDropdownSettingController::class, 'toggleVisibility']);
+});
+// header routes
 
 // about routes
 Route::middleware('auth:sanctum')->group(function () {
