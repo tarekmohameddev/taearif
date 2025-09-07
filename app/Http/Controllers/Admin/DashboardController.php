@@ -41,7 +41,8 @@ class DashboardController extends Controller
             ->where([
                 ['memberships.status', '=', 1],
                 ['memberships.start_date', '<=', Carbon::now()->format('Y-m-d')],
-                ['memberships.expire_date', '>=', Carbon::now()->format('Y-m-d')]
+                ['memberships.expire_date', '>=', Carbon::now()->format('Y-m-d')],
+                ['users.account_type', '=', 'tenant']
             ])
             ->get();
 
