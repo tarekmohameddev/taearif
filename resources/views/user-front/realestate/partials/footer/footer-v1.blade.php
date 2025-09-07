@@ -148,18 +148,20 @@
 
       @if(!empty($general['showCopyright']))
           @php
-              // Check if user has expired membership
-              $hasExpiredMembership = false;
+              // Check if user has expired membership or free package
+              $showTaearifBranding = false;
               if (Auth::check()) {
                   $currentMembership = \App\Http\Helpers\UserPermissionHelper::userPackage(Auth::id());
-                  $hasExpiredMembership = is_null($currentMembership);
+                  // Show taearif branding for expired users (no membership) or free package users
+                  $showTaearifBranding = is_null($currentMembership) || 
+                                       ($currentMembership && $currentMembership->package_id == 16);
               }
           @endphp
-          <div class="copy-right-area border-top" @if(!$hasExpiredMembership) style="background-color:rgb(37, 37, 37);" @endif>
+          <div class="copy-right-area border-top" @if(!$showTaearifBranding) style="background-color:rgb(37, 37, 37);" @endif>
               <div class="container">
                   <div class="copy-right-content">
                         <span>
-                        @if($hasExpiredMembership)
+                        @if($showTaearifBranding)
                             <a href="{{ config('app.url') }}" target="_blank" style="color: white; text-decoration: none;">
                             taearif.com
                             </a>
