@@ -535,10 +535,17 @@ class FrontendController extends Controller
             $userCurrentLang = UserLanguage::where('code', session()->get('user_lang'))->where('user_id', $user->id)->first();
             if (empty($userCurrentLang)) {
                 $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
-                session()->put('user_lang', $userCurrentLang->code);
+                if ($userCurrentLang) {
+                    session()->put('user_lang', $userCurrentLang->code);
+                }
             }
         } else {
             $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
+        }
+        
+        // If user has no language, redirect to error or create default language
+        if (!$userCurrentLang) {
+            abort(500, 'User language configuration is missing. Please contact support.');
         }
         //
 
