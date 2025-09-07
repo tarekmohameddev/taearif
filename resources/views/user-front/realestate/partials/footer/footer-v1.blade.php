@@ -147,18 +147,7 @@
       @endif
 
       @if(!empty($general['showCopyright']))
-          @php
-              // Show taearif branding ONLY for users with free package (ID 16)
-              $showTaearifBranding = false; // Default to false
-              if (Auth::check()) {
-                  $currentMembership = \App\Http\Helpers\UserPermissionHelper::userPackage(Auth::id());
-                  // Only show taearif branding if user has free package (ID 16)
-                  if ($currentMembership && $currentMembership->package_id == 16) {
-                      $showTaearifBranding = true; // User has free package
-                  }
-              }
-              // All other cases (no auth, no membership, expired, paid packages) show custom copyright
-          @endphp
+          
           <div class="copy-right-area border-top" @if($showTaearifBranding) style="background-color: black; color: white;" @endif>
               <div class="container">
                   <div class="copy-right-content">

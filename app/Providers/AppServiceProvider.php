@@ -264,6 +264,23 @@ class AppServiceProvider extends ServiceProvider
                     ])->first();
                 $home_sections = User\HomeSection::where('user_id', $user->id)->first();
 
+                // Add membership logic for footer branding
+                $showTaearifBranding = true; // Default to taearif branding
+                if ($user && $user->id) {
+                    // Get the latest active membership (not expired)
+                    $currentMembership = \App\Models\Membership::query()->where([
+                        ['user_id', '=', $user->id],
+                        ['status', '=', 1],
+                        ['start_date', '<=', \Carbon\Carbon::now()->format('Y-m-d')],
+                        ['expire_date', '>=', \Carbon\Carbon::now()->format('Y-m-d')]
+                    ])->orderBy('id', 'DESC')->first();
+                    
+                    // Show custom copyright ONLY if user has active membership AND it's not free package
+                    if ($currentMembership && $currentMembership->package_id != 16) {
+                        $showTaearifBranding = false; // Show custom copyright for non-free active packages
+                    }
+                }
+
                 $view->with('user', $user);
                 $view->with('home_text', $home_text);
                 $view->with('home_sections', $home_sections);
@@ -285,6 +302,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('cookieAlertInfo', $cookieAlert);
                 $view->with('packagePermissions', $packagePermissions);
                 $view->with('userShopSetting', $userShopSetting);
+                $view->with('showTaearifBranding', $showTaearifBranding);
                 //
                 if ($userBs && $userBs->theme == 'home_seven') {
                     $view->with('fservices', $fservices);
