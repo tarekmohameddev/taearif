@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use App\Http\Helpers\UserPermissionHelper;
 use App\Models\BasicSetting;
+use App\Models\BasicExtended;
 use App\Models\Package;
 use App\Services\UserPackageService;
 use Illuminate\Http\Request;
@@ -50,14 +51,12 @@ class ExpiredUser extends Command
             Config::set('app.timezone', $bs->timezone);
         }
 
-        // Free package id (price = 0 and active)
-        $freePackageId = Package::query()
-            ->where('status', '1')
-            ->where('price', 0)
-            ->value('id');
-
-        if (! $freePackageId) {
-            $this->error('No active free package found (price=0).');
+        // Free package id (ID: 16 - الباقة-المجانية)
+        $freePackageId = 16; // الباقة-المجانية
+        $freePackage = Package::find($freePackageId);
+        
+        if (! $freePackage || $freePackage->status != '1') {
+            $this->error('Free package (ID: 16) not found or inactive.');
             return self::FAILURE;
         }
 
@@ -84,7 +83,15 @@ class ExpiredUser extends Command
                             'payment_method' => 'system',
                         ]);
                         $service->addCurrentPackage($req);
-                        // dispatch SubscriptionExpiredMail here
+                        
+                        // Set welcome message for user to see in dashboard
+                        $user->message = 'تم تحويلك إلى الباقة المجانية بعد انتهاء فترة التجربة. يمكنك ترقية باقاتك في أي وقت من لوحة التحكم.';
+                        $user->save();
+                        
+                        // Send notification that user was switched to free package
+                        // $bs = BasicSetting::first();
+                        // $be = BasicExtended::first();
+                        // \App\Jobs\FreePackageSwitchMail::dispatch($user, $bs, $be);
                     }
                 }
             });
