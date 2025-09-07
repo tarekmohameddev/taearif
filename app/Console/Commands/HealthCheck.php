@@ -17,7 +17,7 @@ class HealthCheck extends Command
      *
      * @var string
      */
-    protected $signature = 'health:check';
+    protected $signature = 'health:check {--auto : Run automatically without prompts}';
 
     /**
      * The console command description.
@@ -83,8 +83,10 @@ class HealthCheck extends Command
             $this->warn("  - {$issue}");
         }
         
-        if ($this->confirm('Do you want to fix these issues automatically?')) {
+        if ($this->option('auto') || $this->confirm('Do you want to fix these issues automatically?')) {
             $this->fixIssues();
+        } else {
+            $this->info('Health check completed without fixing issues.');
         }
         
         return 0;
