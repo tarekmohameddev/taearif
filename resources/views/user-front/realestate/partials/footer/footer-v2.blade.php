@@ -148,11 +148,27 @@
       @endif
 
       @if(!empty($general['showCopyright']))
-          <div class="copy-right-area border-top">
+          @php
+              // Check if user has expired membership
+              $hasExpiredMembership = false;
+              if (Auth::check()) {
+                  $currentMembership = \App\Http\Helpers\UserPermissionHelper::userPackage(Auth::id());
+                  $hasExpiredMembership = is_null($currentMembership);
+              }
+          @endphp
+          <div class="copy-right-area border-top" @if(!$hasExpiredMembership) style="background-color:rgb(37, 37, 37);" @endif>
               <div class="container">
                   <div class="copy-right-content">
                         <span>
-                        {{ $general['copyrightText'] ??"" }}
+                        @if($hasExpiredMembership)
+                            <a href="{{ config('app.url') }}" target="_blank" style="color: white; text-decoration: none;">
+                            taearif.com
+                            </a>
+                            <span style="margin: 0 10px; color: white;">-</span>
+                            <span style="color: white;">هذه المنصه بواسطه تعريف</span>
+                        @else
+                            {{ $general['copyrightText'] ?? "" }}
+                        @endif
                         </span>
                   </div>
               </div>
