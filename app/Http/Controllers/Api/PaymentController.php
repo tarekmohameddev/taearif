@@ -47,16 +47,51 @@ class PaymentController extends Controller
                 ], 401);
             }
 
+            // Validate required fields
+            $request->validate([
+                'package_id' => 'required|exists:packages,id',
+                'period' => 'required|integer|min:1'
+            ]);
+
+            $package = Package::find($request->package_id);
+            
+            if (!$package) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Package not found'
+                ], 404);
+            }
+
+            // Handle lifetime packages - ignore period
+            if ($package->term === 'lifetime') {
+                $amount = $package->price;
+                $period = 1; // For display purposes
+            } else {
+                // Validate period for monthly and yearly packages
+                $period = (int) $request->period;
+                
+                if ($period < 1) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Period must be at least 1'
+                    ], 422);
+                }
+
+                // Calculate total amount based on package term and period
+                $amount = $package->price * $period;
+            }
+
             $data = $request->all();
             $data['status'] = "1";
             $data['receipt_name'] = null;
             $data['email'] = $user->email;
+            $data['period'] = $period; // Pass period information for membership creation
 
             $title = "You are extending your membership";
             $description = "Congratulation you are going to join our membership.Please make a payment for confirming your membership now!";
 
-
-            $amount = $request->price;
+            $title = $package->title;
+            $description = $package->description;
 
             // Change success and cancel URLs to API endpoints
             $success_url = route('membership.arb.success');
@@ -76,7 +111,11 @@ class PaymentController extends Controller
             return response()->json([
                 'status' => 'success',
                 'payment_url' => $result['redirect_url'],
-                'payment_token' => $result['payment_token'] ?? null
+                'payment_token' => $result['payment_token'] ?? null,
+                'total_amount' => $amount,
+                'package_price' => $package->price,
+                'period' => $period,
+                'package_term' => $package->term
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
