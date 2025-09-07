@@ -316,12 +316,15 @@ class AuthController extends Controller
                 }
             }
 
+            // Get package details for trial registration
+            $package = Package::findOrFail(26);
+            
             // Static trial registration values
             $request->merge([
                 'status'         => 1,
                 'mode'           => 'online',
                 'receipt_name'   => null,
-                'price'          => 999,
+                'price'          => $package->price,
                 'first_name'     => $request->input('first_name', 'User'),
                 'last_name'      => $request->input('last_name', ''),
                 'company_name'   => 'N/A',
@@ -331,10 +334,10 @@ class AuthController extends Controller
                 'city'           => 'N/A',
                 'district'       => 'N/A',
                 'package_type'   => 'trial',
-                'package_id'     => 24,
-                'trial_days'     => 30,
+                'package_id'     => 26,
+                'trial_days'     => $package->trial_days,
                 'start_date'     => now()->toDateString(),
-                'expire_date'    => now()->addMonth()->toDateString(),
+                'expire_date'    => now()->addDays($package->trial_days)->toDateString(),
                 'payment_method' => $tempToken ? 'google' : '-',
                 'referral_code'  => strtoupper(Str::random(8)),
                 'referred_by'    => $referrer?->id,
