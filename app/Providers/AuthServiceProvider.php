@@ -32,7 +32,12 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('impersonate-users', function (Admin $admin) {
             return is_null($admin->role_id);
         });
-        Gate::before(function (User $user, string $ability) {
+        Gate::before(function ($user, string $ability) {
+            // Only apply this logic to User models, not Admin models
+            if (!$user instanceof User) {
+                return null; // Let other gates handle Admin models
+            }
+            
             // Treat both 'tenant' and 'user' as tenant owners
             $isTenant = method_exists($user, 'isTenant')
                 ? $user->isTenant()
