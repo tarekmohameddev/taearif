@@ -163,7 +163,7 @@
                   $showTaearifBranding = true;
               }
           @endphp
-          <div class="copy-right-area border-top" @if(!$showTaearifBranding) style="background-color:rgb(37, 37, 37);" @endif>
+          <div class="copy-right-area border-top" @if($showTaearifBranding) style="background-color:rgb(37, 37, 37);" @endif>
               <div class="container">
                   <div class="copy-right-content">
                         <span>
