@@ -61,17 +61,19 @@ class RegisterUserController extends Controller
         $activeMembership = $request->input('active_membership');
         $paidMember = $request->input('paid_member');
 
-        $activeUsers = User::whereHas('memberships', function ($q) {
-            $q->where('status', 1) // active membership
-              ->where('expire_date', '>=', now()); // not expired
-        })->get();
+        $activeUsers = User::where('account_type', 'tenant')
+            ->whereHas('memberships', function ($q) {
+                $q->where('status', 1) // active membership
+                  ->where('expire_date', '>=', now()); // not expired
+            })->get();
 
-        $users = User::with('referrer')->when($term, function ($query, $term) {
-            $query->where(function ($q) use ($term) {
-                $q->where('username', 'like', "%$term%")
-                  ->orWhere('email', 'like', "%$term%");
-            });
-        })
+        $users = User::where('account_type', 'tenant')
+            ->with('referrer')->when($term, function ($query, $term) {
+                $query->where(function ($q) use ($term) {
+                    $q->where('username', 'like', "%$term%")
+                      ->orWhere('email', 'like', "%$term%");
+                });
+            })
         ->when($startDate && $endDate, fn($query) => $query->whereBetween('created_at', [$startDate, $endDate]))
         ->when($startDate && !$endDate, fn($query) => $query->where('created_at', '>=', $startDate))
         ->when(!$startDate && $endDate, fn($query) => $query->where('created_at', '<=', $endDate))
@@ -124,7 +126,8 @@ class RegisterUserController extends Controller
         ->paginate(10);
 
         // $affiliateUsers = User::whereNotNull('referral_code')->get(['id','username','email']);
-        $affiliateUsers = User::whereHas('referrals')->get(['id','username','email']);
+        $affiliateUsers = User::where('account_type', 'tenant')
+            ->whereHas('referrals')->get(['id','username','email']);
 
         $online = PaymentGateway::query()->where('status', 1)->get();
         $offline = OfflineGateway::where('status', 1)->get();
@@ -135,14 +138,16 @@ class RegisterUserController extends Controller
         $faviconUploads = UserStep::where('favicon_uploaded', true)->count();
         $websiteNames = UserStep::where('website_named', true)->count();
         $homepageUpdates = UserStep::where('homepage_updated', true)->count();
-        $newUsersThisMonth = User::whereBetween('created_at', [
-            now()->startOfMonth(),
-            now()->endOfMonth()
-        ])->count();
-        $newUsersThisWeek = User::whereBetween('created_at', [
-            now()->startOfWeek(Carbon::SUNDAY),
-            now()->endOfWeek(Carbon::SUNDAY)
-        ])->count();
+        $newUsersThisMonth = User::where('account_type', 'tenant')
+            ->whereBetween('created_at', [
+                now()->startOfMonth(),
+                now()->endOfMonth()
+            ])->count();
+        $newUsersThisWeek = User::where('account_type', 'tenant')
+            ->whereBetween('created_at', [
+                now()->startOfWeek(Carbon::SUNDAY),
+                now()->endOfWeek(Carbon::SUNDAY)
+            ])->count();
 
 
         $stats = [
@@ -268,6 +273,7 @@ class RegisterUserController extends Controller
                 'online_status' => $request["online_status"],
                 'status' => 1,
                 'email_verified' => 1,
+                'account_type' => 'tenant',
             ]);
 
             UserBasicSetting::create([
