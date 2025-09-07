@@ -369,7 +369,14 @@ class AuthController extends Controller
             // Membership + website creation (existing flow)
             $transaction_id      = \App\Http\Helpers\UserPermissionHelper::uniqidReal(8);
             $transaction_details = $request->package_type === 'trial' ? 'Trial' : 'Free';
-            $price               = 0.00;
+            $price               = $package->price;
+
+            // Define welcome message before create_website call
+            $trialPeriod = $package->trial_days == 1 ? 'يوم واحد' : 
+                           ($package->trial_days == 7 ? '7 أيام' : 
+                           ($package->trial_days == 30 ? 'شهر' : 
+                           $package->trial_days . ' أيام'));
+            $welcome_message = 'شكراً على التسجيل في منصة تعاريف انت الآن على الباقة المميزة لمدة ' . $trialPeriod;
 
             $user = $this->create_website(
                 $request->all(),
@@ -377,7 +384,8 @@ class AuthController extends Controller
                 $transaction_details,
                 $price,
                 $be,
-                $request->password
+                $request->password,
+                $welcome_message
             );
 
             // Create default roles & permissions INSIDE this tenant
@@ -749,9 +757,9 @@ class AuthController extends Controller
         return ($be->base_currency_text_position == 'left' ? $be->base_currency_text . ' ' : '') . $amount . ($be->base_currency_text_position == 'right' ? ' ' . $be->base_currency_text : '');
     }
 
-    private function create_website($request, $transaction_id, $transaction_details, $amount, $be, $password)
+    private function create_website($request, $transaction_id, $transaction_details, $amount, $be, $password, $welcome_message)
     {
-        return DB::transaction(function () use ($request, $transaction_id, $transaction_details, $amount, $be, $password) {
+        return DB::transaction(function () use ($request, $transaction_id, $transaction_details, $amount, $be, $password, $welcome_message) {
 
 
             $deLang = User\Language::firstOrFail();
@@ -840,7 +848,6 @@ class AuthController extends Controller
                 "</a>";
             $user = User::where('username', $request['username']);
 
-            $welcome_message = 'شكراً على التسجيل في منصة تعاريف انت الآن على الباقة المميزة لمدة شهر';
             if ($user->count() == 0) {
                 $user = User::create([
                     'first_name' => $request['first_name'],
