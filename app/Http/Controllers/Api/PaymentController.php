@@ -50,7 +50,7 @@ class PaymentController extends Controller
             // Validate required fields
             $request->validate([
                 'package_id' => 'required|exists:packages,id',
-                'period' => 'required|integer|min:1'
+                'period' => 'nullable|integer|min:1'
             ]);
 
             $package = Package::find($request->package_id);
@@ -67,8 +67,8 @@ class PaymentController extends Controller
                 $amount = $package->price;
                 $period = 1; // For display purposes
             } else {
-                // Validate period for monthly and yearly packages
-                $period = (int) $request->period;
+                //  default to 1 if not provided period from request
+                $period = (int) ($request->period ?? 1);
                 
                 if ($period < 1) {
                     return response()->json([
