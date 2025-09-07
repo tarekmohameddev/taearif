@@ -47,16 +47,51 @@ class PaymentController extends Controller
                 ], 401);
             }
 
+            // Validate required fields
+            $request->validate([
+                'package_id' => 'required|exists:packages,id',
+                'period' => 'nullable|integer|min:1'
+            ]);
+
+            $package = Package::find($request->package_id);
+            
+            if (!$package) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Package not found'
+                ], 404);
+            }
+
+            // Handle lifetime packages - ignore period
+            if ($package->term === 'lifetime') {
+                $amount = $package->price;
+                $period = 1; // For display purposes
+            } else {
+                //  default to 1 if not provided period from request
+                $period = (int) ($request->period ?? 1);
+                
+                if ($period < 1) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Period must be at least 1'
+                    ], 422);
+                }
+
+                // Calculate total amount based on package term and period
+                $amount = $package->price * $period;
+            }
+
             $data = $request->all();
             $data['status'] = "1";
             $data['receipt_name'] = null;
             $data['email'] = $user->email;
+            $data['period'] = $period; // Pass period information for membership creation
 
             $title = "You are extending your membership";
             $description = "Congratulation you are going to join our membership.Please make a payment for confirming your membership now!";
 
-
-            $amount = $request->price;
+            $title = $package->title;
+            $description = $package->description;
 
             // Change success and cancel URLs to API endpoints
             $success_url = route('membership.arb.success');
@@ -76,7 +111,11 @@ class PaymentController extends Controller
             return response()->json([
                 'status' => 'success',
                 'payment_url' => $result['redirect_url'],
-                'payment_token' => $result['payment_token'] ?? null
+                'payment_token' => $result['payment_token'] ?? null,
+                'total_amount' => $amount,
+                'package_price' => $package->price,
+                'period' => $period,
+                'package_term' => $package->term
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -90,34 +129,48 @@ class PaymentController extends Controller
     {
         $user = Auth::user();
 
-        $plans = Package::where('is_active', true)
+        $packages = Package::where('is_active', true)
             ->with(['memberships' => function ($query) {
                 $query->where('expire_date', '>=', now());
             }])
-            ->get()
-            ->map(function ($package) use ($user) {
-                $isCurrent = $package->memberships->contains('user_id', $user->id);
+            ->get();
 
-                return [
-                    'id' => $package->id,
-                    'name' => $package->title,
-                    'price' => '' . number_format($package->price, 2),
-                    'billing' => match ($package->term) {
-                        'monthly' => 'شهريًا',
-                        'yearly' => 'سنويًا',
-                        'trial', 'is_trial' => 'تجريبي',
-                        default => '',
-                    },
-                    'features' => is_array($package->new_features)
-                        ? $package->new_features
-                        : json_decode($package->new_features, true, JSON_UNESCAPED_UNICODE) ?? [],
-                    'is_trial' => (bool) $package->is_trial,
-                    'cta' => $isCurrent ? 'الخطة الحالية' :  'الترقية',
-                ];
-            });
+        $plansMonthly = [];
+        $plansYearly = [];
+
+        foreach ($packages as $package) {
+            $isCurrent = $package->memberships->contains('user_id', $user->id);
+
+            $planData = [
+                'id' => $package->id,
+                'name' => $package->title,
+                'price' => '' . number_format($package->price, 2),
+                'billing' => match ($package->term) {
+                    'monthly' => 'شهريًا',
+                    'yearly' => 'سنويًا',
+                    'trial', 'is_trial' => 'تجريبي',
+                    default => '',
+                },
+                'features' => is_array($package->new_features)
+                    ? $package->new_features
+                    : json_decode($package->new_features, true, JSON_UNESCAPED_UNICODE) ?? [],
+                'is_trial' => (bool) $package->is_trial,
+                'cta' => $isCurrent ? 'الخطة الحالية' :  'الترقية',
+            ];
+
+            // Group by term
+            if ($package->term === 'monthly') {
+                $plansMonthly[] = $planData;
+            } elseif ($package->term === 'yearly') {
+                $plansYearly[] = $planData;
+            }
+        }
 
         return response()->json([
-            'plans' => $plans,
+            'plans' => [
+                'plans_monthly' => $plansMonthly,
+                'plans_yearly' => $plansYearly,
+            ],
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 }

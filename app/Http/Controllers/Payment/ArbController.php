@@ -102,6 +102,7 @@ class ArbController extends Controller
             'udf2'        => $user_id,
             'udf3'        => $context,
             'udf4'        => $app_id,
+            'udf5'        => $request->period ?? 1, // Pass period information
         ];
 
        // $data = $data + $this->generateUdfs($data);
@@ -197,6 +198,7 @@ class ArbController extends Controller
                 $package_id = $paymentData['udf1'];
                 $user_id = $paymentData['udf2'];
                 $price = $paymentData['amt'];
+                $period = (int) ($paymentData['udf5'] ?? 1); // Get period from UDF5
 
 
                 // You can access transaction details like $paymentData['transId'], $paymentData['amt'], etc.
@@ -237,11 +239,11 @@ class ArbController extends Controller
             }
             $currMembership->save();
 
-            // calculate expire date for selected package
+            // calculate expire date for selected package based on period
             if ($selectedPackage->term == 'monthly') {
-                $exDate = Carbon::now()->addMonth()->format('d-m-Y');
+                $exDate = Carbon::now()->addMonths($period)->format('d-m-Y');
             } elseif ($selectedPackage->term == 'yearly') {
-                $exDate = Carbon::now()->addYear()->format('d-m-Y');
+                $exDate = Carbon::now()->addYears($period)->format('d-m-Y');
             } elseif ($selectedPackage->term == 'lifetime') {
                 $exDate = Carbon::maxValue()->format('d-m-Y');
             }
@@ -410,8 +412,8 @@ class ArbController extends Controller
 
     public function handlePaymentRequest(string $data): object
     {
-
-
+        // payment request handling
+        return (object) [];
     }
 
 }
