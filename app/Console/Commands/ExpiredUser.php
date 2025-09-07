@@ -84,6 +84,22 @@ class ExpiredUser extends Command
                         ]);
                         $service->addCurrentPackage($req);
                         
+                        // Ensure user has language data (safety check)
+                        if ($user->languages()->count() == 0) {
+                            $deLang = \App\Models\User\Language::where('user_id', 0)->first();
+                            if ($deLang) {
+                                $lang = new \App\Models\User\Language;
+                                $lang->name = $deLang->name;
+                                $lang->code = $deLang->code;
+                                $lang->is_default = 1;
+                                $lang->rtl = $deLang->rtl;
+                                $lang->user_id = $user->id;
+                                $lang->keywords = $deLang->keywords;
+                                $lang->save();
+                                $this->info("Created missing language for user: {$user->username}");
+                            }
+                        }
+                        
                         // Set welcome message for user to see in dashboard
                         $user->message = 'تم تحويلك إلى الباقة المجانية بعد انتهاء فترة التجربة. يمكنك ترقية باقاتك في أي وقت من لوحة التحكم.';
                         $user->save();
