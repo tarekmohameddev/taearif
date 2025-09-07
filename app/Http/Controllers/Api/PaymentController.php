@@ -90,34 +90,48 @@ class PaymentController extends Controller
     {
         $user = Auth::user();
 
-        $plans = Package::where('is_active', true)
+        $packages = Package::where('is_active', true)
             ->with(['memberships' => function ($query) {
                 $query->where('expire_date', '>=', now());
             }])
-            ->get()
-            ->map(function ($package) use ($user) {
-                $isCurrent = $package->memberships->contains('user_id', $user->id);
+            ->get();
 
-                return [
-                    'id' => $package->id,
-                    'name' => $package->title,
-                    'price' => '' . number_format($package->price, 2),
-                    'billing' => match ($package->term) {
-                        'monthly' => 'شهريًا',
-                        'yearly' => 'سنويًا',
-                        'trial', 'is_trial' => 'تجريبي',
-                        default => '',
-                    },
-                    'features' => is_array($package->new_features)
-                        ? $package->new_features
-                        : json_decode($package->new_features, true, JSON_UNESCAPED_UNICODE) ?? [],
-                    'is_trial' => (bool) $package->is_trial,
-                    'cta' => $isCurrent ? 'الخطة الحالية' :  'الترقية',
-                ];
-            });
+        $plansMonthly = [];
+        $plansYearly = [];
+
+        foreach ($packages as $package) {
+            $isCurrent = $package->memberships->contains('user_id', $user->id);
+
+            $planData = [
+                'id' => $package->id,
+                'name' => $package->title,
+                'price' => '' . number_format($package->price, 2),
+                'billing' => match ($package->term) {
+                    'monthly' => 'شهريًا',
+                    'yearly' => 'سنويًا',
+                    'trial', 'is_trial' => 'تجريبي',
+                    default => '',
+                },
+                'features' => is_array($package->new_features)
+                    ? $package->new_features
+                    : json_decode($package->new_features, true, JSON_UNESCAPED_UNICODE) ?? [],
+                'is_trial' => (bool) $package->is_trial,
+                'cta' => $isCurrent ? 'الخطة الحالية' :  'الترقية',
+            ];
+
+            // Group by term
+            if ($package->term === 'monthly') {
+                $plansMonthly[] = $planData;
+            } elseif ($package->term === 'yearly') {
+                $plansYearly[] = $planData;
+            }
+        }
 
         return response()->json([
-            'plans' => $plans,
+            'plans' => [
+                'plans_monthly' => $plansMonthly,
+                'plans_yearly' => $plansYearly,
+            ],
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 }
