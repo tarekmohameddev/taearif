@@ -19,7 +19,6 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\ProcessRmsReminders::class,
         \App\Console\Commands\SeedGlobalPermissions::class,
         \App\Console\Commands\HealthCheck::class,
-        \App\Console\Commands\HealthCheckAuto::class,
 
     ];
 
@@ -34,7 +33,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('expire:user')->daily();
         $schedule->command('app:expire-trials')->daily();
         $schedule->command('reminders:process')->dailyAt('04:00')->timezone('Asia/Riyadh');
-        $schedule->command('health:check-auto')->weekly()->sundays()->at('02:00')->timezone('Asia/Riyadh');
+        $schedule->command('health:check --auto')->dailyAt('03:55')->timezone('Asia/Riyadh');
 
     }
 

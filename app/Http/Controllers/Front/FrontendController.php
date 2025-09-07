@@ -550,6 +550,12 @@ class FrontendController extends Controller
         //
 
         $userBs = \App\Models\User\BasicSetting::where('user_id', $user->id)->first();
+        
+        // If user has no basic settings, create them
+        if (!$userBs) {
+            $this->createBasicSettingForUser($user);
+            $userBs = \App\Models\User\BasicSetting::where('user_id', $user->id)->first();
+        }
 
         if (session()->has('lang')) {
             $currentLang = Language::where('code', session()->get('lang'))->first();
@@ -2163,5 +2169,79 @@ class FrontendController extends Controller
             'topCities' => $topCities,
             'topRegions' => $topRegions,
         ]);
+    }
+    
+    private function createBasicSettingForUser($user)
+    {
+        $basicSettingsJson = '{
+            "favicon": "https://taearif.com/assets/front/img/user/67c6ef042c39b.jpeg",
+            "breadcrumb": "https://codecanyon8.kreativdev.com/estaty/assets/img/hero/static/6574372e0ad77.jpg",
+            "logo": "https://taearif.com/assets/front/img/user/67c6ef042c39b.jpeg",
+            "preloader": "https://taearif.com/assets/front/img/user/67c6ef042c39b.jpeg",
+            "base_color": "0003FF",
+            "secondary_color": "00F5E5",
+            "theme": "home13",
+            "from_name": null,
+            "is_quote": "1",
+            "qr_image": "6727bead51be1.png",
+            "qr_color": "000000",
+            "qr_size": "248",
+            "qr_style": "square",
+            "qr_eye_style": "square",
+            "qr_margin": "0",
+            "qr_text": null,
+            "qr_text_color": "000000",
+            "qr_text_size": "15",
+            "qr_text_x": "50",
+            "qr_text_y": "50",
+            "qr_inserted_image": null,
+            "qr_inserted_image_size": "20",
+            "qr_inserted_image_x": "50",
+            "qr_inserted_image_y": "50",
+            "qr_type": "default",
+            "qr_url": "https://taearif.com/rangs",
+            "whatsapp_status": "0",
+            "whatsapp_number": null,
+            "whatsapp_header_title": null,
+            "whatsapp_popup_status": "0",
+            "whatsapp_popup_message": null,
+            "disqus_status": "0",
+            "disqus_short_name": null,
+            "analytics_status": "0",
+            "measurement_id": null,
+            "pixel_status": "0",
+            "pixel_id": null,
+            "tawkto_status": "0",
+            "tawkto_direct_chat_link": null,
+            "custom_css": null,
+            "website_title": "User Website",
+            "base_currency_symbol": "$",
+            "base_currency_symbol_position": "left",
+            "base_currency_text": "USD",
+            "base_currency_rate": null,
+            "base_currency_text_position": null,
+            "is_recaptcha": "0",
+            "google_recaptcha_site_key": null,
+            "google_recaptcha_secret_key": null,
+            "adsense_publisher_id": null,
+            "timezone": "1",
+            "features_section_image": null,
+            "cv": null,
+            "cv_original": null,
+            "email_verification_status": "1",
+            "cookie_alert_status": "0",
+            "cookie_alert_text": null,
+            "cookie_alert_button_text": null,
+            "property_country_status": "1",
+            "property_state_status": "1",
+            "short_description": "User website for testing and development.",
+            "industry_type": "Real Estate Company"
+        }';
+
+        $basicSettingsArray = json_decode($basicSettingsJson, true);
+        $basicSettingsArray['email'] = $user->email;
+        $basicSettingsArray['user_id'] = $user->id;
+
+        \App\Models\User\BasicSetting::create($basicSettingsArray);
     }
 }
