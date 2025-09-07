@@ -29,7 +29,7 @@ class ApiTestUserSeeder extends Seeder
             'username' => 'apitest_' . Str::random(6),
             'password' => '123123123',
             'password_confirmation' => '123123123',
-            'recaptcha_token' => 'test_token', // You might need to handle this properly
+            'recaptcha_token' => 'TEST_BYPASS_TOKEN', // You might need to handle this properly
         ];
         
         $this->command->info("Testing registration for: " . $userData['email']);
