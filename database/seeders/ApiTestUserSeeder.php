@@ -17,8 +17,8 @@ class ApiTestUserSeeder extends Seeder
     {
         $this->command->info('Testing API user registration...');
         
-        // Test registration endpoint - adjust this URL to match your setup
-        $baseUrl = 'http://localhost'; // Change this to your actual domain
+        // Test registration endpoint - using APP_URL from .env
+        $baseUrl = config('app.url');
         $registerEndpoint = $baseUrl . '/api/register';
         
         // Generate test user data

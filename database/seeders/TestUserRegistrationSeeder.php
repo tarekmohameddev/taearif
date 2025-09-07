@@ -18,7 +18,7 @@ class TestUserRegistrationSeeder extends Seeder
         $this->command->info('Starting test user registration...');
         
         // Test registration endpoint
-        $baseUrl = 'http://localhost'; // Change this to your actual domain
+        $baseUrl = config('app.url');
         $registerEndpoint = $baseUrl . '/api/register';
         
         // Generate test users
