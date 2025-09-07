@@ -592,6 +592,12 @@ class FrontendController extends Controller
         $data['customer_dropdown_show_logout'] = $api_customer_dropdown_settingsData ? $api_customer_dropdown_settingsData->show_logout : true;
 
         $data['home_sections'] = User\HomeSection::where('user_id', $user->id)->first();
+        
+        // If user has no home sections, create them
+        if (!$data['home_sections']) {
+            $this->createHomeSectionsForUser($user);
+            $data['home_sections'] = User\HomeSection::where('user_id', $user->id)->first();
+        }
 
         $tenantId = getUser()->id;
 
@@ -2243,5 +2249,24 @@ class FrontendController extends Controller
         $basicSettingsArray['user_id'] = $user->id;
 
         \App\Models\User\BasicSetting::create($basicSettingsArray);
+    }
+    
+    private function createHomeSectionsForUser($user)
+    {
+        $homeSectionsData = [
+            'user_id' => $user->id,
+            'hero_section' => 1,
+            'featured_properties_section' => 1,
+            'about_section' => 1,
+            'counter_info_section' => 1,
+            'feature_section' => 1,
+            'testimonial_section' => 1,
+            'blog_section' => 1,
+            'newsletter_section' => 1,
+            'contact_section' => 1,
+            'footer_section' => 1,
+        ];
+
+        \App\Models\User\HomeSection::create($homeSectionsData);
     }
 }

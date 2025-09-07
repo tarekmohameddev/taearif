@@ -9,6 +9,7 @@ use App\Models\User\BasicSetting;
 use App\Models\User\Menu;
 use App\Models\User\HomePageText;
 use App\Models\User\UserPermission;
+use App\Models\User\HomeSection;
 
 class HealthCheck extends Command
 {
@@ -71,6 +72,15 @@ class HealthCheck extends Command
             
         if ($usersWithoutPermissions > 0) {
             $issues[] = "{$usersWithoutPermissions} users without permissions";
+        }
+        
+        // Check for users without home sections
+        $usersWithoutHomeSections = User::whereDoesntHave('home_section')
+            ->where('status', 1)
+            ->count();
+            
+        if ($usersWithoutHomeSections > 0) {
+            $issues[] = "{$usersWithoutHomeSections} users without home sections";
         }
         
         if (empty($issues)) {
@@ -170,6 +180,21 @@ class HealthCheck extends Command
                 $fixedCount++;
             } catch (\Exception $e) {
                 $this->error("❌ Failed to fix permissions for user {$user->username}: " . $e->getMessage());
+            }
+        }
+        
+        // Fix users without home sections
+        $usersWithoutHomeSections = User::whereDoesntHave('home_section')
+            ->where('status', 1)
+            ->get();
+            
+        foreach ($usersWithoutHomeSections as $user) {
+            try {
+                $this->createHomeSections($user);
+                $this->info("✅ Fixed home sections for user: {$user->username}");
+                $fixedCount++;
+            } catch (\Exception $e) {
+                $this->error("❌ Failed to fix home sections for user {$user->username}: " . $e->getMessage());
             }
         }
         
@@ -294,5 +319,24 @@ class HealthCheck extends Command
                 ]);
             }
         }
+    }
+    
+    private function createHomeSections($user)
+    {
+        $homeSectionsData = [
+            'user_id' => $user->id,
+            'hero_section' => 1,
+            'featured_properties_section' => 1,
+            'about_section' => 1,
+            'counter_info_section' => 1,
+            'feature_section' => 1,
+            'testimonial_section' => 1,
+            'blog_section' => 1,
+            'newsletter_section' => 1,
+            'contact_section' => 1,
+            'footer_section' => 1,
+        ];
+
+        \App\Models\User\HomeSection::create($homeSectionsData);
     }
 }
