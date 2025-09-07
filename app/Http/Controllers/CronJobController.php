@@ -58,9 +58,10 @@ class CronJobController extends Controller
 
                         $userId = $user->id;
                         // $packageId = 16;
-                        $freePackageId = Package::where('status', '1')->where('price', 0)->value('id');
-                        if (is_null($freePackageId)) {
-                            Log::error('No active free package found (price=0).');
+                        $freePackageId = 16; // الباقة-المجانية
+                        $freePackage = Package::find($freePackageId);
+                        if (is_null($freePackage) || $freePackage->status != '1') {
+                            Log::error('Free package (ID: 16) not found or inactive.');
                             continue;
                         }
                         $packageId = $freePackageId;
@@ -73,7 +74,12 @@ class CronJobController extends Controller
                         ]);
 
                             $service->addCurrentPackage($request);
-                       // SubscriptionExpiredMail::dispatch($user, $bs, $be);
+                            
+                            // Set welcome message for user to see in dashboard
+                            $user->message = 'تم تحويلك إلى الباقة المجانية بعد انتهاء فترة التجربة. يمكنك ترقية باقاتك في أي وقت من لوحة التحكم.';
+                            $user->save();
+                            
+                            \App\Jobs\FreePackageSwitchMail::dispatch($user, $bs, $be);
                     }
                 }
             }
