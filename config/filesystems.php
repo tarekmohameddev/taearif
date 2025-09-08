@@ -65,6 +65,17 @@ return [
             'endpoint' => env('AWS_ENDPOINT'),
         ],
 
+        'oss' => [
+            'driver' => 's3',
+            'key' => env('OSS_ACCESS_KEY_ID'),
+            'secret' => env('OSS_ACCESS_KEY_SECRET'),
+            'region' => env('OSS_REGION', 'oss-me-east-1'), // Riyadh region
+            'bucket' => env('OSS_BUCKET'),
+            'endpoint' => env('OSS_ENDPOINT'),
+            'url' => env('OSS_URL'),
+            'visibility' => 'public',
+        ],
+
     ],
 
 ];

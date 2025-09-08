@@ -560,3 +560,32 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/pixels/{id}', [PixelController::class, 'destroy']);
     Route::patch('/pixels/{id}/toggle-status', [PixelController::class, 'toggleStatus']);
 });
+
+// Add these routes for video upload functionality
+Route::middleware('auth:sanctum')->group(function () {
+    // Video upload routes
+    Route::prefix('video')->group(function () {
+        Route::post('/upload', [App\Http\Controllers\Api\VideoUploadController::class, 'uploadVideo']);
+        Route::post('/initiate-chunked', [App\Http\Controllers\Api\VideoUploadController::class, 'initiateChunkedUpload']);
+        Route::post('/upload-chunk', [App\Http\Controllers\Api\VideoUploadController::class, 'uploadChunk']);
+        Route::post('/complete-chunked', [App\Http\Controllers\Api\VideoUploadController::class, 'completeChunkedUpload']);
+        Route::post('/abort-chunked', [App\Http\Controllers\Api\VideoUploadController::class, 'abortChunkedUpload']);
+        Route::post('/signed-url', [App\Http\Controllers\Api\VideoUploadController::class, 'getSignedUploadUrl']);
+        Route::delete('/delete', [App\Http\Controllers\Api\VideoUploadController::class, 'deleteVideo']);
+    });
+});
+
+// Add this debug route
+Route::get('/debug-oss', function () {
+    return [
+        'env_oss_endpoint' => env('OSS_ENDPOINT'),
+        'env_oss_bucket' => env('OSS_BUCKET'),
+        'env_oss_key' => env('OSS_ACCESS_KEY_ID'),
+        'env_oss_secret' => env('OSS_ACCESS_KEY_SECRET'),
+        'config_oss_endpoint' => config('filesystems.disks.oss.endpoint'),
+        'config_oss_bucket' => config('filesystems.disks.oss.bucket'),
+        'config_oss_key' => config('filesystems.disks.oss.key'),
+        'config_oss_secret' => config('filesystems.disks.oss.secret'),
+        'all_oss_config' => config('filesystems.disks.oss'),
+    ];
+});
