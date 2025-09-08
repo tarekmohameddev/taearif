@@ -31,12 +31,20 @@ use App\Models\User\RealestateManagement\ApiUserCategory as Category;
 use App\Support\Audit;
 use App\Services\GoogleAnalyticsService;
 use Carbon\Carbon;
+use App\Services\AlibabaOssService;
 
 
 class PropertyController extends Controller
 {
 
 
+
+    private $videoService;
+
+    public function __construct(AlibabaOssService $ossService)
+    {
+        $this->videoService = $ossService;
+    }
 
     public function duplicate(Request $request, $propertyId)
     {
@@ -596,7 +604,7 @@ class PropertyController extends Controller
             'gallery.*' => 'string',
             'floor_planning_image' => ['nullable'],
             'video_image' => 'nullable|string',
-            'video_url' => 'nullable|string',
+            'video_url' => 'nullable|string',// For direct URL or OSS URL
             'virtual_tour' => 'nullable|string',
             'price' => 'nullable|numeric',
             'pricePerMeter' => 'nullable|numeric',
@@ -642,7 +650,7 @@ class PropertyController extends Controller
             'elevator' => 'nullable|integer',
             'private_parking' => 'nullable|integer',
             'size' => 'nullable|integer',
-
+            'video_file' => 'nullable|file|max:51200', // 50MB max for video
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -722,6 +730,22 @@ class PropertyController extends Controller
 
             ]);
 
+            $videoUrl = $request->video_url;
+            
+            // Handle video file upload if provided
+            if ($request->hasFile('video_file')) {
+                try {
+                    $videoResult = $this->videoService->uploadVideo(
+                        $request->file('video_file'),
+                        $user->id,
+                        'property'
+                    );
+                    $videoUrl = $videoResult['url'];
+                } catch (\Exception $e) {
+                    throw new \Exception('Failed to upload video: ' . $e->getMessage());
+                }
+            }
+            
             $property = Property::storeProperty(
                 $user->id,
                 $propertyData,
@@ -730,6 +754,11 @@ class PropertyController extends Controller
                 $videoImage,
                 $featured
             );
+
+            // Update the property with video URL if we have one
+            if ($videoUrl) {
+                $property->update(['video_url' => $videoUrl]);
+            }
 
             $characteristics = $request->only([
                 'facade_id',
@@ -998,8 +1027,10 @@ class PropertyController extends Controller
             'size' => 'nullable|numeric',
             'type' => 'nullable',
             'faqs' => 'nullable|array',
-            'video_url' => 'nullable|string',
-            'virtual_tour' => 'nullable|string'
+            'video_url' => 'nullable|string',// For direct URL or OSS URL
+            'virtual_tour' => 'nullable|string',
+            'video_file' => 'nullable|file|max:51200', // 50MB max for video
+
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -1012,7 +1043,30 @@ class PropertyController extends Controller
         }
 
         DB::transaction(function () use ($request, $user, $defaultLanguage, &$property) {
-            $property->updateProperty($request->all());
+            
+            $videoUrl = $request->video_url;
+            
+            // Handle video file upload if provided
+            if ($request->hasFile('video_file')) {
+                try {
+                    $videoResult = $this->videoService->uploadVideo(
+                        $request->file('video_file'),
+                        $user->id,
+                        'property'
+                    );
+                    $videoUrl = $videoResult['url'];
+                } catch (\Exception $e) {
+                    throw new \Exception('Failed to upload video: ' . $e->getMessage());
+                }
+            }
+            
+            // Update property data with video URL
+            $requestData = $request->all();
+            if ($videoUrl) {
+                $requestData['video_url'] = $videoUrl;
+            }
+            
+            $property->updateProperty($requestData);
 
             $characteristics = $request->only([
                 'region_id',
