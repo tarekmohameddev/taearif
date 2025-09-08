@@ -2,8 +2,6 @@
 
 namespace App\Services\Rms;
 
-namespace App\Services\Rms;
-
 use App\Models\Api\Rms\RmContract;
 use App\Models\Api\Rms\RmRental;
 use App\Models\Api\Rms\RmPaymentInstallment;
@@ -37,6 +35,8 @@ class ContractService
                 'office_commission_value' => $data['office_commission_value'] ?? null,
                 'platform_fee' => $data['platform_fee'] ?? 0,
                 'grace_period_months' => $data['grace_period_months'] ?? 0,
+                'created_by' => $userId,
+                'updated_by' => $userId,
             ]);
 
             if ($data['status'] === 'active') {
@@ -60,6 +60,7 @@ class ContractService
             $this->validateNoOverlap($contract->rental_id, $data['start_date'], $data['end_date'], $userId, $contract->id);
         }
 
+        $data['updated_by'] = $userId;
         $contract->update($data);
 
         return $contract;

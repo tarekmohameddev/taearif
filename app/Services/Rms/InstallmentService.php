@@ -87,10 +87,8 @@ class InstallmentService
         $months = $rental->rental_period_months;
         $plan   = $rental->paying_plan; // monthly|quarterly|semi_annual|annual
 
-        // prefer platform_contract_value if provided (>0), else fall back to rental base
-        $baseRent = $contract->platform_contract_value > 0
-            ? $contract->platform_contract_value
-            : $rental->base_rent_amount;
+        // Use rental base rent amount
+        $baseRent = $rental->base_rent_amount;
 
         $userId = $rental->user_id; // already owner id on rental
 
@@ -118,7 +116,7 @@ class InstallmentService
                 'sequence_no'=> $i + 1,
                 'due_date'   => $start->copy()->addMonths($i * $periods),
                 'amount'     => $isGrace ? 0 : $amount,
-                'status'     => 'active',
+                'status'     => 'pending',
                 'payment_type' => 'none',
                 'payment_status' => 'not_due',
                 'created_at' => now(),
@@ -165,7 +163,7 @@ class InstallmentService
         }
 
         // No payment yet
-        return (\Carbon\Carbon::parse($dueDate)->lt(\Carbon\Carbon::parse($today))) ? 'overdue' : 'active';
+        return (\Carbon\Carbon::parse($dueDate)->lt(\Carbon\Carbon::parse($today))) ? 'overdue' : 'pending';
     }
 
     protected function determinePaymentType($amount, $paidAmount)
