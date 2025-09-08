@@ -33,6 +33,30 @@
 @endif
 <link rel="stylesheet" href="{{ asset('assets/front/user/realestate/css/responsive.css') }}">
 
+<style>
+.video-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.video-play-btn:hover {
+    background: rgba(255,255,255,1) !important;
+    transform: scale(1.1);
+}
+
+.property-video {
+    border-radius: 10px;
+}
+
+.video-thumbnail {
+    transition: opacity 0.3s ease;
+}
+
+.video-thumbnail:hover .video-play-btn {
+    transform: scale(1.1);
+}
+</style>
+
 @endsection
 @section('scripts')
 
@@ -558,11 +582,26 @@
                     @if (!empty($propertyContent->video_url))
                     <div class="product-video mb-40">
                         <h3 class="mb-20"> {{ $keywords['Video'] ?? __('Video') }}</h3>
-                        <div class="lazy-container radius-lg ratio ratio-16-11">
-                            <img class="lazyload" data-src="{{ $propertyContent->featured_image ? asset($propertyContent->featured_image) : asset('assets/front/images/placeholder.png') }}" src="{{ $propertyContent->featured_image ? asset($propertyContent->featured_image) : asset('assets/front/images/placeholder.png') }}">
-                            <a href="{{ $propertyContent->video_url }}" class="video-btn youtube-popup p-absolute">
-                                <i class="fas fa-play"></i>
-                            </a>
+                        <div class="video-container radius-lg ratio ratio-16-11" style="position: relative; background: #000;">
+                            <video 
+                                id="property-video" 
+                                class="property-video" 
+                                controls 
+                                preload="metadata"
+                                poster="{{ $propertyContent->featured_image ? asset($propertyContent->featured_image) : asset('assets/front/images/placeholder.png') }}"
+                                style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px; display: none;">
+                                <source src="{{ $propertyContent->video_url }}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            
+                            <!-- Thumbnail with play button overlay -->
+                            <div class="video-thumbnail" id="video-thumbnail" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('{{ $propertyContent->featured_image ? asset($propertyContent->featured_image) : asset('assets/front/images/placeholder.png') }}'); background-size: cover; background-position: center; border-radius: 10px; cursor: pointer;">
+                                <div class="video-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+                                    <button class="video-play-btn" id="play-btn" style="background: rgba(255,255,255,0.9); border: none; border-radius: 50%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;">
+                                        <i class="fas fa-play" style="font-size: 24px; color: #333; margin-left: 4px;"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     @endif
@@ -875,6 +914,41 @@
     if (window.innerWidth >= 768) {
       var el = document.querySelector('.map-iframe');
       if (el && !el.src) el.src = el.dataset.src;
+    }
+    
+    // Video player functionality
+    const playBtn = document.getElementById('play-btn');
+    const videoThumbnail = document.getElementById('video-thumbnail');
+    const video = document.getElementById('property-video');
+    
+    if (playBtn && videoThumbnail && video) {
+        playBtn.addEventListener('click', function() {
+            // Hide thumbnail and show video
+            videoThumbnail.style.display = 'none';
+            video.style.display = 'block';
+            
+            // Play the video
+            video.play().catch(function(error) {
+                console.error('Error playing video:', error);
+                // If autoplay fails, show the thumbnail again
+                videoThumbnail.style.display = 'block';
+                video.style.display = 'none';
+            });
+        });
+        
+        // Optional: Show thumbnail again when video ends
+        video.addEventListener('ended', function() {
+            videoThumbnail.style.display = 'block';
+            video.style.display = 'none';
+        });
+        
+        // Optional: Show thumbnail when video is paused at the beginning
+        video.addEventListener('pause', function() {
+            if (video.currentTime === 0) {
+                videoThumbnail.style.display = 'block';
+                video.style.display = 'none';
+            }
+        });
     }
   });
 </script>
