@@ -228,7 +228,10 @@ class AuthController extends Controller
                     'password'   => ['required','string','min:6'],
                     'first_name' => ['nullable','string','max:191'],
                     'last_name'  => ['nullable','string','max:191'],
-                    'phone'      => ['nullable','string','max:191'],
+                    'phone'      => ['required','string','max:191','unique:users,phone'],
+                ], [
+                    'phone.required' => 'Phone number is required.',
+                    'phone.unique'   => 'Phone number is used, choose different.',
                 ]);
 
                 // Ensure the parent is a tenant (not another employee)
@@ -306,6 +309,10 @@ class AuthController extends Controller
                     'email'    => 'required|email|unique:users,email',
                     'username' => 'required|string|unique:users,username',
                     'password' => 'required|string|min:6',
+                    'phone'    => 'required|string|max:191|unique:users,phone',
+                ], [
+                    'phone.required' => 'Phone number is required.',
+                    'phone.unique'   => 'Phone number is used, choose different.',
                 ]);
             }
 
