@@ -588,19 +588,16 @@
                                 class="property-video" 
                                 controls 
                                 preload="metadata"
-                                poster="{{ $propertyContent->featured_image ? asset($propertyContent->featured_image) : asset('assets/front/images/placeholder.png') }}"
-                                style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px; display: none;">
+                                style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
                                 <source src="{{ $propertyContent->video_url }}" type="video/mp4">
                                 Your browser does not support the video tag.
                             </video>
                             
-                            <!-- Thumbnail with play button overlay -->
-                            <div class="video-thumbnail" id="video-thumbnail" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('{{ $propertyContent->featured_image ? asset($propertyContent->featured_image) : asset('assets/front/images/placeholder.png') }}'); background-size: cover; background-position: center; border-radius: 10px; cursor: pointer;">
-                                <div class="video-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; border-radius: 10px;">
-                                    <button class="video-play-btn" id="play-btn" style="background: rgba(255,255,255,0.9); border: none; border-radius: 50%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;">
-                                        <i class="fas fa-play" style="font-size: 24px; color: #333; margin-left: 4px;"></i>
-                                    </button>
-                                </div>
+                            <!-- Play button overlay -->
+                            <div class="video-overlay" id="video-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; border-radius: 10px; pointer-events: none;">
+                                <button class="video-play-btn" id="play-btn" style="background: rgba(255,255,255,0.9); border: none; border-radius: 50%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; pointer-events: auto;">
+                                    <i class="fas fa-play" style="font-size: 24px; color: #333; margin-left: 4px;"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -918,35 +915,31 @@
     
     // Video player functionality
     const playBtn = document.getElementById('play-btn');
-    const videoThumbnail = document.getElementById('video-thumbnail');
+    const videoOverlay = document.getElementById('video-overlay');
     const video = document.getElementById('property-video');
     
-    if (playBtn && videoThumbnail && video) {
+    if (playBtn && videoOverlay && video) {
         playBtn.addEventListener('click', function() {
-            // Hide thumbnail and show video
-            videoThumbnail.style.display = 'none';
-            video.style.display = 'block';
+            // Hide play button overlay and play the video
+            videoOverlay.style.display = 'none';
             
             // Play the video
             video.play().catch(function(error) {
                 console.error('Error playing video:', error);
-                // If autoplay fails, show the thumbnail again
-                videoThumbnail.style.display = 'block';
-                video.style.display = 'none';
+                // If autoplay fails, show the overlay again
+                videoOverlay.style.display = 'flex';
             });
         });
         
-        // Optional: Show thumbnail again when video ends
+        // Show play button overlay again when video ends
         video.addEventListener('ended', function() {
-            videoThumbnail.style.display = 'block';
-            video.style.display = 'none';
+            videoOverlay.style.display = 'flex';
         });
         
-        // Optional: Show thumbnail when video is paused at the beginning
+        // Show play button overlay when video is paused at the beginning
         video.addEventListener('pause', function() {
             if (video.currentTime === 0) {
-                videoThumbnail.style.display = 'block';
-                video.style.display = 'none';
+                videoOverlay.style.display = 'flex';
             }
         });
     }
