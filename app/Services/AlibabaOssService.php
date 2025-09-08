@@ -69,10 +69,20 @@ class AlibabaOssService
             $extension = $file->getClientOriginalExtension();
             $filename = $path ? $path . '/' . Str::uuid() . '.' . $extension : Str::uuid() . '.' . $extension;
             
-            // Upload file
-            $result = $this->client->uploadFile($this->bucket, $filename, $file->getPathname());
+            // Determine content type based on file extension
+            $contentType = $this->getContentType($extension);
             
-            // Get public URL
+            // Upload file with public read ACL and proper content type
+            $options = [
+                OssClient::OSS_HEADERS => [
+                    'x-oss-object-acl' => OssClient::OSS_ACL_TYPE_PUBLIC_READ,
+                    'Content-Type' => $contentType
+                ]
+            ];
+            
+            $result = $this->client->uploadFile($this->bucket, $filename, $file->getPathname(), $options);
+            
+            // Get public URL (using third-level domain)
             $url = $this->getPublicUrl($filename);
             
             return [
@@ -86,6 +96,32 @@ class AlibabaOssService
         } catch (OssException $e) {
             throw new \Exception('Failed to upload file to OSS: ' . $e->getMessage());
         }
+    }
+    
+    /**
+     * Get content type based on file extension
+     */
+    private function getContentType(string $extension): string
+    {
+        $contentTypes = [
+            'mp4' => 'video/mp4',
+            'avi' => 'video/x-msvideo',
+            'mov' => 'video/quicktime',
+            'wmv' => 'video/x-ms-wmv',
+            'flv' => 'video/x-flv',
+            'webm' => 'video/webm',
+            'mkv' => 'video/x-matroska',
+            '3gp' => 'video/3gpp',
+            'm4v' => 'video/x-m4v',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'svg' => 'image/svg+xml',
+        ];
+        
+        return $contentTypes[strtolower($extension)] ?? 'application/octet-stream';
     }
 
     /**
@@ -120,11 +156,15 @@ class AlibabaOssService
     }
 
     /**
-     * Get public URL for file
+     * Get public URL for file (updated to use third-level domain)
      */
     public function getPublicUrl(string $filename): string
     {
-        return rtrim($this->endpoint, '/') . '/' . $this->bucket . '/' . $filename;
+        // Use third-level domain format: bucket.oss-region.aliyuncs.com
+        $bucket = $this->bucket;
+        $region = env('OSS_REGION', 'me-central-1');
+        
+        return "https://{$bucket}.oss-{$region}.aliyuncs.com/{$filename}";
     }
 
     /**
