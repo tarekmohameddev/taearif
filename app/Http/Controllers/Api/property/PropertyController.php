@@ -1305,8 +1305,46 @@ class PropertyController extends Controller
             $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
         } catch (\Throwable $e) {}
 
-        $properties = Property::with(['category', 'user', 'contents', 'proertyAmenities.amenity'])
-            ->whereIn('user_id', $allowedUserIds)
+        // Build the properties query
+        $propertiesQuery = Property::with(['category', 'user', 'contents', 'proertyAmenities.amenity'])
+            ->whereIn('user_id', $allowedUserIds);
+
+        // Apply purpose filter if provided
+        if ($request->has('purposes_filter') && !empty($request->purposes_filter)) {
+            $propertiesQuery->where('purpose', $request->purposes_filter);
+        }
+
+        // Apply specifics filters
+        if ($request->has('price_from') && !empty($request->price_from)) {
+            $propertiesQuery->where('price', '>=', $request->price_from);
+        }
+        if ($request->has('price_to') && !empty($request->price_to)) {
+            $propertiesQuery->where('price', '<=', $request->price_to);
+        }
+        if ($request->has('area_from') && !empty($request->area_from)) {
+            $propertiesQuery->where('area', '>=', $request->area_from);
+        }
+        if ($request->has('purpose') && !empty($request->purpose)) {
+            $propertiesQuery->where('purpose', $request->purpose);
+        }
+        if ($request->has('type') && !empty($request->type)) {
+            $propertiesQuery->where('type', $request->type);
+        }
+        if ($request->has('beds') && !empty($request->beds)) {
+            $propertiesQuery->where('beds', $request->beds);
+        }
+        if ($request->has('bath') && !empty($request->bath)) {
+            $propertiesQuery->where('bath', $request->bath);
+        }
+        if ($request->has('features') && !empty($request->features)) {
+            $featuresArray = explode(',', $request->features);
+            foreach ($featuresArray as $feature) {
+                $feature = trim($feature);
+                $propertiesQuery->whereJsonContains('features', $feature);
+            }
+        }
+
+        $properties = $propertiesQuery
             ->orderBy('reorder_featured', 'desc')
             ->orderBy('reorder', 'asc')
             ->paginate(10);
@@ -1338,6 +1376,71 @@ class PropertyController extends Controller
             $viewsBySlug[$slug] =
                 ($viewsByPath["/property/{$slug}"] ?? 0);
         }
+
+        // ===== Get available purposes from properties =====
+        $availablePurposes = Property::whereIn('user_id', $allowedUserIds)
+            ->whereNotNull('purpose')
+            ->where('purpose', '!=', '')
+            ->distinct()
+            ->pluck('purpose')
+            ->values()
+            ->toArray();
+
+        // ===== Get specifics filters from properties =====
+        $propertiesForFilters = Property::whereIn('user_id', $allowedUserIds)->get();
+        
+        // Price range (min/max from actual data)
+        $priceRange = [
+            'min' => $propertiesForFilters->whereNotNull('price')->min('price') ?: 0,
+            'max' => $propertiesForFilters->whereNotNull('price')->max('price') ?: 0,
+        ];
+
+        // Area range (min only from actual data)
+        $areaRange = [
+            'min' => $propertiesForFilters->whereNotNull('area')->min('area') ?: 0,
+        ];
+
+        // Get distinct values for filters
+        $availableTypes = $propertiesForFilters->whereNotNull('type')
+            ->where('type', '!=', '')
+            ->pluck('type')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        $availableBeds = $propertiesForFilters->whereNotNull('beds')
+            ->pluck('beds')
+            ->unique()
+            ->sort()
+            ->values()
+            ->toArray();
+
+        $availableBath = $propertiesForFilters->whereNotNull('bath')
+            ->pluck('bath')
+            ->unique()
+            ->sort()
+            ->values()
+            ->toArray();
+
+        // Extract unique features from JSON arrays
+        $allFeatures = [];
+        foreach ($propertiesForFilters as $property) {
+            if (!empty($property->features) && is_array($property->features)) {
+                $allFeatures = array_merge($allFeatures, $property->features);
+            }
+        }
+        $availableFeatures = array_unique($allFeatures);
+        sort($availableFeatures);
+
+        $specificsFilters = [
+            'price_range' => $priceRange,
+            'area_range' => $areaRange,
+            'purpose' => $availablePurposes,
+            'type' => $availableTypes,
+            'beds' => $availableBeds,
+            'bath' => $availableBath,
+            'features' => array_values($availableFeatures),
+        ];
 
         // === Format response ===
         $formattedProperties = $properties->getCollection()->map(function ($property) use ($viewsBySlug) {
@@ -1375,6 +1478,8 @@ class PropertyController extends Controller
             'status' => 'success',
             'data' => [
                 'properties' => $formattedProperties,
+                'purposes_filter' => $availablePurposes,
+                'specifics_filters' => $specificsFilters,
                 'total_reorder_featured' => $totalReorderFeatured,
                 'pagination' => [
                     'total'        => $properties->total(),
