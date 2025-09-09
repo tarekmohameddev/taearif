@@ -18,6 +18,7 @@ class Project extends Model
     protected $fillable = [
         'user_id',
         'featured_image',
+        'video_url',
         'min_price',
         'max_price',
         'latitude',
@@ -41,6 +42,7 @@ class Project extends Model
         return self::create([
             'user_id' => $userId,
             'featured_image' => $request['featured_image'],
+            'video_url' => $request['video_url'] ?? null,
             'min_price' => $request['min_price'],
             'max_price' => $request['max_price'],
             'featured' => $request['featured'],
@@ -60,6 +62,7 @@ class Project extends Model
 
         return $this->update([
             'featured_image' => $request['featured_image'],
+            'video_url' => $request['video_url'] ?? null,
             'min_price' => $request['min_price'],
             'max_price' => $request['max_price'],
             'featured' => $request['featured'],
