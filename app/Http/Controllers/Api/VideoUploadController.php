@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\AlibabaOssService;
+use App\Models\Membership;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -19,14 +20,48 @@ class VideoUploadController extends Controller
     }
 
     /**
+     * Get user's video size limit from their package
+     */
+    private function getUserVideoSizeLimit($userId)
+    {
+        $membership = Membership::where('user_id', $userId)
+            ->where('status', 1)
+            ->orderBy('id', 'desc')
+            ->with('package')
+            ->first();
+
+        return $membership->package->video_size_limit ?? null;
+    }
+
+    /**
      * Upload video directly to OSS
      */
     public function uploadVideo(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'video' => 'required|file|max:51200', // 50MB max
-            'context' => 'nullable|string|in:property,project,content'
-        ]);
+        $user = Auth::user();
+        
+        // Get user's package video size limit
+        $videoSizeLimit = $this->getUserVideoSizeLimit($user->id);
+        $maxVideoSizeKB = $videoSizeLimit ? ($videoSizeLimit * 1024) : null; // Convert MB to KB
+
+        $rules = [
+            'video' => $maxVideoSizeKB ? "required|file|max:{$maxVideoSizeKB}" : 'required|file',
+            'context' => 'nullable|string|in:property,project'
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        // Add custom error messages for video file size limit
+        if ($videoSizeLimit) {
+            $validator->after(function ($validator) use ($request, $videoSizeLimit) {
+                if ($request->hasFile('video')) {
+                    $fileSizeMB = $request->file('video')->getSize() / (1024 * 1024);
+                    if ($fileSizeMB > $videoSizeLimit) {
+                        $validator->errors()->add('video', "The video file size ({$fileSizeMB}MB) exceeds your package limit of {$videoSizeLimit}MB.");
+                    }
+                }
+            });
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -36,7 +71,6 @@ class VideoUploadController extends Controller
         }
 
         try {
-            $user = Auth::user();
             $result = $this->ossService->uploadVideo(
                 $request->file('video'),
                 $user->id,
@@ -67,10 +101,26 @@ class VideoUploadController extends Controller
      */
     public function initiateChunkedUpload(Request $request): JsonResponse
     {
+        $user = Auth::user();
+        
+        // Get user's package video size limit
+        $videoSizeLimit = $this->getUserVideoSizeLimit($user->id);
+
         $validator = Validator::make($request->all(), [
             'filename' => 'required|string',
-            'content_type' => 'nullable|string'
+            'content_type' => 'nullable|string',
+            'total_size' => 'required|integer|min:1' // Total file size in bytes
         ]);
+
+        // Add custom validation for video size limit
+        if ($videoSizeLimit) {
+            $validator->after(function ($validator) use ($request, $videoSizeLimit) {
+                $totalSizeMB = $request->input('total_size') / (1024 * 1024);
+                if ($totalSizeMB > $videoSizeLimit) {
+                    $validator->errors()->add('total_size', "The video file size ({$totalSizeMB}MB) exceeds your package limit of {$videoSizeLimit}MB.");
+                }
+            });
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -80,7 +130,6 @@ class VideoUploadController extends Controller
         }
 
         try {
-            $user = Auth::user();
             $filename = 'videos/property/' . $user->id . '/' . $request->filename;
             
             $result = $this->videoService->initiateMultipartUpload(
