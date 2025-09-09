@@ -281,6 +281,7 @@ class ProjectController extends Controller
         $rules = [
             // 'title' => 'required|max:255',
             'featured_image' => 'required|string',
+            'video_url' => 'nullable|string', // For direct URL or OSS URL
 
             'address' => 'nullable',
             'description' => 'nullable|min:15',
@@ -316,6 +317,7 @@ class ProjectController extends Controller
         DB::transaction(function () use ($request, $ownerId, $defaultLang, &$project) {
             $requestData = $request->all();
             $requestData['featured_image'] = asset($request->featured_image);
+            $requestData['video_url'] = $request->video_url; // Video URL from separate upload
 
             $project = Project::storeProject($ownerId, $requestData);
 
@@ -478,6 +480,7 @@ class ProjectController extends Controller
         $rules = [
             // 'title' => 'required|max:255',
             'featured_image' => 'required|string',
+            'video_url' => 'nullable|string', // For direct URL or OSS URL
 
             'address' => 'nullable',
             'description' => 'nullable|min:15',
@@ -510,6 +513,7 @@ class ProjectController extends Controller
         DB::transaction(function () use ($request, $ownerId, $defaultLang, &$project) {
             $requestData = $request->all();
             $requestData['featured_image'] = $request->featured_image;
+            $requestData['video_url'] = $request->video_url; // Video URL from separate upload
             $project->updateProject($requestData);
             if ($request->has('gallery_images')) {
                 ProjectGalleryImg::where('project_id', $project->id)->delete();

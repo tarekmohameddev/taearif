@@ -114,6 +114,43 @@
 
         el.hide();
     });
+
+    /*============================================
+        Video Player Functionality
+    ============================================*/
+    $(document).ready(function() {
+        const video = document.getElementById('project-video');
+        const playBtn = document.getElementById('play-btn');
+        const overlay = document.getElementById('video-overlay');
+
+        if (video && playBtn && overlay) {
+            // Play button click handler
+            playBtn.addEventListener('click', function() {
+                video.play();
+                overlay.style.display = 'none';
+            });
+
+            // Hide overlay when video starts playing
+            video.addEventListener('play', function() {
+                overlay.style.display = 'none';
+            });
+
+            // Show overlay when video is paused
+            video.addEventListener('pause', function() {
+                overlay.style.display = 'flex';
+            });
+
+            // Show overlay when video ends
+            video.addEventListener('ended', function() {
+                overlay.style.display = 'flex';
+            });
+
+            // Show overlay when video is loaded and ready
+            video.addEventListener('loadeddata', function() {
+                overlay.style.display = 'flex';
+            });
+        }
+    });
 </script>
 @endsection
 @endif
@@ -162,6 +199,30 @@
                     </p>
 
                 </div>
+
+                @if (!empty($project->video_url))
+                <div class="project-video mb-40" data-aos="fade-up">
+                    <h3 class="mb-20"> {{ $keywords['Video'] ?? __('Video') }}</h3>
+                    <div class="video-container radius-lg ratio ratio-16-11" style="position: relative; background: #000;">
+                        <video 
+                            id="project-video" 
+                            class="property-video" 
+                            controls 
+                            preload="metadata"
+                            style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+                            <source src="{{ str_starts_with($project->video_url, 'http') ? $project->video_url : 'https://taearifvideos.oss-me-central-1.aliyuncs.com/' . $project->video_url }}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                        
+                        <!-- Play button overlay -->
+                        <div class="video-overlay" id="video-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; border-radius: 10px; pointer-events: none;">
+                            <button class="video-play-btn" id="play-btn" style="background: rgba(255,255,255,0.9); border: none; border-radius: 50%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; pointer-events: auto;">
+                                <i class="fas fa-play" style="font-size: 24px; color: #333; margin-left: 4px;"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                @endif
                 {{-- @if (!empty(showAd(3)))
                         <div class="text-center mb-3 mt-3">
                             {!! showAd(3) !!}
