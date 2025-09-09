@@ -594,6 +594,10 @@ class PropertyController extends Controller
             ->where('is_default', 1)
             ->firstOrFail();
 
+        // Get user's package video size limit
+        $videoSizeLimit = $membership->package->video_size_limit ?? null;
+        $maxVideoSizeKB = $videoSizeLimit ? ($videoSizeLimit * 1024) : null; // Convert MB to KB
+
         $rules = [
             'payment_method' => 'nullable',
             'title' => 'required|max:255',
@@ -650,10 +654,22 @@ class PropertyController extends Controller
             'elevator' => 'nullable|integer',
             'private_parking' => 'nullable|integer',
             'size' => 'nullable|integer',
-            'video_file' => 'nullable|file|max:51200', // 50MB max for video
+            'video_file' => $maxVideoSizeKB ? "nullable|file|max:{$maxVideoSizeKB}" : 'nullable|file',
         ];
 
         $validator = Validator::make($request->all(), $rules);
+
+        // Add custom error messages for video file size limit
+        if ($videoSizeLimit) {
+            $validator->after(function ($validator) use ($request, $videoSizeLimit) {
+                if ($request->hasFile('video_file')) {
+                    $fileSizeMB = $request->file('video_file')->getSize() / (1024 * 1024);
+                    if ($fileSizeMB > $videoSizeLimit) {
+                        $validator->errors()->add('video_file', "The video file size ({$fileSizeMB}MB) exceeds your package limit of {$videoSizeLimit}MB.");
+                    }
+                }
+            });
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -973,6 +989,16 @@ class PropertyController extends Controller
             ], 404);
         }
 
+        // Get user's package video size limit
+        $membership = Membership::where('user_id', $owner->id)
+            ->where('status', 1)
+            ->orderBy('id', 'desc')
+            ->with('package')
+            ->first();
+
+        $videoSizeLimit = $membership->package->video_size_limit ?? null;
+        $maxVideoSizeKB = $videoSizeLimit ? ($videoSizeLimit * 1024) : null; // Convert MB to KB
+
         $rules = [
             'payment_method' => 'nullable',
             'title' => 'required|max:255',
@@ -1029,11 +1055,23 @@ class PropertyController extends Controller
             'faqs' => 'nullable|array',
             'video_url' => 'nullable|string',// For direct URL or OSS URL
             'virtual_tour' => 'nullable|string',
-            'video_file' => 'nullable|file|max:51200', // 50MB max for video
+            'video_file' => $maxVideoSizeKB ? "nullable|file|max:{$maxVideoSizeKB}" : 'nullable|file',
 
         ];
 
         $validator = Validator::make($request->all(), $rules);
+
+        // Add custom error messages for video file size limit
+        if ($videoSizeLimit) {
+            $validator->after(function ($validator) use ($request, $videoSizeLimit) {
+                if ($request->hasFile('video_file')) {
+                    $fileSizeMB = $request->file('video_file')->getSize() / (1024 * 1024);
+                    if ($fileSizeMB > $videoSizeLimit) {
+                        $validator->errors()->add('video_file', "The video file size ({$fileSizeMB}MB) exceeds your package limit of {$videoSizeLimit}MB.");
+                    }
+                }
+            });
+        }
 
         if ($validator->fails()) {
             return response()->json([
