@@ -62,7 +62,21 @@
                                 @if($social['enabled'])
                                     <li class="list-inline-item">
                                         <a href="{{ $social['url'] }}" target="_blank" class="text-decoration-none">
-                                            <i class="fab fa-{{ strtolower($social['platform']) }} fa-lg text-secondary"></i>
+                                            @php
+                                                $platform = strtolower($social['platform']);
+                                                // Handle special cases for platform icons
+                                                $iconClass = match($platform) {
+                                                    'tiktok' => 'fab fa-tiktok',
+                                                    'facebook' => 'fab fa-facebook-f',
+                                                    'twitter' => 'fab fa-twitter',
+                                                    'instagram' => 'fab fa-instagram',
+                                                    'linkedin' => 'fab fa-linkedin-in',
+                                                    'youtube' => 'fab fa-youtube',
+                                                    'snapchat' => 'fab fa-snapchat-ghost',
+                                                    default => 'fab fa-' . $platform
+                                                };
+                                            @endphp
+                                            <i class="{{ $iconClass }} fa-lg text-secondary"></i>
                                         </a>
                                     </li>
                                 @endif
