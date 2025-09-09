@@ -133,7 +133,7 @@ class FooterSettingController extends Controller
             'general' => 'required|array',
             'general.companyName' => 'required|string|max:100',
             'general.address' => 'nullable|string|max:255',
-            'general.phone' => 'nullable|string|max:20',
+            'general.phone' => 'nullable|string|max:255',
             'general.email' => 'nullable|email|max:100',
             'general.workingHours' => 'nullable|string|max:100',
             'general.showContactInfo' => 'boolean',
