@@ -66,7 +66,7 @@
                                                 $platform = strtolower($social['platform']);
                                                 // Handle special cases for platform icons
                                                 $iconClass = match($platform) {
-                                                    'tiktok' => 'fab fa-tiktok',
+                                                    'tiktok' => 'fab fa-music', // Fallback for TikTok since FA 5.8.0 doesn't have TikTok icon
                                                     'facebook' => 'fab fa-facebook-f',
                                                     'twitter' => 'fab fa-twitter',
                                                     'instagram' => 'fab fa-instagram',
