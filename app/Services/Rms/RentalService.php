@@ -46,16 +46,19 @@ class RentalService
             ]));
 
             $hasEnoughData = $data['move_in_date'] ?? null
-                && $data['rental_period_months'] ?? null
+                && $data['rental_period'] ?? null
                 && $data['paying_plan'] ?? null
                 && $data['base_rent_amount'] ?? null;
 
             if ($hasEnoughData) {
+                // Calculate total months based on rental_period and paying_plan
+                $totalMonths = $this->calculateTotalMonths($data['rental_period'], $data['paying_plan']);
+                
                 $contract = RmContract::create([
                     'user_id' => $userId,
                     'rental_id' => $rental->id,
                     'start_date' => $data['move_in_date'],
-                    'end_date' => Carbon::parse($data['move_in_date'])->addMonths($data['rental_period_months'])->subDay(),
+                    'end_date' => Carbon::parse($data['move_in_date'])->addMonths($totalMonths)->subDay(),
                     'status' => 'pending',
                     // Snapshot identifiers for audit/history
                     'property_id' => $rental->property_id,
@@ -174,10 +177,11 @@ class RentalService
                 'office_commission_value' => (float) ($rental->office_commission_value ?? 0),
                 'office_fee' => (float) $rental->office_fee,
                 'contract_number' => $rental->contract_number,
+                'total_rental_amount' => (float) $rental->total_rental_amount,
                 'currency' => $rental->currency,
                 'move_in_date' => $rental->move_in_date,
                 'paying_plan' => $rental->paying_plan,
-                'rental_period_months' => (int) $rental->rental_period_months,
+                'rental_period' => (int) $rental->rental_period,
                 'status' => $rental->status,
                 'notes' => $rental->notes,
             ],
@@ -209,7 +213,7 @@ class RentalService
         $plan = $data['paying_plan'];
         $amount = $data['base_rent_amount'];
         $start = Carbon::parse($data['move_in_date']);
-        $months = (int) $data['rental_period_months'];
+        $rentalPeriod = (int) $data['rental_period'];
 
         $chunks = match($plan) {
             'monthly' => 1,
@@ -219,7 +223,7 @@ class RentalService
             default => 1
         };
 
-        $periods = ceil($months / $chunks);
+        $periods = $rentalPeriod; // rental_period is now the number of payment periods
         $installmentAmount = round($amount * $chunks, 2);
 
         for ($i = 0; $i < $periods; $i++) {
@@ -234,6 +238,25 @@ class RentalService
                 'payment_type' => 'none',
                 'payment_status' => 'not_due',
             ]);
+        }
+    }
+
+    /**
+     * Calculate total months based on rental_period and paying_plan
+     */
+    private function calculateTotalMonths($rentalPeriod, $payingPlan)
+    {
+        switch ($payingPlan) {
+            case 'monthly':
+                return $rentalPeriod * 1; // 1 month per period
+            case 'quarterly':
+                return $rentalPeriod * 3; // 3 months per period
+            case 'semi_annual':
+                return $rentalPeriod * 6; // 6 months per period
+            case 'annual':
+                return $rentalPeriod * 12; // 12 months per period
+            default:
+                return $rentalPeriod; // fallback to 1 month per period
         }
     }
 }

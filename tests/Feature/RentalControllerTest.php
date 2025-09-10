@@ -117,7 +117,7 @@ class RentalControllerTest extends TestCase
             'unit_label' => 'A-101',
             'property_number' => 'PROP-001',
             'move_in_date' => '2024-01-01',
-            'rental_period_months' => 12,
+            'rental_period' => 12,
             'paying_plan' => 'monthly',
             'base_rent_amount' => 1000.00,
             'currency' => 'USD',
@@ -471,6 +471,7 @@ class RentalControllerTest extends TestCase
                 'office_commission_value' => 5.0,
                 'office_fee' => 600.0, // 12 months * 1000 * 5% = 600
                 'contract_number' => 'CNT-2024-001',
+                'total_rental_amount' => 12000.0, // 12 periods * 1000 = 12000
                 'currency' => 'USD'
             ],
             'property' => [
@@ -568,7 +569,7 @@ class RentalControllerTest extends TestCase
             'tenant_phone' => '+1234567890',
             'property_id' => 'not_a_number',
             'project_id' => 'not_a_number',
-            'rental_period_months' => 'not_a_number',
+            'rental_period' => 'not_a_number',
             'base_rent_amount' => 'not_a_number',
             'deposit_amount' => 'not_a_number'
         ];
@@ -581,7 +582,7 @@ class RentalControllerTest extends TestCase
                 ->assertJsonValidationErrors([
                     'property_id',
                     'project_id',
-                    'rental_period_months',
+                    'rental_period',
                     'base_rent_amount',
                     'deposit_amount'
                 ]);
@@ -869,7 +870,7 @@ class RentalControllerTest extends TestCase
         $rental = new RmRental([
             'office_commission_type' => 'percentage',
             'office_commission_value' => 5.0,
-            'rental_period_months' => 12,
+            'rental_period' => 12,
             'base_rent_amount' => 1000.00
         ]);
 
@@ -885,7 +886,7 @@ class RentalControllerTest extends TestCase
         $rental = new RmRental([
             'office_commission_type' => 'amount',
             'office_commission_value' => 500.00,
-            'rental_period_months' => 12,
+            'rental_period' => 12,
             'base_rent_amount' => 1000.00
         ]);
 
@@ -901,7 +902,7 @@ class RentalControllerTest extends TestCase
         $rental = new RmRental([
             'office_commission_type' => null,
             'office_commission_value' => 5.0,
-            'rental_period_months' => 12,
+            'rental_period' => 12,
             'base_rent_amount' => 1000.00
         ]);
 
@@ -971,5 +972,79 @@ class RentalControllerTest extends TestCase
 
         // Assert
         $response->assertStatus(201);
+    }
+
+    /** @test */
+    public function it_calculates_total_rental_amount_correctly_for_monthly_payment()
+    {
+        // Arrange
+        $rental = new RmRental([
+            'base_rent_amount' => 1000.00,
+            'rental_period' => 12,
+            'paying_plan' => 'monthly'
+        ]);
+
+        // Act & Assert
+        // Expected: 1000 * 12 = 12000 (12 monthly payments)
+        $this->assertEquals(12000.0, $rental->total_rental_amount);
+    }
+
+    /** @test */
+    public function it_calculates_total_rental_amount_correctly_for_quarterly_payment()
+    {
+        // Arrange
+        $rental = new RmRental([
+            'base_rent_amount' => 1000.00,
+            'rental_period' => 4,
+            'paying_plan' => 'quarterly'
+        ]);
+
+        // Act & Assert
+        // Expected: 1000 * 4 = 4000 (4 quarterly payments)
+        $this->assertEquals(4000.0, $rental->total_rental_amount);
+    }
+
+    /** @test */
+    public function it_calculates_total_rental_amount_correctly_for_semi_annual_payment()
+    {
+        // Arrange
+        $rental = new RmRental([
+            'base_rent_amount' => 1000.00,
+            'rental_period' => 2,
+            'paying_plan' => 'semi_annual'
+        ]);
+
+        // Act & Assert
+        // Expected: 1000 * 2 = 2000 (2 semi-annual payments)
+        $this->assertEquals(2000.0, $rental->total_rental_amount);
+    }
+
+    /** @test */
+    public function it_calculates_total_rental_amount_correctly_for_annual_payment()
+    {
+        // Arrange
+        $rental = new RmRental([
+            'base_rent_amount' => 1000.00,
+            'rental_period' => 1,
+            'paying_plan' => 'annual'
+        ]);
+
+        // Act & Assert
+        // Expected: 1000 * 1 = 1000 (1 annual payment)
+        $this->assertEquals(1000.0, $rental->total_rental_amount);
+    }
+
+    /** @test */
+    public function it_returns_zero_total_rental_amount_when_required_fields_are_null()
+    {
+        // Arrange
+        $rental = new RmRental([
+            'base_rent_amount' => null,
+            'rental_period' => 12,
+            'paying_plan' => 'monthly'
+        ]);
+
+        // Act & Assert
+        $this->assertEquals(0.0, $rental->total_rental_amount);
     }
 }

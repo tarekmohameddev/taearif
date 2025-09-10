@@ -27,11 +27,11 @@ return new class extends Migration
             SET office_fee = CASE 
                 WHEN office_commission_type IS NULL 
                     OR office_commission_value IS NULL 
-                    OR rental_period_months IS NULL 
+                    OR rental_period IS NULL 
                     OR base_rent_amount IS NULL 
                 THEN 0
                 WHEN office_commission_type = 'percentage' 
-                THEN (rental_period_months * base_rent_amount) * (office_commission_value / 100)
+                THEN (rental_period * base_rent_amount) * (office_commission_value / 100)
                 WHEN office_commission_type = 'amount' 
                 THEN office_commission_value
                 ELSE 0
