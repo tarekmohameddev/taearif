@@ -42,6 +42,10 @@ class RentalController extends Controller
             'base_rent_amount' => 'nullable|numeric',
             'currency' => 'nullable|string|size:3',
             'deposit_amount' => 'nullable|numeric',
+            'platform_fee' => 'nullable|numeric|min:0',
+            'water_fee' => 'nullable|numeric|min:0',
+            'office_commission_type' => 'nullable|in:percentage,amount',
+            'office_commission_value' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
         ]);
 
@@ -62,7 +66,8 @@ class RentalController extends Controller
             'tenant_full_name', 'tenant_phone', 'tenant_email', 'tenant_job_title',
             'tenant_social_status', 'tenant_national_id', 'property_id', 'project_id', 'unit_label', 'property_number',
             'move_in_date', 'rental_period_months', 'paying_plan',
-            'base_rent_amount', 'currency', 'deposit_amount', 'notes'
+            'base_rent_amount', 'currency', 'deposit_amount', 'platform_fee', 'water_fee', 
+            'office_commission_type', 'office_commission_value', 'notes'
         ]);
 
         $regenerate = $request->boolean('regenerate_schedule', false);

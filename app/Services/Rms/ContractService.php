@@ -30,10 +30,6 @@ class ContractService
                 'project_id' => $data['project_id'] ?? null,
                 'property_name' => $data['property_name'] ?? null,
                 'project_name' => $data['project_name'] ?? null,
-                'water_fee_monthly' => $data['water_fee_monthly'] ?? 0,
-                'office_commission_type' => $data['office_commission_type'] ?? null,
-                'office_commission_value' => $data['office_commission_value'] ?? null,
-                'platform_fee' => $data['platform_fee'] ?? 0,
                 'grace_period_months' => $data['grace_period_months'] ?? 0,
                 'created_by' => $userId,
                 'updated_by' => $userId,
@@ -86,6 +82,103 @@ class ContractService
 
             return $contract;
         });
+    }
+
+    public function changeContractStatus($contractId, array $data, $userId)
+    {
+        $contract = RmContract::where('id', $contractId)->where('user_id', $userId)->firstOrFail();
+
+        return DB::transaction(function () use ($contract, $data, $userId) {
+            $oldStatus = $contract->status;
+            $newStatus = $data['status'];
+
+            // Prepare update data
+            $updateData = [
+                'status' => $newStatus,
+                'updated_by' => $userId
+            ];
+
+            // Add reason if provided
+            if (isset($data['reason'])) {
+                $updateData['termination_reason'] = $data['reason'];
+            }
+
+            // Add effective date if provided
+            if (isset($data['effective_date'])) {
+                if ($newStatus === 'terminated') {
+                    $updateData['end_date'] = $data['effective_date'];
+                }
+            }
+
+            // Update contract
+            $contract->update($updateData);
+
+            // Handle status-specific logic
+            $this->handleStatusChange($contract, $oldStatus, $newStatus);
+
+            return $contract->fresh();
+        });
+    }
+
+
+    protected function handleStatusChange($contract, $oldStatus, $newStatus)
+    {
+        switch ($newStatus) {
+            case 'active':
+                // If activating a contract, deactivate other active contracts for the same rental
+                if ($oldStatus !== 'active') {
+                    RmContract::where('rental_id', $contract->rental_id)
+                        ->where('id', '!=', $contract->id)
+                        ->where('status', 'active')
+                        ->update(['status' => 'expired']);
+
+                    // Update rental status to active
+                    $contract->rental->update(['status' => 'active']);
+                }
+                break;
+
+            case 'pending':
+                // If setting to pending from active, check if rental should be updated
+                if ($oldStatus === 'active') {
+                    // Check if there are other active contracts
+                    $hasOtherActiveContracts = RmContract::where('rental_id', $contract->rental_id)
+                        ->where('id', '!=', $contract->id)
+                        ->where('status', 'active')
+                        ->exists();
+
+                    if (!$hasOtherActiveContracts) {
+                        $contract->rental->update(['status' => 'inactive']);
+                    }
+                }
+                break;
+
+            case 'expired':
+                // If expiring a contract, check if rental should be updated
+                if ($oldStatus === 'active') {
+                    // Check if there are other active contracts
+                    $hasOtherActiveContracts = RmContract::where('rental_id', $contract->rental_id)
+                        ->where('id', '!=', $contract->id)
+                        ->where('status', 'active')
+                        ->exists();
+
+                    if (!$hasOtherActiveContracts) {
+                        $contract->rental->update(['status' => 'inactive']);
+                    }
+                }
+                break;
+
+            case 'terminated':
+                // Void pending installments
+                RmPaymentInstallment::where('contract_id', $contract->id)
+                    ->where('status', 'pending')
+                    ->update(['status' => 'void']);
+
+                // Update rental status if this was the active contract
+                if ($oldStatus === 'active') {
+                    $contract->rental->update(['status' => 'inactive']);
+                }
+                break;
+        }
     }
 
     protected function validateNoOverlap($rentalId, $start, $end, $userId, $excludeId = null)

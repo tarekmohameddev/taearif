@@ -22,7 +22,7 @@ class ContractController extends Controller
             ->select(
                 'id', 'contract_number', 'start_date', 'end_date', 'status',
                 'property_id','project_id','property_name','project_name',
-                'water_fee_monthly','platform_fee','grace_period_months'
+                'grace_period_months'
             )
             ->orderBy('start_date')
             ->get();
@@ -43,10 +43,6 @@ class ContractController extends Controller
             'project_id'      => 'nullable|integer|min:1',
             'property_name'   => 'nullable|string|max:150',
             'project_name'    => 'nullable|string|max:150',
-            'water_fee_monthly'       => 'nullable|numeric|min:0',
-            'office_commission_type'  => 'nullable|in:percentage,amount',
-            'office_commission_value' => 'nullable|numeric|min:0',
-            'platform_fee'            => 'nullable|numeric|min:0',
             'grace_period_months'     => 'nullable|integer|min:0|max:2',
 
         ]);
@@ -67,10 +63,6 @@ class ContractController extends Controller
             'project_id'      => 'sometimes|nullable|integer|min:1',
             'property_name'   => 'sometimes|nullable|string|max:150',
             'project_name'    => 'sometimes|nullable|string|max:150',
-            'water_fee_monthly'       => 'sometimes|nullable|numeric|min:0',
-            'office_commission_type'  => 'sometimes|nullable|in:percentage,amount',
-            'office_commission_value' => 'sometimes|nullable|numeric|min:0',
-            'platform_fee'            => 'sometimes|nullable|numeric|min:0',
             'grace_period_months'     => 'sometimes|nullable|integer|min:0|max:2',
         ]);
 
@@ -87,6 +79,19 @@ class ContractController extends Controller
         ]);
 
         $contract = $this->contractService->terminateContract($id, $validated, auth()->id());
+
+        return response()->json(['status' => true, 'data' => $contract]);
+    }
+
+    public function changeStatus(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:pending,active,expired,terminated',
+            'reason' => 'nullable|string|max:255',
+            'effective_date' => 'nullable|date'
+        ]);
+
+        $contract = $this->contractService->changeContractStatus($id, $validated, auth()->id());
 
         return response()->json(['status' => true, 'data' => $contract]);
     }
