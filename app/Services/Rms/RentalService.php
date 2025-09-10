@@ -54,7 +54,6 @@ class RentalService
                 $contract = RmContract::create([
                     'user_id' => $userId,
                     'rental_id' => $rental->id,
-                    'contract_number' => 'CNT-' . now()->format('Y') . '-' . str_pad($rental->id, 5, '0', STR_PAD_LEFT),
                     'start_date' => $data['move_in_date'],
                     'end_date' => Carbon::parse($data['move_in_date'])->addMonths($data['rental_period_months'])->subDay(),
                     'status' => 'pending',
