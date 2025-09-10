@@ -45,6 +45,7 @@ class Property extends Model
         'video_url',
         'virtual_tour',
         'status',
+        'property_status',
         'featured',
         'features',
         'faqs',
@@ -53,7 +54,6 @@ class Property extends Model
         'project_id',
         'reorder',
         'reorder_featured',
-
     ];
 
     public function displayFaqs(): array
@@ -153,7 +153,6 @@ class Property extends Model
             'faqs' => $requestData['faqs'] ?? $this->faqs,
             'reorder_featured' => $requestData['reorder_featured'] ?? $this->reorder_featured,
             'reorder' => $requestData['reorder'] ?? $this->reorder,
-
         ]);
     }
 
