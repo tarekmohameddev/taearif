@@ -84,7 +84,7 @@ class InstallmentService
     public function generateSchedule(RmContract $contract)
     {
         $rental = $contract->rental;
-        $months = $rental->rental_period_months;
+        $months = $rental->rental_period;
         $plan   = $rental->paying_plan; // monthly|quarterly|semi_annual|annual
 
         // Use rental base rent amount

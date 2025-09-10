@@ -38,9 +38,10 @@ class RmRental extends Model
         'office_commission_value',
         'office_fee',
         'contract_number',
+        'total_rental_amount',
         'move_in_date', 
         'paying_plan', 
-        'rental_period_months',
+        'rental_period',
         'status', 
         'notes', 
         'created_by', 
@@ -53,6 +54,7 @@ class RmRental extends Model
         'water_fee' => 'decimal:2',
         'office_commission_value' => 'decimal:2',
         'office_fee' => 'decimal:2',
+        'total_rental_amount' => 'decimal:2',
     ];
 
     protected $appends = [
@@ -147,19 +149,31 @@ class RmRental extends Model
         // If any required field is null, return 0
         if (is_null($this->office_commission_type) || 
             is_null($this->office_commission_value) || 
-            is_null($this->rental_period_months) || 
+            is_null($this->rental_period) || 
             is_null($this->base_rent_amount)) {
             return 0;
         }
 
         // Calculate based on commission type
         if ($this->office_commission_type === 'percentage') {
-            return ($this->rental_period_months * $this->base_rent_amount) * ($this->office_commission_value / 100);
+            return ($this->rental_period * $this->base_rent_amount) * ($this->office_commission_value / 100);
         } elseif ($this->office_commission_type === 'amount') {
             return $this->office_commission_value;
         }
 
         return 0;
+    }
+
+    public function getTotalRentalAmountAttribute()
+    {
+        // If any required field is null, return 0
+        if (is_null($this->base_rent_amount) || 
+            is_null($this->rental_period)) {
+            return 0;
+        }
+
+        // Simple calculation: base_rent_amount × rental_period
+        return $this->base_rent_amount * $this->rental_period;
     }
 
 }
