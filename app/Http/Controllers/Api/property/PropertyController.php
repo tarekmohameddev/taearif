@@ -1344,6 +1344,22 @@ class PropertyController extends Controller
             }
         }
 
+        // Apply UserPropertyCharacteristic filters
+        $characteristicFilters = [
+            'private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement', 
+            'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room', 
+            'driver_room', 'swimming_pool', 'kitchen', 'floor_number', 'floors', 
+            'bathrooms', 'rooms', 'building_age'
+        ];
+
+        foreach ($characteristicFilters as $filter) {
+            if ($request->has($filter) && !empty($request->$filter)) {
+                $propertiesQuery->whereHas('UserPropertyCharacteristics', function ($query) use ($filter, $request) {
+                    $query->where($filter, $request->$filter);
+                });
+            }
+        }
+
         $properties = $propertiesQuery
             ->orderBy('reorder_featured', 'desc')
             ->orderBy('reorder', 'asc')
@@ -1432,6 +1448,30 @@ class PropertyController extends Controller
         $availableFeatures = array_unique($allFeatures);
         sort($availableFeatures);
 
+        // Get UserPropertyCharacteristic filter options
+        $characteristicFilterOptions = [];
+        $characteristicFields = [
+            'private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement', 
+            'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room', 
+            'driver_room', 'swimming_pool', 'kitchen', 'floor_number', 'floors', 
+            'bathrooms', 'rooms', 'building_age'
+        ];
+
+        foreach ($characteristicFields as $field) {
+            $values = UserPropertyCharacteristic::whereIn('property_id', $propertiesForFilters->pluck('id'))
+                ->whereNotNull($field)
+                ->distinct()
+                ->pluck($field)
+                ->unique()
+                ->sort()
+                ->values()
+                ->toArray();
+            
+            if (!empty($values)) {
+                $characteristicFilterOptions[$field] = $values;
+            }
+        }
+
         $specificsFilters = [
             'price_range' => $priceRange,
             'area_range' => $areaRange,
@@ -1440,6 +1480,7 @@ class PropertyController extends Controller
             'beds' => $availableBeds,
             'bath' => $availableBath,
             'features' => array_values($availableFeatures),
+            'characteristics' => $characteristicFilterOptions,
         ];
 
         // === Format response ===
