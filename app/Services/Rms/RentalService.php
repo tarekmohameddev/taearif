@@ -5,6 +5,7 @@ namespace App\Services\Rms;
 use App\Models\Api\Rms\RmRental;
 use App\Models\Api\Rms\RmContract;
 use App\Models\Api\Rms\RmPaymentInstallment;
+use App\Models\User\RealestateManagement\Property;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -44,6 +45,13 @@ class RentalService
                 'user_id' => $userId,
                 'status' => 'active',
             ]));
+
+            // Update property status to 'rented' if property_id is provided
+            if ($rental->property_id) {
+                Property::where('id', $rental->property_id)
+                    ->where('user_id', $userId)
+                    ->update(['property_status' => 'rented']);
+            }
 
             $hasEnoughData = $data['move_in_date'] ?? null
                 && $data['rental_period'] ?? null
