@@ -441,6 +441,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('rentals/{rentalId}/contracts', [ContractController::class, 'store']);
         Route::patch('contracts/{id}', [ContractController::class, 'update']);
         Route::post('contracts/{id}/terminate', [ContractController::class, 'terminate']);
+        Route::patch('contracts/{id}/status', [ContractController::class, 'changeStatus']);
 
         // Installments
         Route::get('installments', [InstallmentController::class, 'index']);

@@ -32,6 +32,10 @@ class RmRental extends Model
         'base_rent_amount', 
         'currency', 
         'deposit_amount',
+        'platform_fee',
+        'water_fee',
+        'office_commission_type',
+        'office_commission_value',
         'move_in_date', 
         'paying_plan', 
         'rental_period_months',
@@ -43,6 +47,9 @@ class RmRental extends Model
 
     protected $casts = [
         'move_in_date' => 'date',
+        'platform_fee' => 'decimal:2',
+        'water_fee' => 'decimal:2',
+        'office_commission_value' => 'decimal:2',
     ];
 
     protected $appends = [
@@ -58,6 +65,21 @@ class RmRental extends Model
     public function activeContract()
     {
         return $this->hasOne(RmContract::class, 'rental_id')->where('status', 'active');
+    }
+
+    public function latestContract()
+    {
+        return $this->hasOne(RmContract::class, 'rental_id')->latest();
+    }
+
+    public function expiredContracts()
+    {
+        return $this->hasMany(RmContract::class, 'rental_id')->where('status', 'expired');
+    }
+
+    public function pendingContracts()
+    {
+        return $this->hasMany(RmContract::class, 'rental_id')->where('status', 'pending');
     }
 
     public function installments()
