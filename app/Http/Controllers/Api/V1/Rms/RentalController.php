@@ -46,6 +46,7 @@ class RentalController extends Controller
             'water_fee' => 'nullable|numeric|min:0',
             'office_commission_type' => 'nullable|in:percentage,amount',
             'office_commission_value' => 'nullable|numeric|min:0',
+            'contract_number' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ]);
 
@@ -67,7 +68,7 @@ class RentalController extends Controller
             'tenant_social_status', 'tenant_national_id', 'property_id', 'project_id', 'unit_label', 'property_number',
             'move_in_date', 'rental_period_months', 'paying_plan',
             'base_rent_amount', 'currency', 'deposit_amount', 'platform_fee', 'water_fee', 
-            'office_commission_type', 'office_commission_value', 'notes'
+            'office_commission_type', 'office_commission_value', 'contract_number', 'notes'
         ]);
 
         $regenerate = $request->boolean('regenerate_schedule', false);

@@ -33,7 +33,6 @@ class ContractController extends Controller
     public function store(Request $request, $rentalId)
     {
         $validated = $request->validate([
-            'contract_number' => 'required|string|max:64',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
             'status' => 'required|in:pending,active',

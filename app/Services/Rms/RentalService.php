@@ -173,6 +173,8 @@ class RentalService
                 'water_fee' => (float) ($rental->water_fee ?? 0),
                 'office_commission_type' => $rental->office_commission_type,
                 'office_commission_value' => (float) ($rental->office_commission_value ?? 0),
+                'office_fee' => (float) $rental->office_fee,
+                'contract_number' => $rental->contract_number,
                 'currency' => $rental->currency,
                 'move_in_date' => $rental->move_in_date,
                 'paying_plan' => $rental->paying_plan,

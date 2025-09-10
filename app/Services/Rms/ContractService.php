@@ -21,7 +21,6 @@ class ContractService
             $contract = RmContract::create([
                 'user_id' => $userId,
                 'rental_id' => $rental->id,
-                'contract_number' => $data['contract_number'],
                 'start_date' => $data['start_date'],
                 'end_date' => $data['end_date'],
                 'status' => $data['status'],
