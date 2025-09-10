@@ -36,6 +36,8 @@ class RmRental extends Model
         'water_fee',
         'office_commission_type',
         'office_commission_value',
+        'office_fee',
+        'contract_number',
         'move_in_date', 
         'paying_plan', 
         'rental_period_months',
@@ -50,6 +52,7 @@ class RmRental extends Model
         'platform_fee' => 'decimal:2',
         'water_fee' => 'decimal:2',
         'office_commission_value' => 'decimal:2',
+        'office_fee' => 'decimal:2',
     ];
 
     protected $appends = [
@@ -137,6 +140,26 @@ class RmRental extends Model
             ->first();
 
         return $installment?->amount;
+    }
+
+    public function getOfficeFeeAttribute()
+    {
+        // If any required field is null, return 0
+        if (is_null($this->office_commission_type) || 
+            is_null($this->office_commission_value) || 
+            is_null($this->rental_period_months) || 
+            is_null($this->base_rent_amount)) {
+            return 0;
+        }
+
+        // Calculate based on commission type
+        if ($this->office_commission_type === 'percentage') {
+            return ($this->rental_period_months * $this->base_rent_amount) * ($this->office_commission_value / 100);
+        } elseif ($this->office_commission_type === 'amount') {
+            return $this->office_commission_value;
+        }
+
+        return 0;
     }
 
 }

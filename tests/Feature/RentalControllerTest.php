@@ -126,6 +126,7 @@ class RentalControllerTest extends TestCase
             'water_fee' => 30.00,
             'office_commission_type' => 'percentage',
             'office_commission_value' => 5.0,
+            'contract_number' => 'CNT-2024-001',
             'notes' => 'Test rental'
         ];
 
@@ -468,6 +469,8 @@ class RentalControllerTest extends TestCase
                 'water_fee' => 30.0,
                 'office_commission_type' => 'percentage',
                 'office_commission_value' => 5.0,
+                'office_fee' => 600.0, // 12 months * 1000 * 5% = 600
+                'contract_number' => 'CNT-2024-001',
                 'currency' => 'USD'
             ],
             'property' => [
@@ -857,5 +860,116 @@ class RentalControllerTest extends TestCase
                     'status' => true,
                     'data' => $updatedRental->toArray()
                 ]);
+    }
+
+    /** @test */
+    public function it_calculates_office_fee_correctly_for_percentage_commission()
+    {
+        // Arrange
+        $rental = new RmRental([
+            'office_commission_type' => 'percentage',
+            'office_commission_value' => 5.0,
+            'rental_period_months' => 12,
+            'base_rent_amount' => 1000.00
+        ]);
+
+        // Act & Assert
+        // Expected: (12 * 1000) * (5 / 100) = 12000 * 0.05 = 600
+        $this->assertEquals(600.0, $rental->office_fee);
+    }
+
+    /** @test */
+    public function it_calculates_office_fee_correctly_for_amount_commission()
+    {
+        // Arrange
+        $rental = new RmRental([
+            'office_commission_type' => 'amount',
+            'office_commission_value' => 500.00,
+            'rental_period_months' => 12,
+            'base_rent_amount' => 1000.00
+        ]);
+
+        // Act & Assert
+        // Expected: 500.00 (direct amount)
+        $this->assertEquals(500.0, $rental->office_fee);
+    }
+
+    /** @test */
+    public function it_returns_zero_office_fee_when_required_fields_are_null()
+    {
+        // Arrange
+        $rental = new RmRental([
+            'office_commission_type' => null,
+            'office_commission_value' => 5.0,
+            'rental_period_months' => 12,
+            'base_rent_amount' => 1000.00
+        ]);
+
+        // Act & Assert
+        $this->assertEquals(0.0, $rental->office_fee);
+    }
+
+    /** @test */
+    public function it_validates_contract_number_field()
+    {
+        // Arrange
+        $rentalData = [
+            'tenant_full_name' => 'John Doe',
+            'tenant_phone' => '+1234567890',
+            'contract_number' => str_repeat('a', 256) // Exceeds max:255
+        ];
+
+        // Act
+        $response = $this->postJson('/api/v1/rms/rentals', $rentalData);
+
+        // Assert
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['contract_number']);
+    }
+
+    /** @test */
+    public function it_accepts_valid_contract_number()
+    {
+        // Arrange
+        $rentalData = [
+            'tenant_full_name' => 'John Doe',
+            'tenant_phone' => '+1234567890',
+            'contract_number' => 'CNT-2024-001'
+        ];
+
+        $this->rentalService
+            ->shouldReceive('createRental')
+            ->once()
+            ->with($this->user->id, $rentalData)
+            ->andReturn(['id' => 1, 'status' => 'active']);
+
+        // Act
+        $response = $this->postJson('/api/v1/rms/rentals', $rentalData);
+
+        // Assert
+        $response->assertStatus(201);
+    }
+
+    /** @test */
+    public function it_accepts_null_contract_number()
+    {
+        // Arrange
+        $rentalData = [
+            'tenant_full_name' => 'John Doe',
+            'tenant_phone' => '+1234567890',
+            'contract_number' => null
+        ];
+
+        $this->rentalService
+            ->shouldReceive('createRental')
+            ->once()
+            ->with($this->user->id, $rentalData)
+            ->andReturn(['id' => 1, 'status' => 'active']);
+
+        // Act
+        $response = $this->postJson('/api/v1/rms/rentals', $rentalData);
+
+        // Assert
+        $response->assertStatus(201);
     }
 }

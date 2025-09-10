@@ -48,7 +48,6 @@ class ContractControllerTest extends TestCase
         $expectedContracts = collect([
             new RmContract([
                 'id' => 1,
-                'contract_number' => 'CNT-2024-00001',
                 'start_date' => '2024-01-01',
                 'end_date' => '2024-12-31',
                 'status' => 'active'
@@ -72,7 +71,6 @@ class ContractControllerTest extends TestCase
         // Arrange
         $rentalId = 1;
         $contractData = [
-            'contract_number' => 'CNT-2024-00001',
             'start_date' => '2024-01-01',
             'end_date' => '2024-12-31',
             'status' => 'active',
@@ -116,7 +114,6 @@ class ContractControllerTest extends TestCase
         // Assert
         $response->assertStatus(422)
                 ->assertJsonValidationErrors([
-                    'contract_number',
                     'start_date',
                     'end_date',
                     'status'
@@ -149,7 +146,6 @@ class ContractControllerTest extends TestCase
         // Arrange
         $rentalId = 1;
         $contractData = [
-            'contract_number' => 'CNT-2024-00001',
             'start_date' => '2024-01-01',
             'end_date' => '2024-12-31',
             'status' => 'invalid_status'
@@ -170,7 +166,6 @@ class ContractControllerTest extends TestCase
         // Arrange
         $rentalId = 1;
         $contractData = [
-            'contract_number' => 'CNT-2024-00001',
             'start_date' => '2024-01-01',
             'end_date' => '2024-12-31',
             'status' => 'active',
@@ -191,7 +186,6 @@ class ContractControllerTest extends TestCase
         // Arrange
         $rentalId = 1;
         $contractData = [
-            'contract_number' => 'CNT-2024-00001',
             'start_date' => '2024-01-01',
             'end_date' => '2024-12-31',
             'status' => 'active',
@@ -212,7 +206,6 @@ class ContractControllerTest extends TestCase
         // Arrange
         $rentalId = 1;
         $contractData = [
-            'contract_number' => 'CNT-2024-00001',
             'start_date' => '2024-01-01',
             'end_date' => '2024-12-31',
             'status' => 'active',
