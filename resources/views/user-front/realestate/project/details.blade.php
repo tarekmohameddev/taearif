@@ -215,11 +215,7 @@
                         </video>
                         
                         <!-- Play button overlay -->
-                        <div class="video-overlay" id="video-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; border-radius: 10px; pointer-events: none;">
-                            <button class="video-play-btn" id="play-btn" style="background: rgba(255,255,255,0.9); border: none; border-radius: 50%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; pointer-events: auto;">
-                                <i class="fas fa-play" style="font-size: 24px; color: #333; margin-left: 4px;"></i>
-                            </button>
-                        </div>
+
                     </div>
                 </div>
                 @endif
