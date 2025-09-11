@@ -52,9 +52,7 @@ class DashboardService
 
     protected function getOngoingRentals($userId)
     {
-        return RmRental::with(['property.contents', 'contracts' => function ($q) {
-                $q->where('status', 'active');
-            }])
+        return RmRental::with(['property.contents', 'activeContract'])
             ->where('user_id', $userId)
             ->where('status', 'active')
             ->get()
@@ -74,9 +72,9 @@ class DashboardService
                         'unit_label' => $rental->unit_label,
                     ],
                     'contract' => [
-                        'id' => optional($rental->contracts->first())->id,
-                        'end_date' => optional($rental->contracts->first())->end_date,
-                        'status' => optional($rental->contracts->first())->status,
+                        'id' => optional($rental->activeContract)->id,
+                        'end_date' => optional($rental->activeContract)->end_date,
+                        'status' => optional($rental->activeContract)->status,
                     ],
                     'next_payment_due_on' => optional($nextPayment)->due_date,
                     'next_payment_amount' => optional($nextPayment)->amount,
