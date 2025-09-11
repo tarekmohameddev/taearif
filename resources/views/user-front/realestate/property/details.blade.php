@@ -26,6 +26,8 @@
 @endsection
 
 @section('styles')
+<!-- Ensure Font Awesome is loaded for all icon classes -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="{{ asset('assets/front/user/realestate/css/vendors/swiper-bundle.min.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/front/user/realestate/css/partials.css') }}">
 @if ($userCurrentLang->rtl == 1)
@@ -186,10 +188,10 @@
                     <!-- Slider navigation buttons -->
                     <div class="slider-navigation">
                         <button type="button" title="Slide prev" class="slider-btn slider-btn-prev">
-                            <i class="fal fa-angle-left"></i>
+                            <i class="fas fa-angle-left"></i>
                         </button>
                         <button type="button" title="Slide next" class="slider-btn slider-btn-next">
-                            <i class="fal fa-angle-right"></i>
+                            <i class="fas fa-angle-right"></i>
                         </button>
                     </div>
                     <div class="swiper product-single-slider">
@@ -236,7 +238,7 @@
                             @endphp
 
                             <div class="product-location icon-start ">
-                                <i class="fal fa-map-marker-alt"></i>
+                                <i class="fas fa-map-marker-alt"></i>
                                 <span>
                                     {{ $propertyContent->address }}
                                     @if($city && $district)
@@ -251,7 +253,7 @@
                                 @if($propertyContent->type ?? null)
                                 <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top" title="{{ __('Type') }}">
                                     <span>
-                                        <i class="fal fa-vector-square"></i>
+                                        <i class="fas fa-vector-square"></i>
                                         {{ __($propertyContent->type) }}
                                     </span>
                                 </li>
@@ -259,7 +261,7 @@
                                 @if($propertyContent->purpose ?? null)
                                 <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top" title="{{ __('Purpose') }}">
                                     <span>
-                                        <i class="fa-solid fa-handshake"></i>
+                                        <i class="fas fa-handshake"></i>
                                         {{ __($propertyContent->purpose) }}
                                     </span>
                                 </li>
@@ -267,7 +269,7 @@
 
                                 @if ($propertyContent->area)
                                 <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top" title="{{ __('Area') }}">
-                                    <i class="fal fa-vector-square"></i>
+                                    <i class="fas fa-vector-square"></i>
                                     <span>
                                         {{ fmod($propertyContent->area, 1) == 0 ? number_format($propertyContent->area, 0) : number_format($propertyContent->area, 2) }}
                                         {{ $keywords['Sqft'] ?? __('Sqft') }}
@@ -277,14 +279,14 @@
                                 @endif
                                 @if ($propertyContent->beds)
                                 <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top" title="{{ $keywords['Beds'] ?? __('Beds') }}">
-                                    <i class="fal fa-bed"></i>
+                                    <i class="fas fa-bed"></i>
                                     <span>{{ $propertyContent->beds }}
                                         {{ $keywords['Beds'] ?? __('Beds') }}</span>
                                 </li>
                                 @endif
                                 @if ($propertyContent->bath)
                                 <li class="icon-start" data-tooltip="tooltip" data-bs-placement="top" title="{{ $keywords['Baths'] ?? __('Baths') }}">
-                                    <i class="fal fa-bath"></i>
+                                    <i class="fas fa-bath"></i>
                                     <span>{{ $propertyContent->bath }}
                                         {{ $keywords['Baths'] ?? __('Baths') }}</span>
                                 </li>
@@ -393,7 +395,7 @@
                                     </span>
                                     @else
                                     <button type="button" class="btn red" style="width: 100px !important; padding: 14px; height: 45px !important;" data-bs-toggle="modal" data-bs-target="#Interested_login_Modal">
-                                        <i class="fal fa-heart"></i>
+                                        <i class="fas fa-heart"></i>
                                     </button>
                                     <span>{{ __('Interested') }}</span>
                                     @endif
@@ -461,7 +463,7 @@
                                 {{-- Facade --}}
                                 @if(!empty($characteristics->facade_id))
                                 <div class="col-md-4 mb-3 d-flex align-items-center">
-                                    <i class="product-info fal fa-layer-group me-2"></i>
+                                    <i class="product-info fas fa-layer-group me-2"></i>
                                     <strong class="me-1">{{ __('Facade') }}</strong>
                                     <span>{{ optional($characteristics->UserFacade)->name }}</span>
                                 </div>
@@ -469,31 +471,31 @@
 
                                 {{-- Other Characteristics --}}
                                 @foreach ([
-                                'length' => ['label' => __('Length'), 'icon' => 'fal fa-ruler-horizontal'],
-                                'width' => ['label' => __('Width'), 'icon' => 'fal fa-ruler-combined'],
-                                'street_width_north' => ['label' => __('Street Width (North)'), 'icon' => 'fal fa-ruler-vertical'],
-                                'street_width_south' => ['label' => __('Street Width (South)'), 'icon' => 'fal fa-ruler-vertical'],
-                                'street_width_east' => ['label' => __('Street Width (East)'), 'icon' => 'fal fa-ruler-vertical'],
-                                'street_width_west' => ['label' => __('Street Width (West)'), 'icon' => 'fal fa-ruler-vertical'],
-                                'building_age' => ['label' => __('Building Age'), 'icon' => 'fal fa-calendar-alt'],
-                                'rooms' => ['label' => __('Rooms'), 'icon' => 'fal fa-door-open'],
-                                'bathrooms' => ['label' => __('Bathrooms'), 'icon' => 'fal fa-toilet'],
-                                'floors' => ['label' => __('Floors'), 'icon' => 'fal fa-building'],
-                                'floor_number' => ['label' => __('Floor Number'), 'icon' => 'fal fa-sort-numeric-up'],
-                                'kitchen' => ['label' => __('Kitchen'), 'icon' => 'fal fa-utensils'],
-                                'driver_room' => ['label' => __('Driver Room'), 'icon' => 'fal fa-user-tie'],
-                                'maid_room' => ['label' => __('Maid Room'), 'icon' => 'fal fa-broom'],
-                                'dining_room' => ['label' => __('Dining Room'), 'icon' => 'fal fa-utensils'],
-                                'living_room' => ['label' => __('Living Room'), 'icon' => 'fal fa-couch'],
-                                'majlis' => ['label' => __('Majlis'), 'icon' => 'fal fa-users'],
-                                'storage_room' => ['label' => __('Storage Room'), 'icon' => 'fal fa-boxes'],
-                                'basement' => ['label' => __('Basement'), 'icon' => 'fal fa-warehouse'],
-                                'swimming_pool' => ['label' => __('Swimming Pool'), 'icon' => 'fal fa-swimmer'],
-                                'balcony' => ['label' => __('Balcony'), 'icon' => 'fal fa-archway'],
-                                'garden' => ['label' => __('Garden'), 'icon' => 'fal fa-tree'],
-                                'annex' => ['label' => __('Annex'), 'icon' => 'fal fas fa-home'],
-                                'elevator' => ['label' => __('Elevator'), 'icon' => 'fal fas fa-arrows-v'],
-                                'private_parking' => ['label' => __('Private Parking'), 'icon' => 'fal fa-parking'],
+                                'length' => ['label' => __('Length'), 'icon' => 'fas fa-ruler-horizontal'],
+                                'width' => ['label' => __('Width'), 'icon' => 'fas fa-ruler-combined'],
+                                'street_width_north' => ['label' => __('Street Width (North)'), 'icon' => 'fas fa-ruler-vertical'],
+                                'street_width_south' => ['label' => __('Street Width (South)'), 'icon' => 'fas fa-ruler-vertical'],
+                                'street_width_east' => ['label' => __('Street Width (East)'), 'icon' => 'fas fa-ruler-vertical'],
+                                'street_width_west' => ['label' => __('Street Width (West)'), 'icon' => 'fas fa-ruler-vertical'],
+                                'building_age' => ['label' => __('Building Age'), 'icon' => 'fas fa-calendar-alt'],
+                                'rooms' => ['label' => __('Rooms'), 'icon' => 'fas fa-door-open'],
+                                'bathrooms' => ['label' => __('Bathrooms'), 'icon' => 'fas fa-toilet'],
+                                'floors' => ['label' => __('Floors'), 'icon' => 'fas fa-building'],
+                                'floor_number' => ['label' => __('Floor Number'), 'icon' => 'fas fa-sort-numeric-up'],
+                                'kitchen' => ['label' => __('Kitchen'), 'icon' => 'fas fa-utensils'],
+                                'driver_room' => ['label' => __('Driver Room'), 'icon' => 'fas fa-user-tie'],
+                                'maid_room' => ['label' => __('Maid Room'), 'icon' => 'fas fa-broom'],
+                                'dining_room' => ['label' => __('Dining Room'), 'icon' => 'fas fa-utensils'],
+                                'living_room' => ['label' => __('Living Room'), 'icon' => 'fas fa-couch'],
+                                'majlis' => ['label' => __('Majlis'), 'icon' => 'fas fa-users'],
+                                'storage_room' => ['label' => __('Storage Room'), 'icon' => 'fas fa-boxes'],
+                                'basement' => ['label' => __('Basement'), 'icon' => 'fas fa-warehouse'],
+                                'swimming_pool' => ['label' => __('Swimming Pool'), 'icon' => 'fas fa-swimmer'],
+                                'balcony' => ['label' => __('Balcony'), 'icon' => 'fas fa-archway'],
+                                'garden' => ['label' => __('Garden'), 'icon' => 'fas fa-tree'],
+                                'annex' => ['label' => __('Annex'), 'icon' => 'fas fa-home'],
+                                'elevator' => ['label' => __('Elevator'), 'icon' => 'fas fa-arrows-v'],
+                                'private_parking' => ['label' => __('Private Parking'), 'icon' => 'fas fa-parking'],
                                 ] as $key => $meta)
                                 @php $value = data_get($characteristics, $key); @endphp
                                 @if(!is_null($value) && trim((string)$value) !== '' && floatval($value) !== 0.0)
@@ -522,7 +524,7 @@
                             <ul class="featured-list list-unstyled p-0 m-0">
                                 @foreach($features as $feature)
                                 <li class="d-inline-block icon-start">
-                                    <i class="fal fa-star"></i> {{-- always the same icon --}}
+                                    <i class="fas fa-star"></i> {{-- always the same icon --}}
                                     <span>{{ __($feature) }}</span>
                                 </li>
                                 @endforeach
