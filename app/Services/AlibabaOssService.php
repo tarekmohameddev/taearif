@@ -22,15 +22,7 @@ class AlibabaOssService
         
         $accessKeyId = env('OSS_ACCESS_KEY_ID');
         $accessKeySecret = env('OSS_ACCESS_KEY_SECRET');
-        
-        // Debug output
-        \Log::info('OSS Config Debug', [
-            'bucket' => $this->bucket,
-            'endpoint' => $this->endpoint,
-            'key_exists' => !empty($accessKeyId),
-            'secret_exists' => !empty($accessKeySecret),
-        ]);
-        
+       
         // Check each required field individually
         if (empty($accessKeyId)) {
             throw new \Exception('OSS_ACCESS_KEY_ID is missing from .env file');
