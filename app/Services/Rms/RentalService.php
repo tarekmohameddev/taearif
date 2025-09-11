@@ -67,7 +67,7 @@ class RentalService
                     'rental_id' => $rental->id,
                     'start_date' => $data['move_in_date'],
                     'end_date' => Carbon::parse($data['move_in_date'])->addMonths($totalMonths)->subDay(),
-                    'status' => 'pending',
+                    'status' => 'active',
                     // Snapshot identifiers for audit/history
                     'property_id' => $rental->property_id,
                     'project_id' => $rental->project_id,
@@ -80,7 +80,7 @@ class RentalService
                     'status' => 'active',
                     'contract' => [
                         'id' => $contract->id,
-                        'status' => 'pending',
+                        'status' => $contract->status,
                     ]
                 ];
             }
