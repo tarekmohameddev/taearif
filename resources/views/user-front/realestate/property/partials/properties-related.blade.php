@@ -49,7 +49,7 @@
 
                         @if($location !== '')
                             <span class="product-location icon-start">
-                                <i class="fal fa-map-marker-alt"></i>
+                                <i class="fas fa-map-marker-alt"></i>
                                 {{ $location }}
                             </span>
                         @endif
@@ -90,7 +90,7 @@
                             @if($property->area > 0)
                                 <li class="icon-start" data-tooltip="tooltip"
                                     title="{{ $keywords['Area'] ?? __('Area') }}">
-                                    <i class="fal fa-vector-square"></i>
+                                    <i class="fas fa-vector-square"></i>
                                     <span>{{ number_format($property->area, fmod($property->area,1)==0?0:2) }}</span>
                                 </li>
                             @endif
@@ -98,12 +98,12 @@
                             @if($property->type === 'residential')
                                 @if($property->beds > 0)
                                     <li class="icon-start" title="{{ $keywords['Bed'] ?? __('Bed') }}">
-                                        <i class="fal fa-bed"></i><span>{{ $property->beds }}</span>
+                                        <i class="fas fa-bed"></i><span>{{ $property->beds }}</span>
                                     </li>
                                 @endif
                                 @if($property->bath > 0)
                                     <li class="icon-start" title="{{ $keywords['Bath'] ?? __('Bath') }}">
-                                        <i class="fal fa-bath"></i><span>{{ $property->bath }}</span>
+                                        <i class="fas fa-bath"></i><span>{{ $property->bath }}</span>
                                     </li>
                                 @endif
                             @endif
