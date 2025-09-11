@@ -819,6 +819,8 @@ $hero = $sliderData->slider;
 @endif
 @endsection
 
+{{-- Include pixel tracking codes --}}
+@include('user-front.realestate.partials.pixels.pixels-v1')
 <script>
     // if (typeof baseURL === 'undefined') {
     //     var baseURL = "{{ getDynamicBaseUrl() }}";
