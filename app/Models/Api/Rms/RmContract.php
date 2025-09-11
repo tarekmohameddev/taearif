@@ -13,10 +13,15 @@ class RmContract extends Model
 
     protected $fillable = [
         'user_id', 'rental_id',
-        'start_date', 'end_date', 'status',
-        'termination_reason', 'file_path', 'created_by', 'updated_by',
+        'start_date', 
+        'end_date', 
+        'status',
+        'termination_reason', 
+        'file_path', 
+        'created_by', 
+        'updated_by',
         'property_id',
-         'project_id',
+        'project_id',
         'property_name',
         'project_name',
         'grace_period_months',
@@ -34,7 +39,7 @@ class RmContract extends Model
     ];
 
     protected $hidden = [
-        'rental',
+        // 'rental', // Commented out to allow access to rental relationship
     ];
 
     public function rental()

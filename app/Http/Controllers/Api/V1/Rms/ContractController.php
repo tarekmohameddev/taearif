@@ -18,14 +18,23 @@ class ContractController extends Controller
 
     public function listByRental($rentalId)
     {
+        $userId = auth()->id();
+        
         $contracts = RmContract::where('rental_id', $rentalId)
+            ->where('user_id', $userId)
+            ->with('rental:id,contract_number')
             ->select(
-                'id', 'contract_number', 'start_date', 'end_date', 'status',
+                'id', 'rental_id', 'start_date', 'end_date', 'status',
                 'property_id','project_id','property_name','project_name',
                 'grace_period_months'
             )
             ->orderBy('start_date')
             ->get();
+
+        // Add contract_number from rental to each contract
+        $contracts->each(function ($contract) {
+            $contract->contract_number = $contract->rental->contract_number ?? null;
+        });
 
         return response()->json(['status' => true, 'data' => $contracts]);
     }
