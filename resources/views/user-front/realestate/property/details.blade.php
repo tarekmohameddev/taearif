@@ -26,8 +26,6 @@
 @endsection
 
 @section('styles')
-<!-- Ensure Font Awesome is loaded for all icon classes -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="{{ asset('assets/front/user/realestate/css/vendors/swiper-bundle.min.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/front/user/realestate/css/partials.css') }}">
 @if ($userCurrentLang->rtl == 1)
@@ -188,10 +186,10 @@
                     <!-- Slider navigation buttons -->
                     <div class="slider-navigation">
                         <button type="button" title="Slide prev" class="slider-btn slider-btn-prev">
-                            <i class="fas fa-angle-left"></i>
+                            <i class="fas fa-chevron-left"></i>
                         </button>
                         <button type="button" title="Slide next" class="slider-btn slider-btn-next">
-                            <i class="fas fa-angle-right"></i>
+                            <i class="fas fa-chevron-right"></i>
                         </button>
                     </div>
                     <div class="swiper product-single-slider">
