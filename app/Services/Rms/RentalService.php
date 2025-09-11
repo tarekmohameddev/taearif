@@ -71,6 +71,11 @@ class RentalService
                     // Snapshot identifiers for audit/history
                     'property_id' => $rental->property_id,
                     'project_id' => $rental->project_id,
+                    'property_name' => $rental->property_name ?? null,
+                    'project_name' => $rental->project_name ?? null,
+                    'grace_period_months' => 0,
+                    'created_by' => $userId,
+                    'updated_by' => $userId,
                 ]);
 
                 $this->generateInstallments($userId, $rental->id, $contract->id, $data);
@@ -205,7 +210,7 @@ class RentalService
             ],
             'contract' => $activeContract ? [
                 'id' => $activeContract->id,
-                'contract_number' => $activeContract->contract_number,
+                'contract_number' => $rental->contract_number,
                 'start_date' => $activeContract->start_date,
                 'end_date' => $activeContract->end_date,
                 'status' => $activeContract->status,
