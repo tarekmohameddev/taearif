@@ -533,7 +533,9 @@ class PropertyController extends Controller
             'featured' => (bool) $property->featured,
             'city_id' => optional($content)->city_id,
             'state_id' => optional($content)->state_id,
-
+            'video_url' => $property->video_url ? asset($property->video_url) : null,
+            'virtual_tour' => $property->virtual_tour ? asset($property->virtual_tour) : null,
+            'video_image' => $property->video_image ? asset($property->video_image) : null,
             'category_id' => $property->category_id,
             'size' => $property->size ?? null,
             'faqs' => $property->faqs ?? [],
