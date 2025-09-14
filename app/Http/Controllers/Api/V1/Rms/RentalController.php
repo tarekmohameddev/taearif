@@ -88,4 +88,10 @@ class RentalController extends Controller
         $details = $this->rentalService->getPropertyDetails(auth()->id(), $id);
         return response()->json(['status' => true, 'data' => $details]);
     }
+
+    public function currentCollections($id)
+    {
+        $collections = $this->rentalService->getCurrentCollections(auth()->id(), $id);
+        return response()->json(['status' => true, 'data' => $collections]);
+    }
 }

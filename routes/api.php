@@ -433,6 +433,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('rentals', [RentalController::class, 'store']);
         Route::get('rentals/{id}', [RentalController::class, 'show']);
         Route::get('rentals/{id}/details', [RentalController::class, 'propertyDetails']);
+        Route::get('rentals/{id}/current-collections', [RentalController::class, 'currentCollections']);
         Route::patch('rentals/{id}', [RentalController::class, 'update']);
         Route::delete('rentals/{id}', [RentalController::class, 'destroy']);
 
@@ -460,6 +461,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('reminders', [ReminderController::class, 'index']);
         Route::post('reminders/{id}/dismiss', [ReminderController::class, 'dismiss']);
         Route::post('reminders/{id}/snooze', [ReminderController::class, 'snooze']);
+        // rental-collect-payments
     });
 
     // ApiCustomerInquiry
