@@ -433,6 +433,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('rentals', [RentalController::class, 'store']);
         Route::get('rentals/{id}', [RentalController::class, 'show']);
         Route::get('rentals/{id}/details', [RentalController::class, 'propertyDetails']);
+        Route::get('rentals/{id}/details-with-payments', [RentalController::class, 'detailsWithPayments']);
         Route::get('rentals/{id}/current-collections', [RentalController::class, 'currentCollections']);
         Route::patch('rentals/{id}', [RentalController::class, 'update']);
         Route::delete('rentals/{id}', [RentalController::class, 'destroy']);

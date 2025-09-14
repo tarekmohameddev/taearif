@@ -71,6 +71,11 @@ class RentalController extends Controller
             'office_commission_type', 'office_commission_value', 'contract_number', 'notes'
         ]);
 
+        // Handle payments if included in request
+        if ($request->has('payments')) {
+            $data['payments'] = $request->input('payments');
+        }
+
         $regenerate = $request->boolean('regenerate_schedule', false);
         $rental = $this->rentalService->updateRental(auth()->id(), $id, $data, $regenerate);
 
@@ -93,5 +98,11 @@ class RentalController extends Controller
     {
         $collections = $this->rentalService->getCurrentCollections(auth()->id(), $id);
         return response()->json(['status' => true, 'data' => $collections]);
+    }
+
+    public function detailsWithPayments($id)
+    {
+        $details = $this->rentalService->getRentalDetailsWithPayments(auth()->id(), $id);
+        return response()->json(['status' => true, 'data' => $details]);
     }
 }

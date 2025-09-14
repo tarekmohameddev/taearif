@@ -92,6 +92,11 @@ class RmRental extends Model
         return $this->hasMany(RmPaymentInstallment::class, 'rental_id');
     }
 
+    public function payments()
+    {
+        return $this->hasMany(RmPayment::class, 'rental_id');
+    }
+
     public function maintenance()
     {
         return $this->hasMany(RmMaintenanceTicket::class, 'rental_id');
