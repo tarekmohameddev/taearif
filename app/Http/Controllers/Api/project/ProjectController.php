@@ -98,6 +98,7 @@ class ProjectController extends Controller
                 "id"              => $project->id,
                 "visits"          => (int)($visitsByProject[$project->id] ?? 0),   // << here
                 "featured_image"  => $project->featured_image ? asset($project->featured_image) : null,
+                "video_url"       => $project->video_url ? asset($project->video_url) : null,
                 "price_range"     => number_format($project->min_price, 2),
                 "latitude"        => $project->latitude,
                 "longitude"       => $project->longitude,
@@ -173,6 +174,7 @@ class ProjectController extends Controller
         $formattedProject = [
             "id" => $project->id,
             "featured_image" => asset($project->featured_image),
+            "video_url" => $project->video_url ? asset($project->video_url) : null,
             "price_range" => "From $" . number_format($project->min_price, 2) . " to $" . number_format($project->max_price, 2),
             "latitude" => $project->latitude,
             "longitude" => $project->longitude,
