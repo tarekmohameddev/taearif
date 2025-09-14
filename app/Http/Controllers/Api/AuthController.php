@@ -616,6 +616,10 @@ class AuthController extends Controller
                     if ($package) {
                         $membershipDetails['package'] = [
                             'title' => $package->title,
+                            'video_size_limit' => $package->video_size_limit,
+                            'file_size_limit' => $package->file_size_limit,
+                            'number_of_vcards' => $package->number_of_vcards,
+                            'trial_days' => $package->trial_days,
                             'features' => json_decode($package->features, true),
                             'project_limit_number' => $package->project_limit_number,
                             'real_estate_limit_number' => $package->real_estate_limit_number
