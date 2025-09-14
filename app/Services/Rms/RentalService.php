@@ -46,11 +46,14 @@ class RentalService
                 'status' => 'active',
             ]));
 
-            // Update property status to 'rented' if property_id is provided
+            // Update property status based on active rentals
             if ($rental->property_id) {
-                Property::where('id', $rental->property_id)
+                $property = Property::where('id', $rental->property_id)
                     ->where('user_id', $userId)
-                    ->update(['property_status' => 'rented']);
+                    ->first();
+                if ($property) {
+                    $property->updatePropertyStatus();
+                }
             }
 
             $hasEnoughData = $data['move_in_date'] ?? null
@@ -129,6 +132,16 @@ class RentalService
                 );
             }
 
+            // Update property status after rental update
+            if ($rental->property_id) {
+                $property = Property::where('id', $rental->property_id)
+                    ->where('user_id', $ownerId)
+                    ->first();
+                if ($property) {
+                    $property->updatePropertyStatus();
+                }
+            }
+
             return $rental->fresh();
         });
     }
@@ -143,7 +156,18 @@ class RentalService
             throw new \Exception('Cannot delete rental with active contract');
         }
 
+        $propertyId = $rental->property_id;
         $rental->delete();
+
+        // Update property status after rental deletion
+        if ($propertyId) {
+            $property = Property::where('id', $propertyId)
+                ->where('user_id', $ownerId)
+                ->first();
+            if ($property) {
+                $property->updatePropertyStatus();
+            }
+        }
     }
 
 
