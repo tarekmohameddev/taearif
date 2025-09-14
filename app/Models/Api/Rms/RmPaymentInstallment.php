@@ -28,4 +28,9 @@ class RmPaymentInstallment extends Model
     {
         return $this->belongsTo(RmContract::class, 'contract_id');
     }
+
+    public function payments()
+    {
+        return $this->hasMany(RmPayment::class, 'installment_id');
+    }
 }

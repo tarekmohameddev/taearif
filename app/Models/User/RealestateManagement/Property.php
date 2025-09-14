@@ -226,6 +226,22 @@ class Property extends Model
         return $this->belongsTo(Project::class, 'project_id');
     }
 
+    public function rentals()
+    {
+        return $this->hasMany(\App\Models\Api\Rms\RmRental::class, 'property_id');
+    }
+
+    public function activeRentals()
+    {
+        return $this->hasMany(\App\Models\Api\Rms\RmRental::class, 'property_id')->where('status', 'active');
+    }
+
+    public function updatePropertyStatus()
+    {
+        $hasActiveRentals = $this->activeRentals()->exists();
+        $this->update(['property_status' => $hasActiveRentals ? 'rented' : 'available']);
+    }
+
 
        /** Canonical public dir for property images */
     private const CANON_DIR = 'properties';

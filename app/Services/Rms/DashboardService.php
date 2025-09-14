@@ -123,17 +123,16 @@ class DashboardService
         $earliestDueDate = !empty($nextMonthDueDates) ? $nextMonthDueDates[0] : null;
         $latestDueDate = !empty($nextMonthDueDates) ? end($nextMonthDueDates) : null;
 
-        // Get total rental amount from all rented properties
+        // Get total rental amount from all active rentals
         $totalCollected = RmRental::where('user_id', $userId)
-            ->whereHas('property', function ($query) use ($userId) {
-                $query->where('user_id', $userId)
-                      ->where('property_status', 'rented');
-            })
+            ->where('status', 'active')
             ->sum('total_rental_amount');
 
-        // Get count of rented properties
+        // Get count of properties with active rentals
         $rentedPropertiesCount = Property::where('user_id', $userId)
-            ->where('property_status', 'rented')
+            ->whereHas('rentals', function ($query) {
+                $query->where('status', 'active');
+            })
             ->count();
 
         return [

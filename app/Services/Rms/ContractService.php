@@ -37,6 +37,16 @@ class ContractService
             if ($data['status'] === 'active') {
                 $rental->status = 'active';
                 $rental->save();
+                
+                // Update property status when contract becomes active
+                if ($rental->property_id) {
+                    $property = \App\Models\User\RealestateManagement\Property::where('id', $rental->property_id)
+                        ->where('user_id', $userId)
+                        ->first();
+                    if ($property) {
+                        $property->updatePropertyStatus();
+                    }
+                }
             }
 
             // if (!empty($data['generate_schedule'])) {
