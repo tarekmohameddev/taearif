@@ -18,7 +18,10 @@ class RmsDashboardController extends Controller
     public function index(Request $request)
     {
         $range = (int) $request->get('range', 7); // 7 or 30 days
-        $data = $this->dashboardService->getDashboardData(auth()->id(), $range);
+        $perPage = (int) $request->get('per_page', 10); // Default 10 items per page
+        $page = (int) $request->get('page', 1); // Default page 1
+        
+        $data = $this->dashboardService->getDashboardData(auth()->id(), $range, $perPage, $page);
 
         return response()->json(['status' => true, 'data' => $data]);
     }
