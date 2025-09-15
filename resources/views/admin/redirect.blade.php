@@ -44,37 +44,6 @@
     </div>
 
     <script>
-        // Set Authorization header for API calls
-        const token = "{{ $token }}";
-        
-        // Store token in localStorage for API calls
-        localStorage.setItem('auth_token', token);
-        
-        // Set default Authorization header for fetch requests
-        const originalFetch = window.fetch;
-        window.fetch = function(url, options = {}) {
-            options.headers = {
-                ...options.headers,
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            };
-            return originalFetch(url, options);
-        };
-        
-        // Set default Authorization header for XMLHttpRequest
-        const originalXHROpen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
-            this.addEventListener('readystatechange', function() {
-                if (this.readyState === 1) { // OPENED
-                    this.setRequestHeader('Authorization', `Bearer ${token}`);
-                    this.setRequestHeader('Content-Type', 'application/json');
-                    this.setRequestHeader('Accept', 'application/json');
-                }
-            });
-            return originalXHROpen.call(this, method, url, async, user, password);
-        };
-        
         // Immediate redirect for Next.js compatibility
         window.location.href = "{{ $url }}";
     </script>
