@@ -321,7 +321,7 @@
                                                             {{ __('Delete') }}
                                                         </button>
                                                     </form>
-                                                    <a href="{{ route('admin.register.user.secretLogin', $user) }}" class="dropdown-item">
+                                                    <a href="{{ route('admin.register.user.secretLogin', $user) }}" target="_blank" class="dropdown-item">
                                                         {{ __('Secret Login') }}
                                                     </a>
 
