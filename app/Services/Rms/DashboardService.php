@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 
 class DashboardService
 {
-    public function getDashboardData($userId, $range = 7, $perPage = 10, $page = 1)
+    public function getDashboardData($userId, $range = 7)
     {
         $now = Carbon::now('Asia/Riyadh');
         $end = $now->copy()->addDays($range);
@@ -35,55 +35,51 @@ class DashboardService
                 'maintenance_in_progress' => RmMaintenanceTicket::where('user_id', $userId)->where('status', 'in_progress')->count(),
             ],
             'rental_amounts' => $this->getRentalAmounts($userId),
-            'ongoing_rentals' => $this->getOngoingRentals($userId, $perPage, $page),
-            'reminders' => $this->getReminders($userId, $now, $end, $perPage, $page),
-            'maintenance' => $this->getMaintenanceTickets($userId, $perPage, $page)
+            'ongoing_rentals' => $this->getOngoingRentals($userId),
+            'reminders' => RmReminder::where('user_id', $userId)
+                ->where('status', 'pending')
+                ->whereBetween('due_on', [$now, $end])
+                ->orderBy('due_on')
+                ->take(5)
+                ->get(),
+            'maintenance' => RmMaintenanceTicket::where('user_id', $userId)
+                ->whereIn('status', ['open', 'in_progress'])
+                ->orderBy('scheduled_date')
+                ->take(5)
+                ->get()
         ];
     }
 
-    protected function getOngoingRentals($userId, $perPage = 10, $page = 1)
+    protected function getOngoingRentals($userId)
     {
-        $rentals = RmRental::with(['property.contents', 'activeContract'])
+        return RmRental::with(['property.contents', 'activeContract'])
             ->where('user_id', $userId)
             ->where('status', 'active')
-            ->paginate($perPage, ['*'], 'page', $page);
+            ->get()
+            ->map(function ($rental) {
+                $nextPayment = RmPaymentInstallment::where('rental_id', $rental->id)
+                    ->where('status', 'pending')
+                    ->orderBy('due_date')
+                    ->first();
 
-        $formattedRentals = collect($rentals->items())->map(function ($rental) {
-            $nextPayment = RmPaymentInstallment::where('rental_id', $rental->id)
-                ->where('status', 'pending')
-                ->orderBy('due_date')
-                ->first();
-
-            return [
-                'id' => $rental->id,
-                'tenant_name' => $rental->tenant_full_name,
-                'tenant_phone' => $rental->tenant_phone,
-                'property' => [
-                    'id' => $rental->property_id,
-                    'name' => optional($rental->property->firstContent)->title,
-                    'unit_label' => $rental->unit_label,
-                ],
-                'contract' => [
-                    'id' => optional($rental->activeContract)->id,
-                    'end_date' => optional($rental->activeContract)->end_date,
-                    'status' => optional($rental->activeContract)->status,
-                ],
-                'next_payment_due_on' => optional($nextPayment)->due_date,
-                'next_payment_amount' => optional($nextPayment)->amount,
-            ];
-        });
-
-        return [
-            'data' => $formattedRentals,
-            'pagination' => [
-                'total' => $rentals->total(),
-                'per_page' => $rentals->perPage(),
-                'current_page' => $rentals->currentPage(),
-                'last_page' => $rentals->lastPage(),
-                'from' => $rentals->firstItem(),
-                'to' => $rentals->lastItem(),
-            ]
-        ];
+                return [
+                    'id' => $rental->id,
+                    'tenant_name' => $rental->tenant_full_name,
+                    'tenant_phone' => $rental->tenant_phone,
+                    'property' => [
+                        'id' => $rental->property_id,
+                        'name' => optional($rental->property->firstContent)->title,
+                        'unit_label' => $rental->unit_label,
+                    ],
+                    'contract' => [
+                        'id' => optional($rental->activeContract)->id,
+                        'end_date' => optional($rental->activeContract)->end_date,
+                        'status' => optional($rental->activeContract)->status,
+                    ],
+                    'next_payment_due_on' => optional($nextPayment)->due_date,
+                    'next_payment_amount' => optional($nextPayment)->amount,
+                ];
+            });
     }
 
     protected function getRentalAmounts($userId)
@@ -149,47 +145,6 @@ class DashboardService
             'all_due_dates_next_month' => $nextMonthDueDates,
             'rented_properties_count' => $rentedPropertiesCount,
             'currency' => 'SAR', // Default currency, you might want to make this dynamic
-        ];
-    }
-
-    protected function getReminders($userId, $now, $end, $perPage = 10, $page = 1)
-    {
-        $reminders = RmReminder::where('user_id', $userId)
-            ->where('status', 'pending')
-            ->whereBetween('due_on', [$now, $end])
-            ->orderBy('due_on')
-            ->paginate($perPage, ['*'], 'page', $page);
-
-        return [
-            'data' => $reminders->items(),
-            'pagination' => [
-                'total' => $reminders->total(),
-                'per_page' => $reminders->perPage(),
-                'current_page' => $reminders->currentPage(),
-                'last_page' => $reminders->lastPage(),
-                'from' => $reminders->firstItem(),
-                'to' => $reminders->lastItem(),
-            ]
-        ];
-    }
-
-    protected function getMaintenanceTickets($userId, $perPage = 10, $page = 1)
-    {
-        $maintenance = RmMaintenanceTicket::where('user_id', $userId)
-            ->whereIn('status', ['open', 'in_progress'])
-            ->orderBy('scheduled_date')
-            ->paginate($perPage, ['*'], 'page', $page);
-
-        return [
-            'data' => $maintenance->items(),
-            'pagination' => [
-                'total' => $maintenance->total(),
-                'per_page' => $maintenance->perPage(),
-                'current_page' => $maintenance->currentPage(),
-                'last_page' => $maintenance->lastPage(),
-                'from' => $maintenance->firstItem(),
-                'to' => $maintenance->lastItem(),
-            ]
         ];
     }
 }
