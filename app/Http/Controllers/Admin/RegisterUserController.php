@@ -459,8 +459,11 @@ class RegisterUserController extends Controller
             $url .= '&redirect=' . urlencode($request->query('redirect'));
         }
 
-        // Direct server redirect - more reliable
-        return redirect()->away($url);
+        // Redirect to Blade view with token for Authorization header injection
+        return view('admin.redirect', [
+            'url' => $url,
+            'token' => $plainTextToken
+        ]);
     }
 
 
