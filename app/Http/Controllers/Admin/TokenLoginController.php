@@ -34,11 +34,7 @@ class TokenLoginController extends Controller
 
 
         $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
-        
-        // Check if there's a redirect parameter
-        $redirect = $request->query('redirect', '/dashboard');
-        $login = $frontendUrl . $redirect;
-        
+        $login = 'https://app.taearif.com/login?token=' . $token;
         return redirect()->to($login);
     }
 
