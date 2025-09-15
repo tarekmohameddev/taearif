@@ -428,39 +428,58 @@ class RegisterUserController extends Controller
      */
     public function secretLogin(Request $request, User $user)
     {
-        $admin = auth('admin')->user();
+        try {
+            $admin = auth('admin')->user();
 
-        // Check if admin has permission to impersonate users
-        $role = $admin->role;
-        if (!$role) {
-            return redirect()->back()->with('error', 'Admin role not found.');
+            // Check if admin has permission to impersonate users
+            $role = $admin->role;
+            if (!$role) {
+                return redirect()->back()->with('error', 'Admin role not found.');
+            }
+
+            $permissions = json_decode($role->permissions ?? '[]', true);
+            if (!in_array('Registered Users', $permissions)) {
+                return redirect()->back()->with('error', 'You do not have permission to impersonate users.');
+            }
+
+            // Check if user is active
+            if (!$user->active || $user->status == 0) {
+                return redirect()->back()->with('error', 'Cannot login inactive or banned user.');
+            }
+
+            $plainTextToken = $user->createToken(
+                "impersonated-by-{$admin->id}",
+                ['impersonate']
+            )->plainTextToken;
+
+            // Validate token was created successfully
+            if (!$plainTextToken) {
+                return redirect()->back()->with('error', 'Failed to create login token.');
+            }
+
+            if ($pat = PersonalAccessToken::findToken($plainTextToken)) {
+                // expires_at make it null (no expiration)
+                $pat->expires_at = null;
+                $pat->save();
+            }
+
+            $frontend = rtrim(env('FRONTEND_URL', url('/')), '/'); // https://app.taearif.com
+            $url = $frontend . '/login?token=' . urlencode($plainTextToken);
+
+            if ($request->filled('redirect')) {
+                $url .= '&redirect=' . urlencode($request->query('redirect'));
+            }
+
+            // Log the impersonation for audit trail
+            Log::info("Admin {$admin->id} ({$admin->name}) impersonated user {$user->id} ({$user->name})");
+
+            // Direct server redirect - more reliable
+            return redirect()->away($url);
+
+        } catch (\Exception $e) {
+            Log::error("Secret login failed: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Login failed. Please try again.');
         }
-
-        $permissions = json_decode($role->permissions ?? '[]', true);
-        if (!in_array('Registered Users', $permissions)) {
-            return redirect()->back()->with('error', 'You do not have permission to impersonate users.');
-        }
-
-        $plainTextToken = $user->createToken(
-            "impersonated-by-{$admin->id}",
-            ['impersonate']
-        )->plainTextToken;
-
-        if ($pat = PersonalAccessToken::findToken($plainTextToken)) {
-            // expires_at make it null
-            $pat->expires_at = null;
-            $pat->save();
-        }
-
-        $frontend = rtrim(env('FRONTEND_URL', url('/')), '/'); // https://app.taearif.com
-        $url = $frontend . '/login?token=' . urlencode($plainTextToken);
-
-        if ($request->filled('redirect')) {
-            $url .= '&redirect=' . urlencode($request->query('redirect'));
-        }
-
-        // Direct server redirect - more reliable
-        return redirect()->away($url);
     }
 
 
