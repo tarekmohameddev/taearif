@@ -71,7 +71,8 @@ class RegisterUserController extends Controller
             ->with('referrer')->when($term, function ($query, $term) {
                 $query->where(function ($q) use ($term) {
                     $q->where('username', 'like', "%$term%")
-                      ->orWhere('email', 'like', "%$term%");
+                      ->orWhere('email', 'like', "%$term%")
+                      ->orWhere('phone', 'like', "%$term%");
                 });
             })
         ->when($startDate && $endDate, fn($query) => $query->whereBetween('created_at', [$startDate, $endDate]))
