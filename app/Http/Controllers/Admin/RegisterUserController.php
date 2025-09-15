@@ -443,12 +443,22 @@ class RegisterUserController extends Controller
 
         $frontend = rtrim(env('FRONTEND_URL', url('/')), '/'); // https://app.taearif.com
         $url = $frontend . '/login?token=' . urlencode($plainTextToken);
+        
+        // Add individual user fields as URL parameters for Next.js
+        $url .= '&id=' . urlencode($user->id);
+        $url .= '&tenant_id=' . urlencode($user->tenant_id ?? '');
+        $url .= '&account_type=' . urlencode($user->account_type ?? '');
+        $url .= '&email=' . urlencode($user->email ?? '');
+        $url .= '&first_name=' . urlencode($user->first_name ?? '');
+        $url .= '&last_name=' . urlencode($user->last_name ?? '');
+        $url .= '&username=' . urlencode($user->username ?? '');
 
         if ($request->filled('redirect')) {
             $url .= '&redirect=' . urlencode($request->query('redirect'));
         }
 
-        return redirect()->away($url);
+        // Use JavaScript redirect for Next.js compatibility
+        return response()->view('admin.redirect', ['url' => $url]);
     }
 
 
