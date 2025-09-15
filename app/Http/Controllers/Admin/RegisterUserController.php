@@ -430,6 +430,17 @@ class RegisterUserController extends Controller
     {
         $admin = auth('admin')->user();
 
+        // Check if admin has permission to impersonate users
+        $role = $admin->role;
+        if (!$role) {
+            return redirect()->back()->with('error', 'Admin role not found.');
+        }
+
+        $permissions = json_decode($role->permissions ?? '[]', true);
+        if (!in_array('Registered Users', $permissions)) {
+            return redirect()->back()->with('error', 'You do not have permission to impersonate users.');
+        }
+
         $plainTextToken = $user->createToken(
             "impersonated-by-{$admin->id}",
             ['impersonate']
