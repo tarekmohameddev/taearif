@@ -46,11 +46,6 @@
     <script>
         // Immediate redirect for Next.js compatibility
         window.location.href = "{{ $url }}";
-        
-        // Fallback redirect after 2 seconds
-        setTimeout(function() {
-            window.location.href = "{{ $url }}";
-        }, 2000);
     </script>
 </body>
 </html>
