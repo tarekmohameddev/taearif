@@ -42,7 +42,8 @@ require __DIR__ . '/web/admin.php';
 Route::get('/admin-frontend', 'Front\FrontendController@index')->name('admin.front.index');
 
 // Admin secret login route (accessible from admin panel)
-Route::middleware(['auth:admin', 'can:impersonate-users'])->group(function () {
+Route::middleware(['auth:admin'])->group(function () {
+    
     Route::get('admin/register/user/{user}/secret-login', 'Admin\RegisterUserController@secretLogin')->name('admin.register.user.secretLogin');
 });
 
