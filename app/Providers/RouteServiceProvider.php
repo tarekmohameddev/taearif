@@ -34,13 +34,15 @@ class RouteServiceProvider extends ServiceProvider
     public function boot()
     {
         // Pattern for domain route parameter
-        \Route::pattern('domain', '[a-z0-9.\-]+');
+        Route::pattern('domain', '[a-z0-9.\-]+');
 
         // Define a custom global API rate limiter
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(100)->by(optional($request->user())->id ?: $request->ip());
         });
 
+        // Admin routes are loaded in mapAdminRoutes() method
+        // But we need to ensure they're loaded here too for proper registration
         Route::middleware('web')
         ->namespace($this->namespace)
         ->prefix('admin')
@@ -100,10 +102,6 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function mapAdminRoutes()
     {
-        Route::middleware(['web'])
-            ->prefix('admin')
-            ->name('admin.')
-            ->namespace($this->namespace)
-            ->group(base_path('routes/admin.php'));
+        // Admin routes are loaded in boot() method to avoid duplication
     }
 }

@@ -9,10 +9,7 @@
 */
 
 // Admin side: must be logged in with the admin guard AND have the Gate ability
-Route::middleware(['auth:admin', 'can:impersonate-users'])->group(function () {
-    Route::get('admin/register/users/{user}/secret-login', 'Admin\RegisterUserController@secretLogin')
-        ->name('admin.register.user.secretLogin');
-});
+// Note: admin.register.user.secretLogin route is now defined in routes/admin.php
 
 // Front side: consumes the signed URL and logs in the user on 'web' guard
 Route::get('/_impersonate/{user}', 'ImpersonationController@consume')

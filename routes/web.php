@@ -38,6 +38,14 @@ use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyReques
 require __DIR__ . '/web/debug.php';
 require __DIR__ . '/web/admin.php';
 
+// Admin-specific frontend route (without username parameter)
+Route::get('/admin-frontend', 'Front\FrontendController@index')->name('admin.front.index');
+
+// Admin secret login route (accessible from admin panel)
+Route::middleware(['auth:admin', 'can:impersonate-users'])->group(function () {
+    Route::get('admin/register/user/{user}/secret-login', 'Admin\RegisterUserController@secretLogin')->name('admin.register.user.secretLogin');
+});
+
 // Fallback route
 Route::fallback(function () {
     return view('errors.404');
@@ -169,10 +177,7 @@ Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
     Route::get('/get-states/{city_id}', 'Front\PropertyController@getStatesByCity')->name('front.user.get_states');
     Route::get('/data', 'TenantDashboardController@dashboard');
     
-    // Impersonation routes
-    Route::middleware(['auth:admin', 'can:impersonate-users'])->group(function () {
-        Route::get('admin/register/users/{user}/secret-login', 'Admin\RegisterUserController@secretLogin')->name('admin.register.user.secretLogin');
-    });
+    // Impersonation routes (admin routes are defined in web/admin.php)
     
     Route::get('/_impersonate/{user}', 'ImpersonationController@consume')->name('impersonate.consume')->middleware('signed');
     Route::post('/_impersonate/stop', 'ImpersonationController@stop')->name('impersonate.stop')->middleware('auth');
