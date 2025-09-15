@@ -237,7 +237,6 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/user/next-package/change', 'Admin\RegisterUserController@changeNextPackage')->name('user.nextPackage.change');
         Route::post('/user/next-package/add', 'Admin\RegisterUserController@addNextPackage')->name('user.nextPackage.add');
         Route::post('register/user/delete', 'Admin\RegisterUserController@delete')->name('register.user.delete');
-        Route::get('register/user/{user}/secret-login', 'Admin\RegisterUserController@secretLogin')->name('admin.register.user.secretLogin');
         Route::post('register/user/bulk-delete', 'Admin\RegisterUserController@bulkDelete')->name('register.user.bulk.delete');
         Route::get('register/user/{id}/changePassword', 'Admin\RegisterUserController@changePass')->name('register.user.changePass');
         Route::post('register/user/updatePassword', 'Admin\RegisterUserController@updatePassword')->name('register.user.updatePassword');
@@ -250,8 +249,6 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('register/users/vcard/template', 'Admin\UsersVcardsController@vcardTemplate')->name('register.user.vcard.template');
         Route::post('register/users/vcard/delete', 'Admin\UsersVcardsController@destroy')->name('register.user.vcard.delete');
 
-        // TokenLogin
-        // Route::get('register/user/{id}/secret-login', 'Admin\RegisterUserController@secretLogin')->name('register.user.secretLogin');
     });
 
     Route::group(['middleware' => 'checkpermission:FAQ Management'], function () {

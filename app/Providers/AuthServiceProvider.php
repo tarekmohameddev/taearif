@@ -30,7 +30,18 @@ class AuthServiceProvider extends ServiceProvider
         // Define a gate for impersonation
 
         Gate::define('impersonate-users', function (Admin $admin) {
-            return is_null($admin->role_id);
+            // Super admin (no role) can always impersonate
+            if (is_null($admin->role_id)) {
+                return true;
+            }
+            
+            // Check if admin has "Registered Users" permission
+            if (!empty($admin->role) && !empty($admin->role->permissions)) {
+                $permissions = json_decode($admin->role->permissions, true);
+                return in_array('Registered Users', $permissions);
+            }
+            
+            return false;
         });
         Gate::before(function ($user, string $ability) {
             // Only apply this logic to User models, not Admin models
