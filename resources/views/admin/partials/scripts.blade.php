@@ -118,3 +118,25 @@
     });
   </script>
 @endif
+
+@if (session()->has('error'))
+  <script>
+    "use strict";
+    var content = {};
+
+    content.message = '{{ session('error') }}';
+    content.title = 'Error!';
+    content.icon = 'fa fa-exclamation-triangle';
+
+    $.notify(content, {
+      type: 'danger',
+      placement: {
+        from: 'top',
+        align: 'right'
+      },
+      showProgressbar: true,
+      time: 1000,
+      delay: 4000,
+    });
+  </script>
+@endif
