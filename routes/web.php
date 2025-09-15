@@ -159,7 +159,7 @@ use App\Http\Controllers\User\RealestateManagement\ManageProperty\PropertyReques
 
 ////////////////////////////////////////
 // Admin side: must be logged in with the admin guard AND have the Gate ability
-Route::middleware(['auth:admin', 'can:impersonate-users'])->group(function () {
+Route::middleware(['auth:admin'])->group(function () {
     Route::get('admin/register/users/{user}/secret-login', [RegisterUserController::class, 'secretLogin'])
         ->name('admin.register.user.secretLogin');
 });
