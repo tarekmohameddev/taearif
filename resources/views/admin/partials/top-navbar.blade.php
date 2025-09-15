@@ -2,7 +2,7 @@
     <!-- Logo Header -->
     <div class="logo-header" @if (request()->cookie('admin-theme') == 'dark') data-background-color="dark2" @endif>
 
-        <a href="{{ route('admin.front.index') }}" class="logo" target="_blank">
+        <a href="{{ route('front.index') }}" class="logo" target="_blank">
             <img src="{{ asset('assets/front/img/' . $bs->logo) }}" alt="navbar brand" class="navbar-brand">
         </a>
         <button class="navbar-toggler sidenav-toggler ml-auto" type="button" data-toggle="collapse"
