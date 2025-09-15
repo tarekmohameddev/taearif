@@ -457,8 +457,8 @@ class RegisterUserController extends Controller
             $url .= '&redirect=' . urlencode($request->query('redirect'));
         }
 
-        // Use JavaScript redirect for Next.js compatibility
-        return response()->view('admin.redirect', ['url' => $url]);
+        // Direct server redirect - more reliable
+        return redirect()->away($url);
     }
 
 
