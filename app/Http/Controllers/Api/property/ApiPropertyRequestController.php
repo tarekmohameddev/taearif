@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
 use App\Models\Api\UserPropertyRequest;
+use Illuminate\Validation\Rule;
 
 class ApiPropertyRequestController extends Controller
 {
@@ -81,5 +82,15 @@ class ApiPropertyRequestController extends Controller
                 ],
             ],
         ]);
+    }
+    public function destroy($id)
+    {
+        $user = Auth::user();
+        $propertyRequest = UserPropertyRequest::where('id', $id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+        
+        $propertyRequest->delete();
+        return response()->json(['message' => 'Property request deleted successfully']);
     }
 }
