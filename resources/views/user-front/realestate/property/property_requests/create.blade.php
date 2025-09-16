@@ -105,6 +105,11 @@
         <div class="form-group">
             <label class="{{ $req('city_id') ? 'required' : '' }}">{{ $lbl('city_id','المدينة') }}</label>
 
+            {{-- Hidden input to ensure city_id is sent when disabled --}}
+            @if(isset($disableCitySelection) && $disableCitySelection && isset($defaultCityId))
+                <input type="hidden" name="city_id" value="{{ $defaultCityId }}">
+            @endif
+
             <select
                 class="form-select"
                 id="citySelect"
