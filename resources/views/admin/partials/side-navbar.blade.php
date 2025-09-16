@@ -319,6 +319,32 @@
                     </li>
                 @endif
 
+                {{-- communication --}}
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Communication', $permissions)))
+                    <li class="nav-item
+                        @if (request()->path() == 'admin/communication/whatsapp') active
+                        @elseif(request()->is('admin/communication/*')) active @endif">
+                        <a data-toggle="collapse" href="#communication">
+                            <i class="fab fa-whatsapp"></i>
+                            <p>التواصل</p>
+                            <span class="caret"></span>
+                        </a>
+                        <div class="collapse
+                            @if (request()->path() == 'admin/communication/whatsapp') show
+                            @elseif(request()->is('admin/communication/*')) show @endif"
+                            id="communication">
+                            <ul class="nav nav-collapse">
+                                <li class="@if (request()->path() == 'admin/communication/whatsapp') active @endif">
+                                    <a href="{{ route('admin.communication.whatsapp') }}">
+                                        <span class="sub-item">واتس اب</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                @endif
+
+
             </ul>
         </div>
     </div>

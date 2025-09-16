@@ -44,7 +44,20 @@ class BasicSetting extends Model
         'vcard_section_subtitle',
         'intro_button_name',
         'intro_button_url',
-        'adsense_publisher_id'
+        'adsense_publisher_id',
+        'whatsapp_number',
+        'whatsapp_message',
+        'whatsapp_status',
+        'whatsapp_service',
+        'meta_access_token',
+        'meta_phone_number_id',
+        'meta_business_account_id',
+        'meta_template_name',
+        'meta_template_language',
+        'evolution_api_url',
+        'evolution_api_key',
+        'evolution_instance_name',
+        'evolution_phone_number'
     ];
 
     public function language()

@@ -296,6 +296,25 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/contact/{langid}/post', 'Admin\ContactController@update')->name('contact.update');
     });
 
+    Route::group(['middleware' => 'checkpermission:Communication'], function () {
+        // Admin Communication Routes
+        Route::get('/communication/whatsapp', 'Admin\CommunicationController@whatsapp')->name('communication.whatsapp');
+        Route::post('/communication/whatsapp/update', 'Admin\CommunicationController@updateWhatsapp')->name('communication.whatsapp.update');
+        Route::post('/communication/service/update', 'Admin\CommunicationController@updateServiceSelection')->name('communication.service.update');
+        
+        // Meta Cloud API Routes
+        Route::get('/communication/meta-cloud', 'Admin\CommunicationController@metaCloud')->name('communication.meta-cloud');
+        Route::post('/communication/meta-cloud/update', 'Admin\CommunicationController@updateMetaCloud')->name('communication.meta-cloud.update');
+        
+        // Evolution API Routes
+        Route::get('/communication/evolution-api', 'Admin\CommunicationController@evolutionApi')->name('communication.evolution-api');
+        Route::post('/communication/evolution-api/update', 'Admin\CommunicationController@updateEvolutionApi')->name('communication.evolution-api.update');
+        
+        // Test Routes
+        Route::post('/communication/test-whatsapp', 'Admin\CommunicationController@testWhatsAppService')->name('communication.test-whatsapp');
+        Route::post('/communication/check-config', 'Admin\CommunicationController@checkConfiguration')->name('communication.check-config');
+    });
+
     Route::group(['middleware' => 'checkpermission:Payment Gateways'], function () {
         // Admin Online Gateways Routes
         Route::get('/gateways', 'Admin\GatewayController@index')->name('gateway.index');
