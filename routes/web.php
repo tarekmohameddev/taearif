@@ -1424,7 +1424,7 @@ Route::domain($domain)->group(function () {
     //     'env(WEBSITE_HOST)' => env('WEBSITE_HOST')
     //   ]);
 
-Route::group(['domain' => $domain, 'prefix' => $prefix], function () {
+Route::group(['domain' => $domain, 'prefix' => $prefix, 'middleware' => 'check.maintenance'], function () {
     Route::get('/', 'Front\FrontendController@userDetailView')->name('front.user.detail.view');
 
     // Route::group(['middleware' => 'auth:customer'], function () {
