@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\PasswordResetLog;
+use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -93,11 +94,30 @@ class ResetPasswordController extends Controller
 
         // Send code
         if ($request->method === 'email') {
-            // Mail::raw("Your password reset code is: {$code}", function ($message) use ($user) {
-            //     $message->to($user->email)->subject('Your Password Reset Code');
-            // });
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
+            $resetUrl = $frontendUrl . '/reset-password';
+            
+            Mail::raw("Your password reset code is: {$code}\n\nPlease visit: {$resetUrl}", function ($message) use ($user) {
+                $message->to($user->email)->subject('Your Password Reset Code');
+            });
         } else {
-            // Placeholder for SMS/WhatsApp
+            // Send via WhatsApp
+            try {
+                $whatsappService = new WhatsAppService();
+                $whatsappService->sendPasswordResetCode($user->phone, $code, $user->first_name);
+            } catch (\Exception $e) {
+                // Log the error but don't fail the request
+                \Log::error('WhatsApp password reset failed', [
+                    'user_id' => $user->id,
+                    'phone' => $user->phone,
+                    'error' => $e->getMessage()
+                ]);
+                
+                return response()->json([
+                    'message' => 'Failed to send WhatsApp message. Please try again later.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
         }
         return response()->json([
             'message' => "Reset code sent successfully (Attempt {$attemptNumber}/3)",
