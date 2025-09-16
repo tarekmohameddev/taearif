@@ -117,7 +117,10 @@
                 <option value="">{{ $lbl('city_id_placeholder','اختر المدينة') }}</option>
 
                 @foreach($citiesList as $row)
-                    <option value="{{ $row->id }}" {{ (string)old('city_id') === (string)$row->id ? 'selected' : '' }}>
+                    <option value="{{ $row->id }}" {{ 
+                        (string)old('city_id') === (string)$row->id ? 'selected' : 
+                        (isset($defaultCityId) && $defaultCityId == $row->id && !old('city_id')) ? 'selected' : '' 
+                    }}>
                         {{ $isAr ? ($row->name_ar ?? $row->name_en) : ($row->name_en ?? $row->name_ar) }}
                     </option>
                 @endforeach
@@ -528,6 +531,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const OLD_CITY_ID = @json(old('city_id'));
     const OLD_DISTRICT_ID = @json(old('districts_id'));
+    const DEFAULT_CITY_ID = @json($defaultCityId ?? null);
     const IS_AR = @json(app()->getLocale() === 'ar');
 
     function resetDistricts(disabled = true) {
@@ -566,7 +570,9 @@ document.addEventListener('DOMContentLoaded', function() {
             resetDistricts();
             if (this.value) loadDistricts(this.value, null);
         });
-        if (OLD_CITY_ID) loadDistricts(OLD_CITY_ID, OLD_DISTRICT_ID);
+        // Load districts for old city or default city
+        const cityToLoad = OLD_CITY_ID || DEFAULT_CITY_ID;
+        if (cityToLoad) loadDistricts(cityToLoad, OLD_DISTRICT_ID);
     }
 });
 </script>

@@ -60,6 +60,12 @@ class PropertyRequestController extends Controller
             ->get();
         $formSettings = $frSettings->forTenant($tenantId);
 
+        // Set default city for specific user
+        $defaultCityId = null;
+        if ($user && $user->id == 1000) {
+            $defaultCityId = 3;
+        }
+
         // dd($cities);
         return view('user-front.realestate.property.property_requests.create', [
             'cities'              => $cities,
@@ -68,6 +74,7 @@ class PropertyRequestController extends Controller
             'userCurrentLang'     => $userCurrentLang,
             'website'             => $website,
             'formSettings'        => $formSettings,
+            'defaultCityId'       => $defaultCityId,
         ]);
     }
 
