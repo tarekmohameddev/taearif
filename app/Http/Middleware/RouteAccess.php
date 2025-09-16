@@ -20,6 +20,12 @@ class RouteAccess
     public function handle(Request $request, Closure $next, $pages)
     {
         $user = getUser();
+        
+        // If no user is found, redirect to appropriate page
+        if (!$user) {
+            return redirect()->route('front.user.detail.view', getParam());
+        }
+        
         $currentPackage = UserPermissionHelper::userPackage($user->id);
         $packagePermissions = UserPermissionHelper::packagePermission($user->id);
         $packagePermissions = json_decode($packagePermissions, true);
