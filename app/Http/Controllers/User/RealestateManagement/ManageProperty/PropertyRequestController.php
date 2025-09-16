@@ -62,8 +62,10 @@ class PropertyRequestController extends Controller
 
         // Set default city for specific user
         $defaultCityId = null;
+        $disableCitySelection = false;
         if ($user && $user->id == 1000) {
             $defaultCityId = 3;
+            $disableCitySelection = true;
         }
 
         // dd($cities);
@@ -75,6 +77,7 @@ class PropertyRequestController extends Controller
             'website'             => $website,
             'formSettings'        => $formSettings,
             'defaultCityId'       => $defaultCityId,
+            'disableCitySelection' => $disableCitySelection,
         ]);
     }
 

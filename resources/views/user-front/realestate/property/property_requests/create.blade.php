@@ -113,6 +113,7 @@
                 data-old-city="{{ old('city_id') }}"
                 data-old-district="{{ old('districts_id') }}"
                 {{ $req('city_id') ? 'required' : '' }}
+                {{ isset($disableCitySelection) && $disableCitySelection ? 'disabled' : '' }}
             >
                 <option value="">{{ $lbl('city_id_placeholder','اختر المدينة') }}</option>
 
