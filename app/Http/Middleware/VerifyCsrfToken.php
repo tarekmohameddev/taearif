@@ -64,7 +64,6 @@ class VerifyCsrfToken extends Middleware
         '*/cause-donation/phonepe/notify',
         '*/membership/arb/success',
 
-        '*/property-requests/store',
-        '*/property-requests/create',
+        '*/property-requests/*',
     ];
 }
