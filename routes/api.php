@@ -472,6 +472,11 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     // ApiPropertyRequestController
     Route::get('/property-requests', [ApiPropertyRequestController::class, 'index']);
     Route::post('/property-requests', [ApiPropertyRequestController::class, 'store']);
+    // DELETE 
+    Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy']);
+    // update
+    Route::put('/property-requests/{id}', [ApiPropertyRequestController::class, 'update']);
+
 
     // ApiPropertyRequestSettingsController
     Route::prefix('property-request-settings')->group(function () {
