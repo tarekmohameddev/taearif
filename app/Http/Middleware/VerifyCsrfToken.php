@@ -63,5 +63,8 @@ class VerifyCsrfToken extends Middleware
         '*/cause-donation/paytm/notify',
         '*/cause-donation/phonepe/notify',
         '*/membership/arb/success',
+
+        '*/property-requests/store',
+        '*/property-requests/create',
     ];
 }
