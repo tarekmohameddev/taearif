@@ -119,7 +119,7 @@
                 @foreach($citiesList as $row)
                     <option value="{{ $row->id }}" {{ 
                         (string)old('city_id') === (string)$row->id ? 'selected' : 
-                        (isset($defaultCityId) && $defaultCityId == $row->id && !old('city_id')) ? 'selected' : '' 
+                        ((isset($defaultCityId) && $defaultCityId == $row->id && !old('city_id')) ? 'selected' : '')
                     }}>
                         {{ $isAr ? ($row->name_ar ?? $row->name_en) : ($row->name_en ?? $row->name_ar) }}
                     </option>
