@@ -93,4 +93,13 @@ class ApiPropertyRequestController extends Controller
         $propertyRequest->delete();
         return response()->json(['message' => 'Property request deleted successfully']);
     }
+    public function update(Request $request, $id)
+    {
+        $user = Auth::user();
+        $propertyRequest = UserPropertyRequest::where('id', $id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+        $propertyRequest->update($request->all());
+        return response()->json(['message' => 'Property request updated successfully']);
+    }
 }
