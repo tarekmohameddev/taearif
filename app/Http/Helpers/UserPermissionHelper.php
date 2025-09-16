@@ -12,8 +12,12 @@ use Illuminate\Support\Facades\Config;
 class UserPermissionHelper
 {
 
-    public static function packagePermission(int $userId)
+    public static function packagePermission(?int $userId)
     {
+        if ($userId === null) {
+            return collect([]);
+        }
+        
         $bs = BasicSetting::first();
         Config::set('app.timezone', $bs->timezone);
 
@@ -53,8 +57,12 @@ class UserPermissionHelper
         return isset($currentPackage) ? Package::query()->findOrFail($currentPackage->package_id) : null;
     }
 
-    public static function userPackage(int $userId)
+    public static function userPackage(?int $userId)
     {
+        if ($userId === null) {
+            return null;
+        }
+        
         $bs = BasicSetting::first();
         Config::set('app.timezone', $bs->timezone);
 
