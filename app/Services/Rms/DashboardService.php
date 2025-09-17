@@ -20,10 +20,9 @@ class DashboardService
         return [
             'counts' => [
                 'ongoing_rentals' => RmRental::where('user_id', $userId)->where('status', 'active')->count(),
-                'expiring_contracts_next_' . $range . 'd' => RmContract::where('user_id', $userId)
+                'expiring_contracts_next_30d' => RmContract::where('user_id', $userId)
                     ->where('status', 'active')
-                    ->whereDate('end_date', '<=', $now->copy()->addDays($range))
-                    ->whereDate('end_date', '>=', $now) // Only contracts that haven't expired yet
+                    ->whereDate('end_date', '<=', $now->copy()->addDays(30))
                     ->count(),
                 'payments_due_next_' . $range . 'd' => RmPaymentInstallment::where('user_id', $userId)
                     ->where('status', 'pending')
@@ -37,6 +36,7 @@ class DashboardService
             ],
             'rental_amounts' => $this->getRentalAmounts($userId),
             'ongoing_rentals' => $this->getOngoingRentals($userId),
+            'expiring_contracts_next_30d' => $this->getExpiringContracts($userId),
             'reminders' => RmReminder::where('user_id', $userId)
                 ->where('status', 'pending')
                 ->whereBetween('due_on', [$now, $end])
@@ -79,6 +79,37 @@ class DashboardService
                     ],
                     'next_payment_due_on' => optional($nextPayment)->due_date,
                     'next_payment_amount' => optional($nextPayment)->amount,
+                ];
+            });
+    }
+
+    protected function getExpiringContracts($userId)
+    {
+        $now = Carbon::now('Asia/Riyadh');
+        
+        return RmContract::with(['rental.property.contents'])
+            ->where('user_id', $userId)
+            ->where('status', 'active')
+            ->whereDate('end_date', '<=', $now->copy()->addDays(30))
+            ->orderBy('end_date')
+            ->get()
+            ->map(function ($contract) {
+                return [
+                    'id' => $contract->id,
+                    'start_date' => $contract->start_date,
+                    'end_date' => $contract->end_date,
+                    'status' => $contract->status,
+                    'days_until_expiry' => Carbon::now('Asia/Riyadh')->diffInDays($contract->end_date, false),
+                    'rental' => [
+                        'id' => $contract->rental_id,
+                        'tenant_name' => optional($contract->rental)->tenant_full_name,
+                        'tenant_phone' => optional($contract->rental)->tenant_phone,
+                        'property' => [
+                            'id' => optional($contract->rental)->property_id,
+                            'name' => optional($contract->rental->property->firstContent)->title,
+                            'unit_label' => optional($contract->rental)->unit_label,
+                        ],
+                    ],
                 ];
             });
     }
