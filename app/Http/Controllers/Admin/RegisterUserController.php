@@ -472,10 +472,10 @@ class RegisterUserController extends Controller
             }
 
             $frontend = rtrim(env('FRONTEND_URL', url('/')), '/'); // https://app.taearif.com
-            $url = $frontend . '/login?token=' . urlencode($plainTextToken);
+            $url = $frontend . '/login?token=' . $plainTextToken;
 
             if ($request->filled('redirect')) {
-                $url .= '&redirect=' . urlencode($request->query('redirect'));
+                $url .= '&redirect=' . $request->query('redirect');
             }
 
             // Log the impersonation for audit trail
