@@ -242,7 +242,7 @@ class RentalService
             ],
             'property' => [
                 'id' => $rental->property_id,
-                'name' => optional($rental->property->firstContent)->title,
+                'name' => optional($rental->property)->firstContent ? $rental->property->firstContent->title : null,
                 'unit_label' => $rental->unit_label,
                 'property_number' => $rental->property_number,
                 'project' => [
@@ -313,7 +313,7 @@ class RentalService
             ],
             'property' => [
                 'id' => $rental->property_id,
-                'name' => optional($rental->property->firstContent)->title,
+                'name' => optional($rental->property)->firstContent ? $rental->property->firstContent->title : null,
                 'unit_label' => $rental->unit_label,
                 'property_number' => $rental->property_number,
                 'project' => [
