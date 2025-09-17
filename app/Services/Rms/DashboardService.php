@@ -69,7 +69,7 @@ class DashboardService
                     'tenant_phone' => $rental->tenant_phone,
                     'property' => [
                         'id' => $rental->property_id,
-                        'name' => optional($rental->property->firstContent)->title,
+                        'name' => optional($rental->property)->firstContent ? $rental->property->firstContent->title : null,
                         'unit_label' => $rental->unit_label,
                     ],
                     'contract' => [
@@ -106,7 +106,7 @@ class DashboardService
                         'tenant_phone' => optional($contract->rental)->tenant_phone,
                         'property' => [
                             'id' => optional($contract->rental)->property_id,
-                            'name' => optional($contract->rental->property->firstContent)->title,
+                            'name' => optional($contract->rental->property)->firstContent ? $contract->rental->property->firstContent->title : null,
                             'unit_label' => optional($contract->rental)->unit_label,
                         ],
                     ],
