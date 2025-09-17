@@ -17,9 +17,41 @@ class RentalController extends Controller
 
     public function index(Request $request)
     {
+        // Validate pagination and sorting parameters
+        $request->validate([
+            'per_page' => 'nullable|integer|min:1|max:100',
+            'page' => 'nullable|integer|min:1',
+            'sort_by' => 'nullable|string|in:created_at,updated_at,move_in_date,tenant_full_name,base_rent_amount,status',
+            'sort_order' => 'nullable|string|in:asc,desc',
+            'q' => 'nullable|string|max:255',
+            'status' => 'nullable|string|in:active,inactive,terminated',
+            'property_number' => 'nullable|string|max:100',
+            'property_id' => 'nullable|integer',
+            'project_id' => 'nullable|integer',
+            'paying_plan' => 'nullable|string|in:monthly,quarterly,semi_annual,annual',
+            'filter_by_month' => 'nullable|integer|min:1|max:12',
+            'filter_by_year' => 'nullable|integer|min:2000|max:2100',
+            'filter_by_day' => 'nullable|date',
+            'from_date' => 'nullable|date',
+            'to_date' => 'nullable|date|after_or_equal:from_date',
+        ]);
+
+        $rentals = $this->rentalService->listRentals($request);
+
         return response()->json([
             'status' => true,
-            'data' => $this->rentalService->listRentals($request)
+            'data' => $rentals->items(),
+            'pagination' => [
+                'current_page' => $rentals->currentPage(),
+                'per_page' => $rentals->perPage(),
+                'total' => $rentals->total(),
+                'last_page' => $rentals->lastPage(),
+                'from' => $rentals->firstItem(),
+                'to' => $rentals->lastItem(),
+                'has_more_pages' => $rentals->hasMorePages(),
+                'next_page_url' => $rentals->nextPageUrl(),
+                'prev_page_url' => $rentals->previousPageUrl(),
+            ]
         ]);
     }
 
