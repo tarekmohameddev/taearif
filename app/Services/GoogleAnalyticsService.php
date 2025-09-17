@@ -22,6 +22,8 @@ class GoogleAnalyticsService
 {
     protected $client;
     protected $propertyId;
+    protected $maxRetries = 3;
+    protected $baseDelay = 1; // seconds
 
     public function __construct()
     {
@@ -43,6 +45,48 @@ class GoogleAnalyticsService
         ];
 
         return $translations[$sourceName] ?? $sourceName;
+    }
+
+    /**
+     * Execute API call with retry logic and exponential backoff
+     */
+    protected function executeWithRetry(callable $apiCall, string $methodName = 'API call')
+    {
+        $lastException = null;
+        
+        for ($attempt = 1; $attempt <= $this->maxRetries; $attempt++) {
+            try {
+                return $apiCall();
+            } catch (\Google\ApiCore\ApiException $e) {
+                $lastException = $e;
+                
+                // Only retry on specific error codes (service unavailable, rate limit, etc.)
+                $retryableCodes = [14, 8, 13]; // UNAVAILABLE, RESOURCE_EXHAUSTED, INTERNAL
+                
+                if (!in_array($e->getCode(), $retryableCodes) || $attempt >= $this->maxRetries) {
+                    Log::error("Google Analytics API error in {$methodName}", [
+                        'error_code' => $e->getCode(),
+                        'error_message' => $e->getMessage(),
+                        'attempt' => $attempt,
+                        'max_retries' => $this->maxRetries
+                    ]);
+                    throw $e;
+                }
+                
+                // Calculate exponential backoff delay
+                $delay = $this->baseDelay * pow(2, $attempt - 1);
+                
+                Log::warning("Google Analytics API retry for {$methodName}", [
+                    'error_code' => $e->getCode(),
+                    'attempt' => $attempt,
+                    'next_retry_in_seconds' => $delay
+                ]);
+                
+                sleep($delay);
+            }
+        }
+        
+        throw $lastException;
     }
 
     public function getEventCountsByName($startDate, $endDate, $tenantId = null)
@@ -81,7 +125,9 @@ class GoogleAnalyticsService
             ]);
         }
 
-        $response = $this->client->runReport($params);
+        $response = $this->executeWithRetry(function() use ($params) {
+            return $this->client->runReport($params);
+        }, 'getEventCountsByName');
 
         return collect($response->getRows())->map(function ($row) {
             return [
@@ -98,19 +144,21 @@ class GoogleAnalyticsService
 
     public function getVisitorsAndPageViews($startDate, $endDate)
     {
-        $response = $this->client->runReport([
-            'property' => $this->propertyId,
-            'dateRanges' => [
-                new DateRange([
-                    'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d'),
-                ]),
-            ],
-            'metrics' => [
-                new Metric(['name' => 'screenPageViews']),
-                new Metric(['name' => 'sessions']),
-            ],
-        ]);
+        $response = $this->executeWithRetry(function() use ($startDate, $endDate) {
+            return $this->client->runReport([
+                'property' => $this->propertyId,
+                'dateRanges' => [
+                    new DateRange([
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date' => $endDate->format('Y-m-d'),
+                    ]),
+                ],
+                'metrics' => [
+                    new Metric(['name' => 'screenPageViews']),
+                    new Metric(['name' => 'sessions']),
+                ],
+            ]);
+        }, 'getVisitorsAndPageViews');
 
         $rows = $response->getRows();
 
@@ -144,23 +192,25 @@ class GoogleAnalyticsService
 
     public function getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter)
     {
-        $response = $this->client->runReport([
-            'property' => $this->propertyId,
-            'dateRanges' => [
-                new DateRange([
-                    'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d'),
-                ]),
-            ],
-            'dimensions' => [
-                new Dimension(['name' => 'deviceCategory']),
-            ],
-            'metrics' => [
-                new Metric(['name' => 'sessions']),
-                new Metric(['name' => 'screenPageViews']),
-            ],
-            'dimensionFilter' => $tenantFilter,
-        ]);
+        $response = $this->executeWithRetry(function() use ($startDate, $endDate, $tenantFilter) {
+            return $this->client->runReport([
+                'property' => $this->propertyId,
+                'dateRanges' => [
+                    new DateRange([
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date' => $endDate->format('Y-m-d'),
+                    ]),
+                ],
+                'dimensions' => [
+                    new Dimension(['name' => 'deviceCategory']),
+                ],
+                'metrics' => [
+                    new Metric(['name' => 'sessions']),
+                    new Metric(['name' => 'screenPageViews']),
+                ],
+                'dimensionFilter' => $tenantFilter,
+            ]);
+        }, 'getDeviceBreakdown');
 
         return collect($response->getRows())->map(function ($row) {
             $deviceCategory = isset($row->getDimensionValues()[0]) ? $row->getDimensionValues()[0]->getValue() : 'Unknown Device';
@@ -203,18 +253,20 @@ class GoogleAnalyticsService
 
     protected function getOverviewMetrics($startDate, $endDate, FilterExpression $tenantFilter)
     {
-        $response = $this->client->runReport([
-            'property' => $this->propertyId,
-            'dateRanges' => [new DateRange(['start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')])],
-            'metrics' => [
-                new Metric(['name' => 'screenPageViews']),
-                new Metric(['name' => 'sessions']),
-                new Metric(['name' => 'totalUsers']),
-                new Metric(['name' => 'bounceRate']),
-                new Metric(['name' => 'averageSessionDuration']),
-            ],
-            'dimensionFilter' => $tenantFilter,
-        ]);
+        $response = $this->executeWithRetry(function() use ($startDate, $endDate, $tenantFilter) {
+            return $this->client->runReport([
+                'property' => $this->propertyId,
+                'dateRanges' => [new DateRange(['start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')])],
+                'metrics' => [
+                    new Metric(['name' => 'screenPageViews']),
+                    new Metric(['name' => 'sessions']),
+                    new Metric(['name' => 'totalUsers']),
+                    new Metric(['name' => 'bounceRate']),
+                    new Metric(['name' => 'averageSessionDuration']),
+                ],
+                'dimensionFilter' => $tenantFilter,
+            ]);
+        }, 'getOverviewMetrics');
 
         $rows = $response->getRows();
 
@@ -235,24 +287,26 @@ class GoogleAnalyticsService
 
     public function getTrafficSources($startDate, $endDate, FilterExpression $tenantFilter)
     {
-        $response = $this->client->runReport([
-            'property' => $this->propertyId,
-            'dateRanges' => [
-                new DateRange([
-                    'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d'),
-                ]),
-            ],
-            'dimensions' => [
-                new Dimension(['name' => 'sessionSource']),
-                new Dimension(['name' => 'sessionMedium']),
-            ],
-            'metrics' => [
-                new Metric(['name' => 'sessions']),
-                new Metric(['name' => 'totalUsers']),
-            ],
-            'dimensionFilter' => $tenantFilter,
-        ]);
+        $response = $this->executeWithRetry(function() use ($startDate, $endDate, $tenantFilter) {
+            return $this->client->runReport([
+                'property' => $this->propertyId,
+                'dateRanges' => [
+                    new DateRange([
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date' => $endDate->format('Y-m-d'),
+                    ]),
+                ],
+                'dimensions' => [
+                    new Dimension(['name' => 'sessionSource']),
+                    new Dimension(['name' => 'sessionMedium']),
+                ],
+                'metrics' => [
+                    new Metric(['name' => 'sessions']),
+                    new Metric(['name' => 'totalUsers']),
+                ],
+                'dimensionFilter' => $tenantFilter,
+            ]);
+        }, 'getTrafficSources');
 
         return collect($response->getRows())->map(function ($row) {
             $source = $this->getSafeValue($row->getDimensionValues(), 0, 'unknown');
@@ -277,29 +331,31 @@ class GoogleAnalyticsService
 
     protected function getTopPages($startDate, $endDate, FilterExpression $tenantFilter)
     {
-        $response = $this->client->runReport([
-            'property' => $this->propertyId,
-            'dateRanges' => [
-                new DateRange([
-                    'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d'),
-                ]),
-            ],
-            'dimensions' => [
-                new Dimension(['name' => 'pagePath']),
-                new Dimension(['name' => 'pageTitle']),
-            ],
-            'metrics' => [
-                new Metric(['name' => 'screenPageViews']),
-                new Metric(['name' => 'averageSessionDuration']),
-                new Metric(['name' => 'bounceRate']),
-            ],
-            'dimensionFilter' => $tenantFilter,
-            'orderBys' => [
-                new OrderBy(['metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']), 'desc' => true]),
-            ],
-            'limit' => 20,
-        ]);
+        $response = $this->executeWithRetry(function() use ($startDate, $endDate, $tenantFilter) {
+            return $this->client->runReport([
+                'property' => $this->propertyId,
+                'dateRanges' => [
+                    new DateRange([
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date' => $endDate->format('Y-m-d'),
+                    ]),
+                ],
+                'dimensions' => [
+                    new Dimension(['name' => 'pagePath']),
+                    new Dimension(['name' => 'pageTitle']),
+                ],
+                'metrics' => [
+                    new Metric(['name' => 'screenPageViews']),
+                    new Metric(['name' => 'averageSessionDuration']),
+                    new Metric(['name' => 'bounceRate']),
+                ],
+                'dimensionFilter' => $tenantFilter,
+                'orderBys' => [
+                    new OrderBy(['metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']), 'desc' => true]),
+                ],
+                'limit' => 20,
+            ]);
+        }, 'getTopPages');
 
         $rows = $response->getRows();
         if (count($rows) === 0) {
@@ -345,23 +401,25 @@ class GoogleAnalyticsService
             ]),
         ]);
 
-        $response = $this->client->runReport([
-            'property'        => $propertyName,
-            'dateRanges'      => [
-                new DateRange([
-                    'start_date' => $startDate->format('Y-m-d'),
-                    'end_date'   => $endDate->format('Y-m-d'),
-                ]),
-            ],
-            'dimensions'      => [
-                new Dimension([ 'name' => 'date' ]),
-            ],
-            'metrics'         => [
-                new Metric([ 'name' => 'sessions'   ]),
-                new Metric([ 'name' => 'totalUsers' ]),
-            ],
-            'dimensionFilter' => $filterExpression,
-        ]);
+        $response = $this->executeWithRetry(function() use ($propertyName, $startDate, $endDate, $filterExpression) {
+            return $this->client->runReport([
+                'property'        => $propertyName,
+                'dateRanges'      => [
+                    new DateRange([
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date'   => $endDate->format('Y-m-d'),
+                    ]),
+                ],
+                'dimensions'      => [
+                    new Dimension([ 'name' => 'date' ]),
+                ],
+                'metrics'         => [
+                    new Metric([ 'name' => 'sessions'   ]),
+                    new Metric([ 'name' => 'totalUsers' ]),
+                ],
+                'dimensionFilter' => $filterExpression,
+            ]);
+        }, 'getVisitorData');
 
         return collect($response->getRows())
             ->map(function ($row) {
@@ -409,7 +467,9 @@ class GoogleAnalyticsService
             ]);
         }
 
-        $response = $this->client->runReport($params);
+        $response = $this->executeWithRetry(function() use ($params) {
+            return $this->client->runReport($params);
+        }, 'getRecentEvents');
 
         return collect($response->getRows())->map(function ($row) {
             return [
@@ -456,17 +516,19 @@ class GoogleAnalyticsService
             ]),
         ]);
 
-        $response = $this->client->runReport([
-            'property'        => $this->propertyId,
-            'dateRanges'      => [new DateRange([
-                'start_date' => $startDate->format('Y-m-d'),
-                'end_date'   => $endDate->format('Y-m-d'),
-            ])],
-            'dimensions'      => [new Dimension(['name' => 'pagePath'])],
-            'metrics'         => [new Metric(['name' => 'screenPageViews'])],
-            'dimensionFilter' => $dimensionFilter,
-            'limit'           => count($paths), // enough to cover all candidates
-        ]);
+        $response = $this->executeWithRetry(function() use ($startDate, $endDate, $dimensionFilter, $paths) {
+            return $this->client->runReport([
+                'property'        => $this->propertyId,
+                'dateRanges'      => [new DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date'   => $endDate->format('Y-m-d'),
+                ])],
+                'dimensions'      => [new Dimension(['name' => 'pagePath'])],
+                'metrics'         => [new Metric(['name' => 'screenPageViews'])],
+                'dimensionFilter' => $dimensionFilter,
+                'limit'           => count($paths), // enough to cover all candidates
+            ]);
+        }, 'getPageViewsForPaths');
 
         $map = [];
         foreach ($response->getRows() as $row) {
