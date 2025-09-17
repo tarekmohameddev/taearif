@@ -13,6 +13,7 @@ class RmContract extends Model
 
     protected $fillable = [
         'user_id', 'rental_id',
+        'contract_number',
         'start_date', 
         'end_date', 
         'status',

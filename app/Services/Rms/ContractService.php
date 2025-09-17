@@ -21,6 +21,7 @@ class ContractService
             $contract = RmContract::create([
                 'user_id' => $userId,
                 'rental_id' => $rental->id,
+                'contract_number' => $data['contract_number'] ?? $this->generateContractNumber($userId),
                 'start_date' => $data['start_date'],
                 'end_date' => $data['end_date'],
                 'status' => $data['status'],
@@ -188,6 +189,12 @@ class ContractService
                 }
                 break;
         }
+    }
+
+    protected function generateContractNumber($userId)
+    {
+        $count = RmContract::where('user_id', $userId)->count();
+        return 'CNT-' . str_pad($count + 1, 6, '0', STR_PAD_LEFT);
     }
 
     protected function validateNoOverlap($rentalId, $start, $end, $userId, $excludeId = null)
