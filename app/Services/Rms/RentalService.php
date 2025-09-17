@@ -24,7 +24,19 @@ class RentalService
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : auth()->id();
 
-        return RmRental::with(['activeContract', 'property', 'project'])
+        // Pagination parameters
+        $perPage = $request->get('per_page', 15);
+        $perPage = min($perPage, 100); // Limit max per page to 100
+        $page = $request->get('page', 1);
+
+        // Sorting parameters
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $allowedSortFields = ['created_at', 'updated_at', 'move_in_date', 'tenant_full_name', 'base_rent_amount', 'status'];
+        $sortBy = in_array($sortBy, $allowedSortFields) ? $sortBy : 'created_at';
+        $sortOrder = in_array($sortOrder, ['asc', 'desc']) ? $sortOrder : 'desc';
+
+        $query = RmRental::with(['activeContract', 'property', 'project'])
             ->where('user_id', $ownerId)
             ->when($request->q, fn($q) => $q->where('tenant_full_name', 'like', "%{$request->q}%"))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
@@ -41,7 +53,9 @@ class RentalService
             })
             ->when($request->from_date, fn($q) => $q->whereDate('move_in_date', '>=', $request->from_date))
             ->when($request->to_date, fn($q) => $q->whereDate('move_in_date', '<=', $request->to_date))
-            ->paginate($request->get('per_page', 15));
+            ->orderBy($sortBy, $sortOrder);
+
+        return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function createRental($userId, array $data)
