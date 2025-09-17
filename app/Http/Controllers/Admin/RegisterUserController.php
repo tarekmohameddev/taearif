@@ -433,13 +433,21 @@ class RegisterUserController extends Controller
 
             // Check if admin has permission to impersonate users
             $role = $admin->role;
-            if (!$role) {
-                return redirect()->back()->with('error', 'Admin role not found.');
-            }
+            
+            // Super admin (role_id = null) can always impersonate
+            if (is_null($admin->role_id)) {
+                // Super admin has full permissions, allow impersonation
+                
+            } else {
+                // Regular admin needs role and specific permission
+                if (!$role) {
+                    return redirect()->back()->with('error', 'Admin role not found.');
+                }
 
-            $permissions = json_decode($role->permissions ?? '[]', true);
-            if (!in_array('Registered Users', $permissions)) {
-                return redirect()->back()->with('error', 'You do not have permission to impersonate users.');
+                $permissions = json_decode($role->permissions ?? '[]', true);
+                if (!in_array('Registered Users', $permissions)) {
+                    return redirect()->back()->with('error', 'You do not have permission to impersonate users.');
+                }
             }
 
             // Check if user is active
