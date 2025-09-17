@@ -302,6 +302,9 @@ class RentalService
                 'total_rental_amount' => (float) $rental->total_rental_amount,
                 'currency' => $rental->currency,
                 'move_in_date' => $rental->move_in_date,
+                // Next payment information
+                'next_payment_due_date' => $rental->next_payment_due_date,
+                'next_payment_amount' => $rental->next_payment_amount,
                 'paying_plan' => $rental->paying_plan,
                 'rental_period' => (int) $rental->rental_period,
                 'status' => $rental->status,
