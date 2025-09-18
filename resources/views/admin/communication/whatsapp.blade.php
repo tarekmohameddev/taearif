@@ -41,10 +41,6 @@
                   data-tab="subscription_expiration">
             رسالة انتهاء الباقة
           </button>
-          <button class="tab-button {{request('tab') == 'email_templates' ? 'active' : ''}}" 
-                  data-tab="email_templates">
-            قوالب البريد الإلكتروني
-          </button>
         </div>
       </div>
     </div>
@@ -470,165 +466,6 @@
           </div>
         </div>
 
-        <!-- Email Templates Tab -->
-        <div id="email_templates-tab" class="tab-content {{request('tab') == 'email_templates' ? 'active' : ''}}">
-          <form action="{{route('admin.communication.email-templates.update')}}" method="POST">
-            @csrf
-            <input type="hidden" name="type" value="email_templates">
-
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="form-group">
-                  <label for="email_password_reset_template"><strong>قالب إعادة تعيين كلمة المرور (البريد الإلكتروني)</strong></label>
-                  <select class="form-control" id="email_password_reset_template" name="email_password_reset_template">
-                    <option value="">اختر قالب أو اتركه فارغاً</option>
-                    @php
-                        try {
-                            $emailPasswordResetTemplates = \App\Models\EmailTemplate::active()->ofType('password_reset')->get();
-                        } catch (Exception $e) {
-                            $emailPasswordResetTemplates = collect();
-                        }
-                    @endphp
-                    @foreach($emailPasswordResetTemplates as $template)
-                      <option value="{{$template->name}}" {{($abs->email_password_reset_template ?? '') == $template->name ? 'selected' : ''}}>
-                        {{$template->name}} ({{$template->language_label}})
-                      </option>
-                    @endforeach
-                  </select>
-                  <p class="text-muted">اختر قالب من القوالب المحفوظة أو اتركه فارغاً للرسالة العادية</p>
-                  <small class="text-info">
-                    <i class="fas fa-info-circle"></i> 
-                    <a href="{{route('admin.email-templates.create')}}?type=password_reset" target="_blank">إنشاء قالب جديد</a>
-                  </small>
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="form-group">
-                  <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> حفظ إعدادات البريد الإلكتروني
-                  </button>
-                  <button type="button" class="btn btn-info ml-2" onclick="testEmailTemplates()">
-                    <i class="fas fa-paper-plane"></i> اختبار البريد الإلكتروني
-                  </button>
-                </div>
-              </div>
-            </div>
-          </form>
-
-          <!-- Email Configuration Status -->
-          <div class="row mt-4">
-            <div class="col-12">
-              <div class="card">
-                <div class="card-header">
-                  <h6 class="mb-0">
-                    <i class="fas fa-cog"></i> حالة إعدادات البريد الإلكتروني
-                  </h6>
-                </div>
-                <div class="card-body">
-                  <div class="row">
-                    <div class="col-md-6">
-                      <div class="form-group">
-                        <label><strong>خادم SMTP:</strong></label>
-                        <p class="form-control-plaintext">
-                          @if($abs->is_smtp == 1)
-                            <span class="badge badge-success">مفعل</span>
-                            <small class="text-muted">({{$abs->smtp_host ?? 'غير محدد'}})</small>
-                          @else
-                            <span class="badge badge-warning">غير مفعل</span>
-                            <small class="text-muted">(استخدام PHP Mail)</small>
-                          @endif
-                        </p>
-                      </div>
-                    </div>
-                    <div class="col-md-6">
-                      <div class="form-group">
-                        <label><strong>البريد الإلكتروني المرسل:</strong></label>
-                        <p class="form-control-plaintext">
-                          {{$abs->from_mail ?? 'غير محدد'}}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  @if($abs->is_smtp != 1)
-                    <div class="alert alert-warning">
-                      <i class="fas fa-exclamation-triangle"></i>
-                      <strong>تحذير:</strong> إعدادات SMTP غير مفعلة. قد لا تعمل رسائل البريد الإلكتروني بشكل صحيح.
-                      <a href="{{route('admin.basicinfo')}}" class="alert-link">إعداد SMTP</a>
-                    </div>
-                  @endif
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Available Email Templates -->
-          <div class="row mt-4">
-            <div class="col-12">
-              <div class="card">
-                <div class="card-header">
-                  <h6 class="mb-0">
-                    <i class="fas fa-envelope"></i> القوالب الإلكترونية المتاحة
-                  </h6>
-                </div>
-                <div class="card-body">
-                  @php
-                    try {
-                        $allEmailTemplates = \App\Models\EmailTemplate::active()->get();
-                    } catch (Exception $e) {
-                        $allEmailTemplates = collect();
-                    }
-                  @endphp
-                  
-                  @if($allEmailTemplates->count() > 0)
-                    <div class="table-responsive">
-                      <table class="table table-sm">
-                        <thead>
-                          <tr>
-                            <th>اسم القالب</th>
-                            <th>النوع</th>
-                            <th>اللغة</th>
-                            <th>الموضوع</th>
-                            <th>الإجراءات</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          @foreach($allEmailTemplates as $template)
-                            <tr>
-                              <td><strong>{{$template->name}}</strong></td>
-                              <td><span class="badge badge-info">{{$template->type_label}}</span></td>
-                              <td><span class="badge badge-secondary">{{$template->language_label}}</span></td>
-                              <td>{{$template->subject ?? 'غير محدد'}}</td>
-                              <td>
-                                <a href="{{route('admin.email-templates.edit', $template)}}" class="btn btn-sm btn-warning" title="تعديل">
-                                  <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="{{route('admin.email-templates.preview', $template)}}" class="btn btn-sm btn-info" title="معاينة">
-                                  <i class="fas fa-eye"></i>
-                                </a>
-                              </td>
-                            </tr>
-                          @endforeach
-                        </tbody>
-                      </table>
-                    </div>
-                  @else
-                    <div class="text-center text-muted">
-                      <i class="fas fa-inbox fa-2x mb-2"></i><br>
-                      لا توجد قوالب بريد إلكتروني بعد.
-                      <a href="{{route('admin.email-templates.create')}}" class="btn btn-sm btn-primary mt-2">
-                        <i class="fas fa-plus"></i> إنشاء قالب جديد
-                      </a>
-                    </div>
-                  @endif
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -747,8 +584,7 @@ function switchTab(tabName) {
     var titles = {
         'meta_evolution': 'إعدادات Meta & Evolution API',
         'welcome_message': 'إعدادات رسالة الترحيب',
-        'subscription_expiration': 'إعدادات رسالة انتهاء الباقة',
-        'email_templates': 'إعدادات قوالب البريد الإلكتروني'
+        'subscription_expiration': 'إعدادات رسالة انتهاء الباقة'
     };
     $('#tab-title').text(titles[tabName]);
 }
@@ -759,26 +595,6 @@ function showTestModal() {
 
 
 
-function testEmailTemplates() {
-    var testEmail = prompt('أدخل البريد الإلكتروني للاختبار:');
-    if (testEmail && testEmail.includes('@')) {
-        // Send test email request
-        $.post('{{route("admin.communication.test-email")}}', {
-            _token: '{{csrf_token()}}',
-            test_email: testEmail
-        }, function(response) {
-            if (response.success) {
-                alert('تم إرسال رسالة اختبار بنجاح إلى: ' + testEmail);
-            } else {
-                alert('فشل في إرسال رسالة الاختبار: ' + (response.message || 'خطأ غير معروف'));
-            }
-        }).fail(function() {
-            alert('فشل في إرسال رسالة الاختبار. تأكد من إعدادات SMTP.');
-        });
-    } else if (testEmail) {
-        alert('يرجى إدخال بريد إلكتروني صحيح');
-    }
-}
 
 function checkConfiguration() {
     $.post('{{route("admin.communication.check-config")}}', {

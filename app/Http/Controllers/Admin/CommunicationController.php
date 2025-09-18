@@ -298,59 +298,6 @@ class CommunicationController extends Controller
         return redirect()->back();
     }
 
-    public function updateEmailTemplates(Request $request)
-    {
-        $rules = [
-            'email_password_reset_template' => 'nullable|string|max:100',
-        ];
-
-        $validator = Validator::make($request->all(), $rules);
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        $abs = BasicSetting::first();
-        if (!$abs) {
-            $abs = new BasicSetting();
-        }
-
-        $abs->email_password_reset_template = $request->email_password_reset_template;
-        $abs->save();
-
-        Session::flash('success', 'Email template settings updated successfully!');
-        return redirect()->back();
-    }
-
-    public function testEmailTemplates(Request $request)
-    {
-        $request->validate([
-            'test_email' => 'required|email',
-        ]);
-
-        try {
-            $emailService = new EmailService();
-            $success = $emailService->testEmailConfiguration($request->test_email);
-            
-            if ($success) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Test email sent successfully to ' . $request->test_email
-                ]);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to send test email. Please check SMTP configuration.'
-                ]);
-            }
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
-            ]);
-        }
-    }
 
     /**
      * Fetch WhatsApp templates from Facebook Meta API
