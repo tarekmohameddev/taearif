@@ -41,10 +41,6 @@
                   data-tab="subscription_expiration">
             رسالة انتهاء الباقة
           </button>
-          <button class="tab-button {{request('tab') == 'templates' ? 'active' : ''}}" 
-                  data-tab="templates">
-            إدارة القوالب
-          </button>
           <button class="tab-button {{request('tab') == 'email_templates' ? 'active' : ''}}" 
                   data-tab="email_templates">
             قوالب البريد الإلكتروني
@@ -469,175 +465,6 @@
                 </form>
               </div>
 
-              <!-- Templates Configuration Tab -->
-              <div id="templates-tab" class="tab-content {{request('tab') == 'templates' ? 'active' : ''}}">
-                <div class="row">
-                  <div class="col-12">
-                    <div class="alert alert-info">
-                      <i class="fas fa-info-circle"></i>
-                      <strong>إعداد القوالب:</strong> هنا يمكنك اختيار القوالب المستخدمة لكل نوع من الرسائل. لإدارة القوالب بالكامل، 
-                      <a href="{{route('admin.whatsapp-templates.index')}}" class="alert-link">انقر هنا</a>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Template Selection Cards -->
-                <div class="row">
-                  <!-- Welcome Message Template -->
-                  <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100 border-primary">
-                      <div class="card-header bg-primary text-white">
-                        <h6 class="mb-0">
-                          <i class="fas fa-hand-wave"></i> قالب رسالة الترحيب
-                        </h6>
-                      </div>
-                      <div class="card-body">
-                        <p class="text-muted small">القالب المستخدم عند تسجيل مستخدم جديد</p>
-                        @php
-                          try {
-                              $welcomeTemplates = \App\Models\WhatsAppTemplate::active()->ofType('welcome')->get();
-                          } catch (Exception $e) {
-                              $welcomeTemplates = collect();
-                          }
-                        @endphp
-                        <select class="form-control form-control-sm" onchange="updateTemplateSetting('welcome_message_template', this.value)">
-                          <option value="">اختر قالب أو اتركه فارغاً</option>
-                          @foreach($welcomeTemplates as $template)
-                            <option value="{{$template->name}}" {{($abs->welcome_message_template ?? '') == $template->name ? 'selected' : ''}}>
-                              {{$template->name}} ({{$template->language_label}})
-                            </option>
-                          @endforeach
-                        </select>
-                        <div class="mt-2">
-                          <small class="text-info">
-                            <i class="fas fa-code"></i> المتغيرات: <code>{name}</code>, <code>{email}</code>
-                          </small>
-                        </div>
-                      </div>
-                      <div class="card-footer">
-                        <a href="{{route('admin.whatsapp-templates.create')}}?type=welcome&channel=whatsapp" class="btn btn-sm btn-outline-primary">
-                          <i class="fas fa-plus"></i> إنشاء قالب جديد
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Subscription Expiration Template -->
-                  <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100 border-warning">
-                      <div class="card-header bg-warning text-dark">
-                        <h6 class="mb-0">
-                          <i class="fas fa-clock"></i> قالب انتهاء الباقة
-                        </h6>
-                      </div>
-                      <div class="card-body">
-                        <p class="text-muted small">القالب المستخدم قبل انتهاء الباقة</p>
-                        @php
-                          try {
-                              $expirationTemplates = \App\Models\WhatsAppTemplate::active()->ofType('subscription_expiration')->get();
-                          } catch (Exception $e) {
-                              $expirationTemplates = collect();
-                          }
-                        @endphp
-                        <select class="form-control form-control-sm" onchange="updateTemplateSetting('subscription_expiration_template', this.value)">
-                          <option value="">اختر قالب أو اتركه فارغاً</option>
-                          @foreach($expirationTemplates as $template)
-                            <option value="{{$template->name}}" {{($abs->subscription_expiration_template ?? '') == $template->name ? 'selected' : ''}}>
-                              {{$template->name}} ({{$template->language_label}})
-                            </option>
-                          @endforeach
-                        </select>
-                        <div class="mt-2">
-                          <small class="text-info">
-                            <i class="fas fa-code"></i> المتغيرات: <code>{name}</code>, <code>{package_name}</code>, <code>{expiry_date}</code>
-                          </small>
-                        </div>
-                      </div>
-                      <div class="card-footer">
-                        <a href="{{route('admin.whatsapp-templates.create')}}?type=subscription_expiration&channel=whatsapp" class="btn btn-sm btn-outline-warning">
-                          <i class="fas fa-plus"></i> إنشاء قالب جديد
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Password Reset Template -->
-                  <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100 border-danger">
-                      <div class="card-header bg-danger text-white">
-                        <h6 class="mb-0">
-                          <i class="fas fa-key"></i> قالب إعادة تعيين كلمة المرور
-                        </h6>
-                      </div>
-                      <div class="card-body">
-                        <p class="text-muted small">القالب المستخدم لإعادة تعيين كلمة المرور</p>
-                        @php
-                          try {
-                              $passwordResetTemplates = \App\Models\WhatsAppTemplate::active()->ofType('password_reset')->get();
-                          } catch (Exception $e) {
-                              $passwordResetTemplates = collect();
-                          }
-                        @endphp
-                        <select class="form-control form-control-sm" onchange="updateTemplateSetting('meta_template_name', this.value)">
-                          <option value="">اختر قالب أو اتركه فارغاً</option>
-                          @foreach($passwordResetTemplates as $template)
-                            <option value="{{$template->name}}" {{($abs->meta_template_name ?? '') == $template->name ? 'selected' : ''}}>
-                              {{$template->name}} ({{$template->language_label}})
-                            </option>
-                          @endforeach
-                        </select>
-                        <div class="mt-2">
-                          <small class="text-info">
-                            <i class="fas fa-code"></i> المتغيرات: <code>{name}</code>, <code>{code}</code>
-                          </small>
-                        </div>
-                      </div>
-                      <div class="card-footer">
-                        <a href="{{route('admin.whatsapp-templates.create')}}?type=password_reset&channel=whatsapp" class="btn btn-sm btn-outline-danger">
-                          <i class="fas fa-plus"></i> إنشاء قالب جديد
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="row mt-4">
-                  <div class="col-12">
-                    <div class="card">
-                      <div class="card-header">
-                        <h6 class="mb-0">
-                          <i class="fas fa-tools"></i> إجراءات سريعة
-                        </h6>
-                      </div>
-                      <div class="card-body">
-                        <div class="row">
-                          <div class="col-md-3">
-                            <a href="{{route('admin.whatsapp-templates.index')}}" class="btn btn-outline-primary btn-block">
-                              <i class="fas fa-list"></i> عرض جميع القوالب
-                            </a>
-                          </div>
-                          <div class="col-md-3">
-                            <a href="{{route('admin.whatsapp-templates.create')}}" class="btn btn-outline-success btn-block">
-                              <i class="fas fa-plus"></i> إنشاء قالب جديد
-                            </a>
-                          </div>
-                          <div class="col-md-3">
-                            <button type="button" class="btn btn-outline-info btn-block" onclick="showTemplatePreview()">
-                              <i class="fas fa-eye"></i> معاينة القوالب
-                            </button>
-                          </div>
-                          <div class="col-md-3">
-                            <button type="button" class="btn btn-outline-warning btn-block" onclick="testTemplates()">
-                              <i class="fas fa-paper-plane"></i> اختبار القوالب
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
             </div>
           </div>
@@ -921,7 +748,6 @@ function switchTab(tabName) {
         'meta_evolution': 'إعدادات Meta & Evolution API',
         'welcome_message': 'إعدادات رسالة الترحيب',
         'subscription_expiration': 'إعدادات رسالة انتهاء الباقة',
-        'templates': 'إعداد القوالب',
         'email_templates': 'إعدادات قوالب البريد الإلكتروني'
     };
     $('#tab-title').text(titles[tabName]);
@@ -931,39 +757,7 @@ function showTestModal() {
     $('#testModal').modal('show');
 }
 
-// Template selection functions
-function updateTemplateSetting(settingName, value) {
-    // Create a hidden form to submit the template selection
-    var form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '{{route("admin.communication.welcome-message.update")}}';
-    
-    // Add CSRF token
-    var csrfToken = document.createElement('input');
-    csrfToken.type = 'hidden';
-    csrfToken.name = '_token';
-    csrfToken.value = '{{csrf_token()}}';
-    form.appendChild(csrfToken);
-    
-    // Add the setting value
-    var settingInput = document.createElement('input');
-    settingInput.type = 'hidden';
-    settingInput.name = settingName;
-    settingInput.value = value;
-    form.appendChild(settingInput);
-    
-    // Submit the form
-    document.body.appendChild(form);
-    form.submit();
-}
 
-function showTemplatePreview() {
-    alert('معاينة القوالب - سيتم إضافة هذه الميزة قريباً');
-}
-
-function testTemplates() {
-    alert('اختبار القوالب - سيتم إضافة هذه الميزة قريباً');
-}
 
 function testEmailTemplates() {
     var testEmail = prompt('أدخل البريد الإلكتروني للاختبار:');
