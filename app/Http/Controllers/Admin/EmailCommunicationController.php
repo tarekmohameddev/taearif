@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\BasicSetting;
+use App\Models\BasicExtended;
 use App\Services\EmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -13,7 +13,7 @@ class EmailCommunicationController extends Controller
 {
     public function __construct()
     {
-        $abs = BasicSetting::first();
+        $abs = BasicExtended::first();
         if ($abs) {
             config(['app.timezone' => $abs->timezone]);
         }
@@ -21,7 +21,7 @@ class EmailCommunicationController extends Controller
 
     public function index()
     {
-        $data['abs'] = BasicSetting::first();
+        $data['abs'] = BasicExtended::first();
         return view('admin.communication.email.index', $data);
     }
 
@@ -45,9 +45,9 @@ class EmailCommunicationController extends Controller
                 ->withInput();
         }
 
-        $abs = BasicSetting::first();
+        $abs = BasicExtended::first();
         if (!$abs) {
-            $abs = new BasicSetting();
+            $abs = new BasicExtended();
         }
 
         $abs->is_smtp = $request->has('is_smtp') ? 1 : 0;
@@ -77,9 +77,9 @@ class EmailCommunicationController extends Controller
                 ->withInput();
         }
 
-        $abs = BasicSetting::first();
+        $abs = BasicExtended::first();
         if (!$abs) {
-            $abs = new BasicSetting();
+            $abs = new BasicExtended();
         }
 
         $abs->email_password_reset_template = $request->email_password_reset_template;
