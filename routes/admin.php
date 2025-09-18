@@ -313,6 +313,30 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         // Test Routes
         Route::post('/communication/test-whatsapp', 'Admin\CommunicationController@testWhatsAppService')->name('communication.test-whatsapp');
         Route::post('/communication/check-config', 'Admin\CommunicationController@checkConfiguration')->name('communication.check-config');
+        
+        // Welcome Message Routes
+        Route::post('/communication/welcome-message/update', 'Admin\CommunicationController@updateWelcomeMessage')->name('communication.welcome-message.update');
+        Route::post('/communication/welcome-message/test', 'Admin\CommunicationController@testWelcomeMessage')->name('communication.welcome-message.test');
+        
+        // Subscription Expiration Routes
+        Route::post('/communication/subscription-expiration/update', 'Admin\CommunicationController@updateSubscriptionExpiration')->name('communication.subscription-expiration.update');
+        Route::post('/communication/subscription-expiration/test', 'Admin\CommunicationController@testSubscriptionExpiration')->name('communication.subscription-expiration.test');
+
+        // Email Templates
+        Route::post('/communication/email-templates/update', 'Admin\CommunicationController@updateEmailTemplates')->name('communication.email-templates.update');
+        Route::post('/communication/test-email', 'Admin\CommunicationController@testEmailTemplates')->name('communication.test-email');
+        
+        // WhatsApp Templates Routes (Dedicated)
+        Route::resource('whatsapp-templates', 'Admin\WhatsAppTemplateController');
+        Route::post('/whatsapp-templates/{whatsappTemplate}/toggle-status', 'Admin\WhatsAppTemplateController@toggleStatus')->name('whatsapp-templates.toggle-status');
+        Route::get('/whatsapp-templates/{whatsappTemplate}/duplicate', 'Admin\WhatsAppTemplateController@duplicate')->name('whatsapp-templates.duplicate');
+        Route::get('/whatsapp-templates/{whatsappTemplate}/preview', 'Admin\WhatsAppTemplateController@preview')->name('whatsapp-templates.preview');
+
+        // Email Templates Routes
+        Route::resource('email-templates', 'Admin\EmailTemplateController');
+        Route::post('/email-templates/{emailTemplate}/toggle-status', 'Admin\EmailTemplateController@toggleStatus')->name('email-templates.toggle-status');
+        Route::get('/email-templates/{emailTemplate}/duplicate', 'Admin\EmailTemplateController@duplicate')->name('email-templates.duplicate');
+        Route::get('/email-templates/{emailTemplate}/preview', 'Admin\EmailTemplateController@preview')->name('email-templates.preview');
     });
 
     Route::group(['middleware' => 'checkpermission:Payment Gateways'], function () {

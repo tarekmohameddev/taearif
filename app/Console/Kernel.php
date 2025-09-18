@@ -19,6 +19,8 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\ProcessRmsReminders::class,
         \App\Console\Commands\SeedGlobalPermissions::class,
         \App\Console\Commands\HealthCheck::class,
+        \App\Console\Commands\SendSubscriptionExpirationReminders::class,
+        \App\Console\Commands\TestWhatsAppIntegrations::class,
 
     ];
 
@@ -34,6 +36,16 @@ class Kernel extends ConsoleKernel
         $schedule->command('app:expire-trials')->daily();
         $schedule->command('reminders:process')->dailyAt('04:00')->timezone('Asia/Riyadh');
         $schedule->command('health:check --auto')->dailyAt('03:55')->timezone('Asia/Riyadh');
+        
+        // Schedule subscription expiration reminders
+        // This will run daily at the configured time (default 09:00)
+        $schedule->command('subscription:send-expiration-reminders')
+            ->daily()
+            ->when(function () {
+                $bs = \App\Models\BasicSetting::first();
+                return $bs && $bs->subscription_expiration_enabled;
+            })
+            ->timezone('Asia/Riyadh');
 
     }
 

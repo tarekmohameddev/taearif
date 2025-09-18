@@ -5,15 +5,26 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\PasswordResetLog;
-use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
 use App\Rules\Recaptcha;
+use App\Services\EmailService;
+use App\Services\WhatsAppService;
 
 
 class ResetPasswordController extends Controller
 {
+    /**
+     * Get user's preferred language or default to Arabic
+     */
+    private function getUserLanguage($user)
+    {
+        $defaultLanguage = $user->languages()->where('is_default', true)->first();
+        return $defaultLanguage ? $defaultLanguage->code : 'ar';
+    }
+
     /**
      * Send reset code (email or phone)
      */
@@ -21,7 +32,7 @@ class ResetPasswordController extends Controller
     public function forgotPassword(Request $request)
     {
         // Validate only reCAPTCHA first
-        $recaptchaValidator = \Validator::make(
+        $recaptchaValidator = Validator::make(
             $request->only('recaptcha_token'),
             ['recaptcha_token' => ['required', new \App\Rules\Recaptcha]]
         );
@@ -92,30 +103,50 @@ class ResetPasswordController extends Controller
             'expires_at' => now()->addMinutes(15),
         ]);
 
+        // Get user's preferred language
+        $userLanguage = $this->getUserLanguage($user);
+        
+        // Get frontend URL for reset link
+        $frontendUrl = rtrim(env('FRONTEND_URL', url('/')), '/');
+        $resetUrl = $frontendUrl . '/reset-password';
+
         // Send code
         if ($request->method === 'email') {
-            $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
-            $resetUrl = $frontendUrl . '/reset-password';
+            $emailService = new EmailService();
+            $emailSent = $emailService->sendPasswordResetCode(
+                $user->email,
+                $user->name ?? $user->username ?? 'User',
+                $code,
+                $userLanguage,
+                null, // templateName - let service choose based on language
+                $resetUrl
+            );
             
-            Mail::raw("Your password reset code is: {$code}\n\nPlease visit: {$resetUrl}", function ($message) use ($user) {
-                $message->to($user->email)->subject('Your Password Reset Code');
-            });
+            if (!$emailSent) {
+                return response()->json([
+                    'message' => 'Failed to send reset code. Please try again later.'
+                ], 500);
+            }
         } else {
             // Send via WhatsApp
             try {
                 $whatsappService = new WhatsAppService();
-                $whatsappService->sendPasswordResetCode($user->phone, $code, $user->first_name);
-            } catch (\Exception $e) {
-                // Log the error but don't fail the request
-                \Log::error('WhatsApp password reset failed', [
-                    'user_id' => $user->id,
-                    'phone' => $user->phone,
-                    'error' => $e->getMessage()
-                ]);
+                $whatsappSent = $whatsappService->sendPasswordResetCode(
+                    $user->phone,
+                    $code,
+                    $user->name ?? $user->username ?? 'User',
+                    $userLanguage,
+                    $resetUrl
+                );
                 
+                if (!$whatsappSent) {
+                    return response()->json([
+                        'message' => 'Failed to send reset code. Please try again later.'
+                    ], 500);
+                }
+            } catch (\Exception $e) {
                 return response()->json([
-                    'message' => 'Failed to send WhatsApp message. Please try again later.',
-                    'error' => $e->getMessage()
+                    'message' => 'WhatsApp service not configured or failed to send message.'
                 ], 500);
             }
         }
@@ -135,7 +166,7 @@ class ResetPasswordController extends Controller
     {
 
         // Validate only reCAPTCHA first
-        $recaptchaValidator = \Validator::make(
+        $recaptchaValidator = Validator::make(
             $request->only('recaptcha_token'),
             ['recaptcha_token' => ['required', new \App\Rules\Recaptcha]]
         );

@@ -79,6 +79,28 @@ class CronJobController extends Controller
                             $user->message = 'تم تحويلك إلى الباقة المجانية بعد انتهاء فترة التجربة. يمكنك ترقية باقاتك في أي وقت من لوحة التحكم.';
                             $user->save();
                             
+                            // Send WhatsApp notification about package expiration
+                            try {
+                                $whatsappService = new \App\Services\WhatsAppService();
+                                $expirationMessage = "تنبيه: باقة الاشتراك الخاصة بك قد انتهت وتم تحويلك إلى الباقة المجانية. يمكنك ترقية باقاتك في أي وقت من لوحة التحكم.";
+                                
+                                if (!empty($user->phone)) {
+                                    $whatsappService->sendSubscriptionExpirationMessage(
+                                        $user->phone,
+                                        $expirationMessage,
+                                        $user->first_name,
+                                        'الباقة المميزة',
+                                        Carbon::now()->format('Y-m-d')
+                                    );
+                                }
+                            } catch (\Exception $e) {
+                                Log::error('WhatsApp expiration notification failed', [
+                                    'user_id' => $user->id,
+                                    'phone' => $user->phone ?? 'N/A',
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
+                            
                             \App\Jobs\FreePackageSwitchMail::dispatch($user, $bs, $be);
                     }
                 }
