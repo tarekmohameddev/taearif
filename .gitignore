@@ -22,6 +22,7 @@ Homestead.yaml
 # Debug and error logs
 npm-debug.log*
 yarn-error.log*
+error_log
 # IDE and editor settings
 .vscode/
 .idea/*
