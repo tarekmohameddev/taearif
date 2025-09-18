@@ -71,7 +71,7 @@
                   <div class="form-group">
                     <label class="form-label">تفعيل SMTP</label>
                     <div class="custom-control custom-switch">
-                      <input type="checkbox" class="custom-control-input" id="is_smtp" name="is_smtp" 
+                      <input type="checkbox" class="custom-control-input" id="is_smtp" name="is_smtp" value="1"
                              {{($abs->is_smtp ?? 0) ? 'checked' : ''}}>
                       <label class="custom-control-label" for="is_smtp">استخدام SMTP لإرسال البريد الإلكتروني</label>
                     </div>
