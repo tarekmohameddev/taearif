@@ -298,6 +298,57 @@ class CommunicationController extends Controller
         return redirect()->back();
     }
 
+    public function updateSubscriptionExpired(Request $request)
+    {
+        $rules = [
+            'subscription_expired_enabled' => 'nullable|boolean',
+            'subscription_expired_text' => 'required|string|max:1000',
+            'subscription_expired_template' => 'nullable|string|max:100',
+            'subscription_expired_send_time' => 'nullable|date_format:H:i',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $abs = BasicSetting::first();
+        if (!$abs) {
+            $abs = new BasicSetting();
+        }
+
+        $abs->subscription_expired_enabled = $request->has('subscription_expired_enabled') ? 1 : 0;
+        $abs->subscription_expired_text = $request->subscription_expired_text;
+        $abs->subscription_expired_template = $request->subscription_expired_template;
+        $abs->subscription_expired_send_time = $request->subscription_expired_send_time ?? '09:00';
+        $abs->save();
+
+        Session::flash('success', 'On expiration notification settings updated successfully!');
+        return redirect()->back();
+    }
+
+    public function testSubscriptionExpired(Request $request)
+    {
+        $request->validate([
+            'test_phone' => 'required|string|max:20',
+        ]);
+
+        try {
+            $whatsappService = new WhatsAppService();
+            $testMessage = "انتهى اشتراكك وتم نقلك إلى الباقة المجانية. يمكنك الترقية في أي وقت.";
+            
+            $whatsappService->sendSubscriptionExpiredMessage($request->test_phone, $testMessage, 'Test User', 'Test Package', '2024-12-31');
+            
+            Session::flash('success', "Test on expiration message sent successfully to {$request->test_phone}");
+        } catch (\Exception $e) {
+            Session::flash('error', 'Test failed: ' . $e->getMessage());
+        }
+
+        return redirect()->back();
+    }
+
 
     /**
      * Fetch WhatsApp templates from Facebook Meta API

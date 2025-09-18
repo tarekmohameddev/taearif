@@ -79,26 +79,9 @@ class CronJobController extends Controller
                             $user->message = 'تم تحويلك إلى الباقة المجانية بعد انتهاء فترة التجربة. يمكنك ترقية باقاتك في أي وقت من لوحة التحكم.';
                             $user->save();
                             
-                            // Send WhatsApp notification about package expiration
-                            try {
-                                $whatsappService = new \App\Services\WhatsAppService();
-                                $expirationMessage = "تنبيه: باقة الاشتراك الخاصة بك قد انتهت وتم تحويلك إلى الباقة المجانية. يمكنك ترقية باقاتك في أي وقت من لوحة التحكم.";
-                                
-                                if (!empty($user->phone)) {
-                                    $whatsappService->sendSubscriptionExpirationMessage(
-                                        $user->phone,
-                                        $expirationMessage,
-                                        $user->first_name,
-                                        'الباقة المميزة',
-                                        Carbon::now()->format('Y-m-d')
-                                    );
-                                }
-                            } catch (\Exception $e) {
-                                Log::error('WhatsApp expiration notification failed', [
-                                    'user_id' => $user->id,
-                                    'phone' => $user->phone ?? 'N/A',
-                                    'error' => $e->getMessage()
-                                ]);
+                            // Send WhatsApp notification about package expiration (with retry logic)
+                            if ($bs->subscription_expired_enabled && !empty($user->phone) && !empty($bs->subscription_expired_text)) {
+                                $this->sendExpirationNotificationWithRetry($user, $bs, $exMember);
                             }
                             
                             \App\Jobs\FreePackageSwitchMail::dispatch($user, $bs, $be);
@@ -411,6 +394,60 @@ class CronJobController extends Controller
                 // dd($donationDetails);
                 // send a mail to the customer with the invoice
                 $donate->sendMail($donationDetails, $donationDetails->user_id);
+            }
+        }
+    }
+
+    /**
+     * Send expiration notification with retry logic
+     */
+    private function sendExpirationNotificationWithRetry($user, $bs, $membership)
+    {
+        $maxRetries = 3;
+        $retryDelay = 3; // minutes
+        
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                $whatsappService = new \App\Services\WhatsAppService();
+                $packageName = $membership->package ? $membership->package->title : 'الباقة المميزة';
+                $expiryDate = Carbon::parse($membership->expire_date)->format('Y-m-d');
+                
+                $whatsappService->sendSubscriptionExpiredMessage(
+                    $user->phone,
+                    $bs->subscription_expired_text,
+                    $user->first_name,
+                    $packageName,
+                    $expiryDate
+                );
+                
+                Log::info('Expiration notification sent successfully', [
+                    'user_id' => $user->id,
+                    'phone' => $user->phone,
+                    'attempt' => $attempt
+                ]);
+                
+                return; // Success, exit retry loop
+                
+            } catch (\Exception $e) {
+                Log::error('Expiration notification attempt failed', [
+                    'user_id' => $user->id,
+                    'phone' => $user->phone,
+                    'attempt' => $attempt,
+                    'max_retries' => $maxRetries,
+                    'error' => $e->getMessage()
+                ]);
+                
+                // If this is the last attempt, log final failure
+                if ($attempt === $maxRetries) {
+                    Log::error('All expiration notification attempts failed', [
+                        'user_id' => $user->id,
+                        'phone' => $user->phone,
+                        'total_attempts' => $maxRetries
+                    ]);
+                } else {
+                    // Wait before next retry (only if not the last attempt)
+                    sleep($retryDelay * 60); // Convert minutes to seconds
+                }
             }
         }
     }
