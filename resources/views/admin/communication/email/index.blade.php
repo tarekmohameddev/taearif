@@ -411,4 +411,61 @@ function showNotification(message, type) {
     }, 5000);
 }
 </script>
+
+<style>
+/* Tab Navigation Styles */
+.tab-navigation {
+    background: #51c3a3;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.tab-bar {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6c757d;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.tab-button:hover {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.tab-button.active {
+    background: #fff;
+    color: #3a8b6f;
+    border-bottom-color: #3a8b6f;
+    font-weight: 600;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .tab-button {
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+}
+</style>
 @endsection
