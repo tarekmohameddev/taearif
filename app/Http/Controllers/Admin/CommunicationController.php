@@ -69,7 +69,7 @@ class CommunicationController extends Controller
             'meta_access_token' => 'required|string|max:500',
             'meta_phone_number_id' => 'required|string|max:100',
             'meta_business_account_id' => 'required|string|max:100',
-            'meta_template_name' => 'required|string|max:100',
+            'meta_template_name' => 'nullable|string|max:100',
             'meta_template_language' => 'required|string|max:10',
         ];
 
@@ -348,6 +348,37 @@ class CommunicationController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Fetch WhatsApp templates from Facebook Meta API
+     */
+    public function fetchMetaTemplates(Request $request)
+    {
+        try {
+            $abs = BasicSetting::first();
+            
+            if (!$abs || !$abs->meta_access_token || !$abs->meta_business_account_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Meta Cloud API configuration incomplete'
+                ]);
+            }
+
+            $whatsappService = new WhatsAppService();
+            $templates = $whatsappService->fetchMetaTemplates();
+            
+            return response()->json([
+                'success' => true,
+                'templates' => $templates
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching templates: ' . $e->getMessage()
             ]);
         }
     }

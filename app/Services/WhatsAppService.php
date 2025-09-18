@@ -87,21 +87,21 @@ class WhatsAppService
             $templateName = $this->settings->meta_template_name;
             $templateLanguage = $this->settings->meta_template_language;
 
-            if (!$accessToken || !$phoneNumberId || !$templateName) {
+            if (!$accessToken || !$phoneNumberId) {
                 throw new \Exception('Meta Cloud API configuration incomplete');
             }
 
             // Format phone number (remove + and ensure it starts with country code)
             $formattedPhone = $this->formatPhoneNumber($phoneNumber);
 
-            // If custom message is provided, send as regular message instead of template
-            if ($message) {
+            // If no template name is provided or custom message is provided, send as regular message
+            if (!$templateName || $message) {
                 $payload = [
                     "messaging_product" => "whatsapp",
                     "to" => $formattedPhone,
                     "type" => "text",
                     "text" => [
-                        "body" => $message
+                        "body" => $message ?: "رمز إعادة تعيين كلمة المرور: {$code}"
                     ]
                 ];
             } else {
@@ -302,7 +302,7 @@ class WhatsAppService
         $requiredFields = [
             'meta_access_token' => 'Access Token',
             'meta_phone_number_id' => 'Phone Number ID',
-            'meta_template_name' => 'Template Name',
+            'meta_business_account_id' => 'Business Account ID',
             'meta_template_language' => 'Template Language'
         ];
 
@@ -486,6 +486,63 @@ class WhatsAppService
             return true;
         } else {
             throw new \Exception('Failed to send WhatsApp regular message: ' . $response->body());
+        }
+    }
+
+    /**
+     * Fetch WhatsApp templates from Facebook Meta API
+     */
+    public function fetchMetaTemplates()
+    {
+        try {
+            $accessToken = $this->settings->meta_access_token;
+            $businessAccountId = $this->settings->meta_business_account_id;
+
+            if (!$accessToken || !$businessAccountId) {
+                throw new \Exception('Meta Cloud API configuration incomplete');
+            }
+
+            $url = "https://graph.facebook.com/v18.0/{$businessAccountId}/message_templates";
+            
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type' => 'application/json',
+            ])->get($url, [
+                'fields' => 'name,status,category,language,components'
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $templates = [];
+                
+                if (isset($data['data'])) {
+                    foreach ($data['data'] as $template) {
+                        // Only include approved templates
+                        if ($template['status'] === 'APPROVED') {
+                            $templates[] = [
+                                'name' => $template['name'],
+                                'category' => $template['category'],
+                                'language' => $template['language'],
+                                'status' => $template['status']
+                            ];
+                        }
+                    }
+                }
+                
+                return $templates;
+            } else {
+                Log::error('Meta API template fetch error', [
+                    'response' => $response->json(),
+                    'status' => $response->status()
+                ]);
+                throw new \Exception('Failed to fetch templates from Meta API');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Meta API template fetch exception', [
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
         }
     }
 }
