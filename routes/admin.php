@@ -321,6 +321,10 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         // Subscription Expiration Routes
         Route::post('/communication/subscription-expiration/update', 'Admin\CommunicationController@updateSubscriptionExpiration')->name('communication.subscription-expiration.update');
         Route::post('/communication/subscription-expiration/test', 'Admin\CommunicationController@testSubscriptionExpiration')->name('communication.subscription-expiration.test');
+        
+        // On Expiration Notification Routes
+        Route::post('/communication/subscription-expired/update', 'Admin\CommunicationController@updateSubscriptionExpired')->name('communication.subscription-expired.update');
+        Route::post('/communication/subscription-expired/test', 'Admin\CommunicationController@testSubscriptionExpired')->name('communication.subscription-expired.test');
 
         // Email Communication Routes
         Route::get('/communication/email', 'Admin\EmailCommunicationController@index')->name('communication.email');

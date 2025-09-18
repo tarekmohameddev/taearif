@@ -383,6 +383,24 @@ class WhatsAppService
     }
 
     /**
+     * Send subscription expired message (on expiration day)
+     */
+    public function sendSubscriptionExpiredMessage($phoneNumber, $message, $userName = null, $packageName = null, $expiryDate = null)
+    {
+        $message = str_replace('{name}', $userName ?? 'User', $message);
+        $message = str_replace('{package_name}', $packageName ?? 'Package', $message);
+        $message = str_replace('{expiry_date}', $expiryDate ?? 'N/A', $message);
+        
+        if ($this->settings->whatsapp_service === 'meta_cloud') {
+            return $this->sendMetaCloudMessage($phoneNumber, $message, 'subscription_expired');
+        } elseif ($this->settings->whatsapp_service === 'evolution_api') {
+            return $this->sendViaEvolutionApi($phoneNumber, $message, $userName);
+        }
+        
+        throw new \Exception('No WhatsApp service configured');
+    }
+
+    /**
      * Send Meta Cloud message with template support
      */
     protected function sendMetaCloudMessage($phoneNumber, $message, $messageType = 'default')
@@ -395,6 +413,8 @@ class WhatsAppService
             $templateName = $this->settings->welcome_message_template;
         } elseif ($messageType === 'subscription_expiration' && !empty($this->settings->subscription_expiration_template)) {
             $templateName = $this->settings->subscription_expiration_template;
+        } elseif ($messageType === 'subscription_expired' && !empty($this->settings->subscription_expired_template)) {
+            $templateName = $this->settings->subscription_expired_template;
         } elseif ($messageType === 'password_reset' && !empty($this->settings->meta_template_name)) {
             $templateName = $this->settings->meta_template_name;
         }

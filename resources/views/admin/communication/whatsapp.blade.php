@@ -39,7 +39,11 @@
           </button>
           <button class="tab-button {{request('tab') == 'subscription_expiration' ? 'active' : ''}}" 
                   data-tab="subscription_expiration">
-            رسالة انتهاء الباقة
+            اشعار قبل انتهاء الباقة
+          </button>
+          <button class="tab-button {{request('tab') == 'subscription_expired' ? 'active' : ''}}" 
+                  data-tab="subscription_expired">
+            إشعار انتهاء الباقة
           </button>
         </div>
       </div>
@@ -390,7 +394,7 @@
                       <div class="form-group">
                         <label for="subscription_expiration_text"><strong>نص رسالة انتهاء الباقة **</strong></label>
                         <textarea class="form-control" id="subscription_expiration_text" name="subscription_expiration_text" rows="4" 
-                                  placeholder="تنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً...">{{$abs->subscription_expiration_text ?? ''}}</textarea>
+                                  placeholder="تنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً...">{{$abs->subscription_expiration_text ?? 'تنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً.'}}</textarea>
                         <p class="text-muted">يمكن استخدام المتغيرات: {name}, {package_name}, {expiry_date}</p>
                         @error('subscription_expiration_text')
                           <p class="text-danger">{{ $message }}</p>
@@ -454,6 +458,99 @@
                         </button>
                         <button type="button" class="btn btn-warning ml-2" onclick="testSubscriptionExpiration()">
                           <i class="fas fa-paper-plane"></i> اختبار الرسالة
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              <!-- On Expiration Notification Tab -->
+              <div id="subscription_expired-tab" class="tab-content {{request('tab') == 'subscription_expired' ? 'active' : ''}}">
+                <form action="{{route('admin.communication.subscription-expired.update')}}" method="POST">
+                  @csrf
+                  <div class="row">
+                    <div class="col-lg-12">
+                      <div class="form-group">
+                        <label for="subscription_expired_enabled">
+                          <strong>تفعيل إشعار انتهاء الباقة</strong>
+                        </label>
+                        <div class="toggle-switch-container">
+                          <div class="toggle-switch">
+                            <input type="checkbox" id="subscription_expired_enabled" name="subscription_expired_enabled" 
+                                   value="1" {{($abs->subscription_expired_enabled ?? false) ? 'checked' : ''}}>
+                            <label for="subscription_expired_enabled" class="toggle-label">
+                              <span class="toggle-slider"></span>
+                              <span class="toggle-text">
+                                <span class="toggle-on">ON</span>
+                                <span class="toggle-off">OFF</span>
+                              </span>
+                            </label>
+                          </div>
+                          <span class="toggle-description">إرسال إشعار عند انتهاء الباقة فعلياً</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-lg-12">
+                      <div class="form-group">
+                        <label for="subscription_expired_text"><strong>نص إشعار انتهاء الباقة **</strong></label>
+                        <textarea class="form-control" id="subscription_expired_text" name="subscription_expired_text" rows="4" 
+                                  placeholder="انتهى اشتراكك وتم نقلك إلى الباقة المجانية. يمكنك الترقية في أي وقت.">{{$abs->subscription_expired_text ?? 'انتهى اشتراكك وتم نقلك إلى الباقة المجانية. يمكنك الترقية في أي وقت.'}}</textarea>
+                        <p class="text-muted">يمكن استخدام المتغيرات: {name}, {package_name}, {expiry_date}</p>
+                        @error('subscription_expired_text')
+                          <p class="text-danger">{{ $message }}</p>
+                        @enderror
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-lg-6">
+                        <div class="form-group">
+                          <label for="subscription_expired_template"><strong>اسم القالب (Meta API)</strong></label>
+                          <select class="form-control" id="subscription_expired_template" name="subscription_expired_template">
+                            <option value="">اختر قالب أو اتركه فارغاً</option>
+                            @php
+                                try {
+                                    $expiredTemplates = \App\Models\WhatsAppTemplate::active()->ofType('subscription_expired')->get();
+                                } catch (Exception $e) {
+                                    $expiredTemplates = collect();
+                                }
+                            @endphp
+                            @foreach($expiredTemplates as $template)
+                              <option value="{{$template->name}}" {{($abs->subscription_expired_template ?? '') == $template->name ? 'selected' : ''}}>
+                                {{$template->name}} ({{$template->language_label}})
+                              </option>
+                            @endforeach
+                          </select>
+                          <p class="text-muted">اختر قالب من القوالب المحفوظة أو اتركه فارغاً للرسالة العادية</p>
+                          <small class="text-info">
+                            <i class="fas fa-info-circle"></i> 
+                            <a href="{{route('admin.whatsapp-templates.create')}}?type=subscription_expired" target="_blank">إنشاء قالب جديد</a>
+                          </small>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                      <div class="form-group">
+                        <label for="subscription_expired_send_time"><strong>وقت إرسال الإشعار</strong></label>
+                        <input type="time" class="form-control" id="subscription_expired_send_time" name="subscription_expired_send_time" 
+                               value="{{$abs->subscription_expired_send_time ?? '09:00'}}">
+                        <p class="text-muted">الوقت اليومي لإرسال إشعارات انتهاء الباقة</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-lg-12">
+                      <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                          <i class="fas fa-save"></i> حفظ إعدادات إشعار انتهاء الباقة
+                        </button>
+                        <button type="button" class="btn btn-warning ml-2" onclick="testSubscriptionExpired()">
+                          <i class="fas fa-paper-plane"></i> اختبار الإشعار
                         </button>
                       </div>
                     </div>
@@ -631,6 +728,20 @@ function testSubscriptionExpiration() {
             location.reload();
         }).fail(function() {
             alert('حدث خطأ أثناء اختبار رسالة انتهاء الباقة');
+        });
+    }
+}
+
+function testSubscriptionExpired() {
+    var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
+    if (phone) {
+        $.post('{{route("admin.communication.subscription-expired.test")}}', {
+            _token: '{{csrf_token()}}',
+            test_phone: phone
+        }, function(response) {
+            location.reload();
+        }).fail(function() {
+            alert('حدث خطأ أثناء اختبار إشعار انتهاء الباقة');
         });
     }
 }
