@@ -16,7 +16,7 @@ class Recaptcha implements Rule
         ]);
 
         $data = $response->json();
-        \Log::info('Recaptcha response:', $data);
+        // \Log::info('Recaptcha response:', $data);
 
         // Optional: reject if score is too low
         if (!($data['success'] ?? false) || ($data['score'] ?? 0) < 0.5) {
