@@ -153,26 +153,16 @@
                     <div class="row">
                       <div class="col-lg-6">
                         <div class="form-group">
-                          <label for="meta_template_name"><strong>Template Name **</strong></label>
+                          <label for="meta_template_name"><strong>Template Name</strong></label>
                           <select class="form-control" id="meta_template_name" name="meta_template_name">
-                            <option value="">اختر قالب أو اتركه فارغاً</option>
-                            @php
-                                try {
-                                    $passwordResetTemplates = \App\Models\WhatsAppTemplate::active()->ofType('password_reset')->get();
-                                } catch (Exception $e) {
-                                    $passwordResetTemplates = collect();
-                                }
-                            @endphp
-                            @foreach($passwordResetTemplates as $template)
-                              <option value="{{$template->name}}" {{($abs->meta_template_name ?? '') == $template->name ? 'selected' : ''}}>
-                                {{$template->name}} ({{$template->language_label}})
-                              </option>
-                            @endforeach
+                            <option value="">اختر قالب من Facebook أو اتركه فارغاً للرسالة العادية</option>
                           </select>
-                          <p class="text-muted">اختر قالب من القوالب المحفوظة أو اتركه فارغاً للرسالة العادية</p>
+                          <p class="text-muted">سيتم جلب القوالب من Facebook Meta API تلقائياً</p>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i> 
-                            <a href="{{route('admin.whatsapp-templates.create')}}?type=password_reset" target="_blank">إنشاء قالب جديد</a>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplates()">
+                              <i class="fas fa-sync"></i> تحديث القوالب من Facebook
+                            </button>
                           </small>
                           @error('meta_template_name')
                             <p class="text-danger">{{ $message }}</p>
@@ -861,6 +851,15 @@ $(document).ready(function() {
     console.log('Initializing with tab:', activeTab);
     switchTab(activeTab);
     
+    // Auto-load Meta templates when Meta Cloud form is shown
+    if (activeTab === 'meta_evolution') {
+        setTimeout(function() {
+            if ($('#meta-cloud-form').is(':visible')) {
+                loadMetaTemplates();
+            }
+        }, 1000);
+    }
+    
     // Tab switching functionality
     $('.tab-button').click(function() {
         var tabName = $(this).data('tab');
@@ -882,6 +881,13 @@ $(document).ready(function() {
         // Show/hide forms
         $('.service-form').hide();
         $('#' + service.replace('_', '-') + '-form').show();
+        
+        // Auto-load Meta templates when Meta Cloud is selected
+        if (service === 'meta_cloud') {
+            setTimeout(function() {
+                loadMetaTemplates();
+            }, 500);
+        }
         
         // Submit service selection
         $('#selected-service').val(service);
@@ -1017,6 +1023,73 @@ function testSubscriptionExpiration() {
             alert('حدث خطأ أثناء اختبار رسالة انتهاء الباقة');
         });
     }
+}
+
+function loadMetaTemplates() {
+    var select = $('#meta_template_name');
+    var button = $('button[onclick="loadMetaTemplates()"]');
+    
+    // Show loading state
+    button.html('<i class="fas fa-spinner fa-spin"></i> جاري التحميل...');
+    button.prop('disabled', true);
+    
+    $.get('{{route("admin.communication.fetch-meta-templates")}}', function(response) {
+        if (response.success) {
+            // Clear existing options except the first one
+            select.find('option:not(:first)').remove();
+            
+            // Add templates from Facebook
+            if (response.templates && response.templates.length > 0) {
+                response.templates.forEach(function(template) {
+                    var option = $('<option></option>')
+                        .attr('value', template.name)
+                        .text(template.name + ' (' + template.category + ' - ' + template.language + ')');
+                    
+                    // Check if this template is currently selected
+                    if ('{{$abs->meta_template_name ?? ""}}' === template.name) {
+                        option.attr('selected', true);
+                    }
+                    
+                    select.append(option);
+                });
+                
+                // Show success message
+                showNotification('تم تحميل ' + response.templates.length + ' قالب من Facebook بنجاح', 'success');
+            } else {
+                showNotification('لم يتم العثور على قوالب معتمدة في Facebook', 'warning');
+            }
+        } else {
+            showNotification('فشل في تحميل القوالب: ' + response.message, 'error');
+        }
+    }).fail(function() {
+        showNotification('حدث خطأ في الاتصال بالخادم', 'error');
+    }).always(function() {
+        // Reset button state
+        button.html('<i class="fas fa-sync"></i> تحديث القوالب من Facebook');
+        button.prop('disabled', false);
+    });
+}
+
+function showNotification(message, type) {
+    var alertClass = 'alert-info';
+    if (type === 'success') alertClass = 'alert-success';
+    if (type === 'error') alertClass = 'alert-danger';
+    if (type === 'warning') alertClass = 'alert-warning';
+    
+    var notification = $('<div class="alert ' + alertClass + ' alert-dismissible fade show" role="alert">' +
+        message +
+        '<button type="button" class="close" data-dismiss="alert" aria-label="Close">' +
+        '<span aria-hidden="true">&times;</span>' +
+        '</button>' +
+        '</div>');
+    
+    // Insert notification at the top of the form
+    $('#meta-cloud-form').prepend(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(function() {
+        notification.alert('close');
+    }, 5000);
 }
 </script>
 
