@@ -108,7 +108,7 @@ class ResetPasswordController extends Controller
         
         // Get frontend URL for reset link
         $frontendUrl = rtrim(env('FRONTEND_URL', url('/')), '/');
-        $resetUrl = $frontendUrl . '/reset-password';
+        $resetUrl = $frontendUrl . '/reset';
 
         // Send code
         if ($request->method === 'email') {
