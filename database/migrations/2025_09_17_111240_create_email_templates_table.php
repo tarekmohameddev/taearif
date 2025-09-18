@@ -13,19 +13,21 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('email_templates', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->unique();
-            $table->string('description')->nullable();
-            $table->text('subject');
-            $table->longText('content');
-            $table->string('type'); // password_reset, welcome, notification, etc.
-            $table->string('language')->default('ar'); // ar, en
-            $table->json('variables')->nullable(); // Available variables for this template
-            $table->boolean('status')->default(true);
-            $table->integer('character_count')->default(0);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('email_templates')) {
+            Schema::create('email_templates', function (Blueprint $table) {
+                $table->id();
+                $table->string('name')->unique();
+                $table->string('description')->nullable();
+                $table->text('subject');
+                $table->longText('content');
+                $table->string('type'); // password_reset, welcome, notification, etc.
+                $table->string('language')->default('ar'); // ar, en
+                $table->json('variables')->nullable(); // Available variables for this template
+                $table->boolean('status')->default(true);
+                $table->integer('character_count')->default(0);
+                $table->timestamps();
+            });
+        }
     }
 
     /**
