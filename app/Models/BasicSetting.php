@@ -57,7 +57,17 @@ class BasicSetting extends Model
         'evolution_api_url',
         'evolution_api_key',
         'evolution_instance_name',
-        'evolution_phone_number'
+        'evolution_phone_number',
+        'welcome_message_enabled',
+        'welcome_message_text',
+        'welcome_message_delay',
+        'welcome_message_template',
+        'subscription_expiration_enabled',
+        'subscription_expiration_text',
+        'subscription_expiration_days_before',
+        'subscription_expiration_template',
+        'subscription_expiration_send_time',
+        'email_password_reset_template'
     ];
 
     public function language()

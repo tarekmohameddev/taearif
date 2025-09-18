@@ -18,19 +18,59 @@ class WhatsAppService
     /**
      * Send WhatsApp message for password reset
      */
-    public function sendPasswordResetCode($phoneNumber, $code, $userName = null)
+    public function sendPasswordResetCode($phoneNumber, $code, $userName = null, $userLanguage = 'ar', $resetUrl = null, $templateName = null)
     {
         if (!$this->settings || !$this->settings->whatsapp_service) {
             throw new \Exception('WhatsApp service not configured');
+        }
+
+        // Get template - first try with specific template name, then with user language, then fallback
+        $template = null;
+        
+        if ($templateName) {
+            $template = \App\Models\WhatsAppTemplate::where('name', $templateName)
+                ->where('type', 'password_reset')
+                ->where('status', true)
+                ->first();
+        }
+        
+        // If no specific template found, try to get template by user language
+        if (!$template) {
+            $template = \App\Models\WhatsAppTemplate::where('type', 'password_reset')
+                ->where('language', $userLanguage)
+                ->where('status', true)
+                ->orderBy('created_at', 'desc')
+                ->first();
+        }
+        
+        // If still no template found, try Arabic as fallback
+        if (!$template && $userLanguage !== 'ar') {
+            $template = \App\Models\WhatsAppTemplate::where('type', 'password_reset')
+                ->where('language', 'ar')
+                ->where('status', true)
+                ->orderBy('created_at', 'desc')
+                ->first();
+        }
+
+        // Prepare message content
+        if ($template) {
+            $message = $template->content;
+            
+            // Replace variables
+            $message = str_replace('{name}', $userName ?? 'User', $message);
+            $message = str_replace('{code}', $code, $message);
+        } else {
+            // Default message content (fallback)
+            $message = "مرحباً {$userName}،\n\nرمز إعادة تعيين كلمة المرور: {$code}\n\nهذا الرمز صالح لمدة 15 دقيقة.\n\nمع تحيات فريق العمل";
         }
 
         $service = $this->settings->whatsapp_service;
 
         switch ($service) {
             case 'meta_cloud':
-                return $this->sendViaMetaCloud($phoneNumber, $code, $userName);
+                return $this->sendViaMetaCloud($phoneNumber, $code, $userName, $resetUrl, $message);
             case 'evolution_api':
-                return $this->sendViaEvolutionApi($phoneNumber, $code, $userName);
+                return $this->sendViaEvolutionApi($phoneNumber, $code, $userName, $resetUrl, $message);
             default:
                 throw new \Exception('Unknown WhatsApp service: ' . $service);
         }
@@ -39,7 +79,7 @@ class WhatsAppService
     /**
      * Send message via Meta Cloud API
      */
-    protected function sendViaMetaCloud($phoneNumber, $code, $userName = null)
+    protected function sendViaMetaCloud($phoneNumber, $code, $userName = null, $resetUrl = null, $message = null)
     {
         try {
             $accessToken = $this->settings->meta_access_token;
@@ -54,39 +94,59 @@ class WhatsAppService
             // Format phone number (remove + and ensure it starts with country code)
             $formattedPhone = $this->formatPhoneNumber($phoneNumber);
 
-            // Prepare template parameters
-            $templateParams = [
-                [
+            // If custom message is provided, send as regular message instead of template
+            if ($message) {
+                $payload = [
+                    "messaging_product" => "whatsapp",
+                    "to" => $formattedPhone,
                     "type" => "text",
-                    "text" => $code
-                ]
-            ];
+                    "text" => [
+                        "body" => $message
+                    ]
+                ];
+            } else {
+                // Prepare template parameters
+                $templateParams = [
+                    [
+                        "type" => "text",
+                        "text" => $code
+                    ]
+                ];
 
-            // Add user name if provided
-            if ($userName) {
-                array_unshift($templateParams, [
-                    "type" => "text", 
-                    "text" => $userName
-                ]);
-            }
+                // Add user name if provided
+                if ($userName) {
+                    array_unshift($templateParams, [
+                        "type" => "text", 
+                        "text" => $userName
+                    ]);
+                }
 
-            $payload = [
-                "messaging_product" => "whatsapp",
-                "to" => $formattedPhone,
-                "type" => "template",
-                "template" => [
-                    "name" => $templateName,
-                    "language" => [
-                        "code" => $templateLanguage
-                    ],
-                    "components" => [
-                        [
-                            "type" => "body",
-                            "parameters" => $templateParams
+                // Add reset URL if provided
+                if ($resetUrl) {
+                    $templateParams[] = [
+                        "type" => "text",
+                        "text" => $resetUrl
+                    ];
+                }
+
+                $payload = [
+                    "messaging_product" => "whatsapp",
+                    "to" => $formattedPhone,
+                    "type" => "template",
+                    "template" => [
+                        "name" => $templateName,
+                        "language" => [
+                            "code" => $templateLanguage
+                        ],
+                        "components" => [
+                            [
+                                "type" => "body",
+                                "parameters" => $templateParams
+                            ]
                         ]
                     ]
-                ]
-            ];
+                ];
+            }
 
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $accessToken,
@@ -121,7 +181,7 @@ class WhatsAppService
     /**
      * Send message via Evolution API
      */
-    protected function sendViaEvolutionApi($phoneNumber, $code, $userName = null)
+    protected function sendViaEvolutionApi($phoneNumber, $code, $userName = null, $resetUrl = null, $message = null)
     {
         try {
             $apiUrl = $this->settings->evolution_api_url;
@@ -136,10 +196,17 @@ class WhatsAppService
             // Format phone number
             $formattedPhone = $this->formatPhoneNumber($phoneNumber);
 
-            // Prepare message content
-            $message = "رمز إعادة تعيين كلمة المرور: {$code}";
-            if ($userName) {
-                $message = "مرحباً {$userName},\n\n" . $message;
+            // Use custom message if provided, otherwise prepare default message
+            if (!$message) {
+                $message = "رمز إعادة تعيين كلمة المرور: {$code}";
+                if ($userName) {
+                    $message = "مرحباً {$userName},\n\n" . $message;
+                }
+                
+                // Add reset URL if provided
+                if ($resetUrl) {
+                    $message .= "\n\nأو يمكنك الضغط على الرابط التالي:\n{$resetUrl}?code={$code}";
+                }
             }
 
             $payload = [
@@ -279,5 +346,146 @@ class WhatsAppService
             'status' => 'success',
             'message' => 'Evolution API configuration is complete'
         ];
+    }
+
+    /**
+     * Send welcome message to new user
+     */
+    public function sendWelcomeMessage($phoneNumber, $message, $userName = null)
+    {
+        $message = str_replace('{name}', $userName ?? 'User', $message);
+        
+        if ($this->settings->whatsapp_service === 'meta_cloud') {
+            return $this->sendMetaCloudMessage($phoneNumber, $message, 'welcome');
+        } elseif ($this->settings->whatsapp_service === 'evolution_api') {
+            return $this->sendViaEvolutionApi($phoneNumber, $message, $userName);
+        }
+        
+        throw new \Exception('No WhatsApp service configured');
+    }
+
+    /**
+     * Send subscription expiration message
+     */
+    public function sendSubscriptionExpirationMessage($phoneNumber, $message, $userName = null, $packageName = null, $expiryDate = null)
+    {
+        $message = str_replace('{name}', $userName ?? 'User', $message);
+        $message = str_replace('{package_name}', $packageName ?? 'Package', $message);
+        $message = str_replace('{expiry_date}', $expiryDate ?? 'N/A', $message);
+        
+        if ($this->settings->whatsapp_service === 'meta_cloud') {
+            return $this->sendMetaCloudMessage($phoneNumber, $message, 'subscription_expiration');
+        } elseif ($this->settings->whatsapp_service === 'evolution_api') {
+            return $this->sendViaEvolutionApi($phoneNumber, $message, $userName);
+        }
+        
+        throw new \Exception('No WhatsApp service configured');
+    }
+
+    /**
+     * Send Meta Cloud message with template support
+     */
+    protected function sendMetaCloudMessage($phoneNumber, $message, $messageType = 'default')
+    {
+        $templateName = null;
+        $templateContent = null;
+        
+        // Get template name based on message type
+        if ($messageType === 'welcome' && !empty($this->settings->welcome_message_template)) {
+            $templateName = $this->settings->welcome_message_template;
+        } elseif ($messageType === 'subscription_expiration' && !empty($this->settings->subscription_expiration_template)) {
+            $templateName = $this->settings->subscription_expiration_template;
+        } elseif ($messageType === 'password_reset' && !empty($this->settings->meta_template_name)) {
+            $templateName = $this->settings->meta_template_name;
+        }
+
+        // If template name is provided, try to get template content from database
+        if ($templateName) {
+            $template = \App\Models\WhatsAppTemplate::where('name', $templateName)->first();
+            if ($template && $template->status) {
+                $templateContent = $template->content;
+            }
+        }
+
+        if ($templateName && $templateContent) {
+            // Send as template message using database template
+            return $this->sendTemplateMessage($phoneNumber, $templateName, $templateContent);
+        } elseif ($templateName) {
+            // Send as template message using provided message
+            return $this->sendTemplateMessage($phoneNumber, $templateName, $message);
+        } else {
+            // Send as regular message
+            return $this->sendRegularMessage($phoneNumber, $message);
+        }
+    }
+
+    /**
+     * Send template message via Meta Cloud API
+     */
+    protected function sendTemplateMessage($phoneNumber, $templateName, $message)
+    {
+        $url = "https://graph.facebook.com/v18.0/{$this->settings->meta_phone_number_id}/messages";
+        
+        $data = [
+            'messaging_product' => 'whatsapp',
+            'to' => $phoneNumber,
+            'type' => 'template',
+            'template' => [
+                'name' => $templateName,
+                'language' => [
+                    'code' => $this->settings->meta_template_language ?? 'ar'
+                ],
+                'components' => [
+                    [
+                        'type' => 'body',
+                        'parameters' => [
+                            [
+                                'type' => 'text',
+                                'text' => $message
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $this->settings->meta_access_token,
+            'Content-Type' => 'application/json',
+        ])->post($url, $data);
+
+        if ($response->successful()) {
+            return true;
+        } else {
+            throw new \Exception('Failed to send WhatsApp template message: ' . $response->body());
+        }
+    }
+
+    /**
+     * Send regular message via Meta Cloud API
+     */
+    protected function sendRegularMessage($phoneNumber, $message)
+    {
+        $url = "https://graph.facebook.com/v18.0/{$this->settings->meta_phone_number_id}/messages";
+        
+        $data = [
+            'messaging_product' => 'whatsapp',
+            'to' => $phoneNumber,
+            'type' => 'text',
+            'text' => [
+                'body' => $message
+            ]
+        ];
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $this->settings->meta_access_token,
+            'Content-Type' => 'application/json',
+        ])->post($url, $data);
+
+        if ($response->successful()) {
+            return true;
+        } else {
+            throw new \Exception('Failed to send WhatsApp regular message: ' . $response->body());
+        }
     }
 }

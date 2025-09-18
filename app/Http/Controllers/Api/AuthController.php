@@ -422,10 +422,27 @@ class AuthController extends Controller
             $activation = \Carbon\Carbon::parse($lastMemb->start_date);
             $expire     = \Carbon\Carbon::parse($lastMemb->expire_date);
 
-            // Optional welcome message
-            $link    = "https://{$user->username}.taearif.com/";
-            $message = "حياك الله, شكراً على التسجيل في منصة تعاريف وهذا لينك الموقع الخاص بك : $link";
-            // $this->sendWhatsAppMessage($user->phone ?? 'default_phone', $message);
+            // Send WhatsApp welcome message if enabled
+            try {
+                $whatsappService = new \App\Services\WhatsAppService();
+                $bs = \App\Models\BasicSetting::first();
+                
+                if ($bs && $bs->welcome_message_enabled && !empty($bs->welcome_message_text) && !empty($user->phone)) {
+                    // Add delay if configured
+                    $delay = $bs->welcome_message_delay ?? 5;
+                    
+                    // Schedule the welcome message with delay
+                    \App\Jobs\SendWelcomeMessageJob::dispatch($user, $bs->welcome_message_text)
+                        ->delay(now()->addSeconds($delay));
+                }
+            } catch (\Exception $e) {
+                // Log error but don't fail registration
+                \Log::error('WhatsApp welcome message failed', [
+                    'user_id' => $user->id,
+                    'phone' => $user->phone ?? 'N/A',
+                    'error' => $e->getMessage()
+                ]);
+            }
 
             $user['onboarding_completed'] = false;
             return response()->json([

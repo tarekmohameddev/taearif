@@ -5,14 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class EmailTemplate extends Model
+class WhatsAppTemplate extends Model
 {
     use HasFactory;
+
+    protected $table = 'whatsapp_templates';
 
     protected $fillable = [
         'name',
         'description',
-        'subject',
         'content',
         'type',
         'language',
@@ -30,9 +31,9 @@ class EmailTemplate extends Model
     ];
 
     // Template types
-    const TYPE_PASSWORD_RESET = 'password_reset';
     const TYPE_WELCOME = 'welcome';
-    const TYPE_NOTIFICATION = 'notification';
+    const TYPE_SUBSCRIPTION_EXPIRATION = 'subscription_expiration';
+    const TYPE_PASSWORD_RESET = 'password_reset';
 
     // Languages
     const LANGUAGE_ARABIC = 'ar';
@@ -44,9 +45,9 @@ class EmailTemplate extends Model
     public static function getTypes()
     {
         return [
-            self::TYPE_PASSWORD_RESET => 'Password Reset',
-            self::TYPE_WELCOME => 'Welcome',
-            self::TYPE_NOTIFICATION => 'Notification'
+            self::TYPE_WELCOME => 'Welcome Message',
+            self::TYPE_SUBSCRIPTION_EXPIRATION => 'Subscription Expiration',
+            self::TYPE_PASSWORD_RESET => 'Password Reset'
         ];
     }
 
@@ -67,9 +68,9 @@ class EmailTemplate extends Model
     public static function getVariablesForType($type)
     {
         $variables = [
-            self::TYPE_PASSWORD_RESET => ['{name}', '{code}', '{reset_link}'],
             self::TYPE_WELCOME => ['{name}', '{email}'],
-            self::TYPE_NOTIFICATION => ['{name}', '{message}']
+            self::TYPE_SUBSCRIPTION_EXPIRATION => ['{name}', '{package_name}', '{expiry_date}'],
+            self::TYPE_PASSWORD_RESET => ['{name}', '{code}']
         ];
 
         return $variables[$type] ?? [];
@@ -127,8 +128,8 @@ class EmailTemplate extends Model
             '{name}' => 'أحمد محمد',
             '{email}' => 'ahmed@example.com',
             '{code}' => '123456',
-            '{message}' => 'رسالة تجريبية',
-            '{reset_link}' => 'https://example.com/reset-password?code=123456&email=ahmed@example.com'
+            '{package_name}' => 'الباقة المميزة',
+            '{expiry_date}' => '2024-12-31'
         ];
 
         foreach ($sampleData as $variable => $value) {

@@ -323,7 +323,9 @@
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Communication', $permissions)))
                     <li class="nav-item
                         @if (request()->path() == 'admin/communication/whatsapp') active
-                        @elseif(request()->is('admin/communication/*')) active @endif">
+                        @elseif(request()->is('admin/communication/*')) active
+                        @elseif(request()->is('admin/whatsapp-templates/*')) active
+                        @elseif(request()->is('admin/email-templates/*')) active @endif">
                         <a data-toggle="collapse" href="#communication">
                             <i class="fab fa-whatsapp"></i>
                             <p>التواصل</p>
@@ -331,12 +333,24 @@
                         </a>
                         <div class="collapse
                             @if (request()->path() == 'admin/communication/whatsapp') show
-                            @elseif(request()->is('admin/communication/*')) show @endif"
+                            @elseif(request()->is('admin/communication/*')) show
+                            @elseif(request()->is('admin/whatsapp-templates/*')) show
+                            @elseif(request()->is('admin/email-templates/*')) show @endif"
                             id="communication">
                             <ul class="nav nav-collapse">
                                 <li class="@if (request()->path() == 'admin/communication/whatsapp') active @endif">
                                     <a href="{{ route('admin.communication.whatsapp') }}">
                                         <span class="sub-item">واتس اب</span>
+                                    </a>
+                                </li>
+                                <li class="@if (request()->is('admin/whatsapp-templates/*')) active @endif">
+                                    <a href="{{ route('admin.whatsapp-templates.index') }}">
+                                        <span class="sub-item">قوالب الواتس اب</span>
+                                    </a>
+                                </li>
+                                <li class="@if (request()->is('admin/email-templates/*')) active @endif">
+                                    <a href="{{ route('admin.email-templates.index') }}">
+                                        <span class="sub-item">قوالب البريد الإلكتروني</span>
                                     </a>
                                 </li>
                             </ul>

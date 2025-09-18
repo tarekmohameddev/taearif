@@ -5,8 +5,16 @@ namespace App\Http\Controllers\User\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Language;
 use App\Models\Seo;
+use App\Models\User;
+use App\Models\BasicExtended;
+use App\Services\EmailService;
+use App\Services\WhatsAppService;
+use App\Jobs\SendPasswordResetCodeJob;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
 use Config;
 use App\Models\BasicSetting as BS;
 
@@ -67,5 +75,92 @@ class ForgotPasswordController extends Controller
     public function broker()
     {
         return Password::broker('users');
+    }
+
+    /**
+     * Send a reset link to the given user.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     */
+    public function sendResetLinkEmail(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'reset_method' => 'required|in:email,whatsapp',
+            'phone' => 'required_if:reset_method,whatsapp|nullable|string'
+        ]);
+
+        // Find user by email
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return back()->withErrors(['email' => __('We can\'t find a user with that email address.')]);
+        }
+
+        // Generate reset code
+        $resetCode = Str::random(6);
+        
+        // Store reset code in session
+        Session::put('password_reset_code', $resetCode);
+        Session::put('password_reset_email', $request->email);
+        Session::put('password_reset_method', $request->reset_method);
+        Session::put('password_reset_expires', now()->addMinutes(15));
+
+        try {
+            if ($request->reset_method === 'email') {
+                // Send email
+                $emailService = new EmailService();
+                $settings = BasicExtended::first();
+                $templateName = $settings->email_password_reset_template ?? null;
+                
+                $success = $emailService->sendPasswordResetCode(
+                    $request->email,
+                    $user->name ?? $user->email,
+                    $resetCode,
+                    $templateName
+                );
+
+                if ($success) {
+                    Session::flash('success', __('Password reset code has been sent to your email address.'));
+                } else {
+                    return back()->withErrors(['email' => __('Failed to send reset code. Please try again.')]);
+                }
+
+            } else {
+                // Send WhatsApp
+                $whatsappService = new WhatsAppService();
+                $phone = $request->phone;
+                
+                // Remove any non-numeric characters except +
+                $phone = preg_replace('/[^0-9+]/', '', $phone);
+                
+                $settings = BasicExtended::first();
+                $templateName = $settings->meta_template_name ?? null;
+                
+                $success = $whatsappService->sendPasswordResetCode(
+                    $phone,
+                    $resetCode,
+                    $user->name ?? $user->email,
+                    $templateName
+                );
+
+                if ($success) {
+                    Session::flash('success', __('Password reset code has been sent to your WhatsApp number.'));
+                } else {
+                    return back()->withErrors(['phone' => __('Failed to send reset code. Please try again.')]);
+                }
+            }
+
+            // Redirect to reset form
+            return redirect()->route('user.reset.password.form', [
+                'token' => 'code',
+                'email' => $request->email
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Password reset failed: ' . $e->getMessage());
+            return back()->withErrors(['email' => __('An error occurred. Please try again.')]);
+        }
     }
 }
