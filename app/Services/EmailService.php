@@ -62,7 +62,7 @@ class EmailService
                 
                 // Add reset link if provided
                 if ($resetUrl) {
-                    $resetLink = $resetUrl . '?code=' . $code . '&email=' . urlencode($email);
+                    $resetLink = $resetUrl . '?code=' . $code . '&identifier=' . $email;
                     $content = str_replace('{reset_link}', $resetLink, $content);
                 }
             } else {
@@ -71,7 +71,7 @@ class EmailService
                 $content = "مرحباً {$name}،\n\nرمز إعادة تعيين كلمة المرور: {$code}\n\n";
                 
                 if ($resetUrl) {
-                    $resetLink = $resetUrl . '?code=' . $code . '&email=' . urlencode($email);
+                    $resetLink = $resetUrl . '?code=' . $code . '&identifier=' . $email;
                     $content .= "يمكنك أيضاً الضغط على الرابط التالي:\n{$resetLink}\n\n";
                 }
                 
