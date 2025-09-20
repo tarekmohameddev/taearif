@@ -217,10 +217,18 @@ class WhatsAppService
                 ]
             ];
 
+            $endpoint = "{$apiUrl}/message/sendText/{$instanceName}";
+            
+            Log::info('Evolution API Request Details', [
+                'endpoint' => $endpoint,
+                'payload' => $payload,
+                'api_key_length' => strlen($apiKey)
+            ]);
+
             $response = Http::withHeaders([
                 'apikey' => $apiKey,
                 'Content-Type' => 'application/json',
-            ])->post("{$apiUrl}/message/sendText/{$instanceName}", $payload);
+            ])->post($endpoint, $payload);
 
             if ($response->successful()) {
                 Log::info('WhatsApp message sent via Evolution API', [
@@ -230,12 +238,17 @@ class WhatsAppService
                 ]);
                 return true;
             } else {
+                $errorResponse = $response->json();
+                $errorMessage = $errorResponse['message'] ?? $errorResponse['error'] ?? 'Unknown error';
+                
                 Log::error('Evolution API error', [
                     'phone' => $formattedPhone,
-                    'response' => $response->json(),
-                    'status' => $response->status()
+                    'endpoint' => $endpoint,
+                    'response' => $errorResponse,
+                    'status' => $response->status(),
+                    'error_message' => $errorMessage
                 ]);
-                throw new \Exception('Failed to send WhatsApp message via Evolution API');
+                throw new \Exception("Evolution API Error: {$errorMessage} (Status: {$response->status()})");
             }
 
         } catch (\Exception $e) {
@@ -340,10 +353,38 @@ class WhatsAppService
             }
         }
 
-        return [
-            'status' => 'success',
-            'message' => 'Evolution API configuration is complete'
-        ];
+        // Test the actual API connection
+        try {
+            $apiUrl = $this->settings->evolution_api_url;
+            $apiKey = $this->settings->evolution_api_key;
+            $instanceName = $this->settings->evolution_instance_name;
+            
+            // Test connection to Evolution API
+            $response = Http::withHeaders([
+                'apikey' => $apiKey,
+                'Content-Type' => 'application/json',
+            ])->get("{$apiUrl}/instance/connectionState/{$instanceName}");
+            
+            if ($response->successful()) {
+                $responseData = $response->json();
+                $connectionState = $responseData['instance']['state'] ?? 'unknown';
+                
+                return [
+                    'status' => 'success',
+                    'message' => "Evolution API configuration is complete. Instance state: {$connectionState}"
+                ];
+            } else {
+                return [
+                    'status' => 'error',
+                    'message' => 'Evolution API connection failed: ' . $response->status()
+                ];
+            }
+        } catch (\Exception $e) {
+            return [
+                'status' => 'error',
+                'message' => 'Evolution API connection test failed: ' . $e->getMessage()
+            ];
+        }
     }
 
     /**
