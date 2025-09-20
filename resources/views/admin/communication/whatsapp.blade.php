@@ -681,16 +681,22 @@ function showTestModal() {
 }
 
 function testWhatsApp() {
-    var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
+    var phone = prompt('أدخل رقم الهاتف للاختبار:', '+201147170572');
     if (phone) {
+        console.log('Testing WhatsApp with phone:', phone);
+        console.log('Route URL:', '{{route("admin.communication.test-whatsapp")}}');
+        
         $.post('{{route("admin.communication.test-whatsapp")}}', {
             _token: '{{csrf_token()}}',
             test_phone: phone
         }, function(response) {
+            console.log('Test response:', response);
             location.reload();
         }).fail(function(xhr) {
-            console.error('WhatsApp test failed:', xhr.responseText);
-            alert('حدث خطأ أثناء اختبار واتس اب: ' + (xhr.responseJSON?.message || xhr.statusText));
+            console.error('WhatsApp test failed:', xhr);
+            console.error('Status:', xhr.status);
+            console.error('Response:', xhr.responseText);
+            alert('حدث خطأ أثناء اختبار واتس اب: ' + (xhr.responseJSON?.message || xhr.statusText || 'Unknown error'));
         });
     }
 }
@@ -699,14 +705,20 @@ function testWhatsApp() {
 
 
 function checkConfiguration() {
+    console.log('Checking configuration...');
+    console.log('Route URL:', '{{route("admin.communication.check-config")}}');
+    
     $.post('{{route("admin.communication.check-config")}}', {
         _token: '{{csrf_token()}}'
     }, function(response) {
+        console.log('Configuration check response:', response);
         // The response will be handled by the redirect with flash message
         location.reload();
     }).fail(function(xhr) {
-        console.error('Configuration check failed:', xhr.responseText);
-        alert('حدث خطأ أثناء فحص الإعدادات: ' + (xhr.responseJSON?.message || xhr.statusText));
+        console.error('Configuration check failed:', xhr);
+        console.error('Status:', xhr.status);
+        console.error('Response:', xhr.responseText);
+        alert('حدث خطأ أثناء فحص الإعدادات: ' + (xhr.responseJSON?.message || xhr.statusText || 'Unknown error'));
     });
 }
 
