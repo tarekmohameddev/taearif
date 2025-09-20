@@ -227,22 +227,12 @@
                     </div>
 
                     <div class="row">
-                      <div class="col-lg-6">
+                      <div class="col-lg-12">
                         <div class="form-group">
                           <label for="evolution_instance_name"><strong>Instance Name **</strong></label>
                           <input type="text" class="form-control" id="evolution_instance_name" name="evolution_instance_name" 
                                  value="{{$abs->evolution_instance_name ?? ''}}" placeholder="instance_name">
                           @error('evolution_instance_name')
-                            <p class="text-danger">{{ $message }}</p>
-                          @enderror
-                        </div>
-                      </div>
-                      <div class="col-lg-6">
-                        <div class="form-group">
-                          <label for="evolution_phone_number"><strong>Phone Number **</strong></label>
-                          <input type="text" class="form-control" id="evolution_phone_number" name="evolution_phone_number" 
-                                 value="{{$abs->evolution_phone_number ?? ''}}" placeholder="+966501234567">
-                          @error('evolution_phone_number')
                             <p class="text-danger">{{ $message }}</p>
                           @enderror
                         </div>

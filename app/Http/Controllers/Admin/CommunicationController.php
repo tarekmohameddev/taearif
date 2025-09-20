@@ -102,7 +102,6 @@ class CommunicationController extends Controller
             'evolution_api_url' => 'required|url|max:255',
             'evolution_api_key' => 'required|string|max:500',
             'evolution_instance_name' => 'required|string|max:100',
-            'evolution_phone_number' => 'required|string|max:20',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -120,7 +119,6 @@ class CommunicationController extends Controller
         $abs->evolution_api_url = $request->evolution_api_url;
         $abs->evolution_api_key = $request->evolution_api_key;
         $abs->evolution_instance_name = $request->evolution_instance_name;
-        $abs->evolution_phone_number = $request->evolution_phone_number;
         $abs->save();
 
         Session::flash('success', 'Evolution API settings updated successfully!');

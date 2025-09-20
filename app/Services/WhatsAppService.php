@@ -187,9 +187,8 @@ class WhatsAppService
             $apiUrl = $this->settings->evolution_api_url;
             $apiKey = $this->settings->evolution_api_key;
             $instanceName = $this->settings->evolution_instance_name;
-            $fromPhone = $this->settings->evolution_phone_number;
 
-            if (!$apiUrl || !$apiKey || !$instanceName || !$fromPhone) {
+            if (!$apiUrl || !$apiKey || !$instanceName) {
                 throw new \Exception('Evolution API configuration incomplete');
             }
 
@@ -329,8 +328,7 @@ class WhatsAppService
         $requiredFields = [
             'evolution_api_url' => 'API URL',
             'evolution_api_key' => 'API Key',
-            'evolution_instance_name' => 'Instance Name',
-            'evolution_phone_number' => 'Phone Number'
+            'evolution_instance_name' => 'Instance Name'
         ];
 
         foreach ($requiredFields as $field => $label) {
