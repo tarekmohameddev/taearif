@@ -186,7 +186,7 @@
                           <button type="button" class="btn btn-info ml-2" onclick="checkConfiguration()">
                             <i class="fas fa-check-circle"></i> فحص الإعدادات
                           </button>
-                          <button type="button" class="btn btn-warning ml-2" onclick="showTestModal()">
+                          <button type="button" class="btn btn-warning ml-2" onclick="testWhatsApp()">
                             <i class="fas fa-paper-plane"></i> اختبار الإرسال
                           </button>
                         </div>
@@ -248,7 +248,7 @@
                           <button type="button" class="btn btn-info ml-2" onclick="checkConfiguration()">
                             <i class="fas fa-check-circle"></i> فحص الإعدادات
                           </button>
-                          <button type="button" class="btn btn-warning ml-2" onclick="showTestModal()">
+                          <button type="button" class="btn btn-warning ml-2" onclick="testWhatsApp()">
                             <i class="fas fa-paper-plane"></i> اختبار الإرسال
                           </button>
                         </div>
@@ -680,6 +680,21 @@ function showTestModal() {
     $('#testModal').modal('show');
 }
 
+function testWhatsApp() {
+    var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
+    if (phone) {
+        $.post('{{route("admin.communication.test-whatsapp")}}', {
+            _token: '{{csrf_token()}}',
+            test_phone: phone
+        }, function(response) {
+            location.reload();
+        }).fail(function(xhr) {
+            console.error('WhatsApp test failed:', xhr.responseText);
+            alert('حدث خطأ أثناء اختبار واتس اب: ' + (xhr.responseJSON?.message || xhr.statusText));
+        });
+    }
+}
+
 
 
 
@@ -689,8 +704,9 @@ function checkConfiguration() {
     }, function(response) {
         // The response will be handled by the redirect with flash message
         location.reload();
-    }).fail(function() {
-        alert('حدث خطأ أثناء فحص الإعدادات');
+    }).fail(function(xhr) {
+        console.error('Configuration check failed:', xhr.responseText);
+        alert('حدث خطأ أثناء فحص الإعدادات: ' + (xhr.responseJSON?.message || xhr.statusText));
     });
 }
 
