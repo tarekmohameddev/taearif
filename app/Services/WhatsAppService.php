@@ -363,7 +363,7 @@ class WhatsAppService
             $response = Http::withHeaders([
                 'apikey' => $apiKey,
                 'Content-Type' => 'application/json',
-            ])->get("{$apiUrl}/instance/connectionState/{$instanceName}");
+            ])->timeout(10)->get("{$apiUrl}/instance/connectionState/{$instanceName}");
             
             if ($response->successful()) {
                 $responseData = $response->json();
