@@ -68,6 +68,9 @@ class EmailCommunicationController extends Controller
     {
         $rules = [
             'email_password_reset_template' => 'nullable|string|max:100',
+            'welcome_message_template' => 'nullable|string|max:100',
+            'subscription_expiration_template' => 'nullable|string|max:100',
+            'subscription_expired_template' => 'nullable|string|max:100',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -83,6 +86,9 @@ class EmailCommunicationController extends Controller
         }
 
         $abs->email_password_reset_template = $request->email_password_reset_template;
+        $abs->welcome_message_template = $request->welcome_message_template;
+        $abs->subscription_expiration_template = $request->subscription_expiration_template;
+        $abs->subscription_expired_template = $request->subscription_expired_template;
         $abs->save();
 
         Session::flash('success', 'Email template settings updated successfully!');
