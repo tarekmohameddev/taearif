@@ -24,10 +24,24 @@ class WhatsAppService
             throw new \Exception('WhatsApp service not configured');
         }
 
+        // Check if password reset WhatsApp is enabled
+        if (!$this->settings->password_reset_enabled) {
+            throw new \Exception('Password reset WhatsApp messaging is disabled');
+        }
+
         // Get template - first try with specific template name, then with user language, then fallback
         $template = null;
         
-        if ($templateName) {
+        // First, try to get the configured template from settings
+        if ($this->settings->password_reset_template) {
+            $template = \App\Models\WhatsAppTemplate::where('name', $this->settings->password_reset_template)
+                ->where('type', 'password_reset')
+                ->where('status', true)
+                ->first();
+        }
+        
+        // If no configured template found, try with specific template name parameter
+        if (!$template && $templateName) {
             $template = \App\Models\WhatsAppTemplate::where('name', $templateName)
                 ->where('type', 'password_reset')
                 ->where('status', true)
@@ -56,15 +70,21 @@ class WhatsAppService
         if ($template) {
             $message = $template->content;
             
-            // Replace variables (only code, no name)
+            // Replace variables
             $message = str_replace('{code}', $code, $message);
-        } else {
-            // Default message content (fallback) - only code and URL
-            $message = "رمز إعادة تعيين كلمة المرور: {$code}\n\nهذا الرمز صالح لمدة 15 دقيقة.";
-            
-            // Add reset URL if provided
+            $message = str_replace('{name}', $userName ?? 'User', $message);
             if ($resetUrl) {
-                $message .= "\n\nأو يمكنك الضغط على الرابط التالي:\n{$resetUrl}?code={$code}";
+                $message = str_replace('{reset_url}', $resetUrl, $message);
+            }
+        } else {
+            // Use configured custom message or fallback to default
+            $message = $this->settings->password_reset_text ?? "رمز إعادة تعيين كلمة المرور: {$code}\n\nهذا الرمز صالح لمدة 15 دقيقة.";
+            
+            // Replace variables in custom message
+            $message = str_replace('{code}', $code, $message);
+            $message = str_replace('{name}', $userName ?? 'User', $message);
+            if ($resetUrl) {
+                $message = str_replace('{reset_url}', $resetUrl, $message);
             }
         }
 
