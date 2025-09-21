@@ -32,6 +32,8 @@ class EmailTemplate extends Model
     // Template types
     const TYPE_PASSWORD_RESET = 'password_reset';
     const TYPE_WELCOME = 'welcome';
+    const TYPE_SUBSCRIPTION_EXPIRATION = 'subscription_expiration';
+    const TYPE_SUBSCRIPTION_EXPIRED = 'subscription_expired';
     const TYPE_NOTIFICATION = 'notification';
 
     // Languages
@@ -46,6 +48,8 @@ class EmailTemplate extends Model
         return [
             self::TYPE_PASSWORD_RESET => 'Password Reset',
             self::TYPE_WELCOME => 'Welcome',
+            self::TYPE_SUBSCRIPTION_EXPIRATION => 'Subscription Expiration',
+            self::TYPE_SUBSCRIPTION_EXPIRED => 'Subscription Expired',
             self::TYPE_NOTIFICATION => 'Notification'
         ];
     }
@@ -69,6 +73,8 @@ class EmailTemplate extends Model
         $variables = [
             self::TYPE_PASSWORD_RESET => ['{name}', '{code}', '{reset_link}'],
             self::TYPE_WELCOME => ['{name}', '{email}'],
+            self::TYPE_SUBSCRIPTION_EXPIRATION => ['{name}', '{package_name}', '{expiry_date}'],
+            self::TYPE_SUBSCRIPTION_EXPIRED => ['{name}', '{package_name}', '{expiry_date}'],
             self::TYPE_NOTIFICATION => ['{name}', '{message}']
         ];
 

@@ -89,6 +89,12 @@ class EmailCommunicationController extends Controller
         $abs->welcome_message_template = $request->welcome_message_template;
         $abs->subscription_expiration_template = $request->subscription_expiration_template;
         $abs->subscription_expired_template = $request->subscription_expired_template;
+        
+        // Email notification enable/disable settings
+        $abs->welcome_message_email_enabled = $request->has('welcome_message_email_enabled') ? true : false;
+        $abs->subscription_expiration_email_enabled = $request->has('subscription_expiration_email_enabled') ? true : false;
+        $abs->subscription_expired_email_enabled = $request->has('subscription_expired_email_enabled') ? true : false;
+        
         $abs->save();
 
         Session::flash('success', 'Email template settings updated successfully!');

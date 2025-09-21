@@ -156,6 +156,82 @@
           <div id="email_templates-tab" class="tab-content {{request('tab') == 'email_templates' ? 'active' : ''}}">
             <form action="{{route('admin.email-communication.templates.update')}}" method="POST">
               @csrf
+              
+              <!-- Email Notification Controls -->
+              <div class="row mb-4">
+                <div class="col-lg-12">
+                  <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>إعدادات الإشعارات:</strong> تحكم في تفعيل/إلغاء تفعيل الإشعارات الإلكترونية لكل نوع من الرسائل.
+                  </div>
+                </div>
+              </div>
+
+              <div class="row mb-4">
+                <div class="col-lg-4">
+                  <div class="form-group">
+                    <label for="welcome_message_email_enabled">
+                      <strong>تفعيل رسالة الترحيب بالبريد الإلكتروني</strong>
+                    </label>
+                    <div class="toggle-switch-container">
+                      <div class="toggle-switch">
+                        <input type="checkbox" id="welcome_message_email_enabled" name="welcome_message_email_enabled" 
+                               value="1" {{($abs->welcome_message_email_enabled ?? true) ? 'checked' : ''}}>
+                        <label for="welcome_message_email_enabled" class="toggle-label">
+                          <span class="toggle-slider"></span>
+                          <span class="toggle-text">
+                            <span class="toggle-on">ON</span>
+                            <span class="toggle-off">OFF</span>
+                          </span>
+                        </label>
+                      </div>
+                      <span class="toggle-description">إرسال رسالة ترحيب بالبريد الإلكتروني عند التسجيل</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-lg-4">
+                  <div class="form-group">
+                    <label for="subscription_expiration_email_enabled">
+                      <strong>تفعيل إشعار انتهاء الاشتراك بالبريد الإلكتروني</strong>
+                    </label>
+                    <div class="toggle-switch-container">
+                      <div class="toggle-switch">
+                        <input type="checkbox" id="subscription_expiration_email_enabled" name="subscription_expiration_email_enabled" 
+                               value="1" {{($abs->subscription_expiration_email_enabled ?? true) ? 'checked' : ''}}>
+                        <label for="subscription_expiration_email_enabled" class="toggle-label">
+                          <span class="toggle-slider"></span>
+                          <span class="toggle-text">
+                            <span class="toggle-on">ON</span>
+                            <span class="toggle-off">OFF</span>
+                          </span>
+                        </label>
+                      </div>
+                      <span class="toggle-description">إرسال إشعار قبل انتهاء الاشتراك بالبريد الإلكتروني</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-lg-4">
+                  <div class="form-group">
+                    <label for="subscription_expired_email_enabled">
+                      <strong>تفعيل إشعار انتهاء الاشتراك بالبريد الإلكتروني</strong>
+                    </label>
+                    <div class="toggle-switch-container">
+                      <div class="toggle-switch">
+                        <input type="checkbox" id="subscription_expired_email_enabled" name="subscription_expired_email_enabled" 
+                               value="1" {{($abs->subscription_expired_email_enabled ?? true) ? 'checked' : ''}}>
+                        <label for="subscription_expired_email_enabled" class="toggle-label">
+                          <span class="toggle-slider"></span>
+                          <span class="toggle-text">
+                            <span class="toggle-on">ON</span>
+                            <span class="toggle-off">OFF</span>
+                          </span>
+                        </label>
+                      </div>
+                      <span class="toggle-description">إرسال إشعار عند انتهاء الاشتراك بالبريد الإلكتروني</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div class="row">
                 <div class="col-lg-6">
                   <div class="form-group">
@@ -543,11 +619,145 @@ function showNotification(message, type) {
     display: block;
 }
 
+/* Toggle Switch Styles */
+.toggle-switch-container {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+}
+
+.toggle-switch input[type="checkbox"] {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 70px;
+    height: 34px;
+    background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+    border-radius: 34px;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.15);
+    border: 2px solid #dee2e6;
+}
+
+.toggle-slider:before {
+    content: "";
+    position: absolute;
+    height: 28px;
+    width: 28px;
+    left: 2px;
+    bottom: 2px;
+    background: linear-gradient(145deg, #ffffff, #f8f9fa);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.25), 0 1px 2px rgba(0,0,0,0.1);
+    border: 1px solid rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 800;
+    color: #2d7a5f;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.toggle-switch input[type="checkbox"]:not(:checked) + .toggle-label .toggle-slider:before {
+    content: "OFF";
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-label .toggle-slider:before {
+    content: "ON";
+}
+
+.toggle-text {
+    display: none;
+}
+
+.toggle-on {
+    display: none;
+}
+
+.toggle-off {
+    display: none;
+}
+
+.toggle-description {
+    font-size: 14px;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Toggle Switch Active State */
+.toggle-switch input[type="checkbox"]:checked + .toggle-label .toggle-slider {
+    background: linear-gradient(145deg, #51c3a3, #2d7a5f);
+    border-color: #2d7a5f;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.3), 0 0 0 1px rgba(81, 195, 163, 0.4);
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-label .toggle-slider:before {
+    transform: translateX(36px);
+    background: linear-gradient(145deg, #ffffff, #f8f9fa);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-label .toggle-on {
+    opacity: 1;
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-label .toggle-off {
+    opacity: 0;
+}
+
+/* Toggle Switch Hover Effect */
+.toggle-switch:hover .toggle-slider {
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.15), 0 0 12px rgba(81, 195, 163, 0.4);
+    border-color: #51c3a3;
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-label .toggle-slider:hover {
+    background: linear-gradient(145deg, #5dd4b3, #42a085);
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.2), 0 0 12px rgba(81, 195, 163, 0.6);
+}
+
+.toggle-switch:hover .toggle-slider:before {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* Toggle Switch Focus State */
+.toggle-switch input[type="checkbox"]:focus + .toggle-label .toggle-slider {
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.15), 0 0 0 3px rgba(81, 195, 163, 0.3);
+    outline: none;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .tab-button {
         padding: 10px 15px;
         font-size: 14px;
+    }
+    
+    .toggle-switch-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
     }
 }
 </style>

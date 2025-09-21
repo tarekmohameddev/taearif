@@ -166,12 +166,224 @@ class EmailService
     }
 
     /**
+     * Send welcome email to new user
+     */
+    public function sendWelcomeEmail($email, $name, $userLanguage = 'ar', $templateName = null)
+    {
+        try {
+            // Get template - first try with specific template name, then with user language, then fallback
+            $template = null;
+            
+            if ($templateName) {
+                $template = EmailTemplate::where('name', $templateName)
+                    ->where('type', 'welcome')
+                    ->where('status', true)
+                    ->first();
+            }
+            
+            // If no specific template found, try to get template by user language
+            if (!$template) {
+                $template = EmailTemplate::where('type', 'welcome')
+                    ->where('language', $userLanguage)
+                    ->where('status', true)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+            }
+            
+            // If still no template found, try Arabic as fallback
+            if (!$template && $userLanguage !== 'ar') {
+                $template = EmailTemplate::where('type', 'welcome')
+                    ->where('language', 'ar')
+                    ->where('status', true)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+            }
+
+            // Prepare email content
+            if ($template) {
+                $subject = $template->subject;
+                $content = $template->content;
+                
+                // Replace variables
+                $content = str_replace('{name}', $name, $content);
+                $content = str_replace('{email}', $email, $content);
+            } else {
+                // Default email content (fallback)
+                $subject = 'مرحباً بك في منصتنا';
+                $content = "مرحباً {$name},\n\nأهلاً وسهلاً بك في منصتنا!\nنتمنى لك تجربة ممتعة.\n\nشكراً لك على التسجيل.";
+            }
+
+            // Send email
+            return $this->sendEmail($email, $subject, $content, $name);
+
+        } catch (\Exception $e) {
+            Log::error('EmailService: Failed to send welcome email', [
+                'email' => $email,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Send subscription expiration reminder email
+     */
+    public function sendSubscriptionExpirationEmail($email, $name, $packageName = null, $expiryDate = null, $userLanguage = 'ar', $templateName = null)
+    {
+        try {
+            // Get template - first try with specific template name, then with user language, then fallback
+            $template = null;
+            
+            if ($templateName) {
+                $template = EmailTemplate::where('name', $templateName)
+                    ->where('type', 'subscription_expiration')
+                    ->where('status', true)
+                    ->first();
+            }
+            
+            // If no specific template found, try to get template by user language
+            if (!$template) {
+                $template = EmailTemplate::where('type', 'subscription_expiration')
+                    ->where('language', $userLanguage)
+                    ->where('status', true)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+            }
+            
+            // If still no template found, try Arabic as fallback
+            if (!$template && $userLanguage !== 'ar') {
+                $template = EmailTemplate::where('type', 'subscription_expiration')
+                    ->where('language', 'ar')
+                    ->where('status', true)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+            }
+
+            // Prepare email content
+            if ($template) {
+                $subject = $template->subject;
+                $content = $template->content;
+                
+                // Replace variables
+                $content = str_replace('{name}', $name, $content);
+                $content = str_replace('{package_name}', $packageName ?? 'الباقة المميزة', $content);
+                $content = str_replace('{expiry_date}', $expiryDate ?? 'غير محدد', $content);
+            } else {
+                // Default email content (fallback)
+                $subject = 'تنبيه: انتهاء الاشتراك قريباً';
+                $content = "مرحباً {$name},\n\nتنبيه: باقة الاشتراك الخاصة بك ({$packageName}) ستنتهي قريباً.\nتاريخ الانتهاء: {$expiryDate}\n\nيرجى تجديد اشتراكك للاستمرار في الاستفادة من خدماتنا.";
+            }
+
+            // Send email
+            return $this->sendEmail($email, $subject, $content, $name);
+
+        } catch (\Exception $e) {
+            Log::error('EmailService: Failed to send subscription expiration email', [
+                'email' => $email,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Send subscription expired notification email
+     */
+    public function sendSubscriptionExpiredEmail($email, $name, $packageName = null, $expiryDate = null, $userLanguage = 'ar', $templateName = null)
+    {
+        try {
+            // Get template - first try with specific template name, then with user language, then fallback
+            $template = null;
+            
+            if ($templateName) {
+                $template = EmailTemplate::where('name', $templateName)
+                    ->where('type', 'subscription_expired')
+                    ->where('status', true)
+                    ->first();
+            }
+            
+            // If no specific template found, try to get template by user language
+            if (!$template) {
+                $template = EmailTemplate::where('type', 'subscription_expired')
+                    ->where('language', $userLanguage)
+                    ->where('status', true)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+            }
+            
+            // If still no template found, try Arabic as fallback
+            if (!$template && $userLanguage !== 'ar') {
+                $template = EmailTemplate::where('type', 'subscription_expired')
+                    ->where('language', 'ar')
+                    ->where('status', true)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+            }
+
+            // Prepare email content
+            if ($template) {
+                $subject = $template->subject;
+                $content = $template->content;
+                
+                // Replace variables
+                $content = str_replace('{name}', $name, $content);
+                $content = str_replace('{package_name}', $packageName ?? 'الباقة المميزة', $content);
+                $content = str_replace('{expiry_date}', $expiryDate ?? 'غير محدد', $content);
+            } else {
+                // Default email content (fallback)
+                $subject = 'انتهاء الاشتراك';
+                $content = "مرحباً {$name},\n\nانتهى اشتراكك وتم نقلك إلى الباقة المجانية.\nيمكنك الترقية في أي وقت من لوحة التحكم.";
+            }
+
+            // Send email
+            return $this->sendEmail($email, $subject, $content, $name);
+
+        } catch (\Exception $e) {
+            Log::error('EmailService: Failed to send subscription expired email', [
+                'email' => $email,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * Get available email templates for password reset
      */
     public function getPasswordResetTemplates()
     {
         return EmailTemplate::active()
             ->ofType('password_reset')
+            ->get();
+    }
+
+    /**
+     * Get available email templates for welcome messages
+     */
+    public function getWelcomeTemplates()
+    {
+        return EmailTemplate::active()
+            ->ofType('welcome')
+            ->get();
+    }
+
+    /**
+     * Get available email templates for subscription expiration
+     */
+    public function getSubscriptionExpirationTemplates()
+    {
+        return EmailTemplate::active()
+            ->ofType('subscription_expiration')
+            ->get();
+    }
+
+    /**
+     * Get available email templates for subscription expired
+     */
+    public function getSubscriptionExpiredTemplates()
+    {
+        return EmailTemplate::active()
+            ->ofType('subscription_expired')
             ->get();
     }
 }

@@ -4,6 +4,8 @@ namespace App\Jobs;
 
 use App\Models\User;
 use App\Services\WhatsAppService;
+use App\Services\EmailService;
+use App\Models\BasicExtended;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -37,22 +39,69 @@ class SendWelcomeMessageJob implements ShouldQueue
     public function handle()
     {
         try {
-            $whatsappService = new WhatsAppService();
+            // Send WhatsApp welcome message
+            try {
+                $whatsappService = new WhatsAppService();
+                
+                // Replace variables in message
+                $message = str_replace('{name}', $this->user->first_name ?? 'User', $this->message);
+                $message = str_replace('{email}', $this->user->email ?? 'N/A', $message);
+                
+                $whatsappService->sendWelcomeMessage($this->user->phone, $message, $this->user->first_name);
+                
+                Log::info('WhatsApp welcome message sent successfully', [
+                    'user_id' => $this->user->id,
+                    'phone' => $this->user->phone
+                ]);
+            } catch (\Exception $e) {
+                Log::error('WhatsApp welcome message failed', [
+                    'user_id' => $this->user->id,
+                    'phone' => $this->user->phone,
+                    'error' => $e->getMessage()
+                ]);
+                // Don't re-throw here, continue with email
+            }
+
+            // Send email welcome message
+            try {
+                $emailService = new EmailService();
+                $be = BasicExtended::first();
+                
+                // Check if email notifications are enabled
+                if ($be && $be->welcome_message_email_enabled && !empty($this->user->email)) {
+                    // Get template name from settings
+                    $templateName = $be->welcome_message_template ?? null;
+                    
+                    $emailService->sendWelcomeEmail(
+                        $this->user->email,
+                        $this->user->first_name ?? 'User',
+                        'ar', // Default language
+                        $templateName
+                    );
+                    
+                    Log::info('Email welcome message sent successfully', [
+                        'user_id' => $this->user->id,
+                        'email' => $this->user->email
+                    ]);
+                } else {
+                    Log::info('Email welcome message skipped', [
+                        'user_id' => $this->user->id,
+                        'email' => $this->user->email,
+                        'enabled' => $be ? $be->welcome_message_email_enabled : false
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Email welcome message failed', [
+                    'user_id' => $this->user->id,
+                    'email' => $this->user->email,
+                    'error' => $e->getMessage()
+                ]);
+                // Don't re-throw here, job should complete even if email fails
+            }
             
-            // Replace variables in message
-            $message = str_replace('{name}', $this->user->first_name ?? 'User', $this->message);
-            $message = str_replace('{email}', $this->user->email ?? 'N/A', $message);
-            
-            $whatsappService->sendWelcomeMessage($this->user->phone, $message, $this->user->first_name);
-            
-            Log::info('WhatsApp welcome message sent successfully', [
-                'user_id' => $this->user->id,
-                'phone' => $this->user->phone
-            ]);
         } catch (\Exception $e) {
-            Log::error('WhatsApp welcome message failed', [
+            Log::error('Welcome message job failed completely', [
                 'user_id' => $this->user->id,
-                'phone' => $this->user->phone,
                 'error' => $e->getMessage()
             ]);
             
