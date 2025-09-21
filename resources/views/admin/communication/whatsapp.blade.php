@@ -314,23 +314,33 @@
                           <label for="welcome_message_template"><strong>اسم القالب (Meta API)</strong></label>
                           <select class="form-control" id="welcome_message_template" name="welcome_message_template">
                             <option value="">اختر قالب أو اتركه فارغاً</option>
-                            @php
-                                try {
-                                    $welcomeTemplates = \App\Models\WhatsAppTemplate::active()->ofType('welcome')->get();
-                                } catch (Exception $e) {
-                                    $welcomeTemplates = collect();
-                                }
-                            @endphp
-                            @foreach($welcomeTemplates as $template)
-                              <option value="{{$template->name}}" {{($abs->welcome_message_template ?? '') == $template->name ? 'selected' : ''}}>
-                                {{$template->name}} ({{$template->language_label}})
-                              </option>
-                            @endforeach
+                            <optgroup label="Meta API Templates">
+                              <option value="" disabled>جاري تحميل القوالب من Facebook...</option>
+                            </optgroup>
+                            <optgroup label="Local Templates">
+                              @php
+                                  try {
+                                      $welcomeTemplates = \App\Models\WhatsAppTemplate::active()->ofType('welcome')->get();
+                                  } catch (Exception $e) {
+                                      $welcomeTemplates = collect();
+                                  }
+                              @endphp
+                              @foreach($welcomeTemplates as $template)
+                                <option value="{{$template->name}}" {{($abs->welcome_message_template ?? '') == $template->name ? 'selected' : ''}}>
+                                  {{$template->name}} ({{$template->language_label}}) - Local
+                                </option>
+                              @endforeach
+                            </optgroup>
                           </select>
-                          <p class="text-muted">اختر قالب من القوالب المحفوظة أو اتركه فارغاً للرسالة العادية</p>
+                          <p class="text-muted">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i> 
-                            <a href="{{route('admin.whatsapp-templates.create')}}?type=welcome" target="_blank">إنشاء قالب جديد</a>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForWelcome()">
+                              <i class="fas fa-sync"></i> تحديث قوالب Meta API
+                            </button>
+                            <a href="{{route('admin.whatsapp-templates.create')}}?type=welcome" target="_blank" class="btn btn-sm btn-outline-success ml-2">
+                              <i class="fas fa-plus"></i> إنشاء قالب محلي
+                            </a>
                           </small>
                         </div>
                     </div>
@@ -407,23 +417,33 @@
                           <label for="subscription_expiration_template"><strong>اسم القالب (Meta API)</strong></label>
                           <select class="form-control" id="subscription_expiration_template" name="subscription_expiration_template">
                             <option value="">اختر قالب أو اتركه فارغاً</option>
-                            @php
-                                try {
-                                    $subscriptionTemplates = \App\Models\WhatsAppTemplate::active()->ofType('subscription_expiration')->get();
-                                } catch (Exception $e) {
-                                    $subscriptionTemplates = collect();
-                                }
-                            @endphp
-                            @foreach($subscriptionTemplates as $template)
-                              <option value="{{$template->name}}" {{($abs->subscription_expiration_template ?? '') == $template->name ? 'selected' : ''}}>
-                                {{$template->name}} ({{$template->language_label}})
-                              </option>
-                            @endforeach
+                            <optgroup label="Meta API Templates">
+                              <option value="" disabled>جاري تحميل القوالب من Facebook...</option>
+                            </optgroup>
+                            <optgroup label="Local Templates">
+                              @php
+                                  try {
+                                      $subscriptionTemplates = \App\Models\WhatsAppTemplate::active()->ofType('subscription_expiration')->get();
+                                  } catch (Exception $e) {
+                                      $subscriptionTemplates = collect();
+                                  }
+                              @endphp
+                              @foreach($subscriptionTemplates as $template)
+                                <option value="{{$template->name}}" {{($abs->subscription_expiration_template ?? '') == $template->name ? 'selected' : ''}}>
+                                  {{$template->name}} ({{$template->language_label}}) - Local
+                                </option>
+                              @endforeach
+                            </optgroup>
                           </select>
-                          <p class="text-muted">اختر قالب من القوالب المحفوظة أو اتركه فارغاً للرسالة العادية</p>
+                          <p class="text-muted">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i> 
-                            <a href="{{route('admin.whatsapp-templates.create')}}?type=subscription_expiration" target="_blank">إنشاء قالب جديد</a>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForSubscription()">
+                              <i class="fas fa-sync"></i> تحديث قوالب Meta API
+                            </button>
+                            <a href="{{route('admin.whatsapp-templates.create')}}?type=subscription_expiration" target="_blank" class="btn btn-sm btn-outline-success ml-2">
+                              <i class="fas fa-plus"></i> إنشاء قالب محلي
+                            </a>
                           </small>
                         </div>
                     </div>
@@ -503,23 +523,33 @@
                           <label for="subscription_expired_template"><strong>اسم القالب (Meta API)</strong></label>
                           <select class="form-control" id="subscription_expired_template" name="subscription_expired_template">
                             <option value="">اختر قالب أو اتركه فارغاً</option>
-                            @php
-                                try {
-                                    $expiredTemplates = \App\Models\WhatsAppTemplate::active()->ofType('subscription_expired')->get();
-                                } catch (Exception $e) {
-                                    $expiredTemplates = collect();
-                                }
-                            @endphp
-                            @foreach($expiredTemplates as $template)
-                              <option value="{{$template->name}}" {{($abs->subscription_expired_template ?? '') == $template->name ? 'selected' : ''}}>
-                                {{$template->name}} ({{$template->language_label}})
-                              </option>
-                            @endforeach
+                            <optgroup label="Meta API Templates">
+                              <option value="" disabled>جاري تحميل القوالب من Facebook...</option>
+                            </optgroup>
+                            <optgroup label="Local Templates">
+                              @php
+                                  try {
+                                      $expiredTemplates = \App\Models\WhatsAppTemplate::active()->ofType('subscription_expired')->get();
+                                  } catch (Exception $e) {
+                                      $expiredTemplates = collect();
+                                  }
+                              @endphp
+                              @foreach($expiredTemplates as $template)
+                                <option value="{{$template->name}}" {{($abs->subscription_expired_template ?? '') == $template->name ? 'selected' : ''}}>
+                                  {{$template->name}} ({{$template->language_label}}) - Local
+                                </option>
+                              @endforeach
+                            </optgroup>
                           </select>
-                          <p class="text-muted">اختر قالب من القوالب المحفوظة أو اتركه فارغاً للرسالة العادية</p>
+                          <p class="text-muted">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i> 
-                            <a href="{{route('admin.whatsapp-templates.create')}}?type=subscription_expired" target="_blank">إنشاء قالب جديد</a>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForExpired()">
+                              <i class="fas fa-sync"></i> تحديث قوالب Meta API
+                            </button>
+                            <a href="{{route('admin.whatsapp-templates.create')}}?type=subscription_expired" target="_blank" class="btn btn-sm btn-outline-success ml-2">
+                              <i class="fas fa-plus"></i> إنشاء قالب محلي
+                            </a>
                           </small>
                         </div>
                     </div>
@@ -805,6 +835,80 @@ function loadMetaTemplates() {
     }).always(function() {
         // Reset button state
         button.html('<i class="fas fa-sync"></i> تحديث القوالب من Facebook');
+        button.prop('disabled', false);
+    });
+}
+
+function loadMetaTemplatesForWelcome() {
+    loadMetaTemplatesForSelect('#welcome_message_template', 'welcome');
+}
+
+function loadMetaTemplatesForSubscription() {
+    loadMetaTemplatesForSelect('#subscription_expiration_template', 'subscription_expiration');
+}
+
+function loadMetaTemplatesForExpired() {
+    loadMetaTemplatesForSelect('#subscription_expired_template', 'subscription_expired');
+}
+
+function loadMetaTemplatesForSelect(selectId, messageType) {
+    var select = $(selectId);
+    var button = $('button[onclick="loadMetaTemplatesFor' + messageType.charAt(0).toUpperCase() + messageType.slice(1).replace('_', '') + '()"]');
+    
+    // Show loading state
+    button.html('<i class="fas fa-spinner fa-spin"></i> جاري التحميل...');
+    button.prop('disabled', true);
+    
+    $.get('{{route("admin.communication.fetch-meta-templates")}}', function(response) {
+        if (response.success) {
+            // Find and update the Meta API Templates optgroup
+            var metaGroup = select.find('optgroup[label="Meta API Templates"]');
+            metaGroup.empty();
+            
+            // Add templates from Facebook
+            if (response.templates && response.templates.length > 0) {
+                response.templates.forEach(function(template) {
+                    var option = $('<option></option>')
+                        .attr('value', template.name)
+                        .text(template.name + ' (' + template.category + ' - ' + template.language + ') - Meta API');
+                    
+                    // Check if this template is currently selected
+                    var currentValue = '';
+                    if (messageType === 'welcome') {
+                        currentValue = '{{$abs->welcome_message_template ?? ""}}';
+                    } else if (messageType === 'subscription_expiration') {
+                        currentValue = '{{$abs->subscription_expiration_template ?? ""}}';
+                    } else if (messageType === 'subscription_expired') {
+                        currentValue = '{{$abs->subscription_expired_template ?? ""}}';
+                    }
+                    
+                    if (currentValue === template.name) {
+                        option.attr('selected', true);
+                    }
+                    
+                    metaGroup.append(option);
+                });
+                
+                // Show success message
+                showNotification('تم تحميل ' + response.templates.length + ' قالب من Facebook بنجاح', 'success');
+            } else {
+                metaGroup.append('<option value="" disabled>لم يتم العثور على قوالب معتمدة في Facebook</option>');
+                showNotification('لم يتم العثور على قوالب معتمدة في Facebook', 'warning');
+            }
+        } else {
+            var metaGroup = select.find('optgroup[label="Meta API Templates"]');
+            metaGroup.empty();
+            metaGroup.append('<option value="" disabled>فشل في تحميل القوالب: ' + response.message + '</option>');
+            showNotification('فشل في تحميل القوالب: ' + response.message, 'error');
+        }
+    }).fail(function() {
+        var metaGroup = select.find('optgroup[label="Meta API Templates"]');
+        metaGroup.empty();
+        metaGroup.append('<option value="" disabled>حدث خطأ في الاتصال بالخادم</option>');
+        showNotification('حدث خطأ في الاتصال بالخادم', 'error');
+    }).always(function() {
+        // Reset button state
+        button.html('<i class="fas fa-sync"></i> تحديث قوالب Meta API');
         button.prop('disabled', false);
     });
 }
