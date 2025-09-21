@@ -592,6 +592,14 @@
                   </div>
 
                   <div class="row">
+                  <div class="col-lg-6">
+                      <div class="form-group">
+                        <label for="subscription_expired_send_time"><strong>وقت إرسال الإشعار</strong></label>
+                        <input type="time" class="form-control" id="subscription_expired_send_time" name="subscription_expired_send_time" 
+                               value="{{$abs->subscription_expired_send_time ?? '09:00'}}">
+                        <p class="text-muted">الوقت اليومي لإرسال إشعارات انتهاء الباقة</p>
+                      </div>
+                    </div>
                     <div class="col-lg-6">
                         <div class="form-group">
                           <label for="subscription_expired_template"><strong>اسم القالب (Meta API)</strong></label>
@@ -628,14 +636,7 @@
                           </small>
                         </div>
                     </div>
-                    <div class="col-lg-6">
-                      <div class="form-group">
-                        <label for="subscription_expired_send_time"><strong>وقت إرسال الإشعار</strong></label>
-                        <input type="time" class="form-control" id="subscription_expired_send_time" name="subscription_expired_send_time" 
-                               value="{{$abs->subscription_expired_send_time ?? '09:00'}}">
-                        <p class="text-muted">الوقت اليومي لإرسال إشعارات انتهاء الباقة</p>
-                      </div>
-                    </div>
+                    
                   </div>
 
                   <div class="row">
