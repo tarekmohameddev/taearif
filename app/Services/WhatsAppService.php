@@ -244,6 +244,12 @@ class WhatsAppService
 
             // Format phone number
             $formattedPhone = $this->formatPhoneNumber($phoneNumber);
+            
+            // Log the phone number formatting for debugging
+            Log::info('Phone number formatting', [
+                'original' => $phoneNumber,
+                'formatted' => $formattedPhone
+            ]);
 
             // Use custom message if provided, otherwise prepare default message
             if (!$message) {
@@ -331,6 +337,18 @@ class WhatsAppService
             if (in_array($countryCode, $commonCountryCodes)) {
                 $phone = $countryCode . $localNumber;
             }
+        }
+        
+        // Handle Saudi Arabian phone numbers without country code
+        // If it's a 9-digit number starting with 5, add Saudi country code 966
+        if (preg_match('/^5\d{8}$/', $phone)) {
+            $phone = '966' . $phone;
+        }
+        
+        // Handle other common patterns for Saudi numbers
+        // If it's 10 digits starting with 05, remove the 0 and add country code
+        if (preg_match('/^05\d{8}$/', $phone)) {
+            $phone = '966' . substr($phone, 1);
         }
         
         return $phone;
