@@ -156,7 +156,7 @@ class ResetPasswordController extends Controller
             'attempts_used' => $attemptNumber,
             'attempts_remaining' => 3 - $attemptNumber,
             // 'code_for_testing' => $code // For testing purposes, remove in production
-        ])->status(200);
+        ], 200);
     }
 
     /**
