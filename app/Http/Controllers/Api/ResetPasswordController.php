@@ -162,7 +162,7 @@ class ResetPasswordController extends Controller
                 // Use the full phone number (with country code) for sending WhatsApp message
                 $phoneForSending = $request->full_phone_number ?? $user->phone;
                 
-                $whatsappSent = $whatsappService->sendPasswordResetCode(
+                $whatsappResult = $whatsappService->sendPasswordResetCode(
                     $phoneForSending,
                     $code,
                     $user->name ?? $user->username ?? 'User',
@@ -170,12 +170,26 @@ class ResetPasswordController extends Controller
                     $resetUrl
                 );
                 
-                if (!$whatsappSent) {
+                // If WhatsApp service is not configured, it returns the default message string
+                // If it's configured, it returns true/false
+                if (is_string($whatsappResult)) {
+                    // WhatsApp service not configured, log the default message
+                    Log::info('WhatsApp service not configured, using default message', [
+                        'phone' => $phoneForSending,
+                        'code' => $code,
+                        'default_message' => $whatsappResult
+                    ]);
+                    // Continue with success response - the code was generated and stored
+                } elseif (!$whatsappResult) {
                     return response()->json([
                         'message' => 'Failed to send reset code. Please try again later.'
                     ], 500);
                 }
             } catch (\Exception $e) {
+                Log::error('WhatsApp service error', [
+                    'phone' => $phoneForSending ?? 'unknown',
+                    'error' => $e->getMessage()
+                ]);
                 return response()->json([
                     'message' => 'WhatsApp service not configured or failed to send message.'
                 ], 500);
