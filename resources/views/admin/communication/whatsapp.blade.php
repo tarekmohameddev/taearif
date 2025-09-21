@@ -370,7 +370,7 @@
                     </div>
                     <div class="col-lg-6">
                         <div class="form-group">
-                          <label for="welcome_message_template"><strong>اسم القالب (Meta API)</strong></label>
+                          <label for="welcome_message_template"><strong>اسم القالب <span class="template-api-label">(Meta API)</span></strong></label>
                           <select class="form-control" id="welcome_message_template" name="welcome_message_template">
                             <option value="">اختر قالب أو اتركه فارغاً</option>
                             <optgroup label="Meta API Templates" class="meta-api-optgroup">
@@ -391,7 +391,7 @@
                               @endforeach
                             </optgroup>
                           </select>
-                          <p class="text-muted">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i> 
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForWelcome(true)">
@@ -479,7 +479,7 @@
                     </div>
                     <div class="col-lg-6">
                         <div class="form-group">
-                          <label for="subscription_expiration_template"><strong>اسم القالب (Meta API)</strong></label>
+                          <label for="subscription_expiration_template"><strong>اسم القالب <span class="template-api-label">(Meta API)</span></strong></label>
                           <select class="form-control" id="subscription_expiration_template" name="subscription_expiration_template">
                             <option value="">اختر قالب أو اتركه فارغاً</option>
                             <optgroup label="Meta API Templates" class="meta-api-optgroup">
@@ -500,7 +500,7 @@
                               @endforeach
                             </optgroup>
                           </select>
-                          <p class="text-muted">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i> 
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForSubscription(true)">
@@ -602,7 +602,7 @@
                     </div>
                     <div class="col-lg-6">
                         <div class="form-group">
-                          <label for="subscription_expired_template"><strong>اسم القالب (Meta API)</strong></label>
+                          <label for="subscription_expired_template"><strong>اسم القالب <span class="template-api-label">(Meta API)</span></strong></label>
                           <select class="form-control" id="subscription_expired_template" name="subscription_expired_template">
                             <option value="">اختر قالب أو اتركه فارغاً</option>
                             <optgroup label="Meta API Templates" class="meta-api-optgroup">
@@ -623,7 +623,7 @@
                               @endforeach
                             </optgroup>
                           </select>
-                          <p class="text-muted">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i> 
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForExpired(true)">
@@ -765,6 +765,23 @@ $(document).ready(function() {
         // Update API selection for our context-aware system
         var api = service === 'meta_cloud' ? 'meta' : 'evolution';
         setApiSelection(api);
+        
+        // Update button visibility based on selected API
+        if (api === 'meta') {
+            $('.create-local-template-btn').hide();
+            $('button[onclick*="loadMetaTemplatesFor"]').show();
+            $('button[onclick="loadMetaTemplates()"]').show();
+            $('.meta-api-optgroup').show();
+            $('.template-api-label').text('(Meta API)');
+            $('.template-description').text('اختر قالب من Meta API أو القوالب المحفوظة محلياً');
+        } else {
+            $('.create-local-template-btn').show();
+            $('button[onclick*="loadMetaTemplatesFor"]').hide();
+            $('button[onclick="loadMetaTemplates()"]').hide();
+            $('.meta-api-optgroup').hide();
+            $('.template-api-label').text('(Evolution API)');
+            $('.template-description').text('اختر قالب من القوالب المحفوظة محلياً فقط');
+        }
         
         // Auto-load Meta templates when Meta Cloud is selected
         if (service === 'meta_cloud') {
@@ -1013,8 +1030,18 @@ function initializeApiSelection() {
     // Set initial button visibility based on API selection
     if (currentApi === 'meta') {
         $('.create-local-template-btn').hide();
+        $('button[onclick*="loadMetaTemplatesFor"]').show();
+        $('button[onclick="loadMetaTemplates()"]').show();
+        $('.meta-api-optgroup').show();
+        $('.template-api-label').text('(Meta API)');
+        $('.template-description').text('اختر قالب من Meta API أو القوالب المحفوظة محلياً');
     } else {
         $('.create-local-template-btn').show();
+        $('button[onclick*="loadMetaTemplatesFor"]').hide();
+        $('button[onclick="loadMetaTemplates()"]').hide();
+        $('.meta-api-optgroup').hide();
+        $('.template-api-label').text('(Evolution API)');
+        $('.template-description').text('اختر قالب من القوالب المحفوظة محلياً فقط');
     }
     
     // Show initial notification
@@ -1165,18 +1192,24 @@ function isDefaultText(text, type) {
 }
 
 function updateTemplateDropdownsForEvolution() {
-    // For Evolution API, clear Meta API templates and show only local templates
-    $('.meta-api-optgroup').each(function() {
-        $(this).empty();
-        $(this).append('<option disabled>Evolution API - استخدم القوالب المحلية فقط</option>');
-    });
+    // For Evolution API, completely hide Meta API optgroups
+    $('.meta-api-optgroup').hide();
     
     // Show "Create Local Template" buttons for Evolution API
     $('.create-local-template-btn').show();
+    
+    // Hide Meta template refresh buttons for Evolution API
+    $('button[onclick*="loadMetaTemplatesFor"]').hide();
+    $('button[onclick="loadMetaTemplates()"]').hide();
+    
+    // Update template labels and descriptions for Evolution API
+    $('.template-api-label').text('(Evolution API)');
+    $('.template-description').text('اختر قالب من القوالب المحفوظة محلياً فقط');
 }
 
 function updateTemplateDropdownsForMeta() {
-    // For Meta API, clear local templates and show only Meta API templates
+    // For Meta API, show Meta API optgroups and hide local templates
+    $('.meta-api-optgroup').show();
     $('.local-templates-optgroup').each(function() {
         $(this).empty();
         $(this).append('<option disabled>Meta API - استخدم قوالب Meta API فقط</option>');
@@ -1184,6 +1217,14 @@ function updateTemplateDropdownsForMeta() {
     
     // Hide "Create Local Template" buttons for Meta API
     $('.create-local-template-btn').hide();
+    
+    // Show Meta template refresh buttons for Meta API
+    $('button[onclick*="loadMetaTemplatesFor"]').show();
+    $('button[onclick="loadMetaTemplates()"]').show();
+    
+    // Update template labels and descriptions for Meta API
+    $('.template-api-label').text('(Meta API)');
+    $('.template-description').text('اختر قالب من Meta API أو القوالب المحفوظة محلياً');
 }
 
 function loadMetaTemplatesForSelect(selectId, messageType) {
