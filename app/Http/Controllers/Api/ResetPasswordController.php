@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use App\Rules\Recaptcha;
 use App\Services\EmailService;
 use App\Services\WhatsAppService;
@@ -48,12 +49,38 @@ class ResetPasswordController extends Controller
         $request->validate([
             'identifier' => 'required',  // email or phone
             'method' => 'required|in:email,phone',
-
+            'country_code' => 'nullable|string|max:10', // Country code like +966, +1, etc.
         ]);
 
-        $user = User::where('email', $request->identifier)
-            ->orWhere('phone', $request->identifier)
-            ->first();
+        $user = null;
+        
+        if ($request->method === 'phone') {
+            // For phone method, we need to handle country code
+            $countryCode = $request->country_code ?? '';
+            $phoneNumber = $request->identifier;
+            $fullPhoneNumber = $countryCode . $phoneNumber;
+            
+            Log::info('Phone reset attempt', [
+                'phone_number' => $phoneNumber,
+                'country_code' => $countryCode,
+                'full_phone_number' => $fullPhoneNumber
+            ]);
+            
+            // Search user by multiple phone number formats
+            $user = User::where('email', $request->identifier)
+                ->orWhere('phone', $phoneNumber)                    // Original number without country code
+                ->orWhere('phone', $fullPhoneNumber)               // Full number with country code
+                ->orWhere('phone', ltrim($fullPhoneNumber, '+'))   // Full number without + prefix
+                ->first();
+                
+            // Store the full phone number for sending WhatsApp message
+            $request->merge(['full_phone_number' => $fullPhoneNumber]);
+        } else {
+            // For email method, use original logic
+            $user = User::where('email', $request->identifier)
+                ->orWhere('phone', $request->identifier)
+                ->first();
+        }
 
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
@@ -131,8 +158,12 @@ class ResetPasswordController extends Controller
             // Send via WhatsApp
             try {
                 $whatsappService = new WhatsAppService();
+                
+                // Use the full phone number (with country code) for sending WhatsApp message
+                $phoneForSending = $request->full_phone_number ?? $user->phone;
+                
                 $whatsappSent = $whatsappService->sendPasswordResetCode(
-                    $user->phone,
+                    $phoneForSending,
                     $code,
                     $user->name ?? $user->username ?? 'User',
                     $userLanguage,
