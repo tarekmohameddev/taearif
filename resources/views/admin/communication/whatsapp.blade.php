@@ -614,6 +614,15 @@
                 <form action="{{route('admin.communication.password-reset.update')}}" method="POST" id="password-reset-form">
                   @csrf
                   <input type="hidden" name="selected_api" id="password_reset_selected_api" value="">
+                  
+                  @if(session('warning'))
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                      <i class="fas fa-exclamation-triangle"></i> {{ session('warning') }}
+                      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                  @endif
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">

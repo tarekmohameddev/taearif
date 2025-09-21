@@ -43,6 +43,7 @@ class WhatsAppService
 
         // Get template - first try with specific template name, then with user language, then fallback
         $template = null;
+        $useMetaTemplate = false;
         
         // First, try to get the configured template from settings
         if ($this->settings->password_reset_template) {
@@ -77,6 +78,13 @@ class WhatsAppService
                 ->orderBy('created_at', 'desc')
                 ->first();
         }
+        
+        // If still no template found and using Meta Cloud, check for password_reset template
+        if (!$template && $this->settings->whatsapp_service === 'meta_cloud') {
+            if ($this->checkMetaTemplateExists('password_reset')) {
+                $useMetaTemplate = true;
+            }
+        }
 
         // Prepare message content
         if ($template) {
@@ -105,7 +113,7 @@ class WhatsAppService
 
         switch ($service) {
             case 'meta_cloud':
-                return $this->sendViaMetaCloud($phoneNumber, $code, $userName, $resetUrl, $message);
+                return $this->sendViaMetaCloud($phoneNumber, $code, $userName, $resetUrl, $message, $useMetaTemplate);
             case 'evolution_api':
                 return $this->sendViaEvolutionApi($phoneNumber, $code, $userName, $resetUrl, $message);
             default:
@@ -116,7 +124,7 @@ class WhatsAppService
     /**
      * Send message via Meta Cloud API
      */
-    protected function sendViaMetaCloud($phoneNumber, $code, $userName = null, $resetUrl = null, $message = null)
+    protected function sendViaMetaCloud($phoneNumber, $code, $userName = null, $resetUrl = null, $message = null, $useMetaTemplate = false)
     {
         try {
             $accessToken = $this->settings->meta_access_token;
@@ -130,6 +138,11 @@ class WhatsAppService
 
             // Format phone number (remove + and ensure it starts with country code)
             $formattedPhone = $this->formatPhoneNumber($phoneNumber);
+
+            // Auto-select password_reset template if no specific template is configured
+            if (!$templateName && !$message && $useMetaTemplate) {
+                $templateName = 'password_reset';
+            }
 
             // If no template name is provided or custom message is provided, send as regular message
             if (!$templateName || $message) {
@@ -721,6 +734,27 @@ class WhatsAppService
                 'error' => $e->getMessage()
             ]);
             throw $e;
+        }
+    }
+
+    /**
+     * Check if a specific Meta template exists
+     */
+    public function checkMetaTemplateExists($templateName)
+    {
+        try {
+            $templates = $this->fetchMetaTemplates();
+            
+            foreach ($templates as $template) {
+                if ($template['name'] === $templateName && $template['status'] === 'APPROVED') {
+                    return true;
+                }
+            }
+            
+            return false;
+        } catch (\Exception $e) {
+            // If we can't fetch templates, assume template doesn't exist
+            return false;
         }
     }
 
