@@ -62,15 +62,18 @@ class BasicSetting extends Model
         'welcome_message_text',
         'welcome_message_delay',
         'welcome_message_template',
+        'welcome_message_api',
         'subscription_expiration_enabled',
         'subscription_expiration_text',
         'subscription_expiration_days_before',
         'subscription_expiration_template',
         'subscription_expiration_send_time',
+        'subscription_expiration_api',
         'subscription_expired_enabled',
         'subscription_expired_text',
         'subscription_expired_template',
         'subscription_expired_send_time',
+        'subscription_expired_api',
         'email_password_reset_template'
     ];
 

@@ -221,6 +221,7 @@ class CommunicationController extends Controller
             'welcome_message_text' => 'required|string|max:1000',
             'welcome_message_delay' => 'nullable|integer|min:0|max:300',
             'welcome_message_template' => 'nullable|string|max:100',
+            'selected_api' => 'nullable|string|in:meta,evolution',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -239,9 +240,16 @@ class CommunicationController extends Controller
         $abs->welcome_message_text = $request->welcome_message_text;
         $abs->welcome_message_delay = $request->welcome_message_delay ?? 5;
         $abs->welcome_message_template = $request->welcome_message_template;
+        
+        // Store the selected API for this message type
+        if ($request->selected_api) {
+            $abs->welcome_message_api = $request->selected_api;
+        }
+        
         $abs->save();
 
-        Session::flash('success', 'Welcome message settings updated successfully!');
+        $apiName = $request->selected_api === 'meta' ? 'Meta Cloud API' : 'Evolution API';
+        Session::flash('success', "Welcome message settings updated successfully for {$apiName}!");
         return redirect()->back();
     }
 
@@ -269,10 +277,11 @@ class CommunicationController extends Controller
     {
         $rules = [
             'subscription_expiration_enabled' => 'nullable|boolean',
-            'subscription_expiration_text' => 'required|string|max:1000',
+            'subscription_expiration_text' => 'nullable|string|max:1000',
             'subscription_expiration_days_before' => 'nullable|integer|min:1|max:30',
             'subscription_expiration_template' => 'nullable|string|max:100',
-            'subscription_expiration_send_time' => 'nullable|date_format:H:i',
+            'subscription_expiration_send_time' => 'nullable|date_format:H:i:s',
+            'selected_api' => 'nullable|string|in:meta,evolution',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -288,13 +297,20 @@ class CommunicationController extends Controller
         }
 
         $abs->subscription_expiration_enabled = $request->has('subscription_expiration_enabled') ? 1 : 0;
-        $abs->subscription_expiration_text = $request->subscription_expiration_text;
+        $abs->subscription_expiration_text = $request->subscription_expiration_text ?? 'تنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً.';
         $abs->subscription_expiration_days_before = $request->subscription_expiration_days_before ?? 3;
         $abs->subscription_expiration_template = $request->subscription_expiration_template;
         $abs->subscription_expiration_send_time = $request->subscription_expiration_send_time ?? '09:00';
+        
+        // Store the selected API for this message type
+        if ($request->selected_api) {
+            $abs->subscription_expiration_api = $request->selected_api;
+        }
+        
         $abs->save();
 
-        Session::flash('success', 'Subscription expiration message settings updated successfully!');
+        $apiName = $request->selected_api === 'meta' ? 'Meta Cloud API' : 'Evolution API';
+        Session::flash('success', "Subscription expiration message settings updated successfully for {$apiName}!");
         return redirect()->back();
     }
 
@@ -320,11 +336,13 @@ class CommunicationController extends Controller
 
     public function updateSubscriptionExpired(Request $request)
     {
+
         $rules = [
             'subscription_expired_enabled' => 'nullable|boolean',
-            'subscription_expired_text' => 'required|string|max:1000',
+            'subscription_expired_text' => 'nullable|string|max:1000',
             'subscription_expired_template' => 'nullable|string|max:100',
-            'subscription_expired_send_time' => 'nullable|date_format:H:i',
+            'subscription_expired_send_time' => 'nullable|date_format:H:i:s',
+            'selected_api' => 'nullable|string|in:meta,evolution',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -340,12 +358,20 @@ class CommunicationController extends Controller
         }
 
         $abs->subscription_expired_enabled = $request->has('subscription_expired_enabled') ? 1 : 0;
-        $abs->subscription_expired_text = $request->subscription_expired_text;
+        $abs->subscription_expired_text = $request->subscription_expired_text ?? 'مرحبا {name}انتهى اشتراكك وتم نقلك إلى الباقة المجانية.
+يمكنك الترقية في أي وقت.';
         $abs->subscription_expired_template = $request->subscription_expired_template;
         $abs->subscription_expired_send_time = $request->subscription_expired_send_time ?? '09:00';
+        
+        // Store the selected API for this message type
+        if ($request->selected_api) {
+            $abs->subscription_expired_api = $request->selected_api;
+        }
+        
         $abs->save();
 
-        Session::flash('success', 'On expiration notification settings updated successfully!');
+        $apiName = $request->selected_api === 'meta' ? 'Meta Cloud API' : 'Evolution API';
+        Session::flash('success', "On expiration notification settings updated successfully for {$apiName}!");
         return redirect()->back();
     }
 
@@ -357,10 +383,8 @@ class CommunicationController extends Controller
 
         try {
             $whatsappService = new WhatsAppService();
-            $testMessage = "انتهى اشتراكك وتم نقلك إلى الباقة المجانية. يمكنك الترقية في أي وقت.";
-            
-            $whatsappService->sendSubscriptionExpiredMessage($request->test_phone, $testMessage, 'Test User', 'Test Package', '2024-12-31');
-            
+            $testMessage = "مرحبا {name} انتهى اشتراكك وتم نقلك إلى الباقة المجانية. يمكنك الترقية في أي وقت.";
+            $whatsappService->sendSubscriptionExpiredMessage($request->test_phone, $testMessage, 'Test User', 'Test Package', '2024-12-31');          
             Session::flash('success', "Test on expiration message sent successfully to {$request->test_phone}");
         } catch (\Exception $e) {
             Session::flash('error', 'Test failed: ' . $e->getMessage());

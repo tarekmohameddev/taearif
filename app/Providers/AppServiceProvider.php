@@ -59,8 +59,17 @@ class AppServiceProvider extends ServiceProvider
 
         Paginator::useBootstrap();
         if (!app()->runningInConsole()) {
-            $socials = Social::orderBy('serial_number', 'ASC')->get();
-            $langs = Language::all();
+            try {
+                $socials = Social::orderBy('serial_number', 'ASC')->get();
+                $langs = Language::all();
+            } catch (\Exception $e) {
+                // Handle database connection errors gracefully
+                \Log::warning('AppServiceProvider: Database connection failed during bootstrap', [
+                    'error' => $e->getMessage()
+                ]);
+                $socials = collect();
+                $langs = collect();
+            }
 
             View::composer('*', function ($view) {
                 // $api_Banner_settingsData = null;

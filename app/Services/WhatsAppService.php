@@ -155,7 +155,7 @@ class WhatsAppService
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $accessToken,
                 'Content-Type' => 'application/json',
-            ])->post("https://graph.facebook.com/v18.0/{$phoneNumberId}/messages", $payload);
+            ])->post("https://graph.facebook.com/v20.0/{$phoneNumberId}/messages", $payload);
 
             if ($response->successful()) {
                 Log::info('WhatsApp message sent via Meta Cloud API', [
@@ -448,6 +448,12 @@ class WhatsAppService
         $templateName = null;
         $templateContent = null;
         
+        Log::info('Meta Cloud message processing', [
+            'phone' => $phoneNumber,
+            'message_type' => $messageType,
+            'message' => $message
+        ]);
+        
         // Get template name based on message type
         if ($messageType === 'welcome' && !empty($this->settings->welcome_message_template)) {
             $templateName = $this->settings->welcome_message_template;
@@ -459,16 +465,40 @@ class WhatsAppService
             $templateName = $this->settings->meta_template_name;
         }
 
+        Log::info('Template selection', [
+            'message_type' => $messageType,
+            'template_name' => $templateName,
+            'welcome_template_setting' => $this->settings->welcome_message_template ?? 'not_set'
+        ]);
+
         // If template name is provided, try to get template content from database
         if ($templateName) {
             $template = \App\Models\WhatsAppTemplate::where('name', $templateName)->first();
             if ($template && $template->status) {
                 $templateContent = $template->content;
+                Log::info('Found database template', [
+                    'template_name' => $templateName,
+                    'template_content' => $templateContent
+                ]);
+            } else {
+                Log::info('Template not found in database or inactive', [
+                    'template_name' => $templateName,
+                    'template_found' => $template ? 'yes' : 'no',
+                    'template_status' => $template ? $template->status : 'N/A'
+                ]);
             }
         }
 
         // Format phone number
         $formattedPhone = $this->formatPhoneNumber($phoneNumber);
+
+        Log::info('Sending decision', [
+            'formatted_phone' => $formattedPhone,
+            'template_name' => $templateName,
+            'template_content' => $templateContent ? 'has_content' : 'no_content',
+            'sending_method' => $templateName && $templateContent ? 'database_template' : 
+                              ($templateName ? 'meta_template' : 'regular_message')
+        ]);
 
         if ($templateName && $templateContent) {
             // Send as template message using database template
@@ -487,40 +517,68 @@ class WhatsAppService
      */
     protected function sendTemplateMessage($phoneNumber, $templateName, $message)
     {
-        $url = "https://graph.facebook.com/v18.0/{$this->settings->meta_phone_number_id}/messages";
-        
-        $data = [
-            'messaging_product' => 'whatsapp',
-            'to' => $phoneNumber,
-            'type' => 'template',
-            'template' => [
-                'name' => $templateName,
-                'language' => [
-                    'code' => $this->settings->meta_template_language ?? 'ar'
-                ],
-                'components' => [
-                    [
-                        'type' => 'body',
-                        'parameters' => [
-                            [
-                                'type' => 'text',
-                                'text' => $message
+        try {
+            $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
+            
+            $data = [
+                'messaging_product' => 'whatsapp',
+                'to' => $phoneNumber,
+                'type' => 'template',
+                'template' => [
+                    'name' => $templateName,
+                    'language' => [
+                        'code' => $this->settings->meta_template_language ?? 'ar'
+                    ],
+                    'components' => [
+                        [
+                            'type' => 'body',
+                            'parameters' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => $message
+                                ]
                             ]
                         ]
                     ]
                 ]
-            ]
-        ];
+            ];
 
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->settings->meta_access_token,
-            'Content-Type' => 'application/json',
-        ])->post($url, $data);
+            Log::info('Meta Cloud template message request', [
+                'phone' => $phoneNumber,
+                'template_name' => $templateName,
+                'message' => $message,
+                'url' => $url,
+                'data' => $data
+            ]);
 
-        if ($response->successful()) {
-            return true;
-        } else {
-            throw new \Exception('Failed to send WhatsApp template message: ' . $response->body());
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->settings->meta_access_token,
+                'Content-Type' => 'application/json',
+            ])->post($url, $data);
+
+            if ($response->successful()) {
+                Log::info('Meta Cloud template message sent successfully', [
+                    'phone' => $phoneNumber,
+                    'template_name' => $templateName,
+                    'response' => $response->json()
+                ]);
+                return true;
+            } else {
+                Log::error('Meta Cloud template message failed', [
+                    'phone' => $phoneNumber,
+                    'template_name' => $templateName,
+                    'response' => $response->json(),
+                    'status' => $response->status()
+                ]);
+                throw new \Exception('Failed to send WhatsApp template message: ' . $response->body());
+            }
+        } catch (\Exception $e) {
+            Log::error('Meta Cloud template message exception', [
+                'phone' => $phoneNumber,
+                'template_name' => $templateName,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
         }
     }
 
@@ -529,26 +587,50 @@ class WhatsAppService
      */
     protected function sendRegularMessage($phoneNumber, $message)
     {
-        $url = "https://graph.facebook.com/v18.0/{$this->settings->meta_phone_number_id}/messages";
-        
-        $data = [
-            'messaging_product' => 'whatsapp',
-            'to' => $phoneNumber,
-            'type' => 'text',
-            'text' => [
-                'body' => $message
-            ]
-        ];
+        try {
+            $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
+            
+            $data = [
+                'messaging_product' => 'whatsapp',
+                'to' => $phoneNumber,
+                'type' => 'text',
+                'text' => [
+                    'body' => $message
+                ]
+            ];
 
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->settings->meta_access_token,
-            'Content-Type' => 'application/json',
-        ])->post($url, $data);
+            Log::info('Meta Cloud regular message request', [
+                'phone' => $phoneNumber,
+                'message' => $message,
+                'url' => $url,
+                'data' => $data
+            ]);
 
-        if ($response->successful()) {
-            return true;
-        } else {
-            throw new \Exception('Failed to send WhatsApp regular message: ' . $response->body());
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->settings->meta_access_token,
+                'Content-Type' => 'application/json',
+            ])->post($url, $data);
+
+            if ($response->successful()) {
+                Log::info('Meta Cloud regular message sent successfully', [
+                    'phone' => $phoneNumber,
+                    'response' => $response->json()
+                ]);
+                return true;
+            } else {
+                Log::error('Meta Cloud regular message failed', [
+                    'phone' => $phoneNumber,
+                    'response' => $response->json(),
+                    'status' => $response->status()
+                ]);
+                throw new \Exception('Failed to send WhatsApp regular message: ' . $response->body());
+            }
+        } catch (\Exception $e) {
+            Log::error('Meta Cloud regular message exception', [
+                'phone' => $phoneNumber,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
         }
     }
 
@@ -565,7 +647,7 @@ class WhatsAppService
                 throw new \Exception('Meta Cloud API configuration incomplete');
             }
 
-            $url = "https://graph.facebook.com/v18.0/{$businessAccountId}/message_templates";
+            $url = "https://graph.facebook.com/v20.0/{$businessAccountId}/message_templates";
             
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $accessToken,

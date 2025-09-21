@@ -36,14 +36,17 @@
           <button class="tab-button {{request('tab') == 'welcome_message' ? 'active' : ''}}" 
                   data-tab="welcome_message">
             رسالة الترحيب
+            <span class="tab-header-api"></span>
           </button>
           <button class="tab-button {{request('tab') == 'subscription_expiration' ? 'active' : ''}}" 
                   data-tab="subscription_expiration">
             اشعار قبل انتهاء الباقة
+            <span class="tab-header-api"></span>
           </button>
           <button class="tab-button {{request('tab') == 'subscription_expired' ? 'active' : ''}}" 
                   data-tab="subscription_expired">
             إشعار انتهاء الباقة
+            <span class="tab-header-api"></span>
           </button>
         </div>
       </div>
@@ -260,13 +263,15 @@
 
               <!-- Welcome Message Tab -->
               <div id="welcome_message-tab" class="tab-content {{request('tab') == 'welcome_message' ? 'active' : ''}}">
-                <form action="{{route('admin.communication.welcome-message.update')}}" method="POST">
+                <form action="{{route('admin.communication.welcome-message.update')}}" method="POST" id="welcome-message-form">
                   @csrf
+                  <input type="hidden" name="selected_api" id="welcome_selected_api" value="">
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
                         <label for="welcome_message_enabled">
                           <strong>تفعيل رسالة الترحيب</strong>
+                          <span class="api-indicator" style="font-size: 12px; margin-left: 10px;"></span>
                         </label>
                         <div class="toggle-switch-container">
                           <div class="toggle-switch">
@@ -293,6 +298,9 @@
                         <textarea class="form-control" id="welcome_message_text" name="welcome_message_text" rows="4" 
                                   placeholder="مرحباً بك في منصتنا! شكراً لك على التسجيل...">{{$abs->welcome_message_text ?? ''}}</textarea>
                         <p class="text-muted">يمكن استخدام المتغيرات: {name}, {email}</p>
+                        <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
+                          <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
+                        </button>
                         @error('welcome_message_text')
                           <p class="text-danger">{{ $message }}</p>
                         @enderror
@@ -314,10 +322,10 @@
                           <label for="welcome_message_template"><strong>اسم القالب (Meta API)</strong></label>
                           <select class="form-control" id="welcome_message_template" name="welcome_message_template">
                             <option value="">اختر قالب أو اتركه فارغاً</option>
-                            <optgroup label="Meta API Templates">
+                            <optgroup label="Meta API Templates" class="meta-api-optgroup">
                               <option value="" disabled>جاري تحميل القوالب من Facebook...</option>
                             </optgroup>
-                            <optgroup label="Local Templates">
+                            <optgroup label="Local Templates" class="local-templates-optgroup">
                               @php
                                   try {
                                       $welcomeTemplates = \App\Models\WhatsAppTemplate::active()->ofType('welcome')->get();
@@ -335,10 +343,11 @@
                           <p class="text-muted">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i> 
-                            <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForWelcome()">
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForWelcome(true)">
                               <i class="fas fa-sync"></i> تحديث قوالب Meta API
                             </button>
-                            <a href="{{route('admin.whatsapp-templates.create')}}?type=welcome" target="_blank" class="btn btn-sm btn-outline-success ml-2">
+                            <small class="text-muted ml-2">(يتم التحميل تلقائياً ويتم حفظه لمدة 24 ساعة)</small>
+                            <a href="{{route('admin.whatsapp-templates.create')}}?type=welcome" target="_blank" class="btn btn-sm btn-outline-success ml-2 create-local-template-btn">
                               <i class="fas fa-plus"></i> إنشاء قالب محلي
                             </a>
                           </small>
@@ -363,13 +372,15 @@
 
               <!-- Subscription Expiration Tab -->
               <div id="subscription_expiration-tab" class="tab-content {{request('tab') == 'subscription_expiration' ? 'active' : ''}}">
-                <form action="{{route('admin.communication.subscription-expiration.update')}}" method="POST">
+                <form action="{{route('admin.communication.subscription-expiration.update')}}" method="POST" id="subscription-expiration-form">
                   @csrf
+                  <input type="hidden" name="selected_api" id="subscription_expiration_selected_api" value="">
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
                         <label for="subscription_expiration_enabled">
                           <strong>تفعيل رسالة انتهاء الباقة</strong>
+                          <span class="api-indicator" style="font-size: 12px; margin-left: 10px;"></span>
                         </label>
                         <div class="toggle-switch-container">
                           <div class="toggle-switch">
@@ -383,7 +394,7 @@
                               </span>
                             </label>
                           </div>
-                          <span class="toggle-description">إرسال رسالة تنبيه عند انتهاء الباقة</span>
+                          <span class="toggle-description">إرسال رسالة تنبيه قبل انتهاء الباقة</span>
                         </div>
                       </div>
                     </div>
@@ -396,6 +407,9 @@
                         <textarea class="form-control" id="subscription_expiration_text" name="subscription_expiration_text" rows="4" 
                                   placeholder="تنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً...">{{$abs->subscription_expiration_text ?? 'تنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً.'}}</textarea>
                         <p class="text-muted">يمكن استخدام المتغيرات: {name}, {package_name}, {expiry_date}</p>
+                        <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
+                          <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
+                        </button>
                         @error('subscription_expiration_text')
                           <p class="text-danger">{{ $message }}</p>
                         @enderror
@@ -417,10 +431,10 @@
                           <label for="subscription_expiration_template"><strong>اسم القالب (Meta API)</strong></label>
                           <select class="form-control" id="subscription_expiration_template" name="subscription_expiration_template">
                             <option value="">اختر قالب أو اتركه فارغاً</option>
-                            <optgroup label="Meta API Templates">
+                            <optgroup label="Meta API Templates" class="meta-api-optgroup">
                               <option value="" disabled>جاري تحميل القوالب من Facebook...</option>
                             </optgroup>
-                            <optgroup label="Local Templates">
+                            <optgroup label="Local Templates" class="local-templates-optgroup">
                               @php
                                   try {
                                       $subscriptionTemplates = \App\Models\WhatsAppTemplate::active()->ofType('subscription_expiration')->get();
@@ -438,10 +452,11 @@
                           <p class="text-muted">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i> 
-                            <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForSubscription()">
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForSubscription(true)">
                               <i class="fas fa-sync"></i> تحديث قوالب Meta API
                             </button>
-                            <a href="{{route('admin.whatsapp-templates.create')}}?type=subscription_expiration" target="_blank" class="btn btn-sm btn-outline-success ml-2">
+                            <small class="text-muted ml-2">(يتم التحميل تلقائياً ويتم حفظه لمدة 24 ساعة)</small>
+                            <a href="{{route('admin.whatsapp-templates.create')}}?type=subscription_expiration" target="_blank" class="btn btn-sm btn-outline-success ml-2 create-local-template-btn">
                               <i class="fas fa-plus"></i> إنشاء قالب محلي
                             </a>
                           </small>
@@ -477,13 +492,15 @@
 
               <!-- On Expiration Notification Tab -->
               <div id="subscription_expired-tab" class="tab-content {{request('tab') == 'subscription_expired' ? 'active' : ''}}">
-                <form action="{{route('admin.communication.subscription-expired.update')}}" method="POST">
+                <form action="{{route('admin.communication.subscription-expired.update')}}" method="POST" id="subscription-expired-form">
                   @csrf
+                  <input type="hidden" name="selected_api" id="subscription_expired_selected_api" value="">
                   <div class="row">
                     <div class="col-lg-12">
                       <div class="form-group">
                         <label for="subscription_expired_enabled">
                           <strong>تفعيل إشعار انتهاء الباقة</strong>
+                          <span class="api-indicator" style="font-size: 12px; margin-left: 10px;"></span>
                         </label>
                         <div class="toggle-switch-container">
                           <div class="toggle-switch">
@@ -507,9 +524,15 @@
                     <div class="col-lg-12">
                       <div class="form-group">
                         <label for="subscription_expired_text"><strong>نص إشعار انتهاء الباقة **</strong></label>
-                        <textarea class="form-control" id="subscription_expired_text" name="subscription_expired_text" rows="4" 
-                                  placeholder="انتهى اشتراكك وتم نقلك إلى الباقة المجانية. يمكنك الترقية في أي وقت.">{{$abs->subscription_expired_text ?? 'انتهى اشتراكك وتم نقلك إلى الباقة المجانية. يمكنك الترقية في أي وقت.'}}</textarea>
+                        <textarea class="form-control" id="subscription_expired_text" name="subscription_expired_text" rows="4" placeholder="مرحبا {name}
+انتهى اشتراكك وتم نقلك إلى الباقة المجانية.
+يمكنك الترقية في أي وقت.">{{trim($abs->subscription_expired_text ?? 'مرحبا {name}
+انتهى اشتراكك وتم نقلك إلى الباقة المجانية.
+يمكنك الترقية في أي وقت.')}}</textarea>
                         <p class="text-muted">يمكن استخدام المتغيرات: {name}, {package_name}, {expiry_date}</p>
+                        <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
+                          <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
+                        </button>
                         @error('subscription_expired_text')
                           <p class="text-danger">{{ $message }}</p>
                         @enderror
@@ -523,10 +546,10 @@
                           <label for="subscription_expired_template"><strong>اسم القالب (Meta API)</strong></label>
                           <select class="form-control" id="subscription_expired_template" name="subscription_expired_template">
                             <option value="">اختر قالب أو اتركه فارغاً</option>
-                            <optgroup label="Meta API Templates">
+                            <optgroup label="Meta API Templates" class="meta-api-optgroup">
                               <option value="" disabled>جاري تحميل القوالب من Facebook...</option>
                             </optgroup>
-                            <optgroup label="Local Templates">
+                            <optgroup label="Local Templates" class="local-templates-optgroup">
                               @php
                                   try {
                                       $expiredTemplates = \App\Models\WhatsAppTemplate::active()->ofType('subscription_expired')->get();
@@ -544,10 +567,11 @@
                           <p class="text-muted">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
                           <small class="text-info">
                             <i class="fas fa-info-circle"></i> 
-                            <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForExpired()">
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForExpired(true)">
                               <i class="fas fa-sync"></i> تحديث قوالب Meta API
                             </button>
-                            <a href="{{route('admin.whatsapp-templates.create')}}?type=subscription_expired" target="_blank" class="btn btn-sm btn-outline-success ml-2">
+                            <small class="text-muted ml-2">(يتم التحميل تلقائياً ويتم حفظه لمدة 24 ساعة)</small>
+                            <a href="{{route('admin.whatsapp-templates.create')}}?type=subscription_expired" target="_blank" class="btn btn-sm btn-outline-success ml-2 create-local-template-btn">
                               <i class="fas fa-plus"></i> إنشاء قالب محلي
                             </a>
                           </small>
@@ -630,7 +654,29 @@ $(document).ready(function() {
     var urlParams = new URLSearchParams(window.location.search);
     var activeTab = urlParams.get('tab') || 'meta_evolution';
     console.log('Initializing with tab:', activeTab);
+    
+    // Initialize API selection system
+    initializeApiSelection();
+    
+    // Auto-load templates based on selected API
+    loadTemplatesBasedOnApi();
+    
     switchTab(activeTab);
+    
+    // API selection is now handled by service card clicks
+    
+    // Add form submission handlers to include API selection
+    $('#welcome-message-form').submit(function() {
+        $('#welcome_selected_api').val(currentApi);
+    });
+    
+    $('#subscription-expiration-form').submit(function() {
+        $('#subscription_expiration_selected_api').val(currentApi);
+    });
+    
+    $('#subscription-expired-form').submit(function() {
+        $('#subscription_expired_selected_api').val(currentApi);
+    });
     
     // Auto-load Meta templates when Meta Cloud form is shown
     if (activeTab === 'meta_evolution') {
@@ -662,6 +708,10 @@ $(document).ready(function() {
         // Show/hide forms
         $('.service-form').hide();
         $('#' + service.replace('_', '-') + '-form').show();
+        
+        // Update API selection for our context-aware system
+        var api = service === 'meta_cloud' ? 'meta' : 'evolution';
+        setApiSelection(api);
         
         // Auto-load Meta templates when Meta Cloud is selected
         if (service === 'meta_cloud') {
@@ -839,21 +889,266 @@ function loadMetaTemplates() {
     });
 }
 
-function loadMetaTemplatesForWelcome() {
+function loadMetaTemplatesForWelcome(forceRefresh = false) {
+    if (forceRefresh) {
+        clearTemplateCache('welcome');
+    }
     loadMetaTemplatesForSelect('#welcome_message_template', 'welcome');
 }
 
-function loadMetaTemplatesForSubscription() {
+function loadMetaTemplatesForSubscription(forceRefresh = false) {
+    if (forceRefresh) {
+        clearTemplateCache('subscription_expiration');
+    }
     loadMetaTemplatesForSelect('#subscription_expiration_template', 'subscription_expiration');
 }
 
-function loadMetaTemplatesForExpired() {
+function loadMetaTemplatesForExpired(forceRefresh = false) {
+    if (forceRefresh) {
+        clearTemplateCache('subscription_expired');
+    }
     loadMetaTemplatesForSelect('#subscription_expired_template', 'subscription_expired');
+}
+
+function clearTemplateCache(messageType) {
+    var cacheKey = 'meta_templates_' + messageType;
+    localStorage.removeItem(cacheKey);
+    localStorage.removeItem(cacheKey + '_timestamp');
+    console.log('Cache cleared for:', messageType);
+}
+
+// API Selection Management
+var currentApi = 'meta'; // Default to Meta
+
+function initializeApiSelection() {
+    // Get current API selection from localStorage or default to Meta
+    var savedApi = localStorage.getItem('whatsapp_api_selection');
+    if (savedApi) {
+        currentApi = savedApi;
+    }
+    
+    // Set the service card selection based on saved API
+    if (currentApi === 'meta') {
+        // Select Meta Cloud card
+        $('.service-card[data-service="meta_cloud"]').addClass('border-primary');
+        $('.service-card[data-service="evolution_api"]').removeClass('border-primary');
+        $('.service-card[data-service="meta_cloud"] .service-status .badge').removeClass('badge-secondary').addClass('badge-success').text('مفعل');
+        $('.service-card[data-service="evolution_api"] .service-status .badge').removeClass('badge-success').addClass('badge-secondary').text('غير مفعل');
+        $('.service-form').hide();
+        $('#meta-cloud-form').show();
+    } else {
+        // Select Evolution API card
+        $('.service-card[data-service="evolution_api"]').addClass('border-primary');
+        $('.service-card[data-service="meta_cloud"]').removeClass('border-primary');
+        $('.service-card[data-service="evolution_api"] .service-status .badge').removeClass('badge-secondary').addClass('badge-success').text('مفعل');
+        $('.service-card[data-service="meta_cloud"] .service-status .badge').removeClass('badge-success').addClass('badge-secondary').text('غير مفعل');
+        $('.service-form').hide();
+        $('#evolution-api-form').show();
+    }
+    
+    console.log('API Selection initialized:', currentApi);
+    updateApiIndicators();
+    
+    // Set initial button visibility based on API selection
+    if (currentApi === 'meta') {
+        $('.create-local-template-btn').hide();
+    } else {
+        $('.create-local-template-btn').show();
+    }
+    
+    // Show initial notification
+    var apiName = currentApi === 'meta' ? 'Meta Cloud API' : 'Evolution API';
+    console.log('Current API:', apiName);
+}
+
+function setApiSelection(api) {
+    currentApi = api;
+    localStorage.setItem('whatsapp_api_selection', api);
+    console.log('API Selection changed to:', api);
+    
+    // Update visual indicators
+    updateApiIndicators();
+    
+    // Update templates based on new API
+    loadTemplatesBasedOnApi();
+    
+    // Update default texts
+    updateDefaultTexts();
+    
+    // Show notification
+    var apiName = api === 'meta' ? 'Meta Cloud API' : 'Evolution API';
+    showNotification('تم التبديل إلى ' + apiName + ' - تم تحديث النصوص والقالب', 'info');
+}
+
+function forceUpdateTextAreas() {
+    // Force update all textareas with current API's default texts
+    if (currentApi === 'meta') {
+        updateTextsForMeta();
+    } else {
+        updateTextsForEvolution();
+    }
+    console.log('Textareas force updated for:', currentApi);
+}
+
+function updateApiIndicators() {
+    var apiName = currentApi === 'meta' ? 'Meta Cloud API' : 'Evolution API';
+    var apiColor = currentApi === 'meta' ? '#51c3a3' : '#007bff';
+    
+    // Update all API indicators
+    $('.api-indicator').each(function() {
+        $(this).text(apiName);
+        $(this).css('color', apiColor);
+    });
+    
+    // Update tab headers with API indicator
+    $('.tab-header-api').each(function() {
+        $(this).text('(' + apiName + ')');
+        $(this).css('color', apiColor);
+    });
+}
+
+function loadTemplatesBasedOnApi() {
+    if (currentApi === 'meta') {
+        // For Meta API, load Meta API templates and hide local templates
+        console.log('Meta API selected - using Meta API templates only');
+        updateTemplateDropdownsForMeta();
+        setTimeout(function() { loadMetaTemplatesForWelcome(); }, 500);
+        setTimeout(function() { loadMetaTemplatesForSubscription(); }, 1000);
+        setTimeout(function() { loadMetaTemplatesForExpired(); }, 1500);
+    } else {
+        // For Evolution API, only load local templates
+        console.log('Evolution API selected - using local templates only');
+        updateTemplateDropdownsForEvolution();
+    }
+}
+
+function updateDefaultTexts() {
+    if (currentApi === 'meta') {
+        updateTextsForMeta();
+    } else {
+        updateTextsForEvolution();
+    }
+}
+
+function updateTextsForMeta() {
+    // Meta API default texts
+    var metaTexts = {
+        welcome: 'مرحبا {name}\nأهلاً وسهلاً بك في منصتنا!\nنتمنى لك تجربة ممتعة.',
+        subscription_expiration: 'مرحبا {name}\nتنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً.\nيرجى تجديد اشتراكك للاستمرار في الاستفادة من خدماتنا.',
+        subscription_expired: 'مرحبا {name}\nانتهى اشتراكك وتم نقلك إلى الباقة المجانية.\nيمكنك الترقية في أي وقت.'
+    };
+    
+    updateTextAreas(metaTexts);
+}
+
+function updateTextsForEvolution() {
+    // Evolution API default texts
+    var evolutionTexts = {
+        welcome: 'مرحبا {name}\nمرحباً بك في منصتنا!\nنحن سعداء لانضمامك إلينا.',
+        subscription_expiration: 'مرحبًا {name} 👋،\nنود تذكيرك أن باقتك {package_name} ستنتهي بتاريخ {expiry_date}.\nتبقى 3 أيام فقط للاستفادة من خدماتك قبل انتهاء الباقة.\n\n🔄 جدّد الآن لتفادي انقطاع الخدمة.',
+        subscription_expired: 'مرحبا {name}\nانتهى اشتراكك.\nيمكنك الترقية في أي وقت.'
+    };
+    
+    updateTextAreas(evolutionTexts);
+}
+
+function updateTextAreas(texts) {
+    // Update welcome message text
+    if ($('#welcome_message_text').length) {
+        var currentText = $('#welcome_message_text').val().trim();
+        // Only update if textarea is empty or contains default text
+        if (!currentText || isDefaultText(currentText, 'welcome')) {
+            $('#welcome_message_text').val(texts.welcome);
+        }
+    }
+    
+    // Update subscription expiration text
+    if ($('#subscription_expiration_text').length) {
+        var currentText = $('#subscription_expiration_text').val().trim();
+        if (!currentText || isDefaultText(currentText, 'subscription_expiration')) {
+            $('#subscription_expiration_text').val(texts.subscription_expiration);
+        }
+    }
+    
+    // Update subscription expired text
+    if ($('#subscription_expired_text').length) {
+        var currentText = $('#subscription_expired_text').val().trim();
+        if (!currentText || isDefaultText(currentText, 'subscription_expired')) {
+            $('#subscription_expired_text').val(texts.subscription_expired);
+        }
+    }
+}
+
+function isDefaultText(text, type) {
+    // Check if the text matches any of the default texts
+    var defaultTexts = {
+        welcome: [
+            'مرحباً بك في منصتنا! شكراً لك على التسجيل...',
+            'مرحبا {name}\nأهلاً وسهلاً بك في منصتنا!\nنتمنى لك تجربة ممتعة.',
+            'مرحبا {name}\nمرحباً بك في منصتنا!\nنحن سعداء لانضمامك إلينا.'
+        ],
+        subscription_expiration: [
+            'تنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً.',
+            'مرحبا {name}\nتنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً.\nيرجى تجديد اشتراكك للاستمرار في الاستفادة من خدماتنا.',
+            'مرحبا {name}\nتنبيه: اشتراكك سينتهي قريباً.\nيرجى تجديد الاشتراك للاستمرار.',
+            'مرحبًا {name} 👋،\nنود تذكيرك أن باقتك {package_name} ستنتهي بتاريخ {expiry_date}.\nتبقى 3 أيام فقط للاستفادة من خدماتك قبل انتهاء الباقة.\n\n🔄 جدّد الآن لتفادي انقطاع الخدمة.'
+        ],
+        subscription_expired: [
+            'انتهى اشتراكك وتم نقلك إلى الباقة المجانية. يمكنك الترقية في أي وقت.',
+            'مرحبا {name}\nانتهى اشتراكك وتم نقلك إلى الباقة المجانية.\nيمكنك الترقية في أي وقت.',
+            'مرحبا {name}\nانتهى اشتراكك.\nيمكنك الترقية في أي وقت.'
+        ]
+    };
+    
+    return defaultTexts[type].some(defaultText => text === defaultText);
+}
+
+function updateTemplateDropdownsForEvolution() {
+    // For Evolution API, clear Meta API templates and show only local templates
+    $('.meta-api-optgroup').each(function() {
+        $(this).empty();
+        $(this).append('<option disabled>Evolution API - استخدم القوالب المحلية فقط</option>');
+    });
+    
+    // Show "Create Local Template" buttons for Evolution API
+    $('.create-local-template-btn').show();
+}
+
+function updateTemplateDropdownsForMeta() {
+    // For Meta API, clear local templates and show only Meta API templates
+    $('.local-templates-optgroup').each(function() {
+        $(this).empty();
+        $(this).append('<option disabled>Meta API - استخدم قوالب Meta API فقط</option>');
+    });
+    
+    // Hide "Create Local Template" buttons for Meta API
+    $('.create-local-template-btn').hide();
 }
 
 function loadMetaTemplatesForSelect(selectId, messageType) {
     var select = $(selectId);
     var button = $('button[onclick="loadMetaTemplatesFor' + messageType.charAt(0).toUpperCase() + messageType.slice(1).replace('_', '') + '()"]');
+    
+    // Only load Meta templates if Meta API is selected
+    if (currentApi !== 'meta') {
+        console.log('Meta API not selected, skipping template load for:', messageType);
+        return;
+    }
+    
+    // Check if templates are already loaded (cached)
+    var cacheKey = 'meta_templates_' + messageType;
+    var cachedTemplates = localStorage.getItem(cacheKey);
+    var cacheTimestamp = localStorage.getItem(cacheKey + '_timestamp');
+    var now = new Date().getTime();
+    var cacheExpiry = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    
+    // If we have cached templates and they're not expired, use them
+    if (cachedTemplates && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheExpiry) {
+        console.log('Using cached templates for:', messageType);
+        var templates = JSON.parse(cachedTemplates);
+        populateTemplatesInSelect(select, templates, messageType);
+        return;
+    }
     
     // Show loading state
     button.html('<i class="fas fa-spinner fa-spin"></i> جاري التحميل...');
@@ -861,39 +1156,18 @@ function loadMetaTemplatesForSelect(selectId, messageType) {
     
     $.get('{{route("admin.communication.fetch-meta-templates")}}', function(response) {
         if (response.success) {
-            // Find and update the Meta API Templates optgroup
-            var metaGroup = select.find('optgroup[label="Meta API Templates"]');
-            metaGroup.empty();
+            // Cache the templates
+            localStorage.setItem(cacheKey, JSON.stringify(response.templates));
+            localStorage.setItem(cacheKey + '_timestamp', now.toString());
+            console.log('Templates cached for:', messageType);
             
-            // Add templates from Facebook
+            // Populate the select with templates
+            populateTemplatesInSelect(select, response.templates, messageType);
+            
             if (response.templates && response.templates.length > 0) {
-                response.templates.forEach(function(template) {
-                    var option = $('<option></option>')
-                        .attr('value', template.name)
-                        .text(template.name + ' (' + template.category + ' - ' + template.language + ') - Meta API');
-                    
-                    // Check if this template is currently selected
-                    var currentValue = '';
-                    if (messageType === 'welcome') {
-                        currentValue = '{{$abs->welcome_message_template ?? ""}}';
-                    } else if (messageType === 'subscription_expiration') {
-                        currentValue = '{{$abs->subscription_expiration_template ?? ""}}';
-                    } else if (messageType === 'subscription_expired') {
-                        currentValue = '{{$abs->subscription_expired_template ?? ""}}';
-                    }
-                    
-                    if (currentValue === template.name) {
-                        option.attr('selected', true);
-                    }
-                    
-                    metaGroup.append(option);
-                });
-                
-                // Show success message
-                showNotification('تم تحميل ' + response.templates.length + ' قالب من Facebook بنجاح', 'success');
+                showNotification('تم تحميل ' + response.templates.length + ' قالب من Meta API بنجاح', 'success');
             } else {
-                metaGroup.append('<option value="" disabled>لم يتم العثور على قوالب معتمدة في Facebook</option>');
-                showNotification('لم يتم العثور على قوالب معتمدة في Facebook', 'warning');
+                showNotification('لم يتم العثور على قوالب معتمدة في Meta API', 'warning');
             }
         } else {
             var metaGroup = select.find('optgroup[label="Meta API Templates"]');
@@ -911,6 +1185,45 @@ function loadMetaTemplatesForSelect(selectId, messageType) {
         button.html('<i class="fas fa-sync"></i> تحديث قوالب Meta API');
         button.prop('disabled', false);
     });
+}
+
+function populateTemplatesInSelect(select, templates, messageType) {
+    // Only populate Meta API templates if Meta API is selected
+    if (currentApi !== 'meta') {
+        console.log('Not Meta API, skipping template population');
+        return;
+    }
+    
+    // Find and update the Meta API Templates optgroup
+    var metaGroup = select.find('optgroup[label="Meta API Templates"]');
+    metaGroup.empty();
+    
+    // Add templates from Meta API
+    if (templates && templates.length > 0) {
+        templates.forEach(function(template) {
+            var option = $('<option></option>')
+                .attr('value', template.name)
+                .text(template.name + ' (' + template.category + ' - ' + template.language + ') - Meta API');
+            
+            // Check if this template is currently selected
+            var currentValue = '';
+            if (messageType === 'welcome') {
+                currentValue = '{{$abs->welcome_message_template ?? ""}}';
+            } else if (messageType === 'subscription_expiration') {
+                currentValue = '{{$abs->subscription_expiration_template ?? ""}}';
+            } else if (messageType === 'subscription_expired') {
+                currentValue = '{{$abs->subscription_expired_template ?? ""}}';
+            }
+            
+            if (currentValue === template.name) {
+                option.attr('selected', true);
+            }
+            
+            metaGroup.append(option);
+        });
+    } else {
+        metaGroup.append('<option value="" disabled>لم يتم العثور على قوالب معتمدة في Meta API</option>');
+    }
 }
 
 function showNotification(message, type) {
@@ -1135,11 +1448,30 @@ function showNotification(message, type) {
     outline: none;
 }
 
+/* API Indicators */
+.api-indicator {
+    font-weight: normal;
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.tab-header-api {
+    font-size: 10px;
+    font-weight: normal;
+    display: block;
+    margin-top: 2px;
+    opacity: 0.7;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .tab-button {
         padding: 10px 15px;
         font-size: 14px;
+    }
+    
+    .tab-header-api {
+        font-size: 9px;
     }
 }
 </style>
