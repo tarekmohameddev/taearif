@@ -27,33 +27,6 @@ class ResetPasswordController extends Controller
     }
 
     /**
-     * Auto-detect and add country code to phone number
-     */
-    private function addCountryCodeIfNeeded($phoneNumber)
-    {
-        // Remove any spaces or special characters except +
-        $cleanPhone = preg_replace('/[^\d+]/', '', $phoneNumber);
-        
-        // If phone already has country code (starts with +), return as is
-        if (strpos($cleanPhone, '+') === 0) {
-            return $cleanPhone;
-        }
-        
-        // Check for Egyptian numbers (start with 01)
-        if (preg_match('/^01\d{9}$/', $cleanPhone)) {
-            return '+2' . $cleanPhone;
-        }
-        
-        // Check for Saudi numbers (start with 5)
-        if (preg_match('/^5\d{8}$/', $cleanPhone)) {
-            return '+966' . $cleanPhone;
-        }
-        
-        // If no pattern matches, return original phone number
-        return $phoneNumber;
-    }
-
-    /**
      * Send reset code (email or phone)
      */
 
@@ -82,22 +55,15 @@ class ResetPasswordController extends Controller
         $user = null;
         
         if ($request->method === 'phone') {
-            // For phone method, auto-detect and add country code if needed
-            $phoneNumber = $request->identifier;
+            // For phone method, we need to handle country code
             $countryCode = $request->country_code ?? '';
-            
-            // Auto-detect and add country code if not provided
-            $fullPhoneNumber = $this->addCountryCodeIfNeeded($phoneNumber);
-            
-            // If country code was provided manually, use it instead
-            if (!empty($countryCode)) {
-                $fullPhoneNumber = $countryCode . $phoneNumber;
-            }
+            $phoneNumber = $request->identifier;
+            $fullPhoneNumber = $countryCode . $phoneNumber;
             
             Log::info('Phone reset attempt', [
-                'original_phone' => $phoneNumber,
+                'phone_number' => $phoneNumber,
                 'country_code' => $countryCode,
-                'auto_detected_full_phone' => $fullPhoneNumber
+                'full_phone_number' => $fullPhoneNumber
             ]);
             
             // Search user by multiple phone number formats
