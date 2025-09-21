@@ -56,12 +56,16 @@ class WhatsAppService
         if ($template) {
             $message = $template->content;
             
-            // Replace variables
-            $message = str_replace('{name}', $userName ?? 'User', $message);
+            // Replace variables (only code, no name)
             $message = str_replace('{code}', $code, $message);
         } else {
-            // Default message content (fallback)
-            $message = "مرحباً {$userName}،\n\nرمز إعادة تعيين كلمة المرور: {$code}\n\nهذا الرمز صالح لمدة 15 دقيقة.\n\nمع تحيات فريق العمل";
+            // Default message content (fallback) - only code and URL
+            $message = "رمز إعادة تعيين كلمة المرور: {$code}\n\nهذا الرمز صالح لمدة 15 دقيقة.";
+            
+            // Add reset URL if provided
+            if ($resetUrl) {
+                $message .= "\n\nأو يمكنك الضغط على الرابط التالي:\n{$resetUrl}?code={$code}";
+            }
         }
 
         $service = $this->settings->whatsapp_service;
@@ -198,11 +202,8 @@ class WhatsAppService
             // Use custom message if provided, otherwise prepare default message
             if (!$message) {
                 $message = "رمز إعادة تعيين كلمة المرور: {$code}";
-                if ($userName) {
-                    $message = "مرحباً {$userName},\n\n" . $message;
-                }
                 
-                // Add reset URL if provided
+                // Add reset URL if provided (only code, no identifier)
                 if ($resetUrl) {
                     $message .= "\n\nأو يمكنك الضغط على الرابط التالي:\n{$resetUrl}?code={$code}";
                 }

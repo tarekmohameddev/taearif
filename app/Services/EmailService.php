@@ -60,18 +60,18 @@ class EmailService
                 $content = str_replace('{name}', $name, $content);
                 $content = str_replace('{code}', $code, $content);
                 
-                // Add reset link if provided
+                // Add reset link if provided (only code, no identifier)
                 if ($resetUrl) {
-                    $resetLink = $resetUrl . '?code=' . $code . '&identifier=' . $email;
+                    $resetLink = $resetUrl . '?code=' . $code;
                     $content = str_replace('{reset_link}', $resetLink, $content);
                 }
             } else {
-                // Default email content (fallback)
+                // Default email content (fallback) - only code and URL
                 $subject = 'إعادة تعيين كلمة المرور';
-                $content = "مرحباً {$name}،\n\nرمز إعادة تعيين كلمة المرور: {$code}\n\n";
+                $content = "رمز إعادة تعيين كلمة المرور: {$code}\n\n";
                 
                 if ($resetUrl) {
-                    $resetLink = $resetUrl . '?code=' . $code . '&identifier=' . $email;
+                    $resetLink = $resetUrl . '?code=' . $code;
                     $content .= "يمكنك أيضاً الضغط على الرابط التالي:\n{$resetLink}\n\n";
                 }
                 
