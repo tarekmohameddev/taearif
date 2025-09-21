@@ -467,15 +467,18 @@ class WhatsAppService
             }
         }
 
+        // Format phone number
+        $formattedPhone = $this->formatPhoneNumber($phoneNumber);
+
         if ($templateName && $templateContent) {
             // Send as template message using database template
-            return $this->sendTemplateMessage($phoneNumber, $templateName, $templateContent);
+            return $this->sendTemplateMessage($formattedPhone, $templateName, $templateContent);
         } elseif ($templateName) {
             // Send as template message using provided message
-            return $this->sendTemplateMessage($phoneNumber, $templateName, $message);
+            return $this->sendTemplateMessage($formattedPhone, $templateName, $message);
         } else {
             // Send as regular message
-            return $this->sendRegularMessage($phoneNumber, $message);
+            return $this->sendRegularMessage($formattedPhone, $message);
         }
     }
 

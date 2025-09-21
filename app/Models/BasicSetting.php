@@ -67,6 +67,10 @@ class BasicSetting extends Model
         'subscription_expiration_days_before',
         'subscription_expiration_template',
         'subscription_expiration_send_time',
+        'subscription_expired_enabled',
+        'subscription_expired_text',
+        'subscription_expired_template',
+        'subscription_expired_send_time',
         'email_password_reset_template'
     ];
 
