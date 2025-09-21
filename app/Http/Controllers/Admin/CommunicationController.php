@@ -9,6 +9,7 @@ use App\Services\EmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Log;
 
 class CommunicationController extends Controller
 {
@@ -156,7 +157,7 @@ class CommunicationController extends Controller
 
     public function testWhatsAppService(Request $request)
     {
-        \Log::info('WhatsApp test request received', [
+        Log::info('WhatsApp test request received', [
             'phone' => $request->test_phone,
             'all_data' => $request->all()
         ]);
@@ -169,17 +170,17 @@ class CommunicationController extends Controller
             $whatsappService = new WhatsAppService();
             $testCode = rand(100000, 999999);
             
-            \Log::info('Attempting to send WhatsApp test message', [
+            Log::info('Attempting to send WhatsApp test message', [
                 'phone' => $request->test_phone,
                 'code' => $testCode
             ]);
             
             $whatsappService->sendPasswordResetCode($request->test_phone, $testCode, 'Test User');
             
-            \Log::info('WhatsApp test message sent successfully');
+            Log::info('WhatsApp test message sent successfully');
             Session::flash('success', "Test message sent successfully to {$request->test_phone}. Code: {$testCode}");
         } catch (\Exception $e) {
-            \Log::error('WhatsApp test failed', [
+            Log::error('WhatsApp test failed', [
                 'error' => $e->getMessage(),
                 'phone' => $request->test_phone
             ]);
@@ -191,13 +192,13 @@ class CommunicationController extends Controller
 
     public function checkConfiguration()
     {
-        \Log::info('Configuration check request received');
+        Log::info('Configuration check request received');
         
         try {
             $whatsappService = new WhatsAppService();
             $result = $whatsappService->testConfiguration();
             
-            \Log::info('Configuration check result', $result);
+            Log::info('Configuration check result', $result);
             
             if ($result['status'] === 'success') {
                 Session::flash('success', $result['message']);
@@ -205,7 +206,7 @@ class CommunicationController extends Controller
                 Session::flash('error', $result['message']);
             }
         } catch (\Exception $e) {
-            \Log::error('Configuration check failed', [
+            Log::error('Configuration check failed', [
                 'error' => $e->getMessage()
             ]);
             Session::flash('error', 'Configuration check failed: ' . $e->getMessage());
@@ -421,6 +422,108 @@ class CommunicationController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching templates: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Save selected template for testing
+     */
+    public function saveSelectedTemplate(Request $request)
+    {
+        try {
+            $request->validate([
+                'template_name' => 'nullable|string|max:255'
+            ]);
+
+            $abs = BasicSetting::first();
+            if (!$abs) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Basic settings not found'
+                ]);
+            }
+
+            // Debug logging
+            Log::info('Saving template selection', [
+                'template_name' => $request->template_name,
+                'current_value' => $abs->meta_test_template_name ?? 'null'
+            ]);
+
+            // Save the selected template name for testing
+            $abs->update([
+                'meta_test_template_name' => $request->template_name
+            ]);
+
+            // Verify the save
+            $abs->refresh();
+            Log::info('Template saved successfully', [
+                'saved_value' => $abs->meta_test_template_name
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Template selection saved successfully',
+                'template_name' => $request->template_name
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error saving template selection: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Test selected template by sending a test message
+     */
+    public function testSelectedTemplate(Request $request)
+    {
+        try {
+            $request->validate([
+                'test_phone' => 'required|string|max:20'
+            ]);
+
+            $abs = BasicSetting::first();
+            
+            // Debug logging
+            Log::info('Test template request', [
+                'test_phone' => $request->test_phone,
+                'meta_test_template_name' => $abs->meta_test_template_name ?? 'null',
+                'whatsapp_service' => $abs->whatsapp_service ?? 'null'
+            ]);
+            
+            if (!$abs || !$abs->meta_test_template_name) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No template selected for testing. Please select a template first.'
+                ]);
+            }
+
+            $whatsappService = new WhatsAppService();
+            $result = $whatsappService->sendTestMessage(
+                $request->test_phone,
+                $abs->meta_test_template_name,
+                $abs->meta_template_language ?? 'ar'
+            );
+
+            if ($result['success']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Test message sent successfully using template: ' . $abs->meta_test_template_name
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to send test message: ' . $result['message']
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error sending test message: ' . $e->getMessage()
             ]);
         }
     }

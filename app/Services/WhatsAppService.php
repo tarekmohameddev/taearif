@@ -690,4 +690,161 @@ class WhatsAppService
             throw $e;
         }
     }
+
+    /**
+     * Send test message using selected template
+     */
+    public function sendTestMessage($phoneNumber, $templateName, $language = 'ar')
+    {
+        try {
+            if (!$this->settings) {
+                return [
+                    'success' => false,
+                    'message' => 'WhatsApp service not configured'
+                ];
+            }
+
+            if ($this->settings->whatsapp_service === 'meta_cloud') {
+                return $this->sendMetaTestMessage($phoneNumber, $templateName, $language);
+            } elseif ($this->settings->whatsapp_service === 'evolution_api') {
+                return $this->sendEvolutionTestMessage($phoneNumber, $templateName, $language);
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Unknown WhatsApp service type'
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('WhatsApp test message error', [
+                'phone' => $phoneNumber,
+                'template' => $templateName,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Error sending test message: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Send test message using Meta Cloud API
+     */
+    protected function sendMetaTestMessage($phoneNumber, $templateName, $language = 'ar')
+    {
+        $accessToken = $this->settings->meta_access_token;
+        $phoneNumberId = $this->settings->meta_phone_number_id;
+
+        if (!$accessToken || !$phoneNumberId) {
+            return [
+                'success' => false,
+                'message' => 'Meta Cloud API configuration incomplete'
+            ];
+        }
+
+        $url = "https://graph.facebook.com/v20.0/{$phoneNumberId}/messages";
+
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'to' => $phoneNumber,
+            'type' => 'template',
+            'template' => [
+                'name' => $templateName,
+                'language' => [
+                    'code' => $language
+                ]
+            ]
+        ];
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $accessToken,
+            'Content-Type' => 'application/json',
+        ])->post($url, $payload);
+
+        if ($response->successful()) {
+            Log::info('Meta test message sent successfully', [
+                'phone' => $phoneNumber,
+                'template' => $templateName,
+                'response' => $response->json()
+            ]);
+
+            return [
+                'success' => true,
+                'message' => 'Test message sent successfully using template: ' . $templateName
+            ];
+        } else {
+            $errorResponse = $response->json();
+            Log::error('Meta test message failed', [
+                'phone' => $phoneNumber,
+                'template' => $templateName,
+                'response' => $errorResponse,
+                'status' => $response->status()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Failed to send test message: ' . ($errorResponse['error']['message'] ?? 'Unknown error')
+            ];
+        }
+    }
+
+    /**
+     * Send test message using Evolution API
+     */
+    protected function sendEvolutionTestMessage($phoneNumber, $templateName, $language = 'ar')
+    {
+        $apiUrl = $this->settings->evolution_api_url;
+        $apiKey = $this->settings->evolution_api_key;
+        $instanceName = $this->settings->evolution_instance_name;
+
+        if (!$apiUrl || !$apiKey || !$instanceName) {
+            return [
+                'success' => false,
+                'message' => 'Evolution API configuration incomplete'
+            ];
+        }
+
+        $url = rtrim($apiUrl, '/') . '/message/sendText/' . $instanceName;
+
+        // For Evolution API, we'll send a simple text message with template info
+        $message = "Test message using template: {$templateName} (Language: {$language})";
+
+        $payload = [
+            'number' => $phoneNumber,
+            'text' => $message
+        ];
+
+        $response = Http::withHeaders([
+            'apikey' => $apiKey,
+            'Content-Type' => 'application/json',
+        ])->post($url, $payload);
+
+        if ($response->successful()) {
+            Log::info('Evolution test message sent successfully', [
+                'phone' => $phoneNumber,
+                'template' => $templateName,
+                'response' => $response->json()
+            ]);
+
+            return [
+                'success' => true,
+                'message' => 'Test message sent successfully using template: ' . $templateName
+            ];
+        } else {
+            $errorResponse = $response->json();
+            Log::error('Evolution test message failed', [
+                'phone' => $phoneNumber,
+                'template' => $templateName,
+                'response' => $errorResponse,
+                'status' => $response->status()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Failed to send test message: ' . ($errorResponse['message'] ?? 'Unknown error')
+            ];
+        }
+    }
 }

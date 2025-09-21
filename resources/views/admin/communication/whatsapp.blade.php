@@ -153,7 +153,7 @@
                       <div class="col-lg-6">
                         <div class="form-group">
                           <label for="meta_template_name"><strong>Template Name</strong></label>
-                          <select class="form-control" id="meta_template_name" name="meta_template_name">
+                          <select class="form-control" id="meta_template_name" name="meta_template_name" onchange="console.log('Template changed to:', this.value); saveTemplateSelection()">
                             <option value="">اختر قالب من Facebook أو اتركه فارغاً للرسالة العادية</option>
                           </select>
                           <p class="text-muted">سيتم جلب القوالب من Facebook Meta API تلقائياً</p>
@@ -176,6 +176,57 @@
                           @error('meta_template_language')
                             <p class="text-danger">{{ $message }}</p>
                           @enderror
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Template Testing Section -->
+                    <div class="row" id="template-testing-section" style="display: none;">
+                      <div class="col-lg-12">
+                        <div class="card bg-light">
+                          <div class="card-body">
+                            <h6 class="card-title">
+                              <i class="fas fa-flask"></i> اختبار القالب المحدد
+                            </h6>
+                            <div class="row">
+                              <div class="col-lg-8">
+                                <div class="form-group">
+                                  <label for="selected_template_display"><strong>القالب المحدد للاختبار:</strong></label>
+                                  <div class="input-group">
+                                    <input type="text" class="form-control" id="selected_template_display" 
+                                           value="{{$abs->meta_test_template_name ?? ''}}" readonly>
+                                    <div class="input-group-append">
+                                      <span class="input-group-text">
+                                        <i class="fas fa-check-circle text-success" id="template-saved-icon" style="display: none;"></i>
+                                        <i class="fas fa-exclamation-triangle text-warning" id="template-unsaved-icon"></i>
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <small class="text-muted">سيتم حفظ القالب المحدد تلقائياً عند تغيير الاختيار</small>
+                                </div>
+                              </div>
+                              <div class="col-lg-4">
+                                <div class="form-group">
+                                  <label for="test_phone_input"><strong>رقم الهاتف للاختبار:</strong></label>
+                                  <input type="text" class="form-control" id="test_phone_input" 
+                                         placeholder="+966501234567" value="+201147170572">
+                                </div>
+                              </div>
+                            </div>
+                            <div class="row">
+                              <div class="col-lg-12">
+                                <button type="button" class="btn btn-success" onclick="testSelectedTemplate()" id="test-template-btn">
+                                  <i class="fas fa-paper-plane"></i> إرسال رسالة اختبار
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary ml-2" onclick="clearTemplateSelection()">
+                                  <i class="fas fa-times"></i> إلغاء الاختيار
+                                </button>
+                                <button type="button" class="btn btn-outline-info ml-2" onclick="console.log('Current template:', $('#selected_template_display').val()); console.log('Test section visible:', $('#template-testing-section').is(':visible'));">
+                                  <i class="fas fa-bug"></i> Debug
+                                </button>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -683,6 +734,7 @@ $(document).ready(function() {
         setTimeout(function() {
             if ($('#meta-cloud-form').is(':visible')) {
                 loadMetaTemplates();
+                initializeTemplateSelection();
             }
         }, 1000);
     }
@@ -717,6 +769,7 @@ $(document).ready(function() {
         if (service === 'meta_cloud') {
             setTimeout(function() {
                 loadMetaTemplates();
+                initializeTemplateSelection();
             }, 500);
         }
         
@@ -864,8 +917,10 @@ function loadMetaTemplates() {
                         .attr('value', template.name)
                         .text(template.name + ' (' + template.category + ' - ' + template.language + ')');
                     
-                    // Check if this template is currently selected
-                    if ('{{$abs->meta_template_name ?? ""}}' === template.name) {
+                    // Check if this template is currently selected or if it's the saved test template
+                    var savedTestTemplate = '{{$abs->meta_test_template_name ?? ""}}';
+                    var currentTemplate = '{{$abs->meta_template_name ?? ""}}';
+                    if (currentTemplate === template.name || savedTestTemplate === template.name) {
                         option.attr('selected', true);
                     }
                     
@@ -874,6 +929,11 @@ function loadMetaTemplates() {
                 
                 // Show success message
                 showNotification('تم تحميل ' + response.templates.length + ' قالب من Facebook بنجاح', 'success');
+                
+                // Initialize template selection after loading
+                setTimeout(function() {
+                    initializeTemplateSelection();
+                }, 500);
             } else {
                 showNotification('لم يتم العثور على قوالب معتمدة في Facebook', 'warning');
             }
@@ -1246,6 +1306,121 @@ function showNotification(message, type) {
     setTimeout(function() {
         notification.alert('close');
     }, 5000);
+}
+
+// Template Selection and Testing Functions
+function saveTemplateSelection() {
+    var selectedTemplate = $('#meta_template_name').val();
+    
+    console.log('Template selection changed:', selectedTemplate);
+    
+    if (selectedTemplate) {
+        // Show the testing section
+        $('#template-testing-section').show();
+        $('#selected_template_display').val(selectedTemplate);
+        
+        // Save to server
+        console.log('Saving template to server:', selectedTemplate);
+        $.post('{{route("admin.communication.save-selected-template")}}', {
+            _token: '{{csrf_token()}}',
+            template_name: selectedTemplate
+        }, function(response) {
+            console.log('Save response:', response);
+            if (response.success) {
+                $('#template-saved-icon').show();
+                $('#template-unsaved-icon').hide();
+                showNotification('تم حفظ القالب للاختبار: ' + selectedTemplate, 'success');
+            } else {
+                $('#template-saved-icon').hide();
+                $('#template-unsaved-icon').show();
+                showNotification('فشل في حفظ القالب: ' + response.message, 'error');
+            }
+        }).fail(function() {
+            $('#template-saved-icon').hide();
+            $('#template-unsaved-icon').show();
+            showNotification('حدث خطأ أثناء حفظ القالب', 'error');
+        });
+    } else {
+        // Hide the testing section if no template selected
+        $('#template-testing-section').hide();
+        $('#template-saved-icon').hide();
+        $('#template-unsaved-icon').hide();
+    }
+}
+
+function testSelectedTemplate() {
+    var phoneNumber = $('#test_phone_input').val();
+    var selectedTemplate = $('#selected_template_display').val();
+    
+    if (!phoneNumber) {
+        alert('يرجى إدخال رقم الهاتف للاختبار');
+        return;
+    }
+    
+    if (!selectedTemplate) {
+        alert('يرجى اختيار قالب أولاً');
+        return;
+    }
+    
+    // Disable button and show loading
+    var btn = $('#test-template-btn');
+    var originalText = btn.html();
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...');
+    
+    $.post('{{route("admin.communication.test-selected-template")}}', {
+        _token: '{{csrf_token()}}',
+        test_phone: phoneNumber
+    }, function(response) {
+        if (response.success) {
+            showNotification(response.message, 'success');
+        } else {
+            showNotification(response.message, 'error');
+        }
+    }).fail(function() {
+        showNotification('حدث خطأ أثناء إرسال رسالة الاختبار', 'error');
+    }).always(function() {
+        // Re-enable button
+        btn.prop('disabled', false).html(originalText);
+    });
+}
+
+function clearTemplateSelection() {
+    $('#meta_template_name').val('');
+    $('#selected_template_display').val('');
+    $('#template-testing-section').hide();
+    $('#template-saved-icon').hide();
+    $('#template-unsaved-icon').hide();
+    
+    // Clear from server
+    $.post('{{route("admin.communication.save-selected-template")}}', {
+        _token: '{{csrf_token()}}',
+        template_name: ''
+    }, function(response) {
+        if (response.success) {
+            showNotification('تم إلغاء اختيار القالب', 'info');
+        }
+    });
+}
+
+// Initialize template selection on page load
+function initializeTemplateSelection() {
+    var savedTemplate = '{{$abs->meta_test_template_name ?? ""}}';
+    if (savedTemplate) {
+        $('#meta_template_name').val(savedTemplate);
+        $('#selected_template_display').val(savedTemplate);
+        $('#template-testing-section').show();
+        $('#template-saved-icon').show();
+        $('#template-unsaved-icon').hide();
+    }
+    
+    // Also check if there's a regular template selected
+    var currentTemplate = $('#meta_template_name').val();
+    if (currentTemplate && !savedTemplate) {
+        $('#template-testing-section').show();
+        $('#selected_template_display').val(currentTemplate);
+        $('#template-saved-icon').hide();
+        $('#template-unsaved-icon').show();
+    }
 }
 </script>
 

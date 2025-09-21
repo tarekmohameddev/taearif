@@ -54,6 +54,7 @@ class BasicSetting extends Model
         'meta_business_account_id',
         'meta_template_name',
         'meta_template_language',
+        'meta_test_template_name',
         'evolution_api_url',
         'evolution_api_key',
         'evolution_instance_name',
