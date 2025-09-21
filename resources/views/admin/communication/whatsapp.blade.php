@@ -185,56 +185,6 @@
                       </div>
                     </div>
 
-                    <!-- Template Testing Section -->
-                    <div class="row" id="template-testing-section" style="display: none;">
-                      <div class="col-lg-12">
-                        <div class="card bg-light">
-                          <div class="card-body">
-                            <h6 class="card-title">
-                              <i class="fas fa-flask"></i> اختبار القالب المحدد
-                            </h6>
-                            <div class="row">
-                              <div class="col-lg-8">
-                                <div class="form-group">
-                                  <label for="selected_template_display"><strong>القالب المحدد للاختبار:</strong></label>
-                                  <div class="input-group">
-                                    <input type="text" class="form-control" id="selected_template_display" 
-                                           value="{{$abs->meta_test_template_name ?? ''}}" readonly>
-                                    <div class="input-group-append">
-                                      <span class="input-group-text">
-                                        <i class="fas fa-check-circle text-success" id="template-saved-icon" style="display: none;"></i>
-                                        <i class="fas fa-exclamation-triangle text-warning" id="template-unsaved-icon"></i>
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <small class="text-muted">سيتم حفظ القالب المحدد تلقائياً عند تغيير الاختيار</small>
-                                </div>
-                              </div>
-                              <div class="col-lg-4">
-                                <div class="form-group">
-                                  <label for="test_phone_input"><strong>رقم الهاتف للاختبار:</strong></label>
-                                  <input type="text" class="form-control" id="test_phone_input" 
-                                         placeholder="+966501234567" value="+201147170572">
-                                </div>
-                              </div>
-                            </div>
-                            <div class="row">
-                              <div class="col-lg-12">
-                                <button type="button" class="btn btn-success" onclick="testSelectedTemplate()" id="test-template-btn">
-                                  <i class="fas fa-paper-plane"></i> إرسال رسالة اختبار
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary ml-2" onclick="clearTemplateSelection()">
-                                  <i class="fas fa-times"></i> إلغاء الاختيار
-                                </button>
-                                <button type="button" class="btn btn-outline-info ml-2" onclick="console.log('Current template:', $('#selected_template_display').val()); console.log('Test section visible:', $('#template-testing-section').is(':visible'));">
-                                  <i class="fas fa-bug"></i> Debug
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
 
                     <div class="row">
                       <div class="col-lg-12">
