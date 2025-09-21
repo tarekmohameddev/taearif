@@ -1131,6 +1131,7 @@ function initializeApiSelection() {
         $('.create-local-template-btn').hide();
         $('button[onclick*="loadMetaTemplatesFor"]').show();
         $('button[onclick="loadMetaTemplates()"]').show();
+        $('button[onclick="forceUpdateTextAreas()"]').show();
         $('.meta-api-optgroup').show();
         $('.template-api-label').text('(Meta API)');
         $('.template-description').text('اختر قالب من Meta API أو القوالب المحفوظة محلياً');
@@ -1138,6 +1139,7 @@ function initializeApiSelection() {
         $('.create-local-template-btn').show();
         $('button[onclick*="loadMetaTemplatesFor"]').hide();
         $('button[onclick="loadMetaTemplates()"]').hide();
+        $('button[onclick="forceUpdateTextAreas()"]').hide();
         $('.meta-api-optgroup').hide();
         $('.template-api-label').text('(Evolution API)');
         $('.template-description').text('اختر قالب من القوالب المحفوظة محلياً فقط');
@@ -1161,6 +1163,13 @@ function setApiSelection(api) {
     
     // Update default texts
     updateDefaultTexts();
+    
+    // Update button visibility based on API selection
+    if (api === 'meta') {
+        $('button[onclick="forceUpdateTextAreas()"]').show();
+    } else {
+        $('button[onclick="forceUpdateTextAreas()"]').hide();
+    }
     
     // Show notification
     var apiName = api === 'meta' ? 'Meta Cloud API' : 'Evolution API';
