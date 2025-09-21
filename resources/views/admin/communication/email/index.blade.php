@@ -157,7 +157,7 @@
             <form action="{{route('admin.email-communication.templates.update')}}" method="POST">
               @csrf
               <div class="row">
-                <div class="col-lg-12">
+                <div class="col-lg-6">
                   <div class="form-group">
                     <label for="email_password_reset_template"><strong>قالب إعادة تعيين كلمة المرور</strong></label>
                     <select class="form-control" id="email_password_reset_template" name="email_password_reset_template">
@@ -175,11 +175,94 @@
                         </option>
                       @endforeach
                     </select>
-                    <p class="text-muted">اختر قالب من القوالب المحفوظة أو اتركه فارغاً للرسالة العادية</p>
                     <small class="text-info">
                       <i class="fas fa-info-circle"></i> 
                       <a href="{{route('admin.email-templates.create')}}?type=password_reset" target="_blank">إنشاء قالب جديد</a>
                     </small>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="welcome_message_template"><strong>قالب رسالة الترحيب</strong></label>
+                    <select class="form-control" id="welcome_message_template" name="welcome_message_template">
+                      <option value="">اختر قالب أو اتركه فارغاً</option>
+                      @php
+                          try {
+                              $welcomeTemplates = \App\Models\EmailTemplate::active()->ofType('welcome')->get();
+                          } catch (Exception $e) {
+                              $welcomeTemplates = collect();
+                          }
+                      @endphp
+                      @foreach($welcomeTemplates as $template)
+                        <option value="{{$template->name}}" {{($abs->welcome_message_template ?? '') == $template->name ? 'selected' : ''}}>
+                          {{$template->name}} ({{$template->language_label}})
+                        </option>
+                      @endforeach
+                    </select>
+                    <small class="text-info">
+                      <i class="fas fa-info-circle"></i> 
+                      <a href="{{route('admin.email-templates.create')}}?type=welcome" target="_blank">إنشاء قالب جديد</a>
+                    </small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="subscription_expiration_template"><strong>قالب انتهاء الاشتراك</strong></label>
+                    <select class="form-control" id="subscription_expiration_template" name="subscription_expiration_template">
+                      <option value="">اختر قالب أو اتركه فارغاً</option>
+                      @php
+                          try {
+                              $subscriptionTemplates = \App\Models\EmailTemplate::active()->ofType('subscription_expiration')->get();
+                          } catch (Exception $e) {
+                              $subscriptionTemplates = collect();
+                          }
+                      @endphp
+                      @foreach($subscriptionTemplates as $template)
+                        <option value="{{$template->name}}" {{($abs->subscription_expiration_template ?? '') == $template->name ? 'selected' : ''}}>
+                          {{$template->name}} ({{$template->language_label}})
+                        </option>
+                      @endforeach
+                    </select>
+                    <small class="text-info">
+                      <i class="fas fa-info-circle"></i> 
+                      <a href="{{route('admin.email-templates.create')}}?type=subscription_expiration" target="_blank">إنشاء قالب جديد</a>
+                    </small>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="subscription_expired_template"><strong>قالب انتهاء الاشتراك</strong></label>
+                    <select class="form-control" id="subscription_expired_template" name="subscription_expired_template">
+                      <option value="">اختر قالب أو اتركه فارغاً</option>
+                      @php
+                          try {
+                              $expiredTemplates = \App\Models\EmailTemplate::active()->ofType('subscription_expired')->get();
+                          } catch (Exception $e) {
+                              $expiredTemplates = collect();
+                          }
+                      @endphp
+                      @foreach($expiredTemplates as $template)
+                        <option value="{{$template->name}}" {{($abs->subscription_expired_template ?? '') == $template->name ? 'selected' : ''}}>
+                          {{$template->name}} ({{$template->language_label}})
+                        </option>
+                      @endforeach
+                    </select>
+                    <small class="text-info">
+                      <i class="fas fa-info-circle"></i> 
+                      <a href="{{route('admin.email-templates.create')}}?type=subscription_expired" target="_blank">إنشاء قالب جديد</a>
+                    </small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-lg-12">
+                  <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>ملاحظة:</strong> اختر قالب من القوالب المحفوظة أو اتركه فارغاً للرسالة العادية. يمكنك إنشاء قوالب جديدة من خلال الروابط أعلاه.
                   </div>
                 </div>
               </div>

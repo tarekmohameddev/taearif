@@ -60,7 +60,10 @@ class BasicExtended extends Model
         'hero_img3',
         'hero_img4',
         'hero_img5',
-        'email_password_reset_template'
+        'email_password_reset_template',
+        'welcome_message_template',
+        'subscription_expiration_template',
+        'subscription_expired_template'
     ];
 
     public function language() {
