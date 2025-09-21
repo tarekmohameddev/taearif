@@ -48,6 +48,11 @@
             إشعار انتهاء الباقة
             <span class="tab-header-api"></span>
           </button>
+          <button class="tab-button {{request('tab') == 'password_reset' ? 'active' : ''}}" 
+                  data-tab="password_reset">
+            إعادة تعيين كلمة المرور
+            <span class="tab-header-api"></span>
+          </button>
         </div>
       </div>
     </div>
@@ -654,6 +659,117 @@
                 </form>
               </div>
 
+              <!-- Password Reset Tab -->
+              <div id="password_reset-tab" class="tab-content {{request('tab') == 'password_reset' ? 'active' : ''}}">
+                <form action="{{route('admin.communication.password-reset.update')}}" method="POST" id="password-reset-form">
+                  @csrf
+                  <input type="hidden" name="selected_api" id="password_reset_selected_api" value="">
+                  <div class="row">
+                    <div class="col-lg-12">
+                      <div class="form-group">
+                        <label for="password_reset_enabled">
+                          <strong>تفعيل رسالة إعادة تعيين كلمة المرور</strong>
+                          <span class="api-indicator" style="font-size: 12px; margin-left: 10px;"></span>
+                        </label>
+                        <div class="toggle-switch-container">
+                          <div class="toggle-switch">
+                            <input type="checkbox" id="password_reset_enabled" name="password_reset_enabled" 
+                                   value="1" {{($abs->password_reset_enabled ?? false) ? 'checked' : ''}}>
+                            <label for="password_reset_enabled" class="toggle-label">
+                              <span class="toggle-slider"></span>
+                              <span class="toggle-text">
+                                <span class="toggle-on">ON</span>
+                                <span class="toggle-off">OFF</span>
+                              </span>
+                            </label>
+                          </div>
+                          <span class="toggle-description">إرسال رسالة إعادة تعيين كلمة المرور عبر واتس اب</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-lg-12">
+                      <div class="form-group">
+                        <label for="password_reset_text"><strong>نص رسالة إعادة تعيين كلمة المرور **</strong></label>
+                        <textarea class="form-control" id="password_reset_text" name="password_reset_text" rows="4" 
+                                  placeholder="رمز إعادة تعيين كلمة المرور: {code}
+
+هذا الرمز صالح لمدة 15 دقيقة.
+
+أو يمكنك الضغط على الرابط التالي:
+{reset_url}?code={code}">{{trim($abs->password_reset_text ?? 'رمز إعادة تعيين كلمة المرور: {code}
+
+هذا الرمز صالح لمدة 15 دقيقة.
+
+أو يمكنك الضغط على الرابط التالي:
+{reset_url}?code={code}')}}</textarea>
+                        <p class="text-muted">يمكن استخدام المتغيرات: {code}, {reset_url}, {name}</p>
+                        <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
+                          <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
+                        </button>
+                        @error('password_reset_text')
+                          <p class="text-danger">{{ $message }}</p>
+                        @enderror
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-lg-12">
+                        <div class="form-group">
+                          <label for="password_reset_template"><strong>اسم القالب <span class="template-api-label">(Meta API)</span></strong></label>
+                          <select class="form-control" id="password_reset_template" name="password_reset_template">
+                            <option value="">اختر قالب أو اتركه فارغاً</option>
+                            <optgroup label="Meta API Templates" class="meta-api-optgroup">
+                              <option value="" disabled>جاري تحميل القوالب من Facebook...</option>
+                            </optgroup>
+                            <optgroup label="Local Templates" class="local-templates-optgroup">
+                              @php
+                                  try {
+                                      $passwordResetTemplates = \App\Models\WhatsAppTemplate::active()->ofType('password_reset')->get();
+                                  } catch (Exception $e) {
+                                      $passwordResetTemplates = collect();
+                                  }
+                              @endphp
+                              @foreach($passwordResetTemplates as $template)
+                                <option value="{{$template->name}}" {{($abs->password_reset_template ?? '') == $template->name ? 'selected' : ''}}>
+                                  {{$template->name}} ({{$template->language_label}}) - Local
+                                </option>
+                              @endforeach
+                            </optgroup>
+                          </select>
+                          <p class="text-muted template-description">اختر قالب من Meta API أو القوالب المحفوظة محلياً</p>
+                          <small class="text-info">
+                            <i class="fas fa-info-circle"></i> 
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="loadMetaTemplatesForPasswordReset(true)">
+                              <i class="fas fa-sync"></i> تحديث قوالب Meta API
+                            </button>
+                            <small class="text-muted ml-2">(يتم التحميل تلقائياً ويتم حفظه لمدة 24 ساعة)</small>
+                            <a href="{{route('admin.whatsapp-templates.create')}}?type=password_reset" target="_blank" class="btn btn-sm btn-outline-success ml-2 create-local-template-btn">
+                              <i class="fas fa-plus"></i> إنشاء قالب محلي
+                            </a>
+                          </small>
+                        </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-lg-12">
+                      <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                          <i class="fas fa-save"></i> حفظ إعدادات رسالة إعادة تعيين كلمة المرور
+                        </button>
+                        <button type="button" class="btn btn-warning ml-2" onclick="testPasswordReset()">
+                          <i class="fas fa-paper-plane"></i> اختبار الرسالة
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+
 
             </div>
           </div>
@@ -728,6 +844,10 @@ $(document).ready(function() {
     
     $('#subscription-expired-form').submit(function() {
         $('#subscription_expired_selected_api').val(currentApi);
+    });
+    
+    $('#password-reset-form').submit(function() {
+        $('#password_reset_selected_api').val(currentApi);
     });
     
     // Auto-load Meta templates when Meta Cloud form is shown
@@ -822,7 +942,9 @@ function switchTab(tabName) {
     var titles = {
         'meta_evolution': 'إعدادات Meta & Evolution API',
         'welcome_message': 'إعدادات رسالة الترحيب',
-        'subscription_expiration': 'إعدادات رسالة انتهاء الباقة'
+        'subscription_expiration': 'إعدادات رسالة انتهاء الباقة',
+        'subscription_expired': 'إعدادات إشعار انتهاء الباقة',
+        'password_reset': 'إعدادات رسالة إعادة تعيين كلمة المرور'
     };
     $('#tab-title').text(titles[tabName]);
 }
@@ -851,9 +973,6 @@ function testWhatsApp() {
         });
     }
 }
-
-
-
 
 function checkConfiguration() {
     console.log('Checking configuration...');
@@ -911,6 +1030,20 @@ function testSubscriptionExpired() {
             location.reload();
         }).fail(function() {
             alert('حدث خطأ أثناء اختبار إشعار انتهاء الباقة');
+        });
+    }
+}
+
+function testPasswordReset() {
+    var phone = prompt('أدخل رقم الهاتف للاختبار:', '+966501234567');
+    if (phone) {
+        $.post('{{route("admin.communication.password-reset.test")}}', {
+            _token: '{{csrf_token()}}',
+            test_phone: phone
+        }, function(response) {
+            location.reload();
+        }).fail(function() {
+            alert('حدث خطأ أثناء اختبار رسالة إعادة تعيين كلمة المرور');
         });
     }
 }
@@ -986,6 +1119,13 @@ function loadMetaTemplatesForExpired(forceRefresh = false) {
         clearTemplateCache('subscription_expired');
     }
     loadMetaTemplatesForSelect('#subscription_expired_template', 'subscription_expired');
+}
+
+function loadMetaTemplatesForPasswordReset(forceRefresh = false) {
+    if (forceRefresh) {
+        clearTemplateCache('password_reset');
+    }
+    loadMetaTemplatesForSelect('#password_reset_template', 'password_reset');
 }
 
 function clearTemplateCache(messageType) {
@@ -1103,6 +1243,7 @@ function loadTemplatesBasedOnApi() {
         setTimeout(function() { loadMetaTemplatesForWelcome(); }, 500);
         setTimeout(function() { loadMetaTemplatesForSubscription(); }, 1000);
         setTimeout(function() { loadMetaTemplatesForExpired(); }, 1500);
+        setTimeout(function() { loadMetaTemplatesForPasswordReset(); }, 2000);
     } else {
         // For Evolution API, only load local templates
         console.log('Evolution API selected - using local templates only');
@@ -1123,7 +1264,8 @@ function updateTextsForMeta() {
     var metaTexts = {
         welcome: 'مرحبا {name}\nأهلاً وسهلاً بك في منصتنا!\nنتمنى لك تجربة ممتعة.',
         subscription_expiration: 'مرحبا {name}\nتنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً.\nيرجى تجديد اشتراكك للاستمرار في الاستفادة من خدماتنا.',
-        subscription_expired: 'مرحبا {name}\nانتهى اشتراكك وتم نقلك إلى الباقة المجانية.\nيمكنك الترقية في أي وقت.'
+        subscription_expired: 'مرحبا {name}\nانتهى اشتراكك وتم نقلك إلى الباقة المجانية.\nيمكنك الترقية في أي وقت.',
+        password_reset: 'رمز إعادة تعيين كلمة المرور: {code}\n\nهذا الرمز صالح لمدة 15 دقيقة.\n\nأو يمكنك الضغط على الرابط التالي:\n{reset_url}?code={code}'
     };
     
     updateTextAreas(metaTexts);
@@ -1134,7 +1276,8 @@ function updateTextsForEvolution() {
     var evolutionTexts = {
         welcome: 'مرحبا {name}\nمرحباً بك في منصتنا!\nنحن سعداء لانضمامك إلينا.',
         subscription_expiration: 'مرحبًا {name} 👋،\nنود تذكيرك أن باقتك {package_name} ستنتهي بتاريخ {expiry_date}.\nتبقى 3 أيام فقط للاستفادة من خدماتك قبل انتهاء الباقة.\n\n🔄 جدّد الآن لتفادي انقطاع الخدمة.',
-        subscription_expired: 'مرحبا {name}\nانتهى اشتراكك.\nيمكنك الترقية في أي وقت.'
+        subscription_expired: 'مرحبا {name}\nانتهى اشتراكك.\nيمكنك الترقية في أي وقت.',
+        password_reset: 'رمز إعادة تعيين كلمة المرور: {code}\n\nهذا الرمز صالح لمدة 15 دقيقة.\n\nأو يمكنك الضغط على الرابط التالي:\n{reset_url}?code={code}'
     };
     
     updateTextAreas(evolutionTexts);
@@ -1165,6 +1308,14 @@ function updateTextAreas(texts) {
             $('#subscription_expired_text').val(texts.subscription_expired);
         }
     }
+    
+    // Update password reset text
+    if ($('#password_reset_text').length) {
+        var currentText = $('#password_reset_text').val().trim();
+        if (!currentText || isDefaultText(currentText, 'password_reset')) {
+            $('#password_reset_text').val(texts.password_reset);
+        }
+    }
 }
 
 function isDefaultText(text, type) {
@@ -1185,6 +1336,9 @@ function isDefaultText(text, type) {
             'انتهى اشتراكك وتم نقلك إلى الباقة المجانية. يمكنك الترقية في أي وقت.',
             'مرحبا {name}\nانتهى اشتراكك وتم نقلك إلى الباقة المجانية.\nيمكنك الترقية في أي وقت.',
             'مرحبا {name}\nانتهى اشتراكك.\nيمكنك الترقية في أي وقت.'
+        ],
+        password_reset: [
+            'رمز إعادة تعيين كلمة المرور: {code}\n\nهذا الرمز صالح لمدة 15 دقيقة.\n\nأو يمكنك الضغط على الرابط التالي:\n{reset_url}?code={code}'
         ]
     };
     
@@ -1315,6 +1469,8 @@ function populateTemplatesInSelect(select, templates, messageType) {
                 currentValue = '{{$abs->subscription_expiration_template ?? ""}}';
             } else if (messageType === 'subscription_expired') {
                 currentValue = '{{$abs->subscription_expired_template ?? ""}}';
+            } else if (messageType === 'password_reset') {
+                currentValue = '{{$abs->password_reset_template ?? ""}}';
             }
             
             if (currentValue === template.name) {

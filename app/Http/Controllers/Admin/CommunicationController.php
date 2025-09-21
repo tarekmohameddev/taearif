@@ -394,6 +394,74 @@ class CommunicationController extends Controller
         return redirect()->back();
     }
 
+    public function updatePasswordReset(Request $request)
+    {
+        $rules = [
+            'password_reset_enabled' => 'nullable|boolean',
+            'password_reset_text' => 'nullable|string|max:1000',
+            'password_reset_template' => 'nullable|string|max:100',
+            'selected_api' => 'nullable|string|in:meta,evolution',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $abs = BasicSetting::first();
+        if (!$abs) {
+            $abs = new BasicSetting();
+        }
+
+        $abs->password_reset_enabled = $request->has('password_reset_enabled') ? 1 : 0;
+        $abs->password_reset_text = $request->password_reset_text ?? 'رمز إعادة تعيين كلمة المرور: {code}
+
+هذا الرمز صالح لمدة 15 دقيقة.
+
+أو يمكنك الضغط على الرابط التالي:
+{reset_url}?code={code}';
+        $abs->password_reset_template = $request->password_reset_template;
+        
+        // Store the selected API for this message type
+        if ($request->selected_api) {
+            $abs->password_reset_api = $request->selected_api;
+        }
+        
+        $abs->save();
+
+        $apiName = $request->selected_api === 'meta' ? 'Meta Cloud API' : 'Evolution API';
+        Session::flash('success', "Password reset message settings updated successfully for {$apiName}!");
+        return redirect()->back();
+    }
+
+    public function testPasswordReset(Request $request)
+    {
+        $request->validate([
+            'test_phone' => 'required|string|max:20',
+        ]);
+
+        try {
+            $whatsappService = new WhatsAppService();
+            $testCode = rand(100000, 999999);
+            $testMessage = "رمز إعادة تعيين كلمة المرور: {$testCode}
+
+هذا الرمز صالح لمدة 15 دقيقة.
+
+أو يمكنك الضغط على الرابط التالي:
+https://app.taearif.com/reset?code={$testCode}";
+            
+            $whatsappService->sendPasswordResetCode($request->test_phone, $testCode, 'Test User', 'ar', 'https://app.taearif.com/reset');
+            
+            Session::flash('success', "Test password reset message sent successfully to {$request->test_phone}. Code: {$testCode}");
+        } catch (\Exception $e) {
+            Session::flash('error', 'Test failed: ' . $e->getMessage());
+        }
+
+        return redirect()->back();
+    }
+
 
     /**
      * Fetch WhatsApp templates from Facebook Meta API

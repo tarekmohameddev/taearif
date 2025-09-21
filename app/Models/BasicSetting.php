@@ -75,6 +75,10 @@ class BasicSetting extends Model
         'subscription_expired_template',
         'subscription_expired_send_time',
         'subscription_expired_api',
+        'password_reset_enabled',
+        'password_reset_text',
+        'password_reset_template',
+        'password_reset_api',
         'email_password_reset_template'
     ];
 
