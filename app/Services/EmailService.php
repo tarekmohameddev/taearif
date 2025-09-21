@@ -68,14 +68,12 @@ class EmailService
             } else {
                 // Default email content (fallback) - only code and URL
                 $subject = 'إعادة تعيين كلمة المرور';
-                $content = "رمز إعادة تعيين كلمة المرور: {$code}\n\n";
+                $content = "رمز إعادة تعيين كلمة المرور: {$code}\n\nهذا الرمز صالح لمدة 15 دقيقة.";
                 
                 if ($resetUrl) {
                     $resetLink = $resetUrl . '?code=' . $code;
-                    $content .= "يمكنك أيضاً الضغط على الرابط التالي:\n{$resetLink}\n\n";
+                    $content .= "\n\nأو يمكنك الضغط على الرابط التالي:\n{$resetLink}";
                 }
-                
-                $content .= "هذا الرمز صالح لمدة 15 دقيقة.\n\nمع تحيات فريق العمل";
             }
 
             // Send email
