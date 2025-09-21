@@ -318,9 +318,19 @@ class WhatsAppService
         // Remove + if present
         $phone = ltrim($phone, '+');
         
-        // Ensure it doesn't start with 0
-        if (strpos($phone, '0') === 0) {
-            $phone = substr($phone, 1);
+        // Handle different phone number formats
+        // If the number starts with a country code followed by 0, remove the 0
+        // Examples: 2001147170572 -> 201147170572, 966501234567 -> 966501234567
+        if (preg_match('/^(\d{1,4})0(\d+)$/', $phone, $matches)) {
+            $countryCode = $matches[1];
+            $localNumber = $matches[2];
+            
+            // For common country codes, remove the leading 0 from local number
+            $commonCountryCodes = ['20', '966', '1', '44', '33', '49', '39', '34', '7', '81', '86', '91'];
+            
+            if (in_array($countryCode, $commonCountryCodes)) {
+                $phone = $countryCode . $localNumber;
+            }
         }
         
         return $phone;
