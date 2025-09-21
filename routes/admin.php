@@ -334,6 +334,8 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         
         // Meta Templates
         Route::get('/communication/fetch-meta-templates', 'Admin\CommunicationController@fetchMetaTemplates')->name('communication.fetch-meta-templates');
+        Route::post('/communication/save-selected-template', 'Admin\CommunicationController@saveSelectedTemplate')->name('communication.save-selected-template');
+        Route::post('/communication/test-selected-template', 'Admin\CommunicationController@testSelectedTemplate')->name('communication.test-selected-template');
         
         // WhatsApp Templates Routes (Dedicated)
         Route::resource('/communication/whatsapp-templates', 'Admin\WhatsAppTemplateController')->names('whatsapp-templates');
