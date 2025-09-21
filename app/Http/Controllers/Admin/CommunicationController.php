@@ -431,8 +431,26 @@ class CommunicationController extends Controller
         
         $abs->save();
 
+        // Check for Meta Cloud template warning
+        $warningMessage = '';
+        if ($request->selected_api === 'meta' && $abs->whatsapp_service === 'meta_cloud') {
+            try {
+                $whatsappService = new \App\Services\WhatsAppService();
+                if (!$whatsappService->checkMetaTemplateExists('password_reset')) {
+                    $warningMessage = 'Warning: Meta Cloud API template "password_reset" not found. The system will use the default message format.';
+                }
+            } catch (\Exception $e) {
+                $warningMessage = 'Warning: Could not check Meta Cloud API templates. Please verify your API configuration.';
+            }
+        }
+
         $apiName = $request->selected_api === 'meta' ? 'Meta Cloud API' : 'Evolution API';
         Session::flash('success', "Password reset message settings updated successfully for {$apiName}!");
+        
+        if ($warningMessage) {
+            Session::flash('warning', $warningMessage);
+        }
+        
         return redirect()->back();
     }
 
