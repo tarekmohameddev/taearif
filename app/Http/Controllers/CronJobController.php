@@ -27,6 +27,7 @@ use App\Http\Controllers\Front\RoomBookingController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Http\Request;
 use App\Services\UserPackageService;
+use App\Services\EmailService;
 use Illuminate\Support\Facades\Log;
 
 class CronJobController extends Controller
@@ -82,6 +83,11 @@ class CronJobController extends Controller
                             // Send WhatsApp notification about package expiration (with retry logic)
                             if ($bs->subscription_expired_enabled && !empty($user->phone) && !empty($bs->subscription_expired_text)) {
                                 $this->sendExpirationNotificationWithRetry($user, $bs, $exMember);
+                            }
+
+                            // Send email notification about package expiration
+                            if (!empty($user->email) && $be && $be->subscription_expired_email_enabled) {
+                                $this->sendExpirationEmailNotification($user, $bs, $be, $exMember);
                             }
                             
                             \App\Jobs\FreePackageSwitchMail::dispatch($user, $bs, $be);
@@ -399,7 +405,43 @@ class CronJobController extends Controller
     }
 
     /**
-     * Send expiration notification with retry logic
+     * Send expiration email notification
+     */
+    private function sendExpirationEmailNotification($user, $bs, $be, $membership)
+    {
+        try {
+            $emailService = new EmailService();
+            $packageName = $membership->package ? $membership->package->title : 'الباقة المميزة';
+            $expiryDate = Carbon::parse($membership->expire_date)->format('Y-m-d');
+            
+            // Get template name from settings
+            $templateName = $be->subscription_expired_template ?? null;
+            
+            $emailService->sendSubscriptionExpiredEmail(
+                $user->email,
+                $user->first_name,
+                $packageName,
+                $expiryDate,
+                'ar', // Default language
+                $templateName
+            );
+            
+            Log::info('Expiration email notification sent successfully', [
+                'user_id' => $user->id,
+                'email' => $user->email
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Expiration email notification failed', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+* Send expiration notification with retry logic
      */
     private function sendExpirationNotificationWithRetry($user, $bs, $membership)
     {

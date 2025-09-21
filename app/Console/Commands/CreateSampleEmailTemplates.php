@@ -73,6 +73,28 @@ class CreateSampleEmailTemplates extends Command
                 'variables' => ['{name}', '{email}'],
                 'status' => true,
                 'character_count' => 0
+            ],
+            [
+                'name' => 'subscription_expiration_ar',
+                'description' => 'قالب تنبيه انتهاء الاشتراك باللغة العربية',
+                'subject' => 'تنبيه: انتهاء الاشتراك قريباً',
+                'content' => "مرحباً {name},\n\nنود تذكيرك أن باقتك {package_name} ستنتهي قريباً.\n\nتاريخ الانتهاء: {expiry_date}\n\nيرجى تجديد اشتراكك للاستمرار في الاستفادة من خدماتنا.\n\nمع أطيب التحيات،\nفريق العمل",
+                'type' => 'subscription_expiration',
+                'language' => 'ar',
+                'variables' => ['{name}', '{package_name}', '{expiry_date}'],
+                'status' => true,
+                'character_count' => 0
+            ],
+            [
+                'name' => 'subscription_expired_ar',
+                'description' => 'قالب إشعار انتهاء الاشتراك باللغة العربية',
+                'subject' => 'انتهاء الاشتراك',
+                'content' => "مرحباً {name},\n\nانتهى اشتراكك وتم نقلك إلى الباقة المجانية.\n\nيمكنك الترقية في أي وقت من لوحة التحكم.\n\nمع أطيب التحيات،\nفريق العمل",
+                'type' => 'subscription_expired',
+                'language' => 'ar',
+                'variables' => ['{name}', '{package_name}', '{expiry_date}'],
+                'status' => true,
+                'character_count' => 0
             ]
         ];
 

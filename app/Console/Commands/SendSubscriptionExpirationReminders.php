@@ -4,8 +4,10 @@ namespace App\Console\Commands;
 
 use App\Models\Membership;
 use App\Models\BasicSetting;
+use App\Models\BasicExtended;
 use App\Models\Package;
 use App\Services\WhatsAppService;
+use App\Services\EmailService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -58,39 +60,80 @@ class SendSubscriptionExpirationReminders extends Command
             }
 
             $whatsappService = new WhatsAppService();
+            $emailService = new EmailService();
+            $be = BasicExtended::first();
             $sentCount = 0;
             $failedCount = 0;
 
             foreach ($expiringMemberships as $membership) {
-                if (!$membership->user || empty($membership->user->phone)) {
-                    $this->warn("Skipping user {$membership->user_id}: No phone number");
+                if (!$membership->user) {
+                    $this->warn("Skipping user {$membership->user_id}: User not found");
                     continue;
                 }
 
-                try {
-                    $packageName = $membership->package ? $membership->package->title : 'Unknown Package';
-                    $expiryDate = Carbon::parse($membership->expire_date)->format('Y-m-d');
-                    
-                    $whatsappService->sendSubscriptionExpirationMessage(
-                        $membership->user->phone,
-                        $bs->subscription_expiration_text,
-                        $membership->user->first_name,
-                        $packageName,
-                        $expiryDate
-                    );
+                $packageName = $membership->package ? $membership->package->title : 'Unknown Package';
+                $expiryDate = Carbon::parse($membership->expire_date)->format('Y-m-d');
+                $user = $membership->user;
 
-                    $sentCount++;
-                    $this->info("Sent reminder to: {$membership->user->first_name} ({$membership->user->phone})");
-                    
-                } catch (\Exception $e) {
-                    $failedCount++;
-                    $this->error("Failed to send reminder to user {$membership->user_id}: " . $e->getMessage());
-                    
-                    Log::error('Subscription expiration reminder failed', [
-                        'user_id' => $membership->user_id,
-                        'phone' => $membership->user->phone,
-                        'error' => $e->getMessage()
-                    ]);
+                // Send WhatsApp reminder
+                if (!empty($user->phone)) {
+                    try {
+                        $whatsappService->sendSubscriptionExpirationMessage(
+                            $user->phone,
+                            $bs->subscription_expiration_text,
+                            $user->first_name,
+                            $packageName,
+                            $expiryDate
+                        );
+
+                        $this->info("Sent WhatsApp reminder to: {$user->first_name} ({$user->phone})");
+                        
+                    } catch (\Exception $e) {
+                        $this->error("Failed to send WhatsApp reminder to user {$user->id}: " . $e->getMessage());
+                        
+                        Log::error('WhatsApp subscription expiration reminder failed', [
+                            'user_id' => $user->id,
+                            'phone' => $user->phone,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                } else {
+                    $this->warn("Skipping WhatsApp for user {$user->id}: No phone number");
+                }
+
+                // Send email reminder
+                if (!empty($user->email) && $be && $be->subscription_expiration_email_enabled) {
+                    try {
+                        $templateName = $be->subscription_expiration_template ?? null;
+                        
+                        $emailService->sendSubscriptionExpirationEmail(
+                            $user->email,
+                            $user->first_name,
+                            $packageName,
+                            $expiryDate,
+                            'ar', // Default language
+                            $templateName
+                        );
+
+                        $this->info("Sent email reminder to: {$user->first_name} ({$user->email})");
+                        $sentCount++;
+                        
+                    } catch (\Exception $e) {
+                        $failedCount++;
+                        $this->error("Failed to send email reminder to user {$user->id}: " . $e->getMessage());
+                        
+                        Log::error('Email subscription expiration reminder failed', [
+                            'user_id' => $user->id,
+                            'email' => $user->email,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                } else {
+                    if (empty($user->email)) {
+                        $this->warn("Skipping email for user {$user->id}: No email address");
+                    } elseif (!$be || !$be->subscription_expiration_email_enabled) {
+                        $this->info("Skipping email for user {$user->id}: Email notifications disabled");
+                    }
                 }
             }
 
