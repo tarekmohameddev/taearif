@@ -180,22 +180,12 @@ class ResetPasswordController extends Controller
         }
 
         $request->validate([
-            'identifier' => 'required', // email or phone
             'code' => 'required|digits:6',
             'new_password' => 'required|min:8|confirmed',
         ]);
 
-
-        $user = User::where('email', $request->identifier)
-            ->orWhere('phone', $request->identifier)
-            ->first();
-
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
-
-        $log = PasswordResetLog::where('user_id', $user->id)
-            ->where('code', $request->code)
+        // Find the reset log by code to identify the user
+        $log = PasswordResetLog::where('code', $request->code)
             ->where('used', false)
             ->where('expires_at', '>=', now())
             ->latest()
@@ -203,6 +193,13 @@ class ResetPasswordController extends Controller
 
         if (!$log) {
             return response()->json(['message' => 'Invalid or expired code'], 400);
+        }
+
+        // Get the user from the log
+        $user = User::find($log->user_id);
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
         }
 
         // Reset password
