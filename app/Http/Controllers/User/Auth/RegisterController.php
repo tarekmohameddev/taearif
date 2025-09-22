@@ -75,6 +75,7 @@ class RegisterController extends Controller
             'toMail' => $user->email,
             'toName' => $user->fname,
             'customer_name' => $user->fname,
+            'customer_email' => $user->email,
             'verification_link' => "<a href='" . url('register/verify/' . $token) . "'>" . url('register/verify/' . $token) . "</a>",
             'website_title' => $bs->website_title,
             'templateType' => 'email_verification',

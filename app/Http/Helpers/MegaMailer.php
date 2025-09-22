@@ -22,8 +22,8 @@ class MegaMailer
         if (!$temp) {
             // Fallback to default email verification template
             if ($data['templateType'] === 'email_verification') {
-                $subject = 'Complete Registration';
-                $body = '<p>Hi User,</p><p><br />This is a confirmation mail from us, to complete your registration</p><p>{verification_link}</p><p><br /></p><p>Best Regards,</p><p>{website_title}</p>';
+                $subject = 'تأكيد التسجيل';
+                $body = '<p>شكرًا لتسجيلك في منصة تعاريف.</p><p>تم إنشاء حسابك بنجاح، ويمكنك الآن الوصول إلى موقعك ولوحة التحكم.</p><p>بريدك الإلكتروني: {customer_email}</p><p><br /></p><p>يرجى الضغط على الرابط التالي لتفعيل حسابك:</p><p>{verification_link}</p><p><br /></p><p>مع أطيب التحيات،</p><p>{website_title}</p>';
             } else {
                 throw new \Exception("Email template not found for type: " . $data['templateType']);
             }
@@ -78,6 +78,9 @@ class MegaMailer
         }
         if (array_key_exists('customer_name', $data)) {
             $body = preg_replace("/{customer_name}/", $data['customer_name'], $body);
+        }
+        if (array_key_exists('customer_email', $data)) {
+            $body = preg_replace("/{customer_email}/", $data['customer_email'], $body);
         }
         if (array_key_exists('verification_link', $data)) {
             $body = preg_replace("/{verification_link}/", $data['verification_link'], $body);
