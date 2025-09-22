@@ -724,6 +724,7 @@ class RentalService
             ],
             'available_fees' => [
                 [
+                    'id' => 'platform_fee_' . $rental->id,
                     'fee_type' => 'platform_fee',
                     'fee_name' => 'Platform Fee',
                     'total_amount' => round($fees['platform_fee'], 2),
@@ -732,6 +733,7 @@ class RentalService
                     'status' => $this->getFeePaymentStatus($fees['platform_fee'], $this->getPaidAmountForFee($rental->id, 'platform_fee'))
                 ],
                 [
+                    'id' => 'water_fee_' . $rental->id,
                     'fee_type' => 'water_fee',
                     'fee_name' => 'Water Fee',
                     'total_amount' => round($fees['water_fee'], 2),
@@ -740,6 +742,7 @@ class RentalService
                     'status' => $this->getFeePaymentStatus($fees['water_fee'], $this->getPaidAmountForFee($rental->id, 'water_fee'))
                 ],
                 [
+                    'id' => 'office_fee_' . $rental->id,
                     'fee_type' => 'office_fee',
                     'fee_name' => 'Office Fee',
                     'total_amount' => round($fees['office_fee'], 2),

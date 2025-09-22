@@ -156,7 +156,7 @@ class RentalController extends Controller
     {
         $data = $request->validate([
             'payments' => 'required|array|min:1',
-            'payments.*.installment_id' => 'required|exists:rm_payment_installments,id',
+            'payments.*.installment_id' => 'nullable|exists:rm_payment_installments,id',
             'payments.*.payment_type' => 'required|in:rent,platform_fee,water_fee,office_fee,deposit',
             'payments.*.amount' => 'required|numeric|min:0.01',
             'payments.*.notes' => 'nullable|string|max:255',
@@ -166,8 +166,14 @@ class RentalController extends Controller
             'notes' => 'nullable|string|max:255'
         ]);
 
-        // Validate that all installment_ids belong to this rental
-        $this->rentalService->validateInstallmentsForRental(auth()->id(), $id, collect($data['payments'])->pluck('installment_id'));
+        // Validate installment_ids only for rent payments
+        $rentPayments = collect($data['payments'])->where('payment_type', 'rent');
+        if ($rentPayments->isNotEmpty()) {
+            $installmentIds = $rentPayments->pluck('installment_id')->filter();
+            if ($installmentIds->isNotEmpty()) {
+                $this->rentalService->validateInstallmentsForRental(auth()->id(), $id, $installmentIds);
+            }
+        }
 
         // Process payments using PaymentService
         $paymentService = app(\App\Services\Rms\PaymentService::class);
