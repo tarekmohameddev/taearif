@@ -137,4 +137,60 @@ class RentalController extends Controller
         $details = $this->rentalService->getRentalDetailsWithPayments(auth()->id(), $id);
         return response()->json(['status' => true, 'data' => $details]);
     }
+
+    /**
+     * Get payment collection data for a rental
+     * Returns installments with amounts and payment status
+     */
+    public function paymentCollection($id)
+    {
+        $collectionData = $this->rentalService->getPaymentCollectionData(auth()->id(), $id);
+        return response()->json(['status' => true, 'data' => $collectionData]);
+    }
+
+    /**
+     * Collect payment for specific installments
+     * Supports partial payments for individual installments
+     */
+    public function collectPayment(Request $request, $id)
+    {
+        $data = $request->validate([
+            'payments' => 'required|array|min:1',
+            'payments.*.installment_id' => 'required|exists:rm_payment_installments,id',
+            'payments.*.payment_type' => 'required|in:rent,platform_fee,water_fee,office_fee,deposit',
+            'payments.*.amount' => 'required|numeric|min:0.01',
+            'payments.*.notes' => 'nullable|string|max:255',
+            'payment_method' => 'required|in:cash,bank_transfer,credit_card,online_payment,check,other',
+            'payment_date' => 'nullable|date',
+            'reference' => 'nullable|string|max:100',
+            'notes' => 'nullable|string|max:255'
+        ]);
+
+        // Validate that all installment_ids belong to this rental
+        $this->rentalService->validateInstallmentsForRental(auth()->id(), $id, collect($data['payments'])->pluck('installment_id'));
+
+        // Process payments using PaymentService
+        $paymentService = app(\App\Services\Rms\PaymentService::class);
+        
+        $processedPayments = [];
+        foreach ($data['payments'] as $paymentData) {
+            $paymentData['payment_method'] = $data['payment_method'];
+            $paymentData['payment_date'] = $data['payment_date'] ?? now()->toDateString();
+            $paymentData['reference'] = $data['reference'];
+            $paymentData['notes'] = $paymentData['notes'] ?? $data['notes'];
+            
+            $payment = $paymentService->recordPayment(auth()->id(), $id, $paymentData);
+            $processedPayments[] = $payment;
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Payment collected successfully',
+            'data' => [
+                'payments' => $processedPayments,
+                'total_amount' => collect($processedPayments)->sum('amount'),
+                'payment_count' => count($processedPayments)
+            ]
+        ], 201);
+    }
 }
