@@ -135,6 +135,10 @@ class ForgotPasswordController extends Controller
                 // Remove any non-numeric characters except +
                 $phone = preg_replace('/[^0-9+]/', '', $phone);
                 
+                // Get frontend URL for reset link
+                $frontendUrl = rtrim(env('FRONTEND_URL', url('/')), '/');
+                $resetUrl = $frontendUrl . '/reset';
+                
                 $settings = BasicExtended::first();
                 $templateName = $settings->meta_template_name ?? null;
                 
@@ -142,6 +146,8 @@ class ForgotPasswordController extends Controller
                     $phone,
                     $resetCode,
                     $user->name ?? $user->email,
+                    'ar', // user language
+                    $resetUrl,
                     $templateName
                 );
 

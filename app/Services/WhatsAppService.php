@@ -144,6 +144,36 @@ class WhatsAppService
                 $templateName = 'password_reset';
             }
 
+            // NEW: Try Meta Cloud template first, then database template fallback
+            if ($templateName && $useMetaTemplate) {
+                // Try Meta Cloud template first
+                if ($this->checkMetaTemplateExists($templateName)) {
+                    $templateResult = $this->sendPasswordResetMetaTemplate($formattedPhone, $templateName, $code, $userName, $resetUrl);
+                    if ($templateResult) {
+                        return true;
+                    }
+                }
+                
+                // Fallback to database template
+                $dbTemplate = \App\Models\WhatsAppTemplate::where('name', $templateName)
+                    ->where('type', 'password_reset')
+                    ->where('status', true)
+                    ->first();
+                    
+                if ($dbTemplate) {
+                    Log::info('Using database template for password reset fallback', [
+                        'template_name' => $templateName,
+                        'template_content' => $dbTemplate->content
+                    ]);
+                    
+                    $templateMessage = $dbTemplate->content;
+                    $templateMessage = str_replace('{code}', $code, $templateMessage);
+                    $templateMessage = str_replace('{reset_url}', $resetUrl, $templateMessage);
+                    
+                    return $this->sendRegularMessage($formattedPhone, $templateMessage);
+                }
+            }
+
             // If no template name is provided or custom message is provided, send as regular message
             if (!$templateName || $message) {
                 $payload = [
@@ -229,7 +259,100 @@ class WhatsAppService
     }
 
     /**
-     * Send message via Evolution API
+     * Send welcome message via Evolution API
+     */
+    protected function sendWelcomeViaEvolutionApi($phoneNumber, $message, $userName = null)
+    {
+        try {
+            $apiUrl = $this->settings->evolution_api_url;
+            $apiKey = $this->settings->evolution_api_key;
+            $instanceName = $this->settings->evolution_instance_name;
+
+            if (!$apiUrl || !$apiKey || !$instanceName) {
+                throw new \Exception('Evolution API configuration incomplete');
+            }
+
+            // Format phone number
+            $formattedPhone = $this->formatPhoneNumber($phoneNumber);
+            
+            Log::info('Evolution API welcome message formatting', [
+                'original' => $phoneNumber,
+                'formatted' => $formattedPhone
+            ]);
+
+            // Add title/header to the message for Evolution API
+            $title = "تم التسجيل بنجاح في منصة تعاريف";
+            
+            // Convert \n to actual line breaks and remove email from message
+            $processedMessage = str_replace('\\n', "\n", $message);
+            $processedMessage = str_replace('{email}', '', $processedMessage);
+            $processedMessage = str_replace('بريدك الإلكتروني: ', '', $processedMessage);
+            // Remove any line containing email text
+            $processedMessage = preg_replace('/.*بريدك الإلكتروني:.*\n?/', '', $processedMessage);
+            // Remove any remaining email patterns
+            $processedMessage = preg_replace('/.*@.*\n?/', '', $processedMessage);
+            // Clean up extra line breaks
+            $processedMessage = preg_replace('/\n\s*\n/', "\n", $processedMessage);
+            $processedMessage = trim($processedMessage);
+            
+            // Add clickable links from .env
+            $appUrl = env('APP_URL', 'https://taearifdev.com');
+            $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
+            
+            $fullMessage = "*{$title}*\n\n{$processedMessage}\n\n🔗 روابط مفيدة:\n🌐 موقعك: {$appUrl}\n📊 لوحة التحكم: {$frontendUrl}";
+
+            // Clean message for Evolution API (preserve line breaks)
+            $cleanedMessage = $this->cleanRegularMessageForWhatsApp($fullMessage);
+
+            $payload = [
+                "number" => $formattedPhone,
+                "text" => $cleanedMessage,
+                "options" => [
+                    "delay" => 1200,
+                    "presence" => "composing"
+                ]
+            ];
+
+            $endpoint = "{$apiUrl}/message/sendText/{$instanceName}";
+            
+            Log::info('Evolution API welcome message request', [
+                'endpoint' => $endpoint,
+                'payload' => $payload,
+                'api_key_length' => strlen($apiKey)
+            ]);
+
+            $response = Http::withHeaders([
+                'apikey' => $apiKey,
+                'Content-Type' => 'application/json',
+            ])->post($endpoint, $payload);
+
+            if ($response->successful()) {
+                Log::info('Evolution API welcome message sent successfully', [
+                    'phone' => $formattedPhone,
+                    'instance' => $instanceName,
+                    'response' => $response->json()
+                ]);
+                return true;
+            } else {
+                Log::error('Evolution API welcome message failed', [
+                    'phone' => $formattedPhone,
+                    'response' => $response->json(),
+                    'status' => $response->status()
+                ]);
+                throw new \Exception('Failed to send welcome message via Evolution API');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Evolution API welcome message exception', [
+                'error' => $e->getMessage(),
+                'phone' => $phoneNumber
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Send message via Evolution API (for password reset)
      */
     protected function sendViaEvolutionApi($phoneNumber, $code, $userName = null, $resetUrl = null, $message = null)
     {
@@ -534,7 +657,7 @@ class WhatsAppService
         if ($this->settings->whatsapp_service === 'meta_cloud') {
             return $this->sendMetaCloudMessage($phoneNumber, $message, 'welcome', $userName, $userEmail);
         } elseif ($this->settings->whatsapp_service === 'evolution_api') {
-            return $this->sendViaEvolutionApi($phoneNumber, $message, $userName);
+            return $this->sendWelcomeViaEvolutionApi($phoneNumber, $message, $userName);
         }
         
         throw new \Exception('No WhatsApp service configured');
@@ -550,9 +673,9 @@ class WhatsAppService
         $message = str_replace('{expiry_date}', $expiryDate ?? 'N/A', $message);
         
         if ($this->settings->whatsapp_service === 'meta_cloud') {
-            return $this->sendMetaCloudMessage($phoneNumber, $message, 'subscription_expiration');
+            return $this->sendMetaCloudMessage($phoneNumber, $message, 'subscription_expiration', $userName, null, $packageName, $expiryDate);
         } elseif ($this->settings->whatsapp_service === 'evolution_api') {
-            return $this->sendViaEvolutionApi($phoneNumber, $message, $userName);
+            return $this->sendSubscriptionExpirationViaEvolutionApi($phoneNumber, $message, $userName, $packageName, $expiryDate);
         }
         
         throw new \Exception('No WhatsApp service configured');
@@ -568,18 +691,184 @@ class WhatsAppService
         $message = str_replace('{expiry_date}', $expiryDate ?? 'N/A', $message);
         
         if ($this->settings->whatsapp_service === 'meta_cloud') {
-            return $this->sendMetaCloudMessage($phoneNumber, $message, 'subscription_expired');
+            return $this->sendMetaCloudMessage($phoneNumber, $message, 'subscription_expired', $userName, null, $packageName, $expiryDate);
         } elseif ($this->settings->whatsapp_service === 'evolution_api') {
-            return $this->sendViaEvolutionApi($phoneNumber, $message, $userName);
+            return $this->sendSubscriptionExpiredViaEvolutionApi($phoneNumber, $message, $userName, $packageName, $expiryDate);
         }
         
         throw new \Exception('No WhatsApp service configured');
     }
 
     /**
+     * Send subscription expiration message via Evolution API
+     */
+    protected function sendSubscriptionExpirationViaEvolutionApi($phoneNumber, $message, $userName = null, $packageName = null, $expiryDate = null)
+    {
+        try {
+            $apiUrl = $this->settings->evolution_api_url;
+            $apiKey = $this->settings->evolution_api_key;
+            $instanceName = $this->settings->evolution_instance_name;
+
+            if (!$apiUrl || !$apiKey || !$instanceName) {
+                throw new \Exception('Evolution API configuration incomplete');
+            }
+
+            // Format phone number
+            $formattedPhone = $this->formatPhoneNumber($phoneNumber);
+            
+            Log::info('Evolution API subscription expiration message formatting', [
+                'original' => $phoneNumber,
+                'formatted' => $formattedPhone
+            ]);
+
+            // Add title/header to the message for Evolution API
+            $title = "تنبيه انتهاء الاشتراك";
+            
+            // Convert \n to actual line breaks
+            $processedMessage = str_replace('\\n', "\n", $message);
+            
+            // Add links from .env
+            $appUrl = env('APP_URL', 'https://taearifdev.com');
+            $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
+            
+            $fullMessage = "*{$title}*\n\n{$processedMessage}\n\n🔗 روابط مفيدة:\n🌐 موقعك: {$appUrl}\n📊 لوحة التحكم: {$frontendUrl}";
+
+            // Clean message for Evolution API (preserve line breaks)
+            $cleanedMessage = $this->cleanRegularMessageForWhatsApp($fullMessage);
+
+            $payload = [
+                "number" => $formattedPhone,
+                "text" => $cleanedMessage,
+                "options" => [
+                    "delay" => 1200,
+                    "presence" => "composing"
+                ]
+            ];
+
+            $endpoint = "{$apiUrl}/message/sendText/{$instanceName}";
+            
+            Log::info('Evolution API subscription expiration message request', [
+                'endpoint' => $endpoint,
+                'payload' => $payload,
+                'api_key_length' => strlen($apiKey)
+            ]);
+
+            $response = Http::withHeaders([
+                'apikey' => $apiKey,
+                'Content-Type' => 'application/json',
+            ])->post($endpoint, $payload);
+
+            if ($response->successful()) {
+                Log::info('Evolution API subscription expiration message sent successfully', [
+                    'phone' => $formattedPhone,
+                    'instance' => $instanceName,
+                    'response' => $response->json()
+                ]);
+                return true;
+            } else {
+                Log::error('Evolution API subscription expiration message failed', [
+                    'phone' => $formattedPhone,
+                    'response' => $response->json(),
+                    'status' => $response->status()
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error('Evolution API subscription expiration message exception', [
+                'phone' => $phoneNumber,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Send subscription expired message via Evolution API
+     */
+    protected function sendSubscriptionExpiredViaEvolutionApi($phoneNumber, $message, $userName = null, $packageName = null, $expiryDate = null)
+    {
+        try {
+            $apiUrl = $this->settings->evolution_api_url;
+            $apiKey = $this->settings->evolution_api_key;
+            $instanceName = $this->settings->evolution_instance_name;
+
+            if (!$apiUrl || !$apiKey || !$instanceName) {
+                throw new \Exception('Evolution API configuration incomplete');
+            }
+
+            // Format phone number
+            $formattedPhone = $this->formatPhoneNumber($phoneNumber);
+            
+            Log::info('Evolution API subscription expired message formatting', [
+                'original' => $phoneNumber,
+                'formatted' => $formattedPhone
+            ]);
+
+            // Add title/header to the message for Evolution API
+            $title = "انتهت صلاحية الاشتراك";
+            
+            // Convert \n to actual line breaks
+            $processedMessage = str_replace('\\n', "\n", $message);
+            
+            // Add links from .env
+            $appUrl = env('APP_URL', 'https://taearifdev.com');
+            $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
+            
+            $fullMessage = "*{$title}*\n\n{$processedMessage}\n\n🔗 روابط مفيدة:\n🌐 موقعك: {$appUrl}\n📊 لوحة التحكم: {$frontendUrl}";
+
+            // Clean message for Evolution API (preserve line breaks)
+            $cleanedMessage = $this->cleanRegularMessageForWhatsApp($fullMessage);
+
+            $payload = [
+                "number" => $formattedPhone,
+                "text" => $cleanedMessage,
+                "options" => [
+                    "delay" => 1200,
+                    "presence" => "composing"
+                ]
+            ];
+
+            $endpoint = "{$apiUrl}/message/sendText/{$instanceName}";
+            
+            Log::info('Evolution API subscription expired message request', [
+                'endpoint' => $endpoint,
+                'payload' => $payload,
+                'api_key_length' => strlen($apiKey)
+            ]);
+
+            $response = Http::withHeaders([
+                'apikey' => $apiKey,
+                'Content-Type' => 'application/json',
+            ])->post($endpoint, $payload);
+
+            if ($response->successful()) {
+                Log::info('Evolution API subscription expired message sent successfully', [
+                    'phone' => $formattedPhone,
+                    'instance' => $instanceName,
+                    'response' => $response->json()
+                ]);
+                return true;
+            } else {
+                Log::error('Evolution API subscription expired message failed', [
+                    'phone' => $formattedPhone,
+                    'response' => $response->json(),
+                    'status' => $response->status()
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error('Evolution API subscription expired message exception', [
+                'phone' => $phoneNumber,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * Send Meta Cloud message with template support
      */
-    protected function sendMetaCloudMessage($phoneNumber, $message, $messageType = 'default', $userName = null, $userEmail = null)
+    protected function sendMetaCloudMessage($phoneNumber, $message, $messageType = 'default', $userName = null, $userEmail = null, $packageName = null, $expiryDate = null)
     {
         $templateName = null;
         $templateContent = null;
@@ -645,19 +934,38 @@ class WhatsAppService
                               ($templateName && $templateContent ? 'database_template' : 'regular_message')
         ]);
 
-        // For welcome messages, use the approved Meta Cloud template
-        if ($templateName && $messageType === 'welcome') {
-            Log::info('Using approved Meta Cloud template for welcome message', [
+        // Use Meta Cloud templates for all message types
+        if ($templateName) {
+            Log::info('Using Meta Cloud template', [
                 'template_name' => $templateName,
+                'message_type' => $messageType,
                 'user_email' => $userEmail,
                 'user_name' => $userName
             ]);
-            return $this->sendApprovedTemplateMessage($formattedPhone, $templateName, $userEmail, $userName);
-        } else if ($templateName && $templateContent) {
+            
+            switch ($messageType) {
+                case 'welcome':
+                    return $this->sendWelcomeMetaTemplate($formattedPhone, $templateName, $userEmail, $userName);
+                case 'subscription_expiration':
+                    return $this->sendSubscriptionExpirationMetaTemplate($formattedPhone, $templateName, $userName, $packageName, $expiryDate);
+                case 'subscription_expired':
+                    return $this->sendSubscriptionExpiredMetaTemplate($formattedPhone, $templateName, $userName, $packageName, $expiryDate);
+                default:
+                    // For other message types, check if Meta Cloud template exists
+                    if ($this->checkMetaTemplateExists($templateName)) {
+                        return $this->sendTemplateMessage($formattedPhone, $templateName, $message);
+                    }
+                    break;
+            }
+        }
+        
+        if ($templateName && $templateContent) {
             // For other message types, use database template content
             $processedContent = $templateContent;
             $processedContent = str_replace('{name}', $userName ?? 'User', $processedContent);
             $processedContent = str_replace('{email}', $userEmail ?? 'N/A', $processedContent);
+            $processedContent = str_replace('{package_name}', $packageName ?? 'Package', $processedContent);
+            $processedContent = str_replace('{expiry_date}', $expiryDate ?? 'N/A', $processedContent);
             
             Log::info('Using database template content for regular message', [
                 'template_name' => $templateName,
@@ -791,7 +1099,7 @@ class WhatsAppService
                             'parameters' => [
                                 [
                                     'type' => 'text',
-                                    'text' => $userName ?? 'taearif'
+                                    'text' => env('FRONTEND_URL', 'https://app.taearif.com')
                                 ]
                             ]
                         ]
@@ -836,6 +1144,297 @@ class WhatsAppService
                 'error' => $e->getMessage()
             ]);
             throw $e;
+        }
+    }
+
+    /**
+     * Send welcome message using Meta Cloud template (thanks_for_registration)
+     */
+    protected function sendWelcomeMetaTemplate($phoneNumber, $templateName, $userEmail, $userName = null)
+    {
+        try {
+            $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
+            
+            $data = [
+                'messaging_product' => 'whatsapp',
+                'to' => $phoneNumber,
+                'type' => 'template',
+                'template' => [
+                    'name' => $templateName,
+                    'language' => [
+                        'code' => $this->settings->meta_template_language ?? 'ar'
+                    ],
+                    'components' => [
+                        [
+                            'type' => 'body',
+                            'parameters' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => $userEmail ?? 'user@example.com',
+                                    'parameter_name' => 'email'
+                                ]
+                            ]
+                        ],
+                        [
+                            'type' => 'button',
+                            'sub_type' => 'url',
+                            'index' => '0',
+                            'parameters' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => 'taearif'
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ];
+
+            Log::info('Meta Cloud welcome template message request', [
+                'phone' => $phoneNumber,
+                'template_name' => $templateName,
+                'user_email' => $userEmail,
+                'user_name' => $userName,
+                'url' => $url,
+                'data' => $data
+            ]);
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->settings->meta_access_token,
+                'Content-Type' => 'application/json',
+            ])->post($url, $data);
+
+            if ($response->successful()) {
+                Log::info('Meta Cloud welcome template message sent successfully', [
+                    'phone' => $phoneNumber,
+                    'template_name' => $templateName,
+                    'response' => $response->json()
+                ]);
+                return true;
+            } else {
+                Log::error('Meta Cloud welcome template message failed', [
+                    'phone' => $phoneNumber,
+                    'template_name' => $templateName,
+                    'response' => $response->json(),
+                    'status' => $response->status()
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error('Meta Cloud welcome template message exception', [
+                'phone' => $phoneNumber,
+                'template_name' => $templateName,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Send subscription expiration message using Meta Cloud template (subscription_expiry_reminder)
+     */
+    protected function sendSubscriptionExpirationMetaTemplate($phoneNumber, $templateName, $userName = null, $packageName = null, $expiryDate = null)
+    {
+        try {
+            $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
+            
+            // subscription_expiry_reminder template has no parameters, just header and body
+            $data = [
+                'messaging_product' => 'whatsapp',
+                'to' => $phoneNumber,
+                'type' => 'template',
+                'template' => [
+                    'name' => $templateName,
+                    'language' => [
+                        'code' => $this->settings->meta_template_language ?? 'ar'
+                    ]
+                ]
+            ];
+
+            Log::info('Meta Cloud subscription expiration template message request', [
+                'phone' => $phoneNumber,
+                'template_name' => $templateName,
+                'user_name' => $userName,
+                'package_name' => $packageName,
+                'expiry_date' => $expiryDate,
+                'url' => $url,
+                'data' => $data
+            ]);
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->settings->meta_access_token,
+                'Content-Type' => 'application/json',
+            ])->post($url, $data);
+
+            if ($response->successful()) {
+                Log::info('Meta Cloud subscription expiration template message sent successfully', [
+                    'phone' => $phoneNumber,
+                    'template_name' => $templateName,
+                    'response' => $response->json()
+                ]);
+                return true;
+            } else {
+                Log::error('Meta Cloud subscription expiration template message failed', [
+                    'phone' => $phoneNumber,
+                    'template_name' => $templateName,
+                    'response' => $response->json(),
+                    'status' => $response->status()
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error('Meta Cloud subscription expiration template message exception', [
+                'phone' => $phoneNumber,
+                'template_name' => $templateName,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Send subscription expired message using Meta Cloud template (subscription_expired_notice)
+     */
+    protected function sendSubscriptionExpiredMetaTemplate($phoneNumber, $templateName, $userName = null, $packageName = null, $expiryDate = null)
+    {
+        try {
+            $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
+            
+            // subscription_expired_notice template has no parameters, just header, body, footer and button
+            $data = [
+                'messaging_product' => 'whatsapp',
+                'to' => $phoneNumber,
+                'type' => 'template',
+                'template' => [
+                    'name' => $templateName,
+                    'language' => [
+                        'code' => $this->settings->meta_template_language ?? 'ar'
+                    ]
+                ]
+            ];
+
+            Log::info('Meta Cloud subscription expired template message request', [
+                'phone' => $phoneNumber,
+                'template_name' => $templateName,
+                'user_name' => $userName,
+                'package_name' => $packageName,
+                'expiry_date' => $expiryDate,
+                'url' => $url,
+                'data' => $data
+            ]);
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->settings->meta_access_token,
+                'Content-Type' => 'application/json',
+            ])->post($url, $data);
+
+            if ($response->successful()) {
+                Log::info('Meta Cloud subscription expired template message sent successfully', [
+                    'phone' => $phoneNumber,
+                    'template_name' => $templateName,
+                    'response' => $response->json()
+                ]);
+                return true;
+            } else {
+                Log::error('Meta Cloud subscription expired template message failed', [
+                    'phone' => $phoneNumber,
+                    'template_name' => $templateName,
+                    'response' => $response->json(),
+                    'status' => $response->status()
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error('Meta Cloud subscription expired template message exception', [
+                'phone' => $phoneNumber,
+                'template_name' => $templateName,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Send password reset message using Meta Cloud template (password_reset)
+     */
+    protected function sendPasswordResetMetaTemplate($phoneNumber, $templateName, $code, $userName = null, $resetUrl = null)
+    {
+        try {
+            $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
+            
+            // password_reset template uses positional parameters
+            $data = [
+                'messaging_product' => 'whatsapp',
+                'to' => $phoneNumber,
+                'type' => 'template',
+                'template' => [
+                    'name' => $templateName,
+                    'language' => [
+                        'code' => $this->settings->meta_template_language ?? 'ar'
+                    ],
+                    'components' => [
+                        [
+                            'type' => 'body',
+                            'parameters' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => $userName ?? 'المستخدم'
+                                ]
+                            ]
+                        ],
+                        [
+                            'type' => 'button',
+                            'sub_type' => 'url',
+                            'index' => '0',
+                            'parameters' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => $code
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ];
+
+            Log::info('Meta Cloud password reset template message request', [
+                'phone' => $phoneNumber,
+                'template_name' => $templateName,
+                'code' => $code,
+                'user_name' => $userName,
+                'reset_url' => $resetUrl,
+                'url' => $url,
+                'data' => $data
+            ]);
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->settings->meta_access_token,
+                'Content-Type' => 'application/json',
+            ])->post($url, $data);
+
+            if ($response->successful()) {
+                Log::info('Meta Cloud password reset template message sent successfully', [
+                    'phone' => $phoneNumber,
+                    'template_name' => $templateName,
+                    'response' => $response->json()
+                ]);
+                return true;
+            } else {
+                Log::error('Meta Cloud password reset template message failed', [
+                    'phone' => $phoneNumber,
+                    'template_name' => $templateName,
+                    'response' => $response->json(),
+                    'status' => $response->status()
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error('Meta Cloud password reset template message exception', [
+                'phone' => $phoneNumber,
+                'template_name' => $templateName,
+                'error' => $e->getMessage()
+            ]);
+            return false;
         }
     }
 
