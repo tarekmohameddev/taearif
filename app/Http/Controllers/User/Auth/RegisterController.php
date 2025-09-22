@@ -75,6 +75,7 @@ class RegisterController extends Controller
             'toMail' => $user->email,
             'toName' => $user->fname,
             'customer_name' => $user->fname,
+            'customer_email' => $user->email,
             'verification_link' => "<a href='" . url('register/verify/' . $token) . "'>" . url('register/verify/' . $token) . "</a>",
             'website_title' => $bs->website_title,
             'templateType' => 'email_verification',
@@ -92,13 +93,22 @@ class RegisterController extends Controller
         if (isset($user)) {
             $user->email_verified = 1;
             $user->update();
-            Session::flash('success', 'Email Verified Successfully');
-            if ($mode=== "online"){
-                Auth::guard('web')->login($user);
-                return redirect()->route('user-dashboard');
-            }else{
-                return redirect()->route('user.login');
+            
+            // Get frontend URL from .env or use default
+            $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
+            
+            if ($mode === "online"){
+                // Redirect to frontend with success message and login the user
+                $redirectUrl = $frontendUrl . '?verified=success&message=' . urlencode('Email Verified Successfully');
+                return redirect($redirectUrl);
+            } else {
+                // Redirect to frontend login page
+                return redirect($frontendUrl . '/login?verified=success&message=' . urlencode('Email Verified Successfully'));
             }
+        } else {
+            // Invalid token - redirect to frontend with error
+            $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
+            return redirect($frontendUrl . '?verified=error&message=' . urlencode('Invalid verification link'));
         }
     }
 }

@@ -16,8 +16,21 @@ class MegaMailer
 
     public function mailFromAdmin($data)
     {
-        $temp = EmailTemplate::where('email_type', '=', $data['templateType'])->first();
-        $body = $temp->email_body;
+        $temp = EmailTemplate::where('type', '=', $data['templateType'])->first();
+        
+        // Handle case when template is not found
+        if (!$temp) {
+            // Fallback to default email verification template
+            if ($data['templateType'] === 'email_verification') {
+                $subject = 'تأكيد التسجيل';
+                $body = '<p>شكرًا لتسجيلك في منصة تعاريف.</p><p>تم إنشاء حسابك بنجاح، ويمكنك الآن الوصول إلى موقعك ولوحة التحكم.</p><p>بريدك الإلكتروني: {customer_email}</p><p><br /></p><p>يرجى الضغط على الرابط التالي لتفعيل حسابك:</p><p>{verification_link}</p><p><br /></p><p>مع أطيب التحيات،</p><p>{website_title}</p>';
+            } else {
+                throw new \Exception("Email template not found for type: " . $data['templateType']);
+            }
+        } else {
+            $subject = $temp->subject;
+            $body = $temp->content;
+        }
         if (array_key_exists('username', $data)) {
             $body = preg_replace("/{username}/", $data['username'], $body);
         }
@@ -66,6 +79,9 @@ class MegaMailer
         if (array_key_exists('customer_name', $data)) {
             $body = preg_replace("/{customer_name}/", $data['customer_name'], $body);
         }
+        if (array_key_exists('customer_email', $data)) {
+            $body = preg_replace("/{customer_email}/", $data['customer_email'], $body);
+        }
         if (array_key_exists('verification_link', $data)) {
             $body = preg_replace("/{verification_link}/", $data['verification_link'], $body);
         }
@@ -104,7 +120,7 @@ class MegaMailer
             }
             // Content
             $mail->isHTML(true);
-            $mail->Subject = $temp->email_subject;
+            $mail->Subject = $subject;
             $mail->Body    = $body;
             $mail->send();
             // Attachments
