@@ -603,3 +603,6 @@ Route::get('/debug-oss', function () {
         'all_oss_config' => config('filesystems.disks.oss'),
     ];
 });
+
+// WhatsApp webhook routes
+Route::post('/whatsapp/webhook', [App\Http\Controllers\Api\WhatsAppWebhookController::class, 'handleWebhook']);

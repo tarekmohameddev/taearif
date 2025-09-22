@@ -391,6 +391,30 @@ class WhatsAppService
     }
 
     /**
+     * Clean message content for regular WhatsApp messages
+     * Preserves line breaks but cleans up excessive whitespace
+     */
+    protected function cleanRegularMessageForWhatsApp($message)
+    {
+        // Normalize line endings
+        $message = str_replace(["\r\n", "\r"], "\n", $message);
+        
+        // Replace tabs with spaces
+        $message = str_replace("\t", ' ', $message);
+        
+        // Replace multiple consecutive spaces with single space (but preserve line breaks)
+        $message = preg_replace('/[ ]+/', ' ', $message);
+        
+        // Remove empty lines (multiple consecutive newlines)
+        $message = preg_replace('/\n\s*\n/', "\n", $message);
+        
+        // Trim leading and trailing whitespace
+        $message = trim($message);
+        
+        return $message;
+    }
+
+    /**
      * Test WhatsApp service configuration
      */
     public function testConfiguration()
@@ -501,12 +525,14 @@ class WhatsAppService
     /**
      * Send welcome message to new user
      */
-    public function sendWelcomeMessage($phoneNumber, $message, $userName = null)
+    public function sendWelcomeMessage($phoneNumber, $message, $userName = null, $userEmail = null)
     {
+        // Replace template variables
         $message = str_replace('{name}', $userName ?? 'User', $message);
+        $message = str_replace('{email}', $userEmail ?? 'N/A', $message);
         
         if ($this->settings->whatsapp_service === 'meta_cloud') {
-            return $this->sendMetaCloudMessage($phoneNumber, $message, 'welcome');
+            return $this->sendMetaCloudMessage($phoneNumber, $message, 'welcome', $userName, $userEmail);
         } elseif ($this->settings->whatsapp_service === 'evolution_api') {
             return $this->sendViaEvolutionApi($phoneNumber, $message, $userName);
         }
@@ -553,7 +579,7 @@ class WhatsAppService
     /**
      * Send Meta Cloud message with template support
      */
-    protected function sendMetaCloudMessage($phoneNumber, $message, $messageType = 'default')
+    protected function sendMetaCloudMessage($phoneNumber, $message, $messageType = 'default', $userName = null, $userEmail = null)
     {
         $templateName = null;
         $templateContent = null;
@@ -584,8 +610,14 @@ class WhatsAppService
             'welcome_template_setting' => $this->settings->welcome_message_template ?? 'not_set'
         ]);
 
-        // If template name is provided, try to get template content from database
-        if ($templateName) {
+        // For welcome messages, use the approved Meta Cloud template directly
+        if ($templateName && $messageType === 'welcome') {
+            Log::info('Using approved Meta Cloud template for welcome message', [
+                'template_name' => $templateName,
+                'message_type' => $messageType
+            ]);
+        } else if ($templateName) {
+            // For other message types, try to get template content from database
             $template = \App\Models\WhatsAppTemplate::where('name', $templateName)->first();
             if ($template && $template->status) {
                 $templateContent = $template->content;
@@ -608,18 +640,31 @@ class WhatsAppService
         Log::info('Sending decision', [
             'formatted_phone' => $formattedPhone,
             'template_name' => $templateName,
-            'template_content' => $templateContent ? 'has_content' : 'no_content',
-            'sending_method' => $templateName && $templateContent ? 'database_template_as_regular' : 
-                              ($templateName ? 'meta_template_or_regular' : 'regular_message')
+            'message_type' => $messageType,
+            'sending_method' => $templateName && $messageType === 'welcome' ? 'approved_meta_template' : 
+                              ($templateName && $templateContent ? 'database_template' : 'regular_message')
         ]);
 
-        if ($templateName && $templateContent) {
-            // Send as regular message using database template content
+        // For welcome messages, use the approved Meta Cloud template
+        if ($templateName && $messageType === 'welcome') {
+            Log::info('Using approved Meta Cloud template for welcome message', [
+                'template_name' => $templateName,
+                'user_email' => $userEmail,
+                'user_name' => $userName
+            ]);
+            return $this->sendApprovedTemplateMessage($formattedPhone, $templateName, $userEmail, $userName);
+        } else if ($templateName && $templateContent) {
+            // For other message types, use database template content
+            $processedContent = $templateContent;
+            $processedContent = str_replace('{name}', $userName ?? 'User', $processedContent);
+            $processedContent = str_replace('{email}', $userEmail ?? 'N/A', $processedContent);
+            
             Log::info('Using database template content for regular message', [
                 'template_name' => $templateName,
-                'template_content' => $templateContent
+                'template_content' => $templateContent,
+                'processed_content' => $processedContent
             ]);
-            return $this->sendRegularMessage($formattedPhone, $templateContent);
+            return $this->sendRegularMessage($formattedPhone, $processedContent);
         } elseif ($templateName) {
             // Check if template exists in Meta Cloud API
             if ($this->checkMetaTemplateExists($templateName)) {
@@ -710,6 +755,154 @@ class WhatsAppService
     }
 
     /**
+     * Send approved template message via Meta Cloud API (Exact Postman format)
+     */
+    protected function sendApprovedTemplateMessage($phoneNumber, $templateName, $userEmail, $userName = null)
+    {
+        try {
+            $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
+            
+            // Use exact Postman format
+            $data = [
+                'messaging_product' => 'whatsapp',
+                'to' => $phoneNumber,
+                'type' => 'template',
+                'template' => [
+                    'name' => $templateName,
+                    'language' => [
+                        'policy' => 'deterministic',
+                        'code' => $this->settings->meta_template_language ?? 'ar'
+                    ],
+                    'components' => [
+                        [
+                            'type' => 'body',
+                            'parameters' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => $userEmail,
+                                    'parameter_name' => 'email'
+                                ]
+                            ]
+                        ],
+                        [
+                            'type' => 'button',
+                            'sub_type' => 'url',
+                            'index' => '0',
+                            'parameters' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => $userName ?? 'taearif'
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ];
+
+            Log::info('Meta Cloud approved template message request', [
+                'phone' => $phoneNumber,
+                'template_name' => $templateName,
+                'user_email' => $userEmail,
+                'user_name' => $userName,
+                'url' => $url,
+                'data' => $data
+            ]);
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->settings->meta_access_token,
+                'Content-Type' => 'application/json',
+            ])->post($url, $data);
+
+            if ($response->successful()) {
+                Log::info('Meta Cloud approved template message sent successfully', [
+                    'phone' => $phoneNumber,
+                    'template_name' => $templateName,
+                    'response' => $response->json()
+                ]);
+                return true;
+            } else {
+                Log::error('Meta Cloud approved template message failed', [
+                    'phone' => $phoneNumber,
+                    'template_name' => $templateName,
+                    'response' => $response->json(),
+                    'status' => $response->status()
+                ]);
+                throw new \Exception('Failed to send WhatsApp approved template message: ' . $response->body());
+            }
+        } catch (\Exception $e) {
+            Log::error('Meta Cloud approved template message exception', [
+                'phone' => $phoneNumber,
+                'template_name' => $templateName,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Send interactive message with buttons via Meta Cloud API
+     */
+    protected function sendInteractiveMessage($phoneNumber, $message, $buttons = [])
+    {
+        try {
+            $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
+            
+            // Clean message for regular WhatsApp messages (preserve line breaks)
+            $cleanedMessage = $this->cleanRegularMessageForWhatsApp($message);
+            
+            $data = [
+                'messaging_product' => 'whatsapp',
+                'to' => $phoneNumber,
+                'type' => 'interactive',
+                'interactive' => [
+                    'type' => 'button',
+                    'body' => [
+                        'text' => $cleanedMessage
+                    ],
+                    'action' => [
+                        'buttons' => $buttons
+                    ]
+                ]
+            ];
+
+            Log::info('Meta Cloud interactive message request', [
+                'phone' => $phoneNumber,
+                'original_message' => $message,
+                'cleaned_message' => $cleanedMessage,
+                'buttons' => $buttons,
+                'url' => $url,
+                'data' => $data
+            ]);
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->settings->meta_access_token,
+                'Content-Type' => 'application/json',
+            ])->post($url, $data);
+
+            if ($response->successful()) {
+                Log::info('Meta Cloud interactive message sent successfully', [
+                    'phone' => $phoneNumber,
+                    'response' => $response->json()
+                ]);
+                return true;
+            } else {
+                Log::error('Meta Cloud interactive message failed', [
+                    'phone' => $phoneNumber,
+                    'response' => $response->json(),
+                    'status' => $response->status()
+                ]);
+                throw new \Exception('Failed to send WhatsApp interactive message: ' . $response->body());
+            }
+        } catch (\Exception $e) {
+            Log::error('Meta Cloud interactive message exception', [
+                'phone' => $phoneNumber,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
      * Send regular message via Meta Cloud API
      */
     protected function sendRegularMessage($phoneNumber, $message)
@@ -717,18 +910,22 @@ class WhatsAppService
         try {
             $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
             
+            // Clean message for regular WhatsApp messages (preserve line breaks)
+            $cleanedMessage = $this->cleanRegularMessageForWhatsApp($message);
+            
             $data = [
                 'messaging_product' => 'whatsapp',
                 'to' => $phoneNumber,
                 'type' => 'text',
                 'text' => [
-                    'body' => $message
+                    'body' => $cleanedMessage
                 ]
             ];
 
             Log::info('Meta Cloud regular message request', [
                 'phone' => $phoneNumber,
-                'message' => $message,
+                'original_message' => $message,
+                'cleaned_message' => $cleanedMessage,
                 'url' => $url,
                 'data' => $data
             ]);

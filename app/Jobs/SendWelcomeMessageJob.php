@@ -47,10 +47,7 @@ class SendWelcomeMessageJob implements ShouldQueue
                 $message = str_replace('{name}', $this->user->first_name ?? 'User', $this->message);
                 $message = str_replace('{email}', $this->user->email ?? 'N/A', $message);
                 
-                // Clean message for WhatsApp (remove newlines and excessive spaces)
-                $message = $this->cleanMessageForWhatsApp($message);
-                
-                $whatsappService->sendWelcomeMessage($this->user->phone, $message, $this->user->first_name);
+                $whatsappService->sendWelcomeMessage($this->user->phone, $message, $this->user->first_name, $this->user->email);
                 
                 Log::info('WhatsApp welcome message sent successfully', [
                     'user_id' => $this->user->id,
@@ -113,21 +110,4 @@ class SendWelcomeMessageJob implements ShouldQueue
         }
     }
 
-    /**
-     * Clean message content for WhatsApp template parameters
-     * WhatsApp doesn't allow newlines, tabs, or more than 4 consecutive spaces
-     */
-    private function cleanMessageForWhatsApp($message)
-    {
-        // Replace newlines and tabs with spaces
-        $message = str_replace(["\r\n", "\r", "\n", "\t"], ' ', $message);
-        
-        // Replace multiple consecutive spaces with single space
-        $message = preg_replace('/\s+/', ' ', $message);
-        
-        // Trim leading and trailing spaces
-        $message = trim($message);
-        
-        return $message;
-    }
 }
