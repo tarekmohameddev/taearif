@@ -582,19 +582,17 @@ class RentalService
 
     private function calculateRentalFees($rental)
     {
+        // Use the FIXED amounts saved during rental creation
+        // These should NOT be recalculated to maintain consistency
         $platformFee = (float) ($rental->platform_fee ?? 0);
         $waterFee = (float) ($rental->water_fee ?? 0);
         $officeFee = (float) ($rental->office_fee ?? 0);
         
-        // Calculate office commission based on type
-        $officeCommission = 0;
-        if ($rental->office_commission_type === 'percentage' && $rental->office_commission_value) {
-            $officeCommission = ($rental->base_rent_amount * $rental->office_commission_value) / 100;
-        } elseif ($rental->office_commission_type === 'amount' && $rental->office_commission_value) {
-            $officeCommission = (float) $rental->office_commission_value;
-        }
+        // Use the saved office_fee amount (calculated and saved during rental creation)
+        // Do NOT recalculate office commission - use the fixed amount
+        $officeCommission = $officeFee; // office_fee already contains the calculated commission
 
-        $totalFees = $platformFee + $waterFee + $officeFee + $officeCommission;
+        $totalFees = $platformFee + $waterFee + $officeFee;
 
         return [
             'platform_fee' => $platformFee,
@@ -665,15 +663,33 @@ class RentalService
             ->orderBy('due_date')
             ->get();
 
-        $items = $installments->map(function ($installment) {
+        // Calculate fees for the rental
+        $fees = $this->calculateRentalFees($rental);
+        $totalInstallments = $installments->count();
+        
+        $items = $installments->map(function ($installment) use ($rental, $fees, $totalInstallments) {
             $paidAmount = (float) $installment->paid_amount;
-            $totalAmount = (float) $installment->amount;
+            $rentAmount = (float) $installment->amount;
+            
+            // Calculate fees per installment
+            $installmentFees = [
+                'platform_fee' => $totalInstallments > 0 ? $fees['platform_fee'] / $totalInstallments : 0,
+                'water_fee' => $totalInstallments > 0 ? $fees['water_fee'] / $totalInstallments : 0,
+                'office_fee' => $totalInstallments > 0 ? $fees['office_fee'] / $totalInstallments : 0,
+                'office_commission_value' => $totalInstallments > 0 ? $fees['office_commission_value'] / $totalInstallments : 0
+            ];
+            
+            $totalFeesPerInstallment = array_sum($installmentFees);
+            $totalAmount = $rentAmount + $totalFeesPerInstallment;
             $remainingAmount = max(0, $totalAmount - $paidAmount);
             
             return [
                 'id' => $installment->id,
                 'sequence_no' => $installment->sequence_no,
                 'due_date' => $installment->due_date,
+                'rent_amount' => $rentAmount,
+                'fees' => $installmentFees,
+                'total_fees' => $totalFeesPerInstallment,
                 'amount' => $totalAmount,
                 'paid_amount' => $paidAmount,
                 'remaining_amount' => $remainingAmount,
@@ -683,7 +699,9 @@ class RentalService
         });
 
         // Calculate summary
-        $totalDue = $installments->sum('amount');
+        $totalRentDue = $installments->sum('amount');
+        $totalFeesDue = $items->sum('total_fees');
+        $totalDue = $totalRentDue + $totalFeesDue;
         $totalPaid = $installments->sum('paid_amount');
         $totalRemaining = $totalDue - $totalPaid;
 
@@ -713,9 +731,18 @@ class RentalService
                     'name' => $rental->property?->project?->name
                 ]
             ],
+            'fees_breakdown' => [
+                'platform_fee' => $fees['platform_fee'],
+                'water_fee' => $fees['water_fee'],
+                'office_fee' => $fees['office_fee'],
+                'office_commission_value' => $fees['office_commission_value'],
+                'total_fees' => $fees['total_fees']
+            ],
             'payment_details' => [
                 'items' => $items,
                 'summary' => [
+                    'total_rent_due' => $totalRentDue,
+                    'total_fees_due' => $totalFeesDue,
                     'total_due' => $totalDue,
                     'total_paid' => $totalPaid,
                     'total_remaining' => $totalRemaining,
