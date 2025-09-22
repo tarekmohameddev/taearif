@@ -623,4 +623,145 @@ class RentalService
                 return $rentalPeriod; // fallback to 1 month per period
         }
     }
+
+    /**
+     * Get payment collection data for a rental
+     * Returns detailed payment information for collection interface
+     */
+    public function getPaymentCollectionData($userId, $rentalId)
+    {
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
+        
+        $rental = RmRental::with(['activeContract', 'installments.payments', 'property.project'])
+            ->where('user_id', $ownerId)
+            ->findOrFail($rentalId);
+
+        if (!$rental->activeContract) {
+            return [
+                'rental_info' => [
+                    'id' => $rental->id,
+                    'tenant_name' => $rental->tenant_full_name,
+                    'tenant_phone' => $rental->tenant_phone,
+                    'tenant_email' => $rental->tenant_email,
+                    'property_address' => $rental->property?->name ?? 'N/A',
+                    'unit_label' => $rental->unit_label,
+                    'property_number' => $rental->property_number,
+                    'contract_number' => $rental->activeContract?->contract_number ?? 'N/A'
+                ],
+                'payment_details' => [
+                    'items' => [],
+                    'summary' => [
+                        'total_due' => 0,
+                        'total_paid' => 0,
+                        'total_remaining' => 0
+                    ]
+                ]
+            ];
+        }
+
+        // Get installments with payment details
+        $installments = $rental->installments()
+            ->where('contract_id', $rental->activeContract->id)
+            ->orderBy('due_date')
+            ->get();
+
+        $items = $installments->map(function ($installment) {
+            $paidAmount = (float) $installment->paid_amount;
+            $totalAmount = (float) $installment->amount;
+            $remainingAmount = max(0, $totalAmount - $paidAmount);
+            
+            return [
+                'id' => $installment->id,
+                'sequence_no' => $installment->sequence_no,
+                'due_date' => $installment->due_date,
+                'amount' => $totalAmount,
+                'paid_amount' => $paidAmount,
+                'remaining_amount' => $remainingAmount,
+                'status' => $this->getInstallmentPaymentStatus($paidAmount, $totalAmount, $installment->due_date),
+                'is_overdue' => now()->isAfter($installment->due_date) && $remainingAmount > 0
+            ];
+        });
+
+        // Calculate summary
+        $totalDue = $installments->sum('amount');
+        $totalPaid = $installments->sum('paid_amount');
+        $totalRemaining = $totalDue - $totalPaid;
+
+        return [
+            'rental_info' => [
+                'id' => $rental->id,
+                'tenant_name' => $rental->tenant_full_name,
+                'tenant_phone' => $rental->tenant_phone,
+                'tenant_email' => $rental->tenant_email,
+                'property_address' => $rental->property?->name ?? 'N/A',
+                'unit_label' => $rental->unit_label,
+                'property_number' => $rental->property_number,
+                'contract_number' => $rental->activeContract->contract_number
+            ],
+            'contract' => [
+                'id' => $rental->activeContract->id,
+                'contract_number' => $rental->activeContract->contract_number,
+                'start_date' => $rental->activeContract->start_date
+            ],
+            'property' => [
+                'id' => $rental->property?->id,
+                'name' => $rental->property?->name,
+                'unit_label' => $rental->unit_label,
+                'property_number' => $rental->property_number,
+                'project' => [
+                    'id' => $rental->property?->project?->id,
+                    'name' => $rental->property?->project?->name
+                ]
+            ],
+            'payment_details' => [
+                'items' => $items,
+                'summary' => [
+                    'total_due' => $totalDue,
+                    'total_paid' => $totalPaid,
+                    'total_remaining' => $totalRemaining,
+                    'overdue_count' => $items->where('is_overdue', true)->count(),
+                    'paid_count' => $items->where('status', 'paid')->count(),
+                    'partial_count' => $items->where('status', 'partial')->count(),
+                    'unpaid_count' => $items->where('status', 'unpaid')->count()
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * Validate that installment IDs belong to the specified rental
+     */
+    public function validateInstallmentsForRental($userId, $rentalId, $installmentIds)
+    {
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
+        
+        $validInstallmentIds = RmPaymentInstallment::whereHas('rental', function ($query) use ($ownerId, $rentalId) {
+            $query->where('user_id', $ownerId)->where('id', $rentalId);
+        })->pluck('id')->toArray();
+
+        $invalidIds = $installmentIds->diff($validInstallmentIds);
+        
+        if ($invalidIds->isNotEmpty()) {
+            throw new \InvalidArgumentException(
+                'Invalid installment IDs: ' . $invalidIds->implode(', ') . 
+                '. These installments do not belong to the specified rental.'
+            );
+        }
+    }
+
+    /**
+     * Get installment payment status
+     */
+    private function getInstallmentPaymentStatus($paidAmount, $totalAmount, $dueDate)
+    {
+        if ($paidAmount <= 0) {
+            return now()->isAfter($dueDate) ? 'overdue' : 'unpaid';
+        }
+        
+        if ($paidAmount >= $totalAmount) {
+            return 'paid';
+        }
+        
+        return 'partial';
+    }
 }
