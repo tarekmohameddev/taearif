@@ -609,16 +609,30 @@ class WhatsAppService
             'formatted_phone' => $formattedPhone,
             'template_name' => $templateName,
             'template_content' => $templateContent ? 'has_content' : 'no_content',
-            'sending_method' => $templateName && $templateContent ? 'database_template' : 
-                              ($templateName ? 'meta_template' : 'regular_message')
+            'sending_method' => $templateName && $templateContent ? 'database_template_as_regular' : 
+                              ($templateName ? 'meta_template_or_regular' : 'regular_message')
         ]);
 
         if ($templateName && $templateContent) {
-            // Send as template message using database template
-            return $this->sendTemplateMessage($formattedPhone, $templateName, $templateContent);
+            // Send as regular message using database template content
+            Log::info('Using database template content for regular message', [
+                'template_name' => $templateName,
+                'template_content' => $templateContent
+            ]);
+            return $this->sendRegularMessage($formattedPhone, $templateContent);
         } elseif ($templateName) {
-            // Send as template message using provided message
-            return $this->sendTemplateMessage($formattedPhone, $templateName, $message);
+            // Check if template exists in Meta Cloud API
+            if ($this->checkMetaTemplateExists($templateName)) {
+                // Send as template message using Meta Cloud API
+                return $this->sendTemplateMessage($formattedPhone, $templateName, $message);
+            } else {
+                // Template doesn't exist in Meta Cloud, send as regular message
+                Log::info('Template not found in Meta Cloud, sending as regular message', [
+                    'template_name' => $templateName,
+                    'message' => $message
+                ]);
+                return $this->sendRegularMessage($formattedPhone, $message);
+            }
         } else {
             // Send as regular message
             return $this->sendRegularMessage($formattedPhone, $message);
