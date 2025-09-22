@@ -345,10 +345,34 @@ class WhatsAppService
             $phone = '966' . $phone;
         }
         
-        // Handle other common patterns for Saudi numbers
+        // Handle Saudi numbers with leading 0 (10 digits starting with 05)
         // If it's 10 digits starting with 05, remove the 0 and add country code
         if (preg_match('/^05\d{8}$/', $phone)) {
             $phone = '966' . substr($phone, 1);
+        }
+        
+        // Handle Saudi numbers with leading 0 (11 digits starting with 05)
+        // If it's 11 digits starting with 05, remove the 0 and add country code
+        if (preg_match('/^05\d{9}$/', $phone)) {
+            $phone = '966' . substr($phone, 1);
+        }
+        
+        // Handle Saudi landline numbers (7 digits starting with 1, 2, 3, 4, 6, 7, 8, 9)
+        // If it's 7 digits starting with 1-9 (except 5), add Saudi country code 966
+        if (preg_match('/^[1-46-9]\d{6}$/', $phone)) {
+            $phone = '966' . $phone;
+        }
+        
+        // Handle Saudi landline numbers with leading 0 (8 digits starting with 01-09 except 05)
+        // If it's 8 digits starting with 01-09 (except 05), remove the 0 and add country code
+        if (preg_match('/^0[1-46-9]\d{6}$/', $phone)) {
+            $phone = '966' . substr($phone, 1);
+        }
+        
+        // Handle Egyptian phone numbers without country code
+        // If it's 11 digits starting with 01, remove the 0 and add Egyptian country code 20
+        if (preg_match('/^01\d{9}$/', $phone)) {
+            $phone = '20' . substr($phone, 1);
         }
         
         return $phone;
