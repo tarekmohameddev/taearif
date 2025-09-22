@@ -23,7 +23,7 @@ class MegaMailer
             // Fallback to default email verification template
             if ($data['templateType'] === 'email_verification') {
                 $subject = 'تأكيد التسجيل';
-                $body = '<p>شكرًا لتسجيلك في منصة تعاريف.</p><p>تم إنشاء حسابك بنجاح، ويمكنك الآن الوصول إلى موقعك ولوحة التحكم.</p><p>بريدك الإلكتروني: {customer_email}</p><p><br /></p><p>يرجى الضغط على الرابط التالي لتفعيل حسابك:</p><p>{verification_link}</p><p><br /></p><p>مع أطيب التحيات،</p><p>{website_title}</p>';
+                $body = '<p>شكرًا لتسجيلك في منصة تعاريف.</p><p>تم إنشاء حسابك بنجاح، ويمكنك الآن الوصول إلى موقعك ولوحة التحكم.</p><p><br /></p><p>يرجى الضغط على الرابط التالي لتفعيل حسابك:</p><p>{verification_link}</p><p><br /></p><p>مع أطيب التحيات،</p><p>{website_title}</p>';
             } else {
                 throw new \Exception("Email template not found for type: " . $data['templateType']);
             }
