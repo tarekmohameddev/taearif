@@ -37,7 +37,8 @@ class PaymentService
             }
 
             // Handle automatic excess payment distribution for rent payments
-            if ($payment->payment_type === 'rent') {
+            // Only distribute if no specific installment_id is provided (general payment)
+            if ($payment->payment_type === 'rent' && !$payment->installment_id) {
                 $this->distributeExcessPayment($rentalId, $payment->amount);
             }
 
