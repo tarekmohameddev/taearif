@@ -373,6 +373,24 @@ class WhatsAppService
     }
 
     /**
+     * Clean message content for WhatsApp template parameters
+     * WhatsApp doesn't allow newlines, tabs, or more than 4 consecutive spaces
+     */
+    protected function cleanMessageForWhatsApp($message)
+    {
+        // Replace newlines and tabs with spaces
+        $message = str_replace(["\r\n", "\r", "\n", "\t"], ' ', $message);
+        
+        // Replace multiple consecutive spaces with single space
+        $message = preg_replace('/\s+/', ' ', $message);
+        
+        // Trim leading and trailing spaces
+        $message = trim($message);
+        
+        return $message;
+    }
+
+    /**
      * Test WhatsApp service configuration
      */
     public function testConfiguration()
@@ -539,6 +557,9 @@ class WhatsAppService
     {
         $templateName = null;
         $templateContent = null;
+        
+        // Clean message for WhatsApp template parameters
+        $message = $this->cleanMessageForWhatsApp($message);
         
         Log::info('Meta Cloud message processing', [
             'phone' => $phoneNumber,
