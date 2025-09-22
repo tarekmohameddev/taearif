@@ -95,7 +95,17 @@ class Handler extends ExceptionHandler
                 ], 500);
             }
 
-            // Fallback
+            // Fallback - Log the error for debugging
+            \Log::error('Unhandled API exception', [
+                'exception' => get_class($exception),
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+                'url' => $request->fullUrl(),
+                'method' => $request->method(),
+                'user_id' => auth()->id(),
+            ]);
+
             return response()->json([
                 'status'    => 'error',
                 'message'   => config('app.debug') ? $exception->getMessage() : 'Server error',

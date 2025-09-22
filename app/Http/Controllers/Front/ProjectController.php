@@ -149,6 +149,17 @@ class ProjectController extends Controller
             ? Language::where('code', session('user_lang'))->where('user_id', $userId)->first()
             : Language::where('is_default', 1)->where('user_id', $userId)->first();
 
+        // Check if language was found, otherwise use a fallback
+        if (!$userCurrentLang) {
+            // Try to get any language for this user as fallback
+            $userCurrentLang = Language::where('user_id', $userId)->first();
+            
+            // If still no language found, create a default one or handle gracefully
+            if (!$userCurrentLang) {
+                throw new \Exception('No language configuration found for user');
+            }
+        }
+
         session()->put('user_lang', $userCurrentLang->code);
 
         $projectContent = ProjectContent::where([
