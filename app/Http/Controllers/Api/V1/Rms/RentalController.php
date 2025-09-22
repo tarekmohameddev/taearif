@@ -154,49 +154,80 @@ class RentalController extends Controller
      */
     public function collectPayment(Request $request, $id)
     {
-        $data = $request->validate([
-            'payments' => 'required|array|min:1',
-            'payments.*.installment_id' => 'nullable|exists:rm_payment_installments,id',
-            'payments.*.payment_type' => 'required|in:rent,platform_fee,water_fee,office_fee,deposit',
-            'payments.*.amount' => 'required|numeric|min:0.01',
-            'payments.*.notes' => 'nullable|string|max:255',
-            'payment_method' => 'required|in:cash,bank_transfer,credit_card,online_payment,check,other',
-            'payment_date' => 'nullable|date',
-            'reference' => 'nullable|string|max:100',
-            'notes' => 'nullable|string|max:255'
-        ]);
+        try {
+            $data = $request->validate([
+                'payments' => 'required|array|min:1',
+                'payments.*.installment_id' => 'nullable|exists:rm_payment_installments,id',
+                'payments.*.payment_type' => 'required|in:rent,platform_fee,water_fee,office_fee,deposit',
+                'payments.*.amount' => 'required|numeric|min:0.01',
+                'payments.*.notes' => 'nullable|string|max:255',
+                'payment_method' => 'required|in:cash,bank_transfer,credit_card,online_payment,check,other',
+                'payment_date' => 'nullable|date',
+                'reference' => 'nullable|string|max:100',
+                'notes' => 'nullable|string|max:255'
+            ]);
 
-        // Validate installment_ids only for rent payments
-        $rentPayments = collect($data['payments'])->where('payment_type', 'rent');
-        if ($rentPayments->isNotEmpty()) {
-            $installmentIds = $rentPayments->pluck('installment_id')->filter();
-            if ($installmentIds->isNotEmpty()) {
-                $this->rentalService->validateInstallmentsForRental(auth()->id(), $id, $installmentIds);
+            // Validate installment_ids only for rent payments
+            $rentPayments = collect($data['payments'])->where('payment_type', 'rent');
+            if ($rentPayments->isNotEmpty()) {
+                $installmentIds = $rentPayments->pluck('installment_id')->filter();
+                if ($installmentIds->isNotEmpty()) {
+                    $this->rentalService->validateInstallmentsForRental(auth()->id(), $id, $installmentIds);
+                }
             }
-        }
 
-        // Process payments using PaymentService
-        $paymentService = app(\App\Services\Rms\PaymentService::class);
-        
-        $processedPayments = [];
-        foreach ($data['payments'] as $paymentData) {
-            $paymentData['payment_method'] = $data['payment_method'];
-            $paymentData['payment_date'] = $data['payment_date'] ?? now()->toDateString();
-            $paymentData['reference'] = $data['reference'];
-            $paymentData['notes'] = $paymentData['notes'] ?? $data['notes'];
+            // Process payments using PaymentService
+            $paymentService = app(\App\Services\Rms\PaymentService::class);
             
-            $payment = $paymentService->recordPayment(auth()->id(), $id, $paymentData);
-            $processedPayments[] = $payment;
-        }
+            $processedPayments = [];
+            foreach ($data['payments'] as $paymentData) {
+                $paymentData['payment_method'] = $data['payment_method'];
+                $paymentData['payment_date'] = $data['payment_date'] ?? now()->toDateString();
+                $paymentData['reference'] = $data['reference'];
+                $paymentData['notes'] = $paymentData['notes'] ?? $data['notes'];
+                
+                $payment = $paymentService->recordPayment(auth()->id(), $id, $paymentData);
+                $processedPayments[] = $payment;
+            }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Payment collected successfully',
-            'data' => [
-                'payments' => $processedPayments,
-                'total_amount' => collect($processedPayments)->sum('amount'),
-                'payment_count' => count($processedPayments)
-            ]
-        ], 201);
+            return response()->json([
+                'status' => true,
+                'message' => 'Payment collected successfully',
+                'data' => [
+                    'payments' => $processedPayments,
+                    'total_amount' => collect($processedPayments)->sum('amount'),
+                    'payment_count' => count($processedPayments)
+                ]
+            ], 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Rental contract or related record not found',
+                'error' => $e->getMessage()
+            ], 404);
+
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error('Payment collection failed', [
+                'user_id' => auth()->id(),
+                'rental_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Payment collection failed',
+                'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
+            ], 500);
+        }
     }
 }
