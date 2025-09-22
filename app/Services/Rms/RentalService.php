@@ -671,17 +671,17 @@ class RentalService
             $paidAmount = (float) $installment->paid_amount;
             $rentAmount = (float) $installment->amount;
             
-            // Calculate fees per installment
+            // Calculate fees per installment and round to 2 decimal places
             $installmentFees = [
-                'platform_fee' => $totalInstallments > 0 ? $fees['platform_fee'] / $totalInstallments : 0,
-                'water_fee' => $totalInstallments > 0 ? $fees['water_fee'] / $totalInstallments : 0,
-                'office_fee' => $totalInstallments > 0 ? $fees['office_fee'] / $totalInstallments : 0,
-                'office_commission_value' => $totalInstallments > 0 ? $fees['office_commission_value'] / $totalInstallments : 0
+                'platform_fee' => $totalInstallments > 0 ? round($fees['platform_fee'] / $totalInstallments, 2) : 0,
+                'water_fee' => $totalInstallments > 0 ? round($fees['water_fee'] / $totalInstallments, 2) : 0,
+                'office_fee' => $totalInstallments > 0 ? round($fees['office_fee'] / $totalInstallments, 2) : 0,
+                'office_commission_value' => $totalInstallments > 0 ? round($fees['office_commission_value'] / $totalInstallments, 2) : 0
             ];
             
-            $totalFeesPerInstallment = array_sum($installmentFees);
-            $totalAmount = $rentAmount + $totalFeesPerInstallment;
-            $remainingAmount = max(0, $totalAmount - $paidAmount);
+            $totalFeesPerInstallment = round(array_sum($installmentFees), 2);
+            $totalAmount = round($rentAmount + $totalFeesPerInstallment, 2);
+            $remainingAmount = round(max(0, $totalAmount - $paidAmount), 2);
             
             return [
                 'id' => $installment->id,
@@ -698,12 +698,12 @@ class RentalService
             ];
         });
 
-        // Calculate summary
-        $totalRentDue = $installments->sum('amount');
-        $totalFeesDue = $items->sum('total_fees');
-        $totalDue = $totalRentDue + $totalFeesDue;
-        $totalPaid = $installments->sum('paid_amount');
-        $totalRemaining = $totalDue - $totalPaid;
+        // Calculate summary with proper rounding
+        $totalRentDue = round($installments->sum('amount'), 2);
+        $totalFeesDue = round($items->sum('total_fees'), 2);
+        $totalDue = round($totalRentDue + $totalFeesDue, 2);
+        $totalPaid = round($installments->sum('paid_amount'), 2);
+        $totalRemaining = round($totalDue - $totalPaid, 2);
 
         return [
             'rental_info' => [
@@ -732,11 +732,11 @@ class RentalService
                 ]
             ],
             'fees_breakdown' => [
-                'platform_fee' => $fees['platform_fee'],
-                'water_fee' => $fees['water_fee'],
-                'office_fee' => $fees['office_fee'],
-                'office_commission_value' => $fees['office_commission_value'],
-                'total_fees' => $fees['total_fees']
+                'platform_fee' => round($fees['platform_fee'], 2),
+                'water_fee' => round($fees['water_fee'], 2),
+                'office_fee' => round($fees['office_fee'], 2),
+                'office_commission_value' => round($fees['office_commission_value'], 2),
+                'total_fees' => round($fees['total_fees'], 2)
             ],
             'payment_details' => [
                 'items' => $items,
