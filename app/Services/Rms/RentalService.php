@@ -667,40 +667,26 @@ class RentalService
         $fees = $this->calculateRentalFees($rental);
         $totalInstallments = $installments->count();
         
-        $items = $installments->map(function ($installment) use ($rental, $fees, $totalInstallments) {
+        $items = $installments->map(function ($installment) {
             $paidAmount = (float) $installment->paid_amount;
             $rentAmount = (float) $installment->amount;
-            
-            // Calculate fees per installment and round to 2 decimal places
-            $installmentFees = [
-                'platform_fee' => $totalInstallments > 0 ? round($fees['platform_fee'] / $totalInstallments, 2) : 0,
-                'water_fee' => $totalInstallments > 0 ? round($fees['water_fee'] / $totalInstallments, 2) : 0,
-                'office_fee' => $totalInstallments > 0 ? round($fees['office_fee'] / $totalInstallments, 2) : 0,
-                'office_commission_value' => $totalInstallments > 0 ? round($fees['office_commission_value'] / $totalInstallments, 2) : 0
-            ];
-            
-            $totalFeesPerInstallment = round(array_sum($installmentFees), 2);
-            $totalAmount = round($rentAmount + $totalFeesPerInstallment, 2);
-            $remainingAmount = round(max(0, $totalAmount - $paidAmount), 2);
+            $remainingAmount = round(max(0, $rentAmount - $paidAmount), 2);
             
             return [
                 'id' => $installment->id,
                 'sequence_no' => $installment->sequence_no,
                 'due_date' => $installment->due_date,
                 'rent_amount' => $rentAmount,
-                'fees' => $installmentFees,
-                'total_fees' => $totalFeesPerInstallment,
-                'amount' => $totalAmount,
                 'paid_amount' => $paidAmount,
                 'remaining_amount' => $remainingAmount,
-                'status' => $this->getInstallmentPaymentStatus($paidAmount, $totalAmount, $installment->due_date),
+                'status' => $this->getInstallmentPaymentStatus($paidAmount, $rentAmount, $installment->due_date),
                 'is_overdue' => now()->isAfter($installment->due_date) && $remainingAmount > 0
             ];
         });
 
         // Calculate summary with proper rounding
         $totalRentDue = round($installments->sum('amount'), 2);
-        $totalFeesDue = round($items->sum('total_fees'), 2);
+        $totalFeesDue = round($fees['total_fees'], 2);
         $totalDue = round($totalRentDue + $totalFeesDue, 2);
         $totalPaid = round($installments->sum('paid_amount'), 2);
         $totalRemaining = round($totalDue - $totalPaid, 2);
@@ -737,6 +723,32 @@ class RentalService
                 'office_fee' => round($fees['office_fee'], 2),
                 'office_commission_value' => round($fees['office_commission_value'], 2),
                 'total_fees' => round($fees['total_fees'], 2)
+            ],
+            'available_fees' => [
+                [
+                    'fee_type' => 'platform_fee',
+                    'fee_name' => 'Platform Fee',
+                    'total_amount' => round($fees['platform_fee'], 2),
+                    'paid_amount' => $this->getPaidAmountForFee($rental->id, 'platform_fee'),
+                    'remaining_amount' => round($fees['platform_fee'] - $this->getPaidAmountForFee($rental->id, 'platform_fee'), 2),
+                    'status' => $this->getFeePaymentStatus($fees['platform_fee'], $this->getPaidAmountForFee($rental->id, 'platform_fee'))
+                ],
+                [
+                    'fee_type' => 'water_fee',
+                    'fee_name' => 'Water Fee',
+                    'total_amount' => round($fees['water_fee'], 2),
+                    'paid_amount' => $this->getPaidAmountForFee($rental->id, 'water_fee'),
+                    'remaining_amount' => round($fees['water_fee'] - $this->getPaidAmountForFee($rental->id, 'water_fee'), 2),
+                    'status' => $this->getFeePaymentStatus($fees['water_fee'], $this->getPaidAmountForFee($rental->id, 'water_fee'))
+                ],
+                [
+                    'fee_type' => 'office_fee',
+                    'fee_name' => 'Office Fee',
+                    'total_amount' => round($fees['office_fee'], 2),
+                    'paid_amount' => $this->getPaidAmountForFee($rental->id, 'office_fee'),
+                    'remaining_amount' => round($fees['office_fee'] - $this->getPaidAmountForFee($rental->id, 'office_fee'), 2),
+                    'status' => $this->getFeePaymentStatus($fees['office_fee'], $this->getPaidAmountForFee($rental->id, 'office_fee'))
+                ]
             ],
             'payment_details' => [
                 'items' => $items,
@@ -783,6 +795,32 @@ class RentalService
     {
         if ($paidAmount <= 0) {
             return now()->isAfter($dueDate) ? 'overdue' : 'unpaid';
+        }
+        
+        if ($paidAmount >= $totalAmount) {
+            return 'paid';
+        }
+        
+        return 'partial';
+    }
+
+    /**
+     * Get paid amount for a specific fee type
+     */
+    private function getPaidAmountForFee($rentalId, $feeType)
+    {
+        return \App\Models\Api\Rms\RmPayment::where('rental_id', $rentalId)
+            ->where('payment_type', $feeType)
+            ->sum('amount');
+    }
+
+    /**
+     * Get fee payment status
+     */
+    private function getFeePaymentStatus($totalAmount, $paidAmount)
+    {
+        if ($paidAmount <= 0) {
+            return 'unpaid';
         }
         
         if ($paidAmount >= $totalAmount) {
