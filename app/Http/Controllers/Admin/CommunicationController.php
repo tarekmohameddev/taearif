@@ -264,7 +264,7 @@ class CommunicationController extends Controller
             $whatsappService = new WhatsAppService();
             $testMessage = "مرحباً بك في منصتنا! هذا اختبار لرسالة الترحيب.";
             
-            $whatsappService->sendWelcomeMessage($request->test_phone, $testMessage, 'Test User');
+            $whatsappService->sendWelcomeMessage($request->test_phone, $testMessage, 'مستخدم تجريبي');
             
             Session::flash('success', "Test welcome message sent successfully to {$request->test_phone}");
         } catch (\Exception $e) {
@@ -323,9 +323,9 @@ class CommunicationController extends Controller
 
         try {
             $whatsappService = new WhatsAppService();
-            $testMessage = "تنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً. هذا اختبار لرسالة انتهاء الباقة.";
+            $testMessage = "{name}، تنبيه: اشتراكك في {package_name} سينتهي في {expiry_date}. يرجى تجديد اشتراكك لتجنب انقطاع الخدمة.";
             
-            $whatsappService->sendSubscriptionExpirationMessage($request->test_phone, $testMessage, 'Test User', 'Test Package', '2024-12-31');
+            $whatsappService->sendSubscriptionExpirationMessage($request->test_phone, $testMessage, 'مستخدم تجريبي', 'الباقة الذهبية', '2024-12-31');
             
             Session::flash('success', "Test subscription expiration message sent successfully to {$request->test_phone}");
         } catch (\Exception $e) {
@@ -384,9 +384,9 @@ class CommunicationController extends Controller
 
         try {
             $whatsappService = new WhatsAppService();
-            $testMessage = "مرحبا {name} انتهى اشتراكك وتم نقلك إلى الباقة المجانية. يمكنك الترقية في أي وقت.";
-            $whatsappService->sendSubscriptionExpiredMessage($request->test_phone, $testMessage, 'Test User', 'Test Package', '2024-12-31');          
-            Session::flash('success', "Test on expiration message sent successfully to {$request->test_phone}");
+            $testMessage = "{name}، انتهت صلاحية اشتراكك في {package_name} في {expiry_date}. يرجى تجديد اشتراكك لاستعادة الخدمة.";
+            $whatsappService->sendSubscriptionExpiredMessage($request->test_phone, $testMessage, 'مستخدم تجريبي', 'الباقة الذهبية', '2024-12-31');          
+            Session::flash('success', "Test subscription expired message sent successfully to {$request->test_phone}");
         } catch (\Exception $e) {
             Session::flash('error', 'Test failed: ' . $e->getMessage());
         }
@@ -463,14 +463,9 @@ class CommunicationController extends Controller
         try {
             $whatsappService = new WhatsAppService();
             $testCode = rand(100000, 999999);
-            $testMessage = "رمز إعادة تعيين كلمة المرور: {$testCode}
-
-هذا الرمز صالح لمدة 15 دقيقة.
-
-أو يمكنك الضغط على الرابط التالي:
-https://app.taearif.com/reset?code={$testCode}";
+            $resetUrl = env('FRONTEND_URL', 'https://app.taearif.com') . '/reset';
             
-            $whatsappService->sendPasswordResetCode($request->test_phone, $testCode, 'Test User', 'ar', 'https://app.taearif.com/reset');
+            $whatsappService->sendPasswordResetCode($request->test_phone, $testCode, 'مستخدم تجريبي', 'ar', $resetUrl, 'password_reset');
             
             Session::flash('success', "Test password reset message sent successfully to {$request->test_phone}. Code: {$testCode}");
         } catch (\Exception $e) {
