@@ -598,7 +598,6 @@ class RentalService
             'platform_fee' => $platformFee,
             'water_fee' => $waterFee,
             'office_fee' => $officeFee,
-            'office_commission_value' => $officeCommission,
             'total_fees' => $totalFees
         ];
     }
@@ -721,7 +720,6 @@ class RentalService
                 'platform_fee' => round($fees['platform_fee'], 2),
                 'water_fee' => round($fees['water_fee'], 2),
                 'office_fee' => round($fees['office_fee'], 2),
-                'office_commission_value' => round($fees['office_commission_value'], 2),
                 'total_fees' => round($fees['total_fees'], 2)
             ],
             'available_fees' => [
