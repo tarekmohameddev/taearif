@@ -16,8 +16,21 @@ class MegaMailer
 
     public function mailFromAdmin($data)
     {
-        $temp = EmailTemplate::where('email_type', '=', $data['templateType'])->first();
-        $body = $temp->email_body;
+        $temp = EmailTemplate::where('type', '=', $data['templateType'])->first();
+        
+        // Handle case when template is not found
+        if (!$temp) {
+            // Fallback to default email verification template
+            if ($data['templateType'] === 'email_verification') {
+                $subject = 'Complete Registration';
+                $body = '<p>Hi User,</p><p><br />This is a confirmation mail from us, to complete your registration</p><p>{verification_link}</p><p><br /></p><p>Best Regards,</p><p>{website_title}</p>';
+            } else {
+                throw new \Exception("Email template not found for type: " . $data['templateType']);
+            }
+        } else {
+            $subject = $temp->subject;
+            $body = $temp->content;
+        }
         if (array_key_exists('username', $data)) {
             $body = preg_replace("/{username}/", $data['username'], $body);
         }
@@ -104,7 +117,7 @@ class MegaMailer
             }
             // Content
             $mail->isHTML(true);
-            $mail->Subject = $temp->email_subject;
+            $mail->Subject = $subject;
             $mail->Body    = $body;
             $mail->send();
             // Attachments
