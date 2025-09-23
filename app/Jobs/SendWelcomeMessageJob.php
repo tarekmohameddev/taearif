@@ -44,7 +44,8 @@ class SendWelcomeMessageJob implements ShouldQueue
                 $whatsappService = new WhatsAppService();
                 
                 // Replace variables in message
-                $message = str_replace('{name}', $this->user->first_name ?? 'User', $this->message);
+                $displayName = $this->user->first_name ?? 'عزيزي المستخدم'; // Use Arabic "Dear User" instead of "User"
+                $message = str_replace('{name}', $displayName, $this->message);
                 $message = str_replace('{email}', $this->user->email ?? 'N/A', $message);
                 
                 $whatsappService->sendWelcomeMessage($this->user->phone, $message, $this->user->first_name, $this->user->email);
