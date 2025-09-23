@@ -669,17 +669,31 @@ class WhatsAppService
     /**
      * Send welcome message to new user
      */
-    public function sendWelcomeMessage($phoneNumber, $message, $userName = null, $userEmail = null)
+    public function sendWelcomeMessage($phoneNumber, $message, $userName = null, $userEmail = null, $userId = null)
     {
+        // Get company name from user_basic_settings table (same logic as password reset)
+        $displayName = $userName ?? 'عزيزي المستخدم'; // Default fallback
+        if ($userId) {
+            $userBasicSettings = \App\Models\User\BasicSetting::where('user_id', $userId)->first();
+            if ($userBasicSettings && $userBasicSettings->company_name && $userBasicSettings->company_name !== 'N/A') {
+                $displayName = $userBasicSettings->company_name;
+            } else {
+                // If company_name is N/A or empty, get username from users table
+                $user = \App\Models\User::find($userId);
+                if ($user && $user->username) {
+                    $displayName = $user->username;
+                }
+            }
+        }
+        
         // Replace template variables
-        $displayName = $userName ?? 'عزيزي المستخدم'; // Use Arabic "Dear User" instead of "User"
         $message = str_replace('{name}', $displayName, $message);
         $message = str_replace('{email}', $userEmail ?? 'N/A', $message);
         
         if ($this->settings->whatsapp_service === 'meta_cloud') {
-            return $this->sendMetaCloudMessage($phoneNumber, $message, 'welcome', $userName, $userEmail);
+            return $this->sendMetaCloudMessage($phoneNumber, $message, 'welcome', $displayName, $userEmail);
         } elseif ($this->settings->whatsapp_service === 'evolution_api') {
-            return $this->sendWelcomeViaEvolutionApi($phoneNumber, $message, $userName);
+            return $this->sendWelcomeViaEvolutionApi($phoneNumber, $message, $displayName);
         }
         
         throw new \Exception('No WhatsApp service configured');

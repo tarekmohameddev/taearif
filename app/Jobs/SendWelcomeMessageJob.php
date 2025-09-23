@@ -43,12 +43,10 @@ class SendWelcomeMessageJob implements ShouldQueue
             try {
                 $whatsappService = new WhatsAppService();
                 
-                // Replace variables in message
-                $displayName = $this->user->first_name ?? 'عزيزي المستخدم'; // Use Arabic "Dear User" instead of "User"
-                $message = str_replace('{name}', $displayName, $this->message);
-                $message = str_replace('{email}', $this->user->email ?? 'N/A', $message);
+                // Variables will be replaced by the service with company name logic
+                $message = str_replace('{email}', $this->user->email ?? 'N/A', $this->message);
                 
-                $whatsappService->sendWelcomeMessage($this->user->phone, $message, $this->user->first_name, $this->user->email);
+                $whatsappService->sendWelcomeMessage($this->user->phone, $message, $this->user->first_name, $this->user->email, $this->user->id);
                 
                 Log::info('WhatsApp welcome message sent successfully', [
                     'user_id' => $this->user->id,
@@ -77,7 +75,8 @@ class SendWelcomeMessageJob implements ShouldQueue
                         $this->user->email,
                         $this->user->first_name ?? 'User',
                         'ar', // Default language
-                        $templateName
+                        $templateName,
+                        $this->user->id
                     );
                     
                     Log::info('Email welcome message sent successfully', [

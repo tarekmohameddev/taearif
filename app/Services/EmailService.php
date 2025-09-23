@@ -20,7 +20,7 @@ class EmailService
     /**
      * Send password reset email
      */
-    public function sendPasswordResetCode($email, $name, $code, $userLanguage = 'ar', $templateName = null, $resetUrl = null)
+    public function sendPasswordResetCode($email, $name, $code, $userLanguage = 'ar', $templateName = null, $resetUrl = null, $userId = null)
     {
         try {
             // Get template - first try with specific template name, then with user language, then fallback
@@ -51,13 +51,28 @@ class EmailService
                     ->first();
             }
 
+            // Get company name from user_basic_settings table (same logic as WhatsApp service)
+            $companyName = $name; // Default to provided name
+            if ($userId) {
+                $userBasicSettings = \App\Models\User\BasicSetting::where('user_id', $userId)->first();
+                if ($userBasicSettings && $userBasicSettings->company_name && $userBasicSettings->company_name !== 'N/A') {
+                    $companyName = $userBasicSettings->company_name;
+                } else {
+                    // If company_name is N/A or empty, get username from users table
+                    $user = \App\Models\User::find($userId);
+                    if ($user && $user->username) {
+                        $companyName = $user->username;
+                    }
+                }
+            }
+
             // Prepare email content
             if ($template) {
                 $subject = $template->subject;
                 $content = $template->content;
                 
                 // Replace variables
-                $content = str_replace('{name}', $name, $content);
+                $content = str_replace('{name}', $companyName, $content);
                 $content = str_replace('{code}', $code, $content);
                 
                 // Add reset link if provided (only code, no identifier)
@@ -68,7 +83,7 @@ class EmailService
             } else {
                 // Default email content (fallback) - only code and URL
                 $subject = 'إعادة تعيين كلمة المرور';
-                $content = "رمز إعادة تعيين كلمة المرور: {$code}\n\nهذا الرمز صالح لمدة 15 دقيقة.";
+                $content = "مرحبا {$companyName},\n\nرمز إعادة تعيين كلمة المرور: {$code}\n\nهذا الرمز صالح لمدة 15 دقيقة.";
                 
                 if ($resetUrl) {
                     $resetLink = $resetUrl . '?code=' . $code;
@@ -77,7 +92,7 @@ class EmailService
             }
 
             // Send email
-            return $this->sendEmail($email, $subject, $content, $name);
+            return $this->sendEmail($email, $subject, $content, $companyName);
 
         } catch (\Exception $e) {
             Log::error('EmailService: Failed to send password reset email', [
@@ -168,7 +183,7 @@ class EmailService
     /**
      * Send welcome email to new user
      */
-    public function sendWelcomeEmail($email, $name, $userLanguage = 'ar', $templateName = null)
+    public function sendWelcomeEmail($email, $name, $userLanguage = 'ar', $templateName = null, $userId = null)
     {
         try {
             // Get template - first try with specific template name, then with user language, then fallback
@@ -199,22 +214,37 @@ class EmailService
                     ->first();
             }
 
+            // Get company name from user_basic_settings table (same logic as password reset)
+            $companyName = $name; // Default to provided name
+            if ($userId) {
+                $userBasicSettings = \App\Models\User\BasicSetting::where('user_id', $userId)->first();
+                if ($userBasicSettings && $userBasicSettings->company_name && $userBasicSettings->company_name !== 'N/A') {
+                    $companyName = $userBasicSettings->company_name;
+                } else {
+                    // If company_name is N/A or empty, get username from users table
+                    $user = \App\Models\User::find($userId);
+                    if ($user && $user->username) {
+                        $companyName = $user->username;
+                    }
+                }
+            }
+
             // Prepare email content
             if ($template) {
                 $subject = $template->subject;
                 $content = $template->content;
                 
                 // Replace variables
-                $content = str_replace('{name}', $name, $content);
+                $content = str_replace('{name}', $companyName, $content);
                 $content = str_replace('{email}', $email, $content);
             } else {
                 // Default email content (fallback)
                 $subject = ' مرحباً بك  في منصة تعاريف ';
-                $content = "مرحباً {$name},\n\nأهلاً وسهلاً بك في منصتنا!\nنتمنى لك تجربة ممتعة.\n\nشكراً لك على التسجيل.";
+                $content = "مرحباً {$companyName},\n\nأهلاً وسهلاً بك في منصتنا!\nنتمنى لك تجربة ممتعة.\n\nشكراً لك على التسجيل.";
             }
 
             // Send email
-            return $this->sendEmail($email, $subject, $content, $name);
+            return $this->sendEmail($email, $subject, $content, $companyName);
 
         } catch (\Exception $e) {
             Log::error('EmailService: Failed to send welcome email', [
