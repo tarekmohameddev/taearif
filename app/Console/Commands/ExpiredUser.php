@@ -11,8 +11,10 @@ use App\Models\BasicSetting;
 use App\Models\BasicExtended;
 use App\Models\Package;
 use App\Services\UserPackageService;
+use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 class ExpiredUser extends Command
 {
     /**
@@ -72,11 +74,32 @@ class ExpiredUser extends Command
             return self::SUCCESS;
         }
 
+        // Initialize WhatsApp service
+        $whatsappService = new WhatsAppService();
+        $bs = BasicSetting::first();
+        $be = BasicExtended::first();
+        $expiredCount = 0;
+        $whatsappSentCount = 0;
+        
         // For each expired user: if no active package NOW, switch to free
         User::whereIn('id', $expiredUserIds)
-            ->chunkById(200, function ($users) use ($service, $freePackageId) {
+            ->chunkById(200, function ($users) use ($service, $freePackageId, $whatsappService, $bs, $be, &$expiredCount, &$whatsappSentCount) {
                 foreach ($users as $user) {
                     if (is_null(UserPermissionHelper::userPackage($user->id))) {
+                        // Get user's expired membership info for WhatsApp message
+                        $expiredMembership = Membership::where('user_id', $user->id)
+                            ->where('status', 1)
+                            ->whereDate('expire_date', '<', now()->toDateString())
+                            ->with('package')
+                            ->first();
+                        
+                        $packageName = $expiredMembership && $expiredMembership->package 
+                            ? $expiredMembership->package->title 
+                            : 'الباقة السابقة';
+                        $expiryDate = $expiredMembership 
+                            ? Carbon::parse($expiredMembership->expire_date)->format('Y-m-d')
+                            : now()->format('Y-m-d');
+                        
                         $req = new Request([
                             'user_id'        => $user->id,
                             'package_id'     => $freePackageId,
@@ -104,15 +127,49 @@ class ExpiredUser extends Command
                         $user->message = 'تم تحويلك إلى الباقة المجانية بعد انتهاء فترة التجربة. يمكنك ترقية باقاتك في أي وقت من لوحة التحكم.';
                         $user->save();
                         
-                        // Send notification that user was switched to free package
-                        // $bs = BasicSetting::first();
-                        // $be = BasicExtended::first();
-                        // \App\Jobs\FreePackageSwitchMail::dispatch($user, $bs, $be);
+                        $expiredCount++;
+                        
+                        // Send WhatsApp notification for subscription expired
+                        if (!empty($user->phone) && $bs && $bs->subscription_expired_enabled) {
+                            try {
+                                $subscriptionExpiredMessage = $bs->subscription_expired_text ?? '{name}، انتهت صلاحية اشتراكك في {package_name} في {expiry_date}. يرجى تجديد اشتراكك لاستعادة الخدمة.';
+                                
+                                $whatsappService->sendSubscriptionExpiredMessage(
+                                    $user->phone,
+                                    $subscriptionExpiredMessage,
+                                    $user->first_name ?? $user->username,
+                                    $packageName,
+                                    $expiryDate
+                                );
+                                
+                                $whatsappSentCount++;
+                                $this->info("Sent WhatsApp subscription expired notification to: {$user->username} ({$user->phone})");
+                                
+                            } catch (\Exception $e) {
+                                $this->error("Failed to send WhatsApp notification to user {$user->id}: " . $e->getMessage());
+                                
+                                Log::error('WhatsApp subscription expired notification failed', [
+                                    'user_id' => $user->id,
+                                    'phone' => $user->phone,
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
+                        } else {
+                            if (empty($user->phone)) {
+                                $this->warn("Skipping WhatsApp for user {$user->username}: No phone number");
+                            } elseif (!$bs || !$bs->subscription_expired_enabled) {
+                                $this->info("Skipping WhatsApp for user {$user->username}: Subscription expired notifications disabled");
+                            }
+                        }
+                        
+                        // Send email notification (uncomment if needed)
+                        // \App\Jobs\SubscriptionExpiredMail::dispatch($user, $bs, $be);
                     }
                 }
             });
 
         $this->info('Expired users downgraded to free.');
+        $this->info("Summary: {$expiredCount} users expired, {$whatsappSentCount} WhatsApp notifications sent.");
         return self::SUCCESS;
     }
 
