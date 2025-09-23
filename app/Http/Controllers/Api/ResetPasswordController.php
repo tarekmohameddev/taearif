@@ -146,7 +146,8 @@ class ResetPasswordController extends Controller
                 $code,
                 $userLanguage,
                 null, // templateName - let service choose based on language
-                $resetUrl
+                $resetUrl,
+                $user->id
             );
             
             if (!$emailSent) {
