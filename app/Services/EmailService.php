@@ -209,7 +209,7 @@ class EmailService
                 $content = str_replace('{email}', $email, $content);
             } else {
                 // Default email content (fallback)
-                $subject = 'مرحباً بك في منصتنا';
+                $subject = ' مرحباً بك  في منصة تعاريف ';
                 $content = "مرحباً {$name},\n\nأهلاً وسهلاً بك في منصتنا!\nنتمنى لك تجربة ممتعة.\n\nشكراً لك على التسجيل.";
             }
 

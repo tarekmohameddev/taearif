@@ -47,7 +47,7 @@ class TestEvolutionWhatsApp extends Command
         if ($this->option('all') || $this->option('welcome')) {
             $this->info("\n1️⃣ Testing Welcome Message...");
             try {
-                $testMessage = "مرحباً بك في منصتنا! هذا اختبار لرسالة الترحيب.";
+                $testMessage = " مرحباً بك  في منصة تعاريف ! هذا اختبار لرسالة الترحيب.";
                 $result = $whatsappService->sendWelcomeMessage($phone, $testMessage, 'مستخدم تجريبي');
                 $testResults['welcome'] = $result;
                 $this->info($result ? "✅ Welcome message sent successfully" : "❌ Welcome message failed");

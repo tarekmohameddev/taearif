@@ -262,7 +262,7 @@ class CommunicationController extends Controller
 
         try {
             $whatsappService = new WhatsAppService();
-            $testMessage = "مرحباً بك في منصتنا! هذا اختبار لرسالة الترحيب.";
+            $testMessage = " مرحباً بك  في منصة تعاريف ! هذا اختبار لرسالة الترحيب.";
             
             $whatsappService->sendWelcomeMessage($request->test_phone, $testMessage, 'مستخدم تجريبي');
             
