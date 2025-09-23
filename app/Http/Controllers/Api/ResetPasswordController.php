@@ -168,7 +168,7 @@ class ResetPasswordController extends Controller
                     $user->name ?? $user->username ?? 'User',
                     $userLanguage,
                     $resetUrl,
-                    null, // templateName
+                    'password_reset', // templateName
                     $user->id
                 );
                 
