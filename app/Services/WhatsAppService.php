@@ -927,7 +927,7 @@ class WhatsAppService
     /**
      * Send subscription expired message via Evolution API
      */
-    protected function sendSubscriptionExpiredViaEvolutionApi($phoneNumber, $message, $userName = null, $packageName = null, $expiryDate = null)
+    public function sendSubscriptionExpiredViaEvolutionApi($phoneNumber, $message, $userName = null, $packageName = null, $expiryDate = null)
     {
         try {
             $apiUrl = $this->settings->evolution_api_url;

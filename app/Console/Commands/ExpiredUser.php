@@ -134,13 +134,33 @@ class ExpiredUser extends Command
                             try {
                                 $subscriptionExpiredMessage = '{name}، انتهت صلاحية اشتراكك في {package_name} في {expiry_date}. يرجى تجديد اشتراكك لاستعادة الخدمة.';
                                 
-                                $whatsappService->sendSubscriptionExpiredMessage(
+                                // Send via admin-selected service first
+                                $primaryResult = $whatsappService->sendSubscriptionExpiredMessage(
                                     $user->phone,
                                     $subscriptionExpiredMessage,
                                     $user->first_name ?? $user->username,
                                     $packageName,
                                     $expiryDate
                                 );
+                                
+                                // For Meta Cloud: Also send via Evolution API as backup for guaranteed delivery
+                                if ($bs->whatsapp_service === 'meta_cloud' && $primaryResult) {
+                                    try {
+                                        sleep(2); // Small delay to avoid conflicts
+                                        $backupResult = $whatsappService->sendSubscriptionExpiredViaEvolutionApi(
+                                            $user->phone,
+                                            $subscriptionExpiredMessage,
+                                            $user->first_name ?? $user->username,
+                                            $packageName,
+                                            $expiryDate
+                                        );
+                                        if ($backupResult) {
+                                            $this->info("  └─ Backup notification sent via Evolution API for guaranteed delivery");
+                                        }
+                                    } catch (\Exception $backupException) {
+                                        $this->warn("  └─ Backup Evolution API failed: " . $backupException->getMessage());
+                                    }
+                                }
                                 
                                 $whatsappSentCount++;
                                 $this->info("Sent WhatsApp subscription expired notification to: {$user->username} ({$user->phone})");
