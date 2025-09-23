@@ -1543,8 +1543,16 @@ class WhatsAppService
             $companyName = 'المستخدم'; // Default fallback
             if ($userId) {
                 $userBasicSettings = \App\Models\User\BasicSetting::where('user_id', $userId)->first();
-                if ($userBasicSettings && $userBasicSettings->company_name) {
+                if ($userBasicSettings && $userBasicSettings->company_name && $userBasicSettings->company_name !== 'N/A') {
                     $companyName = $userBasicSettings->company_name;
+                } else {
+                    // If company_name is N/A or empty, get username from users table
+                    $user = \App\Models\User::find($userId);
+                    if ($user && $user->username) {
+                        $companyName = $user->username;
+                    } elseif ($userName) {
+                        $companyName = $userName; // Fallback to provided user name
+                    }
                 }
             } elseif ($userName) {
                 $companyName = $userName; // Fallback to provided user name
