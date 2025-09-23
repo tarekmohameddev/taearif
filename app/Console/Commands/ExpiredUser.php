@@ -132,7 +132,7 @@ class ExpiredUser extends Command
                         // Send WhatsApp notification for subscription expired
                         if (!empty($user->phone) && $bs && $bs->subscription_expired_enabled) {
                             try {
-                                $subscriptionExpiredMessage = $bs->subscription_expired_text ?? '{name}، انتهت صلاحية اشتراكك في {package_name} في {expiry_date}. يرجى تجديد اشتراكك لاستعادة الخدمة.';
+                                $subscriptionExpiredMessage = '{name}، انتهت صلاحية اشتراكك في {package_name} في {expiry_date}. يرجى تجديد اشتراكك لاستعادة الخدمة.';
                                 
                                 $whatsappService->sendSubscriptionExpiredMessage(
                                     $user->phone,
