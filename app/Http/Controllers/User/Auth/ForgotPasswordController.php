@@ -148,7 +148,8 @@ class ForgotPasswordController extends Controller
                     $user->name ?? $user->email,
                     'ar', // user language
                     $resetUrl,
-                    $templateName
+                    $templateName,
+                    $user->id
                 );
 
                 if ($success) {

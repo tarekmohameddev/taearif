@@ -18,7 +18,7 @@ class WhatsAppService
     /**
      * Send WhatsApp message for password reset
      */
-    public function sendPasswordResetCode($phoneNumber, $code, $userName = null, $userLanguage = 'ar', $resetUrl = null, $templateName = null)
+    public function sendPasswordResetCode($phoneNumber, $code, $userName = null, $userLanguage = 'ar', $resetUrl = null, $templateName = null, $userId = null)
     {
         // If WhatsApp service is not configured or disabled, use default message
         if (!$this->settings || !$this->settings->whatsapp_service || !$this->settings->password_reset_enabled) {
@@ -54,7 +54,8 @@ class WhatsAppService
         }
         
         // If no configured template found, try with specific template name parameter
-        if (!$template && $templateName) {
+        // But only if we're not using Meta Cloud service
+        if (!$template && $templateName && $this->settings->whatsapp_service !== 'meta_cloud') {
             $template = \App\Models\WhatsAppTemplate::where('name', $templateName)
                 ->where('type', 'password_reset')
                 ->where('status', true)
@@ -85,6 +86,26 @@ class WhatsAppService
                 $useMetaTemplate = true;
             }
         }
+        
+        // If a specific template name is provided and we're using Meta Cloud, try Meta template first
+        if ($templateName && $this->settings->whatsapp_service === 'meta_cloud') {
+            Log::info('Checking Meta template for password reset', [
+                'template_name' => $templateName,
+                'service' => $this->settings->whatsapp_service,
+                'has_database_template' => $template ? true : false
+            ]);
+            if ($this->checkMetaTemplateExists($templateName)) {
+                $useMetaTemplate = true;
+                Log::info('Meta template exists, will use Meta Cloud template', [
+                    'template_name' => $templateName,
+                    'use_meta_template' => $useMetaTemplate
+                ]);
+            } else {
+                Log::info('Meta template does not exist', [
+                    'template_name' => $templateName
+                ]);
+            }
+        }
 
         // Prepare message content
         if ($template) {
@@ -113,7 +134,7 @@ class WhatsAppService
 
         switch ($service) {
             case 'meta_cloud':
-                return $this->sendViaMetaCloud($phoneNumber, $code, $userName, $resetUrl, $message, $useMetaTemplate);
+                return $this->sendViaMetaCloud($phoneNumber, $code, $userName, $resetUrl, $message, $useMetaTemplate, $userId, $templateName);
             case 'evolution_api':
                 return $this->sendViaEvolutionApi($phoneNumber, $code, $userName, $resetUrl, $message);
             default:
@@ -124,12 +145,12 @@ class WhatsAppService
     /**
      * Send message via Meta Cloud API
      */
-    protected function sendViaMetaCloud($phoneNumber, $code, $userName = null, $resetUrl = null, $message = null, $useMetaTemplate = false)
+    protected function sendViaMetaCloud($phoneNumber, $code, $userName = null, $resetUrl = null, $message = null, $useMetaTemplate = false, $userId = null, $templateName = null)
     {
         try {
             $accessToken = $this->settings->meta_access_token;
             $phoneNumberId = $this->settings->meta_phone_number_id;
-            $templateName = $this->settings->meta_template_name;
+            $templateName = $templateName ?: $this->settings->meta_template_name;
             $templateLanguage = $this->settings->meta_template_language;
 
             if (!$accessToken || !$phoneNumberId) {
@@ -148,7 +169,7 @@ class WhatsAppService
             if ($templateName && $useMetaTemplate) {
                 // Try Meta Cloud template first
                 if ($this->checkMetaTemplateExists($templateName)) {
-                    $templateResult = $this->sendPasswordResetMetaTemplate($formattedPhone, $templateName, $code, $userName, $resetUrl);
+                    $templateResult = $this->sendPasswordResetMetaTemplate($formattedPhone, $templateName, $code, $userName, $resetUrl, $userId);
                     if ($templateResult) {
                         return true;
                     }
@@ -1159,6 +1180,7 @@ class WhatsAppService
                 'template' => [
                     'name' => $templateName,
                     'language' => [
+                        'policy' => 'deterministic',
                         'code' => $this->settings->meta_template_language ?? 'ar'
                     ],
                     'components' => [
@@ -1314,6 +1336,7 @@ class WhatsAppService
                 'template' => [
                     'name' => $templateName,
                     'language' => [
+                        'policy' => 'deterministic',
                         'code' => $this->settings->meta_template_language ?? 'ar'
                     ],
                     'components' => [
@@ -1398,6 +1421,7 @@ class WhatsAppService
                 'template' => [
                     'name' => $templateName,
                     'language' => [
+                        'policy' => 'deterministic',
                         'code' => $this->settings->meta_template_language ?? 'ar'
                     ]
                 ]
@@ -1460,6 +1484,7 @@ class WhatsAppService
                 'template' => [
                     'name' => $templateName,
                     'language' => [
+                        'policy' => 'deterministic',
                         'code' => $this->settings->meta_template_language ?? 'ar'
                     ]
                 ]
@@ -1509,10 +1534,21 @@ class WhatsAppService
     /**
      * Send password reset message using Meta Cloud template (password_reset)
      */
-    protected function sendPasswordResetMetaTemplate($phoneNumber, $templateName, $code, $userName = null, $resetUrl = null)
+    protected function sendPasswordResetMetaTemplate($phoneNumber, $templateName, $code, $userName = null, $resetUrl = null, $userId = null)
     {
         try {
             $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
+            
+            // Get company name from user_basic_settings table
+            $companyName = 'المستخدم'; // Default fallback
+            if ($userId) {
+                $userBasicSettings = \App\Models\User\BasicSetting::where('user_id', $userId)->first();
+                if ($userBasicSettings && $userBasicSettings->company_name) {
+                    $companyName = $userBasicSettings->company_name;
+                }
+            } elseif ($userName) {
+                $companyName = $userName; // Fallback to provided user name
+            }
             
             // password_reset template uses positional parameters
             $data = [
@@ -1522,6 +1558,7 @@ class WhatsAppService
                 'template' => [
                     'name' => $templateName,
                     'language' => [
+                        'policy' => 'deterministic',
                         'code' => $this->settings->meta_template_language ?? 'ar'
                     ],
                     'components' => [
@@ -1530,7 +1567,7 @@ class WhatsAppService
                             'parameters' => [
                                 [
                                     'type' => 'text',
-                                    'text' => $userName ?? 'المستخدم'
+                                    'text' => $companyName
                                 ]
                             ]
                         ],
@@ -1554,6 +1591,8 @@ class WhatsAppService
                 'template_name' => $templateName,
                 'code' => $code,
                 'user_name' => $userName,
+                'company_name' => $companyName,
+                'user_id' => $userId,
                 'reset_url' => $resetUrl,
                 'url' => $url,
                 'data' => $data
