@@ -1091,33 +1091,16 @@ class WhatsAppService
                 case 'subscription_expiration':
                     return $this->sendSubscriptionExpirationMetaTemplate($formattedPhone, $templateName, $userName, $packageName, $expiryDate);
                 case 'subscription_expired':
-                    // Meta Cloud template for subscription expired
-                    if ($this->checkMetaTemplateExists($templateName)) {
-                        $result = $this->sendSubscriptionExpiredMetaTemplate($formattedPhone, $templateName, $userName, $packageName, $expiryDate);
-                        if ($result) {
-                            Log::info('Meta Cloud subscription expired template sent successfully', [
-                                'template_name' => $templateName,
-                                'phone' => $formattedPhone
-                            ]);
-                            return true;
-                        } else {
-                            Log::warning('Meta Cloud subscription expired template failed, trying as regular message', [
-                                'template_name' => $templateName,
-                                'phone' => $formattedPhone
-                            ]);
-                            // Fallback: Send as regular message with custom text
-                            $customMessage = "إشعار بانتهاء الاشتراك\n\n" . $message . "\n\nمنصة تعاريف لبناء المواقع العقارية\n\nللدخول: " . env('FRONTEND_URL', 'https://app.taearif.com') . "/login";
-                            return $this->sendRegularMessage($formattedPhone, $customMessage);
-                        }
-                    } else {
-                        Log::info('Meta Cloud template not found, sending as regular message', [
-                            'template_name' => $templateName,
-                            'phone' => $formattedPhone
-                        ]);
-                        // No template found: Send as regular message
-                        $customMessage = "إشعار بانتهاء الاشتراك\n\n" . $message . "\n\nمنصة تعاريف لبناء المواقع العقارية\n\nللدخول: " . env('FRONTEND_URL', 'https://app.taearif.com') . "/login";
-                        return $this->sendRegularMessage($formattedPhone, $customMessage);
-                    }
+                    // TEMPORARY FIX: Skip Meta Cloud template due to delivery issues
+                    // Send directly as regular message for guaranteed delivery
+                    Log::info('Meta Cloud subscription expired: Using regular message for guaranteed delivery', [
+                        'template_name' => $templateName,
+                        'phone' => $formattedPhone,
+                        'reason' => 'template_delivery_issues'
+                    ]);
+                    
+                    $customMessage = "إشعار بانتهاء الاشتراك\n\n" . $message . "\n\nمنصة تعاريف لبناء المواقع العقارية\n\nللدخول: " . env('FRONTEND_URL', 'https://app.taearif.com') . "/login";
+                    return $this->sendRegularMessage($formattedPhone, $customMessage);
                 default:
                     // For other message types, check if Meta Cloud template exists
                     if ($this->checkMetaTemplateExists($templateName)) {
