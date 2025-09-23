@@ -131,7 +131,7 @@
                     @else
                         <span class="badge badge-danger">غير نشط</span>
                     @endif<br>
-                    <strong>تاريخ الإنشاء:</strong> {{$whatsappTemplate->created_at->format('Y-m-d H:i')}}
+                    <strong>تاريخ الإنشاء:</strong> {{$whatsappTemplate->created_at ? $whatsappTemplate->created_at->format('Y-m-d H:i') : 'N/A'}}
                 </div>
             </div>
         </div>

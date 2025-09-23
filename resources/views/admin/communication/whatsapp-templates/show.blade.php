@@ -131,15 +131,15 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label><strong>تاريخ الإنشاء:</strong></label>
-                            <p class="form-control-plaintext">{{$whatsappTemplate->created_at->format('Y-m-d H:i:s')}}</p>
+                            <p class="form-control-plaintext">{{$whatsappTemplate->created_at ? $whatsappTemplate->created_at->format('Y-m-d H:i:s') : 'N/A'}}</p>
                         </div>
                     </div>
                 </div>
 
-                @if($whatsappTemplate->updated_at != $whatsappTemplate->created_at)
+                @if($whatsappTemplate->updated_at && $whatsappTemplate->created_at && $whatsappTemplate->updated_at != $whatsappTemplate->created_at)
                     <div class="form-group">
                         <label><strong>تاريخ آخر تحديث:</strong></label>
-                        <p class="form-control-plaintext">{{$whatsappTemplate->updated_at->format('Y-m-d H:i:s')}}</p>
+                        <p class="form-control-plaintext">{{$whatsappTemplate->updated_at ? $whatsappTemplate->updated_at->format('Y-m-d H:i:s') : 'N/A'}}</p>
                     </div>
                 @endif
             </div>

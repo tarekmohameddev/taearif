@@ -113,7 +113,7 @@
                                             <span class="badge badge-danger">غير نشط</span>
                                         @endif
                                     </td>
-                                    <td>{{$template->created_at->format('Y-m-d H:i')}}</td>
+                                    <td>{{$template->created_at ? $template->created_at->format('Y-m-d H:i') : 'N/A'}}</td>
                                     <td>
                                         <div class="btn-group" role="group">
                                             <a href="{{route('admin.whatsapp-templates.show', $template)}}" class="btn btn-sm btn-info" title="عرض">

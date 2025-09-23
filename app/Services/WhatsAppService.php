@@ -949,7 +949,28 @@ class WhatsAppService
                 case 'subscription_expiration':
                     return $this->sendSubscriptionExpirationMetaTemplate($formattedPhone, $templateName, $userName, $packageName, $expiryDate);
                 case 'subscription_expired':
-                    return $this->sendSubscriptionExpiredMetaTemplate($formattedPhone, $templateName, $userName, $packageName, $expiryDate);
+                    // Try Meta Cloud template first, but always fallback to database template for reliability
+                    if ($this->checkMetaTemplateExists($templateName)) {
+                        $result = $this->sendSubscriptionExpiredMetaTemplate($formattedPhone, $templateName, $userName, $packageName, $expiryDate);
+                        if ($result) {
+                            Log::info('Meta Cloud template sent, also sending database template for reliability', [
+                                'template_name' => $templateName,
+                                'phone' => $formattedPhone
+                            ]);
+                        } else {
+                            Log::warning('Meta Cloud template failed, using database template', [
+                                'template_name' => $templateName,
+                                'phone' => $formattedPhone
+                            ]);
+                        }
+                    } else {
+                        Log::info('Meta Cloud template not found, using database template', [
+                            'template_name' => $templateName,
+                            'phone' => $formattedPhone
+                        ]);
+                    }
+                    // Always fallback to database template for reliable delivery
+                    break;
                 default:
                     // For other message types, check if Meta Cloud template exists
                     if ($this->checkMetaTemplateExists($templateName)) {
@@ -1300,7 +1321,7 @@ class WhatsAppService
         try {
             $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
             
-            // subscription_expired_notice template has no parameters, just header, body, footer and button
+            // subscription_expired_notice template structure: header, body, footer, and URL button (no parameters needed)
             $data = [
                 'messaging_product' => 'whatsapp',
                 'to' => $phoneNumber,
