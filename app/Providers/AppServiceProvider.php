@@ -147,6 +147,10 @@ class AppServiceProvider extends ServiceProvider
             });
 
             View::composer(['user-front.*'], function ($view) {
+                // Skip error pages to prevent recursive abort() calls
+                if (str_contains($view->getName(), 'user-front.errors.')) {
+                    return;
+                }
                 if (session()->has('user_midtrans')) {
                     $user = session()->get('user_midtrans');
                 } else {
