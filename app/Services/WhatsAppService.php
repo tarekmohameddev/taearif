@@ -651,7 +651,8 @@ class WhatsAppService
     public function sendWelcomeMessage($phoneNumber, $message, $userName = null, $userEmail = null)
     {
         // Replace template variables
-        $message = str_replace('{name}', $userName ?? 'User', $message);
+        $displayName = $userName ?? 'عزيزي المستخدم'; // Use Arabic "Dear User" instead of "User"
+        $message = str_replace('{name}', $displayName, $message);
         $message = str_replace('{email}', $userEmail ?? 'N/A', $message);
         
         if ($this->settings->whatsapp_service === 'meta_cloud') {
