@@ -949,44 +949,29 @@ class WhatsAppService
                 case 'subscription_expiration':
                     return $this->sendSubscriptionExpirationMetaTemplate($formattedPhone, $templateName, $userName, $packageName, $expiryDate);
                 case 'subscription_expired':
-                    // Try Meta Cloud template first, but always fallback to database template for reliability
-                    $metaResult = false;
+                    // Meta Cloud template for subscription expired
                     if ($this->checkMetaTemplateExists($templateName)) {
-                        $metaResult = $this->sendSubscriptionExpiredMetaTemplate($formattedPhone, $templateName, $userName, $packageName, $expiryDate);
-                        if ($metaResult) {
-                            Log::info('Meta Cloud template sent, also sending database template for reliability', [
+                        $result = $this->sendSubscriptionExpiredMetaTemplate($formattedPhone, $templateName, $userName, $packageName, $expiryDate);
+                        if ($result) {
+                            Log::info('Meta Cloud subscription expired template sent successfully', [
                                 'template_name' => $templateName,
                                 'phone' => $formattedPhone
                             ]);
+                            return true;
                         } else {
-                            Log::warning('Meta Cloud template failed, using database template', [
+                            Log::error('Meta Cloud subscription expired template failed', [
                                 'template_name' => $templateName,
                                 'phone' => $formattedPhone
                             ]);
+                            return false;
                         }
                     } else {
-                        Log::info('Meta Cloud template not found, using database template', [
+                        Log::error('Meta Cloud subscription expired template not found', [
                             'template_name' => $templateName,
                             'phone' => $formattedPhone
                         ]);
+                        return false;
                     }
-                    
-                    // Always send database template for reliable delivery
-                    if ($templateContent) {
-                        $processedContent = str_replace('{name}', $userName ?? 'User', $templateContent);
-                        $processedContent = str_replace('{package_name}', $packageName ?? 'Package', $processedContent);
-                        $processedContent = str_replace('{expiry_date}', $expiryDate ?? 'N/A', $processedContent);
-                        
-                        Log::info('Using database template content for subscription expired', [
-                            'template_name' => $templateName,
-                            'template_content' => $templateContent,
-                            'processed_content' => $processedContent
-                        ]);
-                        
-                        $dbResult = $this->sendRegularMessage($formattedPhone, $processedContent);
-                        return $metaResult || $dbResult;
-                    }
-                    return $metaResult;
                 default:
                     // For other message types, check if Meta Cloud template exists
                     if ($this->checkMetaTemplateExists($templateName)) {
