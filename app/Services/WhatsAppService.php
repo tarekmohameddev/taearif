@@ -690,45 +690,87 @@ class WhatsAppService
         $message = str_replace('{package_name}', $packageName ?? 'Package', $message);
         $message = str_replace('{expiry_date}', $expiryDate ?? 'N/A', $message);
         
-        // Check if Evolution API is available (more reliable for delivery)
-        $evolutionAvailable = !empty($this->settings->evolution_api_url) && 
-                             !empty($this->settings->evolution_api_key) && 
-                             !empty($this->settings->evolution_instance_name);
-        
-        // Priority 1: Try Evolution API if available (most reliable delivery)
-        if ($evolutionAvailable) {
+        // Respect admin's WhatsApp service selection first, then fallback
+        if ($this->settings->whatsapp_service === 'meta_cloud') {
+            // Primary: Try Meta Cloud as per admin selection
             try {
-                $result = $this->sendSubscriptionExpiredViaEvolutionApi($phoneNumber, $message, $userName, $packageName, $expiryDate);
+                $result = $this->sendMetaCloudMessage($phoneNumber, $message, 'subscription_expired', $userName, null, $packageName, $expiryDate);
                 if ($result) {
-                    Log::info('Subscription expired sent via Evolution API successfully (Priority 1)', [
+                    Log::info('Subscription expired sent via Meta Cloud successfully (Admin Choice)', [
                         'phone' => $phoneNumber,
-                        'service' => 'evolution_api',
-                        'configured_service' => $this->settings->whatsapp_service
+                        'service' => 'meta_cloud',
+                        'selected_by_admin' => true
                     ]);
                     return true;
                 }
             } catch (\Exception $e) {
-                Log::warning('Evolution API failed for subscription expired, trying Meta Cloud', [
+                Log::warning('Meta Cloud failed for subscription expired, trying Evolution API fallback', [
                     'phone' => $phoneNumber,
                     'error' => $e->getMessage()
                 ]);
             }
-        }
-        
-        // Priority 2: Try Meta Cloud if Evolution API failed or not available
-        if ($this->settings->whatsapp_service === 'meta_cloud') {
+            
+            // Fallback: Try Evolution API if Meta Cloud failed
+            $evolutionAvailable = !empty($this->settings->evolution_api_url) && 
+                                 !empty($this->settings->evolution_api_key) && 
+                                 !empty($this->settings->evolution_instance_name);
+            
+            if ($evolutionAvailable) {
+                try {
+                    $result = $this->sendSubscriptionExpiredViaEvolutionApi($phoneNumber, $message, $userName, $packageName, $expiryDate);
+                    if ($result) {
+                        Log::info('Subscription expired sent via Evolution API successfully (Meta Cloud Fallback)', [
+                            'phone' => $phoneNumber,
+                            'service' => 'evolution_api',
+                            'fallback_from' => 'meta_cloud'
+                        ]);
+                        return true;
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Evolution API fallback also failed for subscription expired', [
+                        'phone' => $phoneNumber,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        } elseif ($this->settings->whatsapp_service === 'evolution_api') {
+            // Primary: Try Evolution API as per admin selection
+            $evolutionAvailable = !empty($this->settings->evolution_api_url) && 
+                                 !empty($this->settings->evolution_api_key) && 
+                                 !empty($this->settings->evolution_instance_name);
+            
+            if ($evolutionAvailable) {
+                try {
+                    $result = $this->sendSubscriptionExpiredViaEvolutionApi($phoneNumber, $message, $userName, $packageName, $expiryDate);
+                    if ($result) {
+                        Log::info('Subscription expired sent via Evolution API successfully (Admin Choice)', [
+                            'phone' => $phoneNumber,
+                            'service' => 'evolution_api',
+                            'selected_by_admin' => true
+                        ]);
+                        return true;
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Evolution API failed for subscription expired, trying Meta Cloud fallback', [
+                        'phone' => $phoneNumber,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            // Fallback: Try Meta Cloud if Evolution API failed
             try {
                 $result = $this->sendMetaCloudMessage($phoneNumber, $message, 'subscription_expired', $userName, null, $packageName, $expiryDate);
                 if ($result) {
-                    Log::info('Subscription expired sent via Meta Cloud successfully (Priority 2)', [
+                    Log::info('Subscription expired sent via Meta Cloud successfully (Evolution API Fallback)', [
                         'phone' => $phoneNumber,
                         'service' => 'meta_cloud',
-                        'evolution_available' => $evolutionAvailable
+                        'fallback_from' => 'evolution_api'
                     ]);
                     return true;
                 }
             } catch (\Exception $e) {
-                Log::warning('Meta Cloud failed for subscription expired, falling back to database template', [
+                Log::warning('Meta Cloud fallback also failed for subscription expired', [
                     'phone' => $phoneNumber,
                     'error' => $e->getMessage()
                 ]);
