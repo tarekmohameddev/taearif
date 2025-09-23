@@ -690,13 +690,107 @@ class WhatsAppService
         $message = str_replace('{package_name}', $packageName ?? 'Package', $message);
         $message = str_replace('{expiry_date}', $expiryDate ?? 'N/A', $message);
         
+        // Try Meta Cloud first if enabled
         if ($this->settings->whatsapp_service === 'meta_cloud') {
-            return $this->sendMetaCloudMessage($phoneNumber, $message, 'subscription_expired', $userName, null, $packageName, $expiryDate);
-        } elseif ($this->settings->whatsapp_service === 'evolution_api') {
-            return $this->sendSubscriptionExpiredViaEvolutionApi($phoneNumber, $message, $userName, $packageName, $expiryDate);
+            try {
+                $result = $this->sendMetaCloudMessage($phoneNumber, $message, 'subscription_expired', $userName, null, $packageName, $expiryDate);
+                if ($result) {
+                    Log::info('Subscription expired sent via Meta Cloud successfully', [
+                        'phone' => $phoneNumber,
+                        'service' => 'meta_cloud'
+                    ]);
+                    return true;
+                }
+            } catch (\Exception $e) {
+                Log::warning('Meta Cloud failed for subscription expired, trying Evolution API', [
+                    'phone' => $phoneNumber,
+                    'error' => $e->getMessage()
+                ]);
+            }
         }
         
-        throw new \Exception('No WhatsApp service configured');
+        // Try Evolution API if Meta Cloud failed or Evolution is enabled
+        if ($this->settings->whatsapp_service === 'evolution_api' || 
+            ($this->settings->whatsapp_service === 'meta_cloud' && !isset($result))) {
+            try {
+                $result = $this->sendSubscriptionExpiredViaEvolutionApi($phoneNumber, $message, $userName, $packageName, $expiryDate);
+                if ($result) {
+                    Log::info('Subscription expired sent via Evolution API successfully', [
+                        'phone' => $phoneNumber,
+                        'service' => 'evolution_api'
+                    ]);
+                    return true;
+                }
+            } catch (\Exception $e) {
+                Log::warning('Evolution API failed for subscription expired, falling back to database template', [
+                    'phone' => $phoneNumber,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        // Final fallback: Use database template as regular message
+        Log::info('Using database template fallback for subscription expired', [
+            'phone' => $phoneNumber,
+            'service' => 'database_fallback'
+        ]);
+        
+        // Get database template
+        $template = \App\Models\WhatsAppTemplate::where('name', 'subscription_expired_notice')
+            ->where('type', 'subscription_expired')
+            ->where('status', true)
+            ->first();
+            
+        if ($template) {
+            $templateMessage = $template->content;
+            $templateMessage = str_replace('{name}', $userName ?? 'User', $templateMessage);
+            $templateMessage = str_replace('{package_name}', $packageName ?? 'Package', $templateMessage);
+            $templateMessage = str_replace('{expiry_date}', $expiryDate ?? 'N/A', $templateMessage);
+            
+            // Try to send via current WhatsApp service as regular message
+            if ($this->settings->whatsapp_service === 'meta_cloud') {
+                return $this->sendRegularMessage($phoneNumber, $templateMessage);
+            } elseif ($this->settings->whatsapp_service === 'evolution_api') {
+                // Use Evolution API for regular message
+                try {
+                    $apiUrl = $this->settings->evolution_api_url;
+                    $apiKey = $this->settings->evolution_api_key;
+                    $instanceName = $this->settings->evolution_instance_name;
+                    
+                    if ($apiUrl && $apiKey && $instanceName) {
+                        $formattedPhone = $this->formatPhoneNumber($phoneNumber);
+                        $cleanedMessage = $this->cleanRegularMessageForWhatsApp($templateMessage);
+                        
+                        $payload = [
+                            "number" => $formattedPhone,
+                            "text" => $cleanedMessage,
+                            "options" => [
+                                "delay" => 1200,
+                                "presence" => "composing"
+                            ]
+                        ];
+                        
+                        $endpoint = "{$apiUrl}/message/sendText/{$instanceName}";
+                        $response = \Illuminate\Support\Facades\Http::withHeaders([
+                            'apikey' => $apiKey,
+                            'Content-Type' => 'application/json',
+                        ])->post($endpoint, $payload);
+                        
+                        return $response->successful();
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Evolution API regular message failed', [
+                        'phone' => $phoneNumber,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+                // Fallback to Meta Cloud regular message if Evolution fails
+                return $this->sendRegularMessage($phoneNumber, $templateMessage);
+            }
+        }
+        
+        // Ultimate fallback: Send the original message as regular text
+        return $this->sendRegularMessage($phoneNumber, $message);
     }
 
     /**
