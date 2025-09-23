@@ -302,7 +302,7 @@
                       <div class="form-group">
                         <label for="welcome_message_text"><strong>نص رسالة الترحيب **</strong></label>
                         <textarea class="form-control" id="welcome_message_text" name="welcome_message_text" rows="4" 
-                                  placeholder="مرحباً بك في منصتنا! شكراً لك على التسجيل...">{{$abs->welcome_message_text ?? ''}}</textarea>
+                                  placeholder=" مرحباً بك  في منصة تعاريف ! شكراً لك على التسجيل...">{{$abs->welcome_message_text ?? ''}}</textarea>
                         <p class="text-muted">يمكن استخدام المتغيرات: {name}, {email}</p>
                         <button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="forceUpdateTextAreas()">
                           <i class="fas fa-sync"></i> تحديث النص حسب API المحدد
@@ -1242,7 +1242,7 @@ function updateTextsForMeta() {
 function updateTextsForEvolution() {
     // Evolution API default texts
     var evolutionTexts = {
-        welcome: 'مرحبا {name}\nمرحباً بك في منصتنا!\nنحن سعداء لانضمامك إلينا.',
+        welcome: 'مرحبا {name}\n مرحباً بك  في منصة تعاريف !\nنحن سعداء لانضمامك إلينا.',
         subscription_expiration: 'مرحبًا {name} 👋،\nنود تذكيرك أن باقتك {package_name} ستنتهي بتاريخ {expiry_date}.\nتبقى 3 أيام فقط للاستفادة من خدماتك قبل انتهاء الباقة.\n\n🔄 جدّد الآن لتفادي انقطاع الخدمة.',
         subscription_expired: 'مرحبا {name}\nانتهى اشتراكك.\nيمكنك الترقية في أي وقت.',
         password_reset: 'رمز إعادة تعيين كلمة المرور: {code}\n\nهذا الرمز صالح لمدة 15 دقيقة.\n\nأو يمكنك الضغط على الرابط التالي:\n{reset_url}?code={code}'
@@ -1290,9 +1290,9 @@ function isDefaultText(text, type) {
     // Check if the text matches any of the default texts
     var defaultTexts = {
         welcome: [
-            'مرحباً بك في منصتنا! شكراً لك على التسجيل...',
+            ' مرحباً بك  في منصة تعاريف ! شكراً لك على التسجيل...',
             'مرحبا {name}\nأهلاً وسهلاً بك في منصتنا!\nنتمنى لك تجربة ممتعة.',
-            'مرحبا {name}\nمرحباً بك في منصتنا!\nنحن سعداء لانضمامك إلينا.'
+            'مرحبا {name}\ مرحباً بك  في منصة تعاريف !\nنحن سعداء لانضمامك إلينا.'
         ],
         subscription_expiration: [
             'تنبيه: باقة الاشتراك الخاصة بك ستنتهي قريباً.',

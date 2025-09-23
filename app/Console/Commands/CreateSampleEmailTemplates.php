@@ -66,7 +66,7 @@ class CreateSampleEmailTemplates extends Command
             [
                 'name' => 'welcome_ar',
                 'description' => 'قالب الترحيب باللغة العربية',
-                'subject' => 'مرحباً بك في منصتنا',
+                'subject' => ' مرحباً بك  في منصة تعاريف ',
                 'content' => "مرحباً {name},\n\nنرحب بك في منصتنا!\n\nبريدك الإلكتروني: {email}\n\nنشكرك على انضمامك إلينا.\n\nمع أطيب التحيات،\nفريق العمل",
                 'type' => 'welcome',
                 'language' => 'ar',
