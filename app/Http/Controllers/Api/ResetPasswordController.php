@@ -167,7 +167,9 @@ class ResetPasswordController extends Controller
                     $code,
                     $user->name ?? $user->username ?? 'User',
                     $userLanguage,
-                    $resetUrl
+                    $resetUrl,
+                    null, // templateName
+                    $user->id
                 );
                 
                 // If WhatsApp service is not configured, it returns the default message string
