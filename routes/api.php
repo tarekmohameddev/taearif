@@ -425,6 +425,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
+    // Sales Management
+
     Route::prefix('rms')->group(function () {
         // Dashboard
         Route::get('dashboard', [RmsDashboardController::class, 'index']);
@@ -468,6 +470,43 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('reminders/{id}/dismiss', [ReminderController::class, 'dismiss']);
         Route::post('reminders/{id}/snooze', [ReminderController::class, 'snooze']);
         // rental-collect-payments
+    });
+
+    // Purchase Management System
+    Route::prefix('pms')->group(function () {
+        // Dashboard and Statistics
+        Route::get('dashboard', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'dashboard']);
+        
+        // Helper endpoints for dropdowns
+        Route::get('properties', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'getProperties']);
+        Route::get('projects', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'getProjects']);
+        Route::get('staff', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'getStaff']);
+
+        // Purchase Requests CRUD
+        Route::get('purchase-requests', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'index']);
+        Route::post('purchase-requests', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'store']);
+        Route::get('purchase-requests/{id}', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'show']);
+        Route::patch('purchase-requests/{id}', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'update']);
+        Route::delete('purchase-requests/{id}', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'destroy']);
+        
+        // Stage Transition
+        Route::post('purchase-requests/{id}/transition-stage', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'transitionStage']);
+        Route::post('purchase-requests/{id}/simple-transition-stage', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'simpleTransitionStage']);
+
+        // Purchase Request Stages
+        Route::get('purchase-requests/{purchaseRequestId}/stages', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'index']);
+        Route::get('purchase-requests/{purchaseRequestId}/stages/statistics', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'statistics']);
+        Route::get('purchase-requests/{purchaseRequestId}/stages/{stageId}', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'show']);
+        
+        // Stage Status Updates
+        Route::patch('purchase-requests/{purchaseRequestId}/stages/{stageId}/status', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'updateStatus']);
+        Route::patch('purchase-requests/{purchaseRequestId}/stages/{stageId}/notes', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'updateNotes']);
+        Route::patch('purchase-requests/{purchaseRequestId}/stages/bulk-update', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'bulkUpdate']);
+        
+        // Stage Action Helpers
+        Route::post('purchase-requests/{purchaseRequestId}/stages/{stageId}/mark-completed', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'markCompleted']);
+        Route::post('purchase-requests/{purchaseRequestId}/stages/{stageId}/mark-in-progress', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'markInProgress']);
+        Route::post('purchase-requests/{purchaseRequestId}/stages/{stageId}/mark-pending', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'markPending']);
     });
 
     // ApiCustomerInquiry
