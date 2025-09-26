@@ -530,18 +530,15 @@ class PurchaseRequestController extends Controller
 
         // Get next stage
         $nextStageName = $this->getNextStageName($validated['current_stage_name']);
-        $nextStage = $purchaseRequest->stages()
-            ->where('stage_name', $nextStageName)
-            ->first();
-
-        if (!$nextStage) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Next stage not found'
-            ], 404);
+        $nextStage = null;
+        
+        if ($nextStageName) {
+            $nextStage = $purchaseRequest->stages()
+                ->where('stage_name', $nextStageName)
+                ->first();
         }
 
-        // Update stages without using model events
+        // Update current stage to completed
         $currentStage->timestamps = false; // Disable timestamps to avoid issues
         $currentStage->update([
             'status' => 'مكتمل',
@@ -550,13 +547,16 @@ class PurchaseRequestController extends Controller
             'notes' => $currentStage->notes . ($validated['additional_notes'] ? "\n\nAdditional Notes: " . $validated['additional_notes'] : ''),
         ]);
 
-        $nextStage->timestamps = false;
-        $nextStage->update([
-            'status' => 'قيد التنفيذ',
-            'started_at' => now(),
-            'updated_by' => $user->id,
-            'notes' => $validated['additional_notes'],
-        ]);
+        // Update next stage if it exists (not the final stage)
+        if ($nextStage) {
+            $nextStage->timestamps = false;
+            $nextStage->update([
+                'status' => 'قيد التنفيذ',
+                'started_at' => now(),
+                'updated_by' => $user->id,
+                'notes' => $validated['additional_notes'],
+            ]);
+        }
 
         // Update purchase request data
         $updateData = [];
@@ -591,17 +591,28 @@ class PurchaseRequestController extends Controller
             $query->orderBy('stage_order');
         }, 'stages.updatedBy']);
 
+        // Prepare response data
+        $responseData = [
+            'purchase_request' => $purchaseRequest,
+            'transitioned_from' => $currentStage->stage_name,
+            'requirements_met' => $validated['requirements_met'],
+            'inspection_date' => $validated['inspection_date'],
+            'payment_amount' => $validated['payment_amount'],
+        ];
+
+        if ($nextStage) {
+            $responseData['transitioned_to'] = $nextStage->stage_name;
+            $message = "Successfully transitioned from {$currentStage->stage_name} to {$nextStage->stage_name}";
+        } else {
+            $responseData['transitioned_to'] = null;
+            $responseData['is_final_stage'] = true;
+            $message = "Successfully completed final stage: {$currentStage->stage_name}. Purchase request is now completed!";
+        }
+
         return response()->json([
             'success' => true,
-            'data' => [
-                'purchase_request' => $purchaseRequest,
-                'transitioned_from' => $currentStage->stage_name,
-                'transitioned_to' => $nextStage->stage_name,
-                'requirements_met' => $validated['requirements_met'],
-                'inspection_date' => $validated['inspection_date'],
-                'payment_amount' => $validated['payment_amount'],
-            ],
-            'message' => "Successfully transitioned from {$currentStage->stage_name} to {$nextStage->stage_name}"
+            'data' => $responseData,
+            'message' => $message
         ]);
     }
 
