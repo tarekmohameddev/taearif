@@ -138,6 +138,26 @@ class PurchaseRequestController extends Controller
 
         $purchaseRequest = PurchaseRequest::create($validated);
 
+        // Auto-start first stage (الحجز) as in progress
+        try {
+            $firstStage = $purchaseRequest->stages()->where('stage_order', 1)->first();
+            if ($firstStage && $firstStage->status === 'الانتظار') {
+                $firstStage->update([
+                    'status' => 'قيد التنفيذ',
+                    'started_at' => now(),
+                    'updated_by' => Auth::id(),
+                    'notes' => $firstStage->notes ?: 'تم بدء مرحلة الحجز',
+                ]);
+
+                // Ensure overall status reflects progress start
+                $purchaseRequest->update([
+                    'overall_status' => 'in_progress',
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // Non-fatal: if this fails, creation should still succeed
+        }
+
         return response()->json([
             'success' => true,
             'data' => $purchaseRequest->load(['property', 'project', 'assignedUser', 'stages']),
