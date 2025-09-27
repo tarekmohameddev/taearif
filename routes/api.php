@@ -629,19 +629,21 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Add this debug route
-Route::get('/debug-oss', function () {
-    return [
-        'env_oss_endpoint' => env('OSS_ENDPOINT'),
-        'env_oss_bucket' => env('OSS_BUCKET'),
-        'env_oss_key' => env('OSS_ACCESS_KEY_ID'),
-        'env_oss_secret' => env('OSS_ACCESS_KEY_SECRET'),
-        'config_oss_endpoint' => config('filesystems.disks.oss.endpoint'),
-        'config_oss_bucket' => config('filesystems.disks.oss.bucket'),
-        'config_oss_key' => config('filesystems.disks.oss.key'),
-        'config_oss_secret' => config('filesystems.disks.oss.secret'),
-        'all_oss_config' => config('filesystems.disks.oss'),
-    ];
-});
+if (!app()->environment('production')) {
+    Route::get('/debug-oss', function () {
+        return [
+            'env_oss_endpoint' => env('OSS_ENDPOINT'),
+            'env_oss_bucket' => env('OSS_BUCKET'),
+            'env_oss_key' => env('OSS_ACCESS_KEY_ID'),
+            'env_oss_secret' => env('OSS_ACCESS_KEY_SECRET'),
+            'config_oss_endpoint' => config('filesystems.disks.oss.endpoint'),
+            'config_oss_bucket' => config('filesystems.disks.oss.bucket'),
+            'config_oss_key' => config('filesystems.disks.oss.key'),
+            'config_oss_secret' => config('filesystems.disks.oss.secret'),
+            'all_oss_config' => config('filesystems.disks.oss'),
+        ];
+    });
+}
 
 // WhatsApp webhook routes
 Route::post('/whatsapp/webhook', [App\Http\Controllers\Api\WhatsAppWebhookController::class, 'handleWebhook']);
