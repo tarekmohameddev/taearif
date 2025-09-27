@@ -561,6 +561,25 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::delete('cards/{id}', [CrmCardController::class, 'destroy']);
     });
 
+    // Marketing Channels Routes
+    Route::prefix('marketing')->group(function () {
+        Route::get('channels', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'index']);
+        Route::post('channels', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'store']);
+        Route::get('channels/types', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getChannelTypes']);
+        Route::get('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'show']);
+        Route::put('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'update']);
+        Route::patch('channels/{id}/status', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'updateStatus']);
+        Route::get('channels/{id}/statistics', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'statistics']);
+        Route::get('channels/{id}/stats', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'stats']);
+        Route::post('channels/{id}/sync-verified', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'syncVerified']);
+        Route::delete('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'destroy']);
+    });
+
+    // Marketing Webhooks Routes (no auth required for webhooks)
+    Route::prefix('marketing/webhooks')->group(function () {
+        Route::post('whatsapp', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'whatsappWebhook']);
+    });
+
 
 });
 
