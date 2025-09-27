@@ -91,6 +91,17 @@ use App\Http\Controllers\Api\V1\Rms\{
     ReminderController,
     RmsDashboardController,
 };
+use App\Http\Controllers\Api\V1\TenantWebsite\{
+    GetTenantController,
+    SavePagesController,
+    PageController,
+    GlobalsController,
+    ComponentCatalogController,
+    MediaController,
+    SettingsController,
+    PublishController,
+    FormController,
+};
 
 use App\Http\Controllers\Api\PixelController; // Added import for PixelController
 
@@ -676,3 +687,23 @@ if (!app()->environment('production')) {
 
 // WhatsApp webhook routes
 Route::post('/whatsapp/webhook', [App\Http\Controllers\Api\WhatsAppWebhookController::class, 'handleWebhook']);
+
+// Tenant Website API
+Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve'])->group(function () {
+    Route::post('getTenant', [GetTenantController::class, 'store']);
+    Route::post('save-pages', [SavePagesController::class, 'store'])->middleware('auth:sanctum');
+
+    Route::get('{tenantId}/pages', [PageController::class, 'index']);
+    Route::get('{tenantId}/pages/{pageId}', [PageController::class, 'show']);
+    Route::post('{tenantId}/pages', [PageController::class, 'store'])->middleware('auth:sanctum');
+    Route::put('{tenantId}/pages/{pageId}', [PageController::class, 'update'])->middleware('auth:sanctum');
+    Route::patch('{tenantId}/pages/{pageId}', [PageController::class, 'patch'])->middleware('auth:sanctum');
+    Route::delete('{tenantId}/pages/{pageId}', [PageController::class, 'destroy'])->middleware('auth:sanctum');
+
+    Route::put('{tenantId}/globals', [GlobalsController::class, 'update'])->middleware('auth:sanctum');
+    Route::get('components/catalog', [ComponentCatalogController::class, 'index']);
+    Route::post('{tenantId}/media', [MediaController::class, 'store'])->middleware('auth:sanctum');
+    Route::put('{tenantId}/settings', [SettingsController::class, 'update'])->middleware('auth:sanctum');
+    Route::post('{tenantId}/publish', [PublishController::class, 'store'])->middleware('auth:sanctum');
+    Route::post('{tenantId}/forms/contact', [FormController::class, 'store']);
+});

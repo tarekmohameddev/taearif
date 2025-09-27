@@ -89,6 +89,7 @@ class Kernel extends HttpKernel
         'owner-or-can' => \App\Http\Middleware\OwnerOrCan::class,
         'require.active.package' => \App\Http\Middleware\RequireActiveMembership::class,
         'check.maintenance' => \App\Http\Middleware\CheckMaintenanceMode::class,
+        'tenant.resolve' => \App\Http\Middleware\TenantResolution::class,
 
     ];
 
