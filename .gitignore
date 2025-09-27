@@ -49,3 +49,6 @@ database/seeds/RentalDashboardTestSeeder833.php
 
 # Test scripts folder
 /test-scripts/
+test-webhook.php
+Credit_Management_API_Postman_Collection.json
+Marketing_Channels_API_Postman_Collection.json
