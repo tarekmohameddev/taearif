@@ -12,7 +12,7 @@ return new class extends Migration
             Schema::create('tenant_settings', function (Blueprint $table) {
                 $table->uuid('id')->primary();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
-                $table->json('settings')->default('{}');
+                $table->json('settings')->nullable();
                 $table->string('version')->default('1');
                 $table->timestamp('published_at')->nullable();
                 $table->timestamps();
