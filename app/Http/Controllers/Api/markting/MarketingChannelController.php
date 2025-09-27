@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\markting;
 
 use App\Http\Controllers\Api\BaseApiController;
 use App\Models\Api\markting\MarketingChannel;
+use App\Http\Controllers\Api\markting\CreditController;
+use App\Models\Api\markting\UserCredit;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -367,6 +369,202 @@ class MarketingChannelController extends BaseApiController
                     'is_verified' => false,
                     'is_connected' => false,
                 ];
+        }
+    }
+
+    /**
+     * Send message through marketing channel
+     */
+    public function sendMessage(Request $request, $id): JsonResponse
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'to' => 'required|string|max:50',
+                'message' => 'required|string|max:1000',
+                'message_type' => 'sometimes|string|in:text,media,template',
+                'media_url' => 'nullable|url',
+            ]);
+
+            if ($validator->fails()) {
+                return $this->fail('Validation failed', 422, $validator->errors());
+            }
+
+            $channel = MarketingChannel::where('user_id', Auth::id())
+                ->where('id', $id)
+                ->first();
+
+            if (!$channel) {
+                return $this->fail('Marketing channel not found', 404);
+            }
+
+            if (!$channel->is_connected || !$channel->is_verified) {
+                return $this->fail('Channel is not connected or verified', 400);
+            }
+
+            // Calculate credits needed
+            $creditsNeeded = UserCredit::getCostForMessageType($channel->type);
+
+            // Check and deduct credits
+            $creditResult = CreditController::useCredits(
+                Auth::id(),
+                $creditsNeeded,
+                "Message sent via {$channel->name} ({$channel->type})",
+                [
+                    'channel_id' => $channel->id,
+                    'channel_type' => $channel->type,
+                    'recipient' => $request->to,
+                    'message_type' => $request->get('message_type', 'text'),
+                ]
+            );
+
+            if (!$creditResult['success']) {
+                return $this->fail($creditResult['error'], 400, [
+                    'credits_available' => $creditResult['available_credits'] ?? 0,
+                    'credits_required' => $creditsNeeded,
+                ]);
+            }
+
+            // Send message through external API (simulated)
+            $messageResult = $this->sendMessageToExternalService($channel, $request);
+
+            if ($messageResult['success']) {
+                // Update sent message count
+                $channel->increment('sent_messages_count');
+
+                return $this->ok([
+                    'message_id' => $messageResult['message_id'],
+                    'credits_used' => $creditsNeeded,
+                    'remaining_credits' => $creditResult['remaining_credits'],
+                    'channel_name' => $channel->name,
+                    'sent_to' => $request->to,
+                    'status' => 'sent',
+                ], 'Message sent successfully');
+            } else {
+                // Refund credits if message sending failed
+                $this->refundCredits(Auth::id(), $creditsNeeded, "Failed to send message via {$channel->name}");
+                
+                return $this->fail('Failed to send message: ' . $messageResult['error'], 500);
+            }
+
+        } catch (\Exception $e) {
+            return $this->fail('Failed to send message: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send message to external service (WhatsApp, SMS, etc.)
+     */
+    private function sendMessageToExternalService($channel, Request $request)
+    {
+        try {
+            // This is a simulation - in production, you would integrate with actual APIs
+            // like WhatsApp Business API, SMS gateways, etc.
+
+            switch ($channel->type) {
+                case 'whatsapp':
+                    return $this->sendWhatsAppMessage($channel, $request);
+                case 'sms':
+                    return $this->sendSMSMessage($channel, $request);
+                case 'facebook':
+                    return $this->sendFacebookMessage($channel, $request);
+                case 'telegram':
+                    return $this->sendTelegramMessage($channel, $request);
+                case 'instagram':
+                    return $this->sendInstagramMessage($channel, $request);
+                default:
+                    return [
+                        'success' => false,
+                        'error' => 'Unsupported channel type',
+                    ];
+            }
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Send WhatsApp message (simulated)
+     */
+    private function sendWhatsAppMessage($channel, Request $request)
+    {
+        // In production, integrate with WhatsApp Business API
+        return [
+            'success' => true,
+            'message_id' => 'WHATSAPP_' . time() . '_' . rand(1000, 9999),
+        ];
+    }
+
+    /**
+     * Send SMS message (simulated)
+     */
+    private function sendSMSMessage($channel, Request $request)
+    {
+        // In production, integrate with SMS gateway
+        return [
+            'success' => true,
+            'message_id' => 'SMS_' . time() . '_' . rand(1000, 9999),
+        ];
+    }
+
+    /**
+     * Send Facebook message (simulated)
+     */
+    private function sendFacebookMessage($channel, Request $request)
+    {
+        // In production, integrate with Facebook Messenger API
+        return [
+            'success' => true,
+            'message_id' => 'FB_' . time() . '_' . rand(1000, 9999),
+        ];
+    }
+
+    /**
+     * Send Telegram message (simulated)
+     */
+    private function sendTelegramMessage($channel, Request $request)
+    {
+        // In production, integrate with Telegram Bot API
+        return [
+            'success' => true,
+            'message_id' => 'TG_' . time() . '_' . rand(1000, 9999),
+        ];
+    }
+
+    /**
+     * Send Instagram message (simulated)
+     */
+    private function sendInstagramMessage($channel, Request $request)
+    {
+        // In production, integrate with Instagram API
+        return [
+            'success' => true,
+            'message_id' => 'IG_' . time() . '_' . rand(1000, 9999),
+        ];
+    }
+
+    /**
+     * Refund credits when message sending fails
+     */
+    private function refundCredits($userId, $credits, $description)
+    {
+        try {
+            $userCredit = UserCredit::getOrCreateForUser($userId);
+            $userCredit->addCredits($credits, null, $description);
+            
+            // Create refund transaction
+            \App\Models\Api\markting\CreditTransaction::create([
+                'user_id' => $userId,
+                'transaction_type' => 'refund',
+                'credits_amount' => $credits,
+                'status' => 'completed',
+                'reference_number' => \App\Models\Api\markting\CreditTransaction::generateReferenceNumber(),
+                'description' => $description,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to refund credits: ' . $e->getMessage());
         }
     }
 
