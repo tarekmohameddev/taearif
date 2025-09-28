@@ -14,10 +14,34 @@ echo "=====================================\n\n";
 echo "Creating permissions...\n";
 
 $permissions = [
+    // Properties Management
     'properties.view', 'properties.create', 'properties.update', 'properties.delete',
-    'customers.view', 'customers.create', 'customers.update', 'customers.delete',
+    'properties.approve', 'properties.feature', 'properties.export', 'properties.manage',
+    
+    // Projects Management  
     'projects.view', 'projects.create', 'projects.update', 'projects.delete',
-    'settings.view', 'settings.update'
+    'projects.assign', 'projects.approve', 'projects.manage',
+    
+    // Customers Management
+    'customers.view', 'customers.create', 'customers.update', 'customers.delete',
+    'customers.assign', 'customers.followup', 'customers.export', 'customers.manage',
+    
+    // CRM Operations
+    'crm.view', 'crm.create', 'crm.update', 'crm.assign', 'crm.schedule', 'crm.manage',
+    
+    // Content Management
+    'content.view', 'content.create', 'content.update', 'content.delete', 'content.manage',
+    
+    // Reports & Analytics
+    'reports.view', 'reports.create', 'reports.export', 'reports.manage',
+    'analytics.view', 'analytics.export', 'analytics.manage',
+    
+    // Settings
+    'settings.view', 'settings.update', 'settings.manage',
+    
+    // User & Employee Management
+    'users.view', 'users.create', 'users.update', 'users.delete', 'users.manage',
+    'employees.view', 'employees.create', 'employees.update', 'employees.delete', 'employees.manage'
 ];
 
 foreach ($permissions as $perm) {

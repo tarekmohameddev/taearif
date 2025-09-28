@@ -1,13 +1,15 @@
 <?php
+
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\Api\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Services\ActivityLogger;
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\ResolvesTenant;
-
+use App\Http\Controllers\Controller;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 class RoleController extends Controller
 {
@@ -22,14 +24,40 @@ class RoleController extends Controller
     public function index(Request $request)
     {
         $tenantId = $this->tenantId();
-        $q = Role::where('user_id',$tenantId)
-            ->when($request->filled('q'), function($qb) use ($request){
-                $s = trim($request->q);
-                $qb->where('name','like',"%$s%");
-            })
-            ->orderBy('name');
 
-        return response()->json($q->get(['id','name','permissions']));
+        $roles = Role::where('team_id', $tenantId)
+            ->with('permissions:id,name')
+            ->select('id', 'name', 'created_at', 'updated_at')
+            ->orderBy('name')
+            ->get();
+
+        // Add permissions to each role
+        $roles->transform(function ($role) {
+            $role->permissions_list = $role->permissions->pluck('name')->toArray();
+            return $role;
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $roles
+        ]);
+    }
+
+    // GET /roles/{id}
+    public function show($id)
+    {
+        $tenantId = $this->tenantId();
+
+        $role = Role::where('team_id', $tenantId)
+            ->with('permissions:id,name')
+            ->findOrFail($id);
+
+        $role->permissions_list = $role->permissions->pluck('name')->toArray();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $role
+        ]);
     }
 
     // POST /roles
@@ -38,16 +66,35 @@ class RoleController extends Controller
         $tenantId = $this->tenantId();
 
         $data = $request->validate([
-            'name'        => ['required','string','max:120', Rule::unique('api_roles')->where(fn($q)=>$q->where('user_id',$tenantId))],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('api_roles', 'name')->where(function ($query) use ($tenantId) {
+                    return $query->where('team_id', $tenantId);
+                })
+            ],
             'permissions' => ['array'],
-            'permissions.*' => ['string','max:100'],
+            'permissions.*' => ['string', 'exists:api_permissions,name']
         ]);
 
+        // Create the role
         $role = Role::create([
             'user_id' => $tenantId,
             'name' => $data['name'],
-            'permissions' => $data['permissions'] ?? [],
+            'team_id' => $tenantId,
+            'guard_name' => 'sanctum'
         ]);
+
+        // Assign permissions if provided
+        if (!empty($data['permissions'])) {
+            $permissions = Permission::whereIn('name', $data['permissions'])->get();
+            $role->syncPermissions($permissions);
+        }
+
+        // Load permissions for response
+        $role->load('permissions:id,name');
+        $role->permissions_list = $role->permissions->pluck('name')->toArray();
 
         ActivityLogger::log([
             'user_id'     => $tenantId,
@@ -56,29 +103,58 @@ class RoleController extends Controller
             'action'      => 'role.created',
             'target_type' => 'api_roles',
             'target_id'   => $role->id,
-            'new_values'  => $role->toArray(),
+            'new_values'  => [
+                'name' => $role->name,
+                'permissions' => $role->permissions_list
+            ],
         ]);
 
-        return response()->json($role, 201);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Role created successfully',
+            'data' => $role
+        ], 201);
     }
 
     // PUT /roles/{id}
     public function update(Request $request, $id)
     {
         $tenantId = $this->tenantId();
-        $role = Role::where('user_id',$tenantId)->findOrFail($id);
+
+        $role = Role::where('team_id', $tenantId)->findOrFail($id);
 
         $data = $request->validate([
-            'name'        => ['sometimes','required','string','max:120', Rule::unique('api_roles')->where(fn($q)=>$q->where('user_id',$tenantId))->ignore($role->id)],
-            'permissions' => ['sometimes','array'],
-            'permissions.*' => ['string','max:100'],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('api_roles', 'name')->where(function ($query) use ($tenantId) {
+                    return $query->where('team_id', $tenantId);
+                })->ignore($role->id)
+            ],
+            'permissions' => ['array'],
+            'permissions.*' => ['string', 'exists:api_permissions,name']
         ]);
 
-        $old = $role->toArray();
+        $oldData = [
+            'name' => $role->name,
+            'permissions' => $role->permissions->pluck('name')->toArray()
+        ];
 
-        if (array_key_exists('name',$data)) $role->name = $data['name'];
-        if (array_key_exists('permissions',$data)) $role->permissions = $data['permissions'];
-        $role->save();
+        // Update role name
+        $role->update([
+            'name' => $data['name']
+        ]);
+
+        // Update permissions if provided
+        if (array_key_exists('permissions', $data)) {
+            $permissions = Permission::whereIn('name', $data['permissions'])->get();
+            $role->syncPermissions($permissions);
+        }
+
+        // Load permissions for response
+        $role->load('permissions:id,name');
+        $role->permissions_list = $role->permissions->pluck('name')->toArray();
 
         ActivityLogger::log([
             'user_id'     => $tenantId,
@@ -87,18 +163,55 @@ class RoleController extends Controller
             'action'      => 'role.updated',
             'target_type' => 'api_roles',
             'target_id'   => $role->id,
-            'old_values'  => $old,
-            'new_values'  => $role->toArray(),
+            'old_values'  => $oldData,
+            'new_values'  => [
+                'name' => $role->name,
+                'permissions' => $role->permissions_list
+            ],
         ]);
 
-        return response()->json($role);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Role updated successfully',
+            'data' => $role
+        ]);
     }
 
     // DELETE /roles/{id}
     public function destroy($id)
     {
         $tenantId = $this->tenantId();
-        $role = Role::where('user_id',$tenantId)->findOrFail($id);
+
+        $role = Role::where('team_id', $tenantId)->findOrFail($id);
+
+        // Check if role is protected
+        $protectedRoles = ['owner', 'manager', 'agent'];
+        if (in_array($role->name, $protectedRoles)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Cannot delete protected role: ' . $role->name,
+                'protected_roles' => $protectedRoles
+            ], 403);
+        }
+
+        // Check if role is assigned to any users
+        $userCount = User::role($role->name, 'sanctum')->count();
+        if ($userCount > 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Cannot delete role that is assigned to ' . $userCount . ' user(s)',
+                'assigned_users' => $userCount
+            ], 422);
+        }
+
+        $oldData = [
+            'name' => $role->name,
+            'permissions' => $role->permissions->pluck('name')->toArray()
+        ];
+
+        // Remove all permissions from role before deletion
+        $role->syncPermissions([]);
+        $role->delete();
 
         ActivityLogger::log([
             'user_id'     => $tenantId,
@@ -106,14 +219,278 @@ class RoleController extends Controller
             'actor_id'    => auth()->id(),
             'action'      => 'role.deleted',
             'target_type' => 'api_roles',
-            'target_id'   => $role->id,
-            'old_values'  => $role->toArray(),
+            'target_id'   => $id,
+            'old_values'  => $oldData,
         ]);
 
-        // Detach from employees implicitly via FK or manually:
-        $role->employees()->detach();
-        $role->delete();
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Role deleted successfully'
+        ]);
+    }
 
-        return response()->noContent();
+    // GET /permissions
+    public function permissions()
+    {
+        $tenantId = $this->tenantId();
+
+        // Get both global and tenant-specific permissions
+        $permissions = Permission::where(function($query) use ($tenantId) {
+                $query->whereNull('team_id') // Global permissions
+                      ->orWhere('team_id', $tenantId); // Tenant-specific permissions
+            })
+            ->select('id', 'name', 'description', 'team_id')
+            ->orderBy('name')
+            ->get();
+
+        // Group permissions by resource
+        $groupedPermissions = $permissions->groupBy(function($permission) {
+            return explode('.', $permission->name)[0];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $permissions,
+            'grouped' => $groupedPermissions,
+            'templates' => $this->getPermissionTemplates()
+        ]);
+    }
+
+    // POST /permissions
+    public function storePermission(Request $request)
+    {
+        $tenantId = $this->tenantId();
+
+        $data = $request->validate([
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[a-z]+\.[a-z_]+$/',
+                'unique:api_permissions,name'
+            ],
+            'description' => ['nullable', 'string', 'max:500']
+        ]);
+
+        // Validate against business-action pattern
+        $validation = $this->validatePermissionName($data['name']);
+        if (!$validation['valid']) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid permission format',
+                'errors' => $validation['errors'],
+                'suggestions' => $validation['suggestions']
+            ], 422);
+        }
+
+        // Create tenant-specific permission
+        $permission = Permission::create([
+            'name' => $data['name'],
+            'guard_name' => 'sanctum',
+            'team_id' => $tenantId, // Make it tenant-specific
+            'description' => $data['description'] ?? null
+        ]);
+
+        ActivityLogger::log([
+            'user_id'     => $tenantId,
+            'actor_type'  => 'user',
+            'actor_id'    => auth()->id(),
+            'action'      => 'permission.created',
+            'target_type' => 'api_permissions',
+            'target_id'   => $permission->id,
+            'new_values'  => [
+                'name' => $permission->name,
+                'description' => $permission->description
+            ],
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Permission created successfully',
+            'data' => $permission
+        ], 201);
+    }
+
+    // PUT /permissions/{id}
+    public function updatePermission(Request $request, $id)
+    {
+        $permission = Permission::findOrFail($id);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:api_permissions,name,' . $permission->id]
+        ]);
+
+        $oldName = $permission->name;
+        $permission->update(['name' => $data['name']]);
+
+        ActivityLogger::log([
+            'user_id'     => $this->tenantId(),
+            'actor_type'  => 'user',
+            'actor_id'    => auth()->id(),
+            'action'      => 'permission.updated',
+            'target_type' => 'api_permissions',
+            'target_id'   => $permission->id,
+            'old_values'  => ['name' => $oldName],
+            'new_values'  => ['name' => $permission->name],
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Permission updated successfully',
+            'data' => $permission
+        ]);
+    }
+
+    // DELETE /permissions/{id}
+    public function destroyPermission($id)
+    {
+        $permission = Permission::findOrFail($id);
+
+        // Check if permission is assigned to any roles
+        $roleCount = Role::permission($permission->name, 'sanctum')->count();
+        if ($roleCount > 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Cannot delete permission that is assigned to ' . $roleCount . ' role(s)',
+                'assigned_roles' => $roleCount
+            ], 422);
+        }
+
+        $oldName = $permission->name;
+        $permission->delete();
+
+        ActivityLogger::log([
+            'user_id'     => $this->tenantId(),
+            'actor_type'  => 'user',
+            'actor_id'    => auth()->id(),
+            'action'      => 'permission.deleted',
+            'target_type' => 'api_permissions',
+            'target_id'   => $id,
+            'old_values'  => ['name' => $oldName],
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Permission deleted successfully'
+        ]);
+    }
+
+    /**
+     * Validate permission name against business-action pattern
+     */
+    private function validatePermissionName($permissionName)
+    {
+        $errors = [];
+        $suggestions = [];
+
+        // Check format: resource.action
+        if (!preg_match('/^[a-z]+\.[a-z_]+$/', $permissionName)) {
+            $errors[] = 'Permission must follow format: resource.action (e.g., properties.view)';
+            $suggestions[] = 'Use lowercase letters and dots only';
+        }
+
+        $parts = explode('.', $permissionName);
+        if (count($parts) !== 2) {
+            $errors[] = 'Permission must have exactly one dot separating resource and action';
+            return ['valid' => false, 'errors' => $errors, 'suggestions' => $suggestions];
+        }
+
+        [$resource, $action] = $parts;
+
+        // Validate resource against business context
+        $validResources = [
+            'properties', 'projects', 'customers', 'crm', 'content', 
+            'settings', 'reports', 'analytics', 'users', 'employees',
+            'bookings', 'sales', 'leads', 'deals', 'contracts', 'payments'
+        ];
+
+        if (!in_array($resource, $validResources)) {
+            $errors[] = "Invalid resource: '{$resource}'";
+            $suggestions[] = 'Valid resources: ' . implode(', ', $validResources);
+        }
+
+        // Validate action against business actions
+        $validActions = [
+            'view', 'create', 'update', 'delete', 'approve', 'reject',
+            'assign', 'export', 'import', 'manage', 'feature', 'archive',
+            'restore', 'followup', 'schedule', 'complete', 'cancel'
+        ];
+
+        if (!in_array($action, $validActions)) {
+            $errors[] = "Invalid action: '{$action}'";
+            $suggestions[] = 'Valid actions: ' . implode(', ', $validActions);
+        }
+
+        // Business-specific validation
+        if ($resource === 'properties' && in_array($action, ['approve', 'feature'])) {
+            // These are valid for properties
+        } elseif ($resource === 'customers' && $action === 'followup') {
+            // Valid for customer management
+        } elseif ($resource === 'crm' && in_array($action, ['assign', 'schedule'])) {
+            // Valid for CRM operations
+        }
+
+        return [
+            'valid' => empty($errors),
+            'errors' => $errors,
+            'suggestions' => $suggestions
+        ];
+    }
+
+    /**
+     * Get permission templates for the business
+     */
+    private function getPermissionTemplates()
+    {
+        return [
+            'properties' => [
+                'view' => 'View property listings',
+                'create' => 'Add new properties',
+                'update' => 'Edit property details',
+                'delete' => 'Remove properties',
+                'approve' => 'Approve property listings',
+                'feature' => 'Feature/unfeature properties',
+                'export' => 'Export property data',
+                'manage' => 'Full property management'
+            ],
+            'projects' => [
+                'view' => 'View real estate projects',
+                'create' => 'Create new projects',
+                'update' => 'Edit project details',
+                'delete' => 'Delete projects',
+                'assign' => 'Assign projects to agents',
+                'approve' => 'Approve project plans',
+                'manage' => 'Full project management'
+            ],
+            'customers' => [
+                'view' => 'View customer information',
+                'create' => 'Add new customers',
+                'update' => 'Edit customer details',
+                'delete' => 'Remove customers',
+                'assign' => 'Assign customers to agents',
+                'followup' => 'Schedule customer follow-ups',
+                'export' => 'Export customer data',
+                'manage' => 'Full customer management'
+            ],
+            'crm' => [
+                'view' => 'View CRM data',
+                'create' => 'Create CRM records',
+                'update' => 'Update CRM information',
+                'assign' => 'Assign CRM tasks',
+                'schedule' => 'Schedule CRM activities',
+                'manage' => 'Full CRM management'
+            ],
+            'reports' => [
+                'view' => 'View business reports',
+                'create' => 'Generate custom reports',
+                'export' => 'Export report data',
+                'manage' => 'Manage reporting system'
+            ],
+            'settings' => [
+                'view' => 'View system settings',
+                'update' => 'Modify system settings',
+                'manage' => 'Full system management'
+            ]
+        ];
     }
 }

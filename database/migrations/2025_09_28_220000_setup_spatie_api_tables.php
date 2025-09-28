@@ -98,9 +98,12 @@ return new class extends Migration
             $table->bigIncrements('id');
             $table->string('name');
             $table->string('guard_name');
+            $table->unsignedBigInteger('team_id')->nullable();
+            $table->text('description')->nullable();
             $table->timestamps();
 
-            $table->unique(['name', 'guard_name']);
+            $table->unique(['name', 'guard_name', 'team_id']);
+            $table->index(['team_id', 'guard_name']);
         });
 
         // api_roles table
