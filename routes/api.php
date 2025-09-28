@@ -642,6 +642,14 @@ Route::prefix('v1')->group(function () {
         Route::get('/crm/cards/{id}/logs', [CardLogController::class, 'index'])->middleware('can:crm.cards.view');
         // crm/cards
     });
+    
+    // Employee Management Routes
+    Route::middleware(['auth:sanctum'])->group(function () {
+        // Define specific routes BEFORE apiResource to avoid conflicts
+        Route::get('employees/available-roles', [EmployeeController::class, 'availableRoles']);
+        Route::get('employees/available-permissions', [EmployeeController::class, 'availablePermissions']);
+        Route::apiResource('employees', EmployeeController::class);
+    });
 });
 
 // Pixel routes
