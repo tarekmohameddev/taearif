@@ -7,10 +7,14 @@ use App\Models\Api\ApiThemeSettings;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\Rbac\{
-    RoleController,
+    RoleController as RbacRoleController,
     AssignmentController,
     PermissionController,
     PermissionAdminController,
+};
+
+use App\Http\Controllers\Api\V1\{
+    RoleController,
 };
 
 use Laravel\Socialite\Facades\Socialite;
@@ -649,6 +653,15 @@ Route::prefix('v1')->group(function () {
         Route::get('employees/available-roles', [EmployeeController::class, 'availableRoles']);
         Route::get('employees/available-permissions', [EmployeeController::class, 'availablePermissions']);
         Route::apiResource('employees', EmployeeController::class);
+    });
+
+    // Role Management Routes
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::apiResource('roles', RoleController::class);
+        Route::get('permissions', [RoleController::class, 'permissions']);
+        Route::post('permissions', [RoleController::class, 'storePermission']);
+        Route::put('permissions/{id}', [RoleController::class, 'updatePermission']);
+        Route::delete('permissions/{id}', [RoleController::class, 'destroyPermission']);
     });
 });
 
