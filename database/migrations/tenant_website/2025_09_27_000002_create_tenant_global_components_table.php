@@ -12,7 +12,7 @@ return new class extends Migration
             Schema::create('tenant_global_components', function (Blueprint $table) {
                 $table->uuid('id')->primary();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
-                $table->json('data')->default('{}');
+                $table->json('data')->nullable();
                 $table->json('published_data')->nullable();
                 $table->timestamps();
                 $table->unique('user_id');
