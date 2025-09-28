@@ -232,36 +232,76 @@ class RoleController extends Controller
     // GET /permissions
     public function permissions()
     {
-        $permissions = Permission::select('id', 'name')
+        $tenantId = $this->tenantId();
+
+        // Get both global and tenant-specific permissions
+        $permissions = Permission::where(function($query) use ($tenantId) {
+                $query->whereNull('team_id') // Global permissions
+                      ->orWhere('team_id', $tenantId); // Tenant-specific permissions
+            })
+            ->select('id', 'name', 'description', 'team_id')
             ->orderBy('name')
             ->get();
 
+        // Group permissions by resource
+        $groupedPermissions = $permissions->groupBy(function($permission) {
+            return explode('.', $permission->name)[0];
+        });
+
         return response()->json([
             'status' => 'success',
-            'data' => $permissions
+            'data' => $permissions,
+            'grouped' => $groupedPermissions,
+            'templates' => $this->getPermissionTemplates()
         ]);
     }
 
     // POST /permissions
     public function storePermission(Request $request)
     {
+        $tenantId = $this->tenantId();
+
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:api_permissions,name']
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[a-z]+\.[a-z_]+$/',
+                'unique:api_permissions,name'
+            ],
+            'description' => ['nullable', 'string', 'max:500']
         ]);
 
+        // Validate against business-action pattern
+        $validation = $this->validatePermissionName($data['name']);
+        if (!$validation['valid']) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid permission format',
+                'errors' => $validation['errors'],
+                'suggestions' => $validation['suggestions']
+            ], 422);
+        }
+
+        // Create tenant-specific permission
         $permission = Permission::create([
             'name' => $data['name'],
-            'guard_name' => 'sanctum'
+            'guard_name' => 'sanctum',
+            'team_id' => $tenantId, // Make it tenant-specific
+            'description' => $data['description'] ?? null
         ]);
 
         ActivityLogger::log([
-            'user_id'     => $this->tenantId(),
+            'user_id'     => $tenantId,
             'actor_type'  => 'user',
             'actor_id'    => auth()->id(),
             'action'      => 'permission.created',
             'target_type' => 'api_permissions',
             'target_id'   => $permission->id,
-            'new_values'  => ['name' => $permission->name],
+            'new_values'  => [
+                'name' => $permission->name,
+                'description' => $permission->description
+            ],
         ]);
 
         return response()->json([
@@ -333,5 +373,124 @@ class RoleController extends Controller
             'status' => 'success',
             'message' => 'Permission deleted successfully'
         ]);
+    }
+
+    /**
+     * Validate permission name against business-action pattern
+     */
+    private function validatePermissionName($permissionName)
+    {
+        $errors = [];
+        $suggestions = [];
+
+        // Check format: resource.action
+        if (!preg_match('/^[a-z]+\.[a-z_]+$/', $permissionName)) {
+            $errors[] = 'Permission must follow format: resource.action (e.g., properties.view)';
+            $suggestions[] = 'Use lowercase letters and dots only';
+        }
+
+        $parts = explode('.', $permissionName);
+        if (count($parts) !== 2) {
+            $errors[] = 'Permission must have exactly one dot separating resource and action';
+            return ['valid' => false, 'errors' => $errors, 'suggestions' => $suggestions];
+        }
+
+        [$resource, $action] = $parts;
+
+        // Validate resource against business context
+        $validResources = [
+            'properties', 'projects', 'customers', 'crm', 'content', 
+            'settings', 'reports', 'analytics', 'users', 'employees',
+            'bookings', 'sales', 'leads', 'deals', 'contracts', 'payments'
+        ];
+
+        if (!in_array($resource, $validResources)) {
+            $errors[] = "Invalid resource: '{$resource}'";
+            $suggestions[] = 'Valid resources: ' . implode(', ', $validResources);
+        }
+
+        // Validate action against business actions
+        $validActions = [
+            'view', 'create', 'update', 'delete', 'approve', 'reject',
+            'assign', 'export', 'import', 'manage', 'feature', 'archive',
+            'restore', 'followup', 'schedule', 'complete', 'cancel'
+        ];
+
+        if (!in_array($action, $validActions)) {
+            $errors[] = "Invalid action: '{$action}'";
+            $suggestions[] = 'Valid actions: ' . implode(', ', $validActions);
+        }
+
+        // Business-specific validation
+        if ($resource === 'properties' && in_array($action, ['approve', 'feature'])) {
+            // These are valid for properties
+        } elseif ($resource === 'customers' && $action === 'followup') {
+            // Valid for customer management
+        } elseif ($resource === 'crm' && in_array($action, ['assign', 'schedule'])) {
+            // Valid for CRM operations
+        }
+
+        return [
+            'valid' => empty($errors),
+            'errors' => $errors,
+            'suggestions' => $suggestions
+        ];
+    }
+
+    /**
+     * Get permission templates for the business
+     */
+    private function getPermissionTemplates()
+    {
+        return [
+            'properties' => [
+                'view' => 'View property listings',
+                'create' => 'Add new properties',
+                'update' => 'Edit property details',
+                'delete' => 'Remove properties',
+                'approve' => 'Approve property listings',
+                'feature' => 'Feature/unfeature properties',
+                'export' => 'Export property data',
+                'manage' => 'Full property management'
+            ],
+            'projects' => [
+                'view' => 'View real estate projects',
+                'create' => 'Create new projects',
+                'update' => 'Edit project details',
+                'delete' => 'Delete projects',
+                'assign' => 'Assign projects to agents',
+                'approve' => 'Approve project plans',
+                'manage' => 'Full project management'
+            ],
+            'customers' => [
+                'view' => 'View customer information',
+                'create' => 'Add new customers',
+                'update' => 'Edit customer details',
+                'delete' => 'Remove customers',
+                'assign' => 'Assign customers to agents',
+                'followup' => 'Schedule customer follow-ups',
+                'export' => 'Export customer data',
+                'manage' => 'Full customer management'
+            ],
+            'crm' => [
+                'view' => 'View CRM data',
+                'create' => 'Create CRM records',
+                'update' => 'Update CRM information',
+                'assign' => 'Assign CRM tasks',
+                'schedule' => 'Schedule CRM activities',
+                'manage' => 'Full CRM management'
+            ],
+            'reports' => [
+                'view' => 'View business reports',
+                'create' => 'Generate custom reports',
+                'export' => 'Export report data',
+                'manage' => 'Manage reporting system'
+            ],
+            'settings' => [
+                'view' => 'View system settings',
+                'update' => 'Modify system settings',
+                'manage' => 'Full system management'
+            ]
+        ];
     }
 }
