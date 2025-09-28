@@ -123,12 +123,39 @@ class UserPackageService
 
         $selectedPackage = Package::find($request->package_id);
 
-        if ($selectedPackage->term == 'monthly') {
-            $exDate = Carbon::now()->addMonth()->format('d-m-Y');
-        } elseif ($selectedPackage->term == 'yearly') {
-            $exDate = Carbon::now()->addYear()->format('d-m-Y');
+        // Special handling for free package (ID: 16) when switching from trial (ID: 26)
+        if ($selectedPackage->id == 16 && $request->payment_method == 'system') {
+            // Check if user had a trial package that just expired
+            $expiredTrialMembership = Membership::where('user_id', $userId)
+                ->where('package_id', 26) // Trial package ID
+                ->where('status', 1)
+                ->whereDate('expire_date', '<', now()->toDateString())
+                ->orderByDesc('expire_date')
+                ->first();
+            
+            if ($expiredTrialMembership) {
+                // Set 1-year expiry for free package when coming from trial
+                $exDate = Carbon::now()->addYear()->format('d-m-Y');
+                Log::info('Trial to Free Package Switch: User ID ' . $userId . ' switched from trial package (ID: 26) to free package (ID: 16) with 1-year expiry');
+            } else {
+                // Use normal package term logic for other cases
+                if ($selectedPackage->term == 'monthly') {
+                    $exDate = Carbon::now()->addMonth()->format('d-m-Y');
+                } elseif ($selectedPackage->term == 'yearly') {
+                    $exDate = Carbon::now()->addYear()->format('d-m-Y');
+                } else {
+                    $exDate = Carbon::maxValue()->format('d-m-Y');
+                }
+            }
         } else {
-            $exDate = Carbon::maxValue()->format('d-m-Y');
+            // Normal package term logic for all other cases
+            if ($selectedPackage->term == 'monthly') {
+                $exDate = Carbon::now()->addMonth()->format('d-m-Y');
+            } elseif ($selectedPackage->term == 'yearly') {
+                $exDate = Carbon::now()->addYear()->format('d-m-Y');
+            } else {
+                $exDate = Carbon::maxValue()->format('d-m-Y');
+            }
         }
 
         $selectedMemb = Membership::create([
