@@ -10,6 +10,7 @@ use Database\Seeders\DefaultCategorySeeder;
 use Database\Seeders\ApiContentSectionSeeder;
 use Database\Seeders\AppSeeder;
 use Database\Seeders\PermissionSeeder;
+use Database\Seeders\CreditPackageSeeder;
 class DatabaseSeeder extends Seeder
 {
     /**
@@ -24,6 +25,7 @@ class DatabaseSeeder extends Seeder
         // $this->call(ApiContentSectionSeeder::class);
         // $this->call(AppSeeder::class);
         $this->call(PermissionSeeder::class);
+        $this->call(CreditPackageSeeder::class);
 
     }
 }

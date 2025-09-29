@@ -432,6 +432,17 @@ Route::post('/whatsapp/webhook', [ChatController::class, 'handleWhatsappWebhook'
 // isthara
 Route::post('/isthara', [IstharaController::class, 'store']);
 
+// Public Credit Management Routes (no auth required)
+Route::prefix('v1/credits')->group(function () {
+    Route::get('packages', [\App\Http\Controllers\Api\markting\CreditController::class, 'getPackages']);
+    
+    // Payment callback routes (no auth required for webhooks)
+    Route::get('payment/success/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\markting\CreditController::class, 'paymentSuccess'])
+        ->name('api.credits.payment.success');
+    Route::get('payment/cancel/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\markting\CreditController::class, 'paymentCancel'])
+        ->name('api.credits.payment.cancel');
+});
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/whatsapp/link', [WhatsappController::class, 'store']);
     Route::get('/whatsapp', [WhatsappController::class, 'index']);
@@ -589,6 +600,12 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
             Route::post('channels/{id}/sync-verified', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'syncVerified']);
             Route::post('channels/{id}/send-message', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'sendMessage']);
             Route::delete('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'destroy']);
+            
+            // Marketing Settings Routes
+            Route::get('settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getAllMarketingSettings']);
+            Route::get('channels/{id}/settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getMarketingSettings']);
+            Route::put('channels/{id}/settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'updateMarketingSettings']);
+            Route::patch('channels/{id}/system-integrations', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'updateSystemIntegrationSettings']);
         });
 
     // Marketing Webhooks Routes (no auth required for webhooks)
@@ -596,10 +613,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('whatsapp', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'whatsappWebhook']);
     });
 
-    // Credit Management Routes
-    Route::prefix('credits')->group(function () {
+    // Authenticated Credit Management Routes
+    Route::prefix('credits')->middleware(['auth:sanctum'])->group(function () {
         Route::get('balance', [\App\Http\Controllers\Api\markting\CreditController::class, 'getBalance']);
-        Route::get('packages', [\App\Http\Controllers\Api\markting\CreditController::class, 'getPackages']);
         Route::post('purchase', [\App\Http\Controllers\Api\markting\CreditController::class, 'purchasePackage']);
         Route::get('transactions', [\App\Http\Controllers\Api\markting\CreditController::class, 'getTransactions']);
         Route::get('analytics', [\App\Http\Controllers\Api\markting\CreditController::class, 'getAnalytics']);

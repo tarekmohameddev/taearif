@@ -494,6 +494,20 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/app-request/delete', 'Admin\AppInstallationController@delete')->name('app.request.delete');
     });
 
+    //AdminCreditController
+    Route::group(['middleware' => 'checkpermission:Credit Management'], function () {
+        Route::get('/credit-transactions', 'Admin\AdminCreditController@index')->name('credit.transactions.index');
+        Route::get('/credit-transactions/{id}', 'Admin\AdminCreditController@show')->name('credit.transactions.show');
+        Route::patch('/credit-transactions/{id}/status', 'Admin\AdminCreditController@updateStatus')->name('credit.transactions.updateStatus');
+        Route::post('/credit-transactions/{id}/refund', 'Admin\AdminCreditController@refund')->name('credit.transactions.refund');
+        Route::delete('/credit-transactions/{id}', 'Admin\AdminCreditController@destroy')->name('credit.transactions.destroy');
+        
+        Route::get('/credit-statistics', 'Admin\AdminCreditController@statistics')->name('credit.statistics');
+        Route::get('/user-credits', 'Admin\AdminCreditController@userCredits')->name('credit.userCredits');
+        Route::post('/add-credits', 'Admin\AdminCreditController@addCredits')->name('credit.addCredits');
+        Route::post('/remove-credits', 'Admin\AdminCreditController@removeCredits')->name('credit.removeCredits');
+    });
+
     //IstharaController
     Route::group(['middleware' => 'checkpermission:Isthara'], function () {
         Route::get('/isthara', 'Admin\AdminIstharaController@index')->name('isthara.index');

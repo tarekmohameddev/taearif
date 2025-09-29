@@ -33,6 +33,110 @@ class PaymentController extends Controller
         ]);
     }
 
+    public function checkoutCredits(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'credits' => 'required|integer|min:1',
+            'payment_method' => 'required|string|in:arb,myfatoorah,test'
+        ]);
+
+        $user = $request->user();
+        $amount = (float) $request->amount;
+        $credits = (int) $request->credits;
+        $paymentMethod = $request->payment_method;
+
+        try {
+            // Create a temporary transaction record for tracking
+            $transaction = \App\Models\Api\markting\CreditTransaction::create([
+                'user_id' => $user->id,
+                'credit_package_id' => null, // Direct amount purchase
+                'transaction_type' => 'purchase',
+                'credits_amount' => $credits,
+                'amount_paid' => $amount,
+                'currency' => 'SAR',
+                'payment_method' => $paymentMethod,
+                'status' => 'pending',
+                'reference_number' => \App\Models\Api\markting\CreditTransaction::generateReferenceNumber(),
+                'description' => "Direct credit purchase: {$credits} credits for {$amount} SAR",
+                'metadata' => [
+                    'purchase_type' => 'direct_amount',
+                    'purchase_initiated_at' => now()->toISOString(),
+                ],
+            ]);
+
+            if ($paymentMethod === 'test') {
+                // Test mode - immediately complete the transaction
+                $transaction->update([
+                    'status' => 'completed',
+                    'payment_transaction_id' => 'TEST_' . time() . '_' . rand(1000, 9999),
+                    'metadata' => array_merge($transaction->metadata ?? [], [
+                        'payment_completed_at' => now()->toISOString(),
+                        'test_mode' => true,
+                    ]),
+                ]);
+
+                // Add credits to user
+                $userCredit = \App\Models\Api\markting\UserCredit::getOrCreateForUser($user->id);
+                $userCredit->addCredits($credits, null, "Test credit purchase: {$credits} credits");
+
+                return response()->json([
+                    'status' => 'success',
+                    'payment_url' => null,
+                    'payment_token' => null,
+                    'transaction_id' => $transaction->reference_number,
+                    'credits_added' => $credits,
+                    'amount_paid' => $amount,
+                    'new_balance' => $userCredit->fresh()->total_credits,
+                    'message' => 'Test payment completed successfully'
+                ]);
+            }
+
+            // Process payment with ARB or MyFatoorah
+            if ($paymentMethod === 'arb') {
+                $arb = app(\App\Http\Controllers\Payment\ArbController::class);
+                $resp = $arb->paymentProcessForCredits($user, $amount, $credits, 'arb');
+            } elseif ($paymentMethod === 'myfatoorah') {
+                $myfatoorah = app(\App\Http\Controllers\Payment\MyFatoorahController::class);
+                $resp = $myfatoorah->paymentProcessForCredits($user, $amount, $credits, 'myfatoorah');
+            }
+
+            if ($resp === 'error' || !isset($resp['redirect_url'])) {
+                $transaction->update(['status' => 'failed']);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Payment initialization failed',
+                    'payment_url' => null
+                ], 422);
+            }
+
+            // Update transaction with payment details
+            $transaction->update([
+                'payment_transaction_id' => $resp['payment_token'] ?? null,
+                'metadata' => array_merge($transaction->metadata ?? [], [
+                    'payment_initiated_at' => now()->toISOString(),
+                    'payment_gateway_response' => $resp,
+                ]),
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'payment_url' => $resp['redirect_url'],
+                'payment_token' => $resp['payment_token'] ?? null,
+                'transaction_id' => $transaction->reference_number,
+                'amount' => $amount,
+                'credits' => $credits,
+                'payment_method' => $paymentMethod
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Payment processing failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 
     public function checkout(Request $request)
     {

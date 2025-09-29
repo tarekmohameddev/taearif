@@ -170,6 +170,15 @@
                     </li>
                 @endif
 
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Credit Management', $permissions)))
+                    <li class="nav-item @if (request()->path() == 'admin/credit-transactions') active @endif">
+                        <a href="{{ route('admin.credit.transactions.index') }}">
+                            <i class="fas fa-coins"></i>
+                            <p>{{ __('Credit Management') }}</p>
+                        </a>
+                    </li>
+                @endif
+
                 <!-- Affiliate -->
 
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Affiliate Management', $permissions)))
