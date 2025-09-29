@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class MarketingChannelController extends BaseApiController
 {
@@ -564,7 +565,7 @@ class MarketingChannelController extends BaseApiController
                 'description' => $description,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Failed to refund credits: ' . $e->getMessage());
+            Log::error('Failed to refund credits: ' . $e->getMessage());
         }
     }
 
@@ -588,7 +589,7 @@ class MarketingChannelController extends BaseApiController
     {
         try {
             // Log the incoming webhook for debugging
-            \Log::info('WhatsApp Webhook Received', [
+            Log::info('WhatsApp Webhook Received', [
                 'headers' => $request->headers->all(),
                 'body' => $request->all(),
                 'timestamp' => now()->toISOString()
@@ -620,7 +621,7 @@ class MarketingChannelController extends BaseApiController
             // WhatsApp expects a 200 response to acknowledge receipt
             return response()->json(['status' => 'success'], 200);
         } catch (\Exception $e) {
-            \Log::error('WhatsApp Webhook Error', [
+            Log::error('WhatsApp Webhook Error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -652,10 +653,10 @@ class MarketingChannelController extends BaseApiController
                     $this->processWhatsAppMessageReactions($value);
                     break;
                 default:
-                    \Log::info('Unknown WhatsApp webhook field', ['field' => $field]);
+                    Log::info('Unknown WhatsApp webhook field', ['field' => $field]);
             }
         } catch (\Exception $e) {
-            \Log::error('Error processing WhatsApp change', [
+            Log::error('Error processing WhatsApp change', [
                 'error' => $e->getMessage(),
                 'change' => $change
             ]);
@@ -689,7 +690,7 @@ class MarketingChannelController extends BaseApiController
                 ->first();
 
             if (!$channel) {
-                \Log::warning('WhatsApp channel not found', ['phone_number_id' => $phoneNumberId]);
+                Log::warning('WhatsApp channel not found', ['phone_number_id' => $phoneNumberId]);
                 return;
             }
 
@@ -716,20 +717,20 @@ class MarketingChannelController extends BaseApiController
                     $this->processInteractiveMessage($message, $channel);
                     break;
                 default:
-                    \Log::info('Unhandled WhatsApp message type', [
+                    Log::info('Unhandled WhatsApp message type', [
                         'type' => $messageType,
                         'message_id' => $message['id'] ?? null
                     ]);
             }
 
-            \Log::info('WhatsApp message processed', [
+            Log::info('WhatsApp message processed', [
                 'channel_id' => $channel->id,
                 'message_type' => $messageType,
                 'message_id' => $message['id'] ?? null
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error processing WhatsApp message', [
+            Log::error('Error processing WhatsApp message', [
                 'error' => $e->getMessage(),
                 'message' => $message
             ]);
@@ -747,7 +748,7 @@ class MarketingChannelController extends BaseApiController
         // Here you can implement your business logic
         // For example: auto-reply, save to database, trigger workflows, etc.
         
-        \Log::info('Text message received', [
+        Log::info('Text message received', [
             'channel_id' => $channel->id,
             'from' => $from,
             'text' => $text
@@ -762,7 +763,7 @@ class MarketingChannelController extends BaseApiController
         $mediaType = $message['type'];
         $mediaId = $message[$mediaType]['id'] ?? null;
         
-        \Log::info('Media message received', [
+        Log::info('Media message received', [
             'channel_id' => $channel->id,
             'media_type' => $mediaType,
             'media_id' => $mediaId
@@ -777,7 +778,7 @@ class MarketingChannelController extends BaseApiController
         $buttonText = $message['button']['text'] ?? '';
         $buttonPayload = $message['button']['payload'] ?? '';
         
-        \Log::info('Button message received', [
+        Log::info('Button message received', [
             'channel_id' => $channel->id,
             'button_text' => $buttonText,
             'button_payload' => $buttonPayload
@@ -791,7 +792,7 @@ class MarketingChannelController extends BaseApiController
     {
         $interactiveType = $message['interactive']['type'] ?? '';
         
-        \Log::info('Interactive message received', [
+        Log::info('Interactive message received', [
             'channel_id' => $channel->id,
             'interactive_type' => $interactiveType
         ]);
@@ -808,7 +809,7 @@ class MarketingChannelController extends BaseApiController
             $messageId = $status['id'] ?? null;
             $deliveryStatus = $status['status'] ?? 'unknown';
             
-            \Log::info('Message delivery status', [
+            Log::info('Message delivery status', [
                 'message_id' => $messageId,
                 'status' => $deliveryStatus
             ]);
@@ -826,7 +827,7 @@ class MarketingChannelController extends BaseApiController
             $messageId = $status['id'] ?? null;
             $readStatus = $status['status'] ?? 'unknown';
             
-            \Log::info('Message read status', [
+            Log::info('Message read status', [
                 'message_id' => $messageId,
                 'status' => $readStatus
             ]);
@@ -844,11 +845,185 @@ class MarketingChannelController extends BaseApiController
             $reaction = $message['reaction'] ?? null;
             
             if ($reaction) {
-                \Log::info('Message reaction received', [
+                Log::info('Message reaction received', [
                     'message_id' => $message['id'] ?? null,
                     'emoji' => $reaction['emoji'] ?? null
                 ]);
             }
+        }
+    }
+
+    /**
+     * Get marketing settings for a specific channel
+     */
+    public function getMarketingSettings($id): JsonResponse
+    {
+        try {
+            $channel = MarketingChannel::where('user_id', Auth::id())
+                ->where('id', $id)
+                ->first();
+
+            if (!$channel) {
+                return $this->fail('Marketing channel not found', 404);
+            }
+
+            $settings = [
+                'channel_id' => $channel->id,
+                'channel_name' => $channel->name,
+                'channel_type' => $channel->type,
+                'system_integrations' => $channel->getSystemIntegrationSettings(),
+                'marketing_settings' => $channel->additional_settings ?? [],
+                'updated_at' => $channel->updated_at,
+            ];
+
+            return $this->ok($settings, 'Marketing settings retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->fail('Failed to retrieve marketing settings: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update marketing settings for a specific channel
+     */
+    public function updateMarketingSettings(Request $request, $id): JsonResponse
+    {
+        try {
+            $channel = MarketingChannel::where('user_id', Auth::id())
+                ->where('id', $id)
+                ->first();
+
+            if (!$channel) {
+                return $this->fail('Marketing channel not found', 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'crm_integration_enabled' => 'sometimes|boolean',
+                'appointment_system_integration_enabled' => 'sometimes|boolean',
+                'integration_settings' => 'nullable|array',
+                'marketing_settings' => 'nullable|array',
+            ]);
+
+            if ($validator->fails()) {
+                return $this->fail('Validation failed', 422, $validator->errors());
+            }
+
+            $updateData = [];
+
+            // Update system integration settings
+            if ($request->has('crm_integration_enabled') || 
+                $request->has('appointment_system_integration_enabled') || 
+                $request->has('integration_settings')) {
+                
+                $systemSettings = [];
+                if ($request->has('crm_integration_enabled')) {
+                    $systemSettings['crm_integration_enabled'] = $request->crm_integration_enabled;
+                }
+                if ($request->has('appointment_system_integration_enabled')) {
+                    $systemSettings['appointment_system_integration_enabled'] = $request->appointment_system_integration_enabled;
+                }
+                if ($request->has('integration_settings')) {
+                    $systemSettings['integration_settings'] = $request->integration_settings;
+                }
+
+                $channel->updateSystemIntegrationSettings($systemSettings);
+            }
+
+            // Update marketing settings
+            if ($request->has('marketing_settings')) {
+                $updateData['additional_settings'] = $request->marketing_settings;
+            }
+
+            if (!empty($updateData)) {
+                $channel->update($updateData);
+            }
+
+            $response = [
+                'channel_id' => $channel->id,
+                'channel_name' => $channel->name,
+                'channel_type' => $channel->type,
+                'system_integrations' => $channel->getSystemIntegrationSettings(),
+                'marketing_settings' => $channel->additional_settings ?? [],
+                'updated_at' => $channel->updated_at,
+            ];
+
+            return $this->ok($response, 'Marketing settings updated successfully');
+        } catch (\Exception $e) {
+            return $this->fail('Failed to update marketing settings: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get all marketing settings for the authenticated user
+     */
+    public function getAllMarketingSettings(): JsonResponse
+    {
+        try {
+            $channels = MarketingChannel::where('user_id', Auth::id())
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $settings = $channels->map(function ($channel) {
+                return [
+                    'channel_id' => $channel->id,
+                    'channel_name' => $channel->name,
+                    'channel_type' => $channel->type,
+                    'is_connected' => $channel->is_connected,
+                    'is_verified' => $channel->is_verified,
+                    'system_integrations' => $channel->getSystemIntegrationSettings(),
+                    'marketing_settings' => $channel->additional_settings ?? [],
+                    'updated_at' => $channel->updated_at,
+                ];
+            });
+
+            return $this->ok($settings, 'All marketing settings retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->fail('Failed to retrieve marketing settings: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update system integration settings for a specific channel
+     */
+    public function updateSystemIntegrationSettings(Request $request, $id): JsonResponse
+    {
+        try {
+            $channel = MarketingChannel::where('user_id', Auth::id())
+                ->where('id', $id)
+                ->first();
+
+            if (!$channel) {
+                return $this->fail('Marketing channel not found', 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'crm_integration_enabled' => 'required|boolean',
+                'appointment_system_integration_enabled' => 'required|boolean',
+                'integration_settings' => 'nullable|array',
+            ]);
+
+            if ($validator->fails()) {
+                return $this->fail('Validation failed', 422, $validator->errors());
+            }
+
+            $settings = [
+                'crm_integration_enabled' => $request->crm_integration_enabled,
+                'appointment_system_integration_enabled' => $request->appointment_system_integration_enabled,
+                'integration_settings' => $request->integration_settings ?? [],
+            ];
+
+            $channel->updateSystemIntegrationSettings($settings);
+
+            $response = [
+                'channel_id' => $channel->id,
+                'channel_name' => $channel->name,
+                'channel_type' => $channel->type,
+                'system_integrations' => $channel->getSystemIntegrationSettings(),
+                'updated_at' => $channel->updated_at,
+            ];
+
+            return $this->ok($response, 'System integration settings updated successfully');
+        } catch (\Exception $e) {
+            return $this->fail('Failed to update system integration settings: ' . $e->getMessage());
         }
     }
 }

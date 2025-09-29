@@ -125,29 +125,56 @@ class CreditController extends BaseApiController
                 $paymentResult = $this->processPayment($request, $package, $transaction);
 
                 if ($paymentResult['success']) {
-                    // Update transaction status
-                    $transaction->update([
-                        'status' => 'completed',
-                        'payment_transaction_id' => $paymentResult['transaction_id'],
-                        'metadata' => array_merge($transaction->metadata ?? [], [
-                            'payment_completed_at' => now()->toISOString(),
-                            'payment_gateway_response' => $paymentResult['gateway_response'],
-                        ]),
-                    ]);
+                    $gatewayResponse = $paymentResult['gateway_response'];
+                    
+                    // Check if payment requires redirect (ARB, MyFatoorah)
+                    if (isset($gatewayResponse['status']) && $gatewayResponse['status'] === 'redirect_required') {
+                        // Update transaction with redirect info
+                        $transaction->update([
+                            'status' => 'pending',
+                            'payment_transaction_id' => $paymentResult['transaction_id'],
+                            'metadata' => array_merge($transaction->metadata ?? [], [
+                                'payment_initiated_at' => now()->toISOString(),
+                                'payment_gateway_response' => $gatewayResponse,
+                                'redirect_required' => true,
+                            ]),
+                        ]);
 
-                    // Add credits to user
-                    $userCredit->addCredits($package->credits, $package->id, "Purchase of {$package->name} package");
+                        DB::commit();
 
-                    DB::commit();
+                        return $this->ok([
+                            'transaction_id' => $transaction->id,
+                            'reference_number' => $transaction->reference_number,
+                            'payment_status' => 'redirect_required',
+                            'redirect_url' => $gatewayResponse['redirect_url'],
+                            'payment_token' => $gatewayResponse['payment_token'] ?? null,
+                            'message' => 'Please complete payment by visiting the redirect URL',
+                        ], 'Payment redirect required');
+                    } else {
+                        // Immediate payment completion (test mode)
+                        $transaction->update([
+                            'status' => 'completed',
+                            'payment_transaction_id' => $paymentResult['transaction_id'],
+                            'metadata' => array_merge($transaction->metadata ?? [], [
+                                'payment_completed_at' => now()->toISOString(),
+                                'payment_gateway_response' => $gatewayResponse,
+                            ]),
+                        ]);
 
-                    return $this->ok([
-                        'transaction_id' => $transaction->id,
-                        'reference_number' => $transaction->reference_number,
-                        'credits_added' => $package->credits,
-                        'amount_paid' => $package->discounted_price,
-                        'new_balance' => $userCredit->total_credits,
-                        'payment_status' => 'completed',
-                    ], 'Credit package purchased successfully');
+                        // Add credits to user
+                        $userCredit->addCredits($package->credits, $package->id, "Purchase of {$package->name} package");
+
+                        DB::commit();
+
+                        return $this->ok([
+                            'transaction_id' => $transaction->id,
+                            'reference_number' => $transaction->reference_number,
+                            'credits_added' => $package->credits,
+                            'amount_paid' => $package->discounted_price,
+                            'new_balance' => $userCredit->total_credits,
+                            'payment_status' => 'completed',
+                        ], 'Credit package purchased successfully');
+                    }
                 } else {
                     // Update transaction status to failed
                     $transaction->update([
@@ -308,51 +335,269 @@ class CreditController extends BaseApiController
     private function processPayment(Request $request, CreditPackage $package, CreditTransaction $transaction)
     {
         try {
-            // This integrates with your existing payment system
-            // You can modify this based on your specific payment gateway implementation
-
             $paymentMethod = $request->payment_method;
 
-            // For now, we'll simulate a successful payment
-            // In production, you would integrate with your existing payment controllers
-            // like StripeController, PayPalController, etc.
-
-            return [
-                'success' => true,
-                'transaction_id' => 'PAY_' . time() . '_' . rand(1000, 9999),
-                'gateway_response' => [
-                    'status' => 'success',
-                    'method' => $paymentMethod,
-                    'amount' => $package->discounted_price,
-                ],
-            ];
-
-            // Example integration with existing payment system:
-            /*
             switch ($paymentMethod) {
-                case 'stripe':
-                    $stripeController = new \App\Http\Controllers\Payment\StripeController();
-                    return $stripeController->creditPurchaseProcess($request, $package, $transaction);
+                case 'arb':
+                    return $this->processArbPayment($request, $package, $transaction);
                 
-                case 'paypal':
-                    $paypalController = new \App\Http\Controllers\Payment\PayPalController();
-                    return $paypalController->creditPurchaseProcess($request, $package, $transaction);
+                case 'myfatoorah':
+                    return $this->processMyFatoorahPayment($request, $package, $transaction);
                 
-                // Add other payment methods as needed
+                case 'test':
+                    // For testing purposes only
+                    return [
+                        'success' => true,
+                        'transaction_id' => 'TEST_' . time() . '_' . rand(1000, 9999),
+                        'gateway_response' => [
+                            'status' => 'success',
+                            'method' => 'test',
+                            'amount' => $package->discounted_price,
+                        ],
+                    ];
                 
                 default:
                     return [
                         'success' => false,
-                        'error' => 'Unsupported payment method',
+                        'error' => 'Unsupported payment method. Supported methods: arb, myfatoorah, test',
                     ];
             }
-            */
 
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
             ];
+        }
+    }
+
+    /**
+     * Process ARB payment
+     */
+    private function processArbPayment(Request $request, CreditPackage $package, CreditTransaction $transaction)
+    {
+        try {
+            $arbController = new \App\Http\Controllers\Payment\ArbController();
+            
+            // Create a mock request for ARB payment process
+            $arbRequest = new Request([
+                'amount' => $package->discounted_price,
+                'title' => "Credit Package: {$package->name}",
+                'user_id' => Auth::id(),
+                'context' => 'CREDIT_PURCHASE',
+                'app_id' => 0,
+                'transaction_id' => $transaction->id,
+                'package_id' => $package->id,
+            ]);
+
+            // Generate success and cancel URLs for credit purchase
+            $successUrl = route('api.credits.payment.success', [
+                'transaction_id' => $transaction->id,
+                'gateway' => 'arb'
+            ]);
+            $cancelUrl = route('api.credits.payment.cancel', [
+                'transaction_id' => $transaction->id,
+                'gateway' => 'arb'
+            ]);
+
+            // Call ARB payment process
+            $result = $arbController->paymentProcess(
+                $arbRequest,
+                $package->discounted_price,
+                $successUrl,
+                $cancelUrl,
+                "Credit Package: {$package->name}",
+                Auth::id(),
+                'CREDIT_PURCHASE',
+                0
+            );
+
+            if (isset($result['redirect_url'])) {
+                return [
+                    'success' => true,
+                    'transaction_id' => $transaction->reference_number,
+                    'gateway_response' => [
+                        'status' => 'redirect_required',
+                        'method' => 'arb',
+                        'amount' => $package->discounted_price,
+                        'redirect_url' => $result['redirect_url'],
+                        'payment_token' => $result['payment_token'] ?? null,
+                    ],
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'error' => 'Failed to initialize ARB payment',
+                ];
+            }
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'ARB payment error: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Process MyFatoorah payment
+     */
+    private function processMyFatoorahPayment(Request $request, CreditPackage $package, CreditTransaction $transaction)
+    {
+        try {
+            $myfatoorahController = new \App\Http\Controllers\Payment\MyFatoorahController();
+            
+            // Create a mock request for MyFatoorah payment process
+            $mfRequest = new Request([
+                'amount' => $package->discounted_price,
+                'title' => "Credit Package: {$package->name}",
+                'user_id' => Auth::id(),
+                'transaction_id' => $transaction->id,
+                'package_id' => $package->id,
+            ]);
+
+            // Get basic extended settings for currency
+            $currentLang = session()->has('lang') ? 
+                (\App\Models\Language::where('code', session()->get('lang'))->first()) :
+                (\App\Models\Language::where('is_default', 1)->first());
+            $be = $currentLang->basic_extended;
+
+            // Generate success and cancel URLs for credit purchase
+            $successUrl = route('api.credits.payment.success', [
+                'transaction_id' => $transaction->id,
+                'gateway' => 'myfatoorah'
+            ]);
+            $cancelUrl = route('api.credits.payment.cancel', [
+                'transaction_id' => $transaction->id,
+                'gateway' => 'myfatoorah'
+            ]);
+
+            // Call MyFatoorah payment process
+            $result = $myfatoorahController->paymentProcess(
+                $mfRequest,
+                $package->discounted_price,
+                $successUrl,
+                $cancelUrl,
+                "Credit Package: {$package->name}",
+                $be
+            );
+
+            if (isset($result['redirect_url'])) {
+                return [
+                    'success' => true,
+                    'transaction_id' => $transaction->reference_number,
+                    'gateway_response' => [
+                        'status' => 'redirect_required',
+                        'method' => 'myfatoorah',
+                        'amount' => $package->discounted_price,
+                        'redirect_url' => $result['redirect_url'],
+                        'payment_token' => $result['payment_token'] ?? null,
+                    ],
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'error' => 'Failed to initialize MyFatoorah payment',
+                ];
+            }
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'MyFatoorah payment error: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Handle payment success callback
+     */
+    public function paymentSuccess(Request $request, $transactionId, $gateway)
+    {
+        try {
+            $transaction = CreditTransaction::findOrFail($transactionId);
+            
+            if ($transaction->status === 'completed') {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Payment already processed',
+                    'transaction_id' => $transaction->reference_number,
+                ]);
+            }
+
+            // Update transaction status to completed
+            $transaction->update([
+                'status' => 'completed',
+                'payment_transaction_id' => $request->get('payment_id') ?? $request->get('transaction_id'),
+                'metadata' => array_merge($transaction->metadata ?? [], [
+                    'payment_completed_at' => now()->toISOString(),
+                    'gateway' => $gateway,
+                    'callback_data' => $request->all(),
+                ]),
+            ]);
+
+            // Add credits to user
+            $userCredit = UserCredit::getOrCreateForUser($transaction->user_id);
+            $userCredit->addCredits(
+                $transaction->credits_amount,
+                $transaction->credit_package_id,
+                "Credit purchase via {$gateway}"
+            );
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Payment successful and credits added',
+                'transaction_id' => $transaction->reference_number,
+                'credits_added' => $transaction->credits_amount,
+                'new_balance' => $userCredit->fresh()->total_credits,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to process payment success: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Handle payment cancel callback
+     */
+    public function paymentCancel(Request $request, $transactionId, $gateway)
+    {
+        try {
+            $transaction = CreditTransaction::findOrFail($transactionId);
+            
+            if ($transaction->status === 'completed') {
+                return response()->json([
+                    'status' => 'info',
+                    'message' => 'Payment was already completed',
+                    'transaction_id' => $transaction->reference_number,
+                ]);
+            }
+
+            // Update transaction status to failed
+            $transaction->update([
+                'status' => 'failed',
+                'metadata' => array_merge($transaction->metadata ?? [], [
+                    'payment_cancelled_at' => now()->toISOString(),
+                    'gateway' => $gateway,
+                    'cancellation_reason' => 'User cancelled payment',
+                    'callback_data' => $request->all(),
+                ]),
+            ]);
+
+            return response()->json([
+                'status' => 'cancelled',
+                'message' => 'Payment was cancelled',
+                'transaction_id' => $transaction->reference_number,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to process payment cancellation: ' . $e->getMessage(),
+            ], 500);
         }
     }
 

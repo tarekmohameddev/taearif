@@ -162,6 +162,37 @@ class ArbController extends Controller
 
     }
 
+    public function paymentProcessForCredits(\App\Models\User $user, float $amount, int $credits, string $paymentMethod = 'arb'): array
+    {
+        $dummyReq = new \Illuminate\Http\Request([
+            'first_name' => $user->name,
+            'last_name'  => '',
+            'phone'      => $user->phone ?? '',
+            'package_id' => 0,
+        ]);
+
+        // Generate success and cancel URLs for credit purchase
+        $successUrl = route('api.credits.payment.success', [
+            'transaction_id' => 'TEMP_' . time(), // Will be updated with actual transaction ID
+            'gateway' => $paymentMethod
+        ]);
+        $cancelUrl = route('api.credits.payment.cancel', [
+            'transaction_id' => 'TEMP_' . time(), // Will be updated with actual transaction ID
+            'gateway' => $paymentMethod
+        ]);
+
+        return $this->paymentProcess(
+            $dummyReq,
+            $amount,
+            $successUrl,
+            $cancelUrl,
+            "شراء {$credits} رصيد",
+            $user->id,
+            'CREDITS',
+            0 // No app_id for credits
+        );
+    }
+
     // return to success page
 
     public function failedPayment(Request $request)

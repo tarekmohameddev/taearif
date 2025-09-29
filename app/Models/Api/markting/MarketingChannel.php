@@ -26,6 +26,9 @@ class MarketingChannel extends Model
         'sent_messages_count',
         'received_messages_count',
         'additional_settings',
+        'crm_integration_enabled',
+        'appointment_system_integration_enabled',
+        'integration_settings',
     ];
 
     protected $casts = [
@@ -34,6 +37,9 @@ class MarketingChannel extends Model
         'sent_messages_count' => 'integer',
         'received_messages_count' => 'integer',
         'additional_settings' => 'array',
+        'crm_integration_enabled' => 'boolean',
+        'appointment_system_integration_enabled' => 'boolean',
+        'integration_settings' => 'array',
     ];
 
     public function user()
@@ -57,5 +63,58 @@ class MarketingChannel extends Model
             self::TYPE_INSTAGRAM => 'Instagram',
             self::TYPE_SMS => 'SMS',
         ];
+    }
+
+    /**
+     * Get system integration settings
+     */
+    public function getSystemIntegrationSettings()
+    {
+        return [
+            'crm_integration_enabled' => $this->crm_integration_enabled,
+            'appointment_system_integration_enabled' => $this->appointment_system_integration_enabled,
+            'integration_settings' => $this->integration_settings ?? [],
+        ];
+    }
+
+    /**
+     * Update system integration settings
+     */
+    public function updateSystemIntegrationSettings($settings)
+    {
+        $allowedSettings = [
+            'crm_integration_enabled',
+            'appointment_system_integration_enabled',
+            'integration_settings'
+        ];
+
+        $updateData = [];
+        foreach ($allowedSettings as $setting) {
+            if (array_key_exists($setting, $settings)) {
+                $updateData[$setting] = $settings[$setting];
+            }
+        }
+
+        if (!empty($updateData)) {
+            $this->update($updateData);
+        }
+
+        return $this->fresh();
+    }
+
+    /**
+     * Check if CRM integration is enabled
+     */
+    public function isCrmIntegrationEnabled()
+    {
+        return $this->crm_integration_enabled;
+    }
+
+    /**
+     * Check if Appointment System integration is enabled
+     */
+    public function isAppointmentSystemIntegrationEnabled()
+    {
+        return $this->appointment_system_integration_enabled;
     }
 }

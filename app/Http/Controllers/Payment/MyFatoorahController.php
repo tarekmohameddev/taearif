@@ -83,6 +83,50 @@ class MyFatoorahController extends Controller
         }
     }
 
+    public function paymentProcessForCredits(\App\Models\User $user, float $amount, int $credits, string $paymentMethod = 'myfatoorah'): array
+    {
+        $dummyReq = new \Illuminate\Http\Request([
+            'first_name' => $user->name,
+            'last_name'  => '',
+            'phone'      => $user->phone ?? '',
+            'package_id' => 0,
+        ]);
+
+        // Generate success and cancel URLs for credit purchase
+        $successUrl = route('api.credits.payment.success', [
+            'transaction_id' => 'TEMP_' . time(), // Will be updated with actual transaction ID
+            'gateway' => $paymentMethod
+        ]);
+        $cancelUrl = route('api.credits.payment.cancel', [
+            'transaction_id' => 'TEMP_' . time(), // Will be updated with actual transaction ID
+            'gateway' => $paymentMethod
+        ]);
+
+        $currentLang = session()->has('lang') ?
+            (Language::where('code', session()->get('lang'))->first())
+            : (Language::where('is_default', 1)->first());
+        $be = $currentLang->basic_extended;
+
+        $result = $this->paymentProcess(
+            $dummyReq,
+            $amount,
+            $successUrl,
+            $cancelUrl,
+            "شراء {$credits} رصيد",
+            $be
+        );
+
+        // Handle the result from paymentProcess
+        if (is_array($result) && isset($result['redirect_url'])) {
+            return $result;
+        } else {
+            return [
+                'redirect_url' => $result,
+                'payment_token' => null
+            ];
+        }
+    }
+
     // return to success page
     public function successPayment(Request $request)
     {
