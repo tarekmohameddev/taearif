@@ -580,7 +580,7 @@ class AuthController extends Controller
 
             // Get owner's latest membership from the membership table
             $membership = Membership::where('user_id', $owner->id)
-                ->orderBy('expire_date', 'desc')
+                ->orderBy('id', 'desc')
                 ->first();
 
             $domain = ApiDomainSetting::where('user_id', $owner->id)->where('status', 'active')->first([
