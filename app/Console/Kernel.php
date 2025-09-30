@@ -32,7 +32,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('expire:user')->daily();
+        $schedule->command('expire:user')->everyMinute(); // TESTING: Changed from daily() to everyMinute()
         $schedule->command('app:expire-trials')->daily();
         $schedule->command('reminders:process')->dailyAt('04:00')->timezone('Asia/Riyadh');
         $schedule->command('health:check --auto')->dailyAt('03:55')->timezone('Asia/Riyadh');
