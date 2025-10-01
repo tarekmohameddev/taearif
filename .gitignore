@@ -41,8 +41,6 @@ composer.lock
 /public/img/*
 /public/themes/*
 /public/footer/*
-API_CONTROLLERS_OVERVIEW.md
-API_ENDPOINTS_QUICK_REFERENCE.md
 *.md
 database/seeders/RentalDashboardTestSeeder833.php
 database/seeds/RentalDashboardTestSeeder833.php
