@@ -32,7 +32,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px;">Total Packages</p>
-                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $packages->total() }}</h2>
+                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $totalPackages }}</h2>
                         </div>
                         <div class="stat-icon">
                             <i class="fas fa-box fa-3x" style="opacity: 0.3;"></i>
@@ -47,7 +47,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px;">Active Packages</p>
-                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $packages->where('is_active', true)->count() }}</h2>
+                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $activePackagesCount }}</h2>
                         </div>
                         <div class="stat-icon">
                             <i class="fas fa-check-circle fa-3x" style="opacity: 0.3;"></i>
@@ -62,7 +62,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px;">Channel Types</p>
-                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $channelPricing->total() }}</h2>
+                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $totalChannels }}</h2>
                         </div>
                         <div class="stat-icon">
                             <i class="fas fa-broadcast-tower fa-3x" style="opacity: 0.3;"></i>
@@ -77,7 +77,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="mb-2 text-uppercase small" style="opacity: 0.9; letter-spacing: 1px;">Active Channels</p>
-                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $channelPricing->where('is_active', true)->count() }}</h2>
+                            <h2 class="mb-0 fw-bold" style="font-size: 2.5rem;">{{ $activeChannelsCount }}</h2>
                         </div>
                         <div class="stat-icon">
                             <i class="fas fa-signal fa-3x" style="opacity: 0.3;"></i>
@@ -106,22 +106,27 @@
                 <div class="card-body">
                     <!-- Package Filters -->
                     <div class="row mb-4">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <select class="form-select form-select-sm border-0 bg-light" id="packageStatusFilter">
-                                <option value="">All Status</option>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
+                                <option value="" {{ request('package_status') == '' ? 'selected' : '' }}>All Status</option>
+                                <option value="active" {{ request('package_status') == 'active' ? 'selected' : '' }}>Active</option>
+                                <option value="inactive" {{ request('package_status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <select class="form-select form-select-sm border-0 bg-light" id="marketingSupportFilter">
-                                <option value="">All Packages</option>
-                                <option value="yes">Marketing Support</option>
-                                <option value="no">No Marketing</option>
+                                <option value="" {{ request('marketing_support') == '' ? 'selected' : '' }}>All Packages</option>
+                                <option value="yes" {{ request('marketing_support') == 'yes' ? 'selected' : '' }}>Marketing Support</option>
+                                <option value="no" {{ request('marketing_support') == 'no' ? 'selected' : '' }}>No Marketing</option>
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <input type="text" class="form-control form-control-sm border-0 bg-light" id="packageSearch" placeholder="🔍 Search packages...">
+                            <input type="text" class="form-control form-control-sm border-0 bg-light" id="packageSearch" placeholder="🔍 Search packages..." value="{{ request('package_search') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-outline-secondary btn-sm w-100" id="resetPackageFilters" title="Reset all filters">
+                                <i class="fas fa-redo me-1"></i> Reset
+                            </button>
                         </div>
                     </div>
 
@@ -243,15 +248,20 @@
                 <div class="card-body">
                     <!-- Channel Filters -->
                     <div class="row mb-4">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <select class="form-select form-select-sm border-0 bg-light" id="channelStatusFilter">
-                                <option value="">All Status</option>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
+                                <option value="" {{ request('channel_status') == '' ? 'selected' : '' }}>All Status</option>
+                                <option value="active" {{ request('channel_status') == 'active' ? 'selected' : '' }}>Active</option>
+                                <option value="inactive" {{ request('channel_status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <input type="text" class="form-control form-control-sm border-0 bg-light" id="channelSearch" placeholder="🔍 Search channels...">
+                        <div class="col-md-5">
+                            <input type="text" class="form-control form-control-sm border-0 bg-light" id="channelSearch" placeholder="🔍 Search channels..." value="{{ request('channel_search') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-secondary btn-sm w-100" id="resetChannelFilters" title="Reset all filters">
+                                <i class="fas fa-redo me-1"></i> Reset
+                            </button>
                         </div>
                     </div>
 
@@ -1013,6 +1023,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const channelSearch = document.getElementById('channelSearch');
     if (channelSearch) {
         channelSearch.addEventListener('input', applyFilters);
+    }
+
+    // Reset buttons functionality
+    const resetPackageFilters = document.getElementById('resetPackageFilters');
+    if (resetPackageFilters) {
+        resetPackageFilters.addEventListener('click', function() {
+            document.getElementById('packageStatusFilter').value = '';
+            document.getElementById('marketingSupportFilter').value = '';
+            document.getElementById('packageSearch').value = '';
+            applyFilters();
+        });
+    }
+
+    const resetChannelFilters = document.getElementById('resetChannelFilters');
+    if (resetChannelFilters) {
+        resetChannelFilters.addEventListener('click', function() {
+            document.getElementById('channelStatusFilter').value = '';
+            document.getElementById('channelSearch').value = '';
+            applyFilters();
+        });
     }
     
     console.log('All event listeners attached');
