@@ -132,7 +132,7 @@
 
                     <!-- Packages List -->
                     <div id="packagesList">
-                        @foreach($packages as $package)
+                        @forelse($packages as $package)
                         <div class="package-item bg-white border p-4 mb-3" data-package-id="{{ $package->id }}">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 @php
@@ -219,7 +219,24 @@
                             </div>
                             @endif
                         </div>
-                        @endforeach
+                        @empty
+                        <!-- Empty State -->
+                        <div class="empty-state text-center py-5">
+                            <i class="fas fa-box fa-4x text-muted mb-3" style="opacity: 0.3;"></i>
+                            <h5 class="text-muted">No packages found</h5>
+                            @if(request()->hasAny(['package_status', 'marketing_support', 'package_search']))
+                                <p class="text-muted mb-3">Try adjusting your filters or search terms</p>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('resetPackageFilters').click()">
+                                    <i class="fas fa-redo me-1"></i> Clear Filters
+                                </button>
+                            @else
+                                <p class="text-muted mb-3">Create your first credit package to get started</p>
+                                <button class="btn btn-primary" data-toggle="modal" data-target="#createPackageModal">
+                                    <i class="fas fa-plus me-1"></i> Create Package
+                                </button>
+                            @endif
+                        </div>
+                        @endforelse
                     </div>
 
                     <!-- Pagination -->
@@ -267,7 +284,7 @@
 
                     <!-- Channel Pricing List -->
                     <div id="pricingList">
-                        @foreach($channelPricing as $pricing)
+                        @forelse($channelPricing as $pricing)
                         <div class="pricing-item bg-white border p-4 mb-3" data-pricing-id="{{ $pricing->id }}">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 @php
@@ -331,7 +348,24 @@
                                     </div>
                             </div>
                         </div>
-                        @endforeach
+                        @empty
+                        <!-- Empty State -->
+                        <div class="empty-state text-center py-5">
+                            <i class="fas fa-broadcast-tower fa-4x text-muted mb-3" style="opacity: 0.3;"></i>
+                            <h5 class="text-muted">No channel pricing found</h5>
+                            @if(request()->hasAny(['channel_status', 'channel_search']))
+                                <p class="text-muted mb-3">Try adjusting your filters or search terms</p>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('resetChannelFilters').click()">
+                                    <i class="fas fa-redo me-1"></i> Clear Filters
+                                </button>
+                            @else
+                                <p class="text-muted mb-3">Create your first channel pricing to get started</p>
+                                <button class="btn btn-warning" data-toggle="modal" data-target="#createPricingModal">
+                                    <i class="fas fa-plus me-1"></i> Add Channel
+                                </button>
+                            @endif
+                        </div>
+                        @endforelse
                     </div>
 
                     <!-- Pagination -->
