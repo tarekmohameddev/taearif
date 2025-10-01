@@ -501,11 +501,28 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::patch('/credit-transactions/{id}/status', 'Admin\AdminCreditController@updateStatus')->name('credit.transactions.updateStatus');
         Route::post('/credit-transactions/{id}/refund', 'Admin\AdminCreditController@refund')->name('credit.transactions.refund');
         Route::delete('/credit-transactions/{id}', 'Admin\AdminCreditController@destroy')->name('credit.transactions.destroy');
-        
+
         Route::get('/credit-statistics', 'Admin\AdminCreditController@statistics')->name('credit.statistics');
         Route::get('/user-credits', 'Admin\AdminCreditController@userCredits')->name('credit.userCredits');
         Route::post('/add-credits', 'Admin\AdminCreditController@addCredits')->name('credit.addCredits');
         Route::post('/remove-credits', 'Admin\AdminCreditController@removeCredits')->name('credit.removeCredits');
+
+        // Unified Credit Management Dashboard
+        Route::get('/credit-management', 'Admin\CreditManagementController@index')->name('credit-management.index');
+        Route::post('/credit-management/packages/quick-create', 'Admin\CreditManagementController@quickCreatePackage')->name('credit-management.packages.quick-create');
+        Route::post('/credit-management/pricing/quick-create', 'Admin\CreditManagementController@quickCreatePricing')->name('credit-management.pricing.quick-create');
+        Route::get('/credit-management/packages/{id}/edit', 'Admin\CreditManagementController@editPackage')->name('credit-management.packages.edit');
+        Route::get('/credit-management/pricing/{id}/edit', 'Admin\CreditManagementController@editPricing')->name('credit-management.pricing.edit');
+        Route::put('/credit-management/packages/{id}', 'Admin\CreditManagementController@updatePackage')->name('credit-management.packages.update');
+        Route::put('/credit-management/pricing/{id}', 'Admin\CreditManagementController@updatePricing')->name('credit-management.pricing.update');
+        Route::put('/credit-management/packages/{id}/quick-update', 'Admin\CreditManagementController@quickUpdatePackage')->name('credit-management.packages.quick-update');
+        Route::put('/credit-management/pricing/{id}/quick-update', 'Admin\CreditManagementController@quickUpdatePricing')->name('credit-management.pricing.quick-update');
+        Route::post('/credit-management/packages/{id}/toggle-status', 'Admin\CreditManagementController@togglePackageStatus')->name('credit-management.packages.toggle-status');
+        Route::post('/credit-management/pricing/{id}/toggle-status', 'Admin\CreditManagementController@togglePricingStatus')->name('credit-management.pricing.toggle-status');
+        Route::delete('/credit-management/packages/{id}', 'Admin\CreditManagementController@deletePackage')->name('credit-management.packages.delete');
+        Route::delete('/credit-management/pricing/{id}', 'Admin\CreditManagementController@deletePricing')->name('credit-management.pricing.delete');
+        Route::get('/credit-management/packages/{id}/estimates', 'Admin\CreditManagementController@getPackageEstimates')->name('credit-management.packages.estimates');
+        Route::post('/credit-management/sync-pricing', 'Admin\CreditManagementController@syncPricingFromPackages')->name('credit-management.sync-pricing');
     });
 
     //IstharaController
