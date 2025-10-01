@@ -24,6 +24,9 @@ class CreditPackage extends Model
         'is_active',
         'sort_order',
         'features',
+        'supports_marketing_channels',
+        'marketing_features',
+        'marketing_priority',
     ];
 
     protected $casts = [
@@ -34,6 +37,9 @@ class CreditPackage extends Model
         'is_active' => 'boolean',
         'sort_order' => 'integer',
         'features' => 'array',
+        'supports_marketing_channels' => 'boolean',
+        'marketing_features' => 'array',
+        'marketing_priority' => 'integer',
     ];
 
     public function transactions()
@@ -81,6 +87,51 @@ class CreditPackage extends Model
     public function hasDiscount()
     {
         return $this->discount_percentage && $this->discount_percentage > 0;
+    }
+
+    /**
+     * Check if package supports marketing channels
+     */
+    public function supportsMarketingChannels()
+    {
+        return $this->supports_marketing_channels;
+    }
+
+    /**
+     * Get marketing features
+     */
+    public function getMarketingFeatures()
+    {
+        return $this->marketing_features ?? [];
+    }
+
+    /**
+     * Scope for marketing channel packages
+     */
+    public function scopeForMarketingChannels($query)
+    {
+        return $query->where('supports_marketing_channels', true);
+    }
+
+    /**
+     * Get estimated messages possible for each channel type
+     */
+    public function getEstimatedMessagesPerChannel()
+    {
+        $channelPricing = \App\Models\Api\markting\MarketingChannelPricing::active()->get();
+        $estimates = [];
+
+        foreach ($channelPricing as $pricing) {
+            $messages = floor($this->credits / $pricing->credits_per_message);
+            $estimates[$pricing->channel_type] = [
+                'channel_name' => $pricing->channel_type_name,
+                'credits_per_message' => $pricing->credits_per_message,
+                'estimated_messages' => $messages,
+                'remaining_credits' => $this->credits % $pricing->credits_per_message,
+            ];
+        }
+
+        return $estimates;
     }
 
     /**

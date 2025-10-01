@@ -39,7 +39,7 @@ class MarketingChannelController extends BaseApiController
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string|max:500',
-                'type' => 'required|string|in:whatsapp,facebook,telegram,instagram,sms',
+                'type' => 'required|string|max:50|alpha_dash',
                 'number' => 'required|string|max:50',
                 'business_id' => 'nullable|string|max:100',
                 'phone_id' => 'nullable|string|max:100',
@@ -110,7 +110,7 @@ class MarketingChannelController extends BaseApiController
             $validator = Validator::make($request->all(), [
                 'name' => 'sometimes|string|max:255',
                 'description' => 'nullable|string|max:500',
-                'type' => 'sometimes|string|in:whatsapp,facebook,telegram,instagram,sms',
+                'type' => 'sometimes|string|max:50|alpha_dash',
                 'number' => 'sometimes|string|max:50',
                 'business_id' => 'nullable|string|max:100',
                 'phone_id' => 'nullable|string|max:100',

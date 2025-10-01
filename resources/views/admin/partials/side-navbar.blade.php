@@ -171,11 +171,26 @@
                 @endif
 
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Credit Management', $permissions)))
-                    <li class="nav-item @if (request()->path() == 'admin/credit-transactions') active @endif">
-                        <a href="{{ route('admin.credit.transactions.index') }}">
+                    <li class="nav-item submenu @if (request()->is('admin/credit-transactions*') || request()->is('admin/credit-management*')) active @endif">
+                        <a data-toggle="collapse" href="#creditManagement">
                             <i class="fas fa-coins"></i>
                             <p>{{ __('Credit Management') }}</p>
+                            <span class="caret"></span>
                         </a>
+                        <div class="collapse @if (request()->is('admin/credit-transactions*') || request()->is('admin/credit-management*')) show @endif" id="creditManagement">
+                            <ul class="nav nav-collapse">
+                                <li class="nav-item @if (request()->path() == 'admin/credit-transactions') active @endif">
+                                    <a href="{{ route('admin.credit.transactions.index') }}">
+                                        <span class="sub-item">{{ __('Credit Transactions') }}</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item @if (request()->is('admin/credit-management*')) active @endif">
+                                    <a href="{{ route('admin.credit-management.index') }}">
+                                        <span class="sub-item">{{ __('Credit Management') }}</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
                 @endif
 
