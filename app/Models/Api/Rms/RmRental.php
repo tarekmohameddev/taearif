@@ -19,11 +19,11 @@ class RmRental extends Model
 
     protected $fillable = [
         'user_id', 
-        'property_id', 
+        'unit_id', 
         'unit_label', 
         'project_id',
         'tenant_full_name', 
-        'property_number', 
+        'building', 
         'tenant_phone', 
         'tenant_email', 
         'tenant_job_title',
@@ -109,7 +109,7 @@ class RmRental extends Model
 
     public function property()
     {
-        return $this->belongsTo(Property::class, 'property_id');
+        return $this->belongsTo(Property::class, 'unit_id');
     }
 
     public function project()

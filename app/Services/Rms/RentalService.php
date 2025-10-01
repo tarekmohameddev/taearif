@@ -40,8 +40,8 @@ class RentalService
             ->where('user_id', $ownerId)
             ->when($request->q, fn($q) => $q->where('tenant_full_name', 'like', "%{$request->q}%"))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->when($request->property_number, fn($q) => $q->where('property_number', $request->property_number))
-            ->when($request->property_id, fn($q) => $q->where('property_id', $request->property_id))
+            ->when($request->building, fn($q) => $q->where('building', $request->building))
+            ->when($request->unit_id, fn($q) => $q->where('unit_id', $request->unit_id))
             ->when($request->project_id, fn($q) => $q->where('project_id', $request->project_id))
             ->when($request->paying_plan, fn($q) => $q->where('paying_plan', $request->paying_plan))
             ->when($request->filter_by_month, function($q) use ($request) {
@@ -69,8 +69,8 @@ class RentalService
             ]));
 
             // Update property status based on active rentals
-            if ($rental->property_id) {
-                $property = Property::where('id', $rental->property_id)
+            if ($rental->unit_id) {
+                $property = Property::where('id', $rental->unit_id)
                     ->where('user_id', $userId)
                     ->first();
                 if ($property) {
@@ -94,7 +94,7 @@ class RentalService
                     'end_date' => Carbon::parse($data['move_in_date'])->addMonths($totalMonths)->subDay(),
                     'status' => 'active',
                     // Snapshot identifiers for audit/history
-                    'property_id' => $rental->property_id,
+                    'property_id' => $rental->unit_id,
                     'project_id' => $rental->project_id,
                     'property_name' => $rental->property_name ?? null,
                     'project_name' => $rental->project_name ?? null,
@@ -167,8 +167,8 @@ class RentalService
             }
 
             // Update property status after rental update
-            if ($rental->property_id) {
-                $property = Property::where('id', $rental->property_id)
+            if ($rental->unit_id) {
+                $property = Property::where('id', $rental->unit_id)
                     ->where('user_id', $ownerId)
                     ->first();
                 if ($property) {
@@ -190,12 +190,12 @@ class RentalService
             throw new \Exception('Cannot delete rental with active contract');
         }
 
-        $propertyId = $rental->property_id;
+        $unitId = $rental->unit_id;
         $rental->delete();
 
         // Update property status after rental deletion
-        if ($propertyId) {
-            $property = Property::where('id', $propertyId)
+        if ($unitId) {
+            $property = Property::where('id', $unitId)
                 ->where('user_id', $ownerId)
                 ->first();
             if ($property) {
@@ -255,10 +255,10 @@ class RentalService
                 'notes' => $rental->notes,
             ],
             'property' => [
-                'id' => $rental->property_id,
+                'id' => $rental->unit_id,
                 'name' => optional($rental->property)->firstContent ? $rental->property->firstContent->title : null,
                 'unit_label' => $rental->unit_label,
-                'property_number' => $rental->property_number,
+                'building' => $rental->building,
                 'project' => [
                     'id' => $rental->project_id,
                     'name' => optional($rental->project)->name,
@@ -329,10 +329,10 @@ class RentalService
                 'payment_status' => $paymentSummary['payment_status'],
             ],
             'property' => [
-                'id' => $rental->property_id,
+                'id' => $rental->unit_id,
                 'name' => optional($rental->property)->firstContent ? $rental->property->firstContent->title : null,
                 'unit_label' => $rental->unit_label,
-                'property_number' => $rental->property_number,
+                'building' => $rental->building,
                 'project' => [
                     'id' => $rental->project_id,
                     'name' => optional($rental->project)->name,
@@ -642,7 +642,7 @@ class RentalService
                     'tenant_email' => $rental->tenant_email,
                     'property_address' => $rental->property?->name ?? 'N/A',
                     'unit_label' => $rental->unit_label,
-                    'property_number' => $rental->property_number,
+                    'building' => $rental->building,
                     'contract_number' => $rental->activeContract?->contract_number ?? 'N/A'
                 ],
                 'payment_details' => [
@@ -698,7 +698,7 @@ class RentalService
                 'tenant_email' => $rental->tenant_email,
                 'property_address' => $rental->property?->name ?? 'N/A',
                 'unit_label' => $rental->unit_label,
-                'property_number' => $rental->property_number,
+                'building' => $rental->building,
                 'contract_number' => $rental->activeContract->contract_number
             ],
             'contract' => [
@@ -710,7 +710,7 @@ class RentalService
                 'id' => $rental->property?->id,
                 'name' => $rental->property?->name,
                 'unit_label' => $rental->unit_label,
-                'property_number' => $rental->property_number,
+                'building' => $rental->building,
                 'project' => [
                     'id' => $rental->property?->project?->id,
                     'name' => $rental->property?->project?->name

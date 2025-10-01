@@ -25,8 +25,8 @@ class RentalController extends Controller
             'sort_order' => 'nullable|string|in:asc,desc',
             'q' => 'nullable|string|max:255',
             'status' => 'nullable|string|in:active,inactive,terminated',
-            'property_number' => 'nullable|string|max:100',
-            'property_id' => 'nullable|integer',
+            'building' => 'nullable|string|max:100',
+            'unit_id' => 'nullable|integer',
             'project_id' => 'nullable|integer',
             'paying_plan' => 'nullable|string|in:monthly,quarterly,semi_annual,annual',
             'filter_by_month' => 'nullable|integer|min:1|max:12',
@@ -64,10 +64,10 @@ class RentalController extends Controller
             'tenant_job_title' => 'nullable|string|max:120',
             'tenant_social_status' => 'nullable|in:single,married,divorced,widowed,other',
             'tenant_national_id' => 'nullable|string|max:20',
-            'property_id' => 'nullable|integer',
+            'unit_id' => 'nullable|integer',
             'project_id' => 'nullable|integer',
             'unit_label' => 'nullable|string|max:100',
-            'property_number' => 'nullable|string|max:100',
+            'building' => 'nullable|string|max:100',
             'move_in_date' => 'nullable|date',
             'rental_period' => 'nullable|integer',
             'paying_plan' => 'nullable|in:monthly,quarterly,semi_annual,annual',
@@ -97,7 +97,7 @@ class RentalController extends Controller
     {
         $data = $request->only([
             'tenant_full_name', 'tenant_phone', 'tenant_email', 'tenant_job_title',
-            'tenant_social_status', 'tenant_national_id', 'property_id', 'project_id', 'unit_label', 'property_number',
+            'tenant_social_status', 'tenant_national_id', 'unit_id', 'project_id', 'unit_label', 'building',
             'move_in_date', 'rental_period', 'paying_plan',
             'base_rent_amount', 'currency', 'deposit_amount', 'platform_fee', 'water_fee', 
             'office_commission_type', 'office_commission_value', 'contract_number', 'notes'
