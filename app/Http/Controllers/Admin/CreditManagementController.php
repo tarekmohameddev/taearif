@@ -21,6 +21,12 @@ class CreditManagementController extends Controller
      */
     public function index(Request $request)
     {
+        // Get total counts (unfiltered) for statistics cards
+        $totalPackages = CreditPackage::count();
+        $activePackagesCount = CreditPackage::where('is_active', true)->count();
+        $totalChannels = MarketingChannelPricing::count();
+        $activeChannelsCount = MarketingChannelPricing::where('is_active', true)->count();
+        
         // Get credit packages with filters
         $packagesQuery = CreditPackage::query();
         
@@ -74,7 +80,11 @@ class CreditManagementController extends Controller
             'channelPricing', 
             'channelTypes', 
             'packageEstimates',
-            'activeChannels'
+            'activeChannels',
+            'totalPackages',
+            'activePackagesCount',
+            'totalChannels',
+            'activeChannelsCount'
         ));
     }
 
