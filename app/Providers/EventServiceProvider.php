@@ -13,11 +13,16 @@ use App\Observers\ProjectObserver;
 use App\Observers\PropertyObserver;
 use Illuminate\Support\Facades\Event;
 use App\Events\TenantActivityOccurred;
+use App\Events\UserDowngradedToFree;
+use App\Events\UserUpgradedFromFree;
 use App\Observers\ApiCustomerObserver;
 use Illuminate\Auth\Events\Registered;
 
 use App\Listeners\PersistTenantActivity;
 use App\Listeners\WriteTenantActivityLog;
+use App\Listeners\EnableMaintenanceMode;
+use App\Listeners\DisableMaintenanceMode;
+use App\Listeners\LogMembershipChange;
 use App\Models\User\RealestateManagement\Project;
 use App\Models\User\RealestateManagement\Property;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
@@ -38,6 +43,14 @@ class EventServiceProvider extends ServiceProvider
         TenantActivityOccurred::class => [
             PersistTenantActivity::class,
             // WriteTenantActivityLog::class,
+        ],
+        UserDowngradedToFree::class => [
+            EnableMaintenanceMode::class,
+            LogMembershipChange::class,
+        ],
+        UserUpgradedFromFree::class => [
+            DisableMaintenanceMode::class,
+            LogMembershipChange::class,
         ],
     ];
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Content;
 use Illuminate\Http\Request;
 use App\Models\User\BasicSetting;
 use App\Models\Api\GeneralSetting;
+use App\Models\MaintenanceMode;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 
@@ -56,6 +57,15 @@ class GeneralSettingController extends Controller
     public function update(Request $request)
     {
         $user = $request->user();
+
+        // Check if user is trying to disable maintenance mode and has permission
+        if ($request->input('maintenance_mode') == 0 && !$user->can('disable', MaintenanceMode::class)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Free package users cannot disable maintenance mode. Please upgrade your package to access this feature.',
+                'code' => 'MAINTENANCE_MODE_RESTRICTED'
+            ], 403);
+        }
 
         // Validate the input fields
         $validator = Validator::make($request->all(), [
@@ -157,6 +167,27 @@ class GeneralSettingController extends Controller
         return response()->json([
             'message' => 'show_properties updated successfully.',
             'show_properties' => $settings->show_properties
+        ]);
+    }
+
+    /**
+     * Get comprehensive membership status for the authenticated user
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getMembershipStatus(Request $request)
+    {
+        $user = $request->user();
+        $membershipService = app(\App\Services\MembershipService::class);
+        
+        $status = $membershipService->getMembershipStatus($user);
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'membership_status' => $status
+            ]
         ]);
     }
 
