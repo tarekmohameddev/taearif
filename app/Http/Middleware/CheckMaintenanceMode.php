@@ -5,9 +5,17 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use App\Models\Api\GeneralSetting;
+use App\Services\MembershipService;
 
 class CheckMaintenanceMode
 {
+    protected $membershipService;
+    
+    public function __construct(MembershipService $membershipService)
+    {
+        $this->membershipService = $membershipService;
+    }
+    
     /**
      * The URIs that should be reachable while maintenance mode is enabled.
      * Add any routes you want to exclude from maintenance mode here.
@@ -78,6 +86,11 @@ class CheckMaintenanceMode
         $user = getUser();
         if (!$user) {
             return $next($request);
+        }
+
+        // Force enable maintenance mode for free package users
+        if (!$this->membershipService->canControlMaintenanceMode($user)) {
+            $this->membershipService->enableMaintenanceMode($user);
         }
 
         // Check if maintenance mode is enabled for this user

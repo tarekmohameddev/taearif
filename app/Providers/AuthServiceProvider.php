@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\Admin;
+use App\Models\MaintenanceMode;
+use App\Policies\MaintenanceModePolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use App\Models\User;
@@ -15,6 +17,7 @@ class AuthServiceProvider extends ServiceProvider
      * @var array
      */
     protected $policies = [
+        MaintenanceMode::class => MaintenanceModePolicy::class,
     ];
 
     /**
@@ -47,6 +50,11 @@ class AuthServiceProvider extends ServiceProvider
             // Only apply this logic to User models, not Admin models
             if (!$user instanceof User) {
                 return null; // Let other gates handle Admin models
+            }
+            
+            // Don't override maintenance mode policies - let them handle their own logic
+            if (in_array($ability, ['control', 'disable', 'enable', 'toggle'])) {
+                return null; // Let the policy handle this
             }
             
             // Treat both 'tenant' and 'user' as tenant owners
