@@ -23,6 +23,7 @@ use App\Listeners\WriteTenantActivityLog;
 use App\Listeners\EnableMaintenanceMode;
 use App\Listeners\DisableMaintenanceMode;
 use App\Listeners\LogMembershipChange;
+use App\Listeners\GiveWelcomeCredits;
 use App\Models\User\RealestateManagement\Project;
 use App\Models\User\RealestateManagement\Property;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
@@ -39,6 +40,7 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         Registered::class => [
             SendEmailVerificationNotification::class,
+            GiveWelcomeCredits::class,
         ],
         TenantActivityOccurred::class => [
             PersistTenantActivity::class,

@@ -14,6 +14,7 @@ use App\Models\User\UserCoupon;
 use App\Models\User\UserFeature;
 use App\Models\User\WorkProcess;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Api\GeneralSetting;
 use App\Models\User\JobExperience;
 use App\Http\Controllers\Controller;
@@ -52,6 +53,7 @@ class User extends Authenticatable
 {
     use HasApiTokens;
     use Notifiable;
+    use HasFactory;
     use \Spatie\Permission\Traits\HasRoles;
     // use \Spatie\Permission\Traits\HasPermissions;
 
