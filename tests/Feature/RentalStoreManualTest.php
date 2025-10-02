@@ -48,15 +48,11 @@ class RentalStoreManualTest extends TestCase
             'unit_label' => 'A-101',
             'building' => 'PROP-2024-001',
             'move_in_date' => '2024-01-01',
-            'rental_period' => 12,
+            'rental_type' => 'monthly',
+            'rental_duration' => 12,
             'paying_plan' => 'monthly',
-            'base_rent_amount' => 2500.00,
+            'total_rental_amount' => 30000.00,
             'currency' => 'SAR',
-            'deposit_amount' => 2500.00,
-            'platform_fee' => 100.00,
-            'water_fee' => 50.00,
-            'office_commission_type' => 'percentage',
-            'office_commission_value' => 5.0,
             'contract_number' => 'CNT-2024-001',
             'notes' => 'Test rental with complete data for integration testing'
         ];

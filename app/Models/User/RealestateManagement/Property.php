@@ -228,12 +228,12 @@ class Property extends Model
 
     public function rentals()
     {
-        return $this->hasMany(\App\Models\Api\Rms\RmRental::class, 'property_id');
+        return $this->hasMany(\App\Models\Api\Rms\RmRental::class, 'unit_id');
     }
 
     public function activeRentals()
     {
-        return $this->hasMany(\App\Models\Api\Rms\RmRental::class, 'property_id')->where('status', 'active');
+        return $this->hasMany(\App\Models\Api\Rms\RmRental::class, 'unit_id')->where('status', 'active');
     }
 
     public function updatePropertyStatus()

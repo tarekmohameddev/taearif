@@ -88,15 +88,11 @@ class RentalStoreIntegrationTest extends TestCase
             'unit_label' => 'A-101',
             'building' => 'PROP-2024-001',
             'move_in_date' => '2024-01-01',
-            'rental_period' => 12,
+            'rental_type' => 'monthly',
+            'rental_duration' => 12,
             'paying_plan' => 'monthly',
-            'base_rent_amount' => 2500.00,
+            'total_rental_amount' => 30000.00,
             'currency' => 'SAR',
-            'deposit_amount' => 2500.00,
-            'platform_fee' => 100.00,
-            'water_fee' => 50.00,
-            'office_commission_type' => 'percentage',
-            'office_commission_value' => 5.0,
             'contract_number' => 'CNT-2024-001',
             'notes' => 'Test rental with complete data for integration testing'
         ];
@@ -129,7 +125,9 @@ class RentalStoreIntegrationTest extends TestCase
             'tenant_phone' => '+966501234567',
             'unit_id' => $this->property->id,
             'project_id' => $this->project->id,
-            'base_rent_amount' => 2500.00,
+            'rental_type' => 'monthly',
+            'rental_duration' => 12,
+            'total_rental_amount' => 30000.00,
             'status' => 'active'
         ]);
 
@@ -180,14 +178,11 @@ class RentalStoreIntegrationTest extends TestCase
             'unit_id' => $this->property->id,
             'project_id' => $this->project->id,
             'move_in_date' => '2024-01-01',
-            'rental_period' => 4, // 4 quarters = 12 months
+            'rental_type' => 'monthly',
+            'rental_duration' => 12, // 12 months
             'paying_plan' => 'quarterly',
-            'base_rent_amount' => 2500.00,
-            'currency' => 'SAR',
-            'platform_fee' => 100.00,
-            'water_fee' => 50.00,
-            'office_commission_type' => 'amount',
-            'office_commission_value' => 500.00
+            'total_rental_amount' => 30000.00,
+            'currency' => 'SAR'
         ];
 
         // Act

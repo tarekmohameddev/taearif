@@ -2,6 +2,7 @@
 
 namespace Config;
 
+if (!class_exists('Config\Iyzipay')) {
 class Iyzipay
 {
   public static function options($apiKey = null, $secretKey = null, $baseUrl = null)
@@ -12,4 +13,5 @@ class Iyzipay
     $options->setBaseUrl($baseUrl ?: config('iyzipay.base_url'));
     return $options;
   }
+}
 }

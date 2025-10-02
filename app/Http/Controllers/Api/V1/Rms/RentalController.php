@@ -69,17 +69,21 @@ class RentalController extends Controller
             'unit_label' => 'nullable|string|max:100',
             'building' => 'nullable|string|max:100',
             'move_in_date' => 'nullable|date',
-            'rental_period' => 'nullable|integer',
-            'paying_plan' => 'nullable|in:monthly,quarterly,semi_annual,annual',
-            'base_rent_amount' => 'nullable|numeric',
+            'rental_type' => 'required|in:monthly,annual',
+            'rental_duration' => 'required|integer|min:1',
+            'paying_plan' => 'required|in:monthly,quarterly,semi_annual,annual',
+            'total_rental_amount' => 'required|numeric|min:0',
             'currency' => 'nullable|string|size:3',
-            'deposit_amount' => 'nullable|numeric',
-            'platform_fee' => 'nullable|numeric|min:0',
-            'water_fee' => 'nullable|numeric|min:0',
-            'office_commission_type' => 'nullable|in:percentage,amount',
-            'office_commission_value' => 'nullable|numeric|min:0',
             'contract_number' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
+            'cost_items' => 'nullable|array',
+            'cost_items.*.name' => 'required|string|max:255',
+            'cost_items.*.cost' => 'required|numeric|min:0',
+            'cost_items.*.type' => 'required|in:fixed,percentage',
+            'cost_items.*.payer' => 'required|in:owner,tenant',
+            'cost_items.*.payment_frequency' => 'required|in:one_time,per_installment',
+            'cost_items.*.percentage_of' => 'nullable|numeric|min:0',
+            'cost_items.*.description' => 'nullable|string',
         ]);
 
         $rental = $this->rentalService->createRental(auth()->id(), $data);
@@ -98,9 +102,8 @@ class RentalController extends Controller
         $data = $request->only([
             'tenant_full_name', 'tenant_phone', 'tenant_email', 'tenant_job_title',
             'tenant_social_status', 'tenant_national_id', 'unit_id', 'project_id', 'unit_label', 'building',
-            'move_in_date', 'rental_period', 'paying_plan',
-            'base_rent_amount', 'currency', 'deposit_amount', 'platform_fee', 'water_fee', 
-            'office_commission_type', 'office_commission_value', 'contract_number', 'notes'
+            'move_in_date', 'rental_type', 'rental_duration', 'paying_plan',
+            'total_rental_amount', 'currency', 'contract_number', 'notes', 'cost_items'
         ]);
 
         // Handle payments if included in request

@@ -19,11 +19,13 @@ class DashboardService
         $end = $now->copy()->addDays($range);
 
         return [
+            'range_days' => $range, // Add this to make it clear what range is being used
             'counts' => [
                 'ongoing_rentals' => RmRental::where('user_id', $userId)->where('status', 'active')->count(),
-                'expiring_contracts_next_30d' => RmContract::where('user_id', $userId)
+                'expiring_contracts_next_' . $range . 'd' => RmContract::where('user_id', $userId)
                     ->where('status', 'active')
-                    ->whereDate('end_date', '<=', $now->copy()->addDays(30))
+                    ->whereDate('end_date', '<=', $end)
+                    ->whereDate('end_date', '>=', $now)
                     ->count(),
                 'payments_due_next_' . $range . 'd' => RmPaymentInstallment::where('user_id', $userId)
                     ->where('status', 'pending')
