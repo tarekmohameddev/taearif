@@ -59,6 +59,8 @@ use App\Http\Controllers\Api\{
     content\CustomerDropdownSettingController,
     DomainSettingsController,
     ApiSideMenusController,
+    ApiContractController,
+    RentalContractController,
 };
 
 use App\Http\Controllers\Api\V1\Logs\{
@@ -208,6 +210,32 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/blog-categories', [BlogController::class, 'categories']); // Get blog categories
 });
 
+// contract routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/contracts', [ApiContractController::class, 'index']); // Get all contracts
+    Route::get('/contracts/{id}', [ApiContractController::class, 'show']); // Get a single contract
+    Route::post('/contracts', [ApiContractController::class, 'store']); // Create a contract
+    Route::put('/contracts/{id}', [ApiContractController::class, 'update']); // Update a contract
+    Route::delete('/contracts/{id}', [ApiContractController::class, 'destroy']); // Delete a contract
+    Route::get('/contracts/statistics', [ApiContractController::class, 'statistics']); // Get contract statistics
+    Route::get('/contracts/customer/{customerId}', [ApiContractController::class, 'getByCustomer']); // Get contracts by customer
+    Route::get('/contracts/rental/{rentalId}', [ApiContractController::class, 'getByRental']); // Get contracts by rental
+});
+
+// rental contract routes (RMS contracts only)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/rental-contracts', [RentalContractController::class, 'index']); // Get all rental contracts
+    Route::get('/rental-contracts/statistics', [RentalContractController::class, 'statistics']); // Get rental contract statistics
+    Route::get('/rental-contracts/daily-follow-up', [RentalContractController::class, 'dailyFollowUp']); // Daily follow-up for rental contracts
+    Route::get('/rental-contracts/all-contracts', [RentalContractController::class, 'allContracts']); // All contracts with color status
+    Route::get('/rental-contracts/rental/{rentalId}', [RentalContractController::class, 'getByRental']); // Get contracts by rental
+    Route::post('/rental-contracts', [RentalContractController::class, 'store']); // Create a rental contract
+    Route::get('/rental-contracts/{id}', [RentalContractController::class, 'show']); // Get a single rental contract
+    Route::put('/rental-contracts/{id}', [RentalContractController::class, 'update']); // Update a rental contract
+    Route::delete('/rental-contracts/{id}', [RentalContractController::class, 'destroy']); // Delete a rental contract
+    Route::post('/rental-contracts/{id}/terminate', [RentalContractController::class, 'terminate']); // Terminate a rental contract
+    Route::patch('/rental-contracts/{id}/status', [RentalContractController::class, 'changeStatus']); // Change rental contract status
+});
 // project routes
 Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
     Route::get   ('/projects',            [ProjectController::class, 'index'])->middleware('can:projects.view');
