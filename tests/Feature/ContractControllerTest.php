@@ -76,7 +76,7 @@ class ContractControllerTest extends TestCase
             'status' => 'active',
             'file_path' => '/path/to/contract.pdf',
             'generate_schedule' => true,
-            'property_id' => 1,
+            'unit_id' => 1,
             'project_id' => 1,
             'property_name' => 'Test Property',
             'project_name' => 'Test Project',

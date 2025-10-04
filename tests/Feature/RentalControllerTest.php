@@ -71,7 +71,7 @@ class RentalControllerTest extends TestCase
         $request = new Request([
             'q' => 'John Doe',
             'status' => 'active',
-            'property_id' => 1,
+            'unit_id' => 1,
             'project_id' => 1,
             'paying_plan' => 'monthly'
         ]);
@@ -84,14 +84,14 @@ class RentalControllerTest extends TestCase
             ->with(Mockery::on(function ($req) {
                 return $req->q === 'John Doe' 
                     && $req->status === 'active'
-                    && $req->property_id === 1
+                    && $req->unit_id === 1
                     && $req->project_id === 1
                     && $req->paying_plan === 'monthly';
             }))
             ->andReturn($expectedData);
 
         // Act
-        $response = $this->getJson('/api/v1/rms/rentals?q=John%20Doe&status=active&property_id=1&project_id=1&paying_plan=monthly');
+        $response = $this->getJson('/api/v1/rms/rentals?q=John%20Doe&status=active&unit_id=1&project_id=1&paying_plan=monthly');
 
         // Assert
         $response->assertStatus(200)
@@ -112,22 +112,27 @@ class RentalControllerTest extends TestCase
             'tenant_job_title' => 'Software Engineer',
             'tenant_social_status' => 'single',
             'tenant_national_id' => '123456789',
-            'property_id' => 1,
+            'unit_id' => 1,
             'project_id' => 1,
             'unit_label' => 'A-101',
-            'property_number' => 'PROP-001',
+            'building' => 'PROP-001',
             'move_in_date' => '2024-01-01',
-            'rental_period' => 12,
+            'rental_type' => 'monthly',
+            'rental_duration' => 6,
             'paying_plan' => 'monthly',
-            'base_rent_amount' => 1000.00,
+            'total_rental_amount' => 12000.00,
             'currency' => 'USD',
-            'deposit_amount' => 1000.00,
-            'platform_fee' => 50.00,
-            'water_fee' => 30.00,
-            'office_commission_type' => 'percentage',
-            'office_commission_value' => 5.0,
             'contract_number' => 'CNT-2024-001',
-            'notes' => 'Test rental'
+            'notes' => 'Test rental',
+            'cost_items' => [
+                [
+                    'name' => 'Water Fee',
+                    'cost' => 50.00,
+                    'type' => 'fixed',
+                    'payer' => 'tenant',
+                    'payment_frequency' => 'per_installment'
+                ]
+            ]
         ];
 
         $expectedResponse = [
@@ -136,6 +141,16 @@ class RentalControllerTest extends TestCase
             'contract' => [
                 'id' => 1,
                 'status' => 'pending'
+            ],
+            'cost_items' => [
+                [
+                    'id' => 1,
+                    'name' => 'Water Fee',
+                    'cost' => 50.00,
+                    'type' => 'fixed',
+                    'payer' => 'tenant',
+                    'payment_frequency' => 'per_installment'
+                ]
             ]
         ];
 
@@ -162,12 +177,17 @@ class RentalControllerTest extends TestCase
         // Arrange
         $rentalData = [
             'tenant_full_name' => 'John Doe',
-            'tenant_phone' => '+1234567890'
+            'tenant_phone' => '+1234567890',
+            'rental_type' => 'monthly',
+            'rental_duration' => 6,
+            'paying_plan' => 'monthly',
+            'total_rental_amount' => 12000.00
         ];
 
         $expectedResponse = [
             'id' => 1,
-            'status' => 'active'
+            'status' => 'active',
+            'cost_items' => []
         ];
 
         $this->rentalService
@@ -195,7 +215,14 @@ class RentalControllerTest extends TestCase
 
         // Assert
         $response->assertStatus(422)
-                ->assertJsonValidationErrors(['tenant_full_name', 'tenant_phone']);
+                ->assertJsonValidationErrors([
+                    'tenant_full_name', 
+                    'tenant_phone',
+                    'rental_type',
+                    'rental_duration',
+                    'paying_plan',
+                    'total_rental_amount'
+                ]);
     }
 
     /** @test */
@@ -478,7 +505,7 @@ class RentalControllerTest extends TestCase
                 'id' => 1,
                 'name' => 'Test Property',
                 'unit_label' => 'A-101',
-                'property_number' => 'PROP-001',
+                'building' => 'PROP-001',
                 'project' => [
                     'id' => 1,
                     'name' => 'Test Project'
@@ -542,7 +569,11 @@ class RentalControllerTest extends TestCase
             'tenant_job_title' => str_repeat('b', 121), // Exceeds max:120
             'tenant_national_id' => str_repeat('1', 21), // Exceeds max:20
             'unit_label' => str_repeat('c', 101), // Exceeds max:100
-            'property_number' => str_repeat('d', 101), // Exceeds max:100
+            'building' => str_repeat('d', 101), // Exceeds max:100
+            'rental_type' => 'monthly',
+            'rental_duration' => 6,
+            'paying_plan' => 'monthly',
+            'total_rental_amount' => 12000.00
         ];
 
         // Act
@@ -556,7 +587,7 @@ class RentalControllerTest extends TestCase
                     'tenant_job_title',
                     'tenant_national_id',
                     'unit_label',
-                    'property_number'
+                    'building'
                 ]);
     }
 
@@ -567,11 +598,12 @@ class RentalControllerTest extends TestCase
         $rentalData = [
             'tenant_full_name' => 'John Doe',
             'tenant_phone' => '+1234567890',
-            'property_id' => 'not_a_number',
+            'unit_id' => 'not_a_number',
             'project_id' => 'not_a_number',
-            'rental_period' => 'not_a_number',
-            'base_rent_amount' => 'not_a_number',
-            'deposit_amount' => 'not_a_number'
+            'rental_duration' => 'not_a_number',
+            'total_rental_amount' => 'not_a_number',
+            'rental_type' => 'monthly',
+            'paying_plan' => 'monthly'
         ];
 
         // Act
@@ -580,11 +612,10 @@ class RentalControllerTest extends TestCase
         // Assert
         $response->assertStatus(422)
                 ->assertJsonValidationErrors([
-                    'property_id',
+                    'unit_id',
                     'project_id',
-                    'rental_period',
-                    'base_rent_amount',
-                    'deposit_amount'
+                    'rental_duration',
+                    'total_rental_amount'
                 ]);
     }
 
@@ -607,20 +638,61 @@ class RentalControllerTest extends TestCase
     }
 
     /** @test */
+    public function it_validates_cost_items_structure()
+    {
+        // Arrange
+        $rentalData = [
+            'tenant_full_name' => 'John Doe',
+            'tenant_phone' => '+1234567890',
+            'rental_type' => 'monthly',
+            'rental_duration' => 6,
+            'paying_plan' => 'monthly',
+            'total_rental_amount' => 12000.00,
+            'cost_items' => [
+                [
+                    'name' => '', // Empty name should fail
+                    'cost' => 'not_a_number', // Invalid cost
+                    'type' => 'invalid_type', // Invalid type
+                    'payer' => 'invalid_payer', // Invalid payer
+                    'payment_frequency' => 'invalid_frequency' // Invalid frequency
+                ]
+            ]
+        ];
+
+        // Act
+        $response = $this->postJson('/api/v1/rms/rentals', $rentalData);
+
+        // Assert
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors([
+                    'cost_items.0.name',
+                    'cost_items.0.cost',
+                    'cost_items.0.type',
+                    'cost_items.0.payer',
+                    'cost_items.0.payment_frequency'
+                ]);
+    }
+
+    /** @test */
     public function it_accepts_valid_enum_values()
     {
         // Arrange
         $validSocialStatuses = ['single', 'married', 'divorced', 'widowed', 'other'];
         $validPayingPlans = ['monthly', 'quarterly', 'semi_annual', 'annual'];
+        $validRentalTypes = ['monthly', 'annual'];
 
         foreach ($validSocialStatuses as $status) {
             foreach ($validPayingPlans as $plan) {
-                $rentalData = [
-                    'tenant_full_name' => 'John Doe',
-                    'tenant_phone' => '+1234567890',
-                    'tenant_social_status' => $status,
-                    'paying_plan' => $plan
-                ];
+                foreach ($validRentalTypes as $rentalType) {
+                    $rentalData = [
+                        'tenant_full_name' => 'John Doe',
+                        'tenant_phone' => '+1234567890',
+                        'tenant_social_status' => $status,
+                        'rental_type' => $rentalType,
+                        'rental_duration' => 6,
+                        'paying_plan' => $plan,
+                        'total_rental_amount' => 12000.00
+                    ];
 
                 $this->rentalService
                     ->shouldReceive('createRental')
@@ -633,282 +705,19 @@ class RentalControllerTest extends TestCase
 
                 // Assert
                 $response->assertStatus(201);
+                }
             }
         }
     }
 
-    /** @test */
-    public function it_validates_platform_fee_field()
-    {
-        // Arrange
-        $rentalData = [
-            'tenant_full_name' => 'John Doe',
-            'tenant_phone' => '+1234567890',
-            'platform_fee' => -10.00 // Invalid negative value
-        ];
 
-        // Act
-        $response = $this->postJson('/api/v1/rms/rentals', $rentalData);
 
-        // Assert
-        $response->assertStatus(422)
-                ->assertJsonValidationErrors(['platform_fee']);
-    }
 
-    /** @test */
-    public function it_validates_water_fee_field()
-    {
-        // Arrange
-        $rentalData = [
-            'tenant_full_name' => 'John Doe',
-            'tenant_phone' => '+1234567890',
-            'water_fee' => -5.00 // Invalid negative value
-        ];
 
-        // Act
-        $response = $this->postJson('/api/v1/rms/rentals', $rentalData);
 
-        // Assert
-        $response->assertStatus(422)
-                ->assertJsonValidationErrors(['water_fee']);
-    }
 
-    /** @test */
-    public function it_accepts_valid_platform_fee_and_water_fee_values()
-    {
-        // Arrange
-        $rentalData = [
-            'tenant_full_name' => 'John Doe',
-            'tenant_phone' => '+1234567890',
-            'platform_fee' => 50.00,
-            'water_fee' => 30.00
-        ];
 
-        $this->rentalService
-            ->shouldReceive('createRental')
-            ->once()
-            ->with($this->user->id, $rentalData)
-            ->andReturn(['id' => 1, 'status' => 'active']);
 
-        // Act
-        $response = $this->postJson('/api/v1/rms/rentals', $rentalData);
-
-        // Assert
-        $response->assertStatus(201);
-    }
-
-    /** @test */
-    public function it_validates_office_commission_type_field()
-    {
-        // Arrange
-        $rentalData = [
-            'tenant_full_name' => 'John Doe',
-            'tenant_phone' => '+1234567890',
-            'office_commission_type' => 'invalid_type'
-        ];
-
-        // Act
-        $response = $this->postJson('/api/v1/rms/rentals', $rentalData);
-
-        // Assert
-        $response->assertStatus(422)
-                ->assertJsonValidationErrors(['office_commission_type']);
-    }
-
-    /** @test */
-    public function it_validates_office_commission_value_field()
-    {
-        // Arrange
-        $rentalData = [
-            'tenant_full_name' => 'John Doe',
-            'tenant_phone' => '+1234567890',
-            'office_commission_value' => -10.00 // Invalid negative value
-        ];
-
-        // Act
-        $response = $this->postJson('/api/v1/rms/rentals', $rentalData);
-
-        // Assert
-        $response->assertStatus(422)
-                ->assertJsonValidationErrors(['office_commission_value']);
-    }
-
-    /** @test */
-    public function it_accepts_valid_office_commission_values()
-    {
-        // Arrange
-        $rentalData = [
-            'tenant_full_name' => 'John Doe',
-            'tenant_phone' => '+1234567890',
-            'office_commission_type' => 'percentage',
-            'office_commission_value' => 5.0
-        ];
-
-        $this->rentalService
-            ->shouldReceive('createRental')
-            ->once()
-            ->with($this->user->id, $rentalData)
-            ->andReturn(['id' => 1, 'status' => 'active']);
-
-        // Act
-        $response = $this->postJson('/api/v1/rms/rentals', $rentalData);
-
-        // Assert
-        $response->assertStatus(201);
-    }
-
-    /** @test */
-    public function it_accepts_null_office_commission_values()
-    {
-        // Arrange
-        $rentalData = [
-            'tenant_full_name' => 'John Doe',
-            'tenant_phone' => '+1234567890',
-            'office_commission_type' => null,
-            'office_commission_value' => null
-        ];
-
-        $this->rentalService
-            ->shouldReceive('createRental')
-            ->once()
-            ->with($this->user->id, $rentalData)
-            ->andReturn(['id' => 1, 'status' => 'active']);
-
-        // Act
-        $response = $this->postJson('/api/v1/rms/rentals', $rentalData);
-
-        // Assert
-        $response->assertStatus(201);
-    }
-
-    /** @test */
-    public function it_accepts_null_platform_fee_and_water_fee_values()
-    {
-        // Arrange
-        $rentalData = [
-            'tenant_full_name' => 'John Doe',
-            'tenant_phone' => '+1234567890',
-            'platform_fee' => null,
-            'water_fee' => null
-        ];
-
-        $this->rentalService
-            ->shouldReceive('createRental')
-            ->once()
-            ->with($this->user->id, $rentalData)
-            ->andReturn(['id' => 1, 'status' => 'active']);
-
-        // Act
-        $response = $this->postJson('/api/v1/rms/rentals', $rentalData);
-
-        // Assert
-        $response->assertStatus(201);
-    }
-
-    /** @test */
-    public function it_can_update_rental_with_platform_fee_and_water_fee()
-    {
-        // Arrange
-        $rentalId = 1;
-        $updateData = [
-            'platform_fee' => 75.00,
-            'water_fee' => 40.00
-        ];
-
-        $updatedRental = new RmRental(array_merge(['id' => $rentalId], $updateData));
-
-        $this->rentalService
-            ->shouldReceive('updateRental')
-            ->once()
-            ->with($this->user->id, $rentalId, $updateData, false)
-            ->andReturn($updatedRental);
-
-        // Act
-        $response = $this->putJson("/api/v1/rms/rentals/{$rentalId}", $updateData);
-
-        // Assert
-        $response->assertStatus(200)
-                ->assertJson([
-                    'status' => true,
-                    'data' => $updatedRental->toArray()
-                ]);
-    }
-
-    /** @test */
-    public function it_can_update_rental_with_office_commission_fields()
-    {
-        // Arrange
-        $rentalId = 1;
-        $updateData = [
-            'office_commission_type' => 'amount',
-            'office_commission_value' => 500.00
-        ];
-
-        $updatedRental = new RmRental(array_merge(['id' => $rentalId], $updateData));
-
-        $this->rentalService
-            ->shouldReceive('updateRental')
-            ->once()
-            ->with($this->user->id, $rentalId, $updateData, false)
-            ->andReturn($updatedRental);
-
-        // Act
-        $response = $this->putJson("/api/v1/rms/rentals/{$rentalId}", $updateData);
-
-        // Assert
-        $response->assertStatus(200)
-                ->assertJson([
-                    'status' => true,
-                    'data' => $updatedRental->toArray()
-                ]);
-    }
-
-    /** @test */
-    public function it_calculates_office_fee_correctly_for_percentage_commission()
-    {
-        // Arrange
-        $rental = new RmRental([
-            'office_commission_type' => 'percentage',
-            'office_commission_value' => 5.0,
-            'rental_period' => 12,
-            'base_rent_amount' => 1000.00
-        ]);
-
-        // Act & Assert
-        // Expected: (12 * 1000) * (5 / 100) = 12000 * 0.05 = 600
-        $this->assertEquals(600.0, $rental->office_fee);
-    }
-
-    /** @test */
-    public function it_calculates_office_fee_correctly_for_amount_commission()
-    {
-        // Arrange
-        $rental = new RmRental([
-            'office_commission_type' => 'amount',
-            'office_commission_value' => 500.00,
-            'rental_period' => 12,
-            'base_rent_amount' => 1000.00
-        ]);
-
-        // Act & Assert
-        // Expected: 500.00 (direct amount)
-        $this->assertEquals(500.0, $rental->office_fee);
-    }
-
-    /** @test */
-    public function it_returns_zero_office_fee_when_required_fields_are_null()
-    {
-        // Arrange
-        $rental = new RmRental([
-            'office_commission_type' => null,
-            'office_commission_value' => 5.0,
-            'rental_period' => 12,
-            'base_rent_amount' => 1000.00
-        ]);
-
-        // Act & Assert
-        $this->assertEquals(0.0, $rental->office_fee);
-    }
 
     /** @test */
     public function it_validates_contract_number_field()
@@ -917,6 +726,10 @@ class RentalControllerTest extends TestCase
         $rentalData = [
             'tenant_full_name' => 'John Doe',
             'tenant_phone' => '+1234567890',
+            'rental_type' => 'monthly',
+            'rental_duration' => 6,
+            'paying_plan' => 'monthly',
+            'total_rental_amount' => 12000.00,
             'contract_number' => str_repeat('a', 256) // Exceeds max:255
         ];
 
@@ -935,6 +748,10 @@ class RentalControllerTest extends TestCase
         $rentalData = [
             'tenant_full_name' => 'John Doe',
             'tenant_phone' => '+1234567890',
+            'rental_type' => 'monthly',
+            'rental_duration' => 6,
+            'paying_plan' => 'monthly',
+            'total_rental_amount' => 12000.00,
             'contract_number' => 'CNT-2024-001'
         ];
 

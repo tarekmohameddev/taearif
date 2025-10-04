@@ -53,6 +53,11 @@ class Property extends Model
         'latitude',
         'longitude',
         'project_id',
+        'building_id',
+        'building',
+        'water_meter_number',
+        'electricity_meter_number',
+        'deed_number',
         'reorder',
         'reorder_featured',
     ];
@@ -118,6 +123,10 @@ class Property extends Model
             'category_id' => $request['category_id'] ?? $defaultCategory->id,
             'payment_method' => $request['payment_method'] ?? null,
             'faqs' => $request['faqs'] ?? [],
+            'building' => $request['building'] ?? null,
+            'water_meter_number' => $request['water_meter_number'] ?? null,
+            'electricity_meter_number' => $request['electricity_meter_number'] ?? null,
+            'deed_number' => $request['deed_number'] ?? null,
             'reorder_featured' => $reorderFeatured,
             'reorder' => 0,
         ]);
@@ -154,6 +163,10 @@ class Property extends Model
             'category_id' => $requestData['category_id'] ?? $this->category_id,
             'payment_method' => $requestData['payment_method'] ?? $this->payment_method  ?? null,
             'faqs' => $requestData['faqs'] ?? $this->faqs,
+            'building' => $requestData['building'] ?? $this->building,
+            'water_meter_number' => $requestData['water_meter_number'] ?? $this->water_meter_number,
+            'electricity_meter_number' => $requestData['electricity_meter_number'] ?? $this->electricity_meter_number,
+            'deed_number' => $requestData['deed_number'] ?? $this->deed_number,
             'reorder_featured' => $requestData['reorder_featured'] ?? $this->reorder_featured,
             'reorder' => $requestData['reorder'] ?? $this->reorder,
         ]);
@@ -226,14 +239,19 @@ class Property extends Model
         return $this->belongsTo(Project::class, 'project_id');
     }
 
+    public function building()
+    {
+        return $this->belongsTo(\App\Models\Building::class, 'building_id');
+    }
+
     public function rentals()
     {
-        return $this->hasMany(\App\Models\Api\Rms\RmRental::class, 'property_id');
+        return $this->hasMany(\App\Models\Api\Rms\RmRental::class, 'unit_id');
     }
 
     public function activeRentals()
     {
-        return $this->hasMany(\App\Models\Api\Rms\RmRental::class, 'property_id')->where('status', 'active');
+        return $this->hasMany(\App\Models\Api\Rms\RmRental::class, 'unit_id')->where('status', 'active');
     }
 
     public function updatePropertyStatus()

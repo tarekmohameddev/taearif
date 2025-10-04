@@ -59,6 +59,8 @@ use App\Http\Controllers\Api\{
     content\CustomerDropdownSettingController,
     DomainSettingsController,
     ApiSideMenusController,
+    ApiContractController,
+    RentalContractController,
 };
 
 use App\Http\Controllers\Api\V1\Logs\{
@@ -208,6 +210,32 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/blog-categories', [BlogController::class, 'categories']); // Get blog categories
 });
 
+// contract routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/contracts', [ApiContractController::class, 'index']); // Get all contracts
+    Route::get('/contracts/{id}', [ApiContractController::class, 'show']); // Get a single contract
+    Route::post('/contracts', [ApiContractController::class, 'store']); // Create a contract
+    Route::put('/contracts/{id}', [ApiContractController::class, 'update']); // Update a contract
+    Route::delete('/contracts/{id}', [ApiContractController::class, 'destroy']); // Delete a contract
+    Route::get('/contracts/statistics', [ApiContractController::class, 'statistics']); // Get contract statistics
+    Route::get('/contracts/customer/{customerId}', [ApiContractController::class, 'getByCustomer']); // Get contracts by customer
+    Route::get('/contracts/rental/{rentalId}', [ApiContractController::class, 'getByRental']); // Get contracts by rental
+});
+
+// rental contract routes (RMS contracts only)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/rental-contracts', [RentalContractController::class, 'index']); // Get all rental contracts
+    Route::get('/rental-contracts/statistics', [RentalContractController::class, 'statistics']); // Get rental contract statistics
+    Route::get('/rental-contracts/daily-follow-up', [RentalContractController::class, 'dailyFollowUp']); // Daily follow-up for rental contracts
+    Route::get('/rental-contracts/all-contracts', [RentalContractController::class, 'allContracts']); // All contracts with color status
+    Route::get('/rental-contracts/rental/{rentalId}', [RentalContractController::class, 'getByRental']); // Get contracts by rental
+    Route::post('/rental-contracts', [RentalContractController::class, 'store']); // Create a rental contract
+    Route::get('/rental-contracts/{id}', [RentalContractController::class, 'show']); // Get a single rental contract
+    Route::put('/rental-contracts/{id}', [RentalContractController::class, 'update']); // Update a rental contract
+    Route::delete('/rental-contracts/{id}', [RentalContractController::class, 'destroy']); // Delete a rental contract
+    Route::post('/rental-contracts/{id}/terminate', [RentalContractController::class, 'terminate']); // Terminate a rental contract
+    Route::patch('/rental-contracts/{id}/status', [RentalContractController::class, 'changeStatus']); // Change rental contract status
+});
 // project routes
 Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
     Route::get   ('/projects',            [ProjectController::class, 'index'])->middleware('can:projects.view');
@@ -232,6 +260,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::get   ('/properties',                         [PropertyController::class, 'index'])->middleware('can:properties.view');
     Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
     Route::post  ('/properties',                         [PropertyController::class, 'store'])->middleware('can:properties.create');
+    Route::post  ('/properties/upload-deed-image',       [PropertyController::class, 'uploadDeedImage'])->middleware('can:properties.create');
     Route::post  ('/properties/{id}',                    [PropertyController::class, 'update'])->middleware('can:properties.update');
     Route::delete('/properties/{id}',                    [PropertyController::class, 'destroy'])->middleware('can:properties.delete');
     Route::patch ('/properties/{id}/toggle-featured',    [PropertyController::class, 'toggleFeatured'])->middleware('can:properties.update');
@@ -240,6 +269,15 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::get   ('/property/facades',                   [UserFacadeController::class, 'index'])->middleware('can:properties.view');
     // faqs
     Route::get   ('/property-faqs',                               [PropertyController::class, 'faqs']);
+    
+    // Building management routes
+    Route::get   ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'index']);
+    Route::get   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'show']);
+    Route::post  ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'store']);
+    Route::post  ('/buildings/upload-image',            [App\Http\Controllers\Api\BuildingController::class, 'uploadBuildingImage']);
+    Route::post  ('/buildings/upload-deed-image',       [App\Http\Controllers\Api\BuildingController::class, 'uploadDeedImage']);
+    Route::put   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'update']);
+    Route::delete('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'destroy']);
 });
 
 // Content routes

@@ -40,8 +40,8 @@ class RentalService
             ->where('user_id', $ownerId)
             ->when($request->q, fn($q) => $q->where('tenant_full_name', 'like', "%{$request->q}%"))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->when($request->property_number, fn($q) => $q->where('property_number', $request->property_number))
-            ->when($request->property_id, fn($q) => $q->where('property_id', $request->property_id))
+            ->when($request->building, fn($q) => $q->where('building', $request->building))
+            ->when($request->unit_id, fn($q) => $q->where('unit_id', $request->unit_id))
             ->when($request->project_id, fn($q) => $q->where('project_id', $request->project_id))
             ->when($request->paying_plan, fn($q) => $q->where('paying_plan', $request->paying_plan))
             ->when($request->filter_by_month, function($q) use ($request) {
@@ -63,14 +63,27 @@ class RentalService
         // Use the provided userId (which should be the tenant owner's ID)
         // This ensures rentals are created under the correct tenant account
         return DB::transaction(function () use ($userId, $data) {
+            // Extract cost items from data
+            $costItems = $data['cost_items'] ?? [];
+            unset($data['cost_items']);
+
             $rental = RmRental::create(array_merge($data, [
                 'user_id' => $userId,
                 'status' => 'active',
             ]));
 
+            // Create cost items if provided
+            if (!empty($costItems)) {
+                foreach ($costItems as $costItemData) {
+                    $rental->costItems()->create(array_merge($costItemData, [
+                        'user_id' => $userId,
+                    ]));
+                }
+            }
+
             // Update property status based on active rentals
-            if ($rental->property_id) {
-                $property = Property::where('id', $rental->property_id)
+            if ($rental->unit_id) {
+                $property = Property::where('id', $rental->unit_id)
                     ->where('user_id', $userId)
                     ->first();
                 if ($property) {
@@ -79,13 +92,13 @@ class RentalService
             }
 
             $hasEnoughData = $data['move_in_date'] ?? null
-                && $data['rental_period'] ?? null
+                && $data['rental_duration'] ?? null
                 && $data['paying_plan'] ?? null
-                && $data['base_rent_amount'] ?? null;
+                && $data['total_rental_amount'] ?? null;
 
             if ($hasEnoughData) {
-                // Calculate total months based on rental_period and paying_plan
-                $totalMonths = $this->calculateTotalMonths($data['rental_period'], $data['paying_plan']);
+                // Calculate total months based on rental_duration and rental_type
+                $totalMonths = $this->calculateTotalMonthsFromDuration($data['rental_duration'], $data['rental_type']);
                 
                 $contract = RmContract::create([
                     'user_id' => $userId,
@@ -94,7 +107,7 @@ class RentalService
                     'end_date' => Carbon::parse($data['move_in_date'])->addMonths($totalMonths)->subDay(),
                     'status' => 'active',
                     // Snapshot identifiers for audit/history
-                    'property_id' => $rental->property_id,
+                    'property_id' => $rental->unit_id,
                     'project_id' => $rental->project_id,
                     'property_name' => $rental->property_name ?? null,
                     'project_name' => $rental->project_name ?? null,
@@ -111,13 +124,15 @@ class RentalService
                     'contract' => [
                         'id' => $contract->id,
                         'status' => $contract->status,
-                    ]
+                    ],
+                    'cost_items' => $rental->costItems
                 ];
             }
 
             return [
                 'id' => $rental->id,
-                'status' => 'active'
+                'status' => 'active',
+                'cost_items' => $rental->costItems
             ];
         });
     }
@@ -126,7 +141,7 @@ class RentalService
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
 
-        $rental = RmRental::with(['activeContract', 'upcomingInstallments', 'maintenanceOpen'])
+        $rental = RmRental::with(['activeContract', 'upcomingInstallments', 'maintenanceOpen', 'costItems'])
             ->where('user_id', $ownerId)
             ->findOrFail($id);
 
@@ -139,6 +154,21 @@ class RentalService
 
         return DB::transaction(function () use ($ownerId, $id, $data, $regenerate) {
             $rental = RmRental::where('user_id', $ownerId)->findOrFail($id);
+            
+            // Handle cost items update
+            if (isset($data['cost_items']) && is_array($data['cost_items'])) {
+                $costItems = $data['cost_items'];
+                unset($data['cost_items']); // Remove cost items from rental update data
+                
+                // Delete existing cost items and create new ones
+                $rental->costItems()->delete();
+                
+                foreach ($costItems as $costItemData) {
+                    $rental->costItems()->create(array_merge($costItemData, [
+                        'user_id' => $ownerId,
+                    ]));
+                }
+            }
             
             // Handle payment recording if payments are included
             if (isset($data['payments']) && is_array($data['payments'])) {
@@ -167,8 +197,8 @@ class RentalService
             }
 
             // Update property status after rental update
-            if ($rental->property_id) {
-                $property = Property::where('id', $rental->property_id)
+            if ($rental->unit_id) {
+                $property = Property::where('id', $rental->unit_id)
                     ->where('user_id', $ownerId)
                     ->first();
                 if ($property) {
@@ -176,7 +206,7 @@ class RentalService
                 }
             }
 
-            return $rental->fresh();
+            return $rental->fresh(['costItems']);
         });
     }
 
@@ -190,12 +220,12 @@ class RentalService
             throw new \Exception('Cannot delete rental with active contract');
         }
 
-        $propertyId = $rental->property_id;
+        $unitId = $rental->unit_id;
         $rental->delete();
 
         // Update property status after rental deletion
-        if ($propertyId) {
-            $property = Property::where('id', $propertyId)
+        if ($unitId) {
+            $property = Property::where('id', $unitId)
                 ->where('user_id', $ownerId)
                 ->first();
             if ($property) {
@@ -255,10 +285,10 @@ class RentalService
                 'notes' => $rental->notes,
             ],
             'property' => [
-                'id' => $rental->property_id,
+                'id' => $rental->unit_id,
                 'name' => optional($rental->property)->firstContent ? $rental->property->firstContent->title : null,
                 'unit_label' => $rental->unit_label,
-                'property_number' => $rental->property_number,
+                'building' => $rental->building,
                 'project' => [
                     'id' => $rental->project_id,
                     'name' => optional($rental->project)->name,
@@ -329,10 +359,10 @@ class RentalService
                 'payment_status' => $paymentSummary['payment_status'],
             ],
             'property' => [
-                'id' => $rental->property_id,
+                'id' => $rental->unit_id,
                 'name' => optional($rental->property)->firstContent ? $rental->property->firstContent->title : null,
                 'unit_label' => $rental->unit_label,
-                'property_number' => $rental->property_number,
+                'building' => $rental->building,
                 'project' => [
                     'id' => $rental->project_id,
                     'name' => optional($rental->project)->name,
@@ -372,10 +402,12 @@ class RentalService
     private function generateInstallments($userId, $rentalId, $contractId, array $data)
     {
         $plan = $data['paying_plan'];
-        $amount = $data['base_rent_amount'];
+        $totalAmount = $data['total_rental_amount'];
         $start = Carbon::parse($data['move_in_date']);
-        $rentalPeriod = (int) $data['rental_period'];
+        $rentalDuration = (int) $data['rental_duration'];
+        $rentalType = $data['rental_type'];
 
+        // Calculate how many installments based on paying plan
         $chunks = match($plan) {
             'monthly' => 1,
             'quarterly' => 3,
@@ -384,10 +416,14 @@ class RentalService
             default => 1
         };
 
-        $periods = $rentalPeriod; // rental_period is now the number of payment periods
-        $installmentAmount = round($amount * $chunks, 2);
+        // Calculate total months for the rental
+        $totalMonths = $this->calculateTotalMonthsFromDuration($rentalDuration, $rentalType);
+        
+        // Calculate number of installments
+        $numberOfInstallments = intval($totalMonths / $chunks);
+        $installmentAmount = round($totalAmount / $numberOfInstallments, 2);
 
-        for ($i = 0; $i < $periods; $i++) {
+        for ($i = 0; $i < $numberOfInstallments; $i++) {
             RmPaymentInstallment::create([
                 'user_id' => $userId,
                 'rental_id' => $rentalId,
@@ -400,6 +436,20 @@ class RentalService
                 'payment_status' => 'not_due',
             ]);
         }
+    }
+
+    /**
+     * Calculate total months based on rental duration and type
+     */
+    private function calculateTotalMonthsFromDuration($rentalDuration, $rentalType)
+    {
+        if ($rentalType === 'monthly') {
+            return $rentalDuration; // duration is already in months
+        } elseif ($rentalType === 'annual') {
+            return $rentalDuration * 12; // convert years to months
+        }
+        
+        return $rentalDuration; // fallback
     }
 
     public function getCurrentCollections($userId, $rentalId)
@@ -642,7 +692,7 @@ class RentalService
                     'tenant_email' => $rental->tenant_email,
                     'property_address' => $rental->property?->name ?? 'N/A',
                     'unit_label' => $rental->unit_label,
-                    'property_number' => $rental->property_number,
+                    'building' => $rental->building,
                     'contract_number' => $rental->activeContract?->contract_number ?? 'N/A'
                 ],
                 'payment_details' => [
@@ -698,7 +748,7 @@ class RentalService
                 'tenant_email' => $rental->tenant_email,
                 'property_address' => $rental->property?->name ?? 'N/A',
                 'unit_label' => $rental->unit_label,
-                'property_number' => $rental->property_number,
+                'building' => $rental->building,
                 'contract_number' => $rental->activeContract->contract_number
             ],
             'contract' => [
@@ -710,7 +760,7 @@ class RentalService
                 'id' => $rental->property?->id,
                 'name' => $rental->property?->name,
                 'unit_label' => $rental->unit_label,
-                'property_number' => $rental->property_number,
+                'building' => $rental->building,
                 'project' => [
                     'id' => $rental->property?->project?->id,
                     'name' => $rental->property?->project?->name

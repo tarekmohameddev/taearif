@@ -83,20 +83,16 @@ class RentalStoreIntegrationTest extends TestCase
             'tenant_job_title' => 'Software Engineer',
             'tenant_social_status' => 'married',
             'tenant_national_id' => '1234567890',
-            'property_id' => $this->property->id,
+            'unit_id' => $this->property->id,
             'project_id' => $this->project->id,
             'unit_label' => 'A-101',
-            'property_number' => 'PROP-2024-001',
+            'building' => 'PROP-2024-001',
             'move_in_date' => '2024-01-01',
-            'rental_period' => 12,
+            'rental_type' => 'monthly',
+            'rental_duration' => 12,
             'paying_plan' => 'monthly',
-            'base_rent_amount' => 2500.00,
+            'total_rental_amount' => 30000.00,
             'currency' => 'SAR',
-            'deposit_amount' => 2500.00,
-            'platform_fee' => 100.00,
-            'water_fee' => 50.00,
-            'office_commission_type' => 'percentage',
-            'office_commission_value' => 5.0,
             'contract_number' => 'CNT-2024-001',
             'notes' => 'Test rental with complete data for integration testing'
         ];
@@ -127,9 +123,11 @@ class RentalStoreIntegrationTest extends TestCase
             'user_id' => $this->user->id,
             'tenant_full_name' => 'Ahmed Al-Rashid',
             'tenant_phone' => '+966501234567',
-            'property_id' => $this->property->id,
+            'unit_id' => $this->property->id,
             'project_id' => $this->project->id,
-            'base_rent_amount' => 2500.00,
+            'rental_type' => 'monthly',
+            'rental_duration' => 12,
+            'total_rental_amount' => 30000.00,
             'status' => 'active'
         ]);
 
@@ -177,17 +175,14 @@ class RentalStoreIntegrationTest extends TestCase
             'tenant_full_name' => 'Sarah Johnson',
             'tenant_phone' => '+966502345678',
             'tenant_email' => 'sarah.johnson@example.com',
-            'property_id' => $this->property->id,
+            'unit_id' => $this->property->id,
             'project_id' => $this->project->id,
             'move_in_date' => '2024-01-01',
-            'rental_period' => 4, // 4 quarters = 12 months
+            'rental_type' => 'monthly',
+            'rental_duration' => 12, // 12 months
             'paying_plan' => 'quarterly',
-            'base_rent_amount' => 2500.00,
-            'currency' => 'SAR',
-            'platform_fee' => 100.00,
-            'water_fee' => 50.00,
-            'office_commission_type' => 'amount',
-            'office_commission_value' => 500.00
+            'total_rental_amount' => 30000.00,
+            'currency' => 'SAR'
         ];
 
         // Act
@@ -452,7 +447,7 @@ class RentalStoreIntegrationTest extends TestCase
         $rentalData = [
             'tenant_full_name' => 'Full Fee Test',
             'tenant_phone' => '+966501234567',
-            'property_id' => $this->property->id,
+            'unit_id' => $this->property->id,
             'project_id' => $this->project->id,
             'move_in_date' => '2024-01-01',
             'rental_period' => 12,

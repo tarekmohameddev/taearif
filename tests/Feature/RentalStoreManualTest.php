@@ -43,20 +43,16 @@ class RentalStoreManualTest extends TestCase
             'tenant_job_title' => 'Software Engineer',
             'tenant_social_status' => 'married',
             'tenant_national_id' => '1234567890',
-            'property_id' => 1, // Should exist in your database
+            'unit_id' => 1, // Should exist in your database
             'project_id' => 1,  // Should exist in your database
             'unit_label' => 'A-101',
-            'property_number' => 'PROP-2024-001',
+            'building' => 'PROP-2024-001',
             'move_in_date' => '2024-01-01',
-            'rental_period' => 12,
+            'rental_type' => 'monthly',
+            'rental_duration' => 12,
             'paying_plan' => 'monthly',
-            'base_rent_amount' => 2500.00,
+            'total_rental_amount' => 30000.00,
             'currency' => 'SAR',
-            'deposit_amount' => 2500.00,
-            'platform_fee' => 100.00,
-            'water_fee' => 50.00,
-            'office_commission_type' => 'percentage',
-            'office_commission_value' => 5.0,
             'contract_number' => 'CNT-2024-001',
             'notes' => 'Test rental with complete data for integration testing'
         ];
@@ -82,7 +78,7 @@ class RentalStoreManualTest extends TestCase
             'tenant_full_name' => 'Sarah Johnson',
             'tenant_phone' => '+966502345678',
             'tenant_email' => 'sarah.johnson@example.com',
-            'property_id' => 1,
+            'unit_id' => 1,
             'project_id' => 1,
             'move_in_date' => '2024-01-01',
             'rental_period' => 4, // 4 quarters = 12 months

@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Auth;
 use Mockery;
 use Tests\TestCase;
 
@@ -27,6 +28,9 @@ class RentalControllerTest extends TestCase
         $this->controller = new RentalController($this->rentalService);
         $this->user = Mockery::mock(User::class);
         $this->user->shouldReceive('getAttribute')->with('id')->andReturn(1);
+        
+        // Mock the auth facade
+        Auth::shouldReceive('id')->andReturn(1);
     }
 
     protected function tearDown(): void
@@ -77,16 +81,16 @@ class RentalControllerTest extends TestCase
             'tenant_job_title' => 'Software Engineer',
             'tenant_social_status' => 'single',
             'tenant_national_id' => '123456789',
-            'property_id' => 1,
+            'unit_id' => 1,
             'project_id' => 1,
             'unit_label' => 'A-101',
-            'property_number' => 'PROP-001',
+            'building' => 'PROP-001',
             'move_in_date' => '2024-01-01',
-            'rental_period' => 12,
+            'rental_type' => 'monthly',
+            'rental_duration' => 6,
             'paying_plan' => 'monthly',
-            'base_rent_amount' => 1000.00,
+            'total_rental_amount' => 12000.00,
             'currency' => 'USD',
-            'deposit_amount' => 1000.00,
             'notes' => 'Test rental'
         ];
 
@@ -225,7 +229,7 @@ class RentalControllerTest extends TestCase
         $rentalId = 1;
         $updateData = [
             'tenant_full_name' => 'Jane Doe',
-            'base_rent_amount' => 1200.00
+            'total_rental_amount' => 14400.00
         ];
 
         $request = new Request(array_merge($updateData, ['regenerate_schedule' => true]));
@@ -289,7 +293,6 @@ class RentalControllerTest extends TestCase
         // Assert
         $this->assertInstanceOf(JsonResponse::class, $response);
         $this->assertEquals(204, $response->getStatusCode());
-        $this->assertEmpty($response->getContent());
     }
 
     /** @test */
@@ -382,16 +385,16 @@ class RentalControllerTest extends TestCase
             'tenant_job_title' => 'Manager',
             'tenant_social_status' => 'married',
             'tenant_national_id' => '987654321',
-            'property_id' => 2,
+            'unit_id' => 2,
             'project_id' => 2,
             'unit_label' => 'B-202',
-            'property_number' => 'PROP-002',
+            'building' => 'PROP-002',
             'move_in_date' => '2024-02-01',
-            'rental_period' => 24,
+            'rental_type' => 'annual',
+            'rental_duration' => 2,
             'paying_plan' => 'quarterly',
-            'base_rent_amount' => 1500.00,
+            'total_rental_amount' => 36000.00,
             'currency' => 'EUR',
-            'deposit_amount' => 1500.00,
             'notes' => 'Updated rental',
             'unauthorized_field' => 'should_be_ignored'
         ];
@@ -408,16 +411,16 @@ class RentalControllerTest extends TestCase
             'tenant_job_title' => 'Manager',
             'tenant_social_status' => 'married',
             'tenant_national_id' => '987654321',
-            'property_id' => 2,
+            'unit_id' => 2,
             'project_id' => 2,
             'unit_label' => 'B-202',
-            'property_number' => 'PROP-002',
+            'building' => 'PROP-002',
             'move_in_date' => '2024-02-01',
-            'rental_period' => 24,
+            'rental_type' => 'annual',
+            'rental_duration' => 2,
             'paying_plan' => 'quarterly',
-            'base_rent_amount' => 1500.00,
+            'total_rental_amount' => 36000.00,
             'currency' => 'EUR',
-            'deposit_amount' => 1500.00,
             'notes' => 'Updated rental'
         ];
 

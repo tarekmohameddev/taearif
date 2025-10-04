@@ -328,6 +328,10 @@ class PropertyController extends Controller
             ],
             'created_at' => $responseProperty->created_at->toISOString(),
             'updated_at' => $responseProperty->updated_at->toISOString(),
+            'building' => $responseProperty->building,
+            'water_meter_number' => $responseProperty->water_meter_number,
+            'electricity_meter_number' => $responseProperty->electricity_meter_number,
+            'deed_number' => $responseProperty->deed_number,
         ];
 
         TenantActivity::emit($request, 'property.duplicated', 'user_properties', $duplicatedProperty->id, [
@@ -539,6 +543,10 @@ class PropertyController extends Controller
             'category_id' => $property->category_id,
             'size' => $property->size ?? null,
             'faqs' => $property->faqs ?? [],
+            'building' => $property->building,
+            'water_meter_number' => $property->water_meter_number,
+            'electricity_meter_number' => $property->electricity_meter_number,
+            'deed_number' => $property->deed_number,
         ], $characteristics);
 
         return response()->json([
@@ -652,6 +660,10 @@ class PropertyController extends Controller
             'elevator' => 'nullable|integer',
             'private_parking' => 'nullable|integer',
             'size' => 'nullable|integer',
+            'building' => 'nullable|string',
+            'water_meter_number' => 'nullable|string',
+            'electricity_meter_number' => 'nullable|string',
+            'deed_number' => 'nullable|string',
             'video_file' => 'nullable|file', // Video upload now handled separately via VideoUploadController
         ];
 
@@ -702,6 +714,10 @@ class PropertyController extends Controller
                 'state_id',
                 'payment_method',
                 'faqs',
+                'building',
+                'water_meter_number',
+                'electricity_meter_number',
+                'deed_number',
 
                 "facade_id",
                 "length",
@@ -876,6 +892,10 @@ class PropertyController extends Controller
             'video_image' => $responseProperty->video_image ? asset($responseProperty->video_image) : null,
             'virtual_tour' => $responseProperty->virtual_tour,
             'video_url' => $responseProperty->video_url,
+            'building' => $responseProperty->building,
+            'water_meter_number' => $responseProperty->water_meter_number,
+            'electricity_meter_number' => $responseProperty->electricity_meter_number,
+            'deed_number' => $responseProperty->deed_number,
         ];
 
         TenantActivity::emit($request, 'property.created', 'user_properties', $responseProperty->id, null, [
@@ -1015,6 +1035,10 @@ class PropertyController extends Controller
             'size' => 'nullable|numeric',
             'type' => 'nullable',
             'faqs' => 'nullable|array',
+            'building' => 'nullable|string',
+            'water_meter_number' => 'nullable|string',
+            'electricity_meter_number' => 'nullable|string',
+            'deed_number' => 'nullable|string',
             'video_url' => 'nullable|string',// For direct URL or OSS URL
             'virtual_tour' => 'nullable|string',
             'video_file' => 'nullable|file', // Video upload now handled separately via VideoUploadController
@@ -1172,6 +1196,10 @@ class PropertyController extends Controller
             'category_id' => $responseProperty->category_id,
             'size' => $responseProperty->size ?? null,
             'faqs' => $responseProperty->faqs ?? [],
+            'building' => $responseProperty->building,
+            'water_meter_number' => $responseProperty->water_meter_number,
+            'electricity_meter_number' => $responseProperty->electricity_meter_number,
+            'deed_number' => $responseProperty->deed_number,
         ], $characteristics);
 
         TenantActivity::emit($request, 'property.updated', 'user_properties', $property->id, $old ?? null, [
@@ -1277,6 +1305,62 @@ class PropertyController extends Controller
             'message' => 'Property favorite status updated',
             'data' => ['is_favorite' => $isFavorite]
         ]);
+    }
+
+    /**
+     * Upload deed image for property
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function uploadDeedImage(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'deed_image' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120', // 5MB max
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('deed_image');
+            $extension = $file->getClientOriginalExtension();
+            $fileName = 'deed_' . time() . '_' . uniqid() . '.' . $extension;
+            
+            $directory = public_path('assets/img/property/deeds');
+            
+            // Create directory if it doesn't exist
+            if (!is_dir($directory)) {
+                mkdir($directory, 0775, true);
+            }
+            
+            // Move file to directory
+            $file->move($directory, $fileName);
+            
+            // Return the relative path
+            $filePath = 'assets/img/property/deeds/' . $fileName;
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Deed image uploaded successfully',
+                'data' => [
+                    'path' => $filePath,
+                    'url' => asset($filePath),
+                    'filename' => $fileName
+                ]
+            ], 200);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to upload deed image: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     private function getGalleryImages($property)

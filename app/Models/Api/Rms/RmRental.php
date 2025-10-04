@@ -19,11 +19,11 @@ class RmRental extends Model
 
     protected $fillable = [
         'user_id', 
-        'property_id', 
+        'unit_id', 
         'unit_label', 
         'project_id',
         'tenant_full_name', 
-        'property_number', 
+        'building', 
         'tenant_phone', 
         'tenant_email', 
         'tenant_job_title',
@@ -31,14 +31,10 @@ class RmRental extends Model
         'tenant_national_id',
         'base_rent_amount', 
         'currency', 
-        'deposit_amount',
-        'platform_fee',
-        'water_fee',
-        'office_commission_type',
-        'office_commission_value',
-        'office_fee',
-        'contract_number',
+        'rental_type',
+        'rental_duration',
         'total_rental_amount',
+        'contract_number',
         'move_in_date', 
         'paying_plan', 
         'rental_period',
@@ -50,16 +46,17 @@ class RmRental extends Model
 
     protected $casts = [
         'move_in_date' => 'date',
-        'platform_fee' => 'decimal:2',
-        'water_fee' => 'decimal:2',
-        'office_commission_value' => 'decimal:2',
-        'office_fee' => 'decimal:2',
+        'base_rent_amount' => 'decimal:2',
         'total_rental_amount' => 'decimal:2',
+        'rental_duration' => 'integer',
     ];
 
     protected $appends = [
         'next_payment_due_date',
         'next_payment_amount',
+        'base_rent_amount',
+        'total_tenant_costs',
+        'total_owner_costs',
     ];
 
     public function contracts()
@@ -107,9 +104,29 @@ class RmRental extends Model
         return $this->hasMany(RmReminder::class, 'rental_id');
     }
 
+    public function costItems()
+    {
+        return $this->hasMany(RentalCostItem::class, 'rental_id');
+    }
+
+    public function activeCostItems()
+    {
+        return $this->hasMany(RentalCostItem::class, 'rental_id')->active();
+    }
+
+    public function tenantCostItems()
+    {
+        return $this->hasMany(RentalCostItem::class, 'rental_id')->active()->forTenant();
+    }
+
+    public function ownerCostItems()
+    {
+        return $this->hasMany(RentalCostItem::class, 'rental_id')->active()->forOwner();
+    }
+
     public function property()
     {
-        return $this->belongsTo(Property::class, 'property_id');
+        return $this->belongsTo(Property::class, 'unit_id');
     }
 
     public function project()
@@ -149,36 +166,57 @@ class RmRental extends Model
         return $installment?->amount;
     }
 
-    public function getOfficeFeeAttribute()
+    public function getBaseRentAmountAttribute()
     {
-        // If any required field is null, return 0
-        if (is_null($this->office_commission_type) || 
-            is_null($this->office_commission_value) || 
-            is_null($this->rental_period) || 
-            is_null($this->base_rent_amount)) {
+        // Calculate base rent amount based on rental type and duration
+        if (is_null($this->total_rental_amount) || 
+            is_null($this->rental_duration) || 
+            is_null($this->rental_type)) {
             return 0;
         }
 
-        // Calculate based on commission type
-        if ($this->office_commission_type === 'percentage') {
-            return ($this->rental_period * $this->base_rent_amount) * ($this->office_commission_value / 100);
-        } elseif ($this->office_commission_type === 'amount') {
-            return $this->office_commission_value;
+        // Calculate based on rental type
+        if ($this->rental_type === 'monthly') {
+            return $this->total_rental_amount / $this->rental_duration;
+        } elseif ($this->rental_type === 'annual') {
+            return $this->total_rental_amount / $this->rental_duration;
         }
 
         return 0;
     }
 
-    public function getTotalRentalAmountAttribute()
+    public function getTotalTenantCostsAttribute()
     {
-        // If any required field is null, return 0
-        if (is_null($this->base_rent_amount) || 
-            is_null($this->rental_period)) {
-            return 0;
+        // Calculate total costs that tenant needs to pay
+        $totalCosts = 0;
+        
+        foreach ($this->tenantCostItems as $costItem) {
+            if ($costItem->type === 'fixed') {
+                $totalCosts += $costItem->cost;
+            } elseif ($costItem->type === 'percentage') {
+                $baseAmount = $costItem->percentage_of ?? $this->total_rental_amount;
+                $totalCosts += ($baseAmount * $costItem->cost) / 100;
+            }
         }
+        
+        return $totalCosts;
+    }
 
-        // Simple calculation: base_rent_amount × rental_period
-        return $this->base_rent_amount * $this->rental_period;
+    public function getTotalOwnerCostsAttribute()
+    {
+        // Calculate total costs that owner needs to pay
+        $totalCosts = 0;
+        
+        foreach ($this->ownerCostItems as $costItem) {
+            if ($costItem->type === 'fixed') {
+                $totalCosts += $costItem->cost;
+            } elseif ($costItem->type === 'percentage') {
+                $baseAmount = $costItem->percentage_of ?? $this->total_rental_amount;
+                $totalCosts += ($baseAmount * $costItem->cost) / 100;
+            }
+        }
+        
+        return $totalCosts;
     }
 
 }

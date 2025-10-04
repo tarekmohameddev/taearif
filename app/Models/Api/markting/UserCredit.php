@@ -71,10 +71,15 @@ class UserCredit extends Model
 
     /**
      * Check if user is within monthly limit
+     * Monthly limits are disabled - always returns true
      */
     public function isWithinMonthlyLimit($additionalCredits = 0)
     {
-        return ($this->used_credits + $additionalCredits) <= $this->monthly_limit;
+        // Monthly limits disabled - users can use all their credits without restrictions
+        return true;
+        
+        // Original logic (commented out):
+        // return ($this->used_credits + $additionalCredits) <= $this->monthly_limit;
     }
 
     /**
@@ -86,9 +91,10 @@ class UserCredit extends Model
             return false;
         }
 
-        if (!$this->isWithinMonthlyLimit($credits)) {
-            return false;
-        }
+        // Monthly limit check removed - users can use all their credits without monthly restrictions
+        // if (!$this->isWithinMonthlyLimit($credits)) {
+        //     return false;
+        // }
 
         $this->increment('used_credits', $credits);
 
@@ -163,7 +169,7 @@ class UserCredit extends Model
                 'user_id' => $userId,
                 'total_credits' => 0,
                 'used_credits' => 0,
-                'monthly_limit' => 5000,
+                'monthly_limit' => 2147483647, // Maximum safe integer value (effectively unlimited)
                 'average_cost_per_credit' => 0.05,
                 'reset_date' => now()->addMonth(),
                 'is_active' => true,

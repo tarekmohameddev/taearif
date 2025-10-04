@@ -25,8 +25,8 @@ class RentalController extends Controller
             'sort_order' => 'nullable|string|in:asc,desc',
             'q' => 'nullable|string|max:255',
             'status' => 'nullable|string|in:active,inactive,terminated',
-            'property_number' => 'nullable|string|max:100',
-            'property_id' => 'nullable|integer',
+            'building' => 'nullable|string|max:100',
+            'unit_id' => 'nullable|integer',
             'project_id' => 'nullable|integer',
             'paying_plan' => 'nullable|string|in:monthly,quarterly,semi_annual,annual',
             'filter_by_month' => 'nullable|integer|min:1|max:12',
@@ -64,22 +64,26 @@ class RentalController extends Controller
             'tenant_job_title' => 'nullable|string|max:120',
             'tenant_social_status' => 'nullable|in:single,married,divorced,widowed,other',
             'tenant_national_id' => 'nullable|string|max:20',
-            'property_id' => 'nullable|integer',
+            'unit_id' => 'nullable|integer',
             'project_id' => 'nullable|integer',
             'unit_label' => 'nullable|string|max:100',
-            'property_number' => 'nullable|string|max:100',
+            'building' => 'nullable|string|max:100',
             'move_in_date' => 'nullable|date',
-            'rental_period' => 'nullable|integer',
-            'paying_plan' => 'nullable|in:monthly,quarterly,semi_annual,annual',
-            'base_rent_amount' => 'nullable|numeric',
+            'rental_type' => 'required|in:monthly,annual',
+            'rental_duration' => 'required|integer|min:1',
+            'paying_plan' => 'required|in:monthly,quarterly,semi_annual,annual',
+            'total_rental_amount' => 'required|numeric|min:0',
             'currency' => 'nullable|string|size:3',
-            'deposit_amount' => 'nullable|numeric',
-            'platform_fee' => 'nullable|numeric|min:0',
-            'water_fee' => 'nullable|numeric|min:0',
-            'office_commission_type' => 'nullable|in:percentage,amount',
-            'office_commission_value' => 'nullable|numeric|min:0',
             'contract_number' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
+            'cost_items' => 'nullable|array',
+            'cost_items.*.name' => 'required|string|max:255',
+            'cost_items.*.cost' => 'required|numeric|min:0',
+            'cost_items.*.type' => 'required|in:fixed,percentage',
+            'cost_items.*.payer' => 'required|in:owner,tenant',
+            'cost_items.*.payment_frequency' => 'required|in:one_time,per_installment',
+            'cost_items.*.percentage_of' => 'nullable|numeric|min:0',
+            'cost_items.*.description' => 'nullable|string',
         ]);
 
         $rental = $this->rentalService->createRental(auth()->id(), $data);
@@ -97,10 +101,9 @@ class RentalController extends Controller
     {
         $data = $request->only([
             'tenant_full_name', 'tenant_phone', 'tenant_email', 'tenant_job_title',
-            'tenant_social_status', 'tenant_national_id', 'property_id', 'project_id', 'unit_label', 'property_number',
-            'move_in_date', 'rental_period', 'paying_plan',
-            'base_rent_amount', 'currency', 'deposit_amount', 'platform_fee', 'water_fee', 
-            'office_commission_type', 'office_commission_value', 'contract_number', 'notes'
+            'tenant_social_status', 'tenant_national_id', 'unit_id', 'project_id', 'unit_label', 'building',
+            'move_in_date', 'rental_type', 'rental_duration', 'paying_plan',
+            'total_rental_amount', 'currency', 'contract_number', 'notes', 'cost_items'
         ]);
 
         // Handle payments if included in request
