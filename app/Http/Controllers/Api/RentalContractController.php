@@ -434,8 +434,10 @@ class RentalContractController extends Controller
             $userId = Auth::id();
             $perPage = $request->get('per_page', 15);
             $search = $request->get('search');
+            $buildingId = $request->get('building_id');
+            $contractStatus = $request->get('contract_status', 'active'); // Default to active
 
-            // Get active contracts with their rental information
+            // Get contracts with their rental information
             $contracts = RmContract::with([
                 'rental:id,contract_number,tenant_full_name,tenant_phone,unit_label,unit_id,project_id,base_rent_amount,paying_plan',
                 'rental.property:id,building_id',
@@ -445,13 +447,18 @@ class RentalContractController extends Controller
                 }
             ])
             ->where('user_id', $userId)
-            ->where('status', 'active')
+            ->where('status', $contractStatus)
             ->whereHas('rental')
             ->when($search, function($query, $search) {
                 $query->whereHas('rental', function($q) use ($search) {
                     $q->where('contract_number', 'like', "%{$search}%")
                       ->orWhere('tenant_full_name', 'like', "%{$search}%")
                       ->orWhere('tenant_phone', 'like', "%{$search}%");
+                });
+            })
+            ->when($buildingId, function($query, $buildingId) {
+                $query->whereHas('rental.property', function($q) use ($buildingId) {
+                    $q->where('building_id', $buildingId);
                 });
             })
             ->orderBy('created_at', 'desc')
@@ -557,5 +564,142 @@ class RentalContractController extends Controller
         }
         
         return 'green'; // Default to green if no issues
+    }
+
+    /**
+     * Get contracts with advanced filtering options.
+     * Separate function for contract filtering with multiple filter options.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function filterContracts(Request $request): JsonResponse
+    {
+        try {
+            $userId = Auth::id();
+            $perPage = $request->get('per_page', 15);
+            $search = $request->get('search');
+            $buildingId = $request->get('building_id');
+            $contractStatus = $request->get('contract_status');
+            $colorStatus = $request->get('color_status'); // red, green, yellow
+            $dateFrom = $request->get('date_from');
+            $dateTo = $request->get('date_to');
+
+            // Build the query
+            $query = RmContract::with([
+                'rental:id,contract_number,tenant_full_name,tenant_phone,unit_label,unit_id,project_id,base_rent_amount,paying_plan',
+                'rental.property:id,building_id',
+                'rental.property.building:id,name',
+                'installments' => function($query) {
+                    $query->orderBy('due_date', 'desc');
+                }
+            ])
+            ->where('user_id', $userId)
+            ->whereHas('rental');
+
+            // Apply filters
+            if ($contractStatus) {
+                $query->where('status', $contractStatus);
+            }
+
+            if ($buildingId) {
+                $query->whereHas('rental.property', function($q) use ($buildingId) {
+                    $q->where('building_id', $buildingId);
+                });
+            }
+
+            if ($search) {
+                $query->whereHas('rental', function($q) use ($search) {
+                    $q->where('contract_number', 'like', "%{$search}%")
+                      ->orWhere('tenant_full_name', 'like', "%{$search}%")
+                      ->orWhere('tenant_phone', 'like', "%{$search}%");
+                });
+            }
+
+            if ($dateFrom) {
+                $query->where('start_date', '>=', $dateFrom);
+            }
+
+            if ($dateTo) {
+                $query->where('end_date', '<=', $dateTo);
+            }
+
+            $contracts = $query->orderBy('created_at', 'desc')->paginate($perPage);
+
+            $contractsData = $contracts->map(function ($contract) {
+                $rental = $contract->rental;
+                $installments = $contract->installments;
+                
+                // Calculate color status
+                $calculatedColorStatus = $this->calculateContractColorStatus($installments);
+                
+                // Get next payment due date
+                $nextPayment = $installments->where('status', 'pending')->sortBy('due_date')->first();
+                
+                return [
+                    'contract_id' => $contract->id,
+                    'contract_number' => $rental->contract_number ?? 'N/A',
+                    'contract_status' => $contract->status,
+                    'tenant_data' => [
+                        'name' => $rental->tenant_full_name ?? 'N/A',
+                        'phone' => $rental->tenant_phone ?? 'N/A',
+                    ],
+                    'unit_data' => [
+                        'unit_label' => $rental->unit_label ?? 'N/A',
+                        'property_id' => $rental->unit_id ?? 'N/A',
+                        'building_name' => $rental->property->building->name ?? 'N/A',
+                        'project_id' => $rental->project_id ?? 'N/A',
+                    ],
+                    'rental_amount' => $rental->base_rent_amount ?? 0,
+                    'rental_period' => [
+                        'start_date' => $contract->start_date->format('Y-m-d'),
+                        'end_date' => $contract->end_date->format('Y-m-d'),
+                    ],
+                    'building' => $rental->property->building->name ?? 'N/A',
+                    'rental_method' => $rental->paying_plan ?? 'N/A',
+                    'color_status' => $calculatedColorStatus,
+                    'next_payment_due' => $nextPayment ? $nextPayment->due_date->format('Y-m-d') : null,
+                    'days_until_next_payment' => $nextPayment ? now()->diffInDays($nextPayment->due_date, false) : null,
+                ];
+            });
+
+            // Apply color status filter if provided
+            if ($colorStatus) {
+                $contractsData = $contractsData->where('color_status', $colorStatus);
+            }
+
+            return response()->json([
+                'status' => true,
+                'data' => $contractsData->values(),
+                'pagination' => [
+                    'current_page' => $contracts->currentPage(),
+                    'last_page' => $contracts->lastPage(),
+                    'per_page' => $contracts->perPage(),
+                    'total' => $contracts->total(),
+                    'from' => $contracts->firstItem(),
+                    'to' => $contracts->lastItem(),
+                ],
+                'summary' => [
+                    'total_contracts' => $contracts->total(),
+                    'red_contracts' => $contractsData->where('color_status', 'red')->count(),
+                    'green_contracts' => $contractsData->where('color_status', 'green')->count(),
+                    'yellow_contracts' => $contractsData->where('color_status', 'yellow')->count(),
+                ],
+                'filters_applied' => [
+                    'contract_status' => $contractStatus,
+                    'building_id' => $buildingId,
+                    'color_status' => $colorStatus,
+                    'search' => $search,
+                    'date_from' => $dateFrom,
+                    'date_to' => $dateTo,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error filtering contracts: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

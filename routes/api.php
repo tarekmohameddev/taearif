@@ -228,6 +228,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/rental-contracts/statistics', [RentalContractController::class, 'statistics']); // Get rental contract statistics
     Route::get('/rental-contracts/daily-follow-up', [RentalContractController::class, 'dailyFollowUp']); // Daily follow-up for rental contracts
     Route::get('/rental-contracts/all-contracts', [RentalContractController::class, 'allContracts']); // All contracts with color status
+    Route::get('/rental-contracts/filter', [RentalContractController::class, 'filterContracts']); // Advanced contract filtering
     Route::get('/rental-contracts/rental/{rentalId}', [RentalContractController::class, 'getByRental']); // Get contracts by rental
     Route::post('/rental-contracts', [RentalContractController::class, 'store']); // Create a rental contract
     Route::get('/rental-contracts/{id}', [RentalContractController::class, 'show']); // Get a single rental contract
