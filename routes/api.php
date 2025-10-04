@@ -232,6 +232,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::get   ('/properties',                         [PropertyController::class, 'index'])->middleware('can:properties.view');
     Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
     Route::post  ('/properties',                         [PropertyController::class, 'store'])->middleware('can:properties.create');
+    Route::post  ('/properties/upload-deed-image',       [PropertyController::class, 'uploadDeedImage'])->middleware('can:properties.create');
     Route::post  ('/properties/{id}',                    [PropertyController::class, 'update'])->middleware('can:properties.update');
     Route::delete('/properties/{id}',                    [PropertyController::class, 'destroy'])->middleware('can:properties.delete');
     Route::patch ('/properties/{id}/toggle-featured',    [PropertyController::class, 'toggleFeatured'])->middleware('can:properties.update');
