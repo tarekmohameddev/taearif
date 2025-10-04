@@ -241,6 +241,15 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::get   ('/property/facades',                   [UserFacadeController::class, 'index'])->middleware('can:properties.view');
     // faqs
     Route::get   ('/property-faqs',                               [PropertyController::class, 'faqs']);
+    
+    // Building management routes
+    Route::get   ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'index']);
+    Route::get   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'show']);
+    Route::post  ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'store']);
+    Route::post  ('/buildings/upload-image',            [App\Http\Controllers\Api\BuildingController::class, 'uploadBuildingImage']);
+    Route::post  ('/buildings/upload-deed-image',       [App\Http\Controllers\Api\BuildingController::class, 'uploadDeedImage']);
+    Route::put   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'update']);
+    Route::delete('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'destroy']);
 });
 
 // Content routes

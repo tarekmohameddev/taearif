@@ -53,6 +53,7 @@ class Property extends Model
         'latitude',
         'longitude',
         'project_id',
+        'building_id',
         'building',
         'water_meter_number',
         'electricity_meter_number',
@@ -236,6 +237,11 @@ class Property extends Model
     public function project()
     {
         return $this->belongsTo(Project::class, 'project_id');
+    }
+
+    public function building()
+    {
+        return $this->belongsTo(\App\Models\Building::class, 'building_id');
     }
 
     public function rentals()
