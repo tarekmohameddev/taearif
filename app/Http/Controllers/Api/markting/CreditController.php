@@ -16,6 +16,46 @@ use Illuminate\Support\Facades\DB;
 class CreditController extends BaseApiController
 {
     /**
+     * Get user's language preference
+     */
+    private function getUserLocale(Request $request): string
+    {
+        // Check for language in request header
+        $acceptLanguage = $request->header('Accept-Language');
+        if ($acceptLanguage && str_contains($acceptLanguage, 'en')) {
+            return 'en';
+        }
+        
+        // Check for language in request parameters
+        if ($request->has('lang') && $request->get('lang') === 'en') {
+            return 'en';
+        }
+        
+        // Check user's saved language preference if available
+        $user = Auth::user();
+        if ($user && isset($user->language) && $user->language === 'en') {
+            return 'en';
+        }
+        
+        // Default to Arabic
+        return 'ar';
+    }
+
+    /**
+     * Get localized purchase description
+     */
+    private function getPurchaseDescription($package, $locale = 'en'): string
+    {
+        $packageName = $package->getLocalizedName($locale);
+        
+        if ($locale === 'ar') {
+            return "شراء باقة {$packageName}";
+        }
+        
+        return "Purchase of {$packageName} package";
+    }
+
+    /**
      * Get user's current credit balance and statistics
      */
     public function getBalance(): JsonResponse
@@ -101,6 +141,9 @@ class CreditController extends BaseApiController
             DB::beginTransaction();
 
             try {
+                // Get user's language preference
+                $locale = $this->getUserLocale($request);
+                
                 // Create pending transaction
                 $transaction = CreditTransaction::create([
                     'user_id' => Auth::id(),
@@ -112,7 +155,7 @@ class CreditController extends BaseApiController
                     'payment_method' => $request->payment_method,
                     'status' => 'pending',
                     'reference_number' => CreditTransaction::generateReferenceNumber(),
-                    'description' => "Purchase of {$package->name} package",
+                    'description' => $this->getPurchaseDescription($package, $locale),
                     'metadata' => [
                         'package_name' => $package->name,
                         'original_price' => $package->price,
@@ -162,7 +205,7 @@ class CreditController extends BaseApiController
                         ]);
 
                         // Add credits to user
-                        $userCredit->addCredits($package->credits, $package->id, "Purchase of {$package->name} package");
+                        $userCredit->addCredits($package->credits, $package->id, $this->getPurchaseDescription($package, $locale));
 
                         DB::commit();
 
