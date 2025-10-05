@@ -659,6 +659,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
             Route::get('channels/{id}/settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getMarketingSettings']);
             Route::put('channels/{id}/settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'updateMarketingSettings']);
             Route::patch('channels/{id}/system-integrations', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'updateSystemIntegrationSettings']);
+            // i want to return for each channel calc how much credits used and how much messages sent all channels return it as object
+            Route::get('channels/usage', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getUsage']);
         });
 
     // Marketing Webhooks Routes (no auth required for webhooks)

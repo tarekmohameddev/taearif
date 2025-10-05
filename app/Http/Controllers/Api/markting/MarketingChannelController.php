@@ -1026,4 +1026,28 @@ class MarketingChannelController extends BaseApiController
             return $this->fail('Failed to update system integration settings: ' . $e->getMessage());
         }
     }
+
+
+    public function getUsage(): JsonResponse
+    {
+        try {
+            $usage = CreditController::getUsage(Auth::id());
+            
+            // Format the usage data for each channel
+            $formattedUsage = $usage->map(function ($usage) {
+                return [
+                    'channel_id' => $usage->channel_id,
+                    'channel_name' => $usage->channel_name,
+                    'channel_type' => $usage->channel_type,
+                    'credits_used' => $usage->credits_used,
+                    'messages_sent' => $usage->messages_sent,
+                ];
+            });
+            
+            // Return all channels usage as an object/array
+            return $this->ok($formattedUsage->all(), 'Usage retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->fail('Failed to retrieve usage: ' . $e->getMessage());
+        }
+    }
 }
