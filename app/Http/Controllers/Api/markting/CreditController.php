@@ -674,6 +674,45 @@ class CreditController extends BaseApiController
     }
 
     /**
+     * Get usage statistics for all marketing channels
+     */
+    public static function getUsage($userId)
+    {
+        try {
+            // Get all marketing channels for the user
+            $channels = \App\Models\Api\markting\MarketingChannel::where('user_id', $userId)
+                ->where('is_connected', true)
+                ->get();
+
+            // Get pricing information for each channel type
+            $pricing = \App\Models\Api\markting\MarketingChannelPricing::where('is_active', true)
+                ->get()
+                ->keyBy('channel_type');
+
+            $usage = $channels->map(function ($channel) use ($pricing) {
+                // Get credits per message for this channel type
+                $creditsPerMessage = $pricing->get($channel->type)?->credits_per_message ?? 1;
+                
+                // Calculate credits used based on sent messages
+                $creditsUsed = $channel->sent_messages_count * $creditsPerMessage;
+
+                return (object) [
+                    'channel_id' => $channel->id,
+                    'channel_name' => $channel->name,
+                    'channel_type' => $channel->type,
+                    'credits_used' => $creditsUsed,
+                    'messages_sent' => $channel->sent_messages_count,
+                ];
+            });
+
+            return $usage;
+
+        } catch (\Exception $e) {
+            return collect([]);
+        }
+    }
+
+    /**
      * Use credits (called by marketing channels when sending messages)
      */
     public static function useCredits($userId, $credits, $description = null, $metadata = [])
