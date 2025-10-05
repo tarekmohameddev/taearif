@@ -1620,4 +1620,111 @@ class PropertyController extends Controller
         ], 200);
     }
 
+    /**
+     * Get available units (units without active or draft rentals)
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function availableUnits(Request $request): JsonResponse
+    {
+        try {
+            $userId = auth()->user() ? auth()->user()->tenantOwnerId() : auth()->id();
+            
+            // Validate request parameters
+            $request->validate([
+                'project_id' => 'nullable|integer',
+                'building_id' => 'nullable|integer',
+                'per_page' => 'nullable|integer|min:1|max:100',
+                'search' => 'nullable|string|max:255',
+            ]);
+
+            $perPage = $request->get('per_page', 50);
+            $search = $request->get('search');
+            $projectId = $request->get('project_id');
+            $buildingId = $request->get('building_id');
+
+            // Get properties (units) that don't have active or draft rentals
+            $query = Property::with(['project.contents', 'building:id,name', 'contents'])
+                ->where('user_id', $userId)
+                ->whereDoesntHave('rentals', function ($q) {
+                    $q->whereIn('status', ['active', 'draft']);
+                })
+                ->where('property_status', '!=', 'rented');
+
+            // Apply filters
+            if ($projectId) {
+                $query->where('project_id', $projectId);
+            }
+
+            if ($buildingId) {
+                $query->where('building_id', $buildingId);
+            }
+
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('contents', function ($contentQuery) use ($search) {
+                        $contentQuery->where('title', 'like', "%{$search}%");
+                    });
+                });
+            }
+
+            $properties = $query->orderBy('created_at', 'desc')->paginate($perPage);
+
+            // Format response
+            $formattedProperties = $properties->map(function ($property) {
+                $content = $property->contents->first();
+                $projectContent = optional($property->project)->contents->first();
+                
+                // Get building name directly from database to avoid relationship issues
+                $buildingName = 'N/A';
+                if ($property->building_id) {
+                    $building = \App\Models\Building::find($property->building_id);
+                    $buildingName = $building ? $building->name : 'Unknown Building';
+                }
+                
+                return [
+                    'id' => $property->id,
+                    'title' => $content->title ?? 'N/A',
+                    'building' => [
+                        'id' => $property->building_id,
+                        'name' => $buildingName,
+                    ],
+                    'project' => [
+                        'id' => $property->project_id,
+                        'name' => $projectContent->title ?? 'N/A',
+                    ],
+                    'property_status' => $property->property_status,
+                    'is_available' => true,
+                ];
+            });
+
+            return response()->json([
+                'status' => true,
+                'data' => $formattedProperties,
+                'pagination' => [
+                    'current_page' => $properties->currentPage(),
+                    'last_page' => $properties->lastPage(),
+                    'per_page' => $properties->perPage(),
+                    'total' => $properties->total(),
+                    'from' => $properties->firstItem(),
+                    'to' => $properties->lastItem(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching available units', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Error fetching available units',
+                'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
+            ], 500);
+        }
+    }
+
 }

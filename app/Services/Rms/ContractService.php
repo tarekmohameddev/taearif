@@ -15,6 +15,16 @@ class ContractService
     {
         $rental = RmRental::where('id', $rentalId)->where('user_id', $userId)->firstOrFail();
 
+        // Check if rental already has an active or pending contract
+        $hasActiveContract = RmContract::where('rental_id', $rentalId)
+            ->where('user_id', $userId)
+            ->whereIn('status', ['active', 'pending'])
+            ->exists();
+        
+        if ($hasActiveContract) {
+            throw new \Exception('This rental already has an active or pending contract. Please end the existing contract before creating a new one.');
+        }
+
         $this->validateNoOverlap($rentalId, $data['start_date'], $data['end_date'], $userId);
 
         return DB::transaction(function () use ($data, $userId, $rental) {

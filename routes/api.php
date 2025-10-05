@@ -260,6 +260,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::get   ('/properties/categories',              [PropertyController::class, 'properties_categories']);
 
     Route::get   ('/properties',                         [PropertyController::class, 'index'])->middleware('can:properties.view');
+    Route::get   ('/properties/available-units',         [PropertyController::class, 'availableUnits'])->middleware('can:properties.view');
     Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
     Route::post  ('/properties',                         [PropertyController::class, 'store'])->middleware('can:properties.create');
     Route::post  ('/properties/upload-deed-image',       [PropertyController::class, 'uploadDeedImage'])->middleware('can:properties.create');
@@ -512,7 +513,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('rentals/upload-receipt-image', [RentalController::class, 'uploadReceiptImage']);
 
         Route::patch('rentals/{id}', [RentalController::class, 'update']);
+        Route::patch('rentals/{id}/status', [RentalController::class, 'updateStatus']);
         Route::delete('rentals/{id}', [RentalController::class, 'destroy']);
+        Route::post('rentals/{id}/end-contract', [RentalController::class, 'endContract']);
 
         // Expenses
         Route::post('expenses/upload-image', [ExpenseController::class, 'uploadImage']);

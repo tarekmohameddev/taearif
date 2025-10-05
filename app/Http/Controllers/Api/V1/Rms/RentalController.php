@@ -258,6 +258,98 @@ class RentalController extends Controller
     }
 
     /**
+     * Update rental status with validation
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        try {
+            $data = $request->validate([
+                'status' => 'required|string|in:draft,active,ended,cancelled',
+                'notes' => 'nullable|string|max:500'
+            ]);
+
+            $rental = $this->rentalService->updateRentalStatus(auth()->id(), $id, $data);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Rental status updated successfully',
+                'data' => $rental
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Rental not found',
+                'error' => $e->getMessage()
+            ], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to update rental status',
+                'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
+            ], 500);
+        }
+    }
+
+    /**
+     * End rental contract by setting end date and updating status
+     */
+    public function endContract(Request $request, $id)
+    {
+        try {
+            $data = $request->validate([
+                'end_date' => 'required|date|after_or_equal:today',
+                'termination_reason' => 'nullable|string|max:255',
+                'notes' => 'nullable|string|max:500'
+            ]);
+
+            $rental = $this->rentalService->endRentalContract(auth()->id(), $id, $data);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Rental contract ended successfully',
+                'data' => $rental
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Rental contract not found',
+                'error' => $e->getMessage()
+            ], 404);
+
+        } catch (\Exception $e) {
+            Log::error('End rental contract failed', [
+                'user_id' => auth()->id(),
+                'rental_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to end rental contract',
+                'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
+            ], 500);
+        }
+    }
+
+    /**
      * Upload receipt image for payment
      */
     public function uploadReceiptImage(Request $request)

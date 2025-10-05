@@ -3,6 +3,7 @@
 namespace App\Models\User\RealestateManagement;
 
 use App\Models\User;
+use App\Models\Building;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User\RealestateManagement\Project;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -54,7 +55,6 @@ class Property extends Model
         'longitude',
         'project_id',
         'building_id',
-        'building',
         'water_meter_number',
         'electricity_meter_number',
         'deed_number',
@@ -241,7 +241,7 @@ class Property extends Model
 
     public function building()
     {
-        return $this->belongsTo(\App\Models\Building::class, 'building_id');
+        return $this->belongsTo(Building::class, 'building_id');
     }
 
     public function rentals()
@@ -251,7 +251,7 @@ class Property extends Model
 
     public function activeRentals()
     {
-        return $this->hasMany(\App\Models\Api\Rms\RmRental::class, 'unit_id')->where('status', 'active');
+        return $this->hasMany(\App\Models\Api\Rms\RmRental::class, 'unit_id')->whereIn('status', ['active', 'draft']);
     }
 
     public function updatePropertyStatus()
