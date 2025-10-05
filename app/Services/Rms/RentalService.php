@@ -238,7 +238,7 @@ class RentalService
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
 
-        $rental = RmRental::with(['property.contents', 'project', 'contracts', 'installments'])
+        $rental = RmRental::with(['property.contents', 'project', 'contracts', 'installments', 'activeExpenses'])
             ->where('user_id', $ownerId)
             ->findOrFail($rentalId);
 
@@ -256,6 +256,30 @@ class RentalService
                 'payment_status' => $i->payment_status,
                 'reference' => $i->reference,
                 'paid_at' => $i->paid_at,
+            ];
+        });
+
+        // Get expenses for the rental
+        $expenses = $rental->activeExpenses->map(function ($expense) use ($rental) {
+            // Use the actual base_rent_amount column value, not the accessor
+            $baseRentAmount = $rental->getAttributes()['base_rent_amount'] ?? 0;
+            $calculatedAmount = $expense->amount_type === 'percentage' 
+                ? ($baseRentAmount * $expense->amount_value) / 100
+                : $expense->amount_value;
+                
+            return [
+                'id' => $expense->id,
+                'expense_name' => $expense->expense_name,
+                'image_path' => $expense->image_path,
+                'image_url' => $expense->image_url,
+                'amount_type' => $expense->amount_type,
+                'amount_value' => (float) $expense->amount_value,
+                'calculated_amount' => (float) $calculatedAmount,
+                'cost_center' => $expense->cost_center,
+                'is_active' => $expense->is_active,
+                'can_be_modified' => $expense->canBeModified(),
+                'created_at' => $expense->created_at,
+                'updated_at' => $expense->updated_at,
             ];
         });
 
@@ -287,7 +311,6 @@ class RentalService
             'property' => [
                 'id' => $rental->unit_id,
                 'name' => optional($rental->property)->firstContent ? $rental->property->firstContent->title : null,
-                'unit_label' => $rental->unit_label,
                 'building' => $rental->building,
                 'project' => [
                     'id' => $rental->project_id,
@@ -304,6 +327,7 @@ class RentalService
             'payment_details' => [
                 'items' => $payments,
             ],
+            'expenses' => $expenses,
         ];
     }
 
@@ -361,7 +385,6 @@ class RentalService
             'property' => [
                 'id' => $rental->unit_id,
                 'name' => optional($rental->property)->firstContent ? $rental->property->firstContent->title : null,
-                'unit_label' => $rental->unit_label,
                 'building' => $rental->building,
                 'project' => [
                     'id' => $rental->project_id,
@@ -691,7 +714,6 @@ class RentalService
                     'tenant_phone' => $rental->tenant_phone,
                     'tenant_email' => $rental->tenant_email,
                     'property_address' => $rental->property?->name ?? 'N/A',
-                    'unit_label' => $rental->unit_label,
                     'building' => $rental->building,
                     'contract_number' => $rental->activeContract?->contract_number ?? 'N/A'
                 ],
@@ -747,7 +769,6 @@ class RentalService
                 'tenant_phone' => $rental->tenant_phone,
                 'tenant_email' => $rental->tenant_email,
                 'property_address' => $rental->property?->name ?? 'N/A',
-                'unit_label' => $rental->unit_label,
                 'building' => $rental->building,
                 'contract_number' => $rental->activeContract->contract_number
             ],
@@ -759,7 +780,6 @@ class RentalService
             'property' => [
                 'id' => $rental->property?->id,
                 'name' => $rental->property?->name,
-                'unit_label' => $rental->unit_label,
                 'building' => $rental->building,
                 'project' => [
                     'id' => $rental->property?->project?->id,

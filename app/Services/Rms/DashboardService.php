@@ -76,7 +76,6 @@ class DashboardService
                     'property' => [
                         'id' => $rental->property_id,
                         'name' => optional($rental->property)->firstContent ? $rental->property->firstContent->title : null,
-                        'unit_label' => $rental->unit_label,
                     ],
                     'contract' => [
                         'id' => optional($rental->activeContract)->id,
@@ -113,7 +112,6 @@ class DashboardService
                         'property' => [
                             'id' => optional($contract->rental)->property_id,
                             'name' => optional($contract->rental->property)->firstContent ? $contract->rental->property->firstContent->title : null,
-                            'unit_label' => optional($contract->rental)->unit_label,
                         ],
                     ],
                 ];
@@ -284,7 +282,6 @@ class DashboardService
                         'property' => [
                             'id' => optional($rental)->property_id,
                             'name' => optional($rental->property)->firstContent ? $rental->property->firstContent->title : null,
-                            'unit_label' => optional($rental)->unit_label,
                         ],
                     ],
                 ];
@@ -314,7 +311,6 @@ class DashboardService
                         'property' => [
                             'id' => optional($rental)->property_id,
                             'name' => optional($rental->property)->firstContent ? $rental->property->firstContent->title : null,
-                            'unit_label' => optional($rental)->unit_label,
                         ],
                     ],
                 ];

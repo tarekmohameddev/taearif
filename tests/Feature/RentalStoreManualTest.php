@@ -45,7 +45,6 @@ class RentalStoreManualTest extends TestCase
             'tenant_national_id' => '1234567890',
             'unit_id' => 1, // Should exist in your database
             'project_id' => 1,  // Should exist in your database
-            'unit_label' => 'A-101',
             'building' => 'PROP-2024-001',
             'move_in_date' => '2024-01-01',
             'rental_type' => 'monthly',

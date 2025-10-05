@@ -96,6 +96,7 @@ use App\Http\Controllers\Api\V1\Rms\{
     MaintenanceController,
     ReminderController,
     RmsDashboardController,
+    ExpenseController,
 };
 use App\Http\Controllers\Api\V1\TenantWebsite\{
     GetTenantController,
@@ -506,9 +507,19 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         // get and post payment collection
         Route::get('rentals/{id}/payment-collection', [RentalController::class, 'paymentCollection']);
         Route::post('rentals/{id}/collect-payment', [RentalController::class, 'collectPayment']);
+        
+        // Upload receipt image
+        Route::post('rentals/upload-receipt-image', [RentalController::class, 'uploadReceiptImage']);
 
         Route::patch('rentals/{id}', [RentalController::class, 'update']);
         Route::delete('rentals/{id}', [RentalController::class, 'destroy']);
+
+        // Expenses
+        Route::post('expenses/upload-image', [ExpenseController::class, 'uploadImage']);
+        Route::get('rentals/{rentalId}/expenses', [ExpenseController::class, 'index']);
+        Route::post('rentals/{rentalId}/expenses', [ExpenseController::class, 'store']);
+        // Route::patch('rentals/{rentalId}/expenses/{expenseId}', [ExpenseController::class, 'update']);
+        Route::delete('rentals/{rentalId}/expenses/{expenseId}', [ExpenseController::class, 'destroy']);
 
         // Contracts
         Route::get('rentals/{rentalId}/contracts', [ContractController::class, 'listByRental']);

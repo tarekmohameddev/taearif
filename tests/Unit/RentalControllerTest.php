@@ -83,7 +83,6 @@ class RentalControllerTest extends TestCase
             'tenant_national_id' => '123456789',
             'unit_id' => 1,
             'project_id' => 1,
-            'unit_label' => 'A-101',
             'building' => 'PROP-001',
             'move_in_date' => '2024-01-01',
             'rental_type' => 'monthly',
@@ -326,7 +325,6 @@ class RentalControllerTest extends TestCase
             'property' => [
                 'id' => 1,
                 'name' => 'Test Property',
-                'unit_label' => 'A-101'
             ],
             'contract' => [
                 'id' => 1,
@@ -387,7 +385,6 @@ class RentalControllerTest extends TestCase
             'tenant_national_id' => '987654321',
             'unit_id' => 2,
             'project_id' => 2,
-            'unit_label' => 'B-202',
             'building' => 'PROP-002',
             'move_in_date' => '2024-02-01',
             'rental_type' => 'annual',
@@ -413,7 +410,6 @@ class RentalControllerTest extends TestCase
             'tenant_national_id' => '987654321',
             'unit_id' => 2,
             'project_id' => 2,
-            'unit_label' => 'B-202',
             'building' => 'PROP-002',
             'move_in_date' => '2024-02-01',
             'rental_type' => 'annual',

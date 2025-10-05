@@ -85,7 +85,6 @@ class RentalStoreIntegrationTest extends TestCase
             'tenant_national_id' => '1234567890',
             'unit_id' => $this->property->id,
             'project_id' => $this->project->id,
-            'unit_label' => 'A-101',
             'building' => 'PROP-2024-001',
             'move_in_date' => '2024-01-01',
             'rental_type' => 'monthly',

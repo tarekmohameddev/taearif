@@ -149,7 +149,6 @@ class CreateExpiringRental extends Command
             'tenant_national_id' => '1' . str_pad(rand(100000000, 999999999), 9, '0', STR_PAD_LEFT),
             'property_id' => rand(1, 10),
             'project_id' => rand(1, 5),
-            'unit_label' => $unitLabel,
             'property_number' => $propertyNumber,
             'move_in_date' => $moveInDate,
             'rental_period' => $rentalPeriod,
@@ -249,7 +248,6 @@ class CreateExpiringRental extends Command
         $this->line("- Email: {$rental->tenant_email}");
         $this->line("- Job: {$rental->tenant_job_title}");
         $this->line("- Social Status: {$rental->tenant_social_status}");
-        $this->line("- Unit: {$rental->unit_label}");
         $this->line("- Property Number: {$rental->property_number}");
         $this->line("- Move-in Date: {$rental->move_in_date}");
         $this->line("- Contract End Date: {$contract->end_date}");
