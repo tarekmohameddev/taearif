@@ -1041,6 +1041,11 @@ class MarketingChannelController extends BaseApiController
                     'channel_type' => $usage->channel_type,
                     'credits_used' => $usage->credits_used,
                     'messages_sent' => $usage->messages_sent,
+                    'messages_received' => $usage->messages_received,
+                    'cost_per_message_credits' => $usage->cost_per_message_credits,
+                    'cost_per_message_currency' => $usage->cost_per_message_currency,
+                    'total_cost_credits' => $usage->total_cost_credits,
+                    'total_cost_currency' => $usage->total_cost_currency,
                 ];
             });
             

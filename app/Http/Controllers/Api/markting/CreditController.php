@@ -690,11 +690,17 @@ class CreditController extends BaseApiController
                 ->keyBy('channel_type');
 
             $usage = $channels->map(function ($channel) use ($pricing) {
-                // Get credits per message for this channel type
-                $creditsPerMessage = $pricing->get($channel->type)?->credits_per_message ?? 1;
+                // Get pricing info for this channel type
+                $channelPricing = $pricing->get($channel->type);
+                $creditsPerMessage = $channelPricing?->credits_per_message ?? 1;
+                $pricePerCredit = $channelPricing?->price_per_credit ?? 0.05;
+                $effectivePricePerMessage = $channelPricing?->effective_price_per_message ?? 0.05;
                 
                 // Calculate credits used based on sent messages
                 $creditsUsed = $channel->sent_messages_count * $creditsPerMessage;
+                
+                // Calculate total cost in currency
+                $totalCostCurrency = $channel->sent_messages_count * $effectivePricePerMessage;
 
                 return (object) [
                     'channel_id' => $channel->id,
@@ -702,6 +708,11 @@ class CreditController extends BaseApiController
                     'channel_type' => $channel->type,
                     'credits_used' => $creditsUsed,
                     'messages_sent' => $channel->sent_messages_count,
+                    'messages_received' => $channel->received_messages_count,
+                    'cost_per_message_credits' => $creditsPerMessage,
+                    'cost_per_message_currency' => $effectivePricePerMessage,
+                    'total_cost_credits' => $creditsUsed,
+                    'total_cost_currency' => round($totalCostCurrency, 4),
                 ];
             });
 
