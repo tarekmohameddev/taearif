@@ -63,6 +63,18 @@ class RentalService
         // Use the provided userId (which should be the tenant owner's ID)
         // This ensures rentals are created under the correct tenant account
         return DB::transaction(function () use ($userId, $data) {
+            // Check if unit already has an active or draft rental
+            if (!empty($data['unit_id'])) {
+                $existingActiveRental = RmRental::where('unit_id', $data['unit_id'])
+                    ->where('user_id', $userId)
+                    ->whereIn('status', ['active', 'draft'])
+                    ->exists();
+                
+                if ($existingActiveRental) {
+                    throw new \Exception('This unit already has an active contract. Please end the existing contract before creating a new one.');
+                }
+            }
+            
             // Extract cost items from data
             $costItems = $data['cost_items'] ?? [];
             unset($data['cost_items']);
@@ -155,6 +167,19 @@ class RentalService
         return DB::transaction(function () use ($ownerId, $id, $data, $regenerate) {
             $rental = RmRental::where('user_id', $ownerId)->findOrFail($id);
             
+            // Check if unit_id is being changed and if new unit is available
+            if (isset($data['unit_id']) && $data['unit_id'] != $rental->unit_id) {
+                $existingActiveRental = RmRental::where('unit_id', $data['unit_id'])
+                    ->where('user_id', $ownerId)
+                    ->where('id', '!=', $id) // Exclude current rental
+                    ->whereIn('status', ['active', 'draft'])
+                    ->exists();
+                
+                if ($existingActiveRental) {
+                    throw new \Exception('The selected unit already has an active contract. Please choose a different unit or end the existing contract first.');
+                }
+            }
+            
             // Handle cost items update
             if (isset($data['cost_items']) && is_array($data['cost_items'])) {
                 $costItems = $data['cost_items'];
@@ -238,7 +263,7 @@ class RentalService
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
 
-        $rental = RmRental::with(['property.contents', 'project', 'contracts', 'installments'])
+        $rental = RmRental::with(['property.contents', 'project', 'contracts', 'installments', 'activeExpenses'])
             ->where('user_id', $ownerId)
             ->findOrFail($rentalId);
 
@@ -256,6 +281,30 @@ class RentalService
                 'payment_status' => $i->payment_status,
                 'reference' => $i->reference,
                 'paid_at' => $i->paid_at,
+            ];
+        });
+
+        // Get expenses for the rental
+        $expenses = $rental->activeExpenses->map(function ($expense) use ($rental) {
+            // Use the actual base_rent_amount column value, not the accessor
+            $baseRentAmount = $rental->getAttributes()['base_rent_amount'] ?? 0;
+            $calculatedAmount = $expense->amount_type === 'percentage' 
+                ? ($baseRentAmount * $expense->amount_value) / 100
+                : $expense->amount_value;
+                
+            return [
+                'id' => $expense->id,
+                'expense_name' => $expense->expense_name,
+                'image_path' => $expense->image_path,
+                'image_url' => $expense->image_url,
+                'amount_type' => $expense->amount_type,
+                'amount_value' => (float) $expense->amount_value,
+                'calculated_amount' => (float) $calculatedAmount,
+                'cost_center' => $expense->cost_center,
+                'is_active' => $expense->is_active,
+                'can_be_modified' => $expense->canBeModified(),
+                'created_at' => $expense->created_at,
+                'updated_at' => $expense->updated_at,
             ];
         });
 
@@ -287,7 +336,6 @@ class RentalService
             'property' => [
                 'id' => $rental->unit_id,
                 'name' => optional($rental->property)->firstContent ? $rental->property->firstContent->title : null,
-                'unit_label' => $rental->unit_label,
                 'building' => $rental->building,
                 'project' => [
                     'id' => $rental->project_id,
@@ -304,6 +352,7 @@ class RentalService
             'payment_details' => [
                 'items' => $payments,
             ],
+            'expenses' => $expenses,
         ];
     }
 
@@ -361,7 +410,6 @@ class RentalService
             'property' => [
                 'id' => $rental->unit_id,
                 'name' => optional($rental->property)->firstContent ? $rental->property->firstContent->title : null,
-                'unit_label' => $rental->unit_label,
                 'building' => $rental->building,
                 'project' => [
                     'id' => $rental->project_id,
@@ -691,7 +739,6 @@ class RentalService
                     'tenant_phone' => $rental->tenant_phone,
                     'tenant_email' => $rental->tenant_email,
                     'property_address' => $rental->property?->name ?? 'N/A',
-                    'unit_label' => $rental->unit_label,
                     'building' => $rental->building,
                     'contract_number' => $rental->activeContract?->contract_number ?? 'N/A'
                 ],
@@ -747,7 +794,6 @@ class RentalService
                 'tenant_phone' => $rental->tenant_phone,
                 'tenant_email' => $rental->tenant_email,
                 'property_address' => $rental->property?->name ?? 'N/A',
-                'unit_label' => $rental->unit_label,
                 'building' => $rental->building,
                 'contract_number' => $rental->activeContract->contract_number
             ],
@@ -759,7 +805,6 @@ class RentalService
             'property' => [
                 'id' => $rental->property?->id,
                 'name' => $rental->property?->name,
-                'unit_label' => $rental->unit_label,
                 'building' => $rental->building,
                 'project' => [
                     'id' => $rental->property?->project?->id,
@@ -879,5 +924,118 @@ class RentalService
         }
         
         return 'partial';
+    }
+
+    /**
+     * End rental contract by updating the active contract's end date and status
+     */
+    public function endRentalContract($userId, $rentalId, array $data)
+    {
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
+
+        return DB::transaction(function () use ($ownerId, $rentalId, $data) {
+            // Find the rental
+            $rental = RmRental::where('user_id', $ownerId)->findOrFail($rentalId);
+            
+            // Find the active contract
+            $activeContract = $rental->activeContract;
+            if (!$activeContract) {
+                throw new \Exception('No active contract found for this rental');
+            }
+
+            // Update the contract
+            $contractData = [
+                'end_date' => $data['end_date'],
+                'status' => 'terminated',
+                'termination_reason' => $data['termination_reason'] ?? 'Contract ended by user',
+                'updated_by' => $ownerId,
+            ];
+            
+            $activeContract->update($contractData);
+
+            // Update any pending installments to reflect the contract termination
+            $pendingInstallments = RmPaymentInstallment::where('contract_id', $activeContract->id)
+                ->where('status', 'pending')
+                ->where('due_date', '>', $data['end_date'])
+                ->get();
+
+            foreach ($pendingInstallments as $installment) {
+                $installment->update([
+                    'status' => 'cancelled',
+                    'payment_status' => 'cancelled'
+                ]);
+            }
+
+            // Update rental status if needed
+            $rental->update([
+                'status' => 'ended',
+                'updated_by' => $ownerId
+            ]);
+
+            // Update property status
+            if ($rental->unit_id) {
+                $property = Property::where('id', $rental->unit_id)
+                    ->where('user_id', $ownerId)
+                    ->first();
+                if ($property) {
+                    $property->updatePropertyStatus();
+                }
+            }
+
+            return $rental->fresh(['activeContract', 'contracts']);
+        });
+    }
+
+    /**
+     * Update rental status with validation
+     */
+    public function updateRentalStatus($userId, $id, array $data)
+    {
+        return DB::transaction(function () use ($userId, $id, $data) {
+            $rental = RmRental::where('user_id', $userId)->findOrFail($id);
+            
+            $currentStatus = $rental->status;
+            $newStatus = $data['status'];
+            
+            // Validate status transitions
+            $this->validateStatusTransition($currentStatus, $newStatus);
+            
+            // Update status
+            $rental->update([
+                'status' => $newStatus,
+                'notes' => $data['notes'] ?? $rental->notes
+            ]);
+            
+            // Update property status if needed
+            if ($rental->unit_id) {
+                $property = \App\Models\User\RealestateManagement\Property::find($rental->unit_id);
+                if ($property) {
+                    $property->updatePropertyStatus();
+                }
+            }
+            
+            return $rental->fresh();
+        });
+    }
+
+    /**
+     * Validate status transitions
+     */
+    private function validateStatusTransition($currentStatus, $newStatus)
+    {
+        $allowedTransitions = [
+            'draft' => ['active', 'cancelled'],
+            'active' => ['ended', 'cancelled'],
+            'ended' => [], // No transitions from ended
+            'cancelled' => [] // No transitions from cancelled
+        ];
+        
+        if (!isset($allowedTransitions[$currentStatus])) {
+            throw new \Exception("Invalid current status: {$currentStatus}");
+        }
+        
+        if (!in_array($newStatus, $allowedTransitions[$currentStatus])) {
+            throw new \Exception("Cannot transition from '{$currentStatus}' to '{$newStatus}'. Allowed transitions: " . implode(', ', $allowedTransitions[$currentStatus]));
+        }
     }
 }

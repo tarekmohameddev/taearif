@@ -114,7 +114,6 @@ class RentalControllerTest extends TestCase
             'tenant_national_id' => '123456789',
             'unit_id' => 1,
             'project_id' => 1,
-            'unit_label' => 'A-101',
             'building' => 'PROP-001',
             'move_in_date' => '2024-01-01',
             'rental_type' => 'monthly',
@@ -504,7 +503,6 @@ class RentalControllerTest extends TestCase
             'property' => [
                 'id' => 1,
                 'name' => 'Test Property',
-                'unit_label' => 'A-101',
                 'building' => 'PROP-001',
                 'project' => [
                     'id' => 1,
@@ -568,7 +566,6 @@ class RentalControllerTest extends TestCase
             'tenant_phone' => str_repeat('1', 33), // Exceeds max:32
             'tenant_job_title' => str_repeat('b', 121), // Exceeds max:120
             'tenant_national_id' => str_repeat('1', 21), // Exceeds max:20
-            'unit_label' => str_repeat('c', 101), // Exceeds max:100
             'building' => str_repeat('d', 101), // Exceeds max:100
             'rental_type' => 'monthly',
             'rental_duration' => 6,
@@ -586,7 +583,6 @@ class RentalControllerTest extends TestCase
                     'tenant_phone',
                     'tenant_job_title',
                     'tenant_national_id',
-                    'unit_label',
                     'building'
                 ]);
     }

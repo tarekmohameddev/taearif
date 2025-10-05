@@ -96,6 +96,7 @@ use App\Http\Controllers\Api\V1\Rms\{
     MaintenanceController,
     ReminderController,
     RmsDashboardController,
+    ExpenseController,
 };
 use App\Http\Controllers\Api\V1\TenantWebsite\{
     GetTenantController,
@@ -259,6 +260,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::get   ('/properties/categories',              [PropertyController::class, 'properties_categories']);
 
     Route::get   ('/properties',                         [PropertyController::class, 'index'])->middleware('can:properties.view');
+    Route::get   ('/properties/available-units',         [PropertyController::class, 'availableUnits'])->middleware('can:properties.view');
     Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
     Route::post  ('/properties',                         [PropertyController::class, 'store'])->middleware('can:properties.create');
     Route::post  ('/properties/upload-deed-image',       [PropertyController::class, 'uploadDeedImage'])->middleware('can:properties.create');
@@ -506,9 +508,21 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         // get and post payment collection
         Route::get('rentals/{id}/payment-collection', [RentalController::class, 'paymentCollection']);
         Route::post('rentals/{id}/collect-payment', [RentalController::class, 'collectPayment']);
+        
+        // Upload receipt image
+        Route::post('rentals/upload-receipt-image', [RentalController::class, 'uploadReceiptImage']);
 
         Route::patch('rentals/{id}', [RentalController::class, 'update']);
+        Route::patch('rentals/{id}/status', [RentalController::class, 'updateStatus']);
         Route::delete('rentals/{id}', [RentalController::class, 'destroy']);
+        Route::post('rentals/{id}/end-contract', [RentalController::class, 'endContract']);
+
+        // Expenses
+        Route::post('expenses/upload-image', [ExpenseController::class, 'uploadImage']);
+        Route::get('rentals/{rentalId}/expenses', [ExpenseController::class, 'index']);
+        Route::post('rentals/{rentalId}/expenses', [ExpenseController::class, 'store']);
+        // Route::patch('rentals/{rentalId}/expenses/{expenseId}', [ExpenseController::class, 'update']);
+        Route::delete('rentals/{rentalId}/expenses/{expenseId}', [ExpenseController::class, 'destroy']);
 
         // Contracts
         Route::get('rentals/{rentalId}/contracts', [ContractController::class, 'listByRental']);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Rms;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\Rms\RentalService;
+use Illuminate\Support\Facades\Log;
 
 class RentalController extends Controller
 {
@@ -66,7 +67,6 @@ class RentalController extends Controller
             'tenant_national_id' => 'nullable|string|max:20',
             'unit_id' => 'nullable|integer',
             'project_id' => 'nullable|integer',
-            'unit_label' => 'nullable|string|max:100',
             'building' => 'nullable|string|max:100',
             'move_in_date' => 'nullable|date',
             'rental_type' => 'required|in:monthly,annual',
@@ -101,7 +101,7 @@ class RentalController extends Controller
     {
         $data = $request->only([
             'tenant_full_name', 'tenant_phone', 'tenant_email', 'tenant_job_title',
-            'tenant_social_status', 'tenant_national_id', 'unit_id', 'project_id', 'unit_label', 'building',
+            'tenant_social_status', 'tenant_national_id', 'unit_id', 'project_id', 'building',
             'move_in_date', 'rental_type', 'rental_duration', 'paying_plan',
             'total_rental_amount', 'currency', 'contract_number', 'notes', 'cost_items'
         ]);
@@ -167,8 +167,20 @@ class RentalController extends Controller
                 'payment_method' => 'required|in:cash,bank_transfer,credit_card,online_payment,check,other',
                 'payment_date' => 'nullable|date',
                 'reference' => 'nullable|string|max:100',
-                'notes' => 'nullable|string|max:255'
+                'notes' => 'nullable|string|max:255',
+                'bank_name' => 'nullable|string|max:100',
+                'receipt_image_path' => 'nullable|string|max:500',
+                'transfer_to' => 'required|in:منصة ناجز,المالك,المكتب'
             ]);
+
+            // Validate bank_name is required when payment_method is bank_transfer
+            if ($data['payment_method'] === 'bank_transfer' && empty($data['bank_name'])) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Bank name is required when payment method is bank transfer',
+                    'errors' => ['bank_name' => ['Bank name is required when payment method is bank transfer']]
+                ], 422);
+            }
 
             // Validate installment_ids only for rent payments
             $rentPayments = collect($data['payments'])->where('payment_type', 'rent');
@@ -188,16 +200,27 @@ class RentalController extends Controller
                 $paymentData['payment_date'] = $data['payment_date'] ?? now()->toDateString();
                 $paymentData['reference'] = $data['reference'];
                 $paymentData['notes'] = $paymentData['notes'] ?? $data['notes'];
+                $paymentData['bank_name'] = $data['bank_name'] ?? null;
+                $paymentData['receipt_image_path'] = $data['receipt_image_path'] ?? null;
+                $paymentData['transfer_to'] = $data['transfer_to'];
                 
                 $payment = $paymentService->recordPayment(auth()->id(), $id, $paymentData);
                 $processedPayments[] = $payment;
             }
 
+            // Add receipt image URL to payments if available
+            $paymentsWithImageUrl = collect($processedPayments)->map(function ($payment) {
+                if (!empty($payment->receipt_image_path)) {
+                    $payment->receipt_image_url = asset('storage/' . $payment->receipt_image_path);
+                }
+                return $payment;
+            });
+
             return response()->json([
                 'status' => true,
                 'message' => 'Payment collected successfully',
                 'data' => [
-                    'payments' => $processedPayments,
+                    'payments' => $paymentsWithImageUrl,
                     'total_amount' => collect($processedPayments)->sum('amount'),
                     'payment_count' => count($processedPayments)
                 ]
@@ -219,7 +242,7 @@ class RentalController extends Controller
 
         } catch (\Exception $e) {
             // Log the error for debugging
-            \Log::error('Payment collection failed', [
+            Log::error('Payment collection failed', [
                 'user_id' => auth()->id(),
                 'rental_id' => $id,
                 'error' => $e->getMessage(),
@@ -229,6 +252,151 @@ class RentalController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Payment collection failed',
+                'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
+            ], 500);
+        }
+    }
+
+    /**
+     * Update rental status with validation
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        try {
+            $data = $request->validate([
+                'status' => 'required|string|in:draft,active,ended,cancelled',
+                'notes' => 'nullable|string|max:500'
+            ]);
+
+            $rental = $this->rentalService->updateRentalStatus(auth()->id(), $id, $data);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Rental status updated successfully',
+                'data' => $rental
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Rental not found',
+                'error' => $e->getMessage()
+            ], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to update rental status',
+                'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
+            ], 500);
+        }
+    }
+
+    /**
+     * End rental contract by setting end date and updating status
+     */
+    public function endContract(Request $request, $id)
+    {
+        try {
+            $data = $request->validate([
+                'end_date' => 'required|date|after_or_equal:today',
+                'termination_reason' => 'nullable|string|max:255',
+                'notes' => 'nullable|string|max:500'
+            ]);
+
+            $rental = $this->rentalService->endRentalContract(auth()->id(), $id, $data);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Rental contract ended successfully',
+                'data' => $rental
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Rental contract not found',
+                'error' => $e->getMessage()
+            ], 404);
+
+        } catch (\Exception $e) {
+            Log::error('End rental contract failed', [
+                'user_id' => auth()->id(),
+                'rental_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to end rental contract',
+                'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
+            ], 500);
+        }
+    }
+
+    /**
+     * Upload receipt image for payment
+     */
+    public function uploadReceiptImage(Request $request)
+    {
+        try {
+            $request->validate([
+                'receipt_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
+            ]);
+
+            // Generate unique filename
+            $file = $request->file('receipt_image');
+            $filename = 'receipt_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            
+            // Store the file in storage/app/public/receipts
+            $path = $file->storeAs('receipts', $filename, 'public');
+            
+            // Get the full URL
+            $url = asset('storage/' . $path);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Receipt image uploaded successfully',
+                'data' => [
+                    'image_path' => $path,
+                    'image_url' => $url,
+                    'filename' => $filename
+                ]
+            ], 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            Log::error('Receipt image upload failed', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Receipt image upload failed',
                 'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
             ], 500);
         }

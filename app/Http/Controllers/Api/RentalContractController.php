@@ -349,7 +349,7 @@ class RentalContractController extends Controller
 
             // Get active contracts with their rental information
             $contracts = RmContract::with([
-                'rental:id,contract_number,tenant_full_name,tenant_phone,unit_label,unit_id,project_id,base_rent_amount,paying_plan',
+                'rental:id,contract_number,tenant_full_name,tenant_phone,unit_id,project_id,base_rent_amount,paying_plan',
                 'rental.property:id,building_id',
                 'rental.property.building:id,name',
                 'installments' => function($query) use ($date) {
@@ -382,7 +382,6 @@ class RentalContractController extends Controller
                     'tenant_name' => $rental->tenant_full_name ?? 'N/A',
                     'tenant_phone' => $rental->tenant_phone ?? 'N/A',
                     'unit_info' => [
-                        'unit_label' => $rental->unit_label ?? 'N/A',
                         'property_id' => $rental->unit_id ?? 'N/A',
                         'building_name' => $rental->property->building->name ?? 'N/A',
                         'project_id' => $rental->project_id ?? 'N/A',
@@ -439,7 +438,7 @@ class RentalContractController extends Controller
 
             // Get contracts with their rental information
             $contracts = RmContract::with([
-                'rental:id,contract_number,tenant_full_name,tenant_phone,unit_label,unit_id,project_id,base_rent_amount,paying_plan',
+                'rental:id,contract_number,tenant_full_name,tenant_phone,unit_id,project_id,base_rent_amount,paying_plan',
                 'rental.property:id,building_id',
                 'rental.property.building:id,name',
                 'installments' => function($query) {
@@ -482,7 +481,6 @@ class RentalContractController extends Controller
                         'phone' => $rental->tenant_phone ?? 'N/A',
                     ],
                     'unit_data' => [
-                        'unit_label' => $rental->unit_label ?? 'N/A',
                         'property_id' => $rental->unit_id ?? 'N/A',
                         'building_name' => $rental->property->building->name ?? 'N/A',
                         'project_id' => $rental->project_id ?? 'N/A',
@@ -587,7 +585,7 @@ class RentalContractController extends Controller
 
             // Build the query
             $query = RmContract::with([
-                'rental:id,contract_number,tenant_full_name,tenant_phone,unit_label,unit_id,project_id,base_rent_amount,paying_plan',
+                'rental:id,contract_number,tenant_full_name,tenant_phone,unit_id,project_id,base_rent_amount,paying_plan',
                 'rental.property:id,building_id',
                 'rental.property.building:id,name',
                 'installments' => function($query) {
@@ -645,7 +643,6 @@ class RentalContractController extends Controller
                         'phone' => $rental->tenant_phone ?? 'N/A',
                     ],
                     'unit_data' => [
-                        'unit_label' => $rental->unit_label ?? 'N/A',
                         'property_id' => $rental->unit_id ?? 'N/A',
                         'building_name' => $rental->property->building->name ?? 'N/A',
                         'project_id' => $rental->project_id ?? 'N/A',

@@ -20,7 +20,6 @@ class RmRental extends Model
     protected $fillable = [
         'user_id', 
         'unit_id', 
-        'unit_label', 
         'project_id',
         'tenant_full_name', 
         'building', 
@@ -107,6 +106,16 @@ class RmRental extends Model
     public function costItems()
     {
         return $this->hasMany(RentalCostItem::class, 'rental_id');
+    }
+
+    public function expenses()
+    {
+        return $this->hasMany(\App\Models\RmExpense::class, 'rental_id');
+    }
+
+    public function activeExpenses()
+    {
+        return $this->hasMany(\App\Models\RmExpense::class, 'rental_id')->where('is_active', true);
     }
 
     public function activeCostItems()
