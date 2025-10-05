@@ -331,7 +331,7 @@ class PropertyController extends Controller
             'building' => $responseProperty->building,
             'water_meter_number' => $responseProperty->water_meter_number,
             'electricity_meter_number' => $responseProperty->electricity_meter_number,
-            'deed_number' => $responseProperty->deed_number,
+            'deed_number' => $responseProperty->deed_number ? asset($responseProperty->deed_number) : null,
         ];
 
         TenantActivity::emit($request, 'property.duplicated', 'user_properties', $duplicatedProperty->id, [
@@ -546,7 +546,7 @@ class PropertyController extends Controller
             'building' => $property->building,
             'water_meter_number' => $property->water_meter_number,
             'electricity_meter_number' => $property->electricity_meter_number,
-            'deed_number' => $property->deed_number,
+            'deed_number' => $property->deed_number ? asset($property->deed_number) : null,
         ], $characteristics);
 
         return response()->json([
@@ -895,7 +895,7 @@ class PropertyController extends Controller
             'building' => $responseProperty->building,
             'water_meter_number' => $responseProperty->water_meter_number,
             'electricity_meter_number' => $responseProperty->electricity_meter_number,
-            'deed_number' => $responseProperty->deed_number,
+            'deed_number' => $responseProperty->deed_number ? asset($responseProperty->deed_number) : null,
         ];
 
         TenantActivity::emit($request, 'property.created', 'user_properties', $responseProperty->id, null, [
@@ -1199,7 +1199,7 @@ class PropertyController extends Controller
             'building' => $responseProperty->building,
             'water_meter_number' => $responseProperty->water_meter_number,
             'electricity_meter_number' => $responseProperty->electricity_meter_number,
-            'deed_number' => $responseProperty->deed_number,
+            'deed_number' => $responseProperty->deed_number ? asset($responseProperty->deed_number) : null,
         ], $characteristics);
 
         TenantActivity::emit($request, 'property.updated', 'user_properties', $property->id, $old ?? null, [
