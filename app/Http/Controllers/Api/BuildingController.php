@@ -18,7 +18,7 @@ class BuildingController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = Auth::user();
-        
+
         $query = Building::where('user_id', $user->id)
             ->with(['user', 'properties'])
             ->orderBy('created_at', 'desc');
@@ -41,13 +41,28 @@ class BuildingController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'image' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
-            'deed_number' => 'nullable|string|max:255',
-            'deed_image' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-            'water_meter_number' => 'nullable|string|max:255',
-        ]);
+        // Check if request is JSON (raw) or form-data
+        $isJsonRequest = $request->isJson() || $request->header('Content-Type') === 'application/json';
+        
+        if ($isJsonRequest) {
+            // Handle JSON request with file paths
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'image' => 'nullable|string|max:500',
+                'deed_number' => 'nullable|string|max:255',
+                'deed_image' => 'nullable|string|max:500',
+                'water_meter_number' => 'nullable|string|max:255',
+            ]);
+        } else {
+            // Handle form-data request with file uploads
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'image' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
+                'deed_number' => 'nullable|string|max:255',
+                'deed_image' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+                'water_meter_number' => 'nullable|string|max:255',
+            ]);
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -62,14 +77,22 @@ class BuildingController extends Controller
             $data = $request->only(['name', 'deed_number', 'water_meter_number']);
             $data['user_id'] = $user->id;
 
-            // Handle building image upload
-            if ($request->hasFile('image')) {
-                $data['image'] = $this->uploadImageFile($request->file('image'), 'buildings');
-            }
-
-            // Handle deed image upload
-            if ($request->hasFile('deed_image')) {
-                $data['deed_image'] = $this->uploadImageFile($request->file('deed_image'), 'buildings/deeds');
+            if ($isJsonRequest) {
+                // Handle JSON request - use provided file paths directly
+                if ($request->has('image') && $request->image) {
+                    $data['image'] = $request->image;
+                }
+                if ($request->has('deed_image') && $request->deed_image) {
+                    $data['deed_image'] = $request->deed_image;
+                }
+            } else {
+                // Handle file uploads
+                if ($request->hasFile('image')) {
+                    $data['image'] = $this->uploadImageFile($request->file('image'), 'buildings');
+                }
+                if ($request->hasFile('deed_image')) {
+                    $data['deed_image'] = $this->uploadImageFile($request->file('deed_image'), 'buildings/deeds');
+                }
             }
 
             $building = Building::create($data);
