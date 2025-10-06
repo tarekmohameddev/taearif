@@ -123,7 +123,7 @@ class MarketingChannelController extends BaseApiController
             }
 
             $channel->update($request->only([
-                'name', 'description', 'type', 'number', 
+                'name', 'description', 'type', 'number',
                 'business_id', 'phone_id', 'access_token', 'additional_settings'
             ]));
 
@@ -350,21 +350,21 @@ class MarketingChannelController extends BaseApiController
                     'is_verified' => true, // Would come from WhatsApp API
                     'is_connected' => true, // Would come from WhatsApp API
                 ];
-            
+
             case 'facebook':
                 // Simulate Facebook Graph API call
                 return [
                     'is_verified' => true, // Would come from Facebook API
                     'is_connected' => true, // Would come from Facebook API
                 ];
-            
+
             case 'telegram':
                 // Simulate Telegram Bot API call
                 return [
                     'is_verified' => true, // Would come from Telegram API
                     'is_connected' => true, // Would come from Telegram API
                 ];
-            
+
             default:
                 return [
                     'is_verified' => false,
@@ -443,7 +443,7 @@ class MarketingChannelController extends BaseApiController
             } else {
                 // Refund credits if message sending failed
                 $this->refundCredits(Auth::id(), $creditsNeeded, "Failed to send message via {$channel->name}");
-                
+
                 return $this->fail('Failed to send message: ' . $messageResult['error'], 500);
             }
 
@@ -554,7 +554,7 @@ class MarketingChannelController extends BaseApiController
         try {
             $userCredit = UserCredit::getOrCreateForUser($userId);
             $userCredit->addCredits($credits, null, $description);
-            
+
             // Create refund transaction
             \App\Models\Api\markting\CreditTransaction::create([
                 'user_id' => $userId,
@@ -598,7 +598,7 @@ class MarketingChannelController extends BaseApiController
             // Verify webhook signature (in production, you should verify the signature)
             $signature = $request->header('X-Hub-Signature-256');
             $body = $request->getContent();
-            
+
             // In production, verify the signature with your webhook secret
             // $expectedSignature = 'sha256=' . hash_hmac('sha256', $body, config('whatsapp.webhook_secret'));
             // if (!hash_equals($expectedSignature, $signature)) {
@@ -625,7 +625,7 @@ class MarketingChannelController extends BaseApiController
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return $this->fail('Webhook processing failed: ' . $e->getMessage());
         }
     }
@@ -669,7 +669,7 @@ class MarketingChannelController extends BaseApiController
     private function processWhatsAppMessages($value)
     {
         $messages = $value['messages'] ?? [];
-        
+
         foreach ($messages as $message) {
             $this->processIncomingWhatsAppMessage($message, $value);
         }
@@ -683,7 +683,7 @@ class MarketingChannelController extends BaseApiController
         try {
             $phoneNumberId = $context['metadata']['phone_number_id'] ?? null;
             $businessAccountId = $context['metadata']['business_account_id'] ?? null;
-            
+
             // Find the marketing channel by phone_number_id
             $channel = MarketingChannel::where('phone_id', $phoneNumberId)
                 ->where('type', 'whatsapp')
@@ -699,7 +699,7 @@ class MarketingChannelController extends BaseApiController
 
             // Process different message types
             $messageType = $message['type'] ?? 'unknown';
-            
+
             switch ($messageType) {
                 case 'text':
                     $this->processTextMessage($message, $channel);
@@ -744,10 +744,10 @@ class MarketingChannelController extends BaseApiController
     {
         $text = $message['text']['body'] ?? '';
         $from = $message['from'] ?? '';
-        
+
         // Here you can implement your business logic
         // For example: auto-reply, save to database, trigger workflows, etc.
-        
+
         Log::info('Text message received', [
             'channel_id' => $channel->id,
             'from' => $from,
@@ -762,7 +762,7 @@ class MarketingChannelController extends BaseApiController
     {
         $mediaType = $message['type'];
         $mediaId = $message[$mediaType]['id'] ?? null;
-        
+
         Log::info('Media message received', [
             'channel_id' => $channel->id,
             'media_type' => $mediaType,
@@ -777,7 +777,7 @@ class MarketingChannelController extends BaseApiController
     {
         $buttonText = $message['button']['text'] ?? '';
         $buttonPayload = $message['button']['payload'] ?? '';
-        
+
         Log::info('Button message received', [
             'channel_id' => $channel->id,
             'button_text' => $buttonText,
@@ -791,7 +791,7 @@ class MarketingChannelController extends BaseApiController
     private function processInteractiveMessage($message, $channel)
     {
         $interactiveType = $message['interactive']['type'] ?? '';
-        
+
         Log::info('Interactive message received', [
             'channel_id' => $channel->id,
             'interactive_type' => $interactiveType
@@ -804,11 +804,11 @@ class MarketingChannelController extends BaseApiController
     private function processWhatsAppMessageDeliveries($value)
     {
         $statuses = $value['statuses'] ?? [];
-        
+
         foreach ($statuses as $status) {
             $messageId = $status['id'] ?? null;
             $deliveryStatus = $status['status'] ?? 'unknown';
-            
+
             Log::info('Message delivery status', [
                 'message_id' => $messageId,
                 'status' => $deliveryStatus
@@ -822,11 +822,11 @@ class MarketingChannelController extends BaseApiController
     private function processWhatsAppMessageReads($value)
     {
         $statuses = $value['statuses'] ?? [];
-        
+
         foreach ($statuses as $status) {
             $messageId = $status['id'] ?? null;
             $readStatus = $status['status'] ?? 'unknown';
-            
+
             Log::info('Message read status', [
                 'message_id' => $messageId,
                 'status' => $readStatus
@@ -840,10 +840,10 @@ class MarketingChannelController extends BaseApiController
     private function processWhatsAppMessageReactions($value)
     {
         $messages = $value['messages'] ?? [];
-        
+
         foreach ($messages as $message) {
             $reaction = $message['reaction'] ?? null;
-            
+
             if ($reaction) {
                 Log::info('Message reaction received', [
                     'message_id' => $message['id'] ?? null,
@@ -899,6 +899,8 @@ class MarketingChannelController extends BaseApiController
             $validator = Validator::make($request->all(), [
                 'crm_integration_enabled' => 'sometimes|boolean',
                 'appointment_system_integration_enabled' => 'sometimes|boolean',
+                'customers_page_integration_enabled' => 'sometimes|boolean',
+                'rental_page_integration_enabled' => 'sometimes|boolean',
                 'integration_settings' => 'nullable|array',
                 'marketing_settings' => 'nullable|array',
             ]);
@@ -910,16 +912,24 @@ class MarketingChannelController extends BaseApiController
             $updateData = [];
 
             // Update system integration settings
-            if ($request->has('crm_integration_enabled') || 
-                $request->has('appointment_system_integration_enabled') || 
+            if ($request->has('crm_integration_enabled') ||
+                $request->has('appointment_system_integration_enabled') ||
+                $request->has('customers_page_integration_enabled') ||
+                $request->has('rental_page_integration_enabled') ||
                 $request->has('integration_settings')) {
-                
+
                 $systemSettings = [];
                 if ($request->has('crm_integration_enabled')) {
                     $systemSettings['crm_integration_enabled'] = $request->crm_integration_enabled;
                 }
                 if ($request->has('appointment_system_integration_enabled')) {
                     $systemSettings['appointment_system_integration_enabled'] = $request->appointment_system_integration_enabled;
+                }
+                if ($request->has('customers_page_integration_enabled')) {
+                    $systemSettings['customers_page_integration_enabled'] = $request->customers_page_integration_enabled;
+                }
+                if ($request->has('rental_page_integration_enabled')) {
+                    $systemSettings['rental_page_integration_enabled'] = $request->rental_page_integration_enabled;
                 }
                 if ($request->has('integration_settings')) {
                     $systemSettings['integration_settings'] = $request->integration_settings;
@@ -998,6 +1008,8 @@ class MarketingChannelController extends BaseApiController
             $validator = Validator::make($request->all(), [
                 'crm_integration_enabled' => 'required|boolean',
                 'appointment_system_integration_enabled' => 'required|boolean',
+                'customers_page_integration_enabled' => 'required|boolean',
+                'rental_page_integration_enabled' => 'required|boolean',
                 'integration_settings' => 'nullable|array',
             ]);
 
@@ -1008,6 +1020,8 @@ class MarketingChannelController extends BaseApiController
             $settings = [
                 'crm_integration_enabled' => $request->crm_integration_enabled,
                 'appointment_system_integration_enabled' => $request->appointment_system_integration_enabled,
+                'customers_page_integration_enabled' => $request->customers_page_integration_enabled,
+                'rental_page_integration_enabled' => $request->rental_page_integration_enabled,
                 'integration_settings' => $request->integration_settings ?? [],
             ];
 
@@ -1032,7 +1046,7 @@ class MarketingChannelController extends BaseApiController
     {
         try {
             $usage = CreditController::getUsage(Auth::id());
-            
+
             // Format the usage data for each channel
             $formattedUsage = $usage->map(function ($usage) {
                 return [
@@ -1048,7 +1062,7 @@ class MarketingChannelController extends BaseApiController
                     'total_cost_currency' => $usage->total_cost_currency,
                 ];
             });
-            
+
             // Return all channels usage as an object/array
             return $this->ok($formattedUsage->all(), 'Usage retrieved successfully');
         } catch (\Exception $e) {

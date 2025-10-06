@@ -28,6 +28,8 @@ class MarketingChannel extends Model
         'additional_settings',
         'crm_integration_enabled',
         'appointment_system_integration_enabled',
+        'customers_page_integration_enabled',
+        'rental_page_integration_enabled',
         'integration_settings',
     ];
 
@@ -39,6 +41,8 @@ class MarketingChannel extends Model
         'additional_settings' => 'array',
         'crm_integration_enabled' => 'boolean',
         'appointment_system_integration_enabled' => 'boolean',
+        'customers_page_integration_enabled' => 'boolean',
+        'rental_page_integration_enabled' => 'boolean',
         'integration_settings' => 'array',
     ];
 
@@ -73,6 +77,8 @@ class MarketingChannel extends Model
         return [
             'crm_integration_enabled' => $this->crm_integration_enabled,
             'appointment_system_integration_enabled' => $this->appointment_system_integration_enabled,
+            'customers_page_integration_enabled' => $this->customers_page_integration_enabled,
+            'rental_page_integration_enabled' => $this->rental_page_integration_enabled,
             'integration_settings' => $this->integration_settings ?? [],
         ];
     }
@@ -85,6 +91,8 @@ class MarketingChannel extends Model
         $allowedSettings = [
             'crm_integration_enabled',
             'appointment_system_integration_enabled',
+            'customers_page_integration_enabled',
+            'rental_page_integration_enabled',
             'integration_settings'
         ];
 
