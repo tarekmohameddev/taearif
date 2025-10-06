@@ -61,4 +61,12 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URL'),
     ],
 
+    // Meta (Facebook) WhatsApp Cloud API
+    'meta' => [
+        // API version, e.g. v20.0
+        'api_version' => env('META_API_VERSION', 'v20.0'),
+        // Optional default Business Account ID (WABA) if not taken from DB settings
+        'business_account_id' => env('META_BUSINESS_ACCOUNT_ID'),
+    ],
+
 ];

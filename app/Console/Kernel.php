@@ -21,6 +21,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\HealthCheck::class,
         \App\Console\Commands\SendSubscriptionExpirationReminders::class,
         \App\Console\Commands\TestWhatsAppIntegrations::class,
+        \App\Console\Commands\TestWhatsAppMessage::class,
         \App\Console\Commands\RunAllScheduledTasks::class,
 
     ];
