@@ -102,8 +102,20 @@ class Building extends Model
             $value = $urlPath;
         }
 
-        // Extract filename and store under buildings directory
+        // Clean and normalize the path
         $path = ltrim($value, '/');
+        
+        // If path already starts with 'buildings/', return as is
+        if (Str::startsWith($path, 'buildings/')) {
+            return $path;
+        }
+        
+        // If path starts with 'deeds/' or contains 'deeds/', preserve the structure
+        if (Str::startsWith($path, 'deeds/') || Str::contains($path, '/deeds/')) {
+            return 'buildings/' . $path;
+        }
+        
+        // For other paths, extract filename and store under buildings directory
         $filename = basename($path);
         if ($filename === '' || $filename === '.' || $filename === '..') {
             return null;
