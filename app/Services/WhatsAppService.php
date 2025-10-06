@@ -24,11 +24,11 @@ class WhatsAppService
         if (!$this->settings || !$this->settings->whatsapp_service || !$this->settings->password_reset_enabled) {
             // Prepare default message
             $message = "رمز إعادة تعيين كلمة المرور: {$code}\n\nهذا الرمز صالح لمدة 15 دقيقة.";
-            
+
             if ($resetUrl) {
                 $message .= "\n\nأو يمكنك الضغط على الرابط التالي:\n{$resetUrl}?code={$code}";
             }
-            
+
             // Log that we're using default message due to service not being configured
             Log::info('WhatsApp service not configured, using default message format', [
                 'phone' => $phoneNumber,
@@ -36,7 +36,7 @@ class WhatsAppService
                 'service_configured' => $this->settings && $this->settings->whatsapp_service ? true : false,
                 'password_reset_enabled' => $this->settings && $this->settings->password_reset_enabled ? true : false
             ]);
-            
+
             // Return the default message (frontend can handle this as a fallback)
             return $message;
         }
@@ -44,7 +44,7 @@ class WhatsAppService
         // Get template - first try with specific template name, then with user language, then fallback
         $template = null;
         $useMetaTemplate = false;
-        
+
         // First, try to get the configured template from settings
         if ($this->settings->password_reset_template) {
             $template = \App\Models\WhatsAppTemplate::where('name', $this->settings->password_reset_template)
@@ -52,7 +52,7 @@ class WhatsAppService
                 ->where('status', true)
                 ->first();
         }
-        
+
         // If no configured template found, try with specific template name parameter
         // But only if we're not using Meta Cloud service
         if (!$template && $templateName && $this->settings->whatsapp_service !== 'meta_cloud') {
@@ -61,7 +61,7 @@ class WhatsAppService
                 ->where('status', true)
                 ->first();
         }
-        
+
         // If no specific template found, try to get template by user language
         if (!$template) {
             $template = \App\Models\WhatsAppTemplate::where('type', 'password_reset')
@@ -70,7 +70,7 @@ class WhatsAppService
                 ->orderBy('created_at', 'desc')
                 ->first();
         }
-        
+
         // If still no template found, try Arabic as fallback
         if (!$template && $userLanguage !== 'ar') {
             $template = \App\Models\WhatsAppTemplate::where('type', 'password_reset')
@@ -79,14 +79,14 @@ class WhatsAppService
                 ->orderBy('created_at', 'desc')
                 ->first();
         }
-        
+
         // If still no template found and using Meta Cloud, check for password_reset template
         if (!$template && $this->settings->whatsapp_service === 'meta_cloud') {
             if ($this->checkMetaTemplateExists('password_reset')) {
                 $useMetaTemplate = true;
             }
         }
-        
+
         // If a specific template name is provided and we're using Meta Cloud, try Meta template first
         if ($templateName && $this->settings->whatsapp_service === 'meta_cloud') {
             Log::info('Checking Meta template for password reset', [
@@ -110,7 +110,7 @@ class WhatsAppService
         // Prepare message content
         if ($template) {
             $message = $template->content;
-            
+
             // Replace variables
             $message = str_replace('{code}', $code, $message);
             $message = str_replace('{name}', $userName ?? 'User', $message);
@@ -120,7 +120,7 @@ class WhatsAppService
         } else {
             // Use configured custom message or fallback to default
             $message = $this->settings->password_reset_text ?? "رمز إعادة تعيين كلمة المرور: {$code}\n\nهذا الرمز صالح لمدة 15 دقيقة.\n\nأو يمكنك الضغط على الرابط التالي:\n{$resetUrl}?code={$code}";
-            
+
             // Replace variables in custom message
             $message = str_replace('{code}', $code, $message);
             $message = str_replace('{name}', $userName ?? 'User', $message);
@@ -174,23 +174,23 @@ class WhatsAppService
                         return true;
                     }
                 }
-                
+
                 // Fallback to database template
                 $dbTemplate = \App\Models\WhatsAppTemplate::where('name', $templateName)
                     ->where('type', 'password_reset')
                     ->where('status', true)
                     ->first();
-                    
+
                 if ($dbTemplate) {
                     Log::info('Using database template for password reset fallback', [
                         'template_name' => $templateName,
                         'template_content' => $dbTemplate->content
                     ]);
-                    
+
                     $templateMessage = $dbTemplate->content;
                     $templateMessage = str_replace('{code}', $code, $templateMessage);
                     $templateMessage = str_replace('{reset_url}', $resetUrl, $templateMessage);
-                    
+
                     return $this->sendRegularMessage($formattedPhone, $templateMessage);
                 }
             }
@@ -217,7 +217,7 @@ class WhatsAppService
                 // Add user name if provided
                 if ($userName) {
                     array_unshift($templateParams, [
-                        "type" => "text", 
+                        "type" => "text",
                         "text" => $userName
                     ]);
                 }
@@ -295,7 +295,7 @@ class WhatsAppService
 
             // Format phone number
             $formattedPhone = $this->formatPhoneNumber($phoneNumber);
-            
+
             Log::info('Evolution API welcome message formatting', [
                 'original' => $phoneNumber,
                 'formatted' => $formattedPhone
@@ -303,7 +303,7 @@ class WhatsAppService
 
             // Add title/header to the message for Evolution API
             $title = "تم التسجيل بنجاح في منصة تعاريف";
-            
+
             // Convert \n to actual line breaks and remove email from message
             $processedMessage = str_replace('\\n', "\n", $message);
             $processedMessage = str_replace('{email}', '', $processedMessage);
@@ -315,11 +315,11 @@ class WhatsAppService
             // Clean up extra line breaks
             $processedMessage = preg_replace('/\n\s*\n/', "\n", $processedMessage);
             $processedMessage = trim($processedMessage);
-            
+
             // Add clickable links from .env
             $appUrl = env('APP_URL', 'https://taearifdev.com');
             $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
-            
+
             $fullMessage = "*{$title}*\n\n{$processedMessage}\n\n🔗 روابط مفيدة:\n🌐 موقعك: {$appUrl}\n📊 لوحة التحكم: {$frontendUrl}";
 
             // Clean message for Evolution API (preserve line breaks)
@@ -335,7 +335,7 @@ class WhatsAppService
             ];
 
             $endpoint = "{$apiUrl}/message/sendText/{$instanceName}";
-            
+
             Log::info('Evolution API welcome message request', [
                 'endpoint' => $endpoint,
                 'payload' => $payload,
@@ -388,7 +388,7 @@ class WhatsAppService
 
             // Format phone number
             $formattedPhone = $this->formatPhoneNumber($phoneNumber);
-            
+
             // Log the phone number formatting for debugging
             Log::info('Phone number formatting', [
                 'original' => $phoneNumber,
@@ -398,7 +398,7 @@ class WhatsAppService
             // Use custom message if provided, otherwise prepare default message
             if (!$message) {
                 $message = "رمز إعادة تعيين كلمة المرور: {$code}\n\nهذا الرمز صالح لمدة 15 دقيقة.";
-                
+
                 // Add reset URL if provided (only code, no identifier)
                 if ($resetUrl) {
                     $message .= "\n\nأو يمكنك الضغط على الرابط التالي:\n{$resetUrl}?code={$code}";
@@ -415,7 +415,7 @@ class WhatsAppService
             ];
 
             $endpoint = "{$apiUrl}/message/sendText/{$instanceName}";
-            
+
             Log::info('Evolution API Request Details', [
                 'endpoint' => $endpoint,
                 'payload' => $payload,
@@ -437,7 +437,7 @@ class WhatsAppService
             } else {
                 $errorResponse = $response->json();
                 $errorMessage = $errorResponse['message'] ?? $errorResponse['error'] ?? 'Unknown error';
-                
+
                 Log::error('Evolution API error', [
                     'phone' => $formattedPhone,
                     'endpoint' => $endpoint,
@@ -464,10 +464,10 @@ class WhatsAppService
     {
         // Remove all non-numeric characters except +
         $phone = preg_replace('/[^0-9+]/', '', $phoneNumber);
-        
+
         // Remove + if present
         $phone = ltrim($phone, '+');
-        
+
         // Handle Egyptian phone numbers first (most specific)
         // If it's 11 digits starting with 01, remove the 0 and add Egyptian country code 20
         if (preg_match('/^01\d{9}$/', $phone)) {
@@ -504,15 +504,15 @@ class WhatsAppService
         elseif (preg_match('/^(\d{1,4})0(\d+)$/', $phone, $matches)) {
             $countryCode = $matches[1];
             $localNumber = $matches[2];
-            
+
             // For common country codes, remove the leading 0 from local number
             $commonCountryCodes = ['20', '966', '1', '44', '33', '49', '39', '34', '7', '81', '86', '91'];
-            
+
             if (in_array($countryCode, $commonCountryCodes)) {
                 $phone = $countryCode . $localNumber;
             }
         }
-        
+
         return $phone;
     }
 
@@ -524,13 +524,13 @@ class WhatsAppService
     {
         // Replace newlines and tabs with spaces
         $message = str_replace(["\r\n", "\r", "\n", "\t"], ' ', $message);
-        
+
         // Replace multiple consecutive spaces with single space
         $message = preg_replace('/\s+/', ' ', $message);
-        
+
         // Trim leading and trailing spaces
         $message = trim($message);
-        
+
         return $message;
     }
 
@@ -542,19 +542,19 @@ class WhatsAppService
     {
         // Normalize line endings
         $message = str_replace(["\r\n", "\r"], "\n", $message);
-        
+
         // Replace tabs with spaces
         $message = str_replace("\t", ' ', $message);
-        
+
         // Replace multiple consecutive spaces with single space (but preserve line breaks)
         $message = preg_replace('/[ ]+/', ' ', $message);
-        
+
         // Remove empty lines (multiple consecutive newlines)
         $message = preg_replace('/\n\s*\n/', "\n", $message);
-        
+
         // Trim leading and trailing whitespace
         $message = trim($message);
-        
+
         return $message;
     }
 
@@ -637,17 +637,17 @@ class WhatsAppService
             $apiUrl = $this->settings->evolution_api_url;
             $apiKey = $this->settings->evolution_api_key;
             $instanceName = $this->settings->evolution_instance_name;
-            
+
             // Test connection to Evolution API
             $response = Http::withHeaders([
                 'apikey' => $apiKey,
                 'Content-Type' => 'application/json',
             ])->timeout(10)->get("{$apiUrl}/instance/connectionState/{$instanceName}");
-            
+
             if ($response->successful()) {
                 $responseData = $response->json();
                 $connectionState = $responseData['instance']['state'] ?? 'unknown';
-                
+
                 return [
                     'status' => 'success',
                     'message' => "Evolution API configuration is complete. Instance state: {$connectionState}"
@@ -685,17 +685,17 @@ class WhatsAppService
                 }
             }
         }
-        
+
         // Replace template variables
         $message = str_replace('{name}', $displayName, $message);
         $message = str_replace('{email}', $userEmail ?? 'N/A', $message);
-        
+
         if ($this->settings->whatsapp_service === 'meta_cloud') {
             return $this->sendMetaCloudMessage($phoneNumber, $message, 'welcome', $displayName, $userEmail);
         } elseif ($this->settings->whatsapp_service === 'evolution_api') {
             return $this->sendWelcomeViaEvolutionApi($phoneNumber, $message, $displayName);
         }
-        
+
         throw new \Exception('No WhatsApp service configured');
     }
 
@@ -707,13 +707,13 @@ class WhatsAppService
         $message = str_replace('{name}', $userName ?? 'User', $message);
         $message = str_replace('{package_name}', $packageName ?? 'Package', $message);
         $message = str_replace('{expiry_date}', $expiryDate ?? 'N/A', $message);
-        
+
         if ($this->settings->whatsapp_service === 'meta_cloud') {
             return $this->sendMetaCloudMessage($phoneNumber, $message, 'subscription_expiration', $userName, null, $packageName, $expiryDate);
         } elseif ($this->settings->whatsapp_service === 'evolution_api') {
             return $this->sendSubscriptionExpirationViaEvolutionApi($phoneNumber, $message, $userName, $packageName, $expiryDate);
         }
-        
+
         throw new \Exception('No WhatsApp service configured');
     }
 
@@ -725,7 +725,7 @@ class WhatsAppService
         $message = str_replace('{name}', $userName ?? 'User', $message);
         $message = str_replace('{package_name}', $packageName ?? 'Package', $message);
         $message = str_replace('{expiry_date}', $expiryDate ?? 'N/A', $message);
-        
+
         // Respect admin's WhatsApp service selection first, then fallback
         if ($this->settings->whatsapp_service === 'meta_cloud') {
             // Primary: Try Meta Cloud as per admin selection
@@ -745,12 +745,12 @@ class WhatsAppService
                     'error' => $e->getMessage()
                 ]);
             }
-            
+
             // Fallback: Try Evolution API if Meta Cloud failed
-            $evolutionAvailable = !empty($this->settings->evolution_api_url) && 
-                                 !empty($this->settings->evolution_api_key) && 
+            $evolutionAvailable = !empty($this->settings->evolution_api_url) &&
+                                 !empty($this->settings->evolution_api_key) &&
                                  !empty($this->settings->evolution_instance_name);
-            
+
             if ($evolutionAvailable) {
                 try {
                     $result = $this->sendSubscriptionExpiredViaEvolutionApi($phoneNumber, $message, $userName, $packageName, $expiryDate);
@@ -771,10 +771,10 @@ class WhatsAppService
             }
         } elseif ($this->settings->whatsapp_service === 'evolution_api') {
             // Primary: Try Evolution API as per admin selection
-            $evolutionAvailable = !empty($this->settings->evolution_api_url) && 
-                                 !empty($this->settings->evolution_api_key) && 
+            $evolutionAvailable = !empty($this->settings->evolution_api_url) &&
+                                 !empty($this->settings->evolution_api_key) &&
                                  !empty($this->settings->evolution_instance_name);
-            
+
             if ($evolutionAvailable) {
                 try {
                     $result = $this->sendSubscriptionExpiredViaEvolutionApi($phoneNumber, $message, $userName, $packageName, $expiryDate);
@@ -793,7 +793,7 @@ class WhatsAppService
                     ]);
                 }
             }
-            
+
             // Fallback: Try Meta Cloud if Evolution API failed
             try {
                 $result = $this->sendMetaCloudMessage($phoneNumber, $message, 'subscription_expired', $userName, null, $packageName, $expiryDate);
@@ -812,25 +812,25 @@ class WhatsAppService
                 ]);
             }
         }
-        
+
         // Final fallback: Use database template as regular message
         Log::info('Using database template fallback for subscription expired', [
             'phone' => $phoneNumber,
             'service' => 'database_fallback'
         ]);
-        
+
         // Get database template
         $template = \App\Models\WhatsAppTemplate::where('name', 'subscription_expired_notice')
             ->where('type', 'subscription_expired')
             ->where('status', true)
             ->first();
-            
+
         if ($template) {
             $templateMessage = $template->content;
             $templateMessage = str_replace('{name}', $userName ?? 'User', $templateMessage);
             $templateMessage = str_replace('{package_name}', $packageName ?? 'Package', $templateMessage);
             $templateMessage = str_replace('{expiry_date}', $expiryDate ?? 'N/A', $templateMessage);
-            
+
             // Try to send via current WhatsApp service as regular message
             if ($this->settings->whatsapp_service === 'meta_cloud') {
                 return $this->sendRegularMessage($phoneNumber, $templateMessage);
@@ -840,11 +840,11 @@ class WhatsAppService
                     $apiUrl = $this->settings->evolution_api_url;
                     $apiKey = $this->settings->evolution_api_key;
                     $instanceName = $this->settings->evolution_instance_name;
-                    
+
                     if ($apiUrl && $apiKey && $instanceName) {
                         $formattedPhone = $this->formatPhoneNumber($phoneNumber);
                         $cleanedMessage = $this->cleanRegularMessageForWhatsApp($templateMessage);
-                        
+
                         $payload = [
                             "number" => $formattedPhone,
                             "text" => $cleanedMessage,
@@ -853,13 +853,13 @@ class WhatsAppService
                                 "presence" => "composing"
                             ]
                         ];
-                        
+
                         $endpoint = "{$apiUrl}/message/sendText/{$instanceName}";
                         $response = \Illuminate\Support\Facades\Http::withHeaders([
                             'apikey' => $apiKey,
                             'Content-Type' => 'application/json',
                         ])->post($endpoint, $payload);
-                        
+
                         return $response->successful();
                     }
                 } catch (\Exception $e) {
@@ -872,7 +872,7 @@ class WhatsAppService
                 return $this->sendRegularMessage($phoneNumber, $templateMessage);
             }
         }
-        
+
         // Ultimate fallback: Send the original message as regular text
         return $this->sendRegularMessage($phoneNumber, $message);
     }
@@ -893,7 +893,7 @@ class WhatsAppService
 
             // Format phone number
             $formattedPhone = $this->formatPhoneNumber($phoneNumber);
-            
+
             Log::info('Evolution API subscription expiration message formatting', [
                 'original' => $phoneNumber,
                 'formatted' => $formattedPhone
@@ -901,14 +901,14 @@ class WhatsAppService
 
             // Add title/header to the message for Evolution API
             $title = "تنبيه انتهاء الاشتراك";
-            
+
             // Convert \n to actual line breaks
             $processedMessage = str_replace('\\n', "\n", $message);
-            
+
             // Add links from .env
             $appUrl = env('APP_URL', 'https://taearifdev.com');
             $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
-            
+
             $fullMessage = "*{$title}*\n\n{$processedMessage}\n\n🔗 روابط مفيدة:\n🌐 موقعك: {$appUrl}\n📊 لوحة التحكم: {$frontendUrl}";
 
             // Clean message for Evolution API (preserve line breaks)
@@ -924,7 +924,7 @@ class WhatsAppService
             ];
 
             $endpoint = "{$apiUrl}/message/sendText/{$instanceName}";
-            
+
             Log::info('Evolution API subscription expiration message request', [
                 'endpoint' => $endpoint,
                 'payload' => $payload,
@@ -976,7 +976,7 @@ class WhatsAppService
 
             // Format phone number
             $formattedPhone = $this->formatPhoneNumber($phoneNumber);
-            
+
             Log::info('Evolution API subscription expired message formatting', [
                 'original' => $phoneNumber,
                 'formatted' => $formattedPhone
@@ -984,14 +984,14 @@ class WhatsAppService
 
             // Add title/header to the message for Evolution API
             $title = "انتهت صلاحية الاشتراك";
-            
+
             // Convert \n to actual line breaks
             $processedMessage = str_replace('\\n', "\n", $message);
-            
+
             // Add links from .env
             $appUrl = env('APP_URL', 'https://taearifdev.com');
             $frontendUrl = env('FRONTEND_URL', 'https://app.taearif.com');
-            
+
             $fullMessage = "*{$title}*\n\n{$processedMessage}\n\n🔗 روابط مفيدة:\n🌐 موقعك: {$appUrl}\n📊 لوحة التحكم: {$frontendUrl}";
 
             // Clean message for Evolution API (preserve line breaks)
@@ -1007,7 +1007,7 @@ class WhatsAppService
             ];
 
             $endpoint = "{$apiUrl}/message/sendText/{$instanceName}";
-            
+
             Log::info('Evolution API subscription expired message request', [
                 'endpoint' => $endpoint,
                 'payload' => $payload,
@@ -1050,16 +1050,16 @@ class WhatsAppService
     {
         $templateName = null;
         $templateContent = null;
-        
+
         // Clean message for WhatsApp template parameters
         $message = $this->cleanMessageForWhatsApp($message);
-        
+
         Log::info('Meta Cloud message processing', [
             'phone' => $phoneNumber,
             'message_type' => $messageType,
             'message' => $message
         ]);
-        
+
         // Get template name based on message type
         if ($messageType === 'welcome' && !empty($this->settings->welcome_message_template)) {
             $templateName = $this->settings->welcome_message_template;
@@ -1108,7 +1108,7 @@ class WhatsAppService
             'formatted_phone' => $formattedPhone,
             'template_name' => $templateName,
             'message_type' => $messageType,
-            'sending_method' => $templateName && $messageType === 'welcome' ? 'approved_meta_template' : 
+            'sending_method' => $templateName && $messageType === 'welcome' ? 'approved_meta_template' :
                               ($templateName && $templateContent ? 'database_template' : 'regular_message')
         ]);
 
@@ -1120,7 +1120,7 @@ class WhatsAppService
                 'user_email' => $userEmail,
                 'user_name' => $userName
             ]);
-            
+
             switch ($messageType) {
                 case 'welcome':
                     return $this->sendWelcomeMetaTemplate($formattedPhone, $templateName, $userEmail, $userName);
@@ -1134,7 +1134,7 @@ class WhatsAppService
                         'phone' => $formattedPhone,
                         'reason' => 'template_delivery_issues'
                     ]);
-                    
+
                     $customMessage = "إشعار بانتهاء الاشتراك\n\n" . $message . "\n\nمنصة تعاريف لبناء المواقع العقارية\n\nللدخول: " . env('FRONTEND_URL', 'https://app.taearif.com') . "/login";
                     return $this->sendRegularMessage($formattedPhone, $customMessage);
                 default:
@@ -1145,7 +1145,7 @@ class WhatsAppService
                     break;
             }
         }
-        
+
         if ($templateName && $templateContent) {
             // For other message types, use database template content
             $processedContent = $templateContent;
@@ -1153,7 +1153,7 @@ class WhatsAppService
             $processedContent = str_replace('{email}', $userEmail ?? 'N/A', $processedContent);
             $processedContent = str_replace('{package_name}', $packageName ?? 'Package', $processedContent);
             $processedContent = str_replace('{expiry_date}', $expiryDate ?? 'N/A', $processedContent);
-            
+
             Log::info('Using database template content for regular message', [
                 'template_name' => $templateName,
                 'template_content' => $templateContent,
@@ -1185,8 +1185,9 @@ class WhatsAppService
     protected function sendTemplateMessage($phoneNumber, $templateName, $message)
     {
         try {
-            $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
-            
+            $apiVersion = config('services.meta.api_version', 'v20.0');
+            $url = "https://graph.facebook.com/{$apiVersion}/{$this->settings->meta_phone_number_id}/messages";
+
             $data = [
                 'messaging_product' => 'whatsapp',
                 'to' => $phoneNumber,
@@ -1256,8 +1257,9 @@ class WhatsAppService
     protected function sendApprovedTemplateMessage($phoneNumber, $templateName, $userEmail, $userName = null)
     {
         try {
-            $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
-            
+            $apiVersion = config('services.meta.api_version', 'v20.0');
+            $url = "https://graph.facebook.com/{$apiVersion}/{$this->settings->meta_phone_number_id}/messages";
+
             // Use exact Postman format
             $data = [
                 'messaging_product' => 'whatsapp',
@@ -1341,8 +1343,9 @@ class WhatsAppService
     protected function sendWelcomeMetaTemplate($phoneNumber, $templateName, $userEmail, $userName = null)
     {
         try {
-            $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
-            
+            $apiVersion = config('services.meta.api_version', 'v20.0');
+            $url = "https://graph.facebook.com/{$apiVersion}/{$this->settings->meta_phone_number_id}/messages";
+
             $data = [
                 'messaging_product' => 'whatsapp',
                 'to' => $phoneNumber,
@@ -1426,7 +1429,7 @@ class WhatsAppService
     {
         try {
             $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
-            
+
             // subscription_expiry_reminder template has no parameters, just header and body
             $data = [
                 'messaging_product' => 'whatsapp',
@@ -1489,7 +1492,7 @@ class WhatsAppService
     {
         try {
             $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
-            
+
             // subscription_expired_notice template structure: header, body, footer, and URL button (no parameters needed)
             $data = [
                 'messaging_product' => 'whatsapp',
@@ -1552,7 +1555,7 @@ class WhatsAppService
     {
         try {
             $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
-            
+
             // Get company name from user_basic_settings table
             $companyName = 'المستخدم'; // Default fallback
             if ($userId) {
@@ -1571,7 +1574,7 @@ class WhatsAppService
             } elseif ($userName) {
                 $companyName = $userName; // Fallback to provided user name
             }
-            
+
             // password_reset template uses positional parameters
             $data = [
                 'messaging_product' => 'whatsapp',
@@ -1658,10 +1661,10 @@ class WhatsAppService
     {
         try {
             $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
-            
+
             // Clean message for regular WhatsApp messages (preserve line breaks)
             $cleanedMessage = $this->cleanRegularMessageForWhatsApp($message);
-            
+
             $data = [
                 'messaging_product' => 'whatsapp',
                 'to' => $phoneNumber,
@@ -1721,10 +1724,10 @@ class WhatsAppService
     {
         try {
             $url = "https://graph.facebook.com/v20.0/{$this->settings->meta_phone_number_id}/messages";
-            
+
             // Clean message for regular WhatsApp messages (preserve line breaks)
             $cleanedMessage = $this->cleanRegularMessageForWhatsApp($message);
-            
+
             $data = [
                 'messaging_product' => 'whatsapp',
                 'to' => $phoneNumber,
@@ -1783,8 +1786,9 @@ class WhatsAppService
                 throw new \Exception('Meta Cloud API configuration incomplete');
             }
 
-            $url = "https://graph.facebook.com/v20.0/{$businessAccountId}/message_templates";
-            
+            $apiVersion = config('services.meta.api_version', 'v20.0');
+            $url = "https://graph.facebook.com/{$apiVersion}/{$businessAccountId}/message_templates";
+
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $accessToken,
                 'Content-Type' => 'application/json',
@@ -1795,7 +1799,7 @@ class WhatsAppService
             if ($response->successful()) {
                 $data = $response->json();
                 $templates = [];
-                
+
                 if (isset($data['data'])) {
                     foreach ($data['data'] as $template) {
                         // Only include approved templates
@@ -1809,7 +1813,7 @@ class WhatsAppService
                         }
                     }
                 }
-                
+
                 return $templates;
             } else {
                 Log::error('Meta API template fetch error', [
@@ -1828,19 +1832,97 @@ class WhatsAppService
     }
 
     /**
+     * Public generic sender for Meta WhatsApp templates with dynamic body params
+     */
+    public function sendTemplateToPhone(string $phoneNumber, string $templateName, string $language = 'ar', array $bodyParams = [])
+    {
+        try {
+            $accessToken = $this->settings->meta_access_token;
+            $phoneNumberId = $this->settings->meta_phone_number_id;
+
+            if (!$accessToken || !$phoneNumberId) {
+                return [
+                    'success' => false,
+                    'message' => 'Meta Cloud API configuration incomplete'
+                ];
+            }
+
+            // Map body params into template parameters
+            $parameters = [];
+            foreach ($bodyParams as $param) {
+                $parameters[] = [
+                    'type' => 'text',
+                    'text' => (string) $param,
+                ];
+            }
+
+            $apiVersion = config('services.meta.api_version', 'v20.0');
+            $url = "https://graph.facebook.com/{$apiVersion}/{$phoneNumberId}/messages";
+
+            $payload = [
+                'messaging_product' => 'whatsapp',
+                'to' => $phoneNumber,
+                'type' => 'template',
+                'template' => [
+                    'name' => $templateName,
+                    'language' => [
+                        'policy' => 'deterministic',
+                        'code' => $language,
+                    ],
+                ],
+            ];
+
+            if (!empty($parameters)) {
+                $payload['template']['components'] = [
+                    [
+                        'type' => 'body',
+                        'parameters' => $parameters,
+                    ],
+                ];
+            }
+
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type' => 'application/json',
+            ])->post($url, $payload);
+
+            if ($response->successful()) {
+                $json = $response->json();
+                return [
+                    'success' => true,
+                    'message_id' => $json['messages'][0]['id'] ?? null,
+                    'response' => $json,
+                ];
+            }
+
+            $err = $response->json();
+            return [
+                'success' => false,
+                'message' => $err['error']['message'] ?? 'Failed to send template',
+                'response' => $err,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Check if a specific Meta template exists
      */
     public function checkMetaTemplateExists($templateName)
     {
         try {
             $templates = $this->fetchMetaTemplates();
-            
+
             foreach ($templates as $template) {
                 if ($template['name'] === $templateName && $template['status'] === 'APPROVED') {
                     return true;
                 }
             }
-            
+
             return false;
         } catch (\Exception $e) {
             // If we can't fetch templates, assume template doesn't exist
@@ -1901,7 +1983,8 @@ class WhatsAppService
             ];
         }
 
-        $url = "https://graph.facebook.com/v20.0/{$phoneNumberId}/messages";
+        $apiVersion = config('services.meta.api_version', 'v20.0');
+        $url = "https://graph.facebook.com/{$apiVersion}/{$phoneNumberId}/messages";
 
         $payload = [
             'messaging_product' => 'whatsapp',

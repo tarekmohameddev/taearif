@@ -582,6 +582,7 @@ class MarketingChannelController extends BaseApiController
         }
     }
 
+
     /**
      * Handle WhatsApp webhook
      */
@@ -1067,6 +1068,239 @@ class MarketingChannelController extends BaseApiController
             return $this->ok($formattedUsage->all(), 'Usage retrieved successfully');
         } catch (\Exception $e) {
             return $this->fail('Failed to retrieve usage: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send WhatsApp message to CRM customer
+     */
+    public function sendWhatsAppToCustomer(Request $request): JsonResponse
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'customer_id' => 'required|integer|exists:api_customers,id',
+                'message' => 'required|string|max:1000',
+                'channel_id' => 'nullable|integer|exists:marketing_channels,id',
+            ]);
+
+            if ($validator->fails()) {
+                return $this->fail('Validation failed', 422, $validator->errors());
+            }
+
+            $userId = Auth::id();
+            $customerId = $request->customer_id;
+
+            // Get customer and verify ownership
+            $customer = \App\Models\ApiCustomer::where('user_id', $userId)
+                ->where('id', $customerId)
+                ->first();
+
+            if (!$customer) {
+                return $this->fail('Customer not found or does not belong to you', 404);
+            }
+
+            // Check if customer has phone number
+            if (empty($customer->phone_number)) {
+                return $this->fail('Customer does not have a phone number', 400, [
+                    'error_code' => 'NO_PHONE_NUMBER',
+                    'customer_name' => $customer->name,
+                ]);
+            }
+
+            // Get or find WhatsApp marketing channel
+            $channel = null;
+            if ($request->has('channel_id')) {
+                $channel = MarketingChannel::where('user_id', $userId)
+                    ->where('id', $request->channel_id)
+                    ->where('type', 'whatsapp')
+                    ->where('is_connected', true)
+                    ->where('is_verified', true)
+                    ->first();
+            } else {
+                // Auto-find user's WhatsApp channel
+                $channel = MarketingChannel::where('user_id', $userId)
+                    ->where('type', 'whatsapp')
+                    ->where('is_connected', true)
+                    ->where('is_verified', true)
+                    ->first();
+            }
+
+            if (!$channel) {
+                return $this->fail('No active WhatsApp channel found. Please configure and verify your WhatsApp marketing channel first.', 400, [
+                    'error_code' => 'NO_WHATSAPP_CHANNEL',
+                ]);
+            }
+
+            // Format phone number (add country code if missing)
+            $formattedPhone = $this->formatPhoneNumber($customer->phone_number);
+
+            // Calculate credits needed
+            $creditsNeeded = UserCredit::getCostForMessageType('whatsapp');
+
+            // Check and deduct credits
+            $creditResult = CreditController::useCredits(
+                $userId,
+                $creditsNeeded,
+                "WhatsApp message sent to customer: {$customer->name}",
+                [
+                    'channel_id' => $channel->id,
+                    'channel_type' => 'whatsapp',
+                    'recipient' => $formattedPhone,
+                    'customer_id' => $customer->id,
+                    'customer_name' => $customer->name,
+                    'message_type' => 'text',
+                ]
+            );
+
+            if (!$creditResult['success']) {
+                return $this->fail($creditResult['error'], 400, [
+                    'credits_available' => $creditResult['available_credits'] ?? 0,
+                    'credits_required' => $creditsNeeded,
+                ]);
+            }
+
+            // Send message via Meta WhatsApp Business API
+            $messageResult = $this->sendWhatsAppViaMeta($channel, $formattedPhone, $request->message);
+
+            if ($messageResult['success']) {
+                // Update sent message count
+                $channel->increment('sent_messages_count');
+
+                // Log the message sent to customer
+                Log::info('WhatsApp message sent to CRM customer', [
+                    'user_id' => $userId,
+                    'customer_id' => $customer->id,
+                    'customer_name' => $customer->name,
+                    'phone' => $formattedPhone,
+                    'channel_id' => $channel->id,
+                    'message_id' => $messageResult['message_id'],
+                    'credits_used' => $creditsNeeded,
+                ]);
+
+                return $this->ok([
+                    'message_id' => $messageResult['message_id'],
+                    'customer' => [
+                        'id' => $customer->id,
+                        'name' => $customer->name,
+                        'phone_number' => $customer->phone_number,
+                        'formatted_phone' => $formattedPhone,
+                    ],
+                    'channel' => [
+                        'id' => $channel->id,
+                        'name' => $channel->name,
+                    ],
+                    'credits_used' => $creditsNeeded,
+                    'remaining_credits' => $creditResult['remaining_credits'],
+                    'status' => 'sent',
+                ], 'WhatsApp message sent to customer successfully');
+            } else {
+                // Refund credits if message sending failed
+                $this->refundCredits($userId, $creditsNeeded, "Failed to send WhatsApp message to customer: {$customer->name}");
+
+                return $this->fail('Failed to send WhatsApp message: ' . $messageResult['error'], 500, [
+                    'customer_name' => $customer->name,
+                    'phone' => $formattedPhone,
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error sending WhatsApp message to customer', [
+                'user_id' => Auth::id(),
+                'customer_id' => $request->customer_id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return $this->fail('Failed to send WhatsApp message: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Format phone number - keep as provided without adding country code
+     */
+    private function formatPhoneNumber($phoneNumber)
+    {
+        // Remove all non-numeric characters and return as is
+        $phone = preg_replace('/[^0-9]/', '', $phoneNumber);
+        return $phone;
+    }
+
+    /**
+     * Send WhatsApp message via Meta Business API
+     */
+    private function sendWhatsAppViaMeta($channel, $phoneNumber, $message)
+    {
+        try {
+            // Get Meta API credentials from channel or basic settings
+            $accessToken = $channel->access_token;
+            $phoneNumberId = $channel->phone_id;
+
+            // If channel doesn't have credentials, try to get from basic settings
+            if (!$accessToken || !$phoneNumberId) {
+                $basicSettings = \App\Models\BasicSetting::first();
+                if ($basicSettings && $basicSettings->whatsapp_service === 'meta_cloud') {
+                    $accessToken = $basicSettings->meta_access_token;
+                    $phoneNumberId = $basicSettings->meta_phone_number_id;
+                }
+            }
+
+            if (!$accessToken || !$phoneNumberId) {
+                throw new \Exception('Meta WhatsApp API credentials not configured');
+            }
+
+            // Prepare message payload
+            $payload = [
+                'messaging_product' => 'whatsapp',
+                'to' => $phoneNumber,
+                'type' => 'text',
+                'text' => [
+                    'body' => $message
+                ]
+            ];
+
+            // Send message via Meta API
+            $apiVersion = config('services.meta.api_version', 'v20.0');
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type' => 'application/json',
+            ])->post("https://graph.facebook.com/{$apiVersion}/{$phoneNumberId}/messages", $payload);
+
+            if ($response->successful()) {
+                $responseData = $response->json();
+                $messageId = $responseData['messages'][0]['id'] ?? null;
+
+                Log::info('Meta WhatsApp message sent successfully', [
+                    'phone' => $phoneNumber,
+                    'message_id' => $messageId,
+                    'response' => $responseData
+                ]);
+
+                return [
+                    'success' => true,
+                    'message_id' => $messageId,
+                    'meta_response' => $responseData,
+                ];
+            } else {
+                $errorData = $response->json();
+                Log::error('Meta WhatsApp API error', [
+                    'phone' => $phoneNumber,
+                    'response' => $errorData,
+                    'status' => $response->status()
+                ]);
+
+                throw new \Exception('Meta API error: ' . ($errorData['error']['message'] ?? 'Unknown error'));
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Meta WhatsApp message exception', [
+                'phone' => $phoneNumber,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
         }
     }
 }

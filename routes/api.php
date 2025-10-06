@@ -640,28 +640,30 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::delete('cards/{id}', [CrmCardController::class, 'destroy']);
     });
 
-        // Marketing Channels Routes
-        Route::prefix('marketing')->group(function () {
-            Route::get('channels', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'index']);
-            Route::post('channels', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'store']);
-            Route::get('channels/types', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getChannelTypes']);
-            // i want to return for each channel calc how much credits used and how much messages sent all channels return it as object
-            Route::get('channels/usage', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getUsage']);
-            Route::get('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'show']);
-            Route::put('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'update']);
-            Route::patch('channels/{id}/status', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'updateStatus']);
-            Route::get('channels/{id}/statistics', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'statistics']);
-            Route::get('channels/{id}/stats', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'stats']);
-            Route::post('channels/{id}/sync-verified', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'syncVerified']);
-            Route::post('channels/{id}/send-message', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'sendMessage']);
-            Route::delete('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'destroy']);
+    // Marketing Channels Routes
+    Route::prefix('marketing')->group(function () {
+        Route::get('channels', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'index']);
+        Route::post('channels', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'store']);
+        Route::get('channels/types', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getChannelTypes']);
+        // i want to return for each channel calc how much credits used and how much messages sent all channels return it as object
+        Route::get('channels/usage', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getUsage']);
+        Route::get('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'show']);
+        Route::put('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'update']);
+        Route::patch('channels/{id}/status', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'updateStatus']);
+        Route::get('channels/{id}/statistics', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'statistics']);
+        Route::get('channels/{id}/stats', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'stats']);
+        Route::post('channels/{id}/sync-verified', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'syncVerified']);
+        Route::post('channels/{id}/send-message', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'sendMessage']);
+        Route::post('channels/send-whatsapp-to-customer', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'sendWhatsAppToCustomer']);
+        Route::delete('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'destroy']);
 
-            // Marketing Settings Routes
-            Route::get('settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getAllMarketingSettings']);
-            Route::get('channels/{id}/settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getMarketingSettings']);
-            Route::put('channels/{id}/settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'updateMarketingSettings']);
-            Route::patch('channels/{id}/system-integrations', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'updateSystemIntegrationSettings']);
-        });
+        // Marketing Settings Routes
+        Route::get('settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getAllMarketingSettings']);
+        Route::get('channels/{id}/settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getMarketingSettings']);
+        Route::put('channels/{id}/settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'updateMarketingSettings']);
+        Route::patch('channels/{id}/system-integrations', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'updateSystemIntegrationSettings']);
+
+    });
 
     // Marketing Webhooks Routes (no auth required for webhooks)
     Route::prefix('marketing/webhooks')->group(function () {
