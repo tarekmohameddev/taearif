@@ -30,11 +30,13 @@ class PaymentLogController extends Controller
     public function index(Request $request)
     {
         $search = $request->search;
-        $data['memberships'] = Membership::query()->when($search, function ($query, $search) {
+        $data['memberships'] = Membership::query()
+        ->where('payment_method', 'arb') 
+        ->when($search, function ($query, $search) {
             return $query->where('transaction_id', 'like', '%' . $search . '%');
         })
-            ->orderBy('id', 'DESC')
-            ->paginate(10);
+        ->orderBy('id', 'DESC')
+        ->paginate(10);
         return view('admin.payment_log.index', $data);
     }
 
