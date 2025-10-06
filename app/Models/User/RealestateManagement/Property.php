@@ -123,7 +123,7 @@ class Property extends Model
             'category_id' => $request['category_id'] ?? $defaultCategory->id,
             'payment_method' => $request['payment_method'] ?? null,
             'faqs' => $request['faqs'] ?? [],
-            'building' => $request['building'] ?? null,
+            'building_id' => $request['building_id'] ?? null,
             'water_meter_number' => $request['water_meter_number'] ?? null,
             'electricity_meter_number' => $request['electricity_meter_number'] ?? null,
             'deed_number' => $request['deed_number'] ?? null,
