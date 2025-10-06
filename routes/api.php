@@ -272,7 +272,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::get   ('/property/facades',                   [UserFacadeController::class, 'index'])->middleware('can:properties.view');
     // faqs
     Route::get   ('/property-faqs',                               [PropertyController::class, 'faqs']);
-    
+
     // Building management routes
     Route::get   ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'index']);
     Route::get   ('/buildings/{id}',                    [App\Http\Controllers\Api\BuildingController::class, 'show']);
@@ -476,7 +476,7 @@ Route::post('/isthara', [IstharaController::class, 'store']);
 // Public Credit Management Routes (no auth required)
 Route::prefix('v1/credits')->group(function () {
     Route::get('packages', [\App\Http\Controllers\Api\markting\CreditController::class, 'getPackages']);
-    
+
     // Payment callback routes (no auth required for webhooks)
     Route::get('payment/success/{transaction_id}/{gateway}', [\App\Http\Controllers\Api\markting\CreditController::class, 'paymentSuccess'])
         ->name('api.credits.payment.success');
@@ -508,7 +508,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         // get and post payment collection
         Route::get('rentals/{id}/payment-collection', [RentalController::class, 'paymentCollection']);
         Route::post('rentals/{id}/collect-payment', [RentalController::class, 'collectPayment']);
-        
+
         // Upload receipt image
         Route::post('rentals/upload-receipt-image', [RentalController::class, 'uploadReceiptImage']);
 
@@ -555,7 +555,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::prefix('pms')->group(function () {
         // Dashboard and Statistics
         Route::get('dashboard', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'dashboard']);
-        
+
         // Helper endpoints for dropdowns
         Route::get('properties', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'getProperties']);
         Route::get('projects', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'getProjects']);
@@ -567,7 +567,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('purchase-requests/{id}', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'show']);
         Route::patch('purchase-requests/{id}', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'update']);
         Route::delete('purchase-requests/{id}', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'destroy']);
-        
+
         // Stage Transition
         Route::post('purchase-requests/{id}/transition-stage', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'transitionStage']);
         Route::post('purchase-requests/{id}/simple-transition-stage', [\App\Http\Controllers\Api\PurchaseRequestController::class, 'simpleTransitionStage']);
@@ -576,12 +576,12 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('purchase-requests/{purchaseRequestId}/stages', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'index']);
         Route::get('purchase-requests/{purchaseRequestId}/stages/statistics', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'statistics']);
         Route::get('purchase-requests/{purchaseRequestId}/stages/{stageId}', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'show']);
-        
+
         // Stage Status Updates
         Route::patch('purchase-requests/{purchaseRequestId}/stages/{stageId}/status', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'updateStatus']);
         Route::patch('purchase-requests/{purchaseRequestId}/stages/{stageId}/notes', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'updateNotes']);
         Route::patch('purchase-requests/{purchaseRequestId}/stages/bulk-update', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'bulkUpdate']);
-        
+
         // Stage Action Helpers
         Route::post('purchase-requests/{purchaseRequestId}/stages/{stageId}/mark-completed', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'markCompleted']);
         Route::post('purchase-requests/{purchaseRequestId}/stages/{stageId}/mark-in-progress', [\App\Http\Controllers\Api\PurchaseRequestStageController::class, 'markInProgress']);
@@ -594,7 +594,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     // ApiPropertyRequestController
     Route::get('/property-requests', [ApiPropertyRequestController::class, 'index']);
     Route::post('/property-requests', [ApiPropertyRequestController::class, 'store']);
-    // DELETE 
+    // DELETE
     Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy']);
     // update
     Route::put('/property-requests/{id}', [ApiPropertyRequestController::class, 'update']);
@@ -655,7 +655,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
             Route::post('channels/{id}/sync-verified', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'syncVerified']);
             Route::post('channels/{id}/send-message', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'sendMessage']);
             Route::delete('channels/{id}', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'destroy']);
-            
+
             // Marketing Settings Routes
             Route::get('settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getAllMarketingSettings']);
             Route::get('channels/{id}/settings', [\App\Http\Controllers\Api\markting\MarketingChannelController::class, 'getMarketingSettings']);
@@ -717,7 +717,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/crm/cards/{id}/logs', [CardLogController::class, 'index'])->middleware('can:crm.cards.view');
         // crm/cards
     });
-    
+
     // Employee Management Routes
     Route::middleware(['auth:sanctum'])->group(function () {
         // Define specific routes BEFORE apiResource to avoid conflicts
@@ -798,6 +798,7 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve'])->group(
     Route::put('{tenantId}/settings', [SettingsController::class, 'update'])->middleware('auth:sanctum');
     Route::post('{tenantId}/publish', [PublishController::class, 'store'])->middleware('auth:sanctum');
     Route::post('{tenantId}/forms/contact', [FormController::class, 'store']);
+});
 
     // Tenant Website Properties (public)
     Route::get('{tenantId}/properties', [\App\Http\Controllers\Api\V1\TenantWebsite\PropertyController::class, 'index']);
