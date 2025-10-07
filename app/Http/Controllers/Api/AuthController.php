@@ -405,6 +405,9 @@ class AuthController extends Controller
             // Onboarding + default categories
             app(\App\Services\OnboardingService::class)->applyDefaultsFor($user);
 
+            // Seed default tenant website pages and components
+            app(\App\Services\TenantWebsiteSeeder::class)->seedDefaultWebsite($user);
+
             $categories = \DB::table('api_user_categories')->get();
             foreach ($categories as $category) {
                 \DB::table('api_user_category_settings')->insert([
