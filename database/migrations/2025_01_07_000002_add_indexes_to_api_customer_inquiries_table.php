@@ -8,7 +8,6 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('api_customer_inquiry', function (Blueprint $table) {
-            $table->index('phone_number', 'aci_phone_idx');
             $table->index('inquiry_type', 'aci_inquiry_type_idx');
             $table->index('property_type', 'aci_property_type_idx');
 
@@ -23,7 +22,6 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('api_customer_inquiry', function (Blueprint $table) {
-            $table->dropIndex('aci_phone_idx');
             $table->dropIndex('aci_inquiry_type_idx');
             $table->dropIndex('aci_property_type_idx');
             $table->dropIndex('aci_region_code_idx');
