@@ -163,7 +163,7 @@ class Property extends Model
             'category_id' => $requestData['category_id'] ?? $this->category_id,
             'payment_method' => $requestData['payment_method'] ?? $this->payment_method  ?? null,
             'faqs' => $requestData['faqs'] ?? $this->faqs,
-            'building' => $requestData['building'] ?? $this->building,
+            'building_id' => $requestData['building_id'] ?? $this->building_id,
             'water_meter_number' => $requestData['water_meter_number'] ?? $this->water_meter_number,
             'electricity_meter_number' => $requestData['electricity_meter_number'] ?? $this->electricity_meter_number,
             'deed_number' => $requestData['deed_number'] ?? $this->deed_number,
