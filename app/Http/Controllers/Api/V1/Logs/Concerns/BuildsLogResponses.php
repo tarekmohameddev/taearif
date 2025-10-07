@@ -35,23 +35,25 @@ trait BuildsLogResponses
         ];
     }
 
-    protected function respondWithLogs(LengthAwarePaginator $paginator)
+    protected function respondWithLogs(LengthAwarePaginator $paginator, array $additionalData = [])
     {
         $rows = $paginator->getCollection()->map(fn ($log) => $this->mapLogRow($log));
 
+        $data = array_merge($additionalData, [
+            'logs' => $rows,
+            'pagination' => [
+                'total'        => $paginator->total(),
+                'per_page'     => $paginator->perPage(),
+                'current_page' => $paginator->currentPage(),
+                'last_page'    => $paginator->lastPage(),
+                'from'         => $paginator->firstItem(),
+                'to'           => $paginator->lastItem(),
+            ],
+        ]);
+
         return response()->json([
             'status' => 'success',
-            'data' => [
-                'logs' => $rows,
-                'pagination' => [
-                    'total'        => $paginator->total(),
-                    'per_page'     => $paginator->perPage(),
-                    'current_page' => $paginator->currentPage(),
-                    'last_page'    => $paginator->lastPage(),
-                    'from'         => $paginator->firstItem(),
-                    'to'           => $paginator->lastItem(),
-                ],
-            ],
+            'data' => $data,
         ]);
     }
 }
