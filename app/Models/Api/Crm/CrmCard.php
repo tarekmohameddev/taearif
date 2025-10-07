@@ -25,10 +25,12 @@ class CrmCard extends Model
         'card_project',
         'card_property',
         'card_date',
+        'reminder_sent_at',
     ];
 
     protected $casts = [
         'card_date' => 'datetime',
+        'reminder_sent_at' => 'datetime',
     ];
 
     /**
