@@ -239,7 +239,7 @@ class RoleController extends Controller
                 $query->whereNull('team_id') // Global permissions
                       ->orWhere('team_id', $tenantId); // Tenant-specific permissions
             })
-            ->select('id', 'name', 'description', 'team_id')
+            ->select('id', 'name', 'name_ar', 'name_en', 'description', 'team_id')
             ->orderBy('name')
             ->get();
 
@@ -269,7 +269,9 @@ class RoleController extends Controller
                 'regex:/^[a-z]+\.[a-z_]+$/',
                 'unique:api_permissions,name'
             ],
-            'description' => ['nullable', 'string', 'max:500']
+            'description' => ['nullable', 'string', 'max:500'],
+            'name_ar' => ['nullable', 'string', 'max:255'],
+            'name_en' => ['nullable', 'string', 'max:255']
         ]);
 
         // Validate against business-action pattern
@@ -288,7 +290,9 @@ class RoleController extends Controller
             'name' => $data['name'],
             'guard_name' => 'sanctum',
             'team_id' => $tenantId, // Make it tenant-specific
-            'description' => $data['description'] ?? null
+            'description' => $data['description'] ?? null,
+            'name_ar' => $data['name_ar'] ?? null,
+            'name_en' => $data['name_en'] ?? null
         ]);
 
         ActivityLogger::log([
@@ -317,11 +321,19 @@ class RoleController extends Controller
         $permission = Permission::findOrFail($id);
 
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:api_permissions,name,' . $permission->id]
+            'name' => ['required', 'string', 'max:255', 'unique:api_permissions,name,' . $permission->id],
+            'description' => ['nullable', 'string', 'max:500'],
+            'name_ar' => ['nullable', 'string', 'max:255'],
+            'name_en' => ['nullable', 'string', 'max:255']
         ]);
 
         $oldName = $permission->name;
-        $permission->update(['name' => $data['name']]);
+        $permission->update([
+            'name' => $data['name'],
+            'description' => $data['description'] ?? $permission->description,
+            'name_ar' => $data['name_ar'] ?? $permission->name_ar,
+            'name_en' => $data['name_en'] ?? $permission->name_en
+        ]);
 
         ActivityLogger::log([
             'user_id'     => $this->tenantId(),
