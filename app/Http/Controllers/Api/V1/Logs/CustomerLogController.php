@@ -24,12 +24,20 @@ class CustomerLogController extends Controller
 
         // Get customer information
         $customer = Customer::where('id', $id)
-            ->first(['email', 'username']);
+            ->first(['id', 'first_name', 'last_name', 'email', 'username']);
 
-        return $this->respondWithLogs($paginator, [
-            'email' => $customer->email ?? null,
-            'username' => $customer->username ?? null,
-        ]);
+        $customerData = [];
+        if ($customer) {
+            $name = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
+            $customerData = [
+                'id' => $customer->id,
+                'name' => !empty($name) ? $name : null,
+                'email' => $customer->email,
+                'username' => $customer->username,
+            ];
+        }
+
+        return $this->respondWithLogs($paginator, $customerData);
     }
 
 }
