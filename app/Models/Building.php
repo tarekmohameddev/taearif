@@ -48,6 +48,14 @@ class Building extends Model
     }
 
     /**
+     * Get the rentals for the building.
+     */
+    public function rentals(): HasMany
+    {
+        return $this->hasMany(\App\Models\Api\Rms\RmRental::class);
+    }
+
+    /**
      * Get the full URL for the building image.
      */
     public function getImageUrlAttribute(): ?string
@@ -157,10 +165,10 @@ class Building extends Model
     }
 
     /**
-     * Check if building can be deleted (no properties linked).
+     * Check if building can be deleted (no properties or rentals linked).
      */
     public function canBeDeleted(): bool
     {
-        return $this->properties()->count() === 0;
+        return $this->properties()->count() === 0 && $this->rentals()->count() === 0;
     }
 }
