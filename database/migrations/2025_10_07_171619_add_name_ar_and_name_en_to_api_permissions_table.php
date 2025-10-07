@@ -14,8 +14,12 @@ return new class extends Migration
     public function up()
     {
         Schema::table('api_permissions', function (Blueprint $table) {
-            $table->string('name_ar')->nullable()->after('name')->comment('Arabic display name');
-            $table->string('name_en')->nullable()->after('name_ar')->comment('English display name');
+            if (!Schema::hasColumn('api_permissions', 'name_ar')) {
+                $table->string('name_ar')->nullable()->after('name')->comment('Arabic display name');
+            }
+            if (!Schema::hasColumn('api_permissions', 'name_en')) {
+                $table->string('name_en')->nullable()->after('name_ar')->comment('English display name');
+            }
         });
     }
 
