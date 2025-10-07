@@ -19,8 +19,29 @@ class BuildingController extends Controller
     {
         $user = Auth::user();
 
+        // Get Arabic language ID for property contents
+        $arabicLang = \App\Models\User\Language::where('user_id', $user->id)
+            ->where('code', 'ar')
+            ->first();
+        
+        $languageId = $arabicLang ? $arabicLang->id : null;
+
         $query = Building::where('user_id', $user->id)
-            ->with(['user', 'properties'])
+            ->with([
+                'user',
+                'properties' => function($q) use ($languageId) {
+                    $q->with([
+                        'contents' => function($q) use ($languageId) {
+                            if ($languageId) {
+                                $q->where('language_id', $languageId);
+                            }
+                        },
+                        'contents.city',
+                        'contents.state',
+                        'contents.country'
+                    ]);
+                }
+            ])
             ->orderBy('created_at', 'desc');
 
         // Search by name
@@ -29,6 +50,35 @@ class BuildingController extends Controller
         }
 
         $buildings = $query->paginate($request->get('per_page', 15));
+
+        // Transform the properties data to include only needed fields
+        $buildings->getCollection()->transform(function ($building) {
+            $building->properties->transform(function ($property) {
+                $content = $property->contents->first();
+                
+                return [
+                    'id' => $property->id,
+                    'title' => $content->title ?? 'N/A',
+                    'slug' => $content->slug ?? null,
+                    'address' => $content->address ?? 'N/A',
+                    'price' => $property->price,
+                    'pricePerMeter' => $property->pricePerMeter,
+                    'area' => $property->area,
+                    'beds' => $property->beds,
+                    'bath' => $property->bath,
+                    'status' => $property->status,
+                    'property_status' => $property->property_status,
+                    'featured' => (bool)$property->featured,
+                    'featured_image' => $property->featured_image ? asset($property->featured_image) : null,
+                    'city' => $content && $content->city ? $content->city->name : 'N/A',
+                    'state' => $content && $content->state ? $content->state->name : 'N/A',
+                    'country' => $content && $content->country ? $content->country->name : 'N/A',
+                    'created_at' => $property->created_at->toISOString(),
+                ];
+            });
+            
+            return $building;
+        });
 
         return response()->json([
             'status' => 'success',
@@ -118,9 +168,30 @@ class BuildingController extends Controller
     {
         $user = Auth::user();
         
+        // Get Arabic language ID for property contents
+        $arabicLang = \App\Models\User\Language::where('user_id', $user->id)
+            ->where('code', 'ar')
+            ->first();
+        
+        $languageId = $arabicLang ? $arabicLang->id : null;
+        
         $building = Building::where('id', $id)
             ->where('user_id', $user->id)
-            ->with(['user', 'properties'])
+            ->with([
+                'user',
+                'properties' => function($q) use ($languageId) {
+                    $q->with([
+                        'contents' => function($q) use ($languageId) {
+                            if ($languageId) {
+                                $q->where('language_id', $languageId);
+                            }
+                        },
+                        'contents.city',
+                        'contents.state',
+                        'contents.country'
+                    ]);
+                }
+            ])
             ->first();
 
         if (!$building) {
@@ -129,6 +200,31 @@ class BuildingController extends Controller
                 'message' => 'Building not found'
             ], 404);
         }
+
+        // Transform the properties data
+        $building->properties->transform(function ($property) {
+            $content = $property->contents->first();
+            
+            return [
+                'id' => $property->id,
+                'title' => $content->title ?? 'N/A',
+                'slug' => $content->slug ?? null,
+                'address' => $content->address ?? 'N/A',
+                'price' => $property->price,
+                'pricePerMeter' => $property->pricePerMeter,
+                'area' => $property->area,
+                'beds' => $property->beds,
+                'bath' => $property->bath,
+                'status' => $property->status,
+                'property_status' => $property->property_status,
+                'featured' => (bool)$property->featured,
+                'featured_image' => $property->featured_image ? asset($property->featured_image) : null,
+                'city' => $content && $content->city ? $content->city->name : 'N/A',
+                'state' => $content && $content->state ? $content->state->name : 'N/A',
+                'country' => $content && $content->country ? $content->country->name : 'N/A',
+                'created_at' => $property->created_at->toISOString(),
+            ];
+        });
 
         return response()->json([
             'status' => 'success',
