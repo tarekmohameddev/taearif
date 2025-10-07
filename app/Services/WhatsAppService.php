@@ -2087,4 +2087,73 @@ class WhatsAppService
             ];
         }
     }
+
+    /**
+     * Send a generic message to a phone number
+     * 
+     * @param string $phoneNumber The phone number to send to
+     * @param string $message The message content
+     * @return bool True if sent successfully, false otherwise
+     */
+    public function sendMessage($phoneNumber, $message)
+    {
+        try {
+            if (!$this->settings || !$this->settings->whatsapp_service) {
+                Log::warning('WhatsApp service not configured', [
+                    'phone' => $phoneNumber
+                ]);
+                return false;
+            }
+
+            if ($this->settings->whatsapp_service === 'meta_cloud') {
+                return $this->sendRegularMessage($phoneNumber, $message);
+            } elseif ($this->settings->whatsapp_service === 'evolution_api') {
+                // Use Evolution API for regular message
+                $apiUrl = $this->settings->evolution_api_url;
+                $apiKey = $this->settings->evolution_api_key;
+                $instanceName = $this->settings->evolution_instance_name;
+
+                if ($apiUrl && $apiKey && $instanceName) {
+                    $formattedPhone = $this->formatPhoneNumber($phoneNumber);
+                    $cleanedMessage = $this->cleanRegularMessageForWhatsApp($message);
+
+                    $payload = [
+                        "number" => $formattedPhone,
+                        "text" => $cleanedMessage,
+                        "options" => [
+                            "delay" => 1200,
+                            "presence" => "composing"
+                        ]
+                    ];
+
+                    $endpoint = "{$apiUrl}/message/sendText/{$instanceName}";
+                    $response = Http::withHeaders([
+                        'apikey' => $apiKey,
+                        'Content-Type' => 'application/json',
+                    ])->post($endpoint, $payload);
+
+                    return $response->successful();
+                }
+
+                Log::warning('Evolution API not properly configured', [
+                    'phone' => $phoneNumber
+                ]);
+                return false;
+            }
+
+            Log::warning('Unknown WhatsApp service type', [
+                'service' => $this->settings->whatsapp_service,
+                'phone' => $phoneNumber
+            ]);
+            return false;
+
+        } catch (\Exception $e) {
+            Log::error('WhatsApp sendMessage exception', [
+                'phone' => $phoneNumber,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
+    }
 }

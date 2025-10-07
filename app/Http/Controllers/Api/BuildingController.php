@@ -204,7 +204,7 @@ class BuildingController extends Controller
         // Transform the properties data
         $building->properties->transform(function ($property) {
             $content = $property->contents->first();
-            
+
             return [
                 'id' => $property->id,
                 'title' => $content->title ?? 'N/A',
