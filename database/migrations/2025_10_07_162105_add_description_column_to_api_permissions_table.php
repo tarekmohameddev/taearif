@@ -14,7 +14,9 @@ return new class extends Migration
     public function up()
     {
         Schema::table('api_permissions', function (Blueprint $table) {
-            $table->text('description')->nullable()->after('guard_name');
+            if (!Schema::hasColumn('api_permissions', 'description')) {
+                $table->text('description')->nullable()->after('guard_name');
+            }
         });
     }
 
