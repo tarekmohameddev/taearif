@@ -366,8 +366,10 @@ class EmployeeController extends Controller
     // GET /employees/available-permissions
     public function availablePermissions()
     {
-        // Get all permissions available in the system
-        $permissions = Permission::all()->pluck('name')->sort()->values();
+        // Get all permissions available in the system with id, name, name_ar, and name_en
+        $permissions = Permission::all(['id', 'name', 'name_ar', 'name_en'])
+            ->sortBy('name')
+            ->values();
 
         return response()->json([
             'status' => 'success',
