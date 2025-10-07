@@ -23,10 +23,15 @@ class CustomerLogController extends Controller
             ->paginate(max(1, min(100, (int) $request->integer('per_page', 20))));
 
         // Get customer information
-        $customer = Customer::where('id', $id)
-            ->first(['id', 'first_name', 'last_name', 'email', 'username']);
+        $customer = Customer::find($id);
 
-        $customerData = [];
+        $customerData = [
+            'id' => null,
+            'name' => null,
+            'email' => null,
+            'username' => null,
+        ];
+
         if ($customer) {
             $name = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
             $customerData = [
