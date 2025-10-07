@@ -648,6 +648,17 @@ class AuthController extends Controller
                 }
             }
 
+            // Get all permissions (direct + from roles) for the user
+            $permissions = $user->getAllPermissions()->map(function ($permission) {
+                return [
+                    'id' => $permission->id,
+                    'name' => $permission->name,
+                    'name_ar' => $permission->name_ar ?? null,
+                    'name_en' => $permission->name_en ?? null,
+                    'description' => $permission->description ?? null,
+                ];
+            })->values()->toArray();
+
             // Compile user data (keep the logged-in user's identity, but reflect owner's membership)
             $userData = [
                 'id' => $user->id,
@@ -673,6 +684,7 @@ class AuthController extends Controller
                 'domain' => $domain ? $domain->custom_name : "https://{$owner->username}.taearif.com/",
                 'onboarding_completed' => $user->onboarding_completed ?? false,
                 'company_name' => $companyName,
+                'permissions' => $permissions,
             ];
 
             return response()->json([
