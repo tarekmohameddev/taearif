@@ -211,7 +211,8 @@ class RentalController extends Controller
             // Add receipt image URL to payments if available
             $paymentsWithImageUrl = collect($processedPayments)->map(function ($payment) {
                 if (!empty($payment->receipt_image_path)) {
-                    $payment->receipt_image_url = url('storage/' . $payment->receipt_image_path);
+                    // Generate URL for receipts stored in public/receipts
+                    $payment->receipt_image_url = url($payment->receipt_image_path);
                 }
                 return $payment;
             });
@@ -363,11 +364,12 @@ class RentalController extends Controller
             $file = $request->file('receipt_image');
             $filename = 'receipt_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
             
-            // Store the file in storage/app/public/receipts
-            $path = $file->storeAs('receipts', $filename, 'public');
+            // Store the file directly in public/receipts folder
+            $file->move(public_path('receipts'), $filename);
+            $path = 'receipts/' . $filename;
             
-            // Get the full URL - construct it based on current request URL
-            $url = url('storage/' . $path);
+            // Get the full URL - directly accessible from public folder
+            $url = url($path);
 
             return response()->json([
                 'status' => true,
