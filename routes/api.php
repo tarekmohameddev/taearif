@@ -780,7 +780,7 @@ if (!app()->environment('production')) {
 }
 
 // WhatsApp webhook routes
-Route::post('/whatsapp/webhook', [App\Http\Controllers\Api\WhatsAppWebhookController::class, 'handleWebhook']);
+//Route::post('/whatsapp/webhook', [App\Http\Controllers\Api\WhatsAppWebhookController::class, 'handleWebhook']);
 
 // Tenant Website API
 Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve'])->group(function () {
