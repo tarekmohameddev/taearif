@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::table('api_customer_inquiries', function (Blueprint $table) {
+        Schema::table('api_customer_inquiry', function (Blueprint $table) {
             // Monetary / preference fields
             $table->string('currency', 8)->nullable()->after('budget');
             $table->unsignedTinyInteger('bedrooms')->nullable()->after('currency');
@@ -38,7 +38,7 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::table('api_customer_inquiries', function (Blueprint $table) {
+        Schema::table('api_customer_inquiry', function (Blueprint $table) {
             $table->dropColumn([
                 'currency','bedrooms','bathrooms','min_area_sqm','max_area_sqm','furnished','urgency',
                 'country_code','region_code','region_name','city','district','latitude','longitude','location_confidence',
