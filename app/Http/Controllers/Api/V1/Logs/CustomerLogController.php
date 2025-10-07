@@ -17,26 +17,18 @@ class CustomerLogController extends Controller
     {
         $tenantId = $this->resolveTenantId($request);
 
-        // Get customer information
-        $customer = Customer::where('id', $id)
-            ->where('user_id', $tenantId)
-            ->first(['email', 'username']);
-
-        if (!$customer) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Customer not found',
-            ], 404);
-        }
-
         $paginator = CustomerLog::where('tenant_id', $tenantId)
             ->where('customer_id', $id)
             ->orderByDesc('id')
             ->paginate(max(1, min(100, (int) $request->integer('per_page', 20))));
 
+        // Get customer information
+        $customer = Customer::where('id', $id)
+            ->first(['email', 'username']);
+
         return $this->respondWithLogs($paginator, [
-            'email' => $customer->email,
-            'username' => $customer->username,
+            'email' => $customer->email ?? null,
+            'username' => $customer->username ?? null,
         ]);
     }
 
