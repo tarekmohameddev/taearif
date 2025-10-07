@@ -22,7 +22,7 @@ class RmRental extends Model
         'unit_id', 
         'project_id',
         'tenant_full_name', 
-        'building', 
+        'building_id', 
         'tenant_phone', 
         'tenant_email', 
         'tenant_job_title',
@@ -141,6 +141,11 @@ class RmRental extends Model
     public function project()
     {
         return $this->belongsTo(Project::class, 'project_id');
+    }
+
+    public function building()
+    {
+        return $this->belongsTo(\App\Models\Building::class, 'building_id');
     }
 
     public function upcomingInstallments()

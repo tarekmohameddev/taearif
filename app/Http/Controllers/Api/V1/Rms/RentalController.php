@@ -26,7 +26,7 @@ class RentalController extends Controller
             'sort_order' => 'nullable|string|in:asc,desc',
             'q' => 'nullable|string|max:255',
             'status' => 'nullable|string|in:active,inactive,terminated',
-            'building' => 'nullable|string|max:100',
+            'building_id' => 'nullable|integer|exists:buildings,id',
             'unit_id' => 'nullable|integer',
             'project_id' => 'nullable|integer',
             'paying_plan' => 'nullable|string|in:monthly,quarterly,semi_annual,annual',
@@ -67,7 +67,7 @@ class RentalController extends Controller
             'tenant_national_id' => 'nullable|string|max:20',
             'unit_id' => 'nullable|integer',
             'project_id' => 'nullable|integer',
-            'building' => 'nullable|string|max:100',
+            'building_id' => 'nullable|integer|exists:buildings,id',
             'move_in_date' => 'nullable|date',
             'rental_type' => 'required|in:monthly,annual',
             'rental_duration' => 'required|integer|min:1',
@@ -101,7 +101,7 @@ class RentalController extends Controller
     {
         $data = $request->only([
             'tenant_full_name', 'tenant_phone', 'tenant_email', 'tenant_job_title',
-            'tenant_social_status', 'tenant_national_id', 'unit_id', 'project_id', 'building',
+            'tenant_social_status', 'tenant_national_id', 'unit_id', 'project_id', 'building_id',
             'move_in_date', 'rental_type', 'rental_duration', 'paying_plan',
             'total_rental_amount', 'currency', 'contract_number', 'notes', 'cost_items'
         ]);
