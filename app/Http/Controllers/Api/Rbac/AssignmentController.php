@@ -104,7 +104,6 @@ class AssignmentController extends Controller
         ]);
 
         $permTable  = config('permission.table_names.permissions');
-        $pivotTable = config('permission.table_names.model_has_permissions');
         $teamFk     = config('permission.column_names.team_foreign_key', 'team_id');
 
 
