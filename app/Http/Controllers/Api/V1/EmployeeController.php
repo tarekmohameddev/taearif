@@ -42,12 +42,12 @@ class EmployeeController extends Controller
             ->orderByDesc('id');
 
         $employees = $q->paginate((int)($request->per_page ?? 20));
-        
+
         // Add roles and permissions to each employee
         $employees->getCollection()->transform(function ($employee) use ($tenantId) {
             // Set tenant context for Spatie
             app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
-            
+
             $employee->roles = $employee->roles->pluck('name', 'id');
             $employee->permissions = $employee->getPermissionNames();
             return $employee;
@@ -60,14 +60,14 @@ class EmployeeController extends Controller
     public function show($id)
     {
         $tenantId = $this->tenantId();
-        
+
         $employee = User::where('tenant_id', $tenantId)
             ->where('account_type', 'employee')
             ->findOrFail($id);
 
         // Set tenant context for Spatie
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
-        
+
         // Add roles and permissions
         $employee->roles = $employee->roles->pluck('name', 'id');
         $employee->permissions = $employee->getPermissionNames();
@@ -119,7 +119,7 @@ class EmployeeController extends Controller
             $requestedRoles = $data['role_ids'];
             $availableRoleIds = $availableRoles->pluck('id')->toArray();
             $missingRoles = array_diff($requestedRoles, $availableRoleIds);
-            
+
             if (!empty($missingRoles)) {
                 return response()->json([
                     'status' => 'error',
@@ -128,7 +128,7 @@ class EmployeeController extends Controller
                     'available_roles' => Role::where('team_id', $tenantId)->select('id', 'name')->get()
                 ], 422);
             }
-            
+
             // Assign roles using Spatie
             $employee->syncRoles($availableRoles);
 
@@ -215,7 +215,7 @@ class EmployeeController extends Controller
         // Handle role updates
         if (array_key_exists('role_ids', $data)) {
             $oldRoles = $employee->roles->pluck('id')->toArray();
-            
+
             // Ensure roles belong to same tenant
             $availableRoles = Role::where('team_id', $tenantId)->whereIn('id', $data['role_ids'] ?? [])->get();
             $employee->syncRoles($availableRoles);
@@ -262,7 +262,7 @@ class EmployeeController extends Controller
 
         // Set tenant context for Spatie
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
-        
+
         // Add roles and permissions to response
         $employee->roles = $employee->roles->pluck('name', 'id');
         $employee->permissions = $employee->getPermissionNames();
@@ -277,7 +277,7 @@ class EmployeeController extends Controller
     public function destroy($id)
     {
         $tenantId = $this->tenantId();
-        
+
         // Use User model for employee data
         $employee = User::where('tenant_id', $tenantId)
             ->where('account_type', 'employee')
@@ -285,7 +285,7 @@ class EmployeeController extends Controller
 
         // Set tenant context for Spatie
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
-        
+
         // Remove all roles and permissions
         $employee->syncRoles([]);
         $employee->syncPermissions([]);
@@ -319,12 +319,12 @@ class EmployeeController extends Controller
         $employee = User::where('tenant_id', $tenantId)
             ->where('account_type', 'employee')
             ->findOrFail($id);
-        
+
         // Set tenant context for Spatie
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
-        
+
         $oldRoles = $employee->roles->pluck('id')->toArray();
-        
+
         // Ensure roles belong to same tenant
         $availableRoles = Role::where('team_id', $tenantId)->whereIn('id', $request->role_ids)->get();
         $employee->syncRoles($availableRoles);
@@ -351,11 +351,18 @@ class EmployeeController extends Controller
     public function availableRoles()
     {
         $tenantId = $this->tenantId();
-        
-        // Get roles for the current tenant using api_roles
+
+        // Get roles for the current tenant with their permissions
         $roles = Role::where('team_id', $tenantId)
+            ->with('permissions:id,name')
             ->select('id', 'name')
             ->get();
+
+        // Add permissions_list to each role
+        $roles->transform(function ($role) {
+            $role->permissions_list = $role->permissions->pluck('name')->toArray();
+            return $role;
+        });
 
         return response()->json([
             'status' => 'success',
