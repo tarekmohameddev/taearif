@@ -51,7 +51,7 @@ return [
                     ],
                     'logo' => [
                         'type' => 'image+text',
-                        'image' => 'https://dalel-lovat.vercel.app/images/logo.svg',
+                        'image' => 'https://taearif.com/assets/admin/img/propics/6727702832398.jpg',
                         'text' => 'تعاريف العقارية',
                         'font' => [
                             'family' => 'Inter',
@@ -287,9 +287,9 @@ return [
                             'enabled' => true,
                             'title' => 'معلومات التواصل',
                             'address' => 'المملكة العربية السعودية - القصيم',
-                            'phone1' => '0533150222',
-                            'phone2' => '0537180774',
-                            'email' => 'guidealjwa22@gmail.com',
+                            'phone1' => '05xxxxxxxx',
+                            'phone2' => '05xxxxxxxx',
+                            'email' => 'info@example.com',
                         ],
                         'socialMedia' => [
                             'enabled' => true,
@@ -652,9 +652,9 @@ return [
                             'enabled' => true,
                             'title' => 'معلومات التواصل',
                             'address' => 'المملكة العربية السعودية - القصيم',
-                            'phone1' => '0533150222',
-                            'phone2' => '0537180774',
-                            'email' => 'guidealjwa22@gmail.com',
+                            'phone1' => '05xxxxxxxx',
+                            'phone2' => '05xxxxxxxx',
+                            'email' => 'info@example.com',
                         ],
                         'socialMedia' => [
                             'enabled' => true,
@@ -1238,9 +1238,9 @@ return [
                     'enabled' => true,
                     'title' => 'معلومات التواصل',
                     'address' => 'المملكة العربية السعودية - القصيم',
-                    'phone1' => '0533150222',
-                    'phone2' => '0537180774',
-                    'email' => 'guidealjwa22@gmail.com',
+                    'phone1' => '05xxxxxxxx',
+                    'phone2' => '05xxxxxxxx',
+                    'email' => 'info@example.com',
                 ],
                 'socialMedia' => [
                     'enabled' => true,
