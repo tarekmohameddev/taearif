@@ -153,7 +153,7 @@ Route::middleware('web')->group(function () {
 
 
 // Auth routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
     Route::get('/user', [AuthController::class, 'getUserProfile']);
     Route::get('/user/getUserInfo', [AuthController::class, 'getUserProfile']); // Alias for frontend compatibility
     Route::post('/user-read-message', [AuthController::class, 'read_message']);
