@@ -330,7 +330,7 @@ class AuthController extends Controller
 
             // Get package details for trial registration
             $package = Package::findOrFail(26);
-            
+
             // Static trial registration values
             $request->merge([
                 'status'         => 1,
@@ -379,9 +379,9 @@ class AuthController extends Controller
             $price               = $package->price;
 
             // Define welcome message before create_website call
-            $trialPeriod = $package->trial_days == 1 ? 'يوم واحد' : 
-                           ($package->trial_days == 7 ? '7 أيام' : 
-                           ($package->trial_days == 30 ? 'شهر' : 
+            $trialPeriod = $package->trial_days == 1 ? 'يوم واحد' :
+                           ($package->trial_days == 7 ? '7 أيام' :
+                           ($package->trial_days == 30 ? 'شهر' :
                            $package->trial_days . ' أيام'));
             $welcome_message = 'شكراً على التسجيل في منصة تعاريف انت الآن على الباقة المميزة لمدة ' . $trialPeriod;
 
@@ -429,11 +429,11 @@ class AuthController extends Controller
             try {
                 $whatsappService = new \App\Services\WhatsAppService();
                 $bs = \App\Models\BasicSetting::first();
-                
+
                 if ($bs && $bs->welcome_message_enabled && !empty($bs->welcome_message_text) && !empty($user->phone)) {
                     // Add delay if configured
                     $delay = $bs->welcome_message_delay ?? 5;
-                    
+
                     // Schedule the welcome message with delay
                     \App\Jobs\SendWelcomeMessageJob::dispatch($user, $bs->welcome_message_text)
                         ->delay(now()->addSeconds($delay));
