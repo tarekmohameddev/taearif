@@ -39,7 +39,7 @@ class OnboardingService extends Controller
 
 
             $category = "realestate";
-            $logo = "user-logo.jpeg";
+            $logo = "logo.png";
             $favicon = "favicon.png";
             $colors = [
                 'primary' => '#1e40af',
