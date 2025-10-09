@@ -409,7 +409,7 @@ class AuthController extends Controller
             app(\App\Services\OnboardingService::class)->applyDefaultsFor($user);
 
             // Re-seed tenant website pages with updated onboarding settings (SECOND TIME - after onboarding)
-            app(\App\Services\TenantWebsiteSeeder::class)->reseedWebsite($user);
+           // app(\App\Services\TenantWebsiteSeeder::class)->reseedWebsite($user);
 
             $categories = \DB::table('api_user_categories')->get();
             foreach ($categories as $category) {
