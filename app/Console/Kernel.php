@@ -23,6 +23,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\TestWhatsAppIntegrations::class,
         \App\Console\Commands\TestWhatsAppMessage::class,
         \App\Console\Commands\RunAllScheduledTasks::class,
+        \App\Console\Commands\SendCrmAppointmentReminders::class,
 
     ];
 
@@ -47,6 +48,11 @@ class Kernel extends ConsoleKernel
                 $bs = \App\Models\BasicSetting::first();
                 return $bs && $bs->subscription_expiration_enabled;
             })
+            ->timezone('Asia/Riyadh');
+
+        // Schedule CRM appointment reminders (send 2 hours before appointment)
+        $schedule->command('crm:send-appointment-reminders')
+            ->hourly()
             ->timezone('Asia/Riyadh');
 
     }

@@ -31,9 +31,9 @@ class BootstrapTenantRbac
 
             DB::transaction(function () use ($owner, $guard) {
                 $rolesCatalog = [
-                    'owner'   => ['menu.dashboard', 'crm.cards.view', 'crm.cards.create', 'crm.cards.update', 'crm.cards.delete'],
-                    'manager' => ['menu.dashboard', 'crm.cards.view', 'crm.cards.create', 'crm.cards.update'],
-                    'agent'   => ['menu.dashboard', 'crm.cards.view', 'crm.cards.create'],
+                    'owner'   => ['crm.cards.view', 'crm.cards.create', 'crm.cards.update', 'crm.cards.delete'],
+                    'manager' => ['crm.cards.view', 'crm.cards.create', 'crm.cards.update'],
+                    'agent'   => ['crm.cards.view', 'crm.cards.create'],
                 ];
 
 

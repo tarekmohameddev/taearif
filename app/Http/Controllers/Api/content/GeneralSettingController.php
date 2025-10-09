@@ -113,19 +113,50 @@ class GeneralSettingController extends Controller
         $settings->additional_settings = $request->input('additional_settings', []);
         $settings->color = $request->input('color');
 
-        // Fetch BasicSettings for the user and update the colors
+        // Fetch BasicSettings for the user and update the colors AND logo/favicon
         $basicSetting = BasicSetting::where('user_id', $user->id)->first();
         if ($basicSetting) {
             $basicSetting->base_color = $request->input('primary_color', $basicSetting->base_color);
             $basicSetting->secondary_color = $request->input('secondary_color', $basicSetting->secondary_color);
             $basicSetting->accent_color = $request->input('accent_color', $basicSetting->accent_color);
 
-            // Save the BasicSetting after updating the colors
+            // Update logo and favicon in BasicSetting as well (for re-seeding)
+            if ($request->has('logo')) {
+                $basicSetting->logo = $request->input('logo');
+            }
+            if ($request->has('favicon')) {
+                $basicSetting->favicon = $request->input('favicon');
+            }
+
+            // Update company name from site_name (for re-seeding)
+            if ($request->has('site_name')) {
+                $basicSetting->company_name = $request->input('site_name');
+            }
+
+            // Save the BasicSetting after updating the colors, logo, favicon, and company name
             $basicSetting->save();
         }
 
         // Save the updated GeneralSettings
         $settings->save();
+
+        // Re-seed tenant website pages if logo or company name changed
+        if ($request->has('logo') || $request->has('site_name')) {
+            try {
+                $seeder = app(\App\Services\TenantWebsiteSeeder::class);
+                $seeder->reseedWebsite($user);
+                \Log::info('Auto re-seeded website after settings update', [
+                    'user_id' => $user->id,
+                    'updated_fields' => array_keys($request->only(['logo', 'site_name']))
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Failed to auto re-seed website after settings update', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage()
+                ]);
+                // Don't fail the settings update if re-seed fails
+            }
+        }
 
         // Prepare response data with the updated settings
         $responseSettings = $settings->toArray();
@@ -180,9 +211,9 @@ class GeneralSettingController extends Controller
     {
         $user = $request->user();
         $membershipService = app(\App\Services\MembershipService::class);
-        
+
         $status = $membershipService->getMembershipStatus($user);
-        
+
         return response()->json([
             'status' => 'success',
             'data' => [

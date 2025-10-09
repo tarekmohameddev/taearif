@@ -153,7 +153,7 @@ Route::middleware('web')->group(function () {
 
 
 // Auth routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
     Route::get('/user', [AuthController::class, 'getUserProfile']);
     Route::get('/user/getUserInfo', [AuthController::class, 'getUserProfile']); // Alias for frontend compatibility
     Route::post('/user-read-message', [AuthController::class, 'read_message']);
@@ -804,5 +804,8 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve'])->group(
     // Tenant Website Properties (public)
     Route::get('{tenantId}/properties', [\App\Http\Controllers\Api\V1\TenantWebsite\PropertyController::class, 'index']);
     Route::get('{tenantId}/properties/{slug}', [\App\Http\Controllers\Api\V1\TenantWebsite\PropertyController::class, 'show']);
+
+    // Tenant Website Projects (public)
+    Route::get('{tenantId}/projects', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'index']);
 });
 

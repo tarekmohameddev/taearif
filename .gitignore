@@ -41,6 +41,7 @@ composer.lock
 /public/img/*
 /public/themes/*
 /public/footer/*
+/public/assets/*
 *.md
 database/seeders/RentalDashboardTestSeeder833.php
 database/seeds/RentalDashboardTestSeeder833.php
@@ -54,3 +55,4 @@ CREDIT_SYSTEM_FRONTEND_TESTING.postman_collection.json
 Taearif api local.postman_collection.json
 docs/*
 Taearif api.postman_collection.json
+RBAC_Permissions_API.postman_collection.json

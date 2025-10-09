@@ -1673,8 +1673,8 @@ class PropertyController extends Controller
 
             // Format response
             $formattedProperties = $properties->map(function ($property) {
-                $content = $property->contents->first();
-                $projectContent = optional($property->project)->contents->first();
+                $content = optional($property->contents)->first();
+                $projectContent = optional(optional($property->project)->contents)->first();
                 
                 // Get building name directly from database to avoid relationship issues
                 $buildingName = 'N/A';

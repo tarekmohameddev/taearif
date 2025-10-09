@@ -25,7 +25,7 @@ class PermissionAdminController extends Controller
         $available = Permission::query()
             ->where(fn($q) => $q->whereNull('team_id')->orWhere('team_id', $tenantId))
             ->orderBy('name')
-            ->get(['id','name','team_id','guard_name','created_at','updated_at']);
+            ->get(['id','name','name_ar','name_en','team_id','guard_name','created_at','updated_at']);
 
         return response()->json([
             'status' => 'success',
@@ -83,17 +83,21 @@ class PermissionAdminController extends Controller
                 'required','string','max:191',
                 Rule::unique('api_permissions', 'name')->where(fn ($q) => $q->where('team_id', $tenantId)),
             ],
+            'name_ar' => ['nullable','string','max:191'],
+            'name_en' => ['nullable','string','max:191'],
         ]);
 
         $perm = Permission::create([
             'name'       => $data['name'],
+            'name_ar'    => $data['name_ar'] ?? null,
+            'name_en'    => $data['name_en'] ?? null,
             'guard_name' => 'sanctum',
             'team_id'    => $tenantId,
         ]);
 
         return response()->json([
             'status' => 'success',
-            'data'   => ['id' => $perm->id, 'name' => $perm->name, 'team_id' => $perm->team_id],
+            'data'   => ['id' => $perm->id, 'name' => $perm->name, 'name_ar' => $perm->name_ar, 'name_en' => $perm->name_en, 'team_id' => $perm->team_id],
         ], 201);
     }
 
@@ -117,12 +121,20 @@ class PermissionAdminController extends Controller
                     ->where(fn($q) => $q->where('team_id', $tenantId))
                     ->ignore($permission->id),
             ],
+            'name_ar' => ['nullable','string','max:191'],
+            'name_en' => ['nullable','string','max:191'],
         ]);
 
         $permission->name = $data['name'];
+        if (isset($data['name_ar'])) {
+            $permission->name_ar = $data['name_ar'];
+        }
+        if (isset($data['name_en'])) {
+            $permission->name_en = $data['name_en'];
+        }
         $permission->save();
 
-        return response()->json(['status'=>'success','data'=>['id'=>$permission->id,'name'=>$permission->name]]);
+        return response()->json(['status'=>'success','data'=>['id'=>$permission->id,'name'=>$permission->name,'name_ar'=>$permission->name_ar,'name_en'=>$permission->name_en]]);
     }
 
     public function destroy(Request $request, Permission $permission)

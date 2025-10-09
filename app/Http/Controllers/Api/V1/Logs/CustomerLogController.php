@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Logs;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Logs\CustomerLog;
+use App\Models\ApiCustomer;
 use App\Http\Controllers\Api\V1\Logs\Concerns\BuildsLogResponses;
 
 
@@ -21,7 +22,24 @@ class CustomerLogController extends Controller
             ->orderByDesc('id')
             ->paginate(max(1, min(100, (int) $request->integer('per_page', 20))));
 
-        return $this->respondWithLogs($paginator);
+        // Get customer information
+        $customer = ApiCustomer::find($id);
+
+        $customerData = [
+            'id' => null,
+            'name' => null,
+            'email' => null,
+        ];
+
+        if ($customer) {
+            $customerData = [
+                'id' => $customer->id,
+                'name' => $customer->name,
+                'email' => $customer->email,
+            ];
+        }
+
+        return $this->respondWithLogs($paginator, $customerData);
     }
 
 }
