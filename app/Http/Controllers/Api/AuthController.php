@@ -2101,6 +2101,10 @@ class AuthController extends Controller
                     'conversation_id' => $conversation_id
                 ]);
 
+                // Handle package upgrade and disable maintenance mode if needed
+                $membershipService = app(\App\Services\MembershipService::class);
+                $membershipService->handlePackageUpgrade($user, $request['package_id'], 'api');
+
                 $features = json_decode($package->features, true);
                 $features[] = "Contact";
                 UserPermission::create([

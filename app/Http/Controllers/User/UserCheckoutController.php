@@ -34,6 +34,7 @@ use App\Http\Controllers\Payment\MidtransController;
 use App\Http\Controllers\Payment\IyzicoController;
 use App\Http\Controllers\Payment\MyFatoorahController;
 use App\Http\Controllers\Payment\ArbController;
+use App\Services\MembershipService;
 
 class UserCheckoutController extends Controller
 {
@@ -339,6 +340,10 @@ class UserCheckoutController extends Controller
                 'trial_days' => 0,
                 'conversation_id' => $conversation_id
             ]);
+
+            // Handle package upgrade and disable maintenance mode if needed
+            $membershipService = app(MembershipService::class);
+            $membershipService->handlePackageUpgrade($user, $request['package_id'], 'user_checkout');
         }
 
 
