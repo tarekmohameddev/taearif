@@ -41,6 +41,7 @@ composer.lock
 /public/img/*
 /public/themes/*
 /public/footer/*
+/public/assets/*
 *.md
 database/seeders/RentalDashboardTestSeeder833.php
 database/seeds/RentalDashboardTestSeeder833.php
