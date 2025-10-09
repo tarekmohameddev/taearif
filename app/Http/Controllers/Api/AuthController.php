@@ -402,11 +402,14 @@ class AuthController extends Controller
             // Log in tenant
             Auth::login($user);
 
+            // Seed default tenant website pages and components (FIRST TIME - before onboarding)
+            app(\App\Services\TenantWebsiteSeeder::class)->seedDefaultWebsite($user);
+
             // Onboarding + default categories
             app(\App\Services\OnboardingService::class)->applyDefaultsFor($user);
 
-            // Seed default tenant website pages and components
-            app(\App\Services\TenantWebsiteSeeder::class)->seedDefaultWebsite($user);
+            // Re-seed tenant website pages with updated onboarding settings (SECOND TIME - after onboarding)
+            app(\App\Services\TenantWebsiteSeeder::class)->reseedWebsite($user);
 
             $categories = \DB::table('api_user_categories')->get();
             foreach ($categories as $category) {
