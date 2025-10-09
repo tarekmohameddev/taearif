@@ -22,7 +22,7 @@ class TenantWebsiteSeeder
             return DB::transaction(function () use ($tenant) {
                 // Load default template from config
                 $template = config('tenant_website_defaults');
-                
+
                 if (!$template || !isset($template['pages']) || !isset($template['globalComponentsData'])) {
                     Log::warning('Tenant website default template not found or invalid', [
                         'tenant_id' => $tenant->id,
@@ -49,7 +49,7 @@ class TenantWebsiteSeeder
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             return false;
         }
     }
@@ -70,11 +70,15 @@ class TenantWebsiteSeeder
                 ->values()
                 ->all();
 
-            TenantPage::create([
-                'user_id' => $tenant->id,
-                'page_id' => $pageId,
-                'components' => $sortedComponents,
-            ]);
+            TenantPage::updateOrCreate(
+                [
+                    'user_id' => $tenant->id,
+                    'page_id' => $pageId,
+                ],
+                [
+                    'components' => $sortedComponents,
+                ]
+            );
         }
     }
 
@@ -87,10 +91,14 @@ class TenantWebsiteSeeder
      */
     protected function seedGlobalComponents(User $tenant, array $globalData): void
     {
-        TenantGlobalComponent::create([
-            'user_id' => $tenant->id,
-            'data' => $globalData,
-        ]);
+        TenantGlobalComponent::updateOrCreate(
+            [
+                'user_id' => $tenant->id,
+            ],
+            [
+                'data' => $globalData,
+            ]
+        );
     }
 
     /**
@@ -122,6 +130,129 @@ class TenantWebsiteSeeder
         }
 
         return $this->seedDefaultWebsite($tenant);
+    }
+
+    /**
+     * Re-seed/refresh website pages and components for a tenant
+     * This will update existing data with fresh defaults
+     * Also injects onboarding data (logo, company name) if available
+     *
+     * @param User $tenant
+     * @return bool
+     */
+    public function reseedWebsite(User $tenant): bool
+    {
+        try {
+            return DB::transaction(function () use ($tenant) {
+                $template = config('tenant_website_defaults');
+
+                if (!$template || !isset($template['pages']) || !isset($template['globalComponentsData'])) {
+                    Log::warning('Tenant website default template not found for reseed', [
+                        'tenant_id' => $tenant->id,
+                    ]);
+                    return false;
+                }
+
+                // Get onboarding data from BasicSetting
+                $basicSetting = \App\Models\User\BasicSetting::where('user_id', $tenant->id)->first();
+
+                if ($basicSetting) {
+                    // Inject onboarding data into template
+                    $template = $this->injectOnboardingData($template, $basicSetting, $tenant);
+                }
+
+                // Update/recreate pages
+                $this->seedPages($tenant, $template['pages']);
+
+                // Update/recreate global components
+                $this->seedGlobalComponents($tenant, $template['globalComponentsData']);
+
+                Log::info('Successfully re-seeded website for tenant', [
+                    'tenant_id' => $tenant->id,
+                    'username' => $tenant->username,
+                    'with_onboarding_data' => $basicSetting !== null,
+                ]);
+
+                return true;
+            });
+        } catch (\Exception $e) {
+            Log::error('Failed to re-seed website for tenant', [
+                'tenant_id' => $tenant->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Inject onboarding data (logo, company name) into template
+     *
+     * @param array $template
+     * @param \App\Models\User\BasicSetting $basicSetting
+     * @param User $tenant
+     * @return array
+     */
+    protected function injectOnboardingData(array $template, $basicSetting, User $tenant): array
+    {
+        $logoUrl = $basicSetting->logo ? url('/') . '/assets/front/img/user/' . $basicSetting->logo : null;
+        $companyName = $basicSetting->company_name ?: 'تعاريف العقارية';
+
+        // Replace in pages
+        if (isset($template['pages'])) {
+            $template['pages'] = $this->replaceInArray($template['pages'], $logoUrl, $companyName);
+        }
+
+        // Replace in global components
+        if (isset($template['globalComponentsData'])) {
+            $template['globalComponentsData'] = $this->replaceInArray($template['globalComponentsData'], $logoUrl, $companyName);
+        }
+
+        return $template;
+    }
+
+    /**
+     * Recursively replace logo and company name in array
+     *
+     * @param mixed $data
+     * @param string|null $logoUrl
+     * @param string $companyName
+     * @return mixed
+     */
+    protected function replaceInArray($data, ?string $logoUrl, string $companyName)
+    {
+        if (is_array($data)) {
+            // Check if this is a 'logo' array with 'image' and/or 'text' key
+            if (isset($data['logo']) && is_array($data['logo'])) {
+                // Replace logo image
+                if (isset($data['logo']['image']) && $logoUrl) {
+                    $data['logo']['image'] = $logoUrl;
+                }
+
+                // Replace company name in logo text
+                if (isset($data['logo']['text']) && $data['logo']['text'] === 'تعاريف العقارية') {
+                    $data['logo']['text'] = $companyName;
+                }
+            }
+
+            // Replace company name in 'text' key (any level)
+            if (isset($data['text']) && $data['text'] === 'تعاريف العقارية') {
+                $data['text'] = $companyName;
+            }
+
+            // Replace company name in 'name' key (any level)
+            if (isset($data['name']) && $data['name'] === 'تعاريف العقارية') {
+                $data['name'] = $companyName;
+            }
+
+            // Recursively process all array elements
+            foreach ($data as $key => $value) {
+                $data[$key] = $this->replaceInArray($value, $logoUrl, $companyName);
+            }
+        }
+
+        return $data;
     }
 }
 
