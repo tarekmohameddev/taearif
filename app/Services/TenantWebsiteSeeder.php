@@ -72,11 +72,11 @@ class TenantWebsiteSeeder
 
             TenantPage::updateOrCreate(
                 [
-                    'user_id' => $tenant->id,
-                    'page_id' => $pageId,
+                'user_id' => $tenant->id,
+                'page_id' => $pageId,
                 ],
                 [
-                    'components' => $sortedComponents,
+                'components' => $sortedComponents,
                 ]
             );
         }
@@ -93,10 +93,10 @@ class TenantWebsiteSeeder
     {
         TenantGlobalComponent::updateOrCreate(
             [
-                'user_id' => $tenant->id,
+            'user_id' => $tenant->id,
             ],
             [
-                'data' => $globalData,
+            'data' => $globalData,
             ]
         );
     }
@@ -196,63 +196,107 @@ class TenantWebsiteSeeder
      */
     protected function injectOnboardingData(array $template, $basicSetting, User $tenant): array
     {
-        $logoUrl = $basicSetting->logo ? url('/') . '/assets/front/img/user/' . $basicSetting->logo : null;
+        $logoUrl = $basicSetting->logo ? 'https://taearif.com/logos/' . $basicSetting->logo : null;
         $companyName = $basicSetting->company_name ?: 'تعاريف العقارية';
+
+        // Get user contact info
+        $userPhone = $tenant->phone ?: null;
+        $userEmail = $tenant->email ?: null;
+        $userAddress = $tenant->address ?: null;
+
+        // Prepare replacement data
+        $replacementData = [
+            'logoUrl' => $logoUrl,
+            'companyName' => $companyName,
+            'phone' => $userPhone,
+            'email' => $userEmail,
+            'address' => $userAddress,
+        ];
 
         // Replace in pages
         if (isset($template['pages'])) {
-            $template['pages'] = $this->replaceInArray($template['pages'], $logoUrl, $companyName);
+            $template['pages'] = $this->replaceInArray($template['pages'], $replacementData);
         }
 
         // Replace in global components
         if (isset($template['globalComponentsData'])) {
-            $template['globalComponentsData'] = $this->replaceInArray($template['globalComponentsData'], $logoUrl, $companyName);
+            $template['globalComponentsData'] = $this->replaceInArray($template['globalComponentsData'], $replacementData);
         }
 
         return $template;
     }
 
     /**
-     * Recursively replace logo and company name in array
+     * Recursively replace logo, company name, and contact info in array
      *
      * @param mixed $data
-     * @param string|null $logoUrl
-     * @param string $companyName
+     * @param array $replacementData
      * @return mixed
      */
-    protected function replaceInArray($data, ?string $logoUrl, string $companyName)
+    protected function replaceInArray($data, array $replacementData)
     {
         if (is_array($data)) {
             // Check if this is a 'logo' array with 'image' and/or 'text' key
             if (isset($data['logo']) && is_array($data['logo'])) {
                 // Replace logo image
-                if (isset($data['logo']['image']) && $logoUrl) {
-                    $data['logo']['image'] = $logoUrl;
+                if (isset($data['logo']['image']) && $replacementData['logoUrl']) {
+                    $data['logo']['image'] = $replacementData['logoUrl'];
                 }
 
                 // Replace company name in logo text
-                if (isset($data['logo']['text']) && $data['logo']['text'] === 'تعاريف العقارية') {
-                    $data['logo']['text'] = $companyName;
+                if (isset($data['logo']['text']) && $data['logo']['text'] === 'تعاريف العقارية' && $replacementData['companyName']) {
+                    $data['logo']['text'] = $replacementData['companyName'];
                 }
             }
 
             // Replace company name in 'text' key (any level)
-            if (isset($data['text']) && $data['text'] === 'تعاريف العقارية') {
-                $data['text'] = $companyName;
+            if (isset($data['text']) && $data['text'] === 'تعاريف العقارية' && $replacementData['companyName']) {
+                $data['text'] = $replacementData['companyName'];
             }
 
             // Replace company name in 'name' key (any level)
-            if (isset($data['name']) && $data['name'] === 'تعاريف العقارية') {
-                $data['name'] = $companyName;
+            if (isset($data['name']) && $data['name'] === 'تعاريف العقارية' && $replacementData['companyName']) {
+                $data['name'] = $replacementData['companyName'];
+            }
+
+            // Replace phone number
+            if (isset($data['phone']) && $replacementData['phone']) {
+                // Check for default phone patterns
+                if (in_array($data['phone'], ['+966 5XXXXXXXX', '5XXXXXXXX', '5XXXXXXXX'])) {
+                    $data['phone'] = $replacementData['phone'];
+                }
+            }
+            if (isset($data['phone1']) && $replacementData['phone']) {
+                if (in_array($data['phone1'], ['+966 5XXXXXXXX', '5XXXXXXXX'])) {
+                    $data['phone1'] = $replacementData['phone'];
+                }
+            }
+            if (isset($data['phone2']) && $replacementData['phone']) {
+                if (in_array($data['phone2'], ['0537180774'])) {
+                    $data['phone2'] = $replacementData['phone'];
+                }
+            }
+
+            // Replace email
+            if (isset($data['email']) && $replacementData['email']) {
+                if (in_array($data['email'], ['info@example.com'])) {
+                    $data['email'] = $replacementData['email'];
+                }
+            }
+
+            // Replace address
+            if (isset($data['address']) && $replacementData['address']) {
+                if (in_array($data['address'], ['المملكة العربية السعودية'])) {
+                    $data['address'] = $replacementData['address'];
+                }
             }
 
             // Recursively process all array elements
             foreach ($data as $key => $value) {
-                $data[$key] = $this->replaceInArray($value, $logoUrl, $companyName);
+                $data[$key] = $this->replaceInArray($value, $replacementData);
             }
         }
 
         return $data;
     }
 }
-
