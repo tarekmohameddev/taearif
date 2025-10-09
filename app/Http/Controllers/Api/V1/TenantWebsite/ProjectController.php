@@ -1,0 +1,83 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1\TenantWebsite;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\User;
+use App\Models\User\RealestateManagement\Project;
+
+class ProjectController extends Controller
+{
+	protected function resolveTenant(string $tenantId): User
+	{
+		return User::where('username', $tenantId)->firstOrFail();
+	}
+
+    public function index(Request $request, string $tenantId)
+	{
+		$tenant = $this->resolveTenant($tenantId);
+
+		$query = Project::query()
+			->with(['contents', 'galleryImages'])
+			->where('user_id', $tenant->id);
+
+		// Featured filter
+		if ($request->boolean('featured')) {
+			$query->where('featured', 1);
+		}
+
+		// Sort by created_at DESC
+		$query->orderBy('created_at', 'desc');
+
+		// Pagination with limit
+        $perPage = min((int) $request->query('limit', 20), 50);
+        $projects = $query->paginate($perPage);
+
+        $items = collect($projects->items())->map(function ($project) {
+            $content = optional($project->contents->first());
+            $slug    = $content?->slug;
+
+            // Images (full urls)
+            $featured = $project->featured_image ? asset($project->featured_image) : null;
+            $gallery  = $project->galleryImages->pluck('image')->map(fn($img) => asset($img))->toArray();
+            $images   = array_values(array_unique(array_filter(array_merge([$featured], $gallery))));
+
+            return [
+                'id' => (string) $project->id,
+                'slug' => $slug,
+                'title' => $content?->title ?? '',
+                'description' => $content?->description ?? '',
+                'address' => $content?->address ?? '',
+                'developer' => $project->developer ?? '',
+                'units' => (int) ($project->units ?? 0),
+                'completionDate' => $project->completion_date ?? '',
+                'completeStatus' => $project->complete_status ?? '',
+                'minPrice' => isset($project->min_price) ? (string) $project->min_price : '0',
+                'maxPrice' => isset($project->max_price) ? (string) $project->max_price : '0',
+                'image' => $featured,
+                'images' => $images,
+                'videoUrl' => $project->video_url ?? null,
+                'amenities' => is_array($project->amenities) ? $project->amenities : [],
+                'location' => [
+                    'lat' => $project->latitude ? (float) $project->latitude : null,
+                    'lng' => $project->longitude ? (float) $project->longitude : null,
+                    'address' => $content?->address ?? '',
+                ],
+            ];
+        });
+
+        return response()->json([
+            'projects' => $items,
+            'pagination' => [
+                'total' => $projects->total(),
+                'per_page' => $projects->perPage(),
+                'current_page' => $projects->currentPage(),
+                'last_page' => $projects->lastPage(),
+                'from' => $projects->firstItem(),
+                'to' => $projects->lastItem(),
+            ],
+        ]);
+	}
+}
+

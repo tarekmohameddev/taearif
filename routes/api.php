@@ -804,5 +804,8 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve'])->group(
     // Tenant Website Properties (public)
     Route::get('{tenantId}/properties', [\App\Http\Controllers\Api\V1\TenantWebsite\PropertyController::class, 'index']);
     Route::get('{tenantId}/properties/{slug}', [\App\Http\Controllers\Api\V1\TenantWebsite\PropertyController::class, 'show']);
+
+    // Tenant Website Projects (public)
+    Route::get('{tenantId}/projects', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'index']);
 });
 
