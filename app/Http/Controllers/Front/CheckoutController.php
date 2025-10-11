@@ -1777,11 +1777,11 @@ class CheckoutController extends Controller
                 // Send WhatsApp welcome message if enabled
                 try {
                     $bs = \App\Models\BasicSetting::first();
-                    
+
                     if ($bs && $bs->welcome_message_enabled && !empty($bs->welcome_message_text) && !empty($user->phone)) {
                         // Add delay if configured
                         $delay = $bs->welcome_message_delay ?? 5;
-                        
+
                         // Schedule the welcome message with delay
                         \App\Jobs\SendWelcomeMessageJob::dispatch($user, $bs->welcome_message_text)
                             ->delay(now()->addSeconds($delay));
