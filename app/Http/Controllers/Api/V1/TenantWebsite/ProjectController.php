@@ -89,6 +89,13 @@ class ProjectController extends Controller
 	{
 		$tenant = $this->resolveTenant($tenantId);
 
+		// Validate slug format
+		if (!preg_match('/^[a-z0-9\-]+$/i', $slug)) {
+			return response()->json([
+				'error' => 'Invalid slug format'
+			], 400);
+		}
+
 		$project = Project::with([
 			'contents',
 			'galleryImages',
@@ -102,7 +109,20 @@ class ProjectController extends Controller
 			})
 			->firstOrFail();
 
-		$content = optional($project->contents->first());
+		// Get the content matching the slug (in case of multi-language)
+		$content = $project->contents->where('slug', $slug)->first();
+
+		// Fallback to first content if slug match not found
+		if (!$content) {
+			$content = $project->contents->first();
+		}
+
+		// If still no content, return error
+		if (!$content) {
+			return response()->json([
+				'error' => 'Project content not found'
+			], 404);
+		}
 
 		// Images (full urls)
 		$featured = $project->featured_image ? asset($project->featured_image) : null;
@@ -135,12 +155,12 @@ class ProjectController extends Controller
 
 		$data = [
 			'id' => (string) $project->id,
-			'slug' => $content?->slug ?? '',
-			'title' => $content?->title ?? '',
-			'description' => $content?->description ?? '',
-			'address' => $content?->address ?? '',
-			'metaKeyword' => $content?->meta_keyword ?? '',
-			'metaDescription' => $content?->meta_description ?? '',
+			'slug' => $content->slug ?? '',
+			'title' => $content->title ?? '',
+			'description' => $content->description ?? '',
+			'address' => $content->address ?? '',
+			'metaKeyword' => $content->meta_keyword ?? '',
+			'metaDescription' => $content->meta_description ?? '',
 			'developer' => $project->developer ?? '',
 			'units' => (int) ($project->units ?? 0),
 			'completionDate' => $project->completion_date ?? '',
@@ -157,7 +177,7 @@ class ProjectController extends Controller
 			'location' => [
 				'lat' => $project->latitude ? (float) $project->latitude : null,
 				'lng' => $project->longitude ? (float) $project->longitude : null,
-				'address' => $content?->address ?? '',
+				'address' => $content->address ?? '',
 			],
 			'specifications' => $specifications,
 			'types' => $types,
