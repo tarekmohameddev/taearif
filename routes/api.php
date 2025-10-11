@@ -473,6 +473,9 @@ Route::post('/whatsapp/webhook', [ChatController::class, 'handleWhatsappWebhook'
 // isthara
 Route::post('/isthara', [IstharaController::class, 'store']);
 
+// Public Property Request (for visitors - no auth required)
+Route::post('/v1/property-requests/public', [ApiPropertyRequestController::class, 'store']);
+
 // Public Credit Management Routes (no auth required)
 Route::prefix('v1/credits')->group(function () {
     Route::get('packages', [\App\Http\Controllers\Api\markting\CreditController::class, 'getPackages']);
