@@ -56,3 +56,6 @@ Taearif api local.postman_collection.json
 docs/*
 Taearif api.postman_collection.json
 RBAC_Permissions_API.postman_collection.json
+check_user_1205.sql
+phpunit.xml
+
