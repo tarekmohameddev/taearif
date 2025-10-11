@@ -89,8 +89,9 @@ class ProjectController extends Controller
 	{
 		$tenant = $this->resolveTenant($tenantId);
 
-		// Validate slug format
-		if (!preg_match('/^[a-z0-9\-]+$/i', $slug)) {
+		// Validate slug format (allow Unicode/Arabic characters)
+		// Block only dangerous characters: null bytes, control chars
+		if (preg_match('/[\x00-\x1F\x7F]/', $slug) || empty(trim($slug))) {
 			return response()->json([
 				'error' => 'Invalid slug format'
 			], 400);
