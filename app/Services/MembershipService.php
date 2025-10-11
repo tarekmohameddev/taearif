@@ -375,13 +375,28 @@ class MembershipService
             return;
         }
 
-        $currentMembership = $this->getCurrentMembership($user);
-        $wasOnFreePackage = $this->hasFreePackage($user);
-        $wasOnTrialPackage = $this->hasTrialPackage($user);
+        // Check if upgrading TO a non-free/non-trial package
         $isUpgradingToNonFree = !in_array($newPackageId, [self::FREE_PACKAGE_ID, self::TRIAL_PACKAGE_ID]);
 
-        // Disable maintenance mode if upgrading from free/trial to any paid package
-        if (($wasOnFreePackage || $wasOnTrialPackage) && $isUpgradingToNonFree) {
+        // Check previous membership to see what package they WERE on
+        // Look for the most recent membership BEFORE this upgrade
+        $previousMembership = \App\Models\Membership::where('user_id', $user->id)
+            ->where('package_id', '!=', $newPackageId) // Not the new package we're upgrading to
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        $wasOnFreePackage = $previousMembership && $previousMembership->package_id === self::FREE_PACKAGE_ID;
+        $wasOnTrialPackage = $previousMembership && $previousMembership->package_id === self::TRIAL_PACKAGE_ID;
+
+        // Also check if maintenance mode is currently enabled (regardless of previous package)
+        $maintenanceIsEnabled = $this->isMaintenanceModeEnabled($user);
+
+        // Disable maintenance mode if:
+        // 1. Upgrading from free/trial to paid package, OR
+        // 2. Maintenance mode is ON and upgrading to any non-free/non-trial package
+        $shouldDisableMaintenance = ($wasOnFreePackage || $wasOnTrialPackage || $maintenanceIsEnabled) && $isUpgradingToNonFree;
+
+        if ($shouldDisableMaintenance) {
             $this->disableMaintenanceMode($user);
 
             // Send renewal success notifications
@@ -390,10 +405,10 @@ class MembershipService
             // Fire event for upgrade
             event(new UserUpgradedFromFree($user, $newPackage));
 
-            $fromPackage = $currentMembership && $currentMembership->package ? $currentMembership->package->title : 'Unknown';
+            $fromPackage = $previousMembership && $previousMembership->package ? $previousMembership->package->title : 'Unknown';
             Log::info("Disabled maintenance mode for user {$user->id} after package upgrade from {$fromPackage} to {$newPackage->title} (ID: {$newPackageId}, Term: {$newPackage->term}, Source: {$source})");
         } else {
-            Log::info("Package upgrade for user {$user->id} to {$newPackage->title} (ID: {$newPackageId}, Term: {$newPackage->term}, Source: {$source}) - no maintenance mode change needed");
+            Log::info("Package upgrade for user {$user->id} to {$newPackage->title} (ID: {$newPackageId}, Term: {$newPackage->term}, Source: {$source}) - no maintenance mode change needed (wasOnFree: " . ($wasOnFreePackage ? 'yes' : 'no') . ", wasOnTrial: " . ($wasOnTrialPackage ? 'yes' : 'no') . ", maintenanceOn: " . ($maintenanceIsEnabled ? 'yes' : 'no') . ")");
         }
     }
 
