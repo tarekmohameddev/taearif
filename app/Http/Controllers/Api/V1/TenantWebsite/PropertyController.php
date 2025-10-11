@@ -169,6 +169,7 @@ class PropertyController extends Controller
 			'galleryImages',
 			'proertyAmenities.amenity',
 			'UserPropertyCharacteristics',
+			'building',
 		])
 			->where('user_id', $tenant->id)
 			->where('status', 1)
@@ -186,7 +187,7 @@ class PropertyController extends Controller
         $gallery  = $property->galleryImages->pluck('image')->map(fn($img) => asset($img))->toArray();
         $images   = array_values(array_unique(array_filter(array_merge([$featured], $gallery))));
 
-        $data = [
+		$data = [
             'id' => (string) $property->id,
             'slug' => $content?->slug ?? '',
             'title' => $content?->title ?? '',
@@ -211,7 +212,22 @@ class PropertyController extends Controller
             'images' => $images,
         ];
 
-        return response()->json(['property' => $data]);
+		// Merge in extended fields to mirror admin show response
+		$characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
+		$extra = [
+			'payment_method' => $property->payment_method,
+			'pricePerMeter' => $property->pricePerMeter,
+			'floor_planning_image' => collect($property->floor_planning_image)->map(fn($img) => asset($img))->toArray(),
+			'video_url' => $property->video_url ? asset($property->video_url) : null,
+			'virtual_tour' => $property->virtual_tour ? asset($property->virtual_tour) : null,
+			'video_image' => $property->video_image ? asset($property->video_image) : null,
+			'faqs' => $property->faqs ?? [],
+			'building' => $property->building,
+		];
+
+		$data = array_merge($data, $extra, $characteristics);
+
+		return response()->json(['property' => $data]);
 	}
 }
 
