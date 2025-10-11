@@ -47,6 +47,7 @@ use App\Http\Controllers\Payment\FlutterWaveController;
 use App\Http\Controllers\Payment\MercadopagoController;
 use App\Http\Controllers\Payment\AuthorizenetController;
 use App\Http\Controllers\Payment\PerfectMoneyController;
+use App\Services\MembershipService;
 
 class CheckoutController extends Controller
 {
@@ -1724,6 +1725,10 @@ class CheckoutController extends Controller
                     'expire_date' => Carbon::parse($request['expire_date']),
                     'conversation_id' => $conversation_id
                 ]);
+
+                // Handle package upgrade and disable maintenance mode if needed
+                $membershipService = app(MembershipService::class);
+                $membershipService->handlePackageUpgrade($user, $request['package_id'], 'checkout');
 
                 $features = json_decode($package->features, true);
                 $features[] = "Contact";

@@ -39,6 +39,7 @@ use Laravel\Sanctum\PersonalAccessToken;
 use App\Http\Helpers\UserPermissionHelper;
 use PhpOffice\PhpSpreadsheet\Calculation\Web;
 use App\Models\User\BasicSetting as UserBasicSetting;
+use App\Services\MembershipService;
 
 
 class RegisterUserController extends Controller

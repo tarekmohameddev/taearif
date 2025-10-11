@@ -35,66 +35,29 @@ class CronJobController extends Controller
 
     /**
      * Handle the expired memberships and send notifications.
-     *
+     * 
+     * @deprecated This method is deprecated. Use the artisan command 'php artisan expire:user' instead.
+     * 
      * @param UserPackageService $service
      * @return void
      */
     public function expired(UserPackageService $service)
     {
-
+        // DEPRECATION WARNING: This controller method is deprecated
+        Log::warning('DEPRECATED: CronJobController@expired is deprecated. Please update your cron job to use "php artisan expire:user" instead.');
+        
         try {
+            // Redirect to the new artisan command for better architecture
+            Artisan::call('expire:user');
+            
+            $output = Artisan::output();
+            Log::info('CronJobController@expired delegated to expire:user command', ['output' => $output]);
+            
+            // Continue with reminder processing (this part is still needed here)
             $bs = BasicSetting::first();
             $be = BasicExtended::first();
-
+            
             Config::set('app.timezone', $bs->timezone);
-            // $exMembers = Membership::whereDate('expire_date', Carbon::now()->subDays(1))->get();
-            $exMembers = Membership::where('status', 1)->whereDate('expire_date', '<', now()->toDateString())->get();
-            foreach ($exMembers as $key => $exMember) {
-
-                if (!empty($exMember->user)) {
-                    $user = $exMember->user;
-                    $currPackage = UserPermissionHelper::userPackage($user->id);
-
-                    if (is_null($currPackage)) {
-
-                        $userId = $user->id;
-                        // $packageId = 16;
-                        $freePackageId = 16; // الباقة-المجانية
-                        $freePackage = Package::find($freePackageId);
-                        if (is_null($freePackage) || $freePackage->status != '1') {
-                            Log::error('Free package (ID: 16) not found or inactive.');
-                            continue;
-                        }
-                        $packageId = $freePackageId;
-                        $paymentMethod = '';
-
-                        $request = new Request([
-                            'user_id' => $userId,
-                            'package_id' => $packageId,
-                            'payment_method' => $paymentMethod,
-                        ]);
-
-                            $service->addCurrentPackage($request);
-                            
-                            // Set welcome message for user to see in dashboard
-                            $user->message = 'تم تحويلك إلى الباقة المجانية بعد انتهاء فترة التجربة. يمكنك ترقية باقاتك في أي وقت من لوحة التحكم.';
-                            $user->save();
-                            
-                            // Send WhatsApp notification about package expiration (with retry logic)
-                            if ($bs->subscription_expired_enabled && !empty($user->phone) && !empty($bs->subscription_expired_text)) {
-                                $this->sendExpirationNotificationWithRetry($user, $bs, $exMember);
-                            }
-
-                            // Send email notification about package expiration
-                            if (!empty($user->email) && $be && $be->subscription_expired_email_enabled) {
-                                $this->sendExpirationEmailNotification($user, $bs, $be, $exMember);
-                            }
-                            
-                            \App\Jobs\FreePackageSwitchMail::dispatch($user, $bs, $be);
-                    }
-                }
-            }
-
 
             $rmdMembers = Membership::whereDate('expire_date', Carbon::now()->addDays($be->expiration_reminder))->get();
 

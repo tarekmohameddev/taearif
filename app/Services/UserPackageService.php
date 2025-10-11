@@ -90,6 +90,10 @@ class UserPackageService
             'trial_days' => 0,
         ]);
 
+        // Handle package upgrade and disable maintenance mode if needed
+        $membershipService = app(\App\Services\MembershipService::class);
+        $membershipService->handlePackageUpgrade($user, $selectedPackage->id, 'admin_change_current');
+
         if (!empty($nextMembership) && $selectedPackage->term != 'lifetime') {
             $nextPackage = Package::find($nextMembership->package_id);
             $nextStart = Carbon::parse($exDate)->addDay();
@@ -176,7 +180,11 @@ class UserPackageService
             'trial_days' => 0,
         ]);
 
-
+        // Handle package upgrade and disable maintenance mode if needed (unless it's system-initiated free package assignment)
+        if ($request->payment_method !== 'system' || $selectedPackage->id !== 16) {
+            $membershipService = app(\App\Services\MembershipService::class);
+            $membershipService->handlePackageUpgrade($user, $selectedPackage->id, 'admin_add_current');
+        }
 
         Session::flash('success', 'Current Package has been added successfully!');
         return back();
