@@ -18,6 +18,7 @@ class ApiPropertyRequestController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
+            'tenant_username' => 'required|string|exists:users,username',
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'property_type' => 'nullable',
@@ -39,8 +40,19 @@ class ApiPropertyRequestController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        // Find the tenant user by username
+        $tenant = \App\Models\User::where('username', $request->tenant_username)->first();
+
+        if (!$tenant) {
+            return response()->json([
+                'message' => 'Tenant not found.',
+                'errors' => ['tenant_username' => ['The specified tenant username does not exist.']]
+            ], 404);
+        }
+
         $data = $validator->validated();
-        $data['user_id'] = Auth::id();
+        unset($data['tenant_username']); // Remove tenant_username from data
+        $data['user_id'] = $tenant->id; // Use tenant's ID
         $data['region'] = $request->input('region', 'الرياض');
         $data['is_read'] = false;
         $data['is_active'] = true;
@@ -89,7 +101,7 @@ class ApiPropertyRequestController extends Controller
         $propertyRequest = UserPropertyRequest::where('id', $id)
             ->where('user_id', $user->id)
             ->firstOrFail();
-        
+
         $propertyRequest->delete();
         return response()->json(['message' => 'Property request deleted successfully']);
     }
