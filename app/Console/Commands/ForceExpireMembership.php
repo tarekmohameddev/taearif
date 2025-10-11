@@ -60,7 +60,8 @@ class ForceExpireMembership extends Command
         
         if ($currentMembership) {
             $package = $currentMembership->package;
-            $this->info("  Current Package: {$package->title ?? 'Unknown'} (ID: {$currentMembership->package_id})");
+            $packageTitle = $package ? $package->title : 'Unknown';
+            $this->info("  Current Package: {$packageTitle} (ID: {$currentMembership->package_id})");
             $this->info("  Expires: {$currentMembership->expire_date}");
             $this->info("  Status: " . ($currentMembership->status == 1 ? 'Active' : 'Inactive'));
         } else {

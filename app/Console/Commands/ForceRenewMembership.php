@@ -165,12 +165,16 @@ class ForceRenewMembership extends Command
         
         $status = $membershipService->getMembershipStatus($user);
         
+        $packageName = isset($status['package_name']) ? $status['package_name'] : 'Unknown';
+        $packageTerm = isset($status['package_term']) ? $status['package_term'] : 'Unknown';
+        $expiresAt = isset($status['expires_at']) ? $status['expires_at'] : 'Unknown';
+        
         $this->table(
             ['Status', 'Value'],
             [
-                ['Package', $status['package_name'] ?? 'Unknown'],
-                ['Package Term', $status['package_term'] ?? 'Unknown'],
-                ['Expires At', $status['expires_at'] ?? 'Unknown'],
+                ['Package', $packageName],
+                ['Package Term', $packageTerm],
+                ['Expires At', $expiresAt],
                 ['Is Free', $isFreeNow ? '🔴 Yes' : '✅ No'],
                 ['Maintenance Mode', $maintenanceEnabledNow ? '🔴 Enabled' : '🟢 Disabled'],
                 ['Can Control Maintenance', $canControl ? '✅ Yes' : '❌ No'],
