@@ -22,6 +22,11 @@ class ProjectController extends Controller
 			->with(['contents', 'galleryImages'])
 			->where('user_id', $tenant->id);
 
+		// Published filter (optional)
+		if ($request->filled('published')) {
+			$query->where('published', $request->boolean('published') ? 1 : 0);
+		}
+
 		// Featured filter
 		if ($request->boolean('featured')) {
 			$query->where('featured', 1);
@@ -78,6 +83,89 @@ class ProjectController extends Controller
                 'to' => $projects->lastItem(),
             ],
         ]);
+	}
+
+	public function show(Request $request, string $tenantId, string $slug)
+	{
+		$tenant = $this->resolveTenant($tenantId);
+
+		$project = Project::with([
+			'contents',
+			'galleryImages',
+			'floorplanImages',
+			'specifications',
+			'types',
+		])
+			->where('user_id', $tenant->id)
+			->whereHas('contents', function ($q) use ($slug) {
+				$q->where('slug', $slug);
+			})
+			->firstOrFail();
+
+		$content = optional($project->contents->first());
+
+		// Images (full urls)
+		$featured = $project->featured_image ? asset($project->featured_image) : null;
+		$gallery  = $project->galleryImages->pluck('image')->map(fn($img) => asset($img))->toArray();
+		$images   = array_values(array_unique(array_filter(array_merge([$featured], $gallery))));
+
+		// Floorplan images (full urls)
+		$floorplans = $project->floorplanImages->pluck('image')->map(fn($img) => asset($img))->toArray();
+
+		// Specifications
+		$specifications = $project->specifications->map(function ($spec) {
+			return [
+				'key' => $spec->key ?? '',
+				'label' => $spec->label ?? '',
+				'value' => $spec->value ?? '',
+			];
+		})->toArray();
+
+		// Types
+		$types = $project->types->map(function ($type) {
+			return [
+				'title' => $type->title ?? '',
+				'minArea' => isset($type->min_area) ? (string) $type->min_area : '0',
+				'maxArea' => isset($type->max_area) ? (string) $type->max_area : '0',
+				'minPrice' => isset($type->min_price) ? (string) $type->min_price : '0',
+				'maxPrice' => isset($type->max_price) ? (string) $type->max_price : '0',
+				'unit' => $type->unit ?? '',
+			];
+		})->toArray();
+
+		$data = [
+			'id' => (string) $project->id,
+			'slug' => $content?->slug ?? '',
+			'title' => $content?->title ?? '',
+			'description' => $content?->description ?? '',
+			'address' => $content?->address ?? '',
+			'metaKeyword' => $content?->meta_keyword ?? '',
+			'metaDescription' => $content?->meta_description ?? '',
+			'developer' => $project->developer ?? '',
+			'units' => (int) ($project->units ?? 0),
+			'completionDate' => $project->completion_date ?? '',
+			'completeStatus' => $project->complete_status ?? '',
+			'minPrice' => isset($project->min_price) ? (string) $project->min_price : '0',
+			'maxPrice' => isset($project->max_price) ? (string) $project->max_price : '0',
+			'image' => $featured,
+			'images' => $images,
+			'floorplans' => $floorplans,
+			'videoUrl' => $project->video_url ?? null,
+			'amenities' => is_array($project->amenities) ? $project->amenities : [],
+			'featured' => (bool) ($project->featured ?? false),
+			'published' => (bool) ($project->published ?? false),
+			'location' => [
+				'lat' => $project->latitude ? (float) $project->latitude : null,
+				'lng' => $project->longitude ? (float) $project->longitude : null,
+				'address' => $content?->address ?? '',
+			],
+			'specifications' => $specifications,
+			'types' => $types,
+			'createdAt' => $project->created_at?->toISOString(),
+			'updatedAt' => $project->updated_at?->toISOString(),
+		];
+
+		return response()->json(['project' => $data]);
 	}
 }
 
