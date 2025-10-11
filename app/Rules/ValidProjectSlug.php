@@ -37,13 +37,14 @@ class ValidProjectSlug implements Rule
             return false;
         }
 
-        // Check if slug contains only valid characters (letters, numbers, hyphens)
-        if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $value)) {
+        // Check if slug contains only valid characters (Unicode letters, numbers, hyphens)
+        // Allow Arabic, English, and other Unicode letters with numbers and hyphens
+        if (!preg_match('/^[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*$/u', $value)) {
             return false;
         }
 
         // Check minimum length
-        if (strlen($value) < 3) {
+        if (mb_strlen($value) < 3) {
             return false;
         }
 
@@ -57,7 +58,7 @@ class ValidProjectSlug implements Rule
      */
     public function message()
     {
-        return 'The :attribute is invalid. It must be at least 3 characters, contain only lowercase letters, numbers, and hyphens, and cannot be a reserved word.';
+        return 'The :attribute is invalid. It must be at least 3 characters, contain only letters (Arabic/English), numbers, and hyphens, and cannot be a reserved word.';
     }
 }
 
