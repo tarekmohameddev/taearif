@@ -659,10 +659,10 @@ return [
                         'contactInfo' => [
                             'enabled' => true,
                             'title' => 'معلومات التواصل',
-                            'address' => 'المملكة العربية السعودية - القصيم',
-                            'phone1' => '0533150222',
-                            'phone2' => '0537180774',
-                            'email' => 'guidealjwa22@gmail.com',
+                            'address' => 'المملكة العربية السعودية',
+                            'phone1' => '05xxxxxxxx',
+                            'phone2' => '05xxxxxxxx',
+                            'email' => 'example@gmail.com',
                         ],
                         'socialMedia' => [
                             'enabled' => true,
@@ -1024,10 +1024,10 @@ return [
                         'contactInfo' => [
                             'enabled' => true,
                             'title' => 'معلومات التواصل',
-                            'address' => 'المملكة العربية السعودية - القصيم',
-                            'phone1' => '0533150222',
-                            'phone2' => '0537180774',
-                            'email' => 'guidealjwa22@gmail.com',
+                            'address' => 'المملكة العربية السعودية',
+                            'phone1' => '05xxxxxxxx',
+                            'phone2' => '05xxxxxxxx',
+                            'email' => 'example@gmail.com',
                         ],
                         'socialMedia' => [
                             'enabled' => true,
@@ -1856,9 +1856,9 @@ return [
                     'enabled' => true,
                     'title' => 'معلومات التواصل',
                     'address' => 'المملكة العربية السعودية - القصيم',
-                    'phone1' => '0533150222',
-                    'phone2' => '0537180774',
-                    'email' => 'guidealjwa22@gmail.com',
+                    'phone1' => '05xxxxxxxx',
+                    'phone2' => '05xxxxxxxx',
+                    'email' => 'example@gmail.com',
                 ],
                 'socialMedia' => [
                     'enabled' => true,
