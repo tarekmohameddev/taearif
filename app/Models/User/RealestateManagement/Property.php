@@ -260,6 +260,16 @@ class Property extends Model
         $this->update(['property_status' => $hasActiveRentals ? 'rented' : 'available']);
     }
 
+    /**
+     * Get the owner rentals who have access to this property.
+     */
+    public function ownerRentals()
+    {
+        return $this->belongsToMany(\App\Models\OwnerRental::class, 'owner_rental_property', 'property_id', 'owner_rental_id')
+                    ->withPivot('assigned_at')
+                    ->withTimestamps();
+    }
+
 
        /** Canonical public dir for property images */
     private const CANON_DIR = 'properties';

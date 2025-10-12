@@ -813,3 +813,53 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve'])->group(
     Route::get('{tenantId}/projects/{slug}', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'show']);
 });
 
+// Owner Rental Management System Routes (v1)
+// User Dashboard - Managing Owner Rentals (requires user authentication)
+Route::prefix('v1/user/owner-rentals')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [\App\Http\Controllers\User\OwnerRentalManagementController::class, 'index']);
+    Route::post('/', [\App\Http\Controllers\User\OwnerRentalManagementController::class, 'store']);
+    Route::get('/{id}', [\App\Http\Controllers\User\OwnerRentalManagementController::class, 'show']);
+    Route::put('/{id}', [\App\Http\Controllers\User\OwnerRentalManagementController::class, 'update']);
+    Route::delete('/{id}', [\App\Http\Controllers\User\OwnerRentalManagementController::class, 'destroy']);
+    Route::post('/{id}/properties', [\App\Http\Controllers\User\OwnerRentalManagementController::class, 'assignProperties']);
+    Route::delete('/{id}/properties/{propertyId}', [\App\Http\Controllers\User\OwnerRentalManagementController::class, 'removeProperty']);
+    Route::get('/{id}/properties', [\App\Http\Controllers\User\OwnerRentalManagementController::class, 'getAssignedProperties']);
+});
+
+// User Properties for Owner Rental Assignment (requires user authentication)
+Route::prefix('v1/user')->middleware('auth:sanctum')->group(function () {
+    Route::get('/properties', [\App\Http\Controllers\User\OwnerRentalManagementController::class, 'getMyProperties']);
+});
+
+// Owner Rental Authentication Routes (v1 - public)
+Route::prefix('v1/owner-rental')->group(function () {
+    Route::post('/login', [\App\Http\Controllers\OwnerRental\AuthController::class, 'login']);
+    Route::post('/forgot-password', [\App\Http\Controllers\OwnerRental\AuthController::class, 'forgotPassword']);
+    Route::post('/reset-password', [\App\Http\Controllers\OwnerRental\AuthController::class, 'resetPassword']);
+
+    // Protected Owner Rental Routes (requires owner-rental authentication)
+    Route::middleware([\App\Http\Middleware\OwnerRentalAuth::class])->group(function () {
+        Route::post('/logout', [\App\Http\Controllers\OwnerRental\AuthController::class, 'logout']);
+        Route::get('/me', [\App\Http\Controllers\OwnerRental\AuthController::class, 'me']);
+
+        // Dashboard
+        Route::get('/dashboard', [\App\Http\Controllers\OwnerRental\DashboardController::class, 'dashboard']);
+
+        // Properties
+        Route::get('/properties', [\App\Http\Controllers\OwnerRental\DashboardController::class, 'properties']);
+        Route::get('/properties/{id}', [\App\Http\Controllers\OwnerRental\DashboardController::class, 'propertyDetails']);
+
+        // Rentals
+        Route::get('/rentals', [\App\Http\Controllers\OwnerRental\DashboardController::class, 'rentals']);
+
+        // Tenants
+        Route::get('/tenants', [\App\Http\Controllers\OwnerRental\DashboardController::class, 'tenants']);
+
+        // Financial Reports
+        Route::get('/financial-reports', [\App\Http\Controllers\OwnerRental\DashboardController::class, 'financialReports']);
+
+        // Maintenance Requests
+        Route::get('/maintenance-requests', [\App\Http\Controllers\OwnerRental\DashboardController::class, 'maintenanceRequests']);
+    });
+});
+
