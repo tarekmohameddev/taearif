@@ -72,6 +72,10 @@ return [
             'driver' => 'token',
             'provider' => 'admins',
         ],
+        'owner-rental' => [
+            'driver' => 'sanctum',
+            'provider' => 'owner_rentals',
+        ],
     ],
 
     /*
@@ -108,6 +112,10 @@ return [
             'driver' => 'eloquent',
             'model' => App\Models\ApiCustomer::class,
         ],
+        'owner_rentals' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\OwnerRental::class,
+        ],
 
     ],
 
@@ -141,6 +149,12 @@ return [
         'api_customers' => [
             'provider' => 'api_customers',
             'table' => 'customer_password_resets',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'owner_rentals' => [
+            'provider' => 'owner_rentals',
+            'table' => 'password_resets',
             'expire' => 60,
             'throttle' => 60,
         ],
