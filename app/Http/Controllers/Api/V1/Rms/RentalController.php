@@ -193,7 +193,7 @@ class RentalController extends Controller
 
             // Process payments using PaymentService
             $paymentService = app(\App\Services\Rms\PaymentService::class);
-            
+
             $processedPayments = [];
             foreach ($data['payments'] as $paymentData) {
                 $paymentData['payment_method'] = $data['payment_method'];
@@ -203,7 +203,7 @@ class RentalController extends Controller
                 $paymentData['bank_name'] = $data['bank_name'] ?? null;
                 $paymentData['receipt_image_path'] = $data['receipt_image_path'] ?? null;
                 $paymentData['transfer_to'] = $data['transfer_to'];
-                
+
                 $payment = $paymentService->recordPayment(auth()->id(), $id, $paymentData);
                 $processedPayments[] = $payment;
             }
@@ -363,11 +363,11 @@ class RentalController extends Controller
             // Generate unique filename
             $file = $request->file('receipt_image');
             $filename = 'receipt_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            
+
             // Store the file directly in public/receipts folder
             $file->move(public_path('receipts'), $filename);
             $path = 'receipts/' . $filename;
-            
+
             // Get the full URL - directly accessible from public folder
             $url = url($path);
 
