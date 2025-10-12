@@ -23,7 +23,7 @@ class TenantWebsiteSeeder
                 // Load default template from config
                 $template = config('tenant_website_defaults');
 
-                if (!$template || !isset($template['pages']) || !isset($template['globalComponentsData'])) {
+                if (!$template || !isset($template['componentSettings']) || !isset($template['globalComponentsData'])) {
                     Log::warning('Tenant website default template not found or invalid', [
                         'tenant_id' => $tenant->id,
                     ]);
@@ -31,7 +31,7 @@ class TenantWebsiteSeeder
                 }
 
                 // Seed pages
-                $this->seedPages($tenant, $template['pages']);
+                $this->seedPages($tenant, $template['componentSettings']);
 
                 // Seed global components
                 $this->seedGlobalComponents($tenant, $template['globalComponentsData']);
@@ -146,7 +146,7 @@ class TenantWebsiteSeeder
             return DB::transaction(function () use ($tenant) {
                 $template = config('tenant_website_defaults');
 
-                if (!$template || !isset($template['pages']) || !isset($template['globalComponentsData'])) {
+                if (!$template || !isset($template['componentSettings']) || !isset($template['globalComponentsData'])) {
                     Log::warning('Tenant website default template not found for reseed', [
                         'tenant_id' => $tenant->id,
                     ]);
@@ -162,7 +162,7 @@ class TenantWebsiteSeeder
                 }
 
                 // Update/recreate pages
-                $this->seedPages($tenant, $template['pages']);
+                $this->seedPages($tenant, $template['componentSettings']);
 
                 // Update/recreate global components
                 $this->seedGlobalComponents($tenant, $template['globalComponentsData']);
@@ -214,8 +214,8 @@ class TenantWebsiteSeeder
         ];
 
         // Replace in pages
-        if (isset($template['pages'])) {
-            $template['pages'] = $this->replaceInArray($template['pages'], $replacementData);
+        if (isset($template['componentSettings'])) {
+            $template['componentSettings'] = $this->replaceInArray($template['componentSettings'], $replacementData);
         }
 
         // Replace in global components
