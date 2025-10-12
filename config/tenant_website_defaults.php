@@ -1723,18 +1723,18 @@ return [
                 'border' => '#e5e7eb',
                 'accent' => '#059669',
             ],
-            'logo' => [
-                'type' => 'image+text',
-                'image' => 'https://taearif.com/logos/logo.png',
-                'text' => 'تعاريف العقارية',
-                'font' => [
-                    'family' => 'Tajawal',
-                    'size' => 24,
-                    'weight' => '600',
-                ],
-                'url' => '/',
-                'clickAction' => 'navigate',
-            ],
+            // 'logo' => [
+            //     'type' => 'image+text',
+            //     'image' => 'https://taearif.com/logos/logo.png',
+            //     'text' => 'تعاريف العقارية',
+            //     'font' => [
+            //         'family' => 'Tajawal',
+            //         'size' => 24,
+            //         'weight' => '600',
+            //     ],
+            //     'url' => '/',
+            //     'clickAction' => 'navigate',
+            // ],
             'menu' => [
                 [
                     'id' => 'home',

@@ -236,6 +236,13 @@ class TenantWebsiteSeeder
     protected function replaceInArray($data, array $replacementData)
     {
         if (is_array($data)) {
+            // Check if this is a 'companyInfo' array and replace its logo (string URL)
+            if (isset($data['companyInfo']) && is_array($data['companyInfo'])) {
+                if (isset($data['companyInfo']['logo']) && $replacementData['logoUrl']) {
+                    $data['companyInfo']['logo'] = $replacementData['logoUrl'];
+                }
+            }
+
             // Check if this is a 'logo' array with 'image' and/or 'text' key
             if (isset($data['logo']) && is_array($data['logo'])) {
                 // Replace logo image
