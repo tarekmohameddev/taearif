@@ -424,7 +424,7 @@ return [
                     ],
                     'logo' => [
                         'type' => 'image+text',
-                        'image' => 'https://dalel-lovat.vercel.app/images/logo.svg',
+                        'image' => 'https://taearif.com/logos/logo.png',
                         'text' => 'تعاريف العقارية',
                         'font' => [
                             'family' => 'Tajawal',
@@ -789,7 +789,7 @@ return [
                     ],
                     'logo' => [
                         'type' => 'image+text',
-                        'image' => 'https://dalel-lovat.vercel.app/images/logo.svg',
+                        'image' => 'https://taearif.com/logos/logo.png',
                         'text' => 'تعاريف العقارية',
                         'font' => [
                             'family' => 'Tajawal',
@@ -1587,7 +1587,7 @@ return [
             ],
             'logo' => [
                 'type' => 'image+text',
-                'image' => 'https://dalel-lovat.vercel.app/images/logo.svg',
+                'image' => 'https://taearif.com/logos/logo.png',
                 'text' => 'تعاريف العقارية',
                 'font' => [
                     'family' => 'Tajawal',
@@ -1725,7 +1725,7 @@ return [
             ],
             'logo' => [
                 'type' => 'image+text',
-                'image' => 'https://dalel-lovat.vercel.app/images/logo.svg',
+                'image' => 'https://taearif.com/logos/logo.png',
                 'text' => 'تعاريف العقارية',
                 'font' => [
                     'family' => 'Tajawal',
@@ -1824,7 +1824,7 @@ return [
                     'name' => 'تعاريف العقارية',
                     'description' => ' نقدم لك أفضل الحلول العقارية بخبرة واحترافية لتلبية كافة احتياجاتك في البيع والإيجار مع ضمان تجربة مريحة وموثوقة',
                     'tagline' => 'للخدمات العقارية',
-                    'logo' => 'https://www.mandhoor.com/logo.png',
+                    'logo' => 'https://taearif.com/logos/logo.png',
                 ],
                 'quickLinks' => [
                     'enabled' => true,
