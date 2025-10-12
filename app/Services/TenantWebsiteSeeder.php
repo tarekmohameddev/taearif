@@ -196,7 +196,7 @@ class TenantWebsiteSeeder
      */
     protected function injectOnboardingData(array $template, $basicSetting, User $tenant): array
     {
-        $logoUrl = $basicSetting->logo ? 'https://taearif.com/logos/' . $basicSetting->logo : null;
+        $logoUrl = $basicSetting->logo ? $basicSetting->logo : null;
         $companyName = $basicSetting->company_name ?: 'تعاريف العقارية';
 
         // Get user contact info

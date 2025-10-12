@@ -170,7 +170,7 @@ class OnboardingController extends Controller
             );
 
             $this->updateUserFooterText($user->id, $lang->id, basename($request->logo));
-
+            app(\App\Services\TenantWebsiteSeeder::class)->reseedWebsite($user);
             return response()->json([
                 'status' => 'success',
                 'data' => [

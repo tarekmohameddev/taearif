@@ -155,116 +155,136 @@ public function handleWhatsappWebhook(Request $request)
     try {
         $payload = $request->all();
 
-        // ====== CASE A: Direct tool-call payload (preferred) ======
-        if (
-            isset($payload['whatsapp_number']) &&
-            isset($payload['message']) &&
-            isset($payload['inquiry_type'])
-        ) {
-            // ---- Normalize input ----
-            $whatsappNumber = $this->normalizeE164($payload['whatsapp_number']); // leave as-is if already E.164
-            $message        = $payload['message'];
-            $inquiryType    = $payload['inquiry_type'];
-            $propertyType   = $payload['property_type'] ?? null;
-
-            $entities       = $payload['detected_entities'] ?? [];
-            $budget         = $entities['budget'] ?? null;
-            $currency       = $entities['currency'] ?? null; // default SAR in DB if you like
-            $locationRaw    = $entities['location'] ?? null;
-
-            // Optional new fields
-            $bedrooms       = $entities['bedrooms'] ?? null;
-            $bathrooms      = $entities['bathrooms'] ?? null;
-            $minArea        = $entities['min_area_sqm'] ?? null;
-            $maxArea        = $entities['max_area_sqm'] ?? null;
-            $furnished      = array_key_exists('furnished', $entities) ? (bool)$entities['furnished'] : null;
-            $urgency        = $entities['urgency'] ?? null;
-
-            $locationNorm   = $entities['location_normalized'] ?? [];
-            // Ensure SA mapping if city/region strings are used
-            $regionCodeName = $this->resolveSaudiRegion(
-                $locationNorm['region_code'] ?? null,
-                $locationNorm['region_name'] ?? null
-            );
-
-            $countryCode = $locationNorm['country_code'] ?? 'SA';
-            $regionCode  = $regionCodeName['code'] ?? null;
-            $regionName  = $regionCodeName['name'] ?? ($locationNorm['region_name'] ?? null);
-            $city        = $locationNorm['city'] ?? null;
-            $district    = $locationNorm['district'] ?? null;
-            $lat         = isset($locationNorm['latitude'])  ? (float)$locationNorm['latitude']  : null;
-            $lng         = isset($locationNorm['longitude']) ? (float)$locationNorm['longitude'] : null;
-            $confidence  = isset($locationNorm['confidence']) ? (float)$locationNorm['confidence'] : null;
-
+     
+        if (isset($payload['whatsapp_number']) && isset($payload['message']) && isset($payload['inquiry_type'])) {
+            // Normalize data
+            $whatsappNumber = $payload['whatsapp_number'];
+            $message = $payload['message'];
+            $inquiryType = $payload['inquiry_type'];
+            $propertyType = $payload['property_type'] ?? null;
             $sourceChannel = $payload['source_channel'] ?? 'whatsapp';
-            $lang          = $payload['lang'] ?? 'ar';
+            $lang = $payload['lang'] ?? 'ar';
+            
+            // Extract detected entities
+            $detectedEntities = $payload['detected_entities'] ?? [];
+            $budget = $detectedEntities['budget'] ?? null;
+            $currency = $detectedEntities['currency'] ?? null;
+            $location = $detectedEntities['location'] ?? null;
+            $bedrooms = $detectedEntities['bedrooms'] ?? null;
+            $bathrooms = $detectedEntities['bathrooms'] ?? null;
+            $minAreaSqm = $detectedEntities['min_area_sqm'] ?? null;
+            $maxAreaSqm = $detectedEntities['max_area_sqm'] ?? null;
+            $furnished = $detectedEntities['furnished'] ?? null;
+            $urgency = $detectedEntities['urgency'] ?? null;
+            
+            // Extract normalized location data
+            $locationNormalized = $detectedEntities['location_normalized'] ?? [];
+            $countryCode = $locationNormalized['country_code'] ?? null;
+            $regionCode = $locationNormalized['region_code'] ?? null;
+            $regionName = $locationNormalized['region_name'] ?? null;
+            $city = $locationNormalized['city'] ?? null;
+            $district = $locationNormalized['district'] ?? null;
+            $latitude = $locationNormalized['latitude'] ?? null;
+            $longitude = $locationNormalized['longitude'] ?? null;
+            $locationConfidence = $locationNormalized['location_confidence'] ?? null;
 
-            // ---- Find/Create customer & owner-user ----
+            // Debug logging
+            \Log::info('WhatsApp Webhook Debug', [
+                'location_normalized' => $locationNormalized,
+                'city' => $city,
+                'district' => $district,
+                'country_code' => $countryCode,
+                'region_name' => $regionName,
+            ]);
+
+            // 🔄 Find customer in ApiCustomer table to get user_id
             $customer = ApiCustomer::where('phone_number', $whatsappNumber)->first();
-            $userId   = $customer->user_id ?? null;
+            $userId = $customer ? $customer->user_id : null;
 
-            // Save inquiry (keep raw location, plus normalized fields)
-            $inquiry = ApiCustomerInquiry::create([
-                'user_id'          => $userId,
-                'customer_id'      => $customer?->id,
-                'phone_number'     => $whatsappNumber,
-                'message'          => $message,
-                'inquiry_type'     => $inquiryType,
-                'property_type'    => $propertyType,
-                'budget'           => $budget,
-                'currency'         => $currency,
-                'location'         => $locationRaw,
-                'country_code'     => $countryCode,
-                'region_code'      => $regionCode,
-                'region_name'      => $regionName,
-                'city'             => $city,
-                'district'         => $district,
-                'latitude'         => $lat,
-                'longitude'        => $lng,
-                'location_confidence' => $confidence,
-                'bedrooms'         => $bedrooms,
-                'bathrooms'        => $bathrooms,
-                'min_area_sqm'     => $minArea,
-                'max_area_sqm'     => $maxArea,
-                'furnished'        => $furnished,
-                'urgency'          => $urgency,
-                'source_channel'   => $sourceChannel,
-                'lang'             => $lang,
-                // Optionally keep full detected_entities json for audit/debug
-                'detected_entities_json' => !empty($entities) ? json_encode($entities, JSON_UNESCAPED_UNICODE) : null,
+            // Prepare data for saving
+            $inquiryData = [
+                'user_id'        => $userId,
+                'customer_id'    => $customer ? $customer->id : null,
+                'phone_number'   => $whatsappNumber,
+                'message'        => $message,
+                'inquiry_type'   => $inquiryType,
+                'property_type'  => $propertyType,
+                'budget'         => $budget,
+                'location'       => $location,
+                
+                // New monetary/preference fields
+                'currency'       => $currency,
+                'bedrooms'       => $bedrooms,
+                'bathrooms'      => $bathrooms,
+                'min_area_sqm'   => $minAreaSqm,
+                'max_area_sqm'   => $maxAreaSqm,
+                'furnished'      => $furnished,
+                'urgency'        => $urgency,
+                
+                // Normalized location fields
+                'country_code'   => $countryCode,
+                'region_code'    => $regionCode,
+                'region_name'    => $regionName,
+                'city'           => $city,
+                'district'       => $district,
+                'latitude'       => $latitude,
+                'longitude'      => $longitude,
+                'location_confidence' => $locationConfidence,
+                
+                // Meta fields
+                'source_channel' => $sourceChannel,
+                'lang'           => $lang,
+                'detected_entities_json' => json_encode($detectedEntities),
+            ];
+
+            // Debug the data being saved
+            \Log::info('Inquiry Data Being Saved', $inquiryData);
+
+            // Save to inquiry table with all new fields
+            $inquiry = ApiCustomerInquiry::create($inquiryData);
+
+            // Debug what was actually saved
+            \Log::info('Inquiry Saved Successfully', [
+                'id' => $inquiry->id,
+                'city' => $inquiry->city,
+                'district' => $inquiry->district,
+                'country_code' => $inquiry->country_code,
+                'region_name' => $inquiry->region_name,
             ]);
 
             return response()->json([
-                'status'  => 'saved',
+                'status' => 'saved',
                 'message' => 'Inquiry saved successfully',
-                'data'    => $inquiry,
+                'data' => $inquiry,
             ], 201);
         }
 
-        // ====== CASE B: Native Meta WhatsApp webhook (unchanged logic) ======
+    
         $entry = $payload['entry'][0]['changes'][0]['value'] ?? null;
         if (!$entry) {
             return response()->json(['status' => 'ignored', 'message' => 'Invalid payload structure'], 400);
         }
 
-        $displayPhone = $entry['metadata']['display_phone_number'] ?? null; // Your business number
-        $fromNumber   = $entry['messages'][0]['from'] ?? null; // Customer number (E.164)
-        $contactName  = $entry['contacts'][0]['profile']['name'] ?? 'Unknown';
+        $displayPhone = $entry['metadata']['display_phone_number'] ?? null;
+        $fromNumber = $entry['messages'][0]['from'] ?? null;
+        $contactName = $entry['contacts'][0]['profile']['name'] ?? 'Unknown';
 
         if (!$displayPhone || !$fromNumber) {
             return response()->json(['status' => 'ignored', 'message' => 'Missing required fields'], 422);
         }
 
         $whatsappUser = WhatsappUser::where('number', $displayPhone)->first();
+
         if (!$whatsappUser) {
             return response()->json([
-                'status'  => 'ignored',
+                'status' => 'ignored',
                 'message' => 'Display phone number not found in whatsapp_users',
             ], 404);
         }
 
         $userId = $whatsappUser->user_id;
 
+        // Check if customer already exists
         $existing = ApiCustomer::where('user_id', $userId)
             ->where('phone_number', $fromNumber)
             ->first();
@@ -296,76 +316,12 @@ public function handleWhatsappWebhook(Request $request)
         ]);
 
         return response()->json([
-            'status'  => 'error',
+            'status' => 'error',
             'message' => 'Internal error',
         ], 500);
     }
 }
 
-/** Soft E.164 normalizer; assumes KSA if 9–10 digit local mobile is received */
-private function normalizeE164(?string $number): ?string
-{
-    if (!$number) return null;
-    $n = preg_replace('/\s+/', '', $number);
-
-    // Already E.164
-    if (Str::startsWith($n, '+')) return $n;
-
-    // Remove leading zeros
-    $n = ltrim($n, '0');
-
-    // Heuristic: KSA mobile often starts with 5 and total 9 digits (5XXXXXXXX)
-    if (preg_match('/^5\d{8}$/', $n)) {
-        return '+966' . $n;
-    }
-
-    // If it starts with 966 already (without +)
-    if (Str::startsWith($n, '966') && preg_match('/^966\d{9}$/', $n)) {
-        return '+' . $n;
-    }
-
-    // Fallback - return as provided
-    return $number;
-}
-
-/** Map KSA regions by code or name (Arabic/English); returns ['code' => 'RIY', 'name' => 'Riyadh'] or [] */
-private function resolveSaudiRegion(?string $code, ?string $name): array
-{
-    $regions = [
-        'RIY' => ['Riyadh','الرياض'],
-        'MKK' => ['Makkah','مكة','مكة المكرمة'],
-        'MED' => ['Madinah','Al Madinah','المدينة','المدينة المنورة'],
-        'EP'  => ['Eastern Province','Ash Sharqiyah','الشرقية','المنطقة الشرقية'],
-        'QAS' => ['Al Qassim','Qassim','القصيم'],
-        'ASIR'=> ['Asir','Aseer','عسير'],
-        'TAB' => ['Tabuk','تبوك'],
-        'HAI' => ['Hail','Ha’il','حائل'],
-        'JOF' => ['Al Jouf','Al Jawf','الجوف'],
-        'BAH' => ['Al Bahah','الباحة'],
-        'NJR' => ['Najran','نجران'],
-        'JAZ' => ['Jazan','جازان','جيزان'],
-        'NBE' => ['Northern Borders','Al Hudud ash Shamaliyah','الحدود الشمالية'],
-    ];
-
-    // Prefer direct code if valid
-    if ($code && isset($regions[$code])) {
-        return ['code' => $code, 'name' => $regions[$code][0]];
-    }
-
-    // Try to map by name (Arabic/English)
-    if ($name) {
-        $needle = mb_strtolower(trim($name));
-        foreach ($regions as $c => $names) {
-            foreach ($names as $n) {
-                if (mb_strtolower($n) === $needle) {
-                    return ['code' => $c, 'name' => $names[0]];
-                }
-            }
-        }
-    }
-
-    return [];
-}
 
 
 

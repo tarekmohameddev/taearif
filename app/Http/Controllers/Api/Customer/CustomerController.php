@@ -115,6 +115,28 @@ class CustomerController extends Controller
             ->groupBy('up.id')
             ->get();
 
+            // Get customer inquiries for district information
+            $customerInquiries = DB::table('api_customer_inquiry')
+                ->where('customer_id', $customer->id)
+                ->whereNotNull('district')
+                ->whereNotNull('city')
+                ->select('district', 'city')
+                ->distinct()
+                ->limit(3)
+                ->get();
+
+            // Format district information
+            $districtInfo = null;
+            if ($customerInquiries->isNotEmpty()) {
+                $districts = $customerInquiries->pluck('district')->filter()->unique()->take(3)->implode(',');
+                $cities = $customerInquiries->pluck('city')->filter()->unique()->take(3)->implode(',');
+                
+                $districtInfo = [
+                    'name_ar' => $districts,
+                    'city_name_ar' => $cities,
+                ];
+            }
+
             return [
                 'id' => $customer->id,
                 'name' => $customer->name,
@@ -139,9 +161,9 @@ class CustomerController extends Controller
                     'id' => $customer->procedure->id,
                     'name' => $customer->procedure->procedure_name,
                 ] : null,
-                'district' => $customer->district ?? null,
                 'note' => $customer->note ?? null,
                 'city_id' => $customer->city_id ?? null,
+                'district' => $districtInfo,
                 'created_by' => $customer->user_id,
                 'created_at' => $customer->created_at->toISOString(),
                 'updated_at' => $customer->updated_at->toISOString(),
@@ -528,6 +550,28 @@ class CustomerController extends Controller
                 ->map(fn($r) => ['id' => (int)$r->id, 'name' => $r->name])
                 ->values();
 
+            // Get customer inquiries for district information
+            $customerInquiries = DB::table('api_customer_inquiry')
+                ->where('customer_id', $customer->id)
+                ->whereNotNull('district')
+                ->whereNotNull('city')
+                ->select('district', 'city')
+                ->distinct()
+                ->limit(3)
+                ->get();
+
+            // Format district information
+            $districtInfo = null;
+            if ($customerInquiries->isNotEmpty()) {
+                $districts = $customerInquiries->pluck('district')->filter()->unique()->take(3)->implode(',');
+                $cities = $customerInquiries->pluck('city')->filter()->unique()->take(3)->implode(',');
+                
+                $districtInfo = [
+                    'name_ar' => $districts,
+                    'city_name_ar' => $cities,
+                ];
+            }
+
             return [
                 'id'                    => $customer->id,
                 'name'                  => $customer->name,
@@ -557,11 +601,7 @@ class CustomerController extends Controller
                     'name_ar' => $city->name_ar,
                     'name_en' => $city->name_en,
                 ] : null,
-                'district' => $district ? [
-                    'id'      => $district->id,
-                    'name_ar' => $district->name_ar,
-                    'name_en' => $district->name_en,
-                ] : null,
+                'district' => $districtInfo,
                 'note'                  => $customer->note ?? null,
                 'district_id'           => $customer->district_id ?? null,
                 'city_id'               => $customer->city_id ?? null,
