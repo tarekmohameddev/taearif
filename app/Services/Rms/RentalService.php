@@ -1046,4 +1046,143 @@ class RentalService
             throw new \Exception("Cannot transition from '{$currentStatus}' to '{$newStatus}'. Allowed transitions: " . implode(', ', $allowedTransitions[$currentStatus]));
         }
     }
+
+    /**
+     * Renew an ended rental by creating a new rental record
+     * Copies tenant and property information from the old rental
+     * Creates new contract with new duration and amounts
+     */
+    public function renewRental($userId, $oldRentalId, array $data)
+    {
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
+
+        return DB::transaction(function () use ($ownerId, $oldRentalId, $data) {
+            // Find the old rental
+            $oldRental = RmRental::where('user_id', $ownerId)->findOrFail($oldRentalId);
+
+            // Validate that the rental is ended
+            if ($oldRental->status !== 'ended') {
+                throw new \Exception('Only ended rentals can be renewed. Current status: ' . $oldRental->status);
+            }
+
+            // Check if unit already has an active rental
+            if (!empty($oldRental->unit_id)) {
+                $existingActiveRental = RmRental::where('unit_id', $oldRental->unit_id)
+                    ->where('user_id', $ownerId)
+                    ->whereIn('status', ['active', 'draft'])
+                    ->exists();
+
+                if ($existingActiveRental) {
+                    throw new \Exception('This unit already has an active contract. Please end the existing contract before renewing.');
+                }
+            }
+
+            // Extract cost items from data
+            $costItems = $data['cost_items'] ?? [];
+            unset($data['cost_items']);
+
+            // Prepare new rental data by copying from old rental and merging with new data
+            $newRentalData = [
+                'user_id' => $ownerId,
+                // Copy tenant information
+                'tenant_full_name' => $oldRental->tenant_full_name,
+                'tenant_phone' => $oldRental->tenant_phone,
+                'tenant_email' => $oldRental->tenant_email,
+                'tenant_job_title' => $oldRental->tenant_job_title,
+                'tenant_social_status' => $oldRental->tenant_social_status,
+                'tenant_national_id' => $oldRental->tenant_national_id,
+                // Copy property information
+                'unit_id' => $oldRental->unit_id,
+                'project_id' => $oldRental->project_id,
+                'building_id' => $oldRental->building_id,
+                // New rental details from request
+                'rental_type' => $data['rental_type'],
+                'rental_duration' => $data['rental_duration'],
+                'paying_plan' => $data['paying_plan'],
+                'total_rental_amount' => $data['total_rental_amount'],
+                'currency' => $data['currency'] ?? $oldRental->currency ?? 'SAR',
+                'move_in_date' => now()->toDateString(), // Start from today
+                'notes' => $data['notes'] ?? null,
+                'status' => 'active',
+                'created_by' => $ownerId,
+                'updated_by' => $ownerId,
+            ];
+
+            // Create new rental
+            $newRental = RmRental::create($newRentalData);
+
+            // Create cost items if provided
+            if (!empty($costItems)) {
+                foreach ($costItems as $costItemData) {
+                    $newRental->costItems()->create(array_merge($costItemData, [
+                        'user_id' => $ownerId,
+                    ]));
+                }
+            }
+
+            // Update property status based on active rentals
+            if ($newRental->unit_id) {
+                $property = Property::where('id', $newRental->unit_id)
+                    ->where('user_id', $ownerId)
+                    ->first();
+                if ($property) {
+                    $property->updatePropertyStatus();
+                }
+            }
+
+            // Create contract and installments if we have enough data
+            $hasEnoughData = $newRentalData['move_in_date']
+                && $newRentalData['rental_duration']
+                && $newRentalData['paying_plan']
+                && $newRentalData['total_rental_amount'];
+
+            if ($hasEnoughData) {
+                // Calculate total months based on rental_duration and rental_type
+                $totalMonths = $this->calculateTotalMonthsFromDuration(
+                    $newRentalData['rental_duration'],
+                    $newRentalData['rental_type']
+                );
+
+                $contract = RmContract::create([
+                    'user_id' => $ownerId,
+                    'rental_id' => $newRental->id,
+                    'start_date' => $newRentalData['move_in_date'],
+                    'end_date' => Carbon::parse($newRentalData['move_in_date'])->addMonths($totalMonths)->subDay(),
+                    'status' => 'active',
+                    // Snapshot identifiers for audit/history
+                    'property_id' => $newRental->unit_id,
+                    'project_id' => $newRental->project_id,
+                    'property_name' => $newRental->property_name ?? null,
+                    'project_name' => $newRental->project_name ?? null,
+                    'grace_period_months' => 0,
+                    'created_by' => $ownerId,
+                    'updated_by' => $ownerId,
+                ]);
+
+                $this->generateInstallments($ownerId, $newRental->id, $contract->id, $newRentalData);
+
+                return [
+                    'id' => $newRental->id,
+                    'old_rental_id' => $oldRental->id,
+                    'status' => 'active',
+                    'message' => 'Rental renewed successfully',
+                    'contract' => [
+                        'id' => $contract->id,
+                        'status' => $contract->status,
+                        'start_date' => $contract->start_date,
+                        'end_date' => $contract->end_date,
+                    ],
+                    'cost_items' => $newRental->costItems
+                ];
+            }
+
+            return [
+                'id' => $newRental->id,
+                'old_rental_id' => $oldRental->id,
+                'status' => 'active',
+                'message' => 'Rental renewed successfully',
+                'cost_items' => $newRental->costItems
+            ];
+        });
+    }
 }
