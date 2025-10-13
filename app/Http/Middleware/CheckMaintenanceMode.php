@@ -10,12 +10,12 @@ use App\Services\MembershipService;
 class CheckMaintenanceMode
 {
     protected $membershipService;
-    
+
     public function __construct(MembershipService $membershipService)
     {
         $this->membershipService = $membershipService;
     }
-    
+
     /**
      * The URIs that should be reachable while maintenance mode is enabled.
      * Add any routes you want to exclude from maintenance mode here.
@@ -25,17 +25,17 @@ class CheckMaintenanceMode
     protected $except = [
         // Property requests - as requested
         'property-requests/*',
-        
+
         // API routes
         'api/*',
-        
+
         // Authentication routes
         'auth/google/*',
         'register',
         'login',
         'auth/forgot-password',
         'auth/verify-reset-code',
-        
+
         // Payment callback routes (critical for business)
         '*paytm/*',
         '*razorpay/*',
@@ -51,7 +51,7 @@ class CheckMaintenanceMode
         '*course-enrolment/*',
         '*cause-donation/*',
         '*item-checkout/*',
-        
+
         // Static assets
         'assets/*',
         'css/*',
@@ -61,7 +61,7 @@ class CheckMaintenanceMode
         'favicon.ico',
         'robots.txt',
         'sitemap.xml',
-        
+
         // Add more routes here as needed
         // Example: 'contact/*', 'about', 'services/*', etc.
     ];
@@ -83,7 +83,10 @@ class CheckMaintenanceMode
         }
 
         // Get the current user (tenant)
+        // Note: getUser() returns User|null, or throws 404 if user not found/unauthorized
         $user = getUser();
+
+        // If no user in current context (e.g., running in console), skip maintenance check
         if (!$user) {
             return $next($request);
         }
@@ -95,14 +98,13 @@ class CheckMaintenanceMode
 
         // Check if maintenance mode is enabled for this user
         $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
-        
-        if (isset($api_general_settingsData->maintenance_mode) && $api_general_settingsData->maintenance_mode == 1) {
-            // Prepare data for maintenance view (similar to FrontendController)
+
+        if ($api_general_settingsData && $api_general_settingsData->maintenance_mode == 1) {
+            // Prepare data for maintenance view
             $data = [
                 'api_general_settingsData' => $api_general_settingsData,
-                // Add other necessary data here if needed
             ];
-            
+
             return response()->view('user-front.maintenance_mode', $data);
         }
 
