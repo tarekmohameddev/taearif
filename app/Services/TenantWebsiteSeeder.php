@@ -7,9 +7,95 @@ use App\Models\TenantPage;
 use App\Models\TenantGlobalComponent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class TenantWebsiteSeeder
 {
+    /**
+     * Maximum number of retry attempts for API calls
+     */
+    protected const MAX_RETRIES = 3;
+
+    /**
+     * API request timeout in seconds
+     */
+    protected const TIMEOUT = 10;
+
+    /**
+     * Fetch default data from external API with retry logic
+     * Falls back to local config if API fails after retries
+     *
+     * @return array|null
+     */
+    protected function fetchDefaultData(): ?array
+    {
+        $apiUrl = config('app.tenant_website_api_url');
+
+        // If API URL is not configured, use local config
+        if (empty($apiUrl)) {
+            Log::info('API URL not configured, using local config');
+            return config('tenant_website_defaults');
+        }
+
+        $attempt = 1;
+        $lastError = null;
+
+        // Try up to MAX_RETRIES times
+        while ($attempt <= self::MAX_RETRIES) {
+            try {
+                Log::info("Fetching default data from API (attempt {$attempt}/" . self::MAX_RETRIES . ")", [
+                    'url' => $apiUrl,
+                ]);
+
+                $response = Http::timeout(self::TIMEOUT)
+                    ->retry(1, 100) // Internal retry with 100ms delay
+                    ->get($apiUrl);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+
+                    // Validate the response structure
+                    if (isset($data['componentSettings']) && isset($data['globalComponentsData'])) {
+                        Log::info("Successfully fetched default data from API on attempt {$attempt}");
+                        return $data;
+                    } else {
+                        $lastError = 'Invalid API response structure: missing required keys';
+                        Log::warning($lastError, ['response' => $data]);
+                    }
+                } else {
+                    $lastError = "API request failed with status {$response->status()}";
+                    Log::warning($lastError, [
+                        'attempt' => $attempt,
+                        'status' => $response->status(),
+                        'body' => $response->body(),
+                    ]);
+                }
+            } catch (\Exception $e) {
+                $lastError = $e->getMessage();
+                Log::warning("API request failed on attempt {$attempt}", [
+                    'error' => $e->getMessage(),
+                    'url' => $apiUrl,
+                ]);
+            }
+
+            $attempt++;
+
+            // Wait before next retry (exponential backoff)
+            if ($attempt <= self::MAX_RETRIES) {
+                $waitTime = pow(2, $attempt - 1); // 2, 4, 8 seconds
+                sleep($waitTime);
+            }
+        }
+
+        // All retries failed, fall back to local config
+        Log::error('All API retry attempts failed, falling back to local config', [
+            'last_error' => $lastError,
+            'attempts' => self::MAX_RETRIES,
+        ]);
+
+        return config('tenant_website_defaults');
+    }
+
     /**
      * Seed default website pages and components for a new tenant
      *
@@ -20,8 +106,8 @@ class TenantWebsiteSeeder
     {
         try {
             return DB::transaction(function () use ($tenant) {
-                // Load default template from config
-                $template = config('tenant_website_defaults');
+                // Fetch default template from API (with fallback to local config)
+                $template = $this->fetchDefaultData();
 
                 if (!$template || !isset($template['componentSettings']) || !isset($template['globalComponentsData'])) {
                     Log::warning('Tenant website default template not found or invalid', [
@@ -144,7 +230,8 @@ class TenantWebsiteSeeder
     {
         try {
             return DB::transaction(function () use ($tenant) {
-                $template = config('tenant_website_defaults');
+                // Fetch default template from API (with fallback to local config)
+                $template = $this->fetchDefaultData();
 
                 if (!$template || !isset($template['componentSettings']) || !isset($template['globalComponentsData'])) {
                     Log::warning('Tenant website default template not found for reseed', [

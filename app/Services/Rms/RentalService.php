@@ -69,12 +69,12 @@ class RentalService
                     ->where('user_id', $userId)
                     ->whereIn('status', ['active', 'draft'])
                     ->exists();
-                
+
                 if ($existingActiveRental) {
                     throw new \Exception('This unit already has an active contract. Please end the existing contract before creating a new one.');
                 }
             }
-            
+
             // Extract cost items from data
             $costItems = $data['cost_items'] ?? [];
             unset($data['cost_items']);
@@ -111,7 +111,7 @@ class RentalService
             if ($hasEnoughData) {
                 // Calculate total months based on rental_duration and rental_type
                 $totalMonths = $this->calculateTotalMonthsFromDuration($data['rental_duration'], $data['rental_type']);
-                
+
                 $contract = RmContract::create([
                     'user_id' => $userId,
                     'rental_id' => $rental->id,
@@ -166,7 +166,7 @@ class RentalService
 
         return DB::transaction(function () use ($ownerId, $id, $data, $regenerate) {
             $rental = RmRental::where('user_id', $ownerId)->findOrFail($id);
-            
+
             // Check if unit_id is being changed and if new unit is available
             if (isset($data['unit_id']) && $data['unit_id'] != $rental->unit_id) {
                 $existingActiveRental = RmRental::where('unit_id', $data['unit_id'])
@@ -174,38 +174,38 @@ class RentalService
                     ->where('id', '!=', $id) // Exclude current rental
                     ->whereIn('status', ['active', 'draft'])
                     ->exists();
-                
+
                 if ($existingActiveRental) {
                     throw new \Exception('The selected unit already has an active contract. Please choose a different unit or end the existing contract first.');
                 }
             }
-            
+
             // Handle cost items update
             if (isset($data['cost_items']) && is_array($data['cost_items'])) {
                 $costItems = $data['cost_items'];
                 unset($data['cost_items']); // Remove cost items from rental update data
-                
+
                 // Delete existing cost items and create new ones
                 $rental->costItems()->delete();
-                
+
                 foreach ($costItems as $costItemData) {
                     $rental->costItems()->create(array_merge($costItemData, [
                         'user_id' => $ownerId,
                     ]));
                 }
             }
-            
+
             // Handle payment recording if payments are included
             if (isset($data['payments']) && is_array($data['payments'])) {
                 $payments = $data['payments'];
                 unset($data['payments']); // Remove payments from rental update data
-                
+
                 // Record payments
                 if (!empty($payments)) {
                     $this->paymentService->recordMultiplePayments($ownerId, $id, $payments);
                 }
             }
-            
+
             $rental->update($data);
 
             if ($regenerate && $rental->activeContract) {
@@ -288,10 +288,10 @@ class RentalService
         $expenses = $rental->activeExpenses->map(function ($expense) use ($rental) {
             // Use the actual base_rent_amount column value, not the accessor
             $baseRentAmount = $rental->getAttributes()['base_rent_amount'] ?? 0;
-            $calculatedAmount = $expense->amount_type === 'percentage' 
+            $calculatedAmount = $expense->amount_type === 'percentage'
                 ? ($baseRentAmount * $expense->amount_value) / 100
                 : $expense->amount_value;
-                
+
             return [
                 'id' => $expense->id,
                 'expense_name' => $expense->expense_name,
@@ -371,7 +371,7 @@ class RentalService
 
         // Get payment summary
         $paymentSummary = $this->paymentService->getPaymentSummary($ownerId, $rentalId);
-        
+
         // Get detailed installment payment information
         $installmentDetails = $this->paymentService->getInstallmentPaymentDetails($ownerId, $rentalId);
 
@@ -466,7 +466,7 @@ class RentalService
 
         // Calculate total months for the rental
         $totalMonths = $this->calculateTotalMonthsFromDuration($rentalDuration, $rentalType);
-        
+
         // Calculate number of installments
         $numberOfInstallments = intval($totalMonths / $chunks);
         $installmentAmount = round($totalAmount / $numberOfInstallments, 2);
@@ -496,7 +496,7 @@ class RentalService
         } elseif ($rentalType === 'annual') {
             return $rentalDuration * 12; // convert years to months
         }
-        
+
         return $rentalDuration; // fallback
     }
 
@@ -581,7 +581,7 @@ class RentalService
             $totalAmount = $rentAmount + $monthlyFees;
             $paidAmount = (float) $installment->paid_amount;
             $remainingAmount = $totalAmount - $paidAmount;
-            
+
             // Only process installments with outstanding amounts
             if ($this->hasOutstandingAmount($installment)) {
                 $totalDue += $totalAmount;
@@ -625,11 +625,11 @@ class RentalService
             $totalAmount = $rentAmount + $monthlyFees;
             $paidAmount = (float) $installment->paid_amount;
             $remainingAmount = $totalAmount - $paidAmount;
-            
+
             // Only include if there's still money owed
             if ($remainingAmount > 0) {
                 $totalOverdue += $remainingAmount;
-                
+
                 $tenants[] = [
                     'rental_id' => $rental->id,
                     'tenant_name' => $rental->tenant_full_name,
@@ -659,7 +659,7 @@ class RentalService
         $totalAmount = (float) $installment->amount;
         $dueDate = \Carbon\Carbon::parse($installment->due_date);
         $isLate = now()->isAfter($dueDate);
-        
+
         if ($paidAmount >= $totalAmount) {
             return $isLate ? 'paid_late' : 'paid';
         } elseif ($paidAmount > 0) {
@@ -673,7 +673,7 @@ class RentalService
     {
         $paidAmount = (float) $installment->paid_amount;
         $totalAmount = (float) $installment->amount;
-        
+
         // Show if there's remaining amount OR if it's paid but we want to show paid status
         return $paidAmount < $totalAmount || $paidAmount > 0;
     }
@@ -685,7 +685,7 @@ class RentalService
         $platformFee = (float) ($rental->platform_fee ?? 0);
         $waterFee = (float) ($rental->water_fee ?? 0);
         $officeFee = (float) ($rental->office_fee ?? 0);
-        
+
         // Use the saved office_fee amount (calculated and saved during rental creation)
         // Do NOT recalculate office commission - use the fixed amount
         $officeCommission = $officeFee; // office_fee already contains the calculated commission
@@ -726,7 +726,7 @@ class RentalService
     public function getPaymentCollectionData($userId, $rentalId)
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
-        
+
         $rental = RmRental::with(['activeContract', 'installments.payments', 'property.project'])
             ->where('user_id', $ownerId)
             ->findOrFail($rentalId);
@@ -762,12 +762,12 @@ class RentalService
         // Calculate fees for the rental
         $fees = $this->calculateRentalFees($rental);
         $totalInstallments = $installments->count();
-        
+
         $items = $installments->map(function ($installment) {
             $paidAmount = (float) $installment->paid_amount;
             $rentAmount = (float) $installment->amount;
             $remainingAmount = round(max(0, $rentAmount - $paidAmount), 2);
-            
+
             return [
                 'id' => $installment->id,
                 'sequence_no' => $installment->sequence_no,
@@ -869,16 +869,16 @@ class RentalService
     public function validateInstallmentsForRental($userId, $rentalId, $installmentIds)
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
-        
+
         $validInstallmentIds = RmPaymentInstallment::whereHas('rental', function ($query) use ($ownerId, $rentalId) {
             $query->where('user_id', $ownerId)->where('id', $rentalId);
         })->pluck('id')->toArray();
 
         $invalidIds = $installmentIds->diff($validInstallmentIds);
-        
+
         if ($invalidIds->isNotEmpty()) {
             throw new \InvalidArgumentException(
-                'Invalid installment IDs: ' . $invalidIds->implode(', ') . 
+                'Invalid installment IDs: ' . $invalidIds->implode(', ') .
                 '. These installments do not belong to the specified rental.'
             );
         }
@@ -892,11 +892,11 @@ class RentalService
         if ($paidAmount <= 0) {
             return now()->isAfter($dueDate) ? 'overdue' : 'unpaid';
         }
-        
+
         if ($paidAmount >= $totalAmount) {
             return 'paid';
         }
-        
+
         return 'partial';
     }
 
@@ -918,11 +918,11 @@ class RentalService
         if ($paidAmount <= 0) {
             return 'unpaid';
         }
-        
+
         if ($paidAmount >= $totalAmount) {
             return 'paid';
         }
-        
+
         return 'partial';
     }
 
@@ -936,7 +936,7 @@ class RentalService
         return DB::transaction(function () use ($ownerId, $rentalId, $data) {
             // Find the rental
             $rental = RmRental::where('user_id', $ownerId)->findOrFail($rentalId);
-            
+
             // Find the active contract
             $activeContract = $rental->activeContract;
             if (!$activeContract) {
@@ -950,7 +950,7 @@ class RentalService
                 'termination_reason' => $data['termination_reason'] ?? 'Contract ended by user',
                 'updated_by' => $ownerId,
             ];
-            
+
             $activeContract->update($contractData);
 
             // Update any pending installments to reflect the contract termination
@@ -993,19 +993,27 @@ class RentalService
     {
         return DB::transaction(function () use ($userId, $id, $data) {
             $rental = RmRental::where('user_id', $userId)->findOrFail($id);
-            
+
             $currentStatus = $rental->status;
             $newStatus = $data['status'];
-            
+
             // Validate status transitions
             $this->validateStatusTransition($currentStatus, $newStatus);
-            
-            // Update status
-            $rental->update([
+
+            // Prepare update data
+            $updateData = [
                 'status' => $newStatus,
                 'notes' => $data['notes'] ?? $rental->notes
-            ]);
-            
+            ];
+
+            // Add end_date if status is 'ended' and end_date is provided
+            if ($newStatus === 'ended' && !empty($data['end_date'])) {
+                $updateData['end_date'] = $data['end_date'];
+            }
+
+            // Update status
+            $rental->update($updateData);
+
             // Update property status if needed
             if ($rental->unit_id) {
                 $property = \App\Models\User\RealestateManagement\Property::find($rental->unit_id);
@@ -1013,7 +1021,7 @@ class RentalService
                     $property->updatePropertyStatus();
                 }
             }
-            
+
             return $rental->fresh();
         });
     }
@@ -1029,11 +1037,11 @@ class RentalService
             'ended' => [], // No transitions from ended
             'cancelled' => [] // No transitions from cancelled
         ];
-        
+
         if (!isset($allowedTransitions[$currentStatus])) {
             throw new \Exception("Invalid current status: {$currentStatus}");
         }
-        
+
         if (!in_array($newStatus, $allowedTransitions[$currentStatus])) {
             throw new \Exception("Cannot transition from '{$currentStatus}' to '{$newStatus}'. Allowed transitions: " . implode(', ', $allowedTransitions[$currentStatus]));
         }
