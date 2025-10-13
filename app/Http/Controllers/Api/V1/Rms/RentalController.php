@@ -352,6 +352,67 @@ class RentalController extends Controller
     }
 
     /**
+     * Renew an ended rental by creating a new rental record
+     */
+    public function renewRental(Request $request, $id)
+    {
+        try {
+            $data = $request->validate([
+                'rental_type' => 'required|in:monthly,annual',
+                'rental_duration' => 'required|integer|min:1',
+                'paying_plan' => 'required|in:monthly,quarterly,semi_annual,annual',
+                'total_rental_amount' => 'required|numeric|min:0',
+                'currency' => 'nullable|string|size:3',
+                'notes' => 'nullable|string',
+                'cost_items' => 'nullable|array',
+                'cost_items.*.name' => 'required|string|max:255',
+                'cost_items.*.cost' => 'required|numeric|min:0',
+                'cost_items.*.type' => 'required|in:fixed,percentage',
+                'cost_items.*.payer' => 'required|in:owner,tenant',
+                'cost_items.*.payment_frequency' => 'required|in:one_time,per_installment',
+                'cost_items.*.percentage_of' => 'nullable|numeric|min:0',
+                'cost_items.*.description' => 'nullable|string',
+            ]);
+
+            $newRental = $this->rentalService->renewRental(auth()->id(), $id, $data);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Rental renewed successfully',
+                'data' => $newRental
+            ], 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Rental not found',
+                'error' => $e->getMessage()
+            ], 404);
+
+        } catch (\Exception $e) {
+            Log::error('Rental renewal failed', [
+                'user_id' => auth()->id(),
+                'rental_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to renew rental',
+                'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
+            ], 500);
+        }
+    }
+
+    /**
      * Upload receipt image for payment
      */
     public function uploadReceiptImage(Request $request)

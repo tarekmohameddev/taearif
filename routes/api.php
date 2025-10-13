@@ -519,6 +519,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::patch('rentals/{id}/status', [RentalController::class, 'updateStatus']);
         Route::delete('rentals/{id}', [RentalController::class, 'destroy']);
         Route::post('rentals/{id}/end-contract', [RentalController::class, 'endContract']);
+        Route::post('rentals/{id}/renew', [RentalController::class, 'renewRental']);
 
         // Expenses
         Route::post('expenses/upload-image', [ExpenseController::class, 'uploadImage']);
