@@ -465,4 +465,48 @@ class RentalController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get property payment report
+     * Shows collected vs outstanding payments for all properties
+     */
+    public function paymentReport(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'from_date' => 'nullable|date',
+                'to_date' => 'nullable|date|after_or_equal:from_date',
+                'property_id' => 'nullable|integer|exists:user_properties,id',
+                'project_id' => 'nullable|integer|exists:projects,id',
+                'building_id' => 'nullable|integer|exists:buildings,id',
+            ]);
+
+            $report = $this->rentalService->getPropertyPaymentReport(auth()->id(), $validated);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Payment report retrieved successfully',
+                'data' => $report,
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Payment report error: ' . $e->getMessage(), [
+                'user_id' => auth()->id(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to generate payment report',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error',
+            ], 500);
+        }
+    }
 }
