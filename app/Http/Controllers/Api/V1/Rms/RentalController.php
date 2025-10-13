@@ -265,7 +265,8 @@ class RentalController extends Controller
     {
         try {
             $data = $request->validate([
-                'status' => 'required|string|in:draft,active,ended,cancelled',
+                'status' => 'required|string',
+                'end_date' => 'nullable|date',
                 'notes' => 'nullable|string|max:500'
             ]);
 
