@@ -58,6 +58,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Tenant Website Default Data API URL
+    |--------------------------------------------------------------------------
+    |
+    | This URL points to the external API endpoint that provides the default
+    | website data for new tenants. If not set or the API fails, the system
+    | will fall back to the local config file (tenant_website_defaults.php).
+    |
+    */
+
+    'tenant_website_api_url' => env('TENANT_WEBSITE_API_URL', 'https://www.mandhoor.com/api/node/defaultData'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
