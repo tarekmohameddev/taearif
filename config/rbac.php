@@ -27,8 +27,6 @@ return [
         'properties.update',
         'properties.delete',
 
-		'content.view',
-
 		'crm.view',
         'crm.create',
         'crm.update',
@@ -58,6 +56,8 @@ return [
             'crm.update',
             'crm.delete',
 			'settings.view',
+			'apps.view',
+			'affiliate.view',
 		],
 		'manager' => [
 			'customers.view',
@@ -76,6 +76,7 @@ return [
             'crm.create',
             'crm.update',
 			'settings.view',
+			'apps.view',
 		],
 		'agent' => [
 			'customers.view',
@@ -89,6 +90,7 @@ return [
 			'crm.view',
             'crm.create',
 			'settings.view',
+			'apps.view',
 		],
 	],
 ];
