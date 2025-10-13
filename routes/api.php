@@ -528,6 +528,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         // Route::patch('rentals/{rentalId}/expenses/{expenseId}', [ExpenseController::class, 'update']);
         Route::delete('rentals/{rentalId}/expenses/{expenseId}', [ExpenseController::class, 'destroy']);
 
+        // Payment Report
+        Route::get('payment-report', [RentalController::class, 'paymentReport']);
+
         // Contracts
         Route::get('rentals/{rentalId}/contracts', [ContractController::class, 'listByRental']);
         Route::post('rentals/{rentalId}/contracts', [ContractController::class, 'store']);

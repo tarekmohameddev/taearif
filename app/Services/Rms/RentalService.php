@@ -1185,4 +1185,231 @@ class RentalService
             ];
         });
     }
+
+    /**
+     * Get property payment report with collected vs outstanding payments
+     *
+     * @param int $userId
+     * @param array $filters
+     * @return array
+     */
+    public function getPropertyPaymentReport($userId, $filters = [])
+    {
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
+
+        // Parse filters
+        $fromDate = $filters['from_date'] ?? now()->startOfYear()->toDateString();
+        $toDate = $filters['to_date'] ?? now()->endOfYear()->toDateString();
+        $propertyId = $filters['property_id'] ?? null;
+        $projectId = $filters['project_id'] ?? null;
+        $buildingId = $filters['building_id'] ?? null;
+
+        // Get all properties for the user
+        $propertiesQuery = Property::where('user_id', $ownerId)
+            ->with(['rentals' => function ($q) use ($fromDate, $toDate) {
+                $q->whereHas('contracts', function ($contractQuery) use ($fromDate, $toDate) {
+                    $contractQuery->where(function ($dateQuery) use ($fromDate, $toDate) {
+                        $dateQuery->whereBetween('start_date', [$fromDate, $toDate])
+                            ->orWhereBetween('end_date', [$fromDate, $toDate])
+                            ->orWhere(function ($overlapQuery) use ($fromDate, $toDate) {
+                                $overlapQuery->where('start_date', '<=', $fromDate)
+                                    ->where('end_date', '>=', $toDate);
+                            });
+                    });
+                });
+            }]);
+
+        // Apply filters
+        if ($propertyId) {
+            $propertiesQuery->where('id', $propertyId);
+        }
+
+        if ($projectId) {
+            $propertiesQuery->where('project_id', $projectId);
+        }
+
+        if ($buildingId) {
+            $propertiesQuery->where('building_id', $buildingId);
+        }
+
+        $properties = $propertiesQuery->get();
+
+        $reportData = [];
+        $grandTotalExpected = 0;
+        $grandTotalCollected = 0;
+        $grandTotalOutstanding = 0;
+
+        foreach ($properties as $property) {
+            $propertyData = [
+                'property_id' => $property->id,
+                'property_name' => $property->name ?? 'N/A',
+                'property_address' => $property->address ?? 'N/A',
+                'building' => $property->building->name ?? 'N/A',
+                'project' => $property->project->name ?? 'N/A',
+                'total_expected' => 0,
+                'total_collected' => 0,
+                'total_outstanding' => 0,
+                'rentals' => []
+            ];
+
+            foreach ($property->rentals as $rental) {
+                // Get contracts for this rental within date range
+                $contracts = $rental->contracts()
+                    ->where(function ($q) use ($fromDate, $toDate) {
+                        $q->whereBetween('start_date', [$fromDate, $toDate])
+                            ->orWhereBetween('end_date', [$fromDate, $toDate])
+                            ->orWhere(function ($overlapQuery) use ($fromDate, $toDate) {
+                                $overlapQuery->where('start_date', '<=', $fromDate)
+                                    ->where('end_date', '>=', $toDate);
+                            });
+                    })
+                    ->get();
+
+                if ($contracts->isEmpty()) {
+                    continue; // Skip rentals without contracts in date range
+                }
+
+                // Get all installments for this rental within date range
+                $installments = $rental->installments()
+                    ->whereBetween('due_date', [$fromDate, $toDate])
+                    ->get();
+
+                // Get all payments for this rental within date range
+                $payments = $rental->payments()
+                    ->whereBetween('payment_date', [$fromDate, $toDate])
+                    ->orderBy('payment_date', 'desc')
+                    ->get();
+
+                // Calculate expected amount from installments + fees
+                $expectedRent = $installments->sum('amount');
+                $expectedFees = $this->calculateExpectedFees($rental, $installments->count());
+                $expectedDeposit = $rental->deposit_amount ?? 0;
+                $totalExpected = $expectedRent + $expectedFees + $expectedDeposit;
+
+                // Calculate collected amount
+                $collectedRent = $payments->where('payment_type', 'rent')->sum('amount');
+                $collectedPlatformFee = $payments->where('payment_type', 'platform_fee')->sum('amount');
+                $collectedWaterFee = $payments->where('payment_type', 'water_fee')->sum('amount');
+                $collectedOfficeFee = $payments->where('payment_type', 'office_fee')->sum('amount');
+                $collectedDeposit = $payments->where('payment_type', 'deposit')->sum('amount');
+                $totalCollected = $collectedRent + $collectedPlatformFee + $collectedWaterFee + $collectedOfficeFee + $collectedDeposit;
+
+                // Calculate outstanding
+                $totalOutstanding = max(0, $totalExpected - $totalCollected);
+
+                // Build payment history
+                $paymentHistory = $payments->map(function ($payment) {
+                    return [
+                        'id' => $payment->id,
+                        'payment_type' => $payment->payment_type,
+                        'amount' => (float) $payment->amount,
+                        'payment_date' => $payment->payment_date,
+                        'payment_method' => $payment->payment_method,
+                        'bank_name' => $payment->bank_name,
+                        'transfer_to' => $payment->transfer_to ?? null,
+                        'reference' => $payment->reference,
+                        'notes' => $payment->notes,
+                        'receipt_image_url' => $payment->receipt_image_path ? url($payment->receipt_image_path) : null,
+                        'created_at' => $payment->created_at->toDateTimeString(),
+                    ];
+                });
+
+                $rentalData = [
+                    'rental_id' => $rental->id,
+                    'tenant_name' => $rental->tenant_full_name,
+                    'tenant_phone' => $rental->tenant_phone,
+                    'tenant_email' => $rental->tenant_email,
+                    'contract_number' => $rental->contract_number,
+                    'status' => $rental->status,
+                    'move_in_date' => $rental->move_in_date?->toDateString(),
+                    'base_rent_amount' => (float) $rental->base_rent_amount,
+                    'currency' => $rental->currency ?? 'SAR',
+                    'payment_breakdown' => [
+                        'rent' => [
+                            'expected' => (float) $expectedRent,
+                            'collected' => (float) $collectedRent,
+                            'outstanding' => (float) max(0, $expectedRent - $collectedRent),
+                        ],
+                        'platform_fee' => [
+                            'expected' => (float) ($rental->platform_fee ?? 0) * $installments->count(),
+                            'collected' => (float) $collectedPlatformFee,
+                            'outstanding' => (float) max(0, (($rental->platform_fee ?? 0) * $installments->count()) - $collectedPlatformFee),
+                        ],
+                        'water_fee' => [
+                            'expected' => (float) ($rental->water_fee ?? 0) * $installments->count(),
+                            'collected' => (float) $collectedWaterFee,
+                            'outstanding' => (float) max(0, (($rental->water_fee ?? 0) * $installments->count()) - $collectedWaterFee),
+                        ],
+                        'office_fee' => [
+                            'expected' => (float) ($rental->office_fee ?? 0) * $installments->count(),
+                            'collected' => (float) $collectedOfficeFee,
+                            'outstanding' => (float) max(0, (($rental->office_fee ?? 0) * $installments->count()) - $collectedOfficeFee),
+                        ],
+                        'deposit' => [
+                            'expected' => (float) $expectedDeposit,
+                            'collected' => (float) $collectedDeposit,
+                            'outstanding' => (float) max(0, $expectedDeposit - $collectedDeposit),
+                        ],
+                    ],
+                    'total_expected' => (float) $totalExpected,
+                    'total_collected' => (float) $totalCollected,
+                    'total_outstanding' => (float) $totalOutstanding,
+                    'installments_count' => $installments->count(),
+                    'payments_count' => $payments->count(),
+                    'payment_history' => $paymentHistory->values()->toArray(),
+                ];
+
+                $propertyData['rentals'][] = $rentalData;
+                $propertyData['total_expected'] += $totalExpected;
+                $propertyData['total_collected'] += $totalCollected;
+                $propertyData['total_outstanding'] += $totalOutstanding;
+            }
+
+            // Only include properties with rentals
+            if (!empty($propertyData['rentals'])) {
+                $propertyData['total_expected'] = (float) $propertyData['total_expected'];
+                $propertyData['total_collected'] = (float) $propertyData['total_collected'];
+                $propertyData['total_outstanding'] = (float) $propertyData['total_outstanding'];
+                $propertyData['rentals_count'] = count($propertyData['rentals']);
+
+                $reportData[] = $propertyData;
+
+                $grandTotalExpected += $propertyData['total_expected'];
+                $grandTotalCollected += $propertyData['total_collected'];
+                $grandTotalOutstanding += $propertyData['total_outstanding'];
+            }
+        }
+
+        return [
+            'filters' => [
+                'from_date' => $fromDate,
+                'to_date' => $toDate,
+                'property_id' => $propertyId,
+                'project_id' => $projectId,
+                'building_id' => $buildingId,
+            ],
+            'summary' => [
+                'total_properties' => count($reportData),
+                'total_expected' => (float) $grandTotalExpected,
+                'total_collected' => (float) $grandTotalCollected,
+                'total_outstanding' => (float) $grandTotalOutstanding,
+                'collection_percentage' => $grandTotalExpected > 0
+                    ? round(($grandTotalCollected / $grandTotalExpected) * 100, 2)
+                    : 0,
+            ],
+            'properties' => $reportData,
+        ];
+    }
+
+    /**
+     * Calculate expected fees for a rental based on installment count
+     */
+    private function calculateExpectedFees($rental, $installmentCount)
+    {
+        $platformFee = ($rental->platform_fee ?? 0) * $installmentCount;
+        $waterFee = ($rental->water_fee ?? 0) * $installmentCount;
+        $officeFee = ($rental->office_fee ?? 0) * $installmentCount;
+
+        return $platformFee + $waterFee + $officeFee;
+    }
 }
