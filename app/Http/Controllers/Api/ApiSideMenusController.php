@@ -116,7 +116,7 @@ class ApiSideMenusController extends Controller
                 $sections[] = $item['section'];
                 continue;
             }
-            
+
             // Other items check permission + optional conditions
             if ($can($item['perm']) && (!isset($item['when']) || $item['when']() === true)) {
                 $sections[] = $item['section'];

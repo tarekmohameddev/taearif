@@ -9,6 +9,8 @@ return [
         'dashboard.view',
         'content.view',
         'settings.view',
+        'apps.view',
+        'affiliate.view',
 
 		'customers.view',
         'customers.create',
