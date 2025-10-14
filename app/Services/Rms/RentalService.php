@@ -885,6 +885,182 @@ class RentalService
     }
 
     /**
+     * Get payment collection data for all rentals of the authenticated user
+     * Returns summary and paginated list of rentals with payment collection data
+     */
+    public function getAllPaymentCollections($userId, array $filters = [])
+    {
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
+
+        // Pagination parameters
+        $perPage = $filters['per_page'] ?? 15;
+        $perPage = min($perPage, 100); // Max 100 per page
+        $page = $filters['page'] ?? 1;
+
+        // Build base query
+        $query = RmRental::with(['activeContract', 'property.contents', 'project'])
+            ->where('user_id', $ownerId);
+
+        // Apply filters
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['property_id'])) {
+            $query->where('unit_id', $filters['property_id']);
+        }
+
+        if (!empty($filters['project_id'])) {
+            $query->where('project_id', $filters['project_id']);
+        }
+
+        if (!empty($filters['from_date'])) {
+            $query->whereDate('move_in_date', '>=', $filters['from_date']);
+        }
+
+        if (!empty($filters['to_date'])) {
+            $query->whereDate('move_in_date', '<=', $filters['to_date']);
+        }
+
+        // Get paginated rentals
+        $rentals = $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
+
+        // Initialize summary totals
+        $summaryTotalDue = 0;
+        $summaryTotalCollected = 0;
+        $summaryTotalRemaining = 0;
+
+        // Process each rental
+        $rentalsList = [];
+        foreach ($rentals as $rental) {
+            // Skip rentals without active contract
+            if (!$rental->activeContract) {
+                continue;
+            }
+
+            // Get installments with payment details
+            $installments = $rental->installments()
+                ->where('contract_id', $rental->activeContract->id)
+                ->orderBy('due_date')
+                ->get();
+
+            // Calculate fees for the rental
+            $fees = $this->calculateRentalFees($rental);
+
+            // Calculate totals for this rental
+            $totalRentDue = round($installments->sum('amount'), 2);
+            $totalFeesDue = round($fees['total_fees'], 2);
+            $totalDue = round($totalRentDue + $totalFeesDue, 2);
+            $totalPaid = round($installments->sum('paid_amount'), 2);
+            
+            // Get fee payments
+            $feePaid = $this->getTotalFeesCollected($rental->id);
+            $totalCollected = round($totalPaid + $feePaid, 2);
+            $totalRemaining = round($totalDue - $totalCollected, 2);
+
+            // Add to summary
+            $summaryTotalDue += $totalDue;
+            $summaryTotalCollected += $totalCollected;
+            $summaryTotalRemaining += $totalRemaining;
+
+            // Map installments
+            $items = $installments->map(function ($installment) {
+                $paidAmount = (float) $installment->paid_amount;
+                $rentAmount = (float) $installment->amount;
+                $remainingAmount = round(max(0, $rentAmount - $paidAmount), 2);
+
+                return [
+                    'id' => $installment->id,
+                    'sequence_no' => $installment->sequence_no,
+                    'due_date' => $installment->due_date,
+                    'rent_amount' => $rentAmount,
+                    'paid_amount' => $paidAmount,
+                    'remaining_amount' => $remainingAmount,
+                    'status' => $this->getInstallmentPaymentStatus($paidAmount, $rentAmount, $installment->due_date),
+                    'is_overdue' => now()->isAfter($installment->due_date) && $remainingAmount > 0
+                ];
+            });
+
+            // Get property name
+            $propertyName = 'N/A';
+            if ($rental->property && $rental->property->firstContent) {
+                $propertyName = $rental->property->firstContent->title;
+            }
+
+            // Build rental data
+            $rentalData = [
+                'rental_id' => $rental->id,
+                'tenant_name' => $rental->tenant_full_name,
+                'tenant_phone' => $rental->tenant_phone,
+                'tenant_email' => $rental->tenant_email,
+                'property_id' => $rental->unit_id,
+                'property_name' => $propertyName,
+                'project_id' => $rental->project_id,
+                'project_name' => $rental->project?->name ?? 'N/A',
+                'building' => $rental->building,
+                'contract_number' => $rental->activeContract->contract_number ?? 'N/A',
+                'status' => $rental->status,
+                'move_in_date' => $rental->move_in_date?->toDateString(),
+                'currency' => $rental->currency ?? 'SAR',
+                'fees_breakdown' => [
+                    'platform_fee' => round($fees['platform_fee'], 2),
+                    'water_fee' => round($fees['water_fee'], 2),
+                    'office_fee' => round($fees['office_fee'], 2),
+                    'total_fees' => round($fees['total_fees'], 2)
+                ],
+                'payment_summary' => [
+                    'total_rent_due' => $totalRentDue,
+                    'total_fees_due' => $totalFeesDue,
+                    'total_due' => $totalDue,
+                    'total_collected' => $totalCollected,
+                    'total_remaining' => $totalRemaining,
+                    'overdue_count' => $items->where('is_overdue', true)->count(),
+                    'paid_count' => $items->where('status', 'paid')->count(),
+                    'partial_count' => $items->where('status', 'partial')->count(),
+                    'unpaid_count' => $items->where('status', 'unpaid')->count()
+                ],
+                'installments' => $items->values()->toArray()
+            ];
+
+            $rentalsList[] = $rentalData;
+        }
+
+        return [
+            'summary' => [
+                'total_rentals' => count($rentalsList),
+                'total_due' => round($summaryTotalDue, 2),
+                'total_collected' => round($summaryTotalCollected, 2),
+                'total_remaining' => round($summaryTotalRemaining, 2),
+                'collection_percentage' => $summaryTotalDue > 0
+                    ? round(($summaryTotalCollected / $summaryTotalDue) * 100, 2)
+                    : 0
+            ],
+            'rentals' => $rentalsList,
+            'pagination' => [
+                'current_page' => $rentals->currentPage(),
+                'per_page' => $rentals->perPage(),
+                'total' => $rentals->total(),
+                'last_page' => $rentals->lastPage(),
+                'from' => $rentals->firstItem(),
+                'to' => $rentals->lastItem(),
+                'has_more_pages' => $rentals->hasMorePages(),
+                'next_page_url' => $rentals->nextPageUrl(),
+                'prev_page_url' => $rentals->previousPageUrl(),
+            ]
+        ];
+    }
+
+    /**
+     * Get total fees collected for a rental
+     */
+    private function getTotalFeesCollected($rentalId)
+    {
+        return RmPayment::where('rental_id', $rentalId)
+            ->whereIn('payment_type', ['platform_fee', 'water_fee', 'office_fee'])
+            ->sum('amount');
+    }
+
+    /**
      * Get installment payment status
      */
     private function getInstallmentPaymentStatus($paidAmount, $totalAmount, $dueDate)

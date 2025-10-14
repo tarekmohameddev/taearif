@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1\Rms;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\Rms\RentalService;
+use App\Models\Api\Rms\RmRental;
+use App\Models\Api\Rms\RmPaymentInstallment;
 use Illuminate\Support\Facades\Log;
 
 class RentalController extends Controller
@@ -152,6 +154,52 @@ class RentalController extends Controller
     }
 
     /**
+     * Get payment collection data for all rentals of the authenticated user
+     * Returns summary and paginated list of rentals with payment collection data
+     */
+    public function allPaymentCollections(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'per_page' => 'nullable|integer|min:1|max:100',
+                'page' => 'nullable|integer|min:1',
+                'status' => 'nullable|string|in:active,ended,terminated,cancelled,draft',
+                'from_date' => 'nullable|date',
+                'to_date' => 'nullable|date|after_or_equal:from_date',
+                'property_id' => 'nullable|integer|exists:user_properties,id',
+                'project_id' => 'nullable|integer|exists:projects,id',
+            ]);
+
+            $result = $this->rentalService->getAllPaymentCollections(auth()->id(), $validated);
+
+            return response()->json([
+                'status' => true,
+                'data' => $result
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            \Log::error('Get all payment collections failed', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to retrieve payment collections',
+                'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
+            ], 500);
+        }
+    }
+
+    /**
      * Collect payment for specific installments
      * Supports partial payments for individual installments
      */
@@ -182,31 +230,60 @@ class RentalController extends Controller
                 ], 422);
             }
 
-            // Validate installment_ids only for rent payments
-            $rentPayments = collect($data['payments'])->where('payment_type', 'rent');
-            if ($rentPayments->isNotEmpty()) {
-                $installmentIds = $rentPayments->pluck('installment_id')->filter();
-                if ($installmentIds->isNotEmpty()) {
-                    $this->rentalService->validateInstallmentsForRental(auth()->id(), $id, $installmentIds);
+            // Get the tenant owner ID (handles both direct owners and sub-users)
+            $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : auth()->id();
+
+            // Enhanced installment validation (fixes Bug #3: Missing Installment Ownership Validation)
+            // Collect ALL installment_ids from any payment type (not just rent)
+            $installmentIds = collect($data['payments'])
+                ->pluck('installment_id')
+                ->filter()
+                ->unique();
+
+            if ($installmentIds->isNotEmpty()) {
+
+                // Validate that installments belong to this rental and user owns the rental
+                $this->rentalService->validateInstallmentsForRental($ownerId, $id, $installmentIds);
+
+                // Additional security: Verify installments belong to ACTIVE contract only
+                // This prevents payment to old/terminated contract installments
+                $rental = RmRental::where('user_id', $ownerId)->findOrFail($id);
+
+                if ($rental->activeContract) {
+                    $validInstallmentIds = RmPaymentInstallment::where('contract_id', $rental->activeContract->id)
+                        ->whereIn('id', $installmentIds)
+                        ->pluck('id');
+
+                    $invalidInstallments = $installmentIds->diff($validInstallmentIds);
+
+                    if ($invalidInstallments->isNotEmpty()) {
+                        throw new \InvalidArgumentException(
+                            'Installments do not belong to active contract: ' . $invalidInstallments->implode(', ')
+                        );
+                    }
                 }
             }
 
             // Process payments using PaymentService
             $paymentService = app(\App\Services\Rms\PaymentService::class);
 
-            $processedPayments = [];
-            foreach ($data['payments'] as $paymentData) {
-                $paymentData['payment_method'] = $data['payment_method'];
-                $paymentData['payment_date'] = $data['payment_date'] ?? now()->toDateString();
-                $paymentData['reference'] = $data['reference'];
-                $paymentData['notes'] = $paymentData['notes'] ?? $data['notes'];
-                $paymentData['bank_name'] = $data['bank_name'] ?? null;
-                $paymentData['receipt_image_path'] = $data['receipt_image_path'] ?? null;
-                $paymentData['transfer_to'] = $data['transfer_to'];
+            // Prepare all payment data with common fields
+            $paymentsData = collect($data['payments'])->map(function ($paymentData) use ($data) {
+                return array_merge($paymentData, [
+                    'payment_method' => $data['payment_method'],
+                    'payment_date' => $data['payment_date'] ?? now()->toDateString(),
+                    'reference' => $data['reference'],
+                    'notes' => $paymentData['notes'] ?? $data['notes'],
+                    'bank_name' => $data['bank_name'] ?? null,
+                    'receipt_image_path' => $data['receipt_image_path'] ?? null,
+                    'transfer_to' => $data['transfer_to'],
+                ]);
+            })->toArray();
 
-                $payment = $paymentService->recordPayment(auth()->id(), $id, $paymentData);
-                $processedPayments[] = $payment;
-            }
+            // Process all payments in a single transaction (fixes Bug #2: Partial Transaction Failure)
+            // If any payment fails, all previous payments will be rolled back
+            // Use $ownerId instead of auth()->id() to handle sub-users correctly
+            $processedPayments = $paymentService->recordMultiplePayments($ownerId, $id, $paymentsData);
 
             // Add receipt image URL to payments if available
             $paymentsWithImageUrl = collect($processedPayments)->map(function ($payment) {
