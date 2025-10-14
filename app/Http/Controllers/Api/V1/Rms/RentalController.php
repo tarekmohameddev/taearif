@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Services\Rms\RentalService;
 use App\Models\Api\Rms\RmRental;
 use App\Models\Api\Rms\RmPaymentInstallment;
+use App\Exceptions\PaymentException;
 use Illuminate\Support\Facades\Log;
 
 class RentalController extends Controller
@@ -311,10 +312,31 @@ class RentalController extends Controller
                 'errors' => $e->errors()
             ], 422);
 
+        } catch (PaymentException $e) {
+            // Handle custom payment exceptions with structured error response
+            Log::warning('Payment validation failed', [
+                'user_id' => auth()->id(),
+                'rental_id' => $id,
+                'error_code' => $e->getErrorCode(),
+                'error_message' => $e->getMessage(),
+                'error_data' => $e->getErrorData()
+            ]);
+
+            return $e->render($request);
+
+        } catch (\InvalidArgumentException $e) {
+            // Handle business logic validation errors
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+                'error_code' => 'INVALID_ARGUMENT'
+            ], 422);
+
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'status' => false,
                 'message' => 'Rental contract or related record not found',
+                'error_code' => 'NOT_FOUND',
                 'error' => $e->getMessage()
             ], 404);
 
@@ -330,6 +352,7 @@ class RentalController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Payment collection failed',
+                'error_code' => 'INTERNAL_ERROR',
                 'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
             ], 500);
         }
