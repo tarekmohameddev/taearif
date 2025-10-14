@@ -17,10 +17,10 @@ class PaymentService
     {
         return DB::transaction(function () use ($userId, $rentalId, $paymentData) {
             $rental = RmRental::where('user_id', $userId)->findOrFail($rentalId);
-            
+
             // Validate payment data
             $validatedData = $this->validatePaymentData($paymentData);
-            
+
             // Create payment record
             $payment = RmPayment::create(array_merge($validatedData, [
                 'user_id' => $userId,
@@ -57,7 +57,7 @@ class PaymentService
 
             foreach ($paymentsData as $paymentData) {
                 $validatedData = $this->validatePaymentData($paymentData);
-                
+
                 $payment = RmPayment::create(array_merge($validatedData, [
                     'user_id' => $userId,
                     'rental_id' => $rentalId,
@@ -85,10 +85,10 @@ class PaymentService
     public function getPaymentSummary($userId, $rentalId)
     {
         $rental = RmRental::where('user_id', $userId)->findOrFail($rentalId);
-        
+
         // Get all payments for this rental
         $payments = RmPayment::where('rental_id', $rentalId)->get();
-        
+
         // Calculate totals by payment type
         $paymentSummary = [
             'rent' => [
@@ -145,7 +145,7 @@ class PaymentService
     public function getInstallmentPaymentDetails($userId, $rentalId)
     {
         $rental = RmRental::where('user_id', $userId)->findOrFail($rentalId);
-        
+
         $installments = RmPaymentInstallment::where('rental_id', $rentalId)
             ->with(['payments' => function($query) {
                 $query->where('payment_type', 'rent');
@@ -157,10 +157,10 @@ class PaymentService
             $rentPayments = $installment->payments;
             $paidAmount = $rentPayments->sum('amount');
             $remainingAmount = max(0, $installment->amount - $paidAmount);
-            
+
             // Calculate fees for this installment
             $fees = $this->calculateInstallmentFees($rental, $installment);
-            
+
             return [
                 'id' => $installment->id,
                 'sequence_no' => $installment->sequence_no,
@@ -194,7 +194,7 @@ class PaymentService
     private function calculateInstallmentFees($rental, $installment)
     {
         $totalInstallments = $rental->rental_period ?? 1;
-        
+
         return [
             'platform_fee' => [
                 'total' => ($rental->platform_fee ?? 0) / $totalInstallments,
@@ -221,11 +221,11 @@ class PaymentService
     {
         $query = RmPayment::where('rental_id', $rentalId)
             ->where('payment_type', $paymentType);
-            
+
         if ($installmentId) {
             $query->where('installment_id', $installmentId);
         }
-        
+
         return $query->sum('amount');
     }
 
@@ -278,6 +278,9 @@ class PaymentService
             'amount' => (float) $data['amount'],
             'payment_date' => $data['payment_date'] ?? now()->toDateString(),
             'payment_method' => $data['payment_method'] ?? 'bank_transfer',
+            'bank_name' => $data['bank_name'] ?? null,
+            'receipt_image_path' => $data['receipt_image_path'] ?? null,
+            'transfer_to' => $data['transfer_to'] ?? null,
             'reference' => $data['reference'] ?? null,
             'notes' => $data['notes'] ?? null,
             'installment_id' => $data['installment_id'] ?? null,
@@ -316,7 +319,7 @@ class PaymentService
 
         foreach ($lateInstallments as $installment) {
             if ($excessAmount <= 0) break;
-            
+
             $remaining = $installment->amount - $installment->paid_amount;
             if ($remaining > 0) {
                 $payAmount = min($excessAmount, $remaining);
@@ -324,7 +327,7 @@ class PaymentService
                 $excessAmount -= $payAmount;
             }
         }
-        
+
         // 2. Then, apply to future installments
         if ($excessAmount > 0) {
             $futureInstallments = RmPaymentInstallment::where('rental_id', $rentalId)
@@ -335,7 +338,7 @@ class PaymentService
 
             foreach ($futureInstallments as $installment) {
                 if ($excessAmount <= 0) break;
-                
+
                 $remaining = $installment->amount - $installment->paid_amount;
                 if ($remaining > 0) {
                     $payAmount = min($excessAmount, $remaining);
@@ -353,7 +356,7 @@ class PaymentService
     {
         $newPaidAmount = $installment->paid_amount + $amount;
         $totalAmount = $installment->amount;
-        
+
         // Determine payment status
         $paymentStatus = 'not_due';
         if ($installment->due_date < now()) {
@@ -361,7 +364,7 @@ class PaymentService
         } else {
             $paymentStatus = $newPaidAmount >= $totalAmount ? 'paid_in_full' : 'paid_in_part';
         }
-        
+
         // Update installment
         $installment->update([
             'paid_amount' => $newPaidAmount,
