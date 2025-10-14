@@ -17,10 +17,15 @@ class PaymentService
     {
         return DB::transaction(function () use ($userId, $rentalId, $paymentData) {
             $rental = RmRental::where('user_id', $userId)->findOrFail($rentalId);
-
+            
             // Validate payment data
             $validatedData = $this->validatePaymentData($paymentData);
-
+            
+            // Check for overpayment before creating payment
+            if ($validatedData['payment_type'] === 'rent' && $validatedData['installment_id']) {
+                $this->validateNoOverpayment($validatedData['installment_id'], $validatedData['amount']);
+            }
+            
             // Create payment record
             $payment = RmPayment::create(array_merge($validatedData, [
                 'user_id' => $userId,
@@ -57,7 +62,12 @@ class PaymentService
 
             foreach ($paymentsData as $paymentData) {
                 $validatedData = $this->validatePaymentData($paymentData);
-
+                
+                // Check for overpayment before creating payment
+                if ($validatedData['payment_type'] === 'rent' && $validatedData['installment_id']) {
+                    $this->validateNoOverpayment($validatedData['installment_id'], $validatedData['amount']);
+                }
+                
                 $payment = RmPayment::create(array_merge($validatedData, [
                     'user_id' => $userId,
                     'rental_id' => $rentalId,
@@ -241,6 +251,19 @@ class PaymentService
             ->where('payment_type', 'rent')
             ->sum('amount');
 
+        // Check for overpayment
+        if ($totalPaid > $installment->amount) {
+            $overpayment = $totalPaid - $installment->amount;
+            \Log::warning('Overpayment detected', [
+                'installment_id' => $installment->id,
+                'rental_id' => $installment->rental_id,
+                'amount_due' => $installment->amount,
+                'total_paid' => $totalPaid,
+                'overpayment' => $overpayment,
+                'payment_id' => $payment->id
+            ]);
+        }
+
         $installment->update([
             'paid_amount' => $totalPaid,
             'status' => $this->getInstallmentStatus($totalPaid, $installment->amount),
@@ -356,7 +379,7 @@ class PaymentService
     {
         $newPaidAmount = $installment->paid_amount + $amount;
         $totalAmount = $installment->amount;
-
+        
         // Determine payment status
         $paymentStatus = 'not_due';
         if ($installment->due_date < now()) {
@@ -364,12 +387,47 @@ class PaymentService
         } else {
             $paymentStatus = $newPaidAmount >= $totalAmount ? 'paid_in_full' : 'paid_in_part';
         }
-
+        
         // Update installment
         $installment->update([
             'paid_amount' => $newPaidAmount,
             'payment_status' => $paymentStatus,
             'status' => $newPaidAmount >= $totalAmount ? 'paid' : 'pending'
         ]);
+    }
+
+    /**
+     * Validate that payment won't cause overpayment
+     * 
+     * @throws \Exception if payment would cause overpayment
+     */
+    private function validateNoOverpayment($installmentId, $paymentAmount)
+    {
+        $installment = RmPaymentInstallment::find($installmentId);
+        if (!$installment) {
+            throw new \Exception('Installment not found');
+        }
+
+        // Calculate current total paid
+        $currentPaid = RmPayment::where('installment_id', $installmentId)
+            ->where('payment_type', 'rent')
+            ->sum('amount');
+
+        // Calculate what total would be after this payment
+        $newTotal = $currentPaid + $paymentAmount;
+
+        // Check if this would cause overpayment
+        if ($newTotal > $installment->amount) {
+            $remaining = $installment->amount - $currentPaid;
+            $overpayment = $newTotal - $installment->amount;
+
+            throw new \Exception(
+                "Payment rejected: Would cause overpayment of {$overpayment} SAR. " .
+                "Installment amount: {$installment->amount} SAR, " .
+                "Already paid: {$currentPaid} SAR, " .
+                "Remaining due: {$remaining} SAR. " .
+                "You are trying to pay: {$paymentAmount} SAR."
+            );
+        }
     }
 }
