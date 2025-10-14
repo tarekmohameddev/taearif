@@ -1808,4 +1808,251 @@ class RentalService
             ],
         ];
     }
+
+    /**
+     * List all contracts with detailed information
+     * 
+     * @param Request $request
+     * @return array
+     */
+    public function listAllContracts($request)
+    {
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : auth()->id();
+
+        // Pagination parameters
+        $perPage = $request->get('per_page', 15);
+        $perPage = min($perPage, 100);
+
+        // Build the base query
+        $query = RmContract::with([
+            'rental.property',
+            'rental.building',
+            'rental.project',
+            'installments'
+        ])
+        ->whereHas('rental', function($q) use ($ownerId) {
+            $q->where('user_id', $ownerId);
+        });
+
+        // Apply filters
+        if ($request->has('building_id') && $request->building_id) {
+            $query->whereHas('rental', function($q) use ($request) {
+                $q->where('building_id', $request->building_id);
+            });
+        }
+
+        if ($request->has('payment_status') && $request->payment_status) {
+            // This will be filtered after loading due to complex calculation
+            // We'll apply this filter in the collection processing
+        }
+
+        if ($request->has('rental_method') && $request->rental_method) {
+            $query->whereHas('rental', function($q) use ($request) {
+                $q->where('paying_plan', $request->rental_method);
+            });
+        }
+
+        if ($request->has('from_date') && $request->from_date) {
+            $query->where('start_date', '>=', $request->from_date);
+        }
+
+        if ($request->has('to_date') && $request->to_date) {
+            $query->where('end_date', '<=', $request->to_date);
+        }
+
+        if ($request->has('contract_status') && $request->contract_status) {
+            $query->where('status', $request->contract_status);
+        }
+
+        // Order by creation date (newest first)
+        $query->orderBy('created_at', 'desc');
+
+        // Get paginated results
+        $contracts = $query->paginate($perPage);
+
+        // Transform the data
+        $contractsList = [];
+        foreach ($contracts as $contract) {
+            $rental = $contract->rental;
+            
+            if (!$rental) {
+                continue;
+            }
+
+            // Calculate payment status for next/latest installment
+            $paymentStatusData = $this->calculateContractPaymentStatus($contract, $rental);
+
+            // Get unit information
+            $property = $rental->property;
+            $unitInfo = [
+                'unit_id' => $rental->unit_id,
+                'unit_number' => $property?->property_number ?? 'N/A',
+                'unit_name' => $property?->name ?? 'N/A',
+                'unit_type' => $property?->property_type ?? 'N/A',
+                'unit_size' => $property?->bedrooms ? $property->bedrooms . ' BR' : 'N/A',
+                'unit_address' => $property?->address ?? 'N/A',
+            ];
+
+            // Get building information
+            $building = $rental->building;
+            $buildingInfo = [
+                'building_id' => $rental->building_id,
+                'building_name' => $building?->name ?? 'N/A',
+                'building_address' => $property?->city ?? 'N/A', // Using property city as building address
+            ];
+
+            // Get tenant information
+            $tenantInfo = [
+                'tenant_name' => $rental->tenant_full_name,
+                'tenant_email' => $rental->tenant_email ?? 'N/A',
+                'tenant_phone' => $rental->tenant_phone,
+            ];
+
+            // Get lease term
+            $leaseTerm = [
+                'start_date' => $contract->start_date ? $contract->start_date->format('Y-m-d') : null,
+                'end_date' => $contract->end_date ? $contract->end_date->format('Y-m-d') : null,
+                'duration_days' => $contract->start_date && $contract->end_date 
+                    ? $contract->start_date->diffInDays($contract->end_date)
+                    : null,
+            ];
+
+            // Rental method mapping
+            $rentalMethodMap = [
+                'monthly' => 'Monthly',
+                'quarterly' => 'Quarterly',
+                'semi_annual' => 'Semi-Annual',
+                'annual' => 'Annual',
+            ];
+
+            $contractData = [
+                'contract_id' => $contract->id,
+                'contract_number' => $rental->contract_number ?? 'N/A',
+                'contract_status' => $contract->status,
+                'tenant_information' => $tenantInfo,
+                'unit_information' => $unitInfo,
+                'building' => $buildingInfo,
+                'rent_amount' => round($rental->base_rent_amount ?? 0, 2),
+                'total_rental_amount' => round($rental->total_rental_amount ?? 0, 2),
+                'currency' => $rental->currency ?? 'SAR',
+                'lease_term' => $leaseTerm,
+                'rental_method' => $rentalMethodMap[$rental->paying_plan] ?? $rental->paying_plan,
+                'rental_method_code' => $rental->paying_plan,
+                'payment_status' => $paymentStatusData['status'],
+                'payment_status_color' => $paymentStatusData['color'],
+                'payment_details' => $paymentStatusData['details'],
+                'created_at' => $contract->created_at->format('Y-m-d H:i:s'),
+            ];
+
+            // Filter by payment status if requested
+            if ($request->has('payment_status') && $request->payment_status) {
+                if ($paymentStatusData['color'] !== $request->payment_status) {
+                    continue;
+                }
+            }
+
+            $contractsList[] = $contractData;
+        }
+
+        return [
+            'status' => true,
+            'data' => $contractsList,
+            'pagination' => [
+                'current_page' => $contracts->currentPage(),
+                'per_page' => $contracts->perPage(),
+                'total' => count($contractsList), // Use filtered count
+                'last_page' => $contracts->lastPage(),
+                'from' => $contracts->firstItem(),
+                'to' => $contracts->lastItem(),
+                'has_more_pages' => $contracts->hasMorePages(),
+                'next_page_url' => $contracts->nextPageUrl(),
+                'prev_page_url' => $contracts->previousPageUrl(),
+            ],
+        ];
+    }
+
+    /**
+     * Calculate payment status for a contract
+     * Returns status, color, and details
+     * 
+     * Red: Late payment (from day 1 past due date)
+     * Yellow: Due soon (within current month)
+     * Green: Paid/up-to-date
+     */
+    private function calculateContractPaymentStatus($contract, $rental)
+    {
+        // Get the next unpaid or partially paid installment
+        $nextInstallment = RmPaymentInstallment::where('contract_id', $contract->id)
+            ->where('rental_id', $rental->id)
+            ->whereColumn('paid_amount', '<', 'amount')
+            ->orderBy('due_date', 'asc')
+            ->first();
+
+        if (!$nextInstallment) {
+            // All installments are paid
+            return [
+                'status' => 'paid',
+                'color' => 'green',
+                'details' => [
+                    'message' => 'All payments completed',
+                    'next_due_date' => null,
+                    'amount_due' => 0,
+                    'amount_paid' => 0,
+                ]
+            ];
+        }
+
+        $dueDate = Carbon::parse($nextInstallment->due_date);
+        $today = Carbon::today();
+        $paidAmount = (float) $nextInstallment->paid_amount;
+        $totalAmount = (float) $nextInstallment->amount;
+        $remainingAmount = max(0, $totalAmount - $paidAmount);
+
+        // Red: Late payment (from day 1 past due date)
+        if ($dueDate->isBefore($today)) {
+            return [
+                'status' => 'overdue',
+                'color' => 'red',
+                'details' => [
+                    'message' => 'Payment overdue',
+                    'next_due_date' => $dueDate->format('Y-m-d'),
+                    'amount_due' => round($totalAmount, 2),
+                    'amount_paid' => round($paidAmount, 2),
+                    'remaining_amount' => round($remainingAmount, 2),
+                    'days_overdue' => $today->diffInDays($dueDate),
+                ]
+            ];
+        }
+
+        // Yellow: Due soon (within current month before due date)
+        $endOfMonth = Carbon::today()->endOfMonth();
+        if ($dueDate->between($today, $endOfMonth)) {
+            return [
+                'status' => 'due_soon',
+                'color' => 'yellow',
+                'details' => [
+                    'message' => 'Payment due soon',
+                    'next_due_date' => $dueDate->format('Y-m-d'),
+                    'amount_due' => round($totalAmount, 2),
+                    'amount_paid' => round($paidAmount, 2),
+                    'remaining_amount' => round($remainingAmount, 2),
+                    'days_until_due' => $today->diffInDays($dueDate),
+                ]
+            ];
+        }
+
+        // Green: Payment not due yet (beyond current month)
+        return [
+            'status' => 'not_due',
+            'color' => 'green',
+            'details' => [
+                'message' => 'Payment not due yet',
+                'next_due_date' => $dueDate->format('Y-m-d'),
+                'amount_due' => round($totalAmount, 2),
+                'amount_paid' => round($paidAmount, 2),
+                'remaining_amount' => round($remainingAmount, 2),
+                'days_until_due' => $today->diffInDays($dueDate),
+            ]
+        ];
+    }
 }

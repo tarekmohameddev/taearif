@@ -657,4 +657,56 @@ class RentalController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * List all contracts with detailed information
+     * 
+     * GET /api/v1/rms/rentals/contracts
+     * 
+     * Optional filters:
+     * - building_id: Filter by building
+     * - payment_status: Filter by payment status color (red, yellow, green)
+     * - rental_method: Filter by rental method (monthly, quarterly, semi_annual, annual)
+     * - from_date: Filter contracts starting from this date
+     * - to_date: Filter contracts ending before this date
+     * - contract_status: Filter by contract status (active, expired, pending, terminated)
+     * - per_page: Number of results per page (default: 15, max: 100)
+     */
+    public function allContracts(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'per_page' => 'nullable|integer|min:1|max:100',
+                'page' => 'nullable|integer|min:1',
+                'building_id' => 'nullable|integer',
+                'payment_status' => 'nullable|in:red,yellow,green',
+                'rental_method' => 'nullable|in:monthly,quarterly,semi_annual,annual',
+                'from_date' => 'nullable|date',
+                'to_date' => 'nullable|date|after_or_equal:from_date',
+                'contract_status' => 'nullable|in:active,expired,pending,terminated',
+            ]);
+
+            $result = $this->rentalService->listAllContracts($request);
+
+            return response()->json($result);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error retrieving all contracts', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to retrieve contracts',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error',
+            ], 500);
+        }
+    }
 }

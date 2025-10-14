@@ -536,6 +536,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         // Daily Follow-up
         Route::get('daily-follow-up', [RentalController::class, 'dailyFollowUp']);
 
+        // All Contracts (list all contracts with detailed information)
+        Route::get('contracts', [RentalController::class, 'allContracts']);
+
         // Contracts
         Route::get('rentals/{rentalId}/contracts', [ContractController::class, 'listByRental']);
         Route::post('rentals/{rentalId}/contracts', [ContractController::class, 'store']);
