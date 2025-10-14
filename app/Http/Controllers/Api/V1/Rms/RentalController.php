@@ -609,4 +609,52 @@ class RentalController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get daily follow-up for rentals with payments due
+     * Shows payments due today by default, with optional filters
+     */
+    public function dailyFollowUp(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'per_page' => 'nullable|integer|min:1|max:100',
+                'page' => 'nullable|integer|min:1',
+                'from_date' => 'nullable|date',
+                'to_date' => 'nullable|date|after_or_equal:from_date',
+                'building_id' => 'nullable|integer',
+                'status' => 'nullable|string|in:overdue,due_today,upcoming',
+            ]);
+
+            $result = $this->rentalService->getDailyFollowUp(auth()->id(), $validated);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Daily follow-up retrieved successfully',
+                'data' => $result['data'],
+                'pagination' => $result['pagination'],
+                'summary' => $result['summary'],
+                'filters' => $result['filters'],
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Daily follow-up error: ' . $e->getMessage(), [
+                'user_id' => auth()->id(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to retrieve daily follow-up',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error',
+            ], 500);
+        }
+    }
 }

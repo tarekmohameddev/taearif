@@ -533,6 +533,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         // Payment Report
         Route::get('payment-report', [RentalController::class, 'paymentReport']);
 
+        // Daily Follow-up
+        Route::get('daily-follow-up', [RentalController::class, 'dailyFollowUp']);
+
         // Contracts
         Route::get('rentals/{rentalId}/contracts', [ContractController::class, 'listByRental']);
         Route::post('rentals/{rentalId}/contracts', [ContractController::class, 'store']);
