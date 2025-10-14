@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\TenantPage;
 use App\Models\TenantGlobalComponent;
+use App\Models\TenantWebsiteLayout;
 
 class GetTenantController extends Controller
 {
@@ -21,11 +22,13 @@ class GetTenantController extends Controller
         }
         $pages = TenantPage::where('user_id', $tenant->id)->get()->keyBy('page_id')->map->components;
         $globals = TenantGlobalComponent::where('user_id', $tenant->id)->first();
+        $layout = TenantWebsiteLayout::where('user_id', $tenant->id)->first();
         return response()->json([
             'username' => $tenant->username,
             'websiteName' => $tenant->username,
             'componentSettings' => $pages,
             'globalComponentsData' => $globals?->data ?? [],
+            'WebsiteLayout' => $layout?->data ?? [],
         ]);
     }
 }
