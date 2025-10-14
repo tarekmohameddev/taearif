@@ -508,7 +508,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('rentals/{id}/details', [RentalController::class, 'propertyDetails']);
         Route::get('rentals/{id}/details-with-payments', [RentalController::class, 'detailsWithPayments']);
         Route::get('rentals/{id}/current-collections', [RentalController::class, 'currentCollections']);
-        // get and post payment collection
+        // get all payment collections (without rental ID)
+        Route::get('payment-collection', [RentalController::class, 'allPaymentCollections']);
+        // get and post payment collection for specific rental
         Route::get('rentals/{id}/payment-collection', [RentalController::class, 'paymentCollection']);
         Route::post('rentals/{id}/collect-payment', [RentalController::class, 'collectPayment']);
 
@@ -555,7 +557,6 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('reminders', [ReminderController::class, 'index']);
         Route::post('reminders/{id}/dismiss', [ReminderController::class, 'dismiss']);
         Route::post('reminders/{id}/snooze', [ReminderController::class, 'snooze']);
-        // rental-collect-payments
     });
 
     // Purchase Management System
