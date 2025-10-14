@@ -1281,28 +1281,28 @@ class RentalService
                     ->get();
 
                 // Calculate expected amount from installments + fees
-                $expectedRent = $installments->sum('amount');
+                $expectedRent = round($installments->sum('amount'), 2);
                 $expectedFees = $this->calculateExpectedFees($rental, $installments->count());
-                $expectedDeposit = $rental->deposit_amount ?? 0;
-                $totalExpected = $expectedRent + $expectedFees + $expectedDeposit;
+                $expectedDeposit = round($rental->deposit_amount ?? 0, 2);
+                $totalExpected = round($expectedRent + $expectedFees + $expectedDeposit, 2);
 
                 // Calculate collected amount
-                $collectedRent = $payments->where('payment_type', 'rent')->sum('amount');
-                $collectedPlatformFee = $payments->where('payment_type', 'platform_fee')->sum('amount');
-                $collectedWaterFee = $payments->where('payment_type', 'water_fee')->sum('amount');
-                $collectedOfficeFee = $payments->where('payment_type', 'office_fee')->sum('amount');
-                $collectedDeposit = $payments->where('payment_type', 'deposit')->sum('amount');
-                $totalCollected = $collectedRent + $collectedPlatformFee + $collectedWaterFee + $collectedOfficeFee + $collectedDeposit;
+                $collectedRent = round($payments->where('payment_type', 'rent')->sum('amount'), 2);
+                $collectedPlatformFee = round($payments->where('payment_type', 'platform_fee')->sum('amount'), 2);
+                $collectedWaterFee = round($payments->where('payment_type', 'water_fee')->sum('amount'), 2);
+                $collectedOfficeFee = round($payments->where('payment_type', 'office_fee')->sum('amount'), 2);
+                $collectedDeposit = round($payments->where('payment_type', 'deposit')->sum('amount'), 2);
+                $totalCollected = round($collectedRent + $collectedPlatformFee + $collectedWaterFee + $collectedOfficeFee + $collectedDeposit, 2);
 
                 // Calculate outstanding
-                $totalOutstanding = max(0, $totalExpected - $totalCollected);
+                $totalOutstanding = round(max(0, $totalExpected - $totalCollected), 2);
 
                 // Build payment history
                 $paymentHistory = $payments->map(function ($payment) {
                     return [
                         'id' => $payment->id,
                         'payment_type' => $payment->payment_type,
-                        'amount' => (float) $payment->amount,
+                        'amount' => round((float) $payment->amount, 2),
                         'payment_date' => $payment->payment_date,
                         'payment_method' => $payment->payment_method,
                         'bank_name' => $payment->bank_name,
@@ -1322,38 +1322,38 @@ class RentalService
                     'contract_number' => $rental->contract_number,
                     'status' => $rental->status,
                     'move_in_date' => $rental->move_in_date?->toDateString(),
-                    'base_rent_amount' => (float) $rental->base_rent_amount,
+                    'base_rent_amount' => round((float) $rental->base_rent_amount, 2),
                     'currency' => $rental->currency ?? 'SAR',
                     'payment_breakdown' => [
                         'rent' => [
-                            'expected' => (float) $expectedRent,
-                            'collected' => (float) $collectedRent,
-                            'outstanding' => (float) max(0, $expectedRent - $collectedRent),
+                            'expected' => round($expectedRent, 2),
+                            'collected' => round($collectedRent, 2),
+                            'outstanding' => round(max(0, $expectedRent - $collectedRent), 2),
                         ],
                         'platform_fee' => [
-                            'expected' => (float) ($rental->platform_fee ?? 0) * $installments->count(),
-                            'collected' => (float) $collectedPlatformFee,
-                            'outstanding' => (float) max(0, (($rental->platform_fee ?? 0) * $installments->count()) - $collectedPlatformFee),
+                            'expected' => round(($rental->platform_fee ?? 0) * $installments->count(), 2),
+                            'collected' => round($collectedPlatformFee, 2),
+                            'outstanding' => round(max(0, (($rental->platform_fee ?? 0) * $installments->count()) - $collectedPlatformFee), 2),
                         ],
                         'water_fee' => [
-                            'expected' => (float) ($rental->water_fee ?? 0) * $installments->count(),
-                            'collected' => (float) $collectedWaterFee,
-                            'outstanding' => (float) max(0, (($rental->water_fee ?? 0) * $installments->count()) - $collectedWaterFee),
+                            'expected' => round(($rental->water_fee ?? 0) * $installments->count(), 2),
+                            'collected' => round($collectedWaterFee, 2),
+                            'outstanding' => round(max(0, (($rental->water_fee ?? 0) * $installments->count()) - $collectedWaterFee), 2),
                         ],
                         'office_fee' => [
-                            'expected' => (float) ($rental->office_fee ?? 0) * $installments->count(),
-                            'collected' => (float) $collectedOfficeFee,
-                            'outstanding' => (float) max(0, (($rental->office_fee ?? 0) * $installments->count()) - $collectedOfficeFee),
+                            'expected' => round(($rental->office_fee ?? 0) * $installments->count(), 2),
+                            'collected' => round($collectedOfficeFee, 2),
+                            'outstanding' => round(max(0, (($rental->office_fee ?? 0) * $installments->count()) - $collectedOfficeFee), 2),
                         ],
                         'deposit' => [
-                            'expected' => (float) $expectedDeposit,
-                            'collected' => (float) $collectedDeposit,
-                            'outstanding' => (float) max(0, $expectedDeposit - $collectedDeposit),
+                            'expected' => round($expectedDeposit, 2),
+                            'collected' => round($collectedDeposit, 2),
+                            'outstanding' => round(max(0, $expectedDeposit - $collectedDeposit), 2),
                         ],
                     ],
-                    'total_expected' => (float) $totalExpected,
-                    'total_collected' => (float) $totalCollected,
-                    'total_outstanding' => (float) $totalOutstanding,
+                    'total_expected' => round($totalExpected, 2),
+                    'total_collected' => round($totalCollected, 2),
+                    'total_outstanding' => round($totalOutstanding, 2),
                     'installments_count' => $installments->count(),
                     'payments_count' => $payments->count(),
                     'payment_history' => $paymentHistory->values()->toArray(),
@@ -1367,9 +1367,9 @@ class RentalService
 
             // Only include properties with rentals
             if (!empty($propertyData['rentals'])) {
-                $propertyData['total_expected'] = (float) $propertyData['total_expected'];
-                $propertyData['total_collected'] = (float) $propertyData['total_collected'];
-                $propertyData['total_outstanding'] = (float) $propertyData['total_outstanding'];
+                $propertyData['total_expected'] = round($propertyData['total_expected'], 2);
+                $propertyData['total_collected'] = round($propertyData['total_collected'], 2);
+                $propertyData['total_outstanding'] = round($propertyData['total_outstanding'], 2);
                 $propertyData['rentals_count'] = count($propertyData['rentals']);
 
                 $reportData[] = $propertyData;
@@ -1390,9 +1390,9 @@ class RentalService
             ],
             'summary' => [
                 'total_properties' => count($reportData),
-                'total_expected' => (float) $grandTotalExpected,
-                'total_collected' => (float) $grandTotalCollected,
-                'total_outstanding' => (float) $grandTotalOutstanding,
+                'total_expected' => round($grandTotalExpected, 2),
+                'total_collected' => round($grandTotalCollected, 2),
+                'total_outstanding' => round($grandTotalOutstanding, 2),
                 'collection_percentage' => $grandTotalExpected > 0
                     ? round(($grandTotalCollected / $grandTotalExpected) * 100, 2)
                     : 0,
@@ -1410,6 +1410,6 @@ class RentalService
         $waterFee = ($rental->water_fee ?? 0) * $installmentCount;
         $officeFee = ($rental->office_fee ?? 0) * $installmentCount;
 
-        return $platformFee + $waterFee + $officeFee;
+        return round($platformFee + $waterFee + $officeFee, 2);
     }
 }
