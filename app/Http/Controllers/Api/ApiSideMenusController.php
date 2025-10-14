@@ -7,12 +7,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Membership;
 use App\Models\Api\ApiMenuItem;
+use Spatie\Permission\PermissionRegistrar;
 
 class ApiSideMenusController extends Controller
 {
     public function index()
     {
         $user = Auth::user();
+
+        // ---- resolve team/tenant id and scope Spatie to it ----
+        $teamId = $this->teamIdFor($user);
+        app(PermissionRegistrar::class)->setPermissionsTeamId($teamId);
 
         // resolve owner (tenant for tenant; tenant for employee)
         $ownerId = $this->isTenant($user) ? (int) $user->id : (int) ($user->tenant_id ?? 0);
@@ -49,31 +54,36 @@ class ApiSideMenusController extends Controller
                 'section' => ['title' => 'لوحة التحكم', 'description' => 'نظره عامه عن الموقع', 'icon' => 'panel', 'path' => '/'],
             ],
             [
-                'perm'    => 'content.view',
+                'perm'    => 'menu.content',
                 'section' => ['title' => 'ادارة المحتوى', 'description' => 'ادارة محتوى الموقع', 'icon' => 'content-settings', 'path' => '/content'],
             ],
             [
-                'perm'    => 'settings.view',
+                'perm'    => 'menu.settings',
                 'section' => ['title' => 'اعدادات الموقع', 'description' => 'تكوين اعدادات الموقع', 'icon' => 'web-settings', 'path' => '/settings'],
             ],
             [
-                'perm'    => 'customers.view',
+                'perm'    => 'menu.customers',
                 'section' => ['title' => 'ادارة العملاء', 'description' => 'ادارة عملائك', 'icon' => 'users', 'path' => '/customers'],
             ],
             [
-                'perm'    => 'crm.view',
+                'perm'    => 'menu.crm',
                 'section' => ['title' => 'CRM', 'description' => 'تكوين اعدادات ادارة علاقات العملاء', 'icon' => 'crm', 'path' => '/crm'],
             ],
             // package + permission (package from OWNER)
             [
-                'perm'    => 'projects.view',
+                'perm'    => 'menu.projects',
                 'when'    => fn() => $package && ($package->project_limit_number > 0),
                 'section' => ['title' => 'المشاريع', 'description' => ' ادارة المشاريع', 'icon' => 'building', 'path' => '/projects'],
             ],
             [
-                'perm'    => 'properties.view',
+                'perm'    => 'menu.properties',
                 'when'    => fn() => $package && ($package->real_estate_limit_number > 0),
                 'section' => ['title' => 'العقارات', 'description' => 'ادارة العقارات', 'icon' => 'home', 'path' => '/properties'],
+            ],
+            [
+                'perm'    => 'menu.projects',
+                'when'    => fn() => $package && ($package->project_limit_number > 0),
+                'section' => ['title' => 'محرر الموقع', 'description' => 'قم بأدارة تصميم الموقع', 'icon' => 'square-pen', 'path' => 'live-editor'],
             ],
             // [
             //     'perm'    => 'menu.blog',
@@ -87,18 +97,18 @@ class ApiSideMenusController extends Controller
             // ],
             // Feature switches inside Apps (still check a perm)
             [
-                'perm'    => 'apps.view',
+                'perm'    => 'menu.apps',
                 'when'    => fn() => (bool) $whatsappMenu,
                 'section' => ['title' => $whatsappMenu?->label ?? 'واتس اب', 'description' => 'مساعد الذكاء الاصطناعي للواتس اب', 'icon' => 'whatsapp', 'path' => $whatsappMenu?->url ?? '/whatsapp-ai'],
             ],
             [
-                'perm'    => 'apps.view',
+                'perm'    => 'menu.apps',
                 'when'    => fn() => (bool) $aiMenu,
                 'section' => ['title' => $aiMenu?->label ?? 'الذكاء الاصطناعي', 'description' => 'مساعد الذكاء الاصطناعي', 'icon' => 'ai', 'path' => $aiMenu?->url ?? '/ai'],
             ],
             // Affiliate program
             [
-                'perm'    => 'affiliate.view',
+                'perm'    => 'menu.affiliate',
                 'when'    => fn() => (bool) $isAffiliateApproved,
                 'section' => ['title' => 'برنامج الشراكة', 'description' => 'إدارة برنامج العمولة', 'icon' => 'lucide lucide-user-check h-5 w-5 text-primary', 'path' => '/affiliate'],
             ],
@@ -111,7 +121,7 @@ class ApiSideMenusController extends Controller
                 $sections[] = $item['section'];
                 continue;
             }
-
+            
             // Other items check permission + optional conditions
             if ($can($item['perm']) && (!isset($item['when']) || $item['when']() === true)) {
                 $sections[] = $item['section'];
