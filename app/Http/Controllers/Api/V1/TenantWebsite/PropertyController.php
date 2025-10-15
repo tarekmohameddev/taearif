@@ -8,9 +8,17 @@ use App\Models\User;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\UserDistrict;
 use App\Services\GoogleAnalyticsService;
+use App\Services\PropertyTranslationService;
 
 class PropertyController extends Controller
 {
+	protected PropertyTranslationService $translator;
+
+	public function __construct(PropertyTranslationService $translator)
+	{
+		$this->translator = $translator;
+	}
+
 	protected function resolveTenant(string $tenantId): User
 	{
 		return User::where('username', $tenantId)->firstOrFail();
@@ -89,28 +97,78 @@ class PropertyController extends Controller
         $perPage = min((int) $request->query('per_page', (int) $request->query('limit', 20)), 50);
         $properties = $query->paginate($perPage);
 
+        // Pre-load districts and cities to avoid N+1 queries
+        $stateIds = $properties->getCollection()
+            ->flatMap(fn($p) => $p->contents->pluck('state_id'))
+            ->filter()
+            ->unique()
+            ->values();
+
+        $districtsMap = UserDistrict::with('city')
+            ->whereIn('id', $stateIds)
+            ->get()
+            ->keyBy('id');
+
         // Analytics: views by slug (last N days)
         $days = (int) $request->query('days', 30);
-        $slugs = $properties->getCollection()
-            ->map(fn ($p) => optional($p->contents->first())->slug)
-            ->filter()
-            ->values();
+
+        // Build paths and slugs map in single pass
         $paths = [];
-        foreach ($slugs as $slug) {
-            $paths[] = "/property/{$slug}";
-        }
-        $viewsByPath = $analytics->getPageViewsForPaths($tenant->username, now()->subDays($days), now(), $paths);
-        $viewsBySlug = [];
-        foreach ($slugs as $slug) {
-            $viewsBySlug[$slug] = (int) ($viewsByPath["/property/{$slug}"] ?? 0);
+        $slugToPropertyMap = [];
+        foreach ($properties->getCollection() as $p) {
+            $content = $p->contents->first();
+            if ($content && $content->slug) {
+                $slug = $content->slug;
+                $path = "/property/{$slug}";
+                $paths[] = $path;
+                $slugToPropertyMap[$slug] = $path;
+            }
         }
 
-        $items = $properties->getCollection()->map(function ($p) use ($viewsBySlug) {
+        // Get view counts from Google Analytics
+        $viewsByPath = [];
+        if (!empty($paths)) {
+            try {
+                $viewsByPath = $analytics->getPageViewsForPaths(
+                    $tenant->username,
+                    now()->subDays($days),
+                    now(),
+                    $paths
+                );
+
+                // Optional: Log for debugging (remove in production)
+                if ($request->boolean('debug_views')) {
+                    \Log::info('GA Views Debug', [
+                        'tenant' => $tenant->username,
+                        'paths_requested' => $paths,
+                        'views_received' => $viewsByPath,
+                        'days' => $days,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Log error but continue without views
+                \Log::error('Google Analytics error in PropertyController', [
+                    'tenant' => $tenant->username,
+                    'error' => $e->getMessage(),
+                    'paths_count' => count($paths),
+                ]);
+            }
+        }
+
+        // Map views to slugs
+        $viewsBySlug = [];
+        foreach ($slugToPropertyMap as $slug => $path) {
+            $viewsBySlug[$slug] = (int) ($viewsByPath[$path] ?? 0);
+        }
+
+        $items = $properties->getCollection()->map(function ($p) use ($viewsBySlug, $districtsMap) {
             $content = optional($p->contents->first());
             $slug    = $content?->slug;
 
-            // district/city derivation
-            $district = $content && $content->state_id ? UserDistrict::find($content->state_id) : null;
+            // district/city derivation using pre-loaded data
+            $district = $content && $content->state_id && isset($districtsMap[$content->state_id])
+                ? $districtsMap[$content->state_id]
+                : null;
             $city     = $district?->city;
             $districtStr = trim(implode(' - ', array_filter([$district->name_ar ?? null, $city->name_ar ?? null])));
 
@@ -130,7 +188,9 @@ class PropertyController extends Controller
                 'bathrooms' => (int) ($p->bath ?? 0),
                 'area' => isset($p->area) ? (string) $p->area : '0',
                 'type' => $p->type,
+                'type_ar' => $this->translator->translateType($p->type),
                 'transactionType' => $p->purpose,
+                'transactionType_ar' => $this->translator->translatePurpose($p->purpose),
                 'image' => $featured,
                 'status' => $p->status ? 'available' : 'rented',
                 'createdAt' => $p->created_at?->toISOString(),
@@ -198,7 +258,9 @@ class PropertyController extends Controller
             'bathrooms' => (int) ($property->bath ?? 0),
             'area' => isset($property->area) ? (string) $property->area : '0',
             'type' => $property->type ?? '',
+            'type_ar' => $this->translator->translateType($property->type),
             'transactionType' => $property->purpose,
+            'transactionType_ar' => $this->translator->translatePurpose($property->purpose),
             'image' => $featured,
             'status' => $property->status ? 'available' : 'rented',
             'createdAt' => $property->created_at?->toISOString(),
@@ -216,6 +278,7 @@ class PropertyController extends Controller
 		$characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
 		$extra = [
 			'payment_method' => $property->payment_method,
+			'payment_method_ar' => $this->translator->translatePaymentMethod($property->payment_method),
 			'pricePerMeter' => $property->pricePerMeter,
 			'floor_planning_image' => collect($property->floor_planning_image)->map(fn($img) => asset($img))->toArray(),
 			'video_url' => $property->video_url ? asset($property->video_url) : null,
