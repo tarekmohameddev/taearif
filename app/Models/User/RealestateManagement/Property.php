@@ -25,6 +25,8 @@ class Property extends Model
         'floor_planning_image' => 'array',
         'features' => 'array',
         'faqs' => 'array',
+        'beds' => 'integer',
+        'bath' => 'integer',
     ];
 
 
