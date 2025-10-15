@@ -5,6 +5,7 @@ namespace App\Services\Rms;
 use App\Models\Api\Rms\RmPayment;
 use App\Models\Api\Rms\RmRental;
 use App\Models\Api\Rms\RmPaymentInstallment;
+use App\Exceptions\PaymentException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 
@@ -17,15 +18,24 @@ class PaymentService
     {
         return DB::transaction(function () use ($userId, $rentalId, $paymentData) {
             $rental = RmRental::where('user_id', $userId)->findOrFail($rentalId);
-            
+
+            // Validate rental is active
+            $this->validateRentalCanReceivePayment($rental);
+
             // Validate payment data
             $validatedData = $this->validatePaymentData($paymentData);
-            
+
+            // Check for duplicate payment reference (if provided)
+            if (!empty($validatedData['reference'])) {
+                $this->validateNoDuplicatePayment($rentalId, $validatedData['reference']);
+            }
+
             // Check for overpayment before creating payment
             if ($validatedData['payment_type'] === 'rent' && $validatedData['installment_id']) {
                 $this->validateNoOverpayment($validatedData['installment_id'], $validatedData['amount']);
+                $this->validateInstallmentNotCancelled($validatedData['installment_id']);
             }
-            
+
             // Create payment record
             $payment = RmPayment::create(array_merge($validatedData, [
                 'user_id' => $userId,
@@ -58,16 +68,26 @@ class PaymentService
     {
         return DB::transaction(function () use ($userId, $rentalId, $paymentsData) {
             $rental = RmRental::where('user_id', $userId)->findOrFail($rentalId);
+
+            // Validate rental is active
+            $this->validateRentalCanReceivePayment($rental);
+
             $payments = [];
 
-            foreach ($paymentsData as $paymentData) {
+            foreach ($paymentsData as $index => $paymentData) {
                 $validatedData = $this->validatePaymentData($paymentData);
-                
+
+                // Check for duplicate payment reference (if provided)
+                if (!empty($validatedData['reference'])) {
+                    $this->validateNoDuplicatePayment($rentalId, $validatedData['reference']);
+                }
+
                 // Check for overpayment before creating payment
                 if ($validatedData['payment_type'] === 'rent' && $validatedData['installment_id']) {
                     $this->validateNoOverpayment($validatedData['installment_id'], $validatedData['amount']);
+                    $this->validateInstallmentNotCancelled($validatedData['installment_id']);
                 }
-                
+
                 $payment = RmPayment::create(array_merge($validatedData, [
                     'user_id' => $userId,
                     'rental_id' => $rentalId,
@@ -379,7 +399,7 @@ class PaymentService
     {
         $newPaidAmount = $installment->paid_amount + $amount;
         $totalAmount = $installment->amount;
-        
+
         // Determine payment status
         $paymentStatus = 'not_due';
         if ($installment->due_date < now()) {
@@ -387,7 +407,7 @@ class PaymentService
         } else {
             $paymentStatus = $newPaidAmount >= $totalAmount ? 'paid_in_full' : 'paid_in_part';
         }
-        
+
         // Update installment
         $installment->update([
             'paid_amount' => $newPaidAmount,
@@ -398,14 +418,17 @@ class PaymentService
 
     /**
      * Validate that payment won't cause overpayment
-     * 
+     *
      * @throws \Exception if payment would cause overpayment
+     */
+    /**
+     * Validate that payment won't cause overpayment
      */
     private function validateNoOverpayment($installmentId, $paymentAmount)
     {
         $installment = RmPaymentInstallment::find($installmentId);
         if (!$installment) {
-            throw new \Exception('Installment not found');
+            throw PaymentException::installmentNotFound($installmentId);
         }
 
         // Calculate current total paid
@@ -413,21 +436,65 @@ class PaymentService
             ->where('payment_type', 'rent')
             ->sum('amount');
 
+        // Check if already fully paid
+        if ($currentPaid >= $installment->amount) {
+            throw PaymentException::installmentFullyPaid($installmentId, $installment->amount);
+        }
+
         // Calculate what total would be after this payment
         $newTotal = $currentPaid + $paymentAmount;
 
         // Check if this would cause overpayment
         if ($newTotal > $installment->amount) {
-            $remaining = $installment->amount - $currentPaid;
-            $overpayment = $newTotal - $installment->amount;
-
-            throw new \Exception(
-                "Payment rejected: Would cause overpayment of {$overpayment} SAR. " .
-                "Installment amount: {$installment->amount} SAR, " .
-                "Already paid: {$currentPaid} SAR, " .
-                "Remaining due: {$remaining} SAR. " .
-                "You are trying to pay: {$paymentAmount} SAR."
+            throw PaymentException::overpayment(
+                $installmentId,
+                $installment->amount,
+                $currentPaid,
+                $paymentAmount
             );
+        }
+    }
+
+    /**
+     * Validate rental can receive payment
+     */
+    private function validateRentalCanReceivePayment($rental)
+    {
+        if ($rental->status !== 'active') {
+            throw PaymentException::rentalNotActive($rental->id, $rental->status);
+        }
+
+        if (!$rental->activeContract) {
+            throw PaymentException::noActiveContract($rental->id);
+        }
+    }
+
+    /**
+     * Validate installment is not cancelled
+     */
+    private function validateInstallmentNotCancelled($installmentId)
+    {
+        $installment = RmPaymentInstallment::find($installmentId);
+        if (!$installment) {
+            throw PaymentException::installmentNotFound($installmentId);
+        }
+
+        if ($installment->status === 'cancelled') {
+            throw PaymentException::installmentCancelled($installmentId);
+        }
+    }
+
+    /**
+     * Validate no duplicate payment with same reference
+     */
+    private function validateNoDuplicatePayment($rentalId, $reference)
+    {
+        $existingPayment = RmPayment::where('rental_id', $rentalId)
+            ->where('reference', $reference)
+            ->first();
+
+        if ($existingPayment) {
+            throw PaymentException::duplicatePayment($reference, $existingPayment->id);
         }
     }
 }

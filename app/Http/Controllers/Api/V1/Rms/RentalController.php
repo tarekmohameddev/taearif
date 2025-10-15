@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Services\Rms\RentalService;
 use App\Models\Api\Rms\RmRental;
 use App\Models\Api\Rms\RmPaymentInstallment;
+use App\Exceptions\PaymentException;
 use Illuminate\Support\Facades\Log;
 
 class RentalController extends Controller
@@ -311,10 +312,31 @@ class RentalController extends Controller
                 'errors' => $e->errors()
             ], 422);
 
+        } catch (PaymentException $e) {
+            // Handle custom payment exceptions with structured error response
+            Log::warning('Payment validation failed', [
+                'user_id' => auth()->id(),
+                'rental_id' => $id,
+                'error_code' => $e->getErrorCode(),
+                'error_message' => $e->getMessage(),
+                'error_data' => $e->getErrorData()
+            ]);
+
+            return $e->render($request);
+
+        } catch (\InvalidArgumentException $e) {
+            // Handle business logic validation errors
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+                'error_code' => 'INVALID_ARGUMENT'
+            ], 422);
+
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'status' => false,
                 'message' => 'Rental contract or related record not found',
+                'error_code' => 'NOT_FOUND',
                 'error' => $e->getMessage()
             ], 404);
 
@@ -330,6 +352,7 @@ class RentalController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Payment collection failed',
+                'error_code' => 'INTERNAL_ERROR',
                 'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
             ], 500);
         }
@@ -582,6 +605,106 @@ class RentalController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to generate payment report',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error',
+            ], 500);
+        }
+    }
+
+    /**
+     * Get daily follow-up for rentals with payments due
+     * Shows payments due today by default, with optional filters
+     */
+    public function dailyFollowUp(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'per_page' => 'nullable|integer|min:1|max:100',
+                'page' => 'nullable|integer|min:1',
+                'from_date' => 'nullable|date',
+                'to_date' => 'nullable|date|after_or_equal:from_date',
+                'building_id' => 'nullable|integer',
+                'status' => 'nullable|string|in:overdue,due_today,upcoming',
+            ]);
+
+            $result = $this->rentalService->getDailyFollowUp(auth()->id(), $validated);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Daily follow-up retrieved successfully',
+                'data' => $result['data'],
+                'pagination' => $result['pagination'],
+                'summary' => $result['summary'],
+                'filters' => $result['filters'],
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Daily follow-up error: ' . $e->getMessage(), [
+                'user_id' => auth()->id(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to retrieve daily follow-up',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error',
+            ], 500);
+        }
+    }
+
+    /**
+     * List all contracts with detailed information
+     * 
+     * GET /api/v1/rms/rentals/contracts
+     * 
+     * Optional filters:
+     * - building_id: Filter by building
+     * - payment_status: Filter by payment status color (red, yellow, green)
+     * - rental_method: Filter by rental method (monthly, quarterly, semi_annual, annual)
+     * - from_date: Filter contracts starting from this date
+     * - to_date: Filter contracts ending before this date
+     * - contract_status: Filter by contract status (active, expired, pending, terminated)
+     * - per_page: Number of results per page (default: 15, max: 100)
+     */
+    public function allContracts(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'per_page' => 'nullable|integer|min:1|max:100',
+                'page' => 'nullable|integer|min:1',
+                'building_id' => 'nullable|integer',
+                'payment_status' => 'nullable|in:red,yellow,green',
+                'rental_method' => 'nullable|in:monthly,quarterly,semi_annual,annual',
+                'from_date' => 'nullable|date',
+                'to_date' => 'nullable|date|after_or_equal:from_date',
+                'contract_status' => 'nullable|in:active,expired,pending,terminated',
+            ]);
+
+            $result = $this->rentalService->listAllContracts($request);
+
+            return response()->json($result);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error retrieving all contracts', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to retrieve contracts',
                 'error' => config('app.debug') ? $e->getMessage() : 'Internal server error',
             ], 500);
         }
