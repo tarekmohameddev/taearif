@@ -113,15 +113,28 @@ class PropertyController extends Controller
         $days = (int) $request->query('days', 30);
 
         // Build paths and slugs map in single pass
+        // Support both with and without language prefixes
         $paths = [];
-        $slugToPropertyMap = [];
+        $slugToPathsMap = [];  // slug => array of paths
+        $supportedLanguages = ['ar', 'en'];  // Supported language prefixes
+
         foreach ($properties->getCollection() as $p) {
             $content = $p->contents->first();
             if ($content && $content->slug) {
                 $slug = $content->slug;
-                $path = "/property/{$slug}";
-                $paths[] = $path;
-                $slugToPropertyMap[$slug] = $path;
+                $slugToPathsMap[$slug] = [];
+
+                // Add path without language prefix
+                $pathWithoutLang = "/property/{$slug}";
+                $paths[] = $pathWithoutLang;
+                $slugToPathsMap[$slug][] = $pathWithoutLang;
+
+                // Add paths with language prefixes
+                foreach ($supportedLanguages as $lang) {
+                    $pathWithLang = "/{$lang}/property/{$slug}";
+                    $paths[] = $pathWithLang;
+                    $slugToPathsMap[$slug][] = $pathWithLang;
+                }
             }
         }
 
@@ -155,10 +168,14 @@ class PropertyController extends Controller
             }
         }
 
-        // Map views to slugs
+        // Map views to slugs - Sum views from all language variations
         $viewsBySlug = [];
-        foreach ($slugToPropertyMap as $slug => $path) {
-            $viewsBySlug[$slug] = (int) ($viewsByPath[$path] ?? 0);
+        foreach ($slugToPathsMap as $slug => $pathVariations) {
+            $totalViews = 0;
+            foreach ($pathVariations as $path) {
+                $totalViews += (int) ($viewsByPath[$path] ?? 0);
+            }
+            $viewsBySlug[$slug] = $totalViews;
         }
 
         $items = $properties->getCollection()->map(function ($p) use ($viewsBySlug, $districtsMap) {

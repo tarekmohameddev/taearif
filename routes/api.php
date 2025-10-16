@@ -822,6 +822,9 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve'])->group(
     // Tenant Website Projects (public)
     Route::get('{tenantId}/projects', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'index']);
     Route::get('{tenantId}/projects/{slug}', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'show']);
+
+    // Properties Categories (public)
+    Route::get('{tenantId}/properties/categories', [PropertyController::class, 'properties_categories']);
 });
 
 // Owner Rental Management System Routes (v1)
