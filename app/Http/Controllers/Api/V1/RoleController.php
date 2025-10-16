@@ -26,14 +26,20 @@ class RoleController extends Controller
         $tenantId = $this->tenantId();
 
         $roles = Role::where('team_id', $tenantId)
-            ->with('permissions:id,name')
-            ->select('id', 'name', 'created_at', 'updated_at')
+            ->with('permissions:id,name,name_ar,name_en')
+            ->select('id', 'name', 'name_ar', 'name_en', 'created_at', 'updated_at')
             ->orderBy('name')
             ->get();
 
         // Add permissions to each role
         $roles->transform(function ($role) {
-            $role->permissions_list = $role->permissions->pluck('name')->toArray();
+            $role->permissions_list = $role->permissions->map(function ($permission) {
+                return [
+                    'name' => $permission->name,
+                    'name_ar' => $permission->name_ar,
+                    'name_en' => $permission->name_en
+                ];
+            })->toArray();
             return $role;
         });
 
@@ -49,10 +55,17 @@ class RoleController extends Controller
         $tenantId = $this->tenantId();
 
         $role = Role::where('team_id', $tenantId)
-            ->with('permissions:id,name')
+            ->with('permissions:id,name,name_ar,name_en')
+            ->select('id', 'name', 'name_ar', 'name_en', 'team_id', 'guard_name', 'created_at', 'updated_at')
             ->findOrFail($id);
 
-        $role->permissions_list = $role->permissions->pluck('name')->toArray();
+        $role->permissions_list = $role->permissions->map(function ($permission) {
+            return [
+                'name' => $permission->name,
+                'name_ar' => $permission->name_ar,
+                'name_en' => $permission->name_en
+            ];
+        })->toArray();
 
         return response()->json([
             'status' => 'success',
@@ -74,6 +87,8 @@ class RoleController extends Controller
                     return $query->where('team_id', $tenantId);
                 })
             ],
+            'name_ar' => ['nullable', 'string', 'max:255'],
+            'name_en' => ['nullable', 'string', 'max:255'],
             'permissions' => ['array'],
             'permissions.*' => ['string', 'exists:api_permissions,name']
         ]);
@@ -82,6 +97,8 @@ class RoleController extends Controller
         $role = Role::create([
             'user_id' => $tenantId,
             'name' => $data['name'],
+            'name_ar' => $data['name_ar'] ?? null,
+            'name_en' => $data['name_en'] ?? null,
             'team_id' => $tenantId,
             'guard_name' => 'sanctum'
         ]);
@@ -93,8 +110,14 @@ class RoleController extends Controller
         }
 
         // Load permissions for response
-        $role->load('permissions:id,name');
-        $role->permissions_list = $role->permissions->pluck('name')->toArray();
+        $role->load('permissions:id,name,name_ar,name_en');
+        $role->permissions_list = $role->permissions->map(function ($permission) {
+            return [
+                'name' => $permission->name,
+                'name_ar' => $permission->name_ar,
+                'name_en' => $permission->name_en
+            ];
+        })->toArray();
 
         ActivityLogger::log([
             'user_id'     => $tenantId,
@@ -105,6 +128,8 @@ class RoleController extends Controller
             'target_id'   => $role->id,
             'new_values'  => [
                 'name' => $role->name,
+                'name_ar' => $role->name_ar,
+                'name_en' => $role->name_en,
                 'permissions' => $role->permissions_list
             ],
         ]);
@@ -132,18 +157,24 @@ class RoleController extends Controller
                     return $query->where('team_id', $tenantId);
                 })->ignore($role->id)
             ],
+            'name_ar' => ['nullable', 'string', 'max:255'],
+            'name_en' => ['nullable', 'string', 'max:255'],
             'permissions' => ['array'],
             'permissions.*' => ['string', 'exists:api_permissions,name']
         ]);
 
         $oldData = [
             'name' => $role->name,
+            'name_ar' => $role->name_ar,
+            'name_en' => $role->name_en,
             'permissions' => $role->permissions->pluck('name')->toArray()
         ];
 
         // Update role name
         $role->update([
-            'name' => $data['name']
+            'name' => $data['name'],
+            'name_ar' => $data['name_ar'] ?? $role->name_ar,
+            'name_en' => $data['name_en'] ?? $role->name_en
         ]);
 
         // Update permissions if provided
@@ -153,8 +184,14 @@ class RoleController extends Controller
         }
 
         // Load permissions for response
-        $role->load('permissions:id,name');
-        $role->permissions_list = $role->permissions->pluck('name')->toArray();
+        $role->load('permissions:id,name,name_ar,name_en');
+        $role->permissions_list = $role->permissions->map(function ($permission) {
+            return [
+                'name' => $permission->name,
+                'name_ar' => $permission->name_ar,
+                'name_en' => $permission->name_en
+            ];
+        })->toArray();
 
         ActivityLogger::log([
             'user_id'     => $tenantId,
@@ -166,6 +203,8 @@ class RoleController extends Controller
             'old_values'  => $oldData,
             'new_values'  => [
                 'name' => $role->name,
+                'name_ar' => $role->name_ar,
+                'name_en' => $role->name_en,
                 'permissions' => $role->permissions_list
             ],
         ]);
@@ -411,7 +450,7 @@ class RoleController extends Controller
 
         // Validate resource against business context
         $validResources = [
-            'properties', 'projects', 'customers', 'crm', 'content', 
+            'properties', 'projects', 'customers', 'crm', 'content',
             'settings', 'reports', 'analytics', 'users', 'employees',
             'bookings', 'sales', 'leads', 'deals', 'contracts', 'payments'
         ];
