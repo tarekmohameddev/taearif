@@ -247,7 +247,7 @@ class ProjectController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        
+
         // Resolve tenant owner (tenant for tenant; tenant for employee)
         $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
         $ownerId = $owner->id;
@@ -457,11 +457,11 @@ class ProjectController extends Controller
     public function update(Request $request, $id)
     {
         $user = auth()->user();
-        
+
         // Resolve tenant owner (tenant for tenant; tenant for employee)
         $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
         $ownerId = $owner->id;
-        
+
         $defaultLang = Language::where('user_id', $ownerId)->where('is_default', 1)->firstOrFail();
 
         // Allow updating projects owned by tenant or any employee
@@ -566,13 +566,13 @@ class ProjectController extends Controller
                 foreach ($types as $type) {
                     ProjectType::storeProjectType($ownerId, [
                         'project_id' => $project->id,
-                        'language_id' => $type['label'],
-                        'title' => $type['title'],
-                        'min_area' => $type['min_area'],
-                        'max_area' => $type['max_area'],
-                        'min_price' => $type['min_price'],
-                        'max_price' => $type['max_price'],
-                        'unit' => $type['unit'],
+                        'language_id' => $type['language_id'] ?? $defaultLang->id,
+                        'title' => $type['title'] ?? null,
+                        'min_area' => $type['min_area'] ?? null,
+                        'max_area' => $type['max_area'] ?? null,
+                        'min_price' => $type['min_price'] ?? null,
+                        'max_price' => $type['max_price'] ?? null,
+                        'unit' => $type['unit'] ?? null,
                     ]);
                 }
             }
