@@ -827,6 +827,9 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve'])->group(
     Route::get('{tenantId}/properties/categories', [PropertyController::class, 'properties_categories']);
 });
 
+// Direct public route for property categories (bypassing tenant.resolve middleware)
+Route::get('v1/tenant-website/{tenantId}/properties/categories/direct', [PropertyController::class, 'properties_categories']);
+
 // Owner Rental Management System Routes (v1)
 // User Dashboard - Managing Owner Rentals (requires user authentication)
 Route::prefix('v1/user/owner-rentals')->middleware('auth:sanctum')->group(function () {
