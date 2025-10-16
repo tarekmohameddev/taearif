@@ -749,7 +749,7 @@ class PropertyController extends Controller
             ]);
 
             $videoUrl = $request->video_url; // Video URL from separate upload
-            
+
             $property = Property::storeProperty(
                 $user->id,
                 $propertyData,
@@ -1055,15 +1055,15 @@ class PropertyController extends Controller
         }
 
         DB::transaction(function () use ($request, $user, $defaultLanguage, &$property) {
-            
+
             $videoUrl = $request->video_url; // Video URL from separate upload
-            
+
             // Update property data with video URL
             $requestData = $request->all();
             if ($videoUrl) {
                 $requestData['video_url'] = $videoUrl;
             }
-            
+
             $property->updateProperty($requestData);
 
             $characteristics = $request->only([
@@ -1331,20 +1331,20 @@ class PropertyController extends Controller
             $file = $request->file('deed_image');
             $extension = $file->getClientOriginalExtension();
             $fileName = 'deed_' . time() . '_' . uniqid() . '.' . $extension;
-            
+
             $directory = public_path('assets/img/property/deeds');
-            
+
             // Create directory if it doesn't exist
             if (!is_dir($directory)) {
                 mkdir($directory, 0775, true);
             }
-            
+
             // Move file to directory
             $file->move($directory, $fileName);
-            
+
             // Return the relative path
             $filePath = 'assets/img/property/deeds/' . $fileName;
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Deed image uploaded successfully',
@@ -1354,7 +1354,7 @@ class PropertyController extends Controller
                     'filename' => $fileName
                 ]
             ], 200);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -1432,9 +1432,9 @@ class PropertyController extends Controller
 
         // Apply UserPropertyCharacteristic filters
         $characteristicFilters = [
-            'private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement', 
-            'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room', 
-            'driver_room', 'swimming_pool', 'kitchen', 'floor_number', 'floors', 
+            'private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement',
+            'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room',
+            'driver_room', 'swimming_pool', 'kitchen', 'floor_number', 'floors',
             'bathrooms', 'rooms', 'building_age'
         ];
 
@@ -1490,7 +1490,7 @@ class PropertyController extends Controller
 
         // ===== Get specifics filters from properties =====
         $propertiesForFilters = Property::whereIn('user_id', $allowedUserIds)->get();
-        
+
         // Price range (min/max from actual data)
         $priceRange = [
             'min' => $propertiesForFilters->whereNotNull('price')->min('price') ?: 0,
@@ -1537,9 +1537,9 @@ class PropertyController extends Controller
         // Get UserPropertyCharacteristic filter options
         $characteristicFilterOptions = [];
         $characteristicFields = [
-            'private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement', 
-            'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room', 
-            'driver_room', 'swimming_pool', 'kitchen', 'floor_number', 'floors', 
+            'private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement',
+            'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room',
+            'driver_room', 'swimming_pool', 'kitchen', 'floor_number', 'floors',
             'bathrooms', 'rooms', 'building_age'
         ];
 
@@ -1552,7 +1552,7 @@ class PropertyController extends Controller
                 ->sort()
                 ->values()
                 ->toArray();
-            
+
             if (!empty($values)) {
                 $characteristicFilterOptions[$field] = $values;
             }
@@ -1630,7 +1630,7 @@ class PropertyController extends Controller
     {
         try {
             $userId = auth()->user() ? auth()->user()->tenantOwnerId() : auth()->id();
-            
+
             // Validate request parameters
             $request->validate([
                 'project_id' => 'nullable|integer',
@@ -1675,14 +1675,14 @@ class PropertyController extends Controller
             $formattedProperties = $properties->map(function ($property) {
                 $content = optional($property->contents)->first();
                 $projectContent = optional(optional($property->project)->contents)->first();
-                
+
                 // Get building name directly from database to avoid relationship issues
                 $buildingName = 'N/A';
                 if ($property->building_id) {
                     $building = \App\Models\Building::find($property->building_id);
                     $buildingName = $building ? $building->name : 'Unknown Building';
                 }
-                
+
                 return [
                     'id' => $property->id,
                     'title' => $content->title ?? 'N/A',
