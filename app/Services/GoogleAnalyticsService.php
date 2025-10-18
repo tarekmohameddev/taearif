@@ -28,7 +28,7 @@ class GoogleAnalyticsService
     public function __construct()
     {
         $this->client = new BetaAnalyticsDataClient([
-            'credentials' => json_decode(file_get_contents(storage_path('app/google/service-account.json')), true),
+            'credentials' => json_decode(file_get_contents(app_path('analytics/service-account-credentials.json')), true),
         ]);
 
         $this->propertyId = 'properties/' . config('services.google.analytics_property_id');
@@ -53,16 +53,16 @@ class GoogleAnalyticsService
     protected function executeWithRetry(callable $apiCall, string $methodName = 'API call')
     {
         $lastException = null;
-        
+
         for ($attempt = 1; $attempt <= $this->maxRetries; $attempt++) {
             try {
                 return $apiCall();
             } catch (\Google\ApiCore\ApiException $e) {
                 $lastException = $e;
-                
+
                 // Only retry on specific error codes (service unavailable, rate limit, etc.)
                 $retryableCodes = [14, 8, 13]; // UNAVAILABLE, RESOURCE_EXHAUSTED, INTERNAL
-                
+
                 if (!in_array($e->getCode(), $retryableCodes) || $attempt >= $this->maxRetries) {
                     Log::error("Google Analytics API error in {$methodName}", [
                         'error_code' => $e->getCode(),
@@ -72,20 +72,20 @@ class GoogleAnalyticsService
                     ]);
                     throw $e;
                 }
-                
+
                 // Calculate exponential backoff delay
                 $delay = $this->baseDelay * pow(2, $attempt - 1);
-                
+
                 Log::warning("Google Analytics API retry for {$methodName}", [
                     'error_code' => $e->getCode(),
                     'attempt' => $attempt,
                     'next_retry_in_seconds' => $delay
                 ]);
-                
+
                 sleep($delay);
             }
         }
-        
+
         throw $lastException;
     }
 
