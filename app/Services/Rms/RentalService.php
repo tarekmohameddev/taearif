@@ -968,7 +968,7 @@ class RentalService
             $totalFeesDue = round($fees['total_fees'], 2);
             $totalDue = round($totalRentDue + $totalFeesDue, 2);
             $totalPaid = round($installments->sum('paid_amount'), 2);
-            
+
             // Get fee payments
             $feePaid = $this->getTotalFeesCollected($rental->id);
             $totalCollected = round($totalPaid + $feePaid, 2);
@@ -1616,7 +1616,7 @@ class RentalService
 
     /**
      * Get daily follow-up data for rentals with payment due dates
-     * 
+     *
      * @param int $userId
      * @param array $filters
      * @return array
@@ -1641,19 +1641,23 @@ class RentalService
         // Building query for installments based on status
         $installmentsQuery = RmPaymentInstallment::with([
             'rental.activeContract',
-            'rental.property',
-            'rental.project',
-            'rental.building',
+            'rental.property.project',
+            'rental.property.building',
             'contract',
             'payments'
         ])
         ->whereHas('rental', function($q) use ($ownerId, $filters) {
             $q->where('user_id', $ownerId)
               ->whereIn('status', ['active']);
-            
-            // Building filter
+
+            // Building filter - check both rental's building_id and property's building_id
             if (!empty($filters['building_id'])) {
-                $q->where('building_id', $filters['building_id']);
+                $q->where(function($subQuery) use ($filters) {
+                    $subQuery->where('building_id', $filters['building_id'])
+                             ->orWhereHas('property', function($propQuery) use ($filters) {
+                                 $propQuery->where('building_id', $filters['building_id']);
+                             });
+                });
             }
         })
         ->whereIn('status', ['pending', 'active']);
@@ -1699,7 +1703,7 @@ class RentalService
 
         foreach ($installments as $installment) {
             $rental = $installment->rental;
-            
+
             if (!$rental || !$rental->activeContract) {
                 continue;
             }
@@ -1739,12 +1743,12 @@ class RentalService
                     'unit_address' => $rental->property?->address ?? 'N/A',
                 ],
                 'building' => [
-                    'building_id' => $rental->building_id,
-                    'building_name' => $rental->building?->name ?? 'N/A',
+                    'building_id' => $rental->property?->building_id ?? $rental->building_id,
+                    'building_name' => $rental->property?->building?->name ?? 'N/A',
                 ],
                 'project' => [
-                    'project_id' => $rental->project_id,
-                    'project_name' => $rental->project?->name ?? 'N/A',
+                    'project_id' => $rental->property?->project_id ?? $rental->project_id,
+                    'project_name' => $rental->property?->project?->name ?? 'N/A',
                 ],
                 'installment_info' => [
                     'installment_id' => $installment->id,
@@ -1760,8 +1764,8 @@ class RentalService
                     'overdue_amount' => round($overdueArrears, 2), // Only overdue amounts
                 ],
                 'due_date' => $installment->due_date->format('Y-m-d'),
-                'days_overdue' => $installment->due_date < $today 
-                    ? now()->diffInDays($installment->due_date) 
+                'days_overdue' => $installment->due_date < $today
+                    ? now()->diffInDays($installment->due_date)
                     : 0,
                 'contract_info' => [
                     'contract_id' => $rental->activeContract->id,
@@ -1811,7 +1815,7 @@ class RentalService
 
     /**
      * List all contracts with detailed information
-     * 
+     *
      * @param Request $request
      * @return array
      */
@@ -1874,7 +1878,7 @@ class RentalService
         $contractsList = [];
         foreach ($contracts as $contract) {
             $rental = $contract->rental;
-            
+
             if (!$rental) {
                 continue;
             }
@@ -1912,7 +1916,7 @@ class RentalService
             $leaseTerm = [
                 'start_date' => $contract->start_date ? $contract->start_date->format('Y-m-d') : null,
                 'end_date' => $contract->end_date ? $contract->end_date->format('Y-m-d') : null,
-                'duration_days' => $contract->start_date && $contract->end_date 
+                'duration_days' => $contract->start_date && $contract->end_date
                     ? $contract->start_date->diffInDays($contract->end_date)
                     : null,
             ];
@@ -1974,7 +1978,7 @@ class RentalService
     /**
      * Calculate payment status for a contract
      * Returns status, color, and details
-     * 
+     *
      * Red: Late payment (from day 1 past due date)
      * Yellow: Due soon (within current month)
      * Green: Paid/up-to-date
