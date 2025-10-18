@@ -18,6 +18,12 @@ class DashboardService
         $now = Carbon::now('Asia/Riyadh');
         $end = $now->copy()->addDays($range);
 
+        // Month boundaries for new count fields
+        $currentMonthStart = $now->copy()->startOfMonth();
+        $currentMonthEnd = $now->copy()->endOfMonth();
+        $nextMonthStart = $now->copy()->addMonth()->startOfMonth();
+        $nextMonthEnd = $now->copy()->addMonth()->endOfMonth();
+
         return [
             'range_days' => $range, // Add this to make it clear what range is being used
             'counts' => [
@@ -27,9 +33,25 @@ class DashboardService
                     ->whereDate('end_date', '<=', $end)
                     ->whereDate('end_date', '>=', $now)
                     ->count(),
+                'expiring_contracts_current_month' => RmContract::where('user_id', $userId)
+                    ->where('status', 'active')
+                    ->whereBetween('end_date', [$currentMonthStart, $currentMonthEnd])
+                    ->count(),
+                'expiring_contracts_next_month' => RmContract::where('user_id', $userId)
+                    ->where('status', 'active')
+                    ->whereBetween('end_date', [$nextMonthStart, $nextMonthEnd])
+                    ->count(),
                 'payments_due_next_' . $range . 'd' => RmPaymentInstallment::where('user_id', $userId)
                     ->where('status', 'pending')
                     ->whereBetween('due_date', [$now, $end])
+                    ->count(),
+                'payments_due_current_month' => RmPaymentInstallment::where('user_id', $userId)
+                    ->where('status', 'pending')
+                    ->whereBetween('due_date', [$currentMonthStart, $currentMonthEnd])
+                    ->count(),
+                'payments_due_next_month' => RmPaymentInstallment::where('user_id', $userId)
+                    ->where('status', 'pending')
+                    ->whereBetween('due_date', [$nextMonthStart, $nextMonthEnd])
                     ->count(),
                 'payments_overdue' => RmPaymentInstallment::where('user_id', $userId)
                     ->where('status', 'overdue')
@@ -43,6 +65,11 @@ class DashboardService
             'yearly_overview' => $this->getYearlyFinancialOverview($userId),
             'contracts_expiring' => $this->getContractsExpiring($userId),
             'ongoing_rentals' => $this->getOngoingRentals($userId),
+            'payments_due_next_month_details' => $this->getPaymentsDueNextMonthDetails($userId, $nextMonthStart, $nextMonthEnd),
+            'payments_due_current_month_details' => $this->getPaymentsDueCurrentMonthDetails($userId, $currentMonthStart, $currentMonthEnd),
+            'expiring_contracts_current_month_details' => $this->getExpiringContractsCurrentMonthDetails($userId, $currentMonthStart, $currentMonthEnd),
+            'expiring_contracts_next_month_details' => $this->getExpiringContractsNextMonthDetails($userId, $nextMonthStart, $nextMonthEnd),
+            'overdue_payments_details' => $this->getOverduePaymentsDetails($userId, $now),
             'reminders' => RmReminder::where('user_id', $userId)
                 ->where('status', 'pending')
                 ->whereBetween('due_on', [$now, $end])
@@ -91,7 +118,7 @@ class DashboardService
     protected function getExpiringContracts($userId)
     {
         $now = Carbon::now('Asia/Riyadh');
-        
+
         return RmContract::with(['rental.property.contents'])
             ->where('user_id', $userId)
             ->where('status', 'active')
@@ -124,7 +151,7 @@ class DashboardService
     protected function getPropertyStats($userId)
     {
         $totalProperties = Property::where('user_id', $userId)->count();
-        
+
         $rentedProperties = Property::where('user_id', $userId)
             ->whereHas('rentals', function ($query) {
                 $query->where('status', 'active');
@@ -211,16 +238,16 @@ class DashboardService
         foreach ($contracts as $contract) {
             if ($contract->rental) {
                 $totalValue += $contract->rental->total_rental_amount ?? 0;
-                
+
                 // Get payment stats for this rental
                 $paidAmount = RmPaymentInstallment::where('rental_id', $contract->rental_id)
                     ->where('status', 'paid')
                     ->sum('amount');
-                
+
                 $pendingAmount = RmPaymentInstallment::where('rental_id', $contract->rental_id)
                     ->whereIn('status', ['pending', 'overdue'])
                     ->sum('amount');
-                
+
                 $collected += $paidAmount;
                 $pending += $pendingAmount;
             }
@@ -260,7 +287,7 @@ class DashboardService
                     $paidAmount = RmPaymentInstallment::where('rental_id', $rental->id)
                         ->where('status', 'paid')
                         ->sum('amount');
-                    
+
                     $pendingAmount = RmPaymentInstallment::where('rental_id', $rental->id)
                         ->whereIn('status', ['pending', 'overdue'])
                         ->sum('amount');
@@ -365,8 +392,8 @@ class DashboardService
             })
             ->sum('amount');
 
-        $currentMonthCollectionRate = $currentMonthExpected > 0 
-            ? round(($currentMonthCollected / $currentMonthExpected) * 100, 2) 
+        $currentMonthCollectionRate = $currentMonthExpected > 0
+            ? round(($currentMonthCollected / $currentMonthExpected) * 100, 2)
             : 0;
 
         // Payment breakdown for current month
@@ -398,8 +425,8 @@ class DashboardService
             ->whereBetween('due_date', [$nextMonthStart, $nextMonthEnd])
             ->sum('amount');
 
-        $nextMonthCollectionRate = $nextMonthExpected > 0 
-            ? round(($nextMonthCollected / $nextMonthExpected) * 100, 2) 
+        $nextMonthCollectionRate = $nextMonthExpected > 0
+            ? round(($nextMonthCollected / $nextMonthExpected) * 100, 2)
             : 0;
 
         $nextMonthDueDates = RmPaymentInstallment::where('user_id', $userId)
@@ -517,8 +544,8 @@ class DashboardService
             })
             ->sum('amount');
 
-        $collectionRate = $totalExpected > 0 
-            ? round(($totalCollected / $totalExpected) * 100, 2) 
+        $collectionRate = $totalExpected > 0
+            ? round(($totalCollected / $totalExpected) * 100, 2)
             : 0;
 
         // Get total contract value for active contracts
@@ -531,8 +558,8 @@ class DashboardService
 
         // Average monthly collection (only for completed months)
         $currentMonth = $now->month;
-        $avgMonthlyCollection = $currentMonth > 0 
-            ? round($totalCollected / $currentMonth, 2) 
+        $avgMonthlyCollection = $currentMonth > 0
+            ? round($totalCollected / $currentMonth, 2)
             : 0;
 
         // Monthly breakdown
@@ -609,8 +636,8 @@ class DashboardService
                 })
                 ->sum('amount');
 
-            $collectionRate = $expected > 0 
-                ? round(($collected / $expected) * 100, 2) 
+            $collectionRate = $expected > 0
+                ? round(($collected / $expected) * 100, 2)
                 : 0;
 
             $breakdown[] = [
@@ -651,9 +678,9 @@ class DashboardService
                 $collected = array_sum(array_column($quarterData, 'collected'));
                 $pending = array_sum(array_column($quarterData, 'pending'));
                 $overdue = array_sum(array_column($quarterData, 'overdue'));
-                
-                $collectionRate = $expected > 0 
-                    ? round(($collected / $expected) * 100, 2) 
+
+                $collectionRate = $expected > 0
+                    ? round(($collected / $expected) * 100, 2)
                     : 0;
 
                 $quarters[] = [
@@ -677,7 +704,7 @@ class DashboardService
     protected function getLatePaymentsAnalysis($userId, $year, $currentDate)
     {
         $yearStart = Carbon::create($year, 1, 1, 0, 0, 0, 'Asia/Riyadh');
-        
+
         // Get all late payments (overdue or pending past due date)
         $latePayments = RmPaymentInstallment::where('user_id', $userId)
             ->whereYear('due_date', $year)
@@ -726,6 +753,415 @@ class DashboardService
                 '8-30_days' => (float) $severity['8-30_days'],
                 '31-90_days' => (float) $severity['31-90_days'],
                 '90+_days' => (float) $severity['90+_days'],
+            ],
+        ];
+    }
+
+    /**
+     * Get detailed payments due in next month for dialog popups
+     */
+    protected function getPaymentsDueNextMonthDetails($userId, $nextMonthStart, $nextMonthEnd)
+    {
+        $now = Carbon::now('Asia/Riyadh');
+
+        // Get all payments due in next month with relationships
+        $payments = RmPaymentInstallment::with(['rental.property.contents', 'rental.activeContract'])
+            ->where('user_id', $userId)
+            ->whereBetween('due_date', [$nextMonthStart, $nextMonthEnd])
+            ->orderBy('due_date')
+            ->get()
+            ->map(function ($payment) use ($now) {
+                $rental = $payment->rental;
+                $property = optional($rental)->property;
+                $contract = optional($rental)->activeContract;
+
+                return [
+                    'rental_id' => $payment->rental_id,
+                    'tenant_name' => optional($rental)->tenant_full_name,
+                    'tenant_phone' => optional($rental)->tenant_phone,
+                    'property' => [
+                        'id' => optional($property)->id,
+                        'name' => optional($property)->firstContent ? $property->firstContent->title : null,
+                        'unit_label' => optional($property)->unit_label,
+                    ],
+                    'contract' => [
+                        'id' => optional($contract)->id,
+                        'end_date' => optional($contract)->end_date,
+                        'status' => optional($contract)->status,
+                    ],
+                    'payment_details' => [
+                        'amount' => (float) $payment->amount,
+                        'due_date' => $payment->due_date->format('Y-m-d'),
+                        'currency' => 'SAR',
+                        'payment_type' => $payment->payment_type ?? 'monthly_rent',
+                        'payment_status' => $payment->status,
+                        'paid_date' => $payment->paid_at ? $payment->paid_at->format('Y-m-d') : null,
+                        'payment_method' => $payment->payment_method,
+                    ],
+                    'days_remaining' => $now->diffInDays($payment->due_date, false),
+                ];
+            });
+
+        // Calculate aggregates
+        $totalAmount = $payments->sum('payment_details.amount');
+        $paidPayments = $payments->filter(function ($payment) {
+            return $payment['payment_details']['payment_status'] === 'paid';
+        });
+        $unpaidPayments = $payments->filter(function ($payment) {
+            return $payment['payment_details']['payment_status'] !== 'paid';
+        });
+
+        $paidCount = $paidPayments->count();
+        $paidAmount = $paidPayments->sum('payment_details.amount');
+        $unpaidCount = $unpaidPayments->count();
+        $unpaidAmount = $unpaidPayments->sum('payment_details.amount');
+
+        return [
+            'month' => $nextMonthStart->format('F Y'),
+            'count' => $payments->count(),
+            'total_amount' => (float) $totalAmount,
+            'paid_count' => $paidCount,
+            'paid_amount' => (float) $paidAmount,
+            'unpaid_count' => $unpaidCount,
+            'unpaid_amount' => (float) $unpaidAmount,
+            'payments' => $payments->values()->toArray(),
+        ];
+    }
+
+    /**
+     * Get detailed payments due in current month for dialog popups
+     */
+    protected function getPaymentsDueCurrentMonthDetails($userId, $currentMonthStart, $currentMonthEnd)
+    {
+        $now = Carbon::now('Asia/Riyadh');
+
+        // Get all payments due in current month with relationships
+        $payments = RmPaymentInstallment::with(['rental.property.contents', 'rental.activeContract'])
+            ->where('user_id', $userId)
+            ->whereBetween('due_date', [$currentMonthStart, $currentMonthEnd])
+            ->orderBy('due_date')
+            ->get()
+            ->map(function ($payment) use ($now) {
+                $rental = $payment->rental;
+                $property = optional($rental)->property;
+                $contract = optional($rental)->activeContract;
+
+                return [
+                    'rental_id' => $payment->rental_id,
+                    'tenant_name' => optional($rental)->tenant_full_name,
+                    'tenant_phone' => optional($rental)->tenant_phone,
+                    'tenant_email' => optional($rental)->tenant_email,
+                    'property' => [
+                        'id' => optional($property)->id,
+                        'name' => optional($property)->firstContent ? $property->firstContent->title : null,
+                        'unit_label' => optional($property)->unit_label,
+                        'address' => optional($property)->address,
+                    ],
+                    'contract' => [
+                        'id' => optional($contract)->id,
+                        'start_date' => optional($contract)->start_date,
+                        'end_date' => optional($contract)->end_date,
+                        'status' => optional($contract)->status,
+                    ],
+                    'payment_details' => [
+                        'amount' => (float) $payment->amount,
+                        'due_date' => $payment->due_date->format('Y-m-d'),
+                        'currency' => 'SAR',
+                        'payment_type' => $payment->payment_type ?? 'monthly_rent',
+                        'payment_status' => $payment->status,
+                        'paid_date' => $payment->paid_at ? $payment->paid_at->format('Y-m-d') : null,
+                        'payment_method' => $payment->payment_method,
+                    ],
+                    'days_remaining' => $now->diffInDays($payment->due_date, false),
+                ];
+            });
+
+        // Calculate aggregates
+        $totalAmount = $payments->sum('payment_details.amount');
+        $paidPayments = $payments->filter(function ($payment) {
+            return $payment['payment_details']['payment_status'] === 'paid';
+        });
+        $unpaidPayments = $payments->filter(function ($payment) {
+            return $payment['payment_details']['payment_status'] !== 'paid';
+        });
+
+        $paidCount = $paidPayments->count();
+        $paidAmount = $paidPayments->sum('payment_details.amount');
+        $unpaidCount = $unpaidPayments->count();
+        $unpaidAmount = $unpaidPayments->sum('payment_details.amount');
+
+        return [
+            'month' => $currentMonthStart->format('F Y'),
+            'count' => $payments->count(),
+            'total_amount' => (float) $totalAmount,
+            'paid_count' => $paidCount,
+            'paid_amount' => (float) $paidAmount,
+            'unpaid_count' => $unpaidCount,
+            'unpaid_amount' => (float) $unpaidAmount,
+            'payments' => $payments->values()->toArray(),
+        ];
+    }
+
+    /**
+     * Get detailed contracts expiring in current month for dialog popups
+     */
+    protected function getExpiringContractsCurrentMonthDetails($userId, $currentMonthStart, $currentMonthEnd)
+    {
+        $now = Carbon::now('Asia/Riyadh');
+
+        // Get all contracts expiring in current month with relationships
+        $contracts = RmContract::with(['rental.property.contents', 'rental'])
+            ->where('user_id', $userId)
+            ->where('status', 'active')
+            ->whereBetween('end_date', [$currentMonthStart, $currentMonthEnd])
+            ->orderBy('end_date')
+            ->get()
+            ->map(function ($contract) use ($now) {
+                $rental = $contract->rental;
+                $property = optional($rental)->property;
+
+                // Get next payment due
+                $nextPayment = RmPaymentInstallment::where('rental_id', $contract->rental_id)
+                    ->where('status', 'pending')
+                    ->orderBy('due_date')
+                    ->first();
+
+                // Calculate contract duration in months
+                $startDate = Carbon::parse($contract->start_date);
+                $endDate = Carbon::parse($contract->end_date);
+                $durationMonths = $startDate->diffInMonths($endDate);
+
+                return [
+                    'rental_id' => $contract->rental_id,
+                    'tenant_name' => optional($rental)->tenant_full_name,
+                    'tenant_phone' => optional($rental)->tenant_phone,
+                    'tenant_email' => optional($rental)->tenant_email,
+                    'property' => [
+                        'id' => optional($property)->id,
+                        'name' => optional($property)->firstContent ? $property->firstContent->title : null,
+                        'unit_label' => optional($property)->unit_label,
+                        'address' => optional($property)->address,
+                    ],
+                    'contract' => [
+                        'id' => $contract->id,
+                        'start_date' => $contract->start_date,
+                        'end_date' => $contract->end_date,
+                        'status' => $contract->status,
+                        'monthly_rent' => (float) optional($rental)->rental_amount ?? 0,
+                        'security_deposit' => (float) $contract->security_deposit ?? 0,
+                        'contract_duration_months' => $durationMonths,
+                    ],
+                    'rental_details' => [
+                        'rental_amount' => (float) optional($rental)->rental_amount ?? 0,
+                        'currency' => 'SAR',
+                        'payment_frequency' => optional($rental)->payment_frequency ?? 'monthly',
+                        'next_payment_due' => $nextPayment ? $nextPayment->due_date->format('Y-m-d') : null,
+                    ],
+                    'days_remaining' => $now->diffInDays($contract->end_date, false),
+                    'renewal_status' => $contract->renewal_status ?? 'pending',
+                ];
+            });
+
+        return [
+            'month' => $currentMonthStart->format('F Y'),
+            'count' => $contracts->count(),
+            'contracts' => $contracts->values()->toArray(),
+        ];
+    }
+
+    /**
+     * Get detailed contracts expiring in next month for dialog popups
+     */
+    protected function getExpiringContractsNextMonthDetails($userId, $nextMonthStart, $nextMonthEnd)
+    {
+        $now = Carbon::now('Asia/Riyadh');
+
+        // Get all contracts expiring in next month with relationships
+        $contracts = RmContract::with(['rental.property.contents', 'rental'])
+            ->where('user_id', $userId)
+            ->where('status', 'active')
+            ->whereBetween('end_date', [$nextMonthStart, $nextMonthEnd])
+            ->orderBy('end_date')
+            ->get()
+            ->map(function ($contract) use ($now) {
+                $rental = $contract->rental;
+                $property = optional($rental)->property;
+
+                // Get next payment due
+                $nextPayment = RmPaymentInstallment::where('rental_id', $contract->rental_id)
+                    ->where('status', 'pending')
+                    ->orderBy('due_date')
+                    ->first();
+
+                // Calculate contract duration in months
+                $startDate = Carbon::parse($contract->start_date);
+                $endDate = Carbon::parse($contract->end_date);
+                $durationMonths = $startDate->diffInMonths($endDate);
+
+                return [
+                    'rental_id' => $contract->rental_id,
+                    'tenant_name' => optional($rental)->tenant_full_name,
+                    'tenant_phone' => optional($rental)->tenant_phone,
+                    'tenant_email' => optional($rental)->tenant_email,
+                    'property' => [
+                        'id' => optional($property)->id,
+                        'name' => optional($property)->firstContent ? $property->firstContent->title : null,
+                        'unit_label' => optional($property)->unit_label,
+                        'address' => optional($property)->address,
+                    ],
+                    'contract' => [
+                        'id' => $contract->id,
+                        'start_date' => $contract->start_date,
+                        'end_date' => $contract->end_date,
+                        'status' => $contract->status,
+                        'monthly_rent' => (float) optional($rental)->rental_amount ?? 0,
+                        'security_deposit' => (float) $contract->security_deposit ?? 0,
+                        'contract_duration_months' => $durationMonths,
+                    ],
+                    'rental_details' => [
+                        'rental_amount' => (float) optional($rental)->rental_amount ?? 0,
+                        'currency' => 'SAR',
+                        'payment_frequency' => optional($rental)->payment_frequency ?? 'monthly',
+                        'next_payment_due' => $nextPayment ? $nextPayment->due_date->format('Y-m-d') : null,
+                    ],
+                    'days_remaining' => $now->diffInDays($contract->end_date, false),
+                    'renewal_status' => $contract->renewal_status ?? 'not_requested',
+                ];
+            });
+
+        return [
+            'month' => $nextMonthStart->format('F Y'),
+            'count' => $contracts->count(),
+            'contracts' => $contracts->values()->toArray(),
+        ];
+    }
+
+    /**
+     * Get detailed overdue payments organized by time periods
+     */
+    protected function getOverduePaymentsDetails($userId, $now)
+    {
+        // Define time periods
+        $currentYear = $now->year;
+        $yearStart = Carbon::create($currentYear, 1, 1, 0, 0, 0, 'Asia/Riyadh');
+        $yearEnd = Carbon::create($currentYear, 12, 31, 23, 59, 59, 'Asia/Riyadh');
+
+        $lastMonthStart = $now->copy()->subMonth()->startOfMonth();
+        $lastMonthEnd = $now->copy()->subMonth()->endOfMonth();
+
+        $currentMonthStart = $now->copy()->startOfMonth();
+        $currentMonthEnd = $now->copy()->endOfMonth();
+
+        // Helper function to map payment to detailed structure
+        $mapPayment = function ($payment) use ($now) {
+            $rental = $payment->rental;
+            $property = optional($rental)->property;
+            $contract = optional($rental)->activeContract;
+
+            $daysOverdue = $now->diffInDays($payment->due_date, false);
+            $daysOverdue = abs($daysOverdue); // Make it positive
+
+            // Calculate overdue penalty (e.g., 5% of amount)
+            // $overduePenalty = ($payment->amount * 0.05);
+
+            return [
+                'rental_id' => $payment->rental_id,
+                'tenant_name' => optional($rental)->tenant_full_name,
+                'tenant_phone' => optional($rental)->tenant_phone,
+                'tenant_email' => optional($rental)->tenant_email,
+                'property' => [
+                    'id' => optional($property)->id,
+                    'name' => optional($property)->firstContent ? $property->firstContent->title : null,
+                    'unit_label' => optional($property)->unit_label,
+                    'address' => optional($property)->address,
+                ],
+                'contract' => [
+                    'id' => optional($contract)->id,
+                    'start_date' => optional($contract)->start_date,
+                    'end_date' => optional($contract)->end_date,
+                    'status' => optional($contract)->status,
+                    'monthly_rent' => (float) optional($rental)->rental_amount ?? 0,
+                    'security_deposit' => (float) optional($contract)->security_deposit ?? 0,
+                ],
+                'payment_details' => [
+                    'amount' => (float) $payment->amount,
+                    'due_date' => $payment->due_date->format('Y-m-d'),
+                    'currency' => 'SAR',
+                    'payment_type' => $payment->payment_type ?? 'monthly_rent',
+                    'payment_status' => $payment->status,
+                    'days_overdue' => $daysOverdue,
+                    // 'overdue_penalty' => (float) $overduePenalty,
+                ],
+                'rental_details' => [
+                    'rental_amount' => (float) optional($rental)->rental_amount ?? 0,
+                    'currency' => 'SAR',
+                    'payment_frequency' => optional($rental)->payment_frequency ?? 'monthly',
+                ],
+            ];
+        };
+
+        // Get all overdue payments for the year
+        $yearlyPayments = RmPaymentInstallment::with(['rental.property.contents', 'rental.activeContract'])
+            ->where('user_id', $userId)
+            ->where('status', 'overdue')
+            ->whereYear('due_date', $currentYear)
+            ->orderBy('due_date')
+            ->get()
+            ->map($mapPayment);
+
+        $yearlyTotalAmount = $yearlyPayments->sum('payment_details.amount');
+
+        // Get overdue payments from last month
+        $lastMonthPayments = RmPaymentInstallment::with(['rental.property.contents', 'rental.activeContract'])
+            ->where('user_id', $userId)
+            ->where('status', 'overdue')
+            ->whereBetween('due_date', [$lastMonthStart, $lastMonthEnd])
+            ->orderBy('due_date')
+            ->get()
+            ->map($mapPayment);
+
+        $lastMonthTotalAmount = $lastMonthPayments->sum('payment_details.amount');
+
+        // Get overdue payments from current month
+        $currentMonthPayments = RmPaymentInstallment::with(['rental.property.contents', 'rental.activeContract'])
+            ->where('user_id', $userId)
+            ->where('status', 'overdue')
+            ->whereBetween('due_date', [$currentMonthStart, $currentMonthEnd])
+            ->orderBy('due_date')
+            ->get()
+            ->map($mapPayment);
+
+        $currentMonthTotalAmount = $currentMonthPayments->sum('payment_details.amount');
+
+        // Calculate total overdue (all time, not just current year)
+        $totalOverdueCount = RmPaymentInstallment::where('user_id', $userId)
+            ->where('status', 'overdue')
+            ->count();
+
+        $totalOverdueAmount = RmPaymentInstallment::where('user_id', $userId)
+            ->where('status', 'overdue')
+            ->sum('amount');
+
+        return [
+            'total_overdue_count' => $totalOverdueCount,
+            'total_overdue_amount' => (float) $totalOverdueAmount,
+            'yearly_overview' => [
+                'year' => $currentYear,
+                'count' => $yearlyPayments->count(),
+                'total_amount' => (float) $yearlyTotalAmount,
+                'payments' => $yearlyPayments->values()->toArray(),
+            ],
+            'last_month' => [
+                'month' => $lastMonthStart->format('F Y'),
+                'count' => $lastMonthPayments->count(),
+                'total_amount' => (float) $lastMonthTotalAmount,
+                'payments' => $lastMonthPayments->values()->toArray(),
+            ],
+            'current_month' => [
+                'month' => $currentMonthStart->format('F Y'),
+                'count' => $currentMonthPayments->count(),
+                'total_amount' => (float) $currentMonthTotalAmount,
+                'payments' => $currentMonthPayments->values()->toArray(),
             ],
         ];
     }
