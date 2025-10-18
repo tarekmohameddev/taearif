@@ -120,6 +120,7 @@ class GoogleAnalyticsService
                     'field_name' => 'customEvent:tenant_id',
                     'string_filter' => new StringFilter([
                         'value' => $tenantId,
+                        'match_type' => MatchType::EXACT,
                     ]),
                 ]),
             ]);
@@ -462,6 +463,7 @@ class GoogleAnalyticsService
                     'field_name' => 'customEvent:tenant_id',
                     'string_filter' => new StringFilter([
                         'value' => $tenantId,
+                        'match_type' => MatchType::EXACT,
                     ]),
                 ]),
             ]);
@@ -488,7 +490,7 @@ class GoogleAnalyticsService
             return [];
         }
 
-        // tenant filter (you already use this pattern elsewhere)
+        // tenant filter (using custom event parameter sent with each page_view)
         $tenantFilter = new FilterExpression([
             'filter' => new Filter([
                 'field_name'    => 'customEvent:tenant_id',
