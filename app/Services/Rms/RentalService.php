@@ -483,18 +483,38 @@ class RentalService
         // Calculate total months for the rental
         $totalMonths = $this->calculateTotalMonthsFromDuration($rentalDuration, $rentalType);
 
-        // Calculate number of installments
-        $numberOfInstallments = intval($totalMonths / $chunks);
+        // Validate: Ensure total months is positive
+        if ($totalMonths <= 0) {
+            throw new \InvalidArgumentException('Rental duration must be at least 1 month');
+        }
+
+        // Calculate number of installments using ceil to ensure all months are covered
+        // Example: 5 months with quarterly (3) = ceil(5/3) = 2 installments
+        $numberOfInstallments = (int) ceil($totalMonths / $chunks);
+
+        // Guard clause: Ensure we have at least 1 installment
+        if ($numberOfInstallments < 1) {
+            $numberOfInstallments = 1;
+        }
+
+        // Calculate installment amount
         $installmentAmount = round($totalAmount / $numberOfInstallments, 2);
 
+        // Calculate the last installment to account for rounding differences
+        $totalAllocated = $installmentAmount * ($numberOfInstallments - 1);
+        $lastInstallmentAmount = round($totalAmount - $totalAllocated, 2);
+
         for ($i = 0; $i < $numberOfInstallments; $i++) {
+            // Use adjusted amount for last installment to ensure total matches exactly
+            $amount = ($i === $numberOfInstallments - 1) ? $lastInstallmentAmount : $installmentAmount;
+
             RmPaymentInstallment::create([
                 'user_id' => $userId,
                 'rental_id' => $rentalId,
                 'contract_id' => $contractId,
                 'sequence_no' => $i + 1,
                 'due_date' => $start->copy()->addMonths($i * $chunks),
-                'amount' => $installmentAmount,
+                'amount' => $amount,
                 'status' => 'pending',
                 'payment_type' => 'none',
                 'payment_status' => 'not_due',
