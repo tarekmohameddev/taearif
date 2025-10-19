@@ -36,11 +36,19 @@ class PaymentService
                 $this->validateInstallmentNotCancelled($validatedData['installment_id']);
             }
 
+            // Get installment_sequence if installment_id is provided
+            $installmentSequence = null;
+            if (!empty($validatedData['installment_id'])) {
+                $installment = RmPaymentInstallment::find($validatedData['installment_id']);
+                $installmentSequence = $installment?->sequence_no;
+            }
+
             // Create payment record
             $payment = RmPayment::create(array_merge($validatedData, [
                 'user_id' => $userId,
                 'rental_id' => $rentalId,
                 'contract_id' => $rental->activeContract?->id,
+                'installment_sequence' => $installmentSequence,
                 'payment_date' => $validatedData['payment_date'] ?? now()->toDateString(),
                 'created_by' => $userId,
                 'updated_by' => $userId,
@@ -88,10 +96,18 @@ class PaymentService
                     $this->validateInstallmentNotCancelled($validatedData['installment_id']);
                 }
 
+                // Get installment_sequence if installment_id is provided
+                $installmentSequence = null;
+                if (!empty($validatedData['installment_id'])) {
+                    $installment = RmPaymentInstallment::find($validatedData['installment_id']);
+                    $installmentSequence = $installment?->sequence_no;
+                }
+
                 $payment = RmPayment::create(array_merge($validatedData, [
                     'user_id' => $userId,
                     'rental_id' => $rentalId,
                     'contract_id' => $rental->activeContract?->id,
+                    'installment_sequence' => $installmentSequence,
                     'payment_date' => $validatedData['payment_date'] ?? now()->toDateString(),
                     'created_by' => $userId,
                     'updated_by' => $userId,

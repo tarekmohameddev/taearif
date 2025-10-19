@@ -267,8 +267,9 @@ class RentalController extends BaseApiController
         try {
             $data = $request->validate([
                 'payments' => 'required|array|min:1',
-                'payments.*.installment_id' => 'nullable|exists:rm_payment_installments,id',
-                'payments.*.payment_type' => 'required|in:rent,platform_fee,water_fee,office_fee,deposit',
+                'payments.*.installment_id' => 'required|exists:rm_payment_installments,id',
+                'payments.*.payment_type' => 'required|in:rent,cost_item,deposit',
+                'payments.*.cost_item_id' => 'required_if:payments.*.payment_type,cost_item|exists:rental_cost_items,id',
                 'payments.*.amount' => 'required|numeric|min:0.01',
                 'payments.*.notes' => 'nullable|string|max:255',
                 'payment_method' => 'required|in:cash,bank_transfer,credit_card,online_payment,check,other',
@@ -292,6 +293,11 @@ class RentalController extends BaseApiController
             // Get the tenant owner ID (handles both direct owners and sub-users)
             $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : auth()->id();
 
+            // Get rental for validation
+            $rental = RmRental::with(['activeContract', 'tenantCostItems', 'ownerCostItems'])
+                ->where('user_id', $ownerId)
+                ->findOrFail($id);
+
             // Enhanced installment validation (fixes Bug #3: Missing Installment Ownership Validation)
             // Collect ALL installment_ids from any payment type (not just rent)
             $installmentIds = collect($data['payments'])
@@ -300,14 +306,11 @@ class RentalController extends BaseApiController
                 ->unique();
 
             if ($installmentIds->isNotEmpty()) {
-
                 // Validate that installments belong to this rental and user owns the rental
                 $this->rentalService->validateInstallmentsForRental($ownerId, $id, $installmentIds);
 
                 // Additional security: Verify installments belong to ACTIVE contract only
                 // This prevents payment to old/terminated contract installments
-                $rental = RmRental::where('user_id', $ownerId)->findOrFail($id);
-
                 if ($rental->activeContract) {
                     $validInstallmentIds = RmPaymentInstallment::where('contract_id', $rental->activeContract->id)
                         ->whereIn('id', $installmentIds)
@@ -319,6 +322,49 @@ class RentalController extends BaseApiController
                         throw new \InvalidArgumentException(
                             'Installments do not belong to active contract: ' . $invalidInstallments->implode(', ')
                         );
+                    }
+                }
+            }
+
+            // Validate cost_item payments
+            foreach ($data['payments'] as $payment) {
+                if ($payment['payment_type'] === 'cost_item' && !empty($payment['cost_item_id'])) {
+                    // Find the cost item
+                    $costItem = \App\Models\Api\Rms\RentalCostItem::where('rental_id', $id)
+                        ->where('id', $payment['cost_item_id'])
+                        ->first();
+
+                    if (!$costItem) {
+                        throw new \InvalidArgumentException('Cost item does not belong to this rental');
+                    }
+
+                    // Check if one_time cost item already paid
+                    if ($costItem->payment_frequency === 'one_time') {
+                        $alreadyPaid = \App\Models\Api\Rms\RmPayment::where('rental_id', $id)
+                            ->where('cost_item_id', $payment['cost_item_id'])
+                            ->where('payment_type', 'cost_item')
+                            ->exists();
+
+                        if ($alreadyPaid) {
+                            throw new \InvalidArgumentException(
+                                "Cost item '{$costItem->name}' (one_time) has already been paid!"
+                            );
+                        }
+                    }
+
+                    // Check if per_installment cost item already paid for this installment
+                    if ($costItem->payment_frequency === 'per_installment' && !empty($payment['installment_id'])) {
+                        $alreadyPaidForInstallment = \App\Models\Api\Rms\RmPayment::where('rental_id', $id)
+                            ->where('cost_item_id', $payment['cost_item_id'])
+                            ->where('installment_id', $payment['installment_id'])
+                            ->where('payment_type', 'cost_item')
+                            ->exists();
+
+                        if ($alreadyPaidForInstallment) {
+                            throw new \InvalidArgumentException(
+                                "Cost item '{$costItem->name}' has already been paid for this installment!"
+                            );
+                        }
                     }
                 }
             }

@@ -922,7 +922,12 @@ class RentalService
         $subsequentPaymentsOwner = $totalOwnerPerInstallment;
 
         $totalCostItemsDue = $firstPaymentTenant + $firstPaymentOwner;
-        $totalCostItemsPaid = 0; // TODO: Calculate from actual payments
+
+        // Calculate actual paid amount from rm_payments
+        $totalCostItemsPaid = RmPayment::where('rental_id', $rental->id)
+            ->where('payment_type', 'cost_item')
+            ->whereNotNull('cost_item_id')
+            ->sum('amount');
 
         return [
             'tenant_cost_items' => $tenantCostItems,
@@ -961,8 +966,17 @@ class RentalService
             $baseCost = ((float) $baseAmount * (float) $costItem->cost) / 100;
         }
 
+        // Get paid amount from rm_payments
+        $paidAmount = RmPayment::where('rental_id', $rental->id)
+            ->where('cost_item_id', $costItem->id)
+            ->where('payment_type', 'cost_item')
+            ->sum('amount');
+
         // Calculate amounts based on payment frequency
         if ($costItem->payment_frequency === 'one_time') {
+            $totalAmount = $baseCost;
+            $remainingAmount = max(0, $totalAmount - $paidAmount);
+
             return [
                 'id' => $costItem->id,
                 'name' => $costItem->name,
@@ -971,11 +985,12 @@ class RentalService
                 'payer' => $costItem->payer,
                 'payment_frequency' => 'one_time',
                 'description' => $costItem->description,
-                'total_amount' => round($baseCost, 2),
+                'total_amount' => round($totalAmount, 2),
                 'amount_per_installment' => 0,
-                'paid_amount' => 0, // TODO: Get from actual payments
-                'remaining_amount' => round($baseCost, 2),
+                'paid_amount' => round($paidAmount, 2),
+                'remaining_amount' => round($remainingAmount, 2),
                 'applies_to_first_payment_only' => true,
+                'payment_status' => $this->getCostItemPaymentStatus($paidAmount, $totalAmount),
             ];
         } else {
             // per_installment: multiply by months
@@ -992,11 +1007,28 @@ class RentalService
                 'months_per_installment' => $monthsPerInstallment,
                 'amount_per_installment' => round($amountPerInstallment, 2),
                 'total_amount' => round($amountPerInstallment, 2),
-                'paid_amount' => 0, // TODO: Get from actual payments
-                'remaining_amount' => round($amountPerInstallment, 2),
+                'paid_amount' => round($paidAmount, 2),
+                'remaining_amount' => round(max(0, $amountPerInstallment - $paidAmount), 2),
                 'applies_to_all_payments' => true,
+                'payment_status' => $this->getCostItemPaymentStatus($paidAmount, $amountPerInstallment),
             ];
         }
+    }
+
+    /**
+     * Get payment status for cost item
+     */
+    private function getCostItemPaymentStatus($paidAmount, $totalAmount)
+    {
+        if ($paidAmount <= 0) {
+            return 'unpaid';
+        }
+
+        if ($paidAmount >= $totalAmount) {
+            return 'paid';
+        }
+
+        return 'partial';
     }
 
     /**
