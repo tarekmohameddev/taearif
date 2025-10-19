@@ -660,12 +660,12 @@ class RentalController extends Controller
 
     /**
      * List all contracts with detailed information
-     * 
+     *
      * GET /api/v1/rms/rentals/contracts
-     * 
+     *
      * Optional filters:
      * - building_id: Filter by building
-     * - payment_status: Filter by payment status color (red, yellow, green)
+     * - payment_status: Filter by payment status (paid, pending, overdue, not_due)
      * - rental_method: Filter by rental method (monthly, quarterly, semi_annual, annual)
      * - from_date: Filter contracts starting from this date
      * - to_date: Filter contracts ending before this date
@@ -679,7 +679,7 @@ class RentalController extends Controller
                 'per_page' => 'nullable|integer|min:1|max:100',
                 'page' => 'nullable|integer|min:1',
                 'building_id' => 'nullable|integer',
-                'payment_status' => 'nullable|in:red,yellow,green',
+                'payment_status' => 'nullable|in:paid,pending,overdue,not_due',
                 'rental_method' => 'nullable|in:monthly,quarterly,semi_annual,annual',
                 'from_date' => 'nullable|date',
                 'to_date' => 'nullable|date|after_or_equal:from_date',

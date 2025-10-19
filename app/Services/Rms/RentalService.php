@@ -1950,7 +1950,7 @@ class RentalService
 
             // Filter by payment status if requested
             if ($request->has('payment_status') && $request->payment_status) {
-                if ($paymentStatusData['color'] !== $request->payment_status) {
+                if ($paymentStatusData['status'] !== $request->payment_status) {
                     continue;
                 }
             }
@@ -2032,7 +2032,7 @@ class RentalService
         $endOfMonth = Carbon::today()->endOfMonth();
         if ($dueDate->between($today, $endOfMonth)) {
             return [
-                'status' => 'due_soon',
+                'status' => 'pending',
                 'color' => 'yellow',
                 'details' => [
                     'message' => 'Payment due soon',
