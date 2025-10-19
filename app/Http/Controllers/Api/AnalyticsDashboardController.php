@@ -426,6 +426,9 @@ class AnalyticsDashboardController extends Controller
         $startDate = Carbon::now()->subDays($days);
         $endDate = Carbon::now();
 
+        // Check if user wants focused results (specific tenant + slug/paths)
+        $isFocusedQuery = $request->has('tenant_id') && ($request->has('slug') || $request->has('paths'));
+
         $debugResults = $this->analytics->debugPageViews(
             $tenantId,
             $startDate,
@@ -433,8 +436,39 @@ class AnalyticsDashboardController extends Controller
             $paths
         );
 
+        // If focused query, return only relevant results
+        if ($isFocusedQuery) {
+            $focusedResults = [
+                'tenant_filtered_paths' => $debugResults['tenant_filtered_paths'] ?? [],
+                'tenant_paths_found' => $debugResults['tenant_paths_found'] ?? 0,
+            ];
+
+            return response()->json([
+                'status' => 'success',
+                'mode' => 'focused',
+                'tenant' => $tenantId,
+                'date_range' => [
+                    'start' => $startDate->toDateString(),
+                    'end' => $endDate->toDateString(),
+                    'days' => $days,
+                ],
+                'paths_tested' => $paths,
+                'results' => $focusedResults,
+                'summary' => [
+                    'total_views' => array_sum($focusedResults['tenant_filtered_paths']),
+                    'paths_with_views' => count(array_filter($focusedResults['tenant_filtered_paths'], fn($v) => $v['views'] > 0)),
+                    'paths_without_views' => count(array_filter($focusedResults['tenant_filtered_paths'], fn($v) => $v['views'] == 0)),
+                ],
+                'interpretation' => $focusedResults['tenant_paths_found'] > 0
+                    ? '✅ Views found for this tenant and property!'
+                    : '❌ No views found. Either no visits yet, or data still processing (wait 24-48 hours).',
+            ]);
+        }
+
+        // Full diagnostic mode (when no specific filters provided)
         return response()->json([
             'status' => 'success',
+            'mode' => 'full_diagnostic',
             'tenant' => $tenantId,
             'date_range' => [
                 'start' => $startDate->toDateString(),
@@ -444,11 +478,11 @@ class AnalyticsDashboardController extends Controller
             'paths_tested' => $paths,
             'debug_results' => $debugResults,
             'usage_examples' => [
+                'Focused query (specific tenant + property)' => '/api/dashboard/debug-ga-views?tenant_id=newdddtest&slug=shk-hdyth-moss',
                 'Test specific slug' => '/api/dashboard/debug-ga-views?slug=shk-hdyth-moss',
                 'Test exact paths' => '/api/dashboard/debug-ga-views?paths=/property/test1,/ar/property/test2',
                 'Test with custom tenant' => '/api/dashboard/debug-ga-views?tenant_id=newdddtest',
                 'Change date range' => '/api/dashboard/debug-ga-views?days=7',
-                'Combine all parameters' => '/api/dashboard/debug-ga-views?slug=my-property&tenant_id=someuser&days=60',
             ],
             'instructions' => [
                 'all_paths' => 'All page views in GA4 (no filters) - if empty, GA4 has no data at all',
