@@ -15,6 +15,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Throwable;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
 use App\Exceptions\Api\ApiException;
@@ -110,6 +111,25 @@ class Handler extends ExceptionHandler
                     'message' => 'Authentication required',
                     'timestamp' => now()->toIso8601String(),
                 ], 401);
+            }
+
+            // Authorization/Permission denied
+            if ($exception instanceof AuthorizationException) {
+                \Log::warning('Authorization failed', [
+                    'exception' => get_class($exception),
+                    'message' => $exception->getMessage(),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'user_id' => auth()->id(),
+                    'ip' => $request->ip(),
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'FORBIDDEN',
+                    'message' => 'You do not have permission to perform this action',
+                    'timestamp' => now()->toIso8601String(),
+                ], 403);
             }
 
             // DB - SECURITY: Never expose SQL in production
