@@ -543,5 +543,146 @@ class GoogleAnalyticsService
         return $map;
     }
 
+    /**
+     * Debug method to diagnose GA4 data issues
+     * Returns raw data about what GA4 is actually receiving
+     */
+    public function debugPageViews(string $tenantId, Carbon $startDate, Carbon $endDate, array $specificPaths = []): array
+    {
+        $results = [];
+
+        // Test 1: Get ALL page views (no filters) - checks if GA4 is working at all
+        try {
+            $response = $this->executeWithRetry(function() use ($startDate, $endDate) {
+                return $this->client->runReport([
+                    'property'   => $this->propertyId,
+                    'dateRanges' => [new DateRange([
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date'   => $endDate->format('Y-m-d'),
+                    ])],
+                    'dimensions' => [new Dimension(['name' => 'pagePath'])],
+                    'metrics'    => [new Metric(['name' => 'screenPageViews'])],
+                    'limit'      => 100,
+                ]);
+            }, 'debugPageViews_all');
+
+            $allPaths = [];
+            foreach ($response->getRows() as $row) {
+                $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                $allPaths[] = ['path' => $path, 'views' => $views];
+            }
+            $results['all_paths'] = $allPaths;
+            $results['total_paths_found'] = count($allPaths);
+        } catch (\Exception $e) {
+            $results['all_paths_error'] = $e->getMessage();
+        }
+
+        // Test 2: Get page views WITH tenant_id filter
+        try {
+            $tenantFilter = new FilterExpression([
+                'filter' => new Filter([
+                    'field_name'    => 'customEvent:tenant_id',
+                    'string_filter' => new StringFilter([
+                        'value'      => $tenantId,
+                        'match_type' => MatchType::CONTAINS,
+                    ]),
+                ]),
+            ]);
+
+            $response = $this->executeWithRetry(function() use ($startDate, $endDate, $tenantFilter) {
+                return $this->client->runReport([
+                    'property'        => $this->propertyId,
+                    'dateRanges'      => [new DateRange([
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date'   => $endDate->format('Y-m-d'),
+                    ])],
+                    'dimensions'      => [new Dimension(['name' => 'pagePath'])],
+                    'metrics'         => [new Metric(['name' => 'screenPageViews'])],
+                    'dimensionFilter' => $tenantFilter,
+                    'limit'           => 100,
+                ]);
+            }, 'debugPageViews_tenant');
+
+            $tenantPaths = [];
+            foreach ($response->getRows() as $row) {
+                $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                $tenantPaths[] = ['path' => $path, 'views' => $views];
+            }
+            $results['tenant_filtered_paths'] = $tenantPaths;
+            $results['tenant_paths_found'] = count($tenantPaths);
+        } catch (\Exception $e) {
+            $results['tenant_filter_error'] = $e->getMessage();
+        }
+
+        // Test 3: Check if specific paths exist (without tenant filter)
+        if (!empty($specificPaths)) {
+            try {
+                $pathsFilter = new FilterExpression([
+                    'filter' => new Filter([
+                        'field_name'     => 'pagePath',
+                        'in_list_filter' => new InListFilter([
+                            'values'         => $specificPaths,
+                            'case_sensitive' => false,
+                        ]),
+                    ]),
+                ]);
+
+                $response = $this->executeWithRetry(function() use ($startDate, $endDate, $pathsFilter, $specificPaths) {
+                    return $this->client->runReport([
+                        'property'        => $this->propertyId,
+                        'dateRanges'      => [new DateRange([
+                            'start_date' => $startDate->format('Y-m-d'),
+                            'end_date'   => $endDate->format('Y-m-d'),
+                        ])],
+                        'dimensions'      => [new Dimension(['name' => 'pagePath'])],
+                        'metrics'         => [new Metric(['name' => 'screenPageViews'])],
+                        'dimensionFilter' => $pathsFilter,
+                        'limit'           => count($specificPaths),
+                    ]);
+                }, 'debugPageViews_specific');
+
+                $specificPathsResult = [];
+                foreach ($response->getRows() as $row) {
+                    $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                    $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                    $specificPathsResult[] = ['path' => $path, 'views' => $views];
+                }
+                $results['specific_paths_no_tenant_filter'] = $specificPathsResult;
+            } catch (\Exception $e) {
+                $results['specific_paths_error'] = $e->getMessage();
+            }
+        }
+
+        // Test 4: Check what custom event parameters are available
+        try {
+            $response = $this->executeWithRetry(function() use ($startDate, $endDate) {
+                return $this->client->runReport([
+                    'property'   => $this->propertyId,
+                    'dateRanges' => [new DateRange([
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date'   => $endDate->format('Y-m-d'),
+                    ])],
+                    'dimensions' => [new Dimension(['name' => 'customEvent:tenant_id'])],
+                    'metrics'    => [new Metric(['name' => 'screenPageViews'])],
+                    'limit'      => 50,
+                ]);
+            }, 'debugPageViews_tenants');
+
+            $tenants = [];
+            foreach ($response->getRows() as $row) {
+                $tenant = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $views  = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                $tenants[] = ['tenant_id' => $tenant, 'views' => $views];
+            }
+            $results['tenant_ids_found'] = $tenants;
+        } catch (\Exception $e) {
+            $results['tenant_ids_error'] = $e->getMessage();
+        }
+
+        return $results;
+    }
+
 
 }

@@ -187,6 +187,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'require.acti
     Route::get('/dashboard/most-visited-pages', [AnalyticsDashboardController::class, 'mostVisitedPages']);
     Route::get('/dashboard/setup-progress', [AnalyticsDashboardController::class, 'setupProgress']);
     Route::get('/dashboard/recent-activity', [AnalyticsDashboardController::class, 'getRecentActivity']);
+    Route::get('/dashboard/debug-ga-views', [AnalyticsDashboardController::class, 'debugGAViews']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {

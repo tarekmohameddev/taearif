@@ -364,56 +364,105 @@ class AnalyticsDashboardController extends Controller
         ]);
     }
 
-    public function getPageViewsForPaths(string $tenantId, Carbon $startDate, Carbon $endDate, array $paths): array
+    /**
+     * Debug endpoint to diagnose GA4 views issues
+     *
+     * Usage examples:
+     * - GET /api/dashboard/debug-ga-views
+     * - GET /api/dashboard/debug-ga-views?slug=shk-hdyth-moss
+     * - GET /api/dashboard/debug-ga-views?paths=/property/test1,/property/test2
+     * - GET /api/dashboard/debug-ga-views?days=7
+     * - GET /api/dashboard/debug-ga-views?tenant_id=newdddtest
+     * - GET /api/dashboard/debug-ga-views?slug=shk-hdyth-moss&tenant_id=newdddtest&days=7
+     */
+    public function debugGAViews(Request $request)
     {
-        $paths = array_values(array_unique(array_filter($paths)));
-        if (empty($paths)) return [];
+        // Allow custom tenant_id for testing, otherwise use authenticated user's tenant
+        $tenantId = $request->input('tenant_id', $this->tenantId($request));
+        $days = (int) $request->input('days', 30);
 
-        $tenantFilter = new FilterExpression([
-            'filter' => new Filter([
-                'field_name'    => 'customEvent:tenant_id',
-                'string_filter' => new StringFilter([
-                    'value'      => $tenantId,
-                    'match_type' => MatchType::CONTAINS,
-                ]),
-            ]),
-        ]);
+        // Option 1: User provides a property slug - auto-generate language variants
+        $slug = $request->input('slug', '');
 
-        $pathsFilter = new FilterExpression([
-            'filter' => new Filter([
-                'field_name'     => 'pagePath',
-                'in_list_filter' => new InListFilter([
-                    'values'         => $paths,
-                    'case_sensitive' => false,
-                ]),
-            ]),
-        ]);
+        // Option 2: User provides exact paths
+        $pathsInput = $request->input('paths', '');
 
-        $dimensionFilter = new FilterExpression([
-            'and_group' => new FilterExpressionList([
-                'expressions' => [$tenantFilter, $pathsFilter],
-            ]),
-        ]);
+        // Generate paths based on input
+        if (!empty($slug)) {
+            // Auto-generate paths with language variants from slug
+            $paths = [
+                "/property/{$slug}",
+                "/ar/property/{$slug}",
+                "/en/property/{$slug}"
+            ];
+        } elseif (!empty($pathsInput)) {
+            // Use exact paths provided by user
+            $paths = array_map('trim', explode(',', $pathsInput));
+        } else {
+            // Default: show recent properties from database
+            $recentProperties = Property::where('user_id', $request->user()->id)
+                ->with('contents')
+                ->orderBy('id', 'desc')
+                ->limit(3)
+                ->get();
 
-        $response = $this->client->runReport([
-            'property'        => $this->propertyId,
-            'dateRanges'      => [new DateRange([
-                'start_date' => $startDate->format('Y-m-d'),
-                'end_date'   => $endDate->format('Y-m-d'),
-            ])],
-            'dimensions'      => [new Dimension(['name' => 'pagePath'])],
-            'metrics'         => [new Metric(['name' => 'screenPageViews'])],
-            'dimensionFilter' => $dimensionFilter,
-            'limit'           => count($paths),
-        ]);
+            $paths = [];
+            foreach ($recentProperties as $property) {
+                $content = $property->contents->first();
+                if ($content && $content->slug) {
+                    $slug = $content->slug;
+                    $paths[] = "/property/{$slug}";
+                    $paths[] = "/ar/property/{$slug}";
+                    $paths[] = "/en/property/{$slug}";
+                }
+            }
 
-        $map = [];
-        foreach ($response->getRows() as $row) {
-            $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
-            $views = (int)$this->getSafeValue($row->getMetricValues(), 0, 0);
-            if ($path !== '') $map[$path] = $views;
+            // If no properties found, use a sample
+            if (empty($paths)) {
+                $paths = ['/property/sample-slug'];
+            }
         }
-        return $map;
+
+        $startDate = Carbon::now()->subDays($days);
+        $endDate = Carbon::now();
+
+        $debugResults = $this->analytics->debugPageViews(
+            $tenantId,
+            $startDate,
+            $endDate,
+            $paths
+        );
+
+        return response()->json([
+            'status' => 'success',
+            'tenant' => $tenantId,
+            'date_range' => [
+                'start' => $startDate->toDateString(),
+                'end' => $endDate->toDateString(),
+                'days' => $days,
+            ],
+            'paths_tested' => $paths,
+            'debug_results' => $debugResults,
+            'usage_examples' => [
+                'Test specific slug' => '/api/dashboard/debug-ga-views?slug=shk-hdyth-moss',
+                'Test exact paths' => '/api/dashboard/debug-ga-views?paths=/property/test1,/ar/property/test2',
+                'Test with custom tenant' => '/api/dashboard/debug-ga-views?tenant_id=newdddtest',
+                'Change date range' => '/api/dashboard/debug-ga-views?days=7',
+                'Combine all parameters' => '/api/dashboard/debug-ga-views?slug=my-property&tenant_id=someuser&days=60',
+            ],
+            'instructions' => [
+                'all_paths' => 'All page views in GA4 (no filters) - if empty, GA4 has no data at all',
+                'tenant_filtered_paths' => 'Page views filtered by tenant_id - if empty, tenant_id parameter is not being sent',
+                'specific_paths_no_tenant_filter' => 'Your specific paths without tenant filter - checks if paths exist in GA4',
+                'tenant_ids_found' => 'All tenant_ids found in GA4 - helps verify parameter name and values',
+            ],
+            'diagnosis' => [
+                'If all_paths is empty' => 'GA4 is not receiving any data. Check GA4 setup and tracking code.',
+                'If tenant_filtered_paths is empty but all_paths has data' => 'The tenant_id custom parameter is not being sent correctly from your frontend.',
+                'If specific_paths_no_tenant_filter has data but tenant_filtered_paths is empty' => 'Paths exist but tenant_id is missing or incorrect.',
+                'If everything is empty' => 'Wait 24-48 hours for GA4 to process data, or check if GA4 property ID is correct.',
+            ]
+        ]);
     }
 
 }
