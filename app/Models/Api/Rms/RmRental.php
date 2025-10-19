@@ -18,28 +18,28 @@ class RmRental extends Model
     protected $table = 'rm_rentals';
 
     protected $fillable = [
-        'user_id', 
-        'unit_id', 
+        'user_id',
+        'unit_id',
         'project_id',
-        'tenant_full_name', 
-        'building_id', 
-        'tenant_phone', 
-        'tenant_email', 
+        'tenant_full_name',
+        'building_id',
+        'tenant_phone',
+        'tenant_email',
         'tenant_job_title',
-        'tenant_social_status', 
+        'tenant_social_status',
         'tenant_national_id',
-        'base_rent_amount', 
-        'currency', 
+        'base_rent_amount',
+        'currency',
         'rental_type',
         'rental_duration',
         'total_rental_amount',
         'contract_number',
-        'move_in_date', 
-        'paying_plan', 
+        'move_in_date',
+        'paying_plan',
         'rental_period',
-        'status', 
-        'notes', 
-        'created_by', 
+        'status',
+        'notes',
+        'created_by',
         'updated_by',
     ];
 
@@ -183,9 +183,10 @@ class RmRental extends Model
     public function getBaseRentAmountAttribute()
     {
         // Calculate base rent amount based on rental type and duration
-        if (is_null($this->total_rental_amount) || 
-            is_null($this->rental_duration) || 
-            is_null($this->rental_type)) {
+        if (is_null($this->total_rental_amount) ||
+            is_null($this->rental_duration) ||
+            is_null($this->rental_type) ||
+            $this->rental_duration <= 0) {  // Prevent division by zero
             return 0;
         }
 
@@ -203,7 +204,7 @@ class RmRental extends Model
     {
         // Calculate total costs that tenant needs to pay
         $totalCosts = 0;
-        
+
         foreach ($this->tenantCostItems as $costItem) {
             if ($costItem->type === 'fixed') {
                 $totalCosts += $costItem->cost;
@@ -212,7 +213,7 @@ class RmRental extends Model
                 $totalCosts += ($baseAmount * $costItem->cost) / 100;
             }
         }
-        
+
         return $totalCosts;
     }
 
@@ -220,7 +221,7 @@ class RmRental extends Model
     {
         // Calculate total costs that owner needs to pay
         $totalCosts = 0;
-        
+
         foreach ($this->ownerCostItems as $costItem) {
             if ($costItem->type === 'fixed') {
                 $totalCosts += $costItem->cost;
@@ -229,7 +230,7 @@ class RmRental extends Model
                 $totalCosts += ($baseAmount * $costItem->cost) / 100;
             }
         }
-        
+
         return $totalCosts;
     }
 
