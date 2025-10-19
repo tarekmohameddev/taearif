@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Responses\ApiResponse;
+use App\Http\Responses\ErrorResponse;
+use App\Http\Responses\SuccessResponse;
+use App\Exceptions\Api\ApiException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\AuthenticationException;
@@ -20,9 +24,9 @@ use Throwable;
  *     {
  *         try {
  *             // Your logic
- *             return $this->successResponse($data);
- *         } catch (\Exception $e) {
- *             return $this->handleException($e);
+ *             return $this->success($data);
+ *         } catch (ApiException $e) {
+ *             return $e->render();
  *         }
  *     }
  * }
@@ -31,6 +35,8 @@ class BaseApiController extends Controller
 {
     /**
      * Handle exceptions and return appropriate JSON response
+     *
+     * NEW: Uses ApiResponse helper for cleaner code
      *
      * @param Throwable $exception
      * @param string|null $defaultMessage
@@ -42,60 +48,14 @@ class BaseApiController extends Controller
         ?string $defaultMessage = null,
         ?int $defaultStatusCode = null
     ) {
-        // Validation errors
-        if ($exception instanceof ValidationException) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $exception->errors()
-            ], 422);
-        }
-
-        // Model/Resource not found
-        if ($exception instanceof ModelNotFoundException) {
-            $message = $defaultMessage ?? 'Resource not found';
-            return response()->json([
-                'status' => 'error',
-                'message' => $message
-            ], 404);
-        }
-
-        // Authentication errors
-        if ($exception instanceof AuthenticationException) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthenticated'
-            ], 401);
-        }
-
-        // Authorization errors
-        if ($exception instanceof \Illuminate\Auth\Access\AuthorizationException) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized'
-            ], 403);
-        }
-
-        // Invalid argument (business logic errors)
-        if ($exception instanceof \InvalidArgumentException) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $exception->getMessage()
-            ], 400);
-        }
-
-        // Generic exception - show actual error message
-        $message = $exception->getMessage() ?: ($defaultMessage ?? 'An unexpected error occurred');
-        $statusCode = $defaultStatusCode ?? 500;
-
-        return response()->json([
-            'status' => 'error',
-            'message' => $message
-        ], $statusCode);
+        // Use the new ApiResponse helper
+        return ApiResponse::fromException($exception);
     }
 
     /**
      * Return success response
+     *
+     * NEW: Uses SuccessResponse builder
      *
      * @param mixed $data
      * @param string|null $message
@@ -107,21 +67,27 @@ class BaseApiController extends Controller
         ?string $message = null,
         int $statusCode = 200
     ) {
-        $response = ['status' => true];
+        $response = SuccessResponse::make($data, $statusCode);
 
         if ($message !== null) {
-            $response['message'] = $message;
+            $response->withMessage($message);
         }
 
-        if ($data !== null) {
-            $response['data'] = $data;
-        }
+        return $response->send();
+    }
 
-        return response()->json($response, $statusCode);
+    /**
+     * Alias for successResponse
+     */
+    protected function success($data = null, ?string $message = null, int $statusCode = 200)
+    {
+        return $this->successResponse($data, $message, $statusCode);
     }
 
     /**
      * Return error response
+     *
+     * NEW: Uses ErrorResponse builder
      *
      * @param string $message
      * @param int $statusCode
@@ -133,16 +99,21 @@ class BaseApiController extends Controller
         int $statusCode = 400,
         ?array $errors = null
     ) {
-        $response = [
-            'status' => 'error',
-            'message' => $message
-        ];
+        $response = ErrorResponse::make($message, $statusCode);
 
         if ($errors !== null) {
-            $response['errors'] = $errors;
+            $response->withErrors($errors);
         }
 
-        return response()->json($response, $statusCode);
+        return $response->send();
+    }
+
+    /**
+     * Alias for errorResponse
+     */
+    protected function error(string $message, int $statusCode = 400, ?array $errors = null)
+    {
+        return $this->errorResponse($message, $statusCode, $errors);
     }
 
     /**
@@ -154,7 +125,15 @@ class BaseApiController extends Controller
      */
     protected function createdResponse($data = null, ?string $message = null)
     {
-        return $this->successResponse($data, $message, 201);
+        return SuccessResponse::created($data, $message ?? 'Resource created successfully');
+    }
+
+    /**
+     * Alias for createdResponse
+     */
+    protected function created($data = null, ?string $message = null)
+    {
+        return $this->createdResponse($data, $message);
     }
 
     /**
@@ -164,7 +143,15 @@ class BaseApiController extends Controller
      */
     protected function noContentResponse()
     {
-        return response()->noContent();
+        return SuccessResponse::noContent();
+    }
+
+    /**
+     * Alias for noContentResponse
+     */
+    protected function noContent()
+    {
+        return $this->noContentResponse();
     }
 
     /**
