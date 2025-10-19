@@ -21,103 +21,153 @@ class RentalController extends Controller
 
     public function index(Request $request)
     {
-        // Validate pagination and sorting parameters
-        $request->validate([
-            'per_page' => 'nullable|integer|min:1|max:100',
-            'page' => 'nullable|integer|min:1',
-            'sort_by' => 'nullable|string|in:created_at,updated_at,move_in_date,tenant_full_name,base_rent_amount,status',
-            'sort_order' => 'nullable|string|in:asc,desc',
-            'q' => 'nullable|string|max:255',
-            'status' => 'nullable|string|in:active,inactive,terminated',
-            'building_id' => 'nullable',
-            'unit_id' => 'nullable|integer',
-            'project_id' => 'nullable|integer',
-            'paying_plan' => 'nullable|string|in:monthly,quarterly,semi_annual,annual',
-            'filter_by_month' => 'nullable|integer|min:1|max:12',
-            'filter_by_year' => 'nullable|integer|min:2000|max:2100',
-            'filter_by_day' => 'nullable|date',
-            'from_date' => 'nullable|date',
-            'to_date' => 'nullable|date|after_or_equal:from_date',
-        ]);
+        try {
+            // Validate pagination and sorting parameters
+            $request->validate([
+                'per_page' => 'nullable|integer|min:1|max:100',
+                'page' => 'nullable|integer|min:1',
+                'sort_by' => 'nullable|string|in:created_at,updated_at,move_in_date,tenant_full_name,base_rent_amount,status',
+                'sort_order' => 'nullable|string|in:asc,desc',
+                'q' => 'nullable|string|max:255',
+                'status' => 'nullable|string|in:active,inactive,terminated',
+                'building_id' => 'nullable',
+                'unit_id' => 'nullable|integer',
+                'project_id' => 'nullable|integer',
+                'paying_plan' => 'nullable|string|in:monthly,quarterly,semi_annual,annual',
+                'filter_by_month' => 'nullable|integer|min:1|max:12',
+                'filter_by_year' => 'nullable|integer|min:2000|max:2100',
+                'filter_by_day' => 'nullable|date',
+                'from_date' => 'nullable|date',
+                'to_date' => 'nullable|date|after_or_equal:from_date',
+            ]);
 
-        $rentals = $this->rentalService->listRentals($request);
+            $rentals = $this->rentalService->listRentals($request);
 
-        return response()->json([
-            'status' => true,
-            'data' => $rentals->items(),
-            'pagination' => [
-                'current_page' => $rentals->currentPage(),
-                'per_page' => $rentals->perPage(),
-                'total' => $rentals->total(),
-                'last_page' => $rentals->lastPage(),
-                'from' => $rentals->firstItem(),
-                'to' => $rentals->lastItem(),
-                'has_more_pages' => $rentals->hasMorePages(),
-                'next_page_url' => $rentals->nextPageUrl(),
-                'prev_page_url' => $rentals->previousPageUrl(),
-            ]
-        ]);
+            return response()->json([
+                'status' => true,
+                'data' => $rentals->items(),
+                'pagination' => [
+                    'current_page' => $rentals->currentPage(),
+                    'per_page' => $rentals->perPage(),
+                    'total' => $rentals->total(),
+                    'last_page' => $rentals->lastPage(),
+                    'from' => $rentals->firstItem(),
+                    'to' => $rentals->lastItem(),
+                    'has_more_pages' => $rentals->hasMorePages(),
+                    'next_page_url' => $rentals->nextPageUrl(),
+                    'prev_page_url' => $rentals->previousPageUrl(),
+                ]
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'tenant_full_name' => 'required|string|max:150',
-            'tenant_phone' => 'required|string|max:32',
-            'tenant_email' => 'nullable|email',
-            'tenant_job_title' => 'nullable|string|max:120',
-            'tenant_social_status' => 'nullable|in:single,married,divorced,widowed,other',
-            'tenant_national_id' => 'nullable|string|max:20',
-            'unit_id' => 'nullable|integer',
-            'project_id' => 'nullable|integer',
-            'building_id' => 'nullable',
-            'move_in_date' => 'nullable|date',
-            'rental_type' => 'required|in:monthly,annual',
-            'rental_duration' => 'required|integer|min:1',
-            'paying_plan' => 'required|in:monthly,quarterly,semi_annual,annual',
-            'total_rental_amount' => 'required|numeric|min:0',
-            'currency' => 'nullable|string|size:3',
-            'contract_number' => 'nullable|string|max:255',
-            'notes' => 'nullable|string',
-            'cost_items' => 'nullable|array',
-            'cost_items.*.name' => 'required|string|max:255',
-            'cost_items.*.cost' => 'required|numeric|min:0',
-            'cost_items.*.type' => 'required|in:fixed,percentage',
-            'cost_items.*.payer' => 'required|in:owner,tenant',
-            'cost_items.*.payment_frequency' => 'required|in:one_time,per_installment',
-            'cost_items.*.percentage_of' => 'nullable|numeric|min:0',
-            'cost_items.*.description' => 'nullable|string',
-        ]);
+        try {
+            $data = $request->validate([
+                'tenant_full_name' => 'required|string|max:150',
+                'tenant_phone' => 'required|string|max:32',
+                'tenant_email' => 'nullable|email',
+                'tenant_job_title' => 'nullable|string|max:120',
+                'tenant_social_status' => 'nullable|in:single,married,divorced,widowed,other',
+                'tenant_national_id' => 'nullable|string|max:20',
+                'unit_id' => 'nullable|integer',
+                'project_id' => 'nullable|integer',
+                'building_id' => 'nullable',
+                'move_in_date' => 'nullable|date',
+                'rental_type' => 'required|in:monthly,annual',
+                'rental_duration' => 'required|integer|min:1',
+                'paying_plan' => 'required|in:monthly,quarterly,semi_annual,annual',
+                'total_rental_amount' => 'required|numeric|min:0',
+                'currency' => 'nullable|string|size:3',
+                'contract_number' => 'nullable|string|max:255',
+                'notes' => 'nullable|string',
+                'cost_items' => 'nullable|array',
+                'cost_items.*.name' => 'required|string|max:255',
+                'cost_items.*.cost' => 'required|numeric|min:0',
+                'cost_items.*.type' => 'required|in:fixed,percentage',
+                'cost_items.*.payer' => 'required|in:owner,tenant',
+                'cost_items.*.payment_frequency' => 'required|in:one_time,per_installment',
+                'cost_items.*.percentage_of' => 'nullable|numeric|min:0',
+                'cost_items.*.description' => 'nullable|string',
+            ]);
 
-        $rental = $this->rentalService->createRental(auth()->id(), $data);
+            $rental = $this->rentalService->createRental(auth()->id(), $data);
 
-        return response()->json(['status' => true, 'data' => $rental], 201);
+            return response()->json(['status' => true, 'data' => $rental], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 
     public function show($id)
     {
-        $rental = $this->rentalService->getRentalDetails(auth()->id(), $id);
-        return response()->json(['status' => true, 'data' => $rental]);
+        try {
+            $rental = $this->rentalService->getRentalDetails(auth()->id(), $id);
+            return response()->json(['status' => true, 'data' => $rental]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Rental not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $data = $request->only([
-            'tenant_full_name', 'tenant_phone', 'tenant_email', 'tenant_job_title',
-            'tenant_social_status', 'tenant_national_id', 'unit_id', 'project_id', 'building_id',
-            'move_in_date', 'rental_type', 'rental_duration', 'paying_plan',
-            'total_rental_amount', 'currency', 'contract_number', 'notes', 'cost_items'
-        ]);
+        try {
+            $data = $request->only([
+                'tenant_full_name', 'tenant_phone', 'tenant_email', 'tenant_job_title',
+                'tenant_social_status', 'tenant_national_id', 'unit_id', 'project_id', 'building_id',
+                'move_in_date', 'rental_type', 'rental_duration', 'paying_plan',
+                'total_rental_amount', 'currency', 'contract_number', 'notes', 'cost_items'
+            ]);
 
-        // Handle payments if included in request
-        if ($request->has('payments')) {
-            $data['payments'] = $request->input('payments');
+            // Handle payments if included in request
+            if ($request->has('payments')) {
+                $data['payments'] = $request->input('payments');
+            }
+
+            $regenerate = $request->boolean('regenerate_schedule', false);
+            $rental = $this->rentalService->updateRental(auth()->id(), $id, $data, $regenerate);
+
+            return response()->json(['status' => true, 'data' => $rental]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Rental not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
         }
-
-        $regenerate = $request->boolean('regenerate_schedule', false);
-        $rental = $this->rentalService->updateRental(auth()->id(), $id, $data, $regenerate);
-
-        return response()->json(['status' => true, 'data' => $rental]);
     }
 
     public function destroy($id)
@@ -135,20 +185,56 @@ class RentalController extends Controller
 
     public function propertyDetails($id)
     {
-        $details = $this->rentalService->getPropertyDetails(auth()->id(), $id);
-        return response()->json(['status' => true, 'data' => $details]);
+        try {
+            $details = $this->rentalService->getPropertyDetails(auth()->id(), $id);
+            return response()->json(['status' => true, 'data' => $details]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Rental not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function currentCollections($id)
     {
-        $collections = $this->rentalService->getCurrentCollections(auth()->id(), $id);
-        return response()->json(['status' => true, 'data' => $collections]);
+        try {
+            $collections = $this->rentalService->getCurrentCollections(auth()->id(), $id);
+            return response()->json(['status' => true, 'data' => $collections]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Rental not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function detailsWithPayments($id)
     {
-        $details = $this->rentalService->getRentalDetailsWithPayments(auth()->id(), $id);
-        return response()->json(['status' => true, 'data' => $details]);
+        try {
+            $details = $this->rentalService->getRentalDetailsWithPayments(auth()->id(), $id);
+            return response()->json(['status' => true, 'data' => $details]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Rental not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -157,8 +243,20 @@ class RentalController extends Controller
      */
     public function paymentCollection($id)
     {
-        $collectionData = $this->rentalService->getPaymentCollectionData(auth()->id(), $id);
-        return response()->json(['status' => true, 'data' => $collectionData]);
+        try {
+            $collectionData = $this->rentalService->getPaymentCollectionData(auth()->id(), $id);
+            return response()->json(['status' => true, 'data' => $collectionData]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Rental not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
