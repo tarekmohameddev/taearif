@@ -122,8 +122,15 @@ class RentalController extends Controller
 
     public function destroy($id)
     {
-        $this->rentalService->deleteRental(auth()->id(), $id);
-        return response()->json(null, 204);
+        try {
+            $this->rentalService->deleteRental(auth()->id(), $id);
+            return response()->json(null, 204);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 
     public function propertyDetails($id)
