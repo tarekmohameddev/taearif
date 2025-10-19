@@ -1080,7 +1080,7 @@ class RentalService
         $page = $filters['page'] ?? 1;
 
         // Build base query
-        $query = RmRental::with(['activeContract', 'property.contents', 'project'])
+        $query = RmRental::with(['activeContract', 'property.contents', 'project', 'tenantCostItems', 'ownerCostItems'])
             ->where('user_id', $ownerId);
 
         // Apply filters
@@ -1126,18 +1126,18 @@ class RentalService
                 ->orderBy('due_date')
                 ->get();
 
-            // Calculate fees for the rental
-            $fees = $this->calculateRentalFees($rental);
+            // Calculate cost items breakdown (NEW SYSTEM)
+            $costItemsBreakdown = $this->calculateCostItemsBreakdown($rental);
 
             // Calculate totals for this rental
             $totalRentDue = round($installments->sum('amount'), 2);
-            $totalFeesDue = round($fees['total_fees'], 2);
-            $totalDue = round($totalRentDue + $totalFeesDue, 2);
+            $totalCostItemsDue = round($costItemsBreakdown['summary']['total_cost_items_due'], 2);
+            $totalDue = round($totalRentDue + $totalCostItemsDue, 2);
             $totalPaid = round($installments->sum('paid_amount'), 2);
 
-            // Get fee payments
-            $feePaid = $this->getTotalFeesCollected($rental->id);
-            $totalCollected = round($totalPaid + $feePaid, 2);
+            // Get cost items paid
+            $totalCostItemsPaid = round($costItemsBreakdown['summary']['total_cost_items_paid'], 2);
+            $totalCollected = round($totalPaid + $totalCostItemsPaid, 2);
             $totalRemaining = round($totalDue - $totalCollected, 2);
 
             // Add to summary
@@ -1184,16 +1184,13 @@ class RentalService
                 'status' => $rental->status,
                 'move_in_date' => $rental->move_in_date?->toDateString(),
                 'currency' => $rental->currency ?? 'SAR',
-                'fees_breakdown' => [
-                    'platform_fee' => round($fees['platform_fee'], 2),
-                    'water_fee' => round($fees['water_fee'], 2),
-                    'office_fee' => round($fees['office_fee'], 2),
-                    'total_fees' => round($fees['total_fees'], 2)
-                ],
+                'cost_items_breakdown' => $costItemsBreakdown,
                 'payment_summary' => [
                     'total_rent_due' => $totalRentDue,
-                    'total_fees_due' => $totalFeesDue,
+                    'total_cost_items_due' => $totalCostItemsDue,
                     'total_due' => $totalDue,
+                    'total_rent_collected' => $totalPaid,
+                    'total_cost_items_collected' => $totalCostItemsPaid,
                     'total_collected' => $totalCollected,
                     'total_remaining' => $totalRemaining,
                     'overdue_count' => $items->where('is_overdue', true)->count(),
