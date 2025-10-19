@@ -17,10 +17,17 @@ class RmsDashboardController extends Controller
 
     public function index(Request $request)
     {
-        $range = (int) $request->get('range', 7); // 7 or 30 days
-        $data = $this->dashboardService->getDashboardData(auth()->id(), $range);
+        try {
+            $range = (int) $request->get('range', 7); // 7 or 30 days
+            $data = $this->dashboardService->getDashboardData(auth()->id(), $range);
 
-        return response()->json(['status' => true, 'data' => $data]);
+            return response()->json(['status' => true, 'data' => $data]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }
 

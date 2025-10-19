@@ -106,9 +106,13 @@ class Handler extends ExceptionHandler
                 'user_id' => auth()->id(),
             ]);
 
+            // Always show the actual error message for better debugging
+            // Use a generic message only if exception message is empty
+            $errorMessage = $exception->getMessage() ?: 'An unexpected error occurred';
+
             return response()->json([
                 'status'    => 'error',
-                'message'   => config('app.debug') ? $exception->getMessage() : 'Server error',
+                'message'   => $errorMessage,
                 'exception' => config('app.debug') ? class_basename($exception) : null,
             ], 500);
         }

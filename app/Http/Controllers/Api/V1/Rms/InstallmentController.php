@@ -17,25 +17,50 @@ class InstallmentController extends Controller
 
     public function index(Request $request)
     {
-        $filters = $request->only(['rental_id', 'contract_id', 'status', 'from', 'to']);
-        $installments = $this->installmentService->listInstallments(auth()->id(), $filters);
+        try {
+            $filters = $request->only(['rental_id', 'contract_id', 'status', 'from', 'to']);
+            $installments = $this->installmentService->listInstallments(auth()->id(), $filters);
 
-        return response()->json(['status' => true, 'data' => $installments]);
+            return response()->json(['status' => true, 'data' => $installments]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $validated = $request->validate([
-            'status' => 'sometimes|in:pending,paid,partial,overdue,void',
-            'paid_amount' => 'nullable|numeric|min:0',
-            'paid_at' => 'nullable|date',
-            'reference' => 'nullable|string|max:100',
-            'notes' => 'nullable|string|max:255',
-        ]);
+        try {
+            $validated = $request->validate([
+                'status' => 'sometimes|in:pending,paid,partial,overdue,void',
+                'paid_amount' => 'nullable|numeric|min:0',
+                'paid_at' => 'nullable|date',
+                'reference' => 'nullable|string|max:100',
+                'notes' => 'nullable|string|max:255',
+            ]);
 
-        $updated = $this->installmentService->updateInstallment($id, $validated, auth()->id());
+            $updated = $this->installmentService->updateInstallment($id, $validated, auth()->id());
 
-        return response()->json(['status' => true, 'data' => $updated]);
+            return response()->json(['status' => true, 'data' => $updated]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Installment not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 
     // regenerate
@@ -50,9 +75,9 @@ class InstallmentController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
+                'status' => 'error',
                 'message' => $e->getMessage()
-            ], 422);
+            ], 400);
         }
     }
 
