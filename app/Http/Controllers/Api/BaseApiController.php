@@ -137,6 +137,32 @@ class BaseApiController extends Controller
     }
 
     /**
+     * Return ok response with data (alias for success)
+     *
+     * @param mixed $data
+     * @param string|null $message
+     * @param int $statusCode
+     * @return \Illuminate\Http\JsonResponse
+     */
+    protected function ok($data = null, ?string $message = null, int $statusCode = 200)
+    {
+        return $this->successResponse($data, $message, $statusCode);
+    }
+
+    /**
+     * Return fail response (alias for error)
+     *
+     * @param string $message
+     * @param int $statusCode
+     * @param array|null $errors
+     * @return \Illuminate\Http\JsonResponse
+     */
+    protected function fail(string $message, int $statusCode = 400, ?array $errors = null)
+    {
+        return $this->errorResponse($message, $statusCode, $errors);
+    }
+
+    /**
      * Return no content response (204)
      *
      * @return \Illuminate\Http\Response
