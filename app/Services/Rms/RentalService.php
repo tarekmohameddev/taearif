@@ -257,9 +257,13 @@ class RentalService
 
         $rental = RmRental::where('user_id', $ownerId)->findOrFail($id);
 
-        // ENTERPRISE: Use custom exception with error code and context
-        if ($rental->activeContract) {
-            throw \App\Exceptions\Rms\RentalException::hasActiveContract($rental);
+        // Check for contracts that should block deletion (active or pending)
+        $blockingContract = $rental->contracts()
+            ->whereIn('status', ['active', 'pending'])
+            ->first();
+
+        if ($blockingContract) {
+            throw \App\Exceptions\Rms\RentalException::hasActiveContract($rental, $blockingContract);
         }
 
         $unitId = $rental->unit_id;

@@ -18,19 +18,21 @@ class RentalException extends ApiException
     /**
      * Rental has active contract - cannot be deleted
      */
-    public static function hasActiveContract(RmRental $rental): self
+    public static function hasActiveContract(RmRental $rental, $contract = null): self
     {
+        $contract = $contract ?? $rental->activeContract;
+
         return new self(
             message: "Rental ID {$rental->id} has an active contract and cannot be deleted",
             code: 'RMS_RENTAL_HAS_ACTIVE_CONTRACT',
             statusCode: 400,
             details: [
                 'rental_id' => $rental->id,
-                'contract_id' => $rental->activeContract?->id,
-                'contract_status' => $rental->activeContract?->status,
+                'contract_id' => $contract?->id,
+                'contract_status' => $contract?->status,
                 'tenant_name' => $rental->tenant_full_name
             ],
-            safeMessage: 'Cannot delete rental with active contract. Please end the contract first.'
+            safeMessage: 'Cannot delete rental with active or pending contract. Please terminate the contract first.'
         );
     }
 
