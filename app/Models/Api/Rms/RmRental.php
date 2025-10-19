@@ -56,6 +56,10 @@ class RmRental extends Model
         'base_rent_amount',
         'total_tenant_costs',
         'total_owner_costs',
+        'one_time_tenant_costs',
+        'one_time_owner_costs',
+        'first_payment_tenant_costs',
+        'first_payment_owner_costs',
     ];
 
     public function contracts()
@@ -182,36 +186,81 @@ class RmRental extends Model
 
     public function getBaseRentAmountAttribute()
     {
-        // Calculate base rent amount based on rental type and duration
+        // Calculate base rent amount = amount per payment based on paying_plan
+        // base_rent_amount = total_rental_amount / number_of_payments
+
         if (is_null($this->total_rental_amount) ||
             is_null($this->rental_duration) ||
             is_null($this->rental_type) ||
+            is_null($this->paying_plan) ||
             $this->rental_duration <= 0) {  // Prevent division by zero
             return 0;
         }
 
-        // Calculate based on rental type
+        // Calculate total months based on rental_type
         if ($this->rental_type === 'monthly') {
-            return $this->total_rental_amount / $this->rental_duration;
+            $totalMonths = $this->rental_duration;
         } elseif ($this->rental_type === 'annual') {
-            return $this->total_rental_amount / $this->rental_duration;
+            $totalMonths = $this->rental_duration * 12;
+        } else {
+            return 0;
         }
 
-        return 0;
+        // Calculate number of payments based on paying_plan
+        // monthly: every month → totalMonths / 1
+        // quarterly: every 3 months → totalMonths / 3
+        // semi_annual: every 6 months → totalMonths / 6
+        // annual: yearly → totalMonths / 12
+        $paymentInterval = match($this->paying_plan) {
+            'monthly' => 1,
+            'quarterly' => 3,
+            'semi_annual' => 6,
+            'annual' => 12,
+            default => 1
+        };
+
+        // Calculate number of payments
+        $numberOfPayments = ceil($totalMonths / $paymentInterval);
+
+        if ($numberOfPayments <= 0) {
+            return 0;
+        }
+
+        // Calculate base rent amount per payment
+        return $this->total_rental_amount / $numberOfPayments;
     }
 
     public function getTotalTenantCostsAttribute()
     {
-        // Calculate total costs that tenant needs to pay
+        // Calculate per_installment costs only (paid every installment)
+        // one_time costs are NOT included here (see one_time_tenant_costs)
+
         $totalCosts = 0;
 
+        // Get months per installment based on paying_plan
+        $monthsPerInstallment = $this->getMonthsPerInstallment();
+
         foreach ($this->tenantCostItems as $costItem) {
+            // Only include per_installment costs
+            if ($costItem->payment_frequency !== 'per_installment') {
+                continue;
+            }
+
+            $itemCost = 0;
+
+            // Calculate base cost (fixed or percentage)
             if ($costItem->type === 'fixed') {
-                $totalCosts += $costItem->cost;
+                $itemCost = $costItem->cost;
             } elseif ($costItem->type === 'percentage') {
                 $baseAmount = $costItem->percentage_of ?? $this->total_rental_amount;
-                $totalCosts += ($baseAmount * $costItem->cost) / 100;
+                $itemCost = ($baseAmount * $costItem->cost) / 100;
             }
+
+            // Multiply by number of months per installment
+            // Example: 50 SAR/month × 6 months = 300 SAR per installment
+            $itemCost *= $monthsPerInstallment;
+
+            $totalCosts += $itemCost;
         }
 
         return $totalCosts;
@@ -219,10 +268,54 @@ class RmRental extends Model
 
     public function getTotalOwnerCostsAttribute()
     {
-        // Calculate total costs that owner needs to pay
+        // Calculate per_installment costs only (paid every installment)
+        // one_time costs are NOT included here (see one_time_owner_costs)
+
         $totalCosts = 0;
 
+        // Get months per installment based on paying_plan
+        $monthsPerInstallment = $this->getMonthsPerInstallment();
+
         foreach ($this->ownerCostItems as $costItem) {
+            // Only include per_installment costs
+            if ($costItem->payment_frequency !== 'per_installment') {
+                continue;
+            }
+
+            $itemCost = 0;
+
+            // Calculate base cost (fixed or percentage)
+            if ($costItem->type === 'fixed') {
+                $itemCost = $costItem->cost;
+            } elseif ($costItem->type === 'percentage') {
+                $baseAmount = $costItem->percentage_of ?? $this->total_rental_amount;
+                $itemCost = ($baseAmount * $costItem->cost) / 100;
+            }
+
+            // Multiply by number of months per installment
+            // Example: 50 SAR/month × 6 months = 300 SAR per installment
+            $itemCost *= $monthsPerInstallment;
+
+            $totalCosts += $itemCost;
+        }
+
+        return $totalCosts;
+    }
+
+    /**
+     * Get one_time costs for tenant (paid only once)
+     */
+    public function getOneTimeTenantCostsAttribute()
+    {
+        $totalCosts = 0;
+
+        foreach ($this->tenantCostItems as $costItem) {
+            // Only include one_time costs
+            if ($costItem->payment_frequency !== 'one_time') {
+                continue;
+            }
+
+            // Calculate base cost (fixed or percentage)
             if ($costItem->type === 'fixed') {
                 $totalCosts += $costItem->cost;
             } elseif ($costItem->type === 'percentage') {
@@ -232,6 +325,66 @@ class RmRental extends Model
         }
 
         return $totalCosts;
+    }
+
+    /**
+     * Get one_time costs for owner (paid only once)
+     */
+    public function getOneTimeOwnerCostsAttribute()
+    {
+        $totalCosts = 0;
+
+        foreach ($this->ownerCostItems as $costItem) {
+            // Only include one_time costs
+            if ($costItem->payment_frequency !== 'one_time') {
+                continue;
+            }
+
+            // Calculate base cost (fixed or percentage)
+            if ($costItem->type === 'fixed') {
+                $totalCosts += $costItem->cost;
+            } elseif ($costItem->type === 'percentage') {
+                $baseAmount = $costItem->percentage_of ?? $this->total_rental_amount;
+                $totalCosts += ($baseAmount * $costItem->cost) / 100;
+            }
+        }
+
+        return $totalCosts;
+    }
+
+    /**
+     * Get first payment total for tenant (one_time + per_installment)
+     */
+    public function getFirstPaymentTenantCostsAttribute()
+    {
+        return $this->one_time_tenant_costs + $this->total_tenant_costs;
+    }
+
+    /**
+     * Get first payment total for owner (one_time + per_installment)
+     */
+    public function getFirstPaymentOwnerCostsAttribute()
+    {
+        return $this->one_time_owner_costs + $this->total_owner_costs;
+    }
+
+    /**
+     * Get number of months per installment based on paying_plan
+     * Used for calculating per_installment costs
+     */
+    private function getMonthsPerInstallment()
+    {
+        if (is_null($this->paying_plan)) {
+            return 1;
+        }
+
+        return match($this->paying_plan) {
+            'monthly' => 1,
+            'quarterly' => 3,
+            'semi_annual' => 6,
+            'annual' => 12,
+            default => 1
+        };
     }
 
 }
