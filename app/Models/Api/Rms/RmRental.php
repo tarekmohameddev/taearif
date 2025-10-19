@@ -228,16 +228,35 @@ class RmRental extends Model
 
     public function getTotalTenantCostsAttribute()
     {
-        // Calculate total costs that tenant needs to pay
+        // Calculate total costs that tenant needs to pay per installment
+        // per_installment: cost × number of months per payment
+        // one_time: cost (paid once)
+
         $totalCosts = 0;
 
+        // Get months per installment based on paying_plan
+        $monthsPerInstallment = $this->getMonthsPerInstallment();
+
         foreach ($this->tenantCostItems as $costItem) {
+            $itemCost = 0;
+
+            // Calculate base cost (fixed or percentage)
             if ($costItem->type === 'fixed') {
-                $totalCosts += $costItem->cost;
+                $itemCost = $costItem->cost;
             } elseif ($costItem->type === 'percentage') {
                 $baseAmount = $costItem->percentage_of ?? $this->total_rental_amount;
-                $totalCosts += ($baseAmount * $costItem->cost) / 100;
+                $itemCost = ($baseAmount * $costItem->cost) / 100;
             }
+
+            // Apply payment frequency multiplier
+            if ($costItem->payment_frequency === 'per_installment') {
+                // Multiply by number of months per installment
+                // Example: 50 SAR/month × 6 months = 300 SAR per installment
+                $itemCost *= $monthsPerInstallment;
+            }
+            // If 'one_time', keep the cost as is (paid once)
+
+            $totalCosts += $itemCost;
         }
 
         return $totalCosts;
@@ -245,19 +264,57 @@ class RmRental extends Model
 
     public function getTotalOwnerCostsAttribute()
     {
-        // Calculate total costs that owner needs to pay
+        // Calculate total costs that owner needs to pay per installment
+        // per_installment: cost × number of months per payment
+        // one_time: cost (paid once)
+
         $totalCosts = 0;
 
+        // Get months per installment based on paying_plan
+        $monthsPerInstallment = $this->getMonthsPerInstallment();
+
         foreach ($this->ownerCostItems as $costItem) {
+            $itemCost = 0;
+
+            // Calculate base cost (fixed or percentage)
             if ($costItem->type === 'fixed') {
-                $totalCosts += $costItem->cost;
+                $itemCost = $costItem->cost;
             } elseif ($costItem->type === 'percentage') {
                 $baseAmount = $costItem->percentage_of ?? $this->total_rental_amount;
-                $totalCosts += ($baseAmount * $costItem->cost) / 100;
+                $itemCost = ($baseAmount * $costItem->cost) / 100;
             }
+
+            // Apply payment frequency multiplier
+            if ($costItem->payment_frequency === 'per_installment') {
+                // Multiply by number of months per installment
+                // Example: 50 SAR/month × 6 months = 300 SAR per installment
+                $itemCost *= $monthsPerInstallment;
+            }
+            // If 'one_time', keep the cost as is (paid once)
+
+            $totalCosts += $itemCost;
         }
 
         return $totalCosts;
+    }
+
+    /**
+     * Get number of months per installment based on paying_plan
+     * Used for calculating per_installment costs
+     */
+    private function getMonthsPerInstallment()
+    {
+        if (is_null($this->paying_plan)) {
+            return 1;
+        }
+
+        return match($this->paying_plan) {
+            'monthly' => 1,
+            'quarterly' => 3,
+            'semi_annual' => 6,
+            'annual' => 12,
+            default => 1
+        };
     }
 
 }
