@@ -764,7 +764,7 @@ class RentalService
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
 
-        $rental = RmRental::with(['activeContract', 'installments.payments', 'property.project'])
+        $rental = RmRental::with(['activeContract', 'installments.payments', 'property.project', 'tenantCostItems', 'ownerCostItems'])
             ->where('user_id', $ownerId)
             ->findOrFail($rentalId);
 
@@ -796,8 +796,6 @@ class RentalService
             ->orderBy('due_date')
             ->get();
 
-        // Calculate fees for the rental
-        $fees = $this->calculateRentalFees($rental);
         $totalInstallments = $installments->count();
 
         $items = $installments->map(function ($installment) {
@@ -817,12 +815,17 @@ class RentalService
             ];
         });
 
+        // Calculate cost items breakdown (NEW SYSTEM)
+        $costItemsBreakdown = $this->calculateCostItemsBreakdown($rental);
+
         // Calculate summary with proper rounding
         $totalRentDue = round($installments->sum('amount'), 2);
-        $totalFeesDue = round($fees['total_fees'], 2);
-        $totalDue = round($totalRentDue + $totalFeesDue, 2);
+        $totalCostItemsDue = round($costItemsBreakdown['summary']['total_cost_items_due'], 2);
+        $totalDue = round($totalRentDue + $totalCostItemsDue, 2);
         $totalPaid = round($installments->sum('paid_amount'), 2);
-        $totalRemaining = round($totalDue - $totalPaid, 2);
+        $totalCostItemsPaid = round($costItemsBreakdown['summary']['total_cost_items_paid'], 2);
+        $totalCollected = round($totalPaid + $totalCostItemsPaid, 2);
+        $totalRemaining = round($totalDue - $totalCollected, 2);
 
         return [
             'rental_info' => [
@@ -848,48 +851,16 @@ class RentalService
                     'name' => $rental->property?->project?->name
                 ]
             ],
-            'fees_breakdown' => [
-                'platform_fee' => round($fees['platform_fee'], 2),
-                'water_fee' => round($fees['water_fee'], 2),
-                'office_fee' => round($fees['office_fee'], 2),
-                'total_fees' => round($fees['total_fees'], 2)
-            ],
-            'available_fees' => [
-                [
-                    'id' => 'platform_fee_' . $rental->id,
-                    'fee_type' => 'platform_fee',
-                    'fee_name' => 'Platform Fee',
-                    'total_amount' => round($fees['platform_fee'], 2),
-                    'paid_amount' => $this->getPaidAmountForFee($rental->id, 'platform_fee'),
-                    'remaining_amount' => round($fees['platform_fee'] - $this->getPaidAmountForFee($rental->id, 'platform_fee'), 2),
-                    'status' => $this->getFeePaymentStatus($fees['platform_fee'], $this->getPaidAmountForFee($rental->id, 'platform_fee'))
-                ],
-                [
-                    'id' => 'water_fee_' . $rental->id,
-                    'fee_type' => 'water_fee',
-                    'fee_name' => 'Water Fee',
-                    'total_amount' => round($fees['water_fee'], 2),
-                    'paid_amount' => $this->getPaidAmountForFee($rental->id, 'water_fee'),
-                    'remaining_amount' => round($fees['water_fee'] - $this->getPaidAmountForFee($rental->id, 'water_fee'), 2),
-                    'status' => $this->getFeePaymentStatus($fees['water_fee'], $this->getPaidAmountForFee($rental->id, 'water_fee'))
-                ],
-                [
-                    'id' => 'office_fee_' . $rental->id,
-                    'fee_type' => 'office_fee',
-                    'fee_name' => 'Office Fee',
-                    'total_amount' => round($fees['office_fee'], 2),
-                    'paid_amount' => $this->getPaidAmountForFee($rental->id, 'office_fee'),
-                    'remaining_amount' => round($fees['office_fee'] - $this->getPaidAmountForFee($rental->id, 'office_fee'), 2),
-                    'status' => $this->getFeePaymentStatus($fees['office_fee'], $this->getPaidAmountForFee($rental->id, 'office_fee'))
-                ]
-            ],
+            'cost_items_breakdown' => $costItemsBreakdown,
             'payment_details' => [
                 'items' => $items,
                 'summary' => [
                     'total_rent_due' => $totalRentDue,
-                    'total_fees_due' => $totalFeesDue,
+                    'total_cost_items_due' => $totalCostItemsDue,
                     'total_due' => $totalDue,
-                    'total_paid' => $totalPaid,
+                    'total_rent_paid' => $totalPaid,
+                    'total_cost_items_paid' => $totalCostItemsPaid,
+                    'total_collected' => $totalCollected,
                     'total_remaining' => $totalRemaining,
                     'overdue_count' => $items->where('is_overdue', true)->count(),
                     'paid_count' => $items->where('status', 'paid')->count(),
@@ -898,6 +869,144 @@ class RentalService
                 ]
             ]
         ];
+    }
+
+    /**
+     * Calculate cost items breakdown for payment collection
+     * Handles one_time vs per_installment costs
+     */
+    private function calculateCostItemsBreakdown($rental)
+    {
+        $monthsPerInstallment = $this->getMonthsPerInstallmentFromPlan($rental->paying_plan);
+
+        $tenantCostItems = [];
+        $ownerCostItems = [];
+
+        $totalTenantOneTime = 0;
+        $totalTenantPerInstallment = 0;
+        $totalOwnerOneTime = 0;
+        $totalOwnerPerInstallment = 0;
+
+        // Process tenant cost items
+        foreach ($rental->tenantCostItems as $costItem) {
+            $itemData = $this->calculateCostItemDetails($costItem, $monthsPerInstallment, $rental);
+            $tenantCostItems[] = $itemData;
+
+            if ($costItem->payment_frequency === 'one_time') {
+                $totalTenantOneTime += $itemData['total_amount'];
+            } else {
+                $totalTenantPerInstallment += $itemData['amount_per_installment'];
+            }
+        }
+
+        // Process owner cost items
+        foreach ($rental->ownerCostItems as $costItem) {
+            $itemData = $this->calculateCostItemDetails($costItem, $monthsPerInstallment, $rental);
+            $ownerCostItems[] = $itemData;
+
+            if ($costItem->payment_frequency === 'one_time') {
+                $totalOwnerOneTime += $itemData['total_amount'];
+            } else {
+                $totalOwnerPerInstallment += $itemData['amount_per_installment'];
+            }
+        }
+
+        // Calculate totals
+        $firstPaymentTenant = $totalTenantOneTime + $totalTenantPerInstallment;
+        $subsequentPaymentsTenant = $totalTenantPerInstallment;
+        $firstPaymentOwner = $totalOwnerOneTime + $totalOwnerPerInstallment;
+        $subsequentPaymentsOwner = $totalOwnerPerInstallment;
+
+        $totalCostItemsDue = $firstPaymentTenant + $firstPaymentOwner;
+        $totalCostItemsPaid = 0; // TODO: Calculate from actual payments
+
+        return [
+            'tenant_cost_items' => $tenantCostItems,
+            'owner_cost_items' => $ownerCostItems,
+            'summary' => [
+                'tenant' => [
+                    'one_time_costs' => round($totalTenantOneTime, 2),
+                    'per_installment_costs' => round($totalTenantPerInstallment, 2),
+                    'first_payment_total' => round($firstPaymentTenant, 2),
+                    'subsequent_payments_total' => round($subsequentPaymentsTenant, 2),
+                ],
+                'owner' => [
+                    'one_time_costs' => round($totalOwnerOneTime, 2),
+                    'per_installment_costs' => round($totalOwnerPerInstallment, 2),
+                    'first_payment_total' => round($firstPaymentOwner, 2),
+                    'subsequent_payments_total' => round($subsequentPaymentsOwner, 2),
+                ],
+                'total_cost_items_due' => round($totalCostItemsDue, 2),
+                'total_cost_items_paid' => round($totalCostItemsPaid, 2),
+                'total_cost_items_remaining' => round($totalCostItemsDue - $totalCostItemsPaid, 2),
+            ]
+        ];
+    }
+
+    /**
+     * Calculate details for a single cost item
+     */
+    private function calculateCostItemDetails($costItem, $monthsPerInstallment, $rental)
+    {
+        // Calculate base cost
+        $baseCost = 0;
+        if ($costItem->type === 'fixed') {
+            $baseCost = (float) $costItem->cost;
+        } elseif ($costItem->type === 'percentage') {
+            $baseAmount = $costItem->percentage_of ?? $rental->total_rental_amount;
+            $baseCost = ((float) $baseAmount * (float) $costItem->cost) / 100;
+        }
+
+        // Calculate amounts based on payment frequency
+        if ($costItem->payment_frequency === 'one_time') {
+            return [
+                'id' => $costItem->id,
+                'name' => $costItem->name,
+                'cost' => round($baseCost, 2),
+                'type' => $costItem->type,
+                'payer' => $costItem->payer,
+                'payment_frequency' => 'one_time',
+                'description' => $costItem->description,
+                'total_amount' => round($baseCost, 2),
+                'amount_per_installment' => 0,
+                'paid_amount' => 0, // TODO: Get from actual payments
+                'remaining_amount' => round($baseCost, 2),
+                'applies_to_first_payment_only' => true,
+            ];
+        } else {
+            // per_installment: multiply by months
+            $amountPerInstallment = $baseCost * $monthsPerInstallment;
+
+            return [
+                'id' => $costItem->id,
+                'name' => $costItem->name,
+                'cost_per_month' => round($baseCost, 2),
+                'type' => $costItem->type,
+                'payer' => $costItem->payer,
+                'payment_frequency' => 'per_installment',
+                'description' => $costItem->description,
+                'months_per_installment' => $monthsPerInstallment,
+                'amount_per_installment' => round($amountPerInstallment, 2),
+                'total_amount' => round($amountPerInstallment, 2),
+                'paid_amount' => 0, // TODO: Get from actual payments
+                'remaining_amount' => round($amountPerInstallment, 2),
+                'applies_to_all_payments' => true,
+            ];
+        }
+    }
+
+    /**
+     * Get months per installment from paying plan
+     */
+    private function getMonthsPerInstallmentFromPlan($payingPlan)
+    {
+        return match($payingPlan) {
+            'monthly' => 1,
+            'quarterly' => 3,
+            'semi_annual' => 6,
+            'annual' => 12,
+            default => 1
+        };
     }
 
     /**
