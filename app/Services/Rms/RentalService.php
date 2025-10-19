@@ -284,7 +284,7 @@ class RentalService
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
 
-        $rental = RmRental::with(['property.contents', 'project', 'contracts', 'installments', 'activeExpenses'])
+        $rental = RmRental::with(['property.contents', 'project', 'contracts', 'installments', 'activeExpenses', 'tenantCostItems', 'ownerCostItems'])
             ->where('user_id', $ownerId)
             ->findOrFail($rentalId);
 
@@ -328,6 +328,9 @@ class RentalService
                 'updated_at' => $expense->updated_at,
             ];
         });
+
+        // Calculate cost items breakdown (NEW SYSTEM)
+        $costItemsBreakdown = $this->calculateCostItemsBreakdown($rental);
 
         return [
             'rental' => [
@@ -374,6 +377,7 @@ class RentalService
                 'items' => $payments,
             ],
             'expenses' => $expenses,
+            'cost_items_breakdown' => $costItemsBreakdown,
         ];
     }
 
@@ -384,7 +388,7 @@ class RentalService
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
 
-        $rental = RmRental::with(['property.contents', 'project', 'contracts', 'installments'])
+        $rental = RmRental::with(['property.contents', 'project', 'contracts', 'installments', 'tenantCostItems', 'ownerCostItems'])
             ->where('user_id', $ownerId)
             ->findOrFail($rentalId);
 
@@ -395,6 +399,9 @@ class RentalService
 
         // Get detailed installment payment information
         $installmentDetails = $this->paymentService->getInstallmentPaymentDetails($ownerId, $rentalId);
+
+        // Calculate cost items breakdown (NEW SYSTEM)
+        $costItemsBreakdown = $this->calculateCostItemsBreakdown($rental);
 
         return [
             'rental' => [
@@ -452,11 +459,15 @@ class RentalService
                 'breakdown' => $paymentSummary['breakdown'],
             ],
             'installments' => $installmentDetails,
-            'recent_payments' => $paymentSummary['recent_payments']->map(function ($payment) {
+            'cost_items_breakdown' => $costItemsBreakdown,
+            'recent_payments' => $paymentSummary['recent_payments']->load('costItem')->map(function ($payment) {
                 return [
                     'id' => $payment->id,
                     'payment_type' => $payment->payment_type,
                     'payment_type_label' => $payment->payment_type_label,
+                    'cost_item_id' => $payment->cost_item_id,
+                    'cost_item_name' => $payment->costItem?->name ?? null,
+                    'installment_sequence' => $payment->installment_sequence,
                     'amount' => (float) $payment->amount,
                     'payment_date' => $payment->payment_date,
                     'payment_method' => $payment->payment_method,
@@ -1571,7 +1582,8 @@ class RentalService
         // Get all properties for the user
         $propertiesQuery = Property::where('user_id', $ownerId)
             ->with(['rentals' => function ($q) use ($fromDate, $toDate) {
-                $q->whereHas('contracts', function ($contractQuery) use ($fromDate, $toDate) {
+                $q->with(['tenantCostItems', 'ownerCostItems'])
+                  ->whereHas('contracts', function ($contractQuery) use ($fromDate, $toDate) {
                     $contractQuery->where(function ($dateQuery) use ($fromDate, $toDate) {
                         $dateQuery->whereBetween('start_date', [$fromDate, $toDate])
                             ->orWhereBetween('end_date', [$fromDate, $toDate])
@@ -1644,28 +1656,33 @@ class RentalService
                     ->orderBy('payment_date', 'desc')
                     ->get();
 
-                // Calculate expected amount from installments + fees
+                // Calculate cost items breakdown (NEW SYSTEM)
+                $costItemsBreakdown = $this->calculateCostItemsBreakdown($rental);
+
+                // Calculate expected amount from installments + cost_items
                 $expectedRent = round($installments->sum('amount'), 2);
-                $expectedFees = $this->calculateExpectedFees($rental, $installments->count());
+                $expectedCostItems = round($costItemsBreakdown['summary']['total_cost_items_due'], 2);
                 $expectedDeposit = round($rental->deposit_amount ?? 0, 2);
-                $totalExpected = round($expectedRent + $expectedFees + $expectedDeposit, 2);
+                $totalExpected = round($expectedRent + $expectedCostItems + $expectedDeposit, 2);
 
                 // Calculate collected amount
                 $collectedRent = round($payments->where('payment_type', 'rent')->sum('amount'), 2);
-                $collectedPlatformFee = round($payments->where('payment_type', 'platform_fee')->sum('amount'), 2);
-                $collectedWaterFee = round($payments->where('payment_type', 'water_fee')->sum('amount'), 2);
-                $collectedOfficeFee = round($payments->where('payment_type', 'office_fee')->sum('amount'), 2);
+                $collectedCostItems = round($payments->where('payment_type', 'cost_item')->sum('amount'), 2);
                 $collectedDeposit = round($payments->where('payment_type', 'deposit')->sum('amount'), 2);
-                $totalCollected = round($collectedRent + $collectedPlatformFee + $collectedWaterFee + $collectedOfficeFee + $collectedDeposit, 2);
+                $totalCollected = round($collectedRent + $collectedCostItems + $collectedDeposit, 2);
 
                 // Calculate outstanding
                 $totalOutstanding = round(max(0, $totalExpected - $totalCollected), 2);
 
                 // Build payment history
-                $paymentHistory = $payments->map(function ($payment) {
+                $paymentHistory = $payments->load('costItem')->map(function ($payment) {
                     return [
                         'id' => $payment->id,
                         'payment_type' => $payment->payment_type,
+                        'payment_type_label' => $payment->payment_type_label,
+                        'cost_item_id' => $payment->cost_item_id,
+                        'cost_item_name' => $payment->costItem?->name ?? null,
+                        'installment_sequence' => $payment->installment_sequence,
                         'amount' => round((float) $payment->amount, 2),
                         'payment_date' => $payment->payment_date,
                         'payment_method' => $payment->payment_method,
@@ -1694,20 +1711,10 @@ class RentalService
                             'collected' => round($collectedRent, 2),
                             'outstanding' => round(max(0, $expectedRent - $collectedRent), 2),
                         ],
-                        'platform_fee' => [
-                            'expected' => round(($rental->platform_fee ?? 0) * $installments->count(), 2),
-                            'collected' => round($collectedPlatformFee, 2),
-                            'outstanding' => round(max(0, (($rental->platform_fee ?? 0) * $installments->count()) - $collectedPlatformFee), 2),
-                        ],
-                        'water_fee' => [
-                            'expected' => round(($rental->water_fee ?? 0) * $installments->count(), 2),
-                            'collected' => round($collectedWaterFee, 2),
-                            'outstanding' => round(max(0, (($rental->water_fee ?? 0) * $installments->count()) - $collectedWaterFee), 2),
-                        ],
-                        'office_fee' => [
-                            'expected' => round(($rental->office_fee ?? 0) * $installments->count(), 2),
-                            'collected' => round($collectedOfficeFee, 2),
-                            'outstanding' => round(max(0, (($rental->office_fee ?? 0) * $installments->count()) - $collectedOfficeFee), 2),
+                        'cost_items' => [
+                            'expected' => round($expectedCostItems, 2),
+                            'collected' => round($collectedCostItems, 2),
+                            'outstanding' => round(max(0, $expectedCostItems - $collectedCostItems), 2),
                         ],
                         'deposit' => [
                             'expected' => round($expectedDeposit, 2),
@@ -1715,6 +1722,7 @@ class RentalService
                             'outstanding' => round(max(0, $expectedDeposit - $collectedDeposit), 2),
                         ],
                     ],
+                    'cost_items_breakdown' => $costItemsBreakdown,
                     'total_expected' => round($totalExpected, 2),
                     'total_collected' => round($totalCollected, 2),
                     'total_outstanding' => round($totalOutstanding, 2),
