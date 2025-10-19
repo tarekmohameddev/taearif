@@ -257,8 +257,9 @@ class RentalService
 
         $rental = RmRental::where('user_id', $ownerId)->findOrFail($id);
 
+        // ENTERPRISE: Use custom exception with error code and context
         if ($rental->activeContract) {
-            throw new \Exception('Cannot delete rental with active contract');
+            throw \App\Exceptions\Rms\RentalException::hasActiveContract($rental);
         }
 
         $unitId = $rental->unit_id;

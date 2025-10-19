@@ -17,6 +17,8 @@ use Throwable;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
+use App\Exceptions\Api\ApiException;
+use App\Http\Responses\ApiResponse;
 
 class Handler extends ExceptionHandler
 {
@@ -64,34 +66,70 @@ class Handler extends ExceptionHandler
 
         // ── JSON for API calls ──
         if ($request->expectsJson() || $request->is('api/*')) {
+            // NEW: Use ApiResponse helper for consistent error handling
+
+            // If it's our custom ApiException, let it render itself (includes security)
+            if ($exception instanceof ApiException) {
+                return $exception->render();
+            }
+
             // Validation (you also have invalidJson; this is just a safeguard)
             if ($exception instanceof ValidationException) {
                 return response()->json([
                     'status'  => 'error',
+                    'code'    => 'VALIDATION_FAILED',
                     'message' => 'Validation failed',
                     'errors'  => $exception->errors(),
+                    'timestamp' => now()->toIso8601String(),
                 ], 422);
             }
 
             // Not found (model/route)
             if ($exception instanceof ModelNotFoundException) {
-                return response()->json(['status' => 'error', 'message' => 'Resource not found'], 404);
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'RESOURCE_NOT_FOUND',
+                    'message' => 'Resource not found',
+                    'timestamp' => now()->toIso8601String(),
+                ], 404);
             }
             if ($exception instanceof NotFoundHttpException || $exception instanceof RouteNotFoundException) {
-                return response()->json(['status' => 'error', 'message' => 'Not found'], 404);
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'ENDPOINT_NOT_FOUND',
+                    'message' => 'Endpoint not found',
+                    'timestamp' => now()->toIso8601String(),
+                ], 404);
             }
 
             // Auth
             if ($exception instanceof AuthenticationException) {
-                return response()->json(['status' => 'error', 'message' => 'Unauthenticated'], 401);
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'UNAUTHORIZED',
+                    'message' => 'Authentication required',
+                    'timestamp' => now()->toIso8601String(),
+                ], 401);
             }
 
-            // DB
+            // DB - SECURITY: Never expose SQL in production
             if ($exception instanceof QueryException) {
+                \Log::error('Database error', [
+                    'exception' => get_class($exception),
+                    'message' => $exception->getMessage(),
+                    'sql' => $exception->getSql() ?? 'N/A',
+                    'bindings' => $exception->getBindings() ?? [],
+                    'url' => $request->fullUrl(),
+                    'user_id' => auth()->id(),
+                ]);
+
                 return response()->json([
                     'status'    => 'error',
-                    'message'   => 'Database error',
-                    'sql_error' => config('app.debug') ? $exception->getMessage() : null,
+                    'code'      => 'DATABASE_ERROR',
+                    'message'   => config('app.debug')
+                        ? 'Database error: ' . $exception->getMessage()
+                        : 'A database error occurred. Please try again later.',
+                    'timestamp' => now()->toIso8601String(),
                 ], 500);
             }
 
@@ -104,12 +142,20 @@ class Handler extends ExceptionHandler
                 'url' => $request->fullUrl(),
                 'method' => $request->method(),
                 'user_id' => auth()->id(),
+                'ip' => $request->ip(),
             ]);
+
+            // SECURITY: Sanitize error message in production
+            $errorMessage = config('app.debug')
+                ? $exception->getMessage()
+                : $this->sanitizeErrorMessage($exception->getMessage());
 
             return response()->json([
                 'status'    => 'error',
-                'message'   => config('app.debug') ? $exception->getMessage() : 'Server error',
+                'code'      => 'INTERNAL_ERROR',
+                'message'   => $errorMessage,
                 'exception' => config('app.debug') ? class_basename($exception) : null,
+                'timestamp' => now()->toIso8601String(),
             ], 500);
         }
         //check if exception is an instance of ModelNotFoundException.
@@ -211,9 +257,63 @@ class Handler extends ExceptionHandler
     {
         return response()->json([
             'status'  => 'error',
+            'code'    => 'VALIDATION_FAILED',
             'message' => 'Validation failed',
             'errors'  => $exception->errors(),
+            'timestamp' => now()->toIso8601String(),
         ], $exception->status);
+    }
+
+    /**
+     * Sanitize error message to prevent sensitive data exposure
+     *
+     * SECURITY: Removes file paths, SQL, credentials from error messages
+     *
+     * @param string $message
+     * @return string
+     */
+    private function sanitizeErrorMessage(string $message): string
+    {
+        // If message is empty, return generic message
+        if (empty($message)) {
+            return 'An unexpected error occurred';
+        }
+
+        // List of patterns to remove (security-sensitive)
+        $patterns = [
+            // File paths (Windows & Linux)
+            '#([A-Z]:\\\\|/)[\w\\/\\\\\-\.]+#i',
+            // SQL queries
+            '#SELECT .+ FROM .+#i',
+            '#INSERT INTO .+#i',
+            '#UPDATE .+ SET .+#i',
+            '#DELETE FROM .+#i',
+            // Database connection strings
+            '#mysql:host=.+#i',
+            '#pgsql:host=.+#i',
+            // Passwords/tokens in messages
+            '#password[\'"]?\s*[:=]\s*[\'"]?.+[\'"]?#i',
+            '#token[\'"]?\s*[:=]\s*[\'"]?.+[\'"]?#i',
+            // Email addresses
+            '#[\w\.-]+@[\w\.-]+\.\w+#',
+        ];
+
+        $sanitized = $message;
+        foreach ($patterns as $pattern) {
+            $sanitized = preg_replace($pattern, '[REDACTED]', $sanitized);
+        }
+
+        // If message was completely sanitized, return generic
+        if (trim($sanitized) === '[REDACTED]' || empty(trim($sanitized))) {
+            return 'An error occurred. Please contact support.';
+        }
+
+        // Limit message length
+        if (strlen($sanitized) > 200) {
+            $sanitized = substr($sanitized, 0, 197) . '...';
+        }
+
+        return $sanitized;
     }
 
 }

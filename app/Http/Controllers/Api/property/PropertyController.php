@@ -501,60 +501,72 @@ class PropertyController extends Controller
 
     public function show($id)
     {
-        $property = Property::with([
-            'category',
-            'user',
-            'contents',
-            'galleryImages',
-            'proertyAmenities.amenity',
-            'UserPropertyCharacteristics',
-        ])->findOrFail($id);
+        try {
+            $property = Property::with([
+                'category',
+                'user',
+                'contents',
+                'galleryImages',
+                'proertyAmenities.amenity',
+                'UserPropertyCharacteristics',
+            ])->findOrFail($id);
 
-        $content = $property->contents->first();
-        $characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
+            $content = $property->contents->first();
+            $characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
 
-        $formattedProperty = array_merge([
-            'id' => $property->id,
-            'project_id' => $property->project_id,
-            'payment_method' => $property->payment_method,
-            'title' => optional($content)->title ?? '',
-            'address' => optional($content)->address ?? '',
-            'price' => $property->price ?? '0.00',
-            'pricePerMeter' => $property->pricePerMeter,
-            'purpose' => $property->purpose,
-            'type' => $property->type ?? '',
-            'beds' => $property->beds,
-            'bath' => $property->bath,
-            'area' => $property->area,
-            'features' => $property->features ?? [],
-            'status' => (int) $property->status,
-            'featured_image' => asset($property->featured_image),
-            'floor_planning_image' => collect($property->floor_planning_image)->map(fn($img) => asset($img))->toArray(),
-            'gallery' => $property->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
-            'description' => optional($content)->description ?? '',
-            'latitude' => $property->latitude ? (float) $property->latitude : null,
-            'longitude' => $property->longitude ? (float) $property->longitude : null,
-            'featured' => (bool) $property->featured,
-            'city_id' => optional($content)->city_id,
-            'state_id' => optional($content)->state_id,
-            'video_url' => $property->video_url ? asset($property->video_url) : null,
-            'virtual_tour' => $property->virtual_tour ? asset($property->virtual_tour) : null,
-            'video_image' => $property->video_image ? asset($property->video_image) : null,
-            'category_id' => $property->category_id,
-            'size' => $property->size ?? null,
-            'faqs' => $property->faqs ?? [],
-            'building' => $property->building,
-            'water_meter_number' => $property->water_meter_number,
-            'electricity_meter_number' => $property->electricity_meter_number,
-            'deed_number' => $property->deed_number ? asset($property->deed_number) : null,
-        ], $characteristics);
+            $formattedProperty = array_merge([
+                'id' => $property->id,
+                'project_id' => $property->project_id,
+                'payment_method' => $property->payment_method,
+                'title' => optional($content)->title ?? '',
+                'address' => optional($content)->address ?? '',
+                'price' => $property->price ?? '0.00',
+                'pricePerMeter' => $property->pricePerMeter,
+                'purpose' => $property->purpose,
+                'type' => $property->type ?? '',
+                'beds' => $property->beds,
+                'bath' => $property->bath,
+                'area' => $property->area,
+                'features' => $property->features ?? [],
+                'status' => (int) $property->status,
+                'featured_image' => asset($property->featured_image),
+                'floor_planning_image' => collect($property->floor_planning_image)->map(fn($img) => asset($img))->toArray(),
+                'gallery' => $property->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
+                'description' => optional($content)->description ?? '',
+                'latitude' => $property->latitude ? (float) $property->latitude : null,
+                'longitude' => $property->longitude ? (float) $property->longitude : null,
+                'featured' => (bool) $property->featured,
+                'city_id' => optional($content)->city_id,
+                'state_id' => optional($content)->state_id,
+                'video_url' => $property->video_url ? asset($property->video_url) : null,
+                'virtual_tour' => $property->virtual_tour ? asset($property->virtual_tour) : null,
+                'video_image' => $property->video_image ? asset($property->video_image) : null,
+                'category_id' => $property->category_id,
+                'size' => $property->size ?? null,
+                'faqs' => $property->faqs ?? [],
+                'building' => $property->building,
+                'water_meter_number' => $property->water_meter_number,
+                'electricity_meter_number' => $property->electricity_meter_number,
+                'deed_number' => $property->deed_number ? asset($property->deed_number) : null,
+            ], $characteristics);
 
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'property' => $formattedProperty
-            ]
-        ]);
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'property' => $formattedProperty
+                ]
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Property not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /*
@@ -1215,60 +1227,96 @@ class PropertyController extends Controller
 
     public function destroy($id)
     {
-        $property = Property::with([
-            'galleryImages',
-            'proertyAmenities',
-            'contents',
-            'wishlists',
-            // 'specifications'
-        ])->findOrFail($id);
+        try {
+            $property = Property::with([
+                'galleryImages',
+                'proertyAmenities',
+                'contents',
+                'wishlists',
+                // 'specifications'
+            ])->findOrFail($id);
 
-        $property->galleryImages()->delete();
-        $property->proertyAmenities()->delete();
-        $property->contents()->delete();
-        $property->wishlists()->delete();
-        // $property->specifications()->delete();
+            $property->galleryImages()->delete();
+            $property->proertyAmenities()->delete();
+            $property->contents()->delete();
+            $property->wishlists()->delete();
+            // $property->specifications()->delete();
 
-        if ($property->featured_image) {
-            Storage::delete('public/properties/' . $property->featured_image);
+            if ($property->featured_image) {
+                Storage::delete('public/properties/' . $property->featured_image);
+            }
+
+            $property->delete();
+
+            // TenantActivity::emit($request, 'property.deleted', 'user_properties', $property->id, $property->toArray(), null);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Property deleted successfully'
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Property not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
         }
-
-        $property->delete();
-
-        // TenantActivity::emit($request, 'property.deleted', 'user_properties', $property->id, $property->toArray(), null);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Property deleted successfully'
-        ], 200);
     }
 
     public function toggleFeatured($id)
     {
-        $property = Property::findOrFail($id);
+        try {
+            $property = Property::findOrFail($id);
 
-        $property->featured = !$property->featured;
-        $property->save();
-        Audit::property($property->user_id, $property->id, 'custom', "toggle featured -> ".($property->featured ? 'on' : 'off'));
+            $property->featured = !$property->featured;
+            $property->save();
+            Audit::property($property->user_id, $property->id, 'custom', "toggle featured -> ".($property->featured ? 'on' : 'off'));
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Property featured status updated',
-            'data' => ['featured' => $property->featured]
-        ]);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Property featured status updated',
+                'data' => ['featured' => $property->featured]
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Property not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 
     public function toggleStatus($id)
     {
-        $property = Property::findOrFail($id);
+        try {
+            $property = Property::findOrFail($id);
 
-        $property->status = !$property->status;
-        $property->save();
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Property status updated successfully',
-            'data' => ['status' => $property->status]
-        ]);
+            $property->status = !$property->status;
+            $property->save();
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Property status updated successfully',
+                'data' => ['status' => $property->status]
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Property not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 
     public function toggleFavorite($id)

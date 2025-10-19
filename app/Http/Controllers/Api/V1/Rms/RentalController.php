@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers\Api\V1\Rms;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\Request;
 use App\Services\Rms\RentalService;
 use App\Models\Api\Rms\RmRental;
 use App\Models\Api\Rms\RmPaymentInstallment;
 use App\Exceptions\PaymentException;
+use App\Exceptions\Api\ApiException;
 use Illuminate\Support\Facades\Log;
 
-class RentalController extends Controller
+class RentalController extends BaseApiController
 {
     protected $rentalService;
 
@@ -43,6 +44,7 @@ class RentalController extends Controller
 
             $rentals = $this->rentalService->listRentals($request);
 
+            // CLEAN: Use success helper with pagination meta
             return response()->json([
                 'status' => true,
                 'data' => $rentals->items(),
@@ -58,17 +60,10 @@ class RentalController extends Controller
                     'prev_page_url' => $rentals->previousPageUrl(),
                 ]
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
+        } catch (ApiException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
+            return $this->handleException($e);
         }
     }
 
@@ -105,18 +100,11 @@ class RentalController extends Controller
 
             $rental = $this->rentalService->createRental(auth()->id(), $data);
 
-            return response()->json(['status' => true, 'data' => $rental], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
+            return $this->created($rental, 'Rental created successfully');
+        } catch (ApiException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->handleException($e);
         }
     }
 
@@ -124,17 +112,11 @@ class RentalController extends Controller
     {
         try {
             $rental = $this->rentalService->getRentalDetails(auth()->id(), $id);
-            return response()->json(['status' => true, 'data' => $rental]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Rental not found'
-            ], 404);
+            return $this->success($rental);
+        } catch (ApiException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
+            return $this->handleException($e);
         }
     }
 
@@ -156,17 +138,11 @@ class RentalController extends Controller
             $regenerate = $request->boolean('regenerate_schedule', false);
             $rental = $this->rentalService->updateRental(auth()->id(), $id, $data, $regenerate);
 
-            return response()->json(['status' => true, 'data' => $rental]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Rental not found'
-            ], 404);
+            return $this->success($rental, 'Rental updated successfully');
+        } catch (ApiException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 400);
+            return $this->handleException($e);
         }
     }
 
@@ -174,12 +150,13 @@ class RentalController extends Controller
     {
         try {
             $this->rentalService->deleteRental(auth()->id(), $id);
-            return response()->json(null, 204);
+            return $this->noContent();
+        } catch (ApiException $e) {
+            // CLEAN: Custom exceptions render themselves with error codes
+            return $e->render();
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 400);
+            // SECURITY: Generic exceptions handled safely
+            return $this->handleException($e);
         }
     }
 
@@ -187,17 +164,11 @@ class RentalController extends Controller
     {
         try {
             $details = $this->rentalService->getPropertyDetails(auth()->id(), $id);
-            return response()->json(['status' => true, 'data' => $details]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Rental not found'
-            ], 404);
+            return $this->success($details);
+        } catch (ApiException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
+            return $this->handleException($e);
         }
     }
 
@@ -205,17 +176,11 @@ class RentalController extends Controller
     {
         try {
             $collections = $this->rentalService->getCurrentCollections(auth()->id(), $id);
-            return response()->json(['status' => true, 'data' => $collections]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Rental not found'
-            ], 404);
+            return $this->success($collections);
+        } catch (ApiException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
+            return $this->handleException($e);
         }
     }
 
@@ -223,17 +188,11 @@ class RentalController extends Controller
     {
         try {
             $details = $this->rentalService->getRentalDetailsWithPayments(auth()->id(), $id);
-            return response()->json(['status' => true, 'data' => $details]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Rental not found'
-            ], 404);
+            return $this->success($details);
+        } catch (ApiException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
+            return $this->handleException($e);
         }
     }
 
@@ -245,17 +204,11 @@ class RentalController extends Controller
     {
         try {
             $collectionData = $this->rentalService->getPaymentCollectionData(auth()->id(), $id);
-            return response()->json(['status' => true, 'data' => $collectionData]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Rental not found'
-            ], 404);
+            return $this->success($collectionData);
+        } catch (ApiException $e) {
+            return $e->render();
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
+            return $this->handleException($e);
         }
     }
 

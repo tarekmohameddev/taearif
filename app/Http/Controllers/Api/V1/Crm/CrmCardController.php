@@ -65,11 +65,23 @@ class CrmCardController extends ApiController
      */
     public function show(Request $request, int $id)
     {
-        $card = CrmCard::forUser($request->user()->id)->findOrFail($id);
+        try {
+            $card = CrmCard::forUser($request->user()->id)->findOrFail($id);
 
-        return $this->success([
-            'card' => $card
-        ]);
+            return $this->success([
+                'card' => $card
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Card not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -77,24 +89,42 @@ class CrmCardController extends ApiController
      */
     public function update(Request $request, int $id)
     {
-        $user = $request->user();
-        $card = CrmCard::forUser($user->id)->findOrFail($id);
+        try {
+            $user = $request->user();
+            $card = CrmCard::forUser($user->id)->findOrFail($id);
 
-        $validated = $request->validate([
-            'card_customer_id' => [
-                'sometimes', 'required', 'integer',
-                Rule::exists('api_customers', 'id')->where(fn($q) => $q->where('user_id', $user->id)),
-            ],
-            'card_content'      => ['nullable', 'string'],
-            'card_procedure'    => ['sometimes', 'required', Rule::in(['reminder','note','interaction','appointment'])],
-            'card_project'      => ['nullable', 'integer'],
-            'card_property'     => ['nullable', 'integer'],
-            'card_date'         => ['nullable', 'date'],
-        ]);
+            $validated = $request->validate([
+                'card_customer_id' => [
+                    'sometimes', 'required', 'integer',
+                    Rule::exists('api_customers', 'id')->where(fn($q) => $q->where('user_id', $user->id)),
+                ],
+                'card_content'      => ['nullable', 'string'],
+                'card_procedure'    => ['sometimes', 'required', Rule::in(['reminder','note','interaction','appointment'])],
+                'card_project'      => ['nullable', 'integer'],
+                'card_property'     => ['nullable', 'integer'],
+                'card_date'         => ['nullable', 'date'],
+            ]);
 
-        $card->fill($validated)->save();
+            $card->fill($validated)->save();
 
-        return $this->success(['card' => $card]);
+            return $this->success(['card' => $card]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Card not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 
     /**
@@ -102,10 +132,22 @@ class CrmCardController extends ApiController
      */
     public function destroy(Request $request, int $id)
     {
-        $user = $request->user();
-        $card = CrmCard::forUser($user->id)->findOrFail($id);
-        $card->delete();
+        try {
+            $user = $request->user();
+            $card = CrmCard::forUser($user->id)->findOrFail($id);
+            $card->delete();
 
-        return $this->success(['message' => 'Deleted']);
+            return $this->success(['message' => 'Deleted']);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Card not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 }
