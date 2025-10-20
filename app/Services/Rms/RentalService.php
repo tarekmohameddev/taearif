@@ -1438,6 +1438,57 @@ class RentalService
             // Update status
             $rental->update($updateData);
 
+            // CASCADE: When rental status changes to 'ended', terminate active contract
+            if ($newStatus === 'ended') {
+                $activeContract = $rental->activeContract;
+                if ($activeContract && $activeContract->status === 'active') {
+                    $endDate = $data['end_date'] ?? now()->toDateString();
+
+                    // Terminate the contract
+                    $activeContract->update([
+                        'status' => 'terminated',
+                        'end_date' => $endDate,
+                        'termination_reason' => $data['termination_reason'] ?? 'Rental ended by user',
+                        'updated_by' => $userId
+                    ]);
+
+                    // Cancel future installments after end date
+                    RmPaymentInstallment::where('contract_id', $activeContract->id)
+                        ->where('status', 'pending')
+                        ->where('due_date', '>', $endDate)
+                        ->update([
+                            'status' => 'cancelled',
+                            'payment_status' => 'cancelled'
+                        ]);
+
+                    \Log::info('Contract automatically terminated due to rental status change', [
+                        'rental_id' => $rental->id,
+                        'contract_id' => $activeContract->id,
+                        'user_id' => $userId
+                    ]);
+                }
+            }
+
+            // CASCADE: When rental status changes to 'cancelled', terminate/cancel contracts
+            if ($newStatus === 'cancelled') {
+                $activeContract = $rental->activeContract;
+                if ($activeContract && in_array($activeContract->status, ['active', 'pending'])) {
+                    $activeContract->update([
+                        'status' => 'cancelled',
+                        'termination_reason' => $data['termination_reason'] ?? 'Rental cancelled by user',
+                        'updated_by' => $userId
+                    ]);
+
+                    // Cancel all pending installments
+                    RmPaymentInstallment::where('contract_id', $activeContract->id)
+                        ->where('status', 'pending')
+                        ->update([
+                            'status' => 'cancelled',
+                            'payment_status' => 'cancelled'
+                        ]);
+                }
+            }
+
             // Update property status if needed
             if ($rental->unit_id) {
                 $property = \App\Models\User\RealestateManagement\Property::find($rental->unit_id);
@@ -1446,7 +1497,7 @@ class RentalService
                 }
             }
 
-            return $rental->fresh();
+            return $rental->fresh(['activeContract', 'contracts']);
         });
     }
 
