@@ -1004,25 +1004,53 @@ class RentalService
                 'payment_status' => $this->getCostItemPaymentStatus($paidAmount, $totalAmount),
             ];
         } else {
-            // per_installment: multiply by months
-            $amountPerInstallment = $baseCost * $monthsPerInstallment;
+            // per_installment: calculate based on rental_type
+            if ($rental->rental_type === 'annual') {
+                // Annual: cost per year, divided by number of payments
+                // Example: 100 SAR/year, 2 years, 4 payments = (100 × 2) / 4 = 50 SAR per installment
+                $totalCostForContract = $baseCost * ($rental->rental_duration ?? 1);
+                $numberOfPayments = $this->calculateNumberOfPayments($rental);
+                $amountPerInstallment = ($numberOfPayments > 0) ? ($totalCostForContract / $numberOfPayments) : 0;
 
-            return [
-                'id' => $costItem->id,
-                'name' => $costItem->name,
-                'cost_per_month' => round($baseCost, 2),
-                'type' => $costItem->type,
-                'payer' => $costItem->payer,
-                'payment_frequency' => 'per_installment',
-                'description' => $costItem->description,
-                'months_per_installment' => $monthsPerInstallment,
-                'amount_per_installment' => round($amountPerInstallment, 2),
-                'total_amount' => round($amountPerInstallment, 2),
-                'paid_amount' => round($paidAmount, 2),
-                'remaining_amount' => round(max(0, $amountPerInstallment - $paidAmount), 2),
-                'applies_to_all_payments' => true,
-                'payment_status' => $this->getCostItemPaymentStatus($paidAmount, $amountPerInstallment),
-            ];
+                return [
+                    'id' => $costItem->id,
+                    'name' => $costItem->name,
+                    'cost_per_year' => round($baseCost, 2),
+                    'type' => $costItem->type,
+                    'payer' => $costItem->payer,
+                    'payment_frequency' => 'per_installment',
+                    'description' => $costItem->description,
+                    'rental_duration_years' => $rental->rental_duration,
+                    'number_of_payments' => $numberOfPayments,
+                    'amount_per_installment' => round($amountPerInstallment, 2),
+                    'total_amount' => round($amountPerInstallment, 2),
+                    'paid_amount' => round($paidAmount, 2),
+                    'remaining_amount' => round(max(0, $amountPerInstallment - $paidAmount), 2),
+                    'applies_to_all_payments' => true,
+                    'payment_status' => $this->getCostItemPaymentStatus($paidAmount, $amountPerInstallment),
+                ];
+            } else {
+                // Monthly: cost per month × months per installment
+                // Example: 100 SAR/month × 6 months = 600 SAR per installment
+                $amountPerInstallment = $baseCost * $monthsPerInstallment;
+
+                return [
+                    'id' => $costItem->id,
+                    'name' => $costItem->name,
+                    'cost_per_month' => round($baseCost, 2),
+                    'type' => $costItem->type,
+                    'payer' => $costItem->payer,
+                    'payment_frequency' => 'per_installment',
+                    'description' => $costItem->description,
+                    'months_per_installment' => $monthsPerInstallment,
+                    'amount_per_installment' => round($amountPerInstallment, 2),
+                    'total_amount' => round($amountPerInstallment, 2),
+                    'paid_amount' => round($paidAmount, 2),
+                    'remaining_amount' => round(max(0, $amountPerInstallment - $paidAmount), 2),
+                    'applies_to_all_payments' => true,
+                    'payment_status' => $this->getCostItemPaymentStatus($paidAmount, $amountPerInstallment),
+                ];
+            }
         }
     }
 
@@ -1054,6 +1082,36 @@ class RentalService
             'annual' => 12,
             default => 1
         };
+    }
+
+    /**
+     * Calculate total number of payments for a rental
+     */
+    private function calculateNumberOfPayments($rental)
+    {
+        if (is_null($rental->rental_duration) ||
+            is_null($rental->rental_type) ||
+            is_null($rental->paying_plan) ||
+            $rental->rental_duration <= 0) {
+            return 0;
+        }
+
+        // Calculate total months
+        $totalMonths = ($rental->rental_type === 'monthly')
+            ? $rental->rental_duration
+            : $rental->rental_duration * 12;
+
+        // Calculate payment interval
+        $paymentInterval = match($rental->paying_plan) {
+            'monthly' => 1,
+            'quarterly' => 3,
+            'semi_annual' => 6,
+            'annual' => 12,
+            default => 1
+        };
+
+        // Calculate number of payments
+        return ceil($totalMonths / $paymentInterval);
     }
 
     /**
