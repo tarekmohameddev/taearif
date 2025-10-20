@@ -146,17 +146,64 @@ class RentalController extends BaseApiController
         }
     }
 
+    /**
+     * Delete a rental
+     *
+     * @param int $id Rental ID
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function destroy($id)
     {
         try {
+            // Get rental details before deletion for response
+            $rental = $this->rentalService->getRentalDetails(auth()->id(), $id);
+
+            // Store important info before deletion
+            $deletedInfo = [
+                'id' => $rental->id,
+                'tenant_name' => $rental->tenant_full_name,
+                'property' => $rental->property?->property_name ?? null,
+                'deleted_at' => now()->toISOString()
+            ];
+
+            // Delete the rental
             $this->rentalService->deleteRental(auth()->id(), $id);
-            return $this->noContent();
+
+            // Return frontend-friendly response
+            return response()->json([
+                'status' => true,
+                'message' => 'Rental deleted successfully',
+                'data' => $deletedInfo
+            ], 200);
+
         } catch (ApiException $e) {
             // CLEAN: Custom exceptions render themselves with error codes
             return $e->render();
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            // Handle not found error
+            return response()->json([
+                'status' => false,
+                'message' => 'Rental not found or already deleted',
+                'error_code' => 'RENTAL_NOT_FOUND'
+            ], 404);
+
         } catch (\Exception $e) {
+            // Log the error for debugging
+            Log::error('Rental deletion failed', [
+                'user_id' => auth()->id(),
+                'rental_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             // SECURITY: Generic exceptions handled safely
-            return $this->handleException($e);
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to delete rental',
+                'error_code' => 'DELETION_FAILED',
+                'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred while deleting the rental'
+            ], 500);
         }
     }
 
@@ -477,6 +524,7 @@ class RentalController extends BaseApiController
             $data = $request->validate([
                 'status' => 'required|string',
                 'end_date' => 'nullable|date',
+                'termination_reason' => 'nullable|string|max:500',
                 'notes' => 'nullable|string|max:500'
             ]);
 
