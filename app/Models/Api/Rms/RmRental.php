@@ -237,9 +237,6 @@ class RmRental extends Model
 
         $totalCosts = 0;
 
-        // Get months per installment based on paying_plan
-        $monthsPerInstallment = $this->getMonthsPerInstallment();
-
         foreach ($this->tenantCostItems as $costItem) {
             // Only include per_installment costs
             if ($costItem->payment_frequency !== 'per_installment') {
@@ -256,9 +253,19 @@ class RmRental extends Model
                 $itemCost = ($baseAmount * $costItem->cost) / 100;
             }
 
-            // Multiply by number of months per installment
-            // Example: 50 SAR/month × 6 months = 300 SAR per installment
-            $itemCost *= $monthsPerInstallment;
+            // Calculate cost per installment based on rental_type
+            if ($this->rental_type === 'annual') {
+                // Annual: cost per year, divided by number of payments
+                // Example: 100 SAR/year, 2 years, 4 payments = (100 × 2) / 4 = 50 SAR per installment
+                $totalCostForContract = $itemCost * ($this->rental_duration ?? 1);
+                $numberOfPayments = $this->calculateNumberOfPayments();
+                $itemCost = ($numberOfPayments > 0) ? ($totalCostForContract / $numberOfPayments) : 0;
+            } else {
+                // Monthly: cost per month × months per installment
+                // Example: 100 SAR/month × 6 months = 600 SAR per installment
+                $monthsPerInstallment = $this->getMonthsPerInstallment();
+                $itemCost *= $monthsPerInstallment;
+            }
 
             $totalCosts += $itemCost;
         }
@@ -272,9 +279,6 @@ class RmRental extends Model
         // one_time costs are NOT included here (see one_time_owner_costs)
 
         $totalCosts = 0;
-
-        // Get months per installment based on paying_plan
-        $monthsPerInstallment = $this->getMonthsPerInstallment();
 
         foreach ($this->ownerCostItems as $costItem) {
             // Only include per_installment costs
@@ -292,9 +296,19 @@ class RmRental extends Model
                 $itemCost = ($baseAmount * $costItem->cost) / 100;
             }
 
-            // Multiply by number of months per installment
-            // Example: 50 SAR/month × 6 months = 300 SAR per installment
-            $itemCost *= $monthsPerInstallment;
+            // Calculate cost per installment based on rental_type
+            if ($this->rental_type === 'annual') {
+                // Annual: cost per year, divided by number of payments
+                // Example: 100 SAR/year, 2 years, 4 payments = (100 × 2) / 4 = 50 SAR per installment
+                $totalCostForContract = $itemCost * ($this->rental_duration ?? 1);
+                $numberOfPayments = $this->calculateNumberOfPayments();
+                $itemCost = ($numberOfPayments > 0) ? ($totalCostForContract / $numberOfPayments) : 0;
+            } else {
+                // Monthly: cost per month × months per installment
+                // Example: 100 SAR/month × 6 months = 600 SAR per installment
+                $monthsPerInstallment = $this->getMonthsPerInstallment();
+                $itemCost *= $monthsPerInstallment;
+            }
 
             $totalCosts += $itemCost;
         }
@@ -385,6 +399,37 @@ class RmRental extends Model
             'annual' => 12,
             default => 1
         };
+    }
+
+    /**
+     * Calculate total number of payments based on rental_type, rental_duration, and paying_plan
+     * Used for calculating cost items in annual contracts
+     */
+    private function calculateNumberOfPayments()
+    {
+        if (is_null($this->rental_duration) ||
+            is_null($this->rental_type) ||
+            is_null($this->paying_plan) ||
+            $this->rental_duration <= 0) {
+            return 0;
+        }
+
+        // Calculate total months
+        $totalMonths = ($this->rental_type === 'monthly')
+            ? $this->rental_duration
+            : $this->rental_duration * 12;
+
+        // Calculate payment interval
+        $paymentInterval = match($this->paying_plan) {
+            'monthly' => 1,
+            'quarterly' => 3,
+            'semi_annual' => 6,
+            'annual' => 12,
+            default => 1
+        };
+
+        // Calculate number of payments
+        return ceil($totalMonths / $paymentInterval);
     }
 
 }
