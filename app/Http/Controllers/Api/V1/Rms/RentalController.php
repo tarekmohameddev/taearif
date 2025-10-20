@@ -373,11 +373,17 @@ class RentalController extends BaseApiController
             $paymentService = app(\App\Services\Rms\PaymentService::class);
 
             // Prepare all payment data with common fields
-            $paymentsData = collect($data['payments'])->map(function ($paymentData) use ($data) {
+            $paymentsData = collect($data['payments'])->map(function ($paymentData, $index) use ($data) {
+                // Generate unique reference for each payment if base reference provided
+                // Format: PAY-{timestamp}-{index} to ensure uniqueness within batch
+                $uniqueReference = !empty($data['reference'])
+                    ? $data['reference'] . '-' . ($index + 1)
+                    : null;
+
                 return array_merge($paymentData, [
                     'payment_method' => $data['payment_method'],
                     'payment_date' => $data['payment_date'] ?? now()->toDateString(),
-                    'reference' => $data['reference'],
+                    'reference' => $uniqueReference,
                     'notes' => $paymentData['notes'] ?? $data['notes'],
                     'bank_name' => $data['bank_name'] ?? null,
                     'receipt_image_path' => $data['receipt_image_path'] ?? null,
