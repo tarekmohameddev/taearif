@@ -750,7 +750,7 @@ class RentalService
                     'paid_amount' => $paidAmount,
                     'remaining' => $remainingAmount,
                     'status' => $this->getPaymentStatus($installment),
-                    'is_late' => now()->isAfter($installment->due_date),
+                    'is_late' => now()->startOfDay()->isAfter($installment->due_date),
                     'payment_status' => $installment->payment_status
                 ];
             }
@@ -791,7 +791,7 @@ class RentalService
                     'original_amount' => $totalAmount,
                     'paid_amount' => $paidAmount,
                     'status' => $this->getPaymentStatus($installment),
-                    'days_overdue' => now()->diffInDays($installment->due_date),
+                    'days_overdue' => now()->startOfDay()->diffInDays($installment->due_date),
                     'payment_status' => $installment->payment_status
                 ];
             }
@@ -955,7 +955,7 @@ class RentalService
                 'paid_amount' => $paidAmount,
                 'remaining_amount' => $remainingAmount,
                 'status' => $this->getInstallmentPaymentStatus($paidAmount, $rentAmount, $installment->due_date),
-                'is_overdue' => now()->isAfter($installment->due_date) && $remainingAmount > 0
+                'is_overdue' => now()->startOfDay()->isAfter($installment->due_date) && $remainingAmount > 0
             ];
         });
 
@@ -1357,7 +1357,7 @@ class RentalService
                     'paid_amount' => $paidAmount,
                     'remaining_amount' => $remainingAmount,
                     'status' => $this->getInstallmentPaymentStatus($paidAmount, $rentAmount, $installment->due_date),
-                    'is_overdue' => now()->isAfter($installment->due_date) && $remainingAmount > 0
+                    'is_overdue' => now()->startOfDay()->isAfter($installment->due_date) && $remainingAmount > 0
                 ];
             });
 
@@ -2090,7 +2090,7 @@ class RentalService
         // Apply status-based date filters
         switch ($status) {
             case 'overdue':
-                $installmentsQuery->whereDate('due_date', '<', $today);
+                $installmentsQuery->whereDate('due_date', '<', $todayString);
                 break;
             case 'due_today':
                 if (!empty($filters['from_date']) && !empty($filters['to_date'])) {
@@ -2098,11 +2098,11 @@ class RentalService
                     $installmentsQuery->whereBetween('due_date', [$fromDate, $toDate]);
                 } else {
                     // Default to today
-                    $installmentsQuery->whereDate('due_date', '=', $today);
+                    $installmentsQuery->whereDate('due_date', '=', $todayString);
                 }
                 break;
             case 'upcoming':
-                $installmentsQuery->whereDate('due_date', '>', $today);
+                $installmentsQuery->whereDate('due_date', '>', $todayString);
                 break;
             default:
                 // If date range is provided, use it
@@ -2110,7 +2110,7 @@ class RentalService
                     $installmentsQuery->whereBetween('due_date', [$fromDate, $toDate]);
                 } else {
                     // Default to today
-                    $installmentsQuery->whereDate('due_date', '=', $today);
+                    $installmentsQuery->whereDate('due_date', '=', $todayString);
                 }
         }
 
@@ -2161,7 +2161,7 @@ class RentalService
                 // Only count OVERDUE installments as arrears (not future ones)
                 $overdueInstallments = $rental->installments()
                     ->where('contract_id', $rental->activeContract->id)
-                    ->where('due_date', '<', $today)
+                    ->where('due_date', '<', $todayString)
                     ->whereIn('status', ['pending', 'active'])
                     ->withSum('payments', 'amount')
                     ->get();
@@ -2235,7 +2235,7 @@ class RentalService
                 ],
                 'due_date' => $installment->due_date->format('Y-m-d'),
                 'days_overdue' => $installment->due_date < $today
-                    ? now()->diffInDays($installment->due_date)
+                    ? $today->diffInDays($installment->due_date)
                     : 0,
                 'contract_info' => [
                     'contract_id' => $rental->activeContract->id,
