@@ -161,8 +161,16 @@ class DashboardController extends Controller
                     if (str_starts_with($imagePath, 'http')) {
                         $propertyImageUrl = $imagePath;
                     } else {
-                        // Use the correct path format: /properties/ instead of /storage/properties/
-                        $propertyImageUrl = asset('properties/' . ltrim($imagePath, '/'));
+                        // Clean the path and ensure it starts with properties/
+                        $cleanPath = ltrim($imagePath, '/');
+
+                        // If path already contains 'properties/', use it as is
+                        if (str_starts_with($cleanPath, 'properties/')) {
+                            $propertyImageUrl = asset($cleanPath);
+                        } else {
+                            // If path doesn't contain 'properties/', add it
+                            $propertyImageUrl = asset('properties/' . $cleanPath);
+                        }
                     }
                 }
 
