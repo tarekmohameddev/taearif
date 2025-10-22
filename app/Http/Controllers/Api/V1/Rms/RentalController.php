@@ -506,13 +506,13 @@ class RentalController extends BaseApiController
             $validated = $request->validate([
                 'per_page' => 'nullable|integer|min:1|max:100',
                 'page' => 'nullable|integer|min:1',
-                'from_date' => 'nullable|date',
-                'to_date' => 'nullable|date|after_or_equal:from_date',
-                'building_id' => 'nullable|integer',
+                'from_date' => 'nullable|date|before_or_equal:today',
+                'to_date' => 'nullable|date|after_or_equal:from_date|before_or_equal:today',
+                'building_id' => 'nullable|integer|exists:buildings,id',
                 'status' => 'nullable|string|in:overdue,due_today,upcoming',
             ]);
 
-            $result = $this->rentalService->getDailyFollowUp(auth()->id(), $validated);
+            $result = $this->rentalService->getDailyFollowUp($validated);
 
             return response()->json([
                 'status' => true,
@@ -530,6 +530,12 @@ class RentalController extends BaseApiController
                 'errors' => $e->errors(),
             ], 422);
 
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 403);
+
         } catch (\Exception $e) {
             Log::error('Daily follow-up error: ' . $e->getMessage(), [
                 'user_id' => auth()->id(),
@@ -539,7 +545,6 @@ class RentalController extends BaseApiController
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to retrieve daily follow-up',
-                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error',
             ], 500);
         }
     }

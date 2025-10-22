@@ -23,6 +23,44 @@ class RentalService
     }
 
     /**
+     * Validate that user owns the requested building
+     *
+     * @param int $ownerId
+     * @param int $buildingId
+     * @return void
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
+    private function validateBuildingAccess(int $ownerId, int $buildingId): void
+    {
+        $hasAccess = \App\Models\Building::where('id', $buildingId)
+            ->where('user_id', $ownerId)
+            ->exists();
+
+        if (!$hasAccess) {
+            throw new \Illuminate\Auth\Access\AuthorizationException(
+                'You do not have access to this building'
+            );
+        }
+    }
+
+    /**
+     * Get user's default language ID with caching
+     *
+     * @param int $userId
+     * @return int
+     */
+    private function getUserLanguageId($userId): int
+    {
+        return \Cache::remember("user_language_{$userId}", 3600, function() use ($userId) {
+            $userLanguage = \App\Models\UserLanguage::where('user_id', $userId)
+                ->where('is_default', 1)
+                ->first();
+
+            return $userLanguage?->id ?? 1; // Fallback to language ID 1 (Arabic)
+        });
+    }
+
+    /**
      * Get property content (name and address) in user's default language
      *
      * @param Property|null $property
@@ -1996,13 +2034,18 @@ class RentalService
     /**
      * Get daily follow-up data for rentals with payment due dates
      *
-     * @param int $userId
      * @param array $filters
      * @return array
      */
-    public function getDailyFollowUp($userId, array $filters = [])
+    public function getDailyFollowUp(array $filters = [])
     {
-        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
+        // Always use authenticated user - no parameter
+        $ownerId = auth()->user()->tenantOwnerId();
+
+        // Validate building access if filter provided
+        if (!empty($filters['building_id'])) {
+            $this->validateBuildingAccess($ownerId, $filters['building_id']);
+        }
 
         // Pagination parameters
         $perPage = $filters['per_page'] ?? 15;
@@ -2017,16 +2060,25 @@ class RentalService
         // Status filter: overdue, due_today, upcoming
         $status = $filters['status'] ?? 'due_today';
 
+        // Get user's default language for optimized eager loading
+        $userLanguageId = $this->getUserLanguageId($ownerId);
+
         // Building query for installments based on status
         $installmentsQuery = RmPaymentInstallment::with([
             'rental.activeContract',
-            'rental.property.project.contents', // Eager load project contents for language support
+            'rental.property.contents' => function($query) use ($userLanguageId) {
+                $query->where('language_id', $userLanguageId);
+            },
+            'rental.property.project.contents' => function($query) use ($userLanguageId) {
+                $query->where('language_id', $userLanguageId);
+            },
             'rental.property.building',
-            'rental.building', // Also load rental's direct building relationship
-            'rental.property.contents', // Eager load property contents for language support
-            'rental.project.contents', // Also load from rental's direct project relationship
+            'rental.building',
+            'rental.project.contents' => function($query) use ($userLanguageId) {
+                $query->where('language_id', $userLanguageId);
+            },
             'contract',
-            'payments'
+            'payments' // Load all payments for sum calculation
         ])
         ->whereHas('rental', function($q) use ($ownerId, $filters) {
             $q->where('user_id', $ownerId)
@@ -2083,35 +2135,59 @@ class RentalService
         $totalArrears = 0;
         $totalOverdueArrears = 0;
 
+        // Cache to prevent recalculating arrears for the same rental multiple times
+        $rentalArrearsCache = [];
+        // Track which rentals we've already counted in summary totals
+        $processedRentals = [];
+
         foreach ($installments as $installment) {
             $rental = $installment->rental;
 
             if (!$rental || !$rental->activeContract) {
+                // Log missing data for debugging
+                \Log::warning('Daily Follow-Up: Skipping installment due to missing rental or contract', [
+                    'installment_id' => $installment->id,
+                    'has_rental' => (bool)$rental,
+                    'has_contract' => $rental ? (bool)$rental->activeContract : false,
+                    'user_id' => $ownerId
+                ]);
                 continue;
             }
 
-            // Calculate paid amount for this installment
-            $paidAmount = $installment->payments()->sum('amount');
+            // Calculate paid amount for this installment (using eager loaded payments)
+            $paidAmount = $installment->payments->sum('amount');
             $remainingAmount = max(0, $installment->amount - $paidAmount);
 
-            // Calculate overdue arrears (only if past due date)
+            // Calculate overdue arrears for THIS specific installment
             $overdueArrears = 0;
             if ($installment->due_date < $today && $remainingAmount > 0) {
                 $overdueArrears = $remainingAmount;
             }
 
-            // Calculate total arrears for this rental (all unpaid amounts across all installments)
-            $allInstallments = $rental->installments()
-                ->where('contract_id', $rental->activeContract->id)
-                ->whereIn('status', ['pending', 'active'])
-                ->get();
+            // Calculate total arrears for this rental ONCE (not per installment)
+            // This prevents duplicate queries and double-counting
+            if (!isset($rentalArrearsCache[$rental->id])) {
+                // Only count OVERDUE installments as arrears (not future ones)
+                $overdueInstallments = $rental->installments()
+                    ->where('contract_id', $rental->activeContract->id)
+                    ->where('due_date', '<', $today)
+                    ->whereIn('status', ['pending', 'active'])
+                    ->withSum('payments', 'amount')
+                    ->get();
 
-            $totalUnpaidAmount = 0;
-            foreach ($allInstallments as $inst) {
-                $instPaid = $inst->payments()->sum('amount');
-                $instRemaining = max(0, $inst->amount - $instPaid);
-                $totalUnpaidAmount += $instRemaining;
+                $totalArrearsForRental = 0;
+                foreach ($overdueInstallments as $inst) {
+                    $instPaid = $inst->payments_sum_amount ?? 0;
+                    $instRemaining = max(0, $inst->amount - $instPaid);
+                    $totalArrearsForRental += $instRemaining;
+                }
+
+                // Cache the result to avoid recalculating
+                $rentalArrearsCache[$rental->id] = $totalArrearsForRental;
             }
+
+            // Get the cached arrears value
+            $totalUnpaidAmount = $rentalArrearsCache[$rental->id];
 
             // Get property content in user's default language
             $propertyContent = $this->getPropertyContent($rental->property, $ownerId);
@@ -2183,9 +2259,17 @@ class RentalService
             $followUpList[] = $followUpItem;
 
             // Update totals
+            // Amount due for THIS installment
             $totalAmountDue += $remainingAmount;
-            $totalArrears += $totalUnpaidAmount;
+
+            // Overdue amount for THIS installment
             $totalOverdueArrears += $overdueArrears;
+
+            // Total arrears counted ONCE per rental (prevents double counting)
+            if (!in_array($rental->id, $processedRentals)) {
+                $totalArrears += $totalUnpaidAmount;
+                $processedRentals[] = $rental->id;
+            }
         }
 
         return [
