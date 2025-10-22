@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\OwnerRental;
 
 use App\Http\Controllers\Controller;
+use App\Models\OwnerRental;
 use App\Models\User\RealestateManagement\Property;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,20 +13,28 @@ class DashboardController extends Controller
 {
     /**
      * Get authenticated owner rental
+     *
+     * @return \App\Models\OwnerRental
      */
-    private function getOwnerRental()
+    private function getOwnerRental(): OwnerRental
     {
-        return Auth::user();
+        /** @var \App\Models\OwnerRental $ownerRental */
+        $ownerRental = Auth::user();
+        return $ownerRental;
     }
 
     /**
-     * Get dashboard statistics
+     * Get dashboard statistics with rental payment information
      */
     public function dashboard()
     {
         try {
             $ownerRental = $this->getOwnerRental();
 
+            // Get property IDs assigned to owner rental
+            $propertyIds = $ownerRental->properties()->pluck('user_properties.id');
+
+            // Initialize statistics
             $stats = [
                 'total_properties' => $ownerRental->properties()->count(),
                 'active_properties' => $ownerRental->properties()->where('status', 1)->count(),
@@ -34,26 +43,100 @@ class DashboardController extends Controller
                 'active_rentals' => 0,
             ];
 
-            // Count rentals from assigned properties
-            $propertyIds = $ownerRental->properties()->pluck('user_properties.id');
+            $rentals = [];
+            $totalAmountDue = 0;
+            $totalOverdue = 0;
 
             if ($propertyIds->isNotEmpty()) {
-                $stats['total_rentals'] = DB::table('rm_rentals')
+                // Get rentals with relationships
+                $rentalRecords = DB::table('rm_rentals')
                     ->whereIn('unit_id', $propertyIds)
-                    ->count();
+                    ->whereNull('deleted_at')
+                    ->get();
 
-                $stats['active_rentals'] = DB::table('rm_rentals')
-                    ->whereIn('unit_id', $propertyIds)
-                    ->where('status', 'active')
-                    ->count();
+                $stats['total_rentals'] = $rentalRecords->count();
+                $stats['active_rentals'] = $rentalRecords->where('status', 'active')->count();
+
+                foreach ($rentalRecords as $rental) {
+                    // Get property information
+                    $property = DB::table('user_properties')
+                        ->leftJoin('user_property_contents', 'user_properties.id', '=', 'user_property_contents.property_id')
+                        ->where('user_properties.id', $rental->unit_id)
+                        ->select('user_properties.*', 'user_property_contents.title as property_title')
+                        ->first();
+
+                    // Get project information
+                    $project = null;
+                    if ($rental->project_id) {
+                        $project = DB::table('user_projects')
+                            ->leftJoin('user_project_contents', 'user_projects.id', '=', 'user_project_contents.project_id')
+                            ->where('user_projects.id', $rental->project_id)
+                            ->select('user_projects.*', 'user_project_contents.title as project_title')
+                            ->first();
+                    }
+
+                    // Get building information
+                    $building = null;
+                    if ($rental->building_id) {
+                        $building = DB::table('buildings')
+                            ->where('id', $rental->building_id)
+                            ->first();
+                    }
+
+                    // Get next payment due (upcoming installment)
+                    $nextInstallment = DB::table('rm_payment_installments')
+                        ->where('rental_id', $rental->id)
+                        ->whereIn('status', ['pending', 'active'])
+                        ->whereDate('due_date', '>=', now()->toDateString())
+                        ->orderBy('due_date', 'asc')
+                        ->first();
+
+                    // Calculate overdue amount (past due installments that are unpaid)
+                    $overdueAmount = DB::table('rm_payment_installments')
+                        ->where('rental_id', $rental->id)
+                        ->whereIn('status', ['pending', 'active'])
+                        ->whereDate('due_date', '<', now()->toDateString())
+                        ->sum('amount');
+
+                    $amountDue = $nextInstallment ? (float) $nextInstallment->amount : 0;
+                    $overdueAmount = (float) $overdueAmount;
+
+                    $totalAmountDue += $amountDue;
+                    $totalOverdue += $overdueAmount;
+
+                    // Build rental data with requested keys
+                    $rentals[] = [
+                        'rental_id' => $rental->id,
+                        'property_name' => $property ? ($property->property_title ?? 'N/A') : 'N/A',
+                        'project_name' => $project ? ($project->project_title ?? 'N/A') : 'N/A',
+                        'building_name' => $building ? ($building->name ?? 'N/A') : 'N/A',
+                        'amount_due' => $amountDue,
+                        'due_date' => $nextInstallment ? $nextInstallment->due_date : null,
+                        'overdue_amount' => $overdueAmount,
+                        'currency' => $rental->currency ?? 'SAR',
+                        'tenant_name' => $rental->tenant_full_name,
+                        'rental_status' => $rental->status,
+                    ];
+                }
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Dashboard data retrieved successfully',
                 'data' => [
-                    'owner_rental' => $ownerRental,
+                    'owner_rental' => [
+                        'id' => $ownerRental->id,
+                        'name' => $ownerRental->name,
+                        'email' => $ownerRental->email,
+                    ],
                     'statistics' => $stats,
+                    'rentals' => $rentals,
+                    'summary' => [
+                        'total_amount_due' => $totalAmountDue,
+                        'total_overdue' => $totalOverdue,
+                        'properties_count' => $propertyIds->count(),
+                        'active_rentals' => $stats['active_rentals'],
+                    ],
                 ],
             ], 200);
 
