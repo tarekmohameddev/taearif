@@ -790,7 +790,7 @@ class RentalService
                     'tenant_name' => $rental->tenant_full_name,
                     'tenant_phone' => $rental->tenant_phone,
                     'tenant_email' => $rental->tenant_email,
-                    'property_address' => $rental->property?->name ?? 'N/A',
+                    'property_address' => $rental->property?->content(1)?->title ?? 'N/A',
                     'building' => $rental->building,
                     'contract_number' => $rental->activeContract?->contract_number ?? 'N/A'
                 ],
@@ -848,7 +848,7 @@ class RentalService
                 'tenant_name' => $rental->tenant_full_name,
                 'tenant_phone' => $rental->tenant_phone,
                 'tenant_email' => $rental->tenant_email,
-                'property_address' => $rental->property?->name ?? 'N/A',
+                'property_address' => $rental->property?->content(1)?->title ?? 'N/A',
                 'building' => $rental->building,
                 'contract_number' => $rental->activeContract->contract_number
             ],
@@ -859,7 +859,7 @@ class RentalService
             ],
             'property' => [
                 'id' => $rental->property?->id,
-                'name' => $rental->property?->name,
+                'name' => $rental->property?->content(1)?->title,
                 'building' => $rental->building,
                 'project' => [
                     'id' => $rental->property?->project?->id,
@@ -2019,8 +2019,8 @@ class RentalService
                 'email' => $rental->tenant_email,
                 'unit_information' => [
                     'unit_id' => $rental->unit_id,
-                    'unit_name' => $rental->property?->name ?? 'N/A',
-                    'unit_address' => $rental->property?->address ?? 'N/A',
+                    'unit_name' => $rental->property?->content(1)?->title ?? 'N/A',
+                    'unit_address' => $rental->property?->content(1)?->address ?? 'N/A',
                 ],
                 'building' => [
                     'building_id' => $rental->property?->building_id ?? $rental->building_id,
@@ -2171,10 +2171,10 @@ class RentalService
             $unitInfo = [
                 'unit_id' => $rental->unit_id,
                 'unit_number' => $property?->property_number ?? 'N/A',
-                'unit_name' => $property?->name ?? 'N/A',
+                'unit_name' => $property?->content(1)?->title ?? 'N/A',
                 'unit_type' => $property?->property_type ?? 'N/A',
                 'unit_size' => $property?->bedrooms ? $property->bedrooms . ' BR' : 'N/A',
-                'unit_address' => $property?->address ?? 'N/A',
+                'unit_address' => $property?->content(1)?->address ?? 'N/A',
             ];
 
             // Get building information
