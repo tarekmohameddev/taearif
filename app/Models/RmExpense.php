@@ -54,12 +54,12 @@ class RmExpense extends Model
             $expiredContracts = $this->rental->contracts()
                 ->where('status', 'expired')
                 ->exists();
-            
+
             if ($expiredContracts) {
                 return false;
             }
         }
-        
+
         return true;
     }
 
@@ -73,5 +73,26 @@ class RmExpense extends Model
         }
 
         return asset('storage/' . $this->image_path);
+    }
+
+    /**
+     * Get the calculated amount based on type.
+     *
+     * If amount_type is 'percentage', calculates percentage of base rent.
+     * If amount_type is 'fixed', returns the amount_value as-is.
+     *
+     * @return float
+     */
+    public function getCalculatedAmountAttribute(): float
+    {
+        if (!$this->rental) {
+            return (float) $this->amount_value;
+        }
+
+        $baseRent = $this->rental->getAttributes()['base_rent_amount'] ?? 0;
+
+        return $this->amount_type === 'percentage'
+            ? ($baseRent * $this->amount_value) / 100
+            : (float) $this->amount_value;
     }
 }

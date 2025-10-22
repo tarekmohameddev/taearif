@@ -41,7 +41,7 @@ class DashboardController extends Controller
                 $stats['total_rentals'] = DB::table('rm_rentals')
                     ->whereIn('unit_id', $propertyIds)
                     ->count();
-                
+
                 $stats['active_rentals'] = DB::table('rm_rentals')
                     ->whereIn('unit_id', $propertyIds)
                     ->where('status', 'active')
