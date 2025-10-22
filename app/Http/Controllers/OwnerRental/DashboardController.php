@@ -72,8 +72,7 @@ class DashboardController extends Controller
                     ->where('user_properties.id', $rental->unit_id)
                     ->select(
                         'user_properties.*',
-                        'user_property_contents.title as property_title',
-                        'user_property_contents.unit_number'
+                        'user_property_contents.title as property_title'
                     )
                     ->first();
 
@@ -138,7 +137,13 @@ class DashboardController extends Controller
 
                 // Calculate total amounts for collection rate
                 $totalDueAmount += $dueRent + $overdueRent;
-                $totalPaidAmount += $rental->base_rent_amount ? (float) $rental->base_rent_amount : 0;
+
+                // Get total paid amount for this rental
+                $rentalPaidAmount = DB::table('rm_payments')
+                    ->where('rental_id', $rental->id)
+                    ->where('payment_type', 'rent')
+                    ->sum('amount');
+                $totalPaidAmount += (float) $rentalPaidAmount;
 
                 // Determine status
                 $status = 'محدث'; // Updated (default)
@@ -151,7 +156,13 @@ class DashboardController extends Controller
                 // Build property image URL
                 $propertyImageUrl = null;
                 if ($property && $property->featured_image) {
-                    $propertyImageUrl = asset('storage/' . ltrim($property->featured_image, '/'));
+                    // Handle different image path formats
+                    $imagePath = $property->featured_image;
+                    if (str_starts_with($imagePath, 'http')) {
+                        $propertyImageUrl = $imagePath;
+                    } else {
+                        $propertyImageUrl = asset('storage/' . ltrim($imagePath, '/'));
+                    }
                 }
 
                 // Add to summary totals
@@ -163,7 +174,7 @@ class DashboardController extends Controller
                     'property' => [
                         'id' => $property->id ?? null,
                         'title' => $property->property_title ?? 'N/A',
-                        'unit_number' => $property->unit_number ?? 'N/A',
+                        'unit_number' => $property->building ?? ($property->id ?? 'N/A'),
                         'image_url' => $propertyImageUrl
                     ],
                     'project' => [
