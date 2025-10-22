@@ -32,7 +32,7 @@ class RentalService
     protected function getPropertyContent($property, $userId)
     {
         if (!$property) {
-            return ['name' => 'N/A', 'address' => 'N/A'];
+            return ['name' => 'لا يوجد اسم العقار', 'address' => 'لا يوجد عنوان العقار'];
         }
 
         // Get user's default language
@@ -53,8 +53,8 @@ class RentalService
         }
 
         return [
-            'name' => $content?->title ?? 'N/A',
-            'address' => $content?->address ?? 'N/A'
+            'name' => $content?->title ?? 'لا يوجد اسم العقار',
+            'address' => $content?->address ?? 'لا يوجد عنوان العقار'
         ];
     }
 
@@ -68,7 +68,7 @@ class RentalService
     protected function getProjectName($project, $userId)
     {
         if (!$project) {
-            return 'N/A';
+            return 'لا يوجد اسم المشروع';
         }
 
         // Get user's default language
@@ -88,7 +88,7 @@ class RentalService
             $content = $project->contents()->first();
         }
 
-        return $content?->title ?? 'N/A';
+        return $content?->title ?? 'لا يوجد اسم المشروع';
     }
     public function listRentals($request)
     {
@@ -872,7 +872,7 @@ class RentalService
 
         // Get building name
         $building = $rental->property?->building ?? $rental->building;
-        $buildingName = 'N/A';
+        $buildingName = 'لا يوجد اسم المبنى';
 
         // Manually load the building if not an object (fix for relationship loading issue)
         if ((!$building || !is_object($building)) && ($rental->building_id || $rental->property?->building_id)) {
@@ -881,7 +881,7 @@ class RentalService
         }
 
         if ($building && is_object($building)) {
-            $buildingName = $building->name ?? 'N/A';
+            $buildingName = $building->name ?? 'لا يوجد اسم المبنى';
         }
 
         if (!$rental->activeContract) {
@@ -893,7 +893,7 @@ class RentalService
                     'tenant_email' => $rental->tenant_email,
                     'property_address' => $propertyContent['name'],
                     'building' => $rental->building,
-                    'contract_number' => $rental->activeContract?->contract_number ?? 'N/A'
+                    'contract_number' => $rental->activeContract?->contract_number ?? 'لا يوجد رقم العقد'
                 ],
                 'payment_details' => [
                     'items' => [],
@@ -1348,7 +1348,7 @@ class RentalService
                 'project_id' => $rental->project_id,
                 'project_name' => $projectName,
                 'building' => $rental->building,
-                'contract_number' => $rental->activeContract->contract_number ?? 'N/A',
+                'contract_number' => $rental->activeContract->contract_number ?? 'لا يوجد رقم العقد',
                 'status' => $rental->status,
                 'move_in_date' => $rental->move_in_date?->toDateString(),
                 'currency' => $rental->currency ?? 'SAR',
@@ -1826,10 +1826,10 @@ class RentalService
         foreach ($properties as $property) {
             $propertyData = [
                 'property_id' => $property->id,
-                'property_name' => $property->name ?? 'N/A',
-                'property_address' => $property->address ?? 'N/A',
-                'building' => $property->building->name ?? 'N/A',
-                'project' => $property->project->name ?? 'N/A',
+                'property_name' => $property->name ?? 'لا يوجد اسم العقار',
+                'property_address' => $property->address ?? 'لا يوجد عنوان العقار',
+                'building' => $property->building->name ?? 'لا يوجد اسم المبنى',
+                'project' => $property->project->name ?? 'لا يوجد اسم المشروع',
                 'total_expected' => 0,
                 'total_collected' => 0,
                 'total_outstanding' => 0,
@@ -2122,7 +2122,7 @@ class RentalService
 
             // Get building name (try property's building first, then rental's building)
             $building = $rental->property?->building ?? $rental->building;
-            $buildingName = 'N/A';
+            $buildingName = 'لا يوجد اسم المبنى';
 
             // Manually load the building if not an object (fix for relationship loading issue)
             if ((!$building || !is_object($building)) && ($rental->building_id || $rental->property?->building_id)) {
@@ -2131,12 +2131,12 @@ class RentalService
             }
 
             if ($building && is_object($building)) {
-                $buildingName = $building->name ?? 'N/A';
+                $buildingName = $building->name ?? 'لا يوجد اسم المبنى';
             }
 
             $followUpItem = [
                 'rental_id' => $rental->id,
-                'contract_number' => $rental->contract_number ?? 'N/A',
+                'contract_number' => $rental->contract_number ?? 'لا يوجد رقم العقد',
                 'tenant_name' => $rental->tenant_full_name,
                 'mobile_number' => $rental->tenant_phone,
                 'email' => $rental->tenant_email,
@@ -2296,16 +2296,16 @@ class RentalService
 
             $unitInfo = [
                 'unit_id' => $rental->unit_id,
-                'unit_number' => $property?->property_number ?? 'N/A',
+                'unit_number' => $property?->property_number ?? 'لا يوجد رقم الوحدة',
                 'unit_name' => $propertyContent['name'],
-                'unit_type' => $property?->property_type ?? 'N/A',
-                'unit_size' => $property?->bedrooms ? $property->bedrooms . ' BR' : 'N/A',
+                'unit_type' => $property?->property_type ?? 'لا يوجد نوع الوحدة',
+                'unit_size' => $property?->bedrooms ? $property->bedrooms . ' BR' : 'لا يوجد حجم الوحدة',
                 'unit_address' => $propertyContent['address'],
             ];
 
             // Get building information (try property's building first, then rental's building)
             $building = $property?->building ?? $rental->building;
-            $buildingName = 'N/A';
+            $buildingName = 'لا يوجد اسم المبنى';
 
             // Manually load the building if not an object (fix for relationship loading issue)
             if ((!$building || !is_object($building)) && ($rental->building_id || $property?->building_id)) {
@@ -2314,19 +2314,19 @@ class RentalService
             }
 
             if ($building && is_object($building)) {
-                $buildingName = $building->name ?? 'N/A';
+                $buildingName = $building->name ?? 'لا يوجد اسم المبنى';
             }
 
             $buildingInfo = [
                 'building_id' => $property?->building_id ?? $rental->building_id,
                 'building_name' => $buildingName,
-                'building_address' => $property?->city ?? 'N/A', // Using property city as building address
+                'building_address' => $property?->city ?? 'لا يوجد عنوان المبنى', // Using property city as building address
             ];
 
             // Get tenant information
             $tenantInfo = [
                 'tenant_name' => $rental->tenant_full_name,
-                'tenant_email' => $rental->tenant_email ?? 'N/A',
+                'tenant_email' => $rental->tenant_email ?? 'لا يوجد بريد إلكتروني',
                 'tenant_phone' => $rental->tenant_phone,
             ];
 
@@ -2349,7 +2349,7 @@ class RentalService
 
             $contractData = [
                 'contract_id' => $contract->id,
-                'contract_number' => $rental->contract_number ?? 'N/A',
+                'contract_number' => $rental->contract_number ?? 'لا يوجد رقم العقد',
                 'contract_status' => $contract->status,
                 'tenant_information' => $tenantInfo,
                 'unit_information' => $unitInfo,
