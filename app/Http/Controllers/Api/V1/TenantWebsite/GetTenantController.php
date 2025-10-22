@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\TenantPage;
 use App\Models\TenantGlobalComponent;
 use App\Models\TenantWebsiteLayout;
+use App\Models\Api\ApiDomainSetting;
 
 class GetTenantController extends Controller
 {
@@ -16,7 +17,22 @@ class GetTenantController extends Controller
         $data = $request->validate([
             'websiteName' => 'required|string',
         ]);
-        $tenant = User::where('username', $data['websiteName'])->first();
+        $input = strtolower(trim($data['websiteName']));
+
+        // Try resolving by username first
+        $tenant = User::where('username', $input)->first();
+
+        // If not found, try resolving by custom domain
+        if (!$tenant) {
+            $domain = $this->normalizeDomain($input);
+            $domainRecord = ApiDomainSetting::where('custom_name', $domain)
+                ->where('status', 'active')
+                ->first();
+
+            if ($domainRecord) {
+                $tenant = $domainRecord->user;
+            }
+        }
         if (!$tenant) {
             return response()->json([], 204);
         }
@@ -30,6 +46,16 @@ class GetTenantController extends Controller
             'globalComponentsData' => $globals?->data ?? [],
             'WebsiteLayout' => $layout?->data ?? [],
         ]);
+    }
+
+    private function normalizeDomain(string $value): string
+    {
+        // Strip protocol
+        $value = preg_replace('#^https?://#', '', $value);
+        // Strip leading www.
+        $value = preg_replace('#^www\.#', '', $value);
+        // Remove trailing slashes and whitespace
+        return rtrim(trim(strtolower($value)), '/');
     }
 }
 
