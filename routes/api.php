@@ -860,6 +860,9 @@ Route::prefix('v1/owner-rental')->group(function () {
         // Dashboard
         Route::get('/dashboard', [\App\Http\Controllers\OwnerRental\DashboardController::class, 'dashboard']);
 
+        // Temporary route to check property associations
+        Route::get('/check-property/{id}', [\App\Http\Controllers\OwnerRental\DashboardController::class, 'checkProperty']);
+
         // Properties
         Route::get('/properties', [\App\Http\Controllers\OwnerRental\DashboardController::class, 'properties']);
         Route::get('/properties/{id}', [\App\Http\Controllers\OwnerRental\DashboardController::class, 'propertyDetails']);

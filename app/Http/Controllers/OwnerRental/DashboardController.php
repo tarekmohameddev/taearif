@@ -24,6 +24,43 @@ class DashboardController extends Controller
     }
 
     /**
+     * Check property associations (temporary method for debugging)
+     */
+    public function checkProperty($id)
+    {
+        try {
+            $property = DB::table('user_properties')
+                ->leftJoin('user_property_contents', 'user_properties.id', '=', 'user_property_contents.property_id')
+                ->leftJoin('user_projects', 'user_properties.project_id', '=', 'user_projects.id')
+                ->leftJoin('user_project_contents', 'user_projects.id', '=', 'user_project_contents.project_id')
+                ->leftJoin('buildings', 'user_properties.building_id', '=', 'buildings.id')
+                ->where('user_properties.id', $id)
+                ->select(
+                    'user_properties.id as property_id',
+                    'user_properties.project_id',
+                    'user_properties.building_id',
+                    'user_properties.building as building_string',
+                    'user_property_contents.title as property_title',
+                    'user_project_contents.title as project_title',
+                    'buildings.name as building_name'
+                )
+                ->first();
+
+            return response()->json([
+                'success' => true,
+                'data' => $property
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to check property',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Get dashboard statistics with rental payment information
      */
     public function dashboard()
