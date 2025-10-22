@@ -36,7 +36,9 @@ class OwnerRentalManagementController extends Controller
             $status = $request->input('status'); // 'active' or 'inactive'
 
             $query = OwnerRental::where('user_id', $user->id)
-                ->with(['properties:id,featured_image,price,status']);
+                ->with(['properties' => function ($query) {
+                    $query->select('id', 'featured_image', 'price', 'status');
+                }]);
 
             // Search by name, email, or phone
             if ($search) {

@@ -3,6 +3,18 @@
 namespace App\Http\Controllers\Api\V1\Rms;
 
 use App\Http\Controllers\Api\BaseApiController;
+use App\Traits\HandlesApiExceptions;
+use App\Constants\RmsConstants;
+use App\Http\Requests\Rms\Rental\ListRentalsRequest;
+use App\Http\Requests\Rms\Rental\StoreRentalRequest;
+use App\Http\Requests\Rms\Rental\UpdateRentalRequest;
+use App\Http\Requests\Rms\Rental\CollectPaymentRequest;
+use App\Http\Requests\Rms\Rental\UpdateRentalStatusRequest;
+use App\Http\Requests\Rms\Rental\EndContractRequest;
+use App\Http\Requests\Rms\Rental\RenewRentalRequest;
+use App\Http\Requests\Rms\Rental\UploadReceiptImageRequest;
+use App\Http\Resources\Rms\RentalResource;
+use App\Http\Resources\Rms\PaymentResource;
 use Illuminate\Http\Request;
 use App\Services\Rms\RentalService;
 use App\Models\Api\Rms\RmRental;
@@ -13,6 +25,8 @@ use Illuminate\Support\Facades\Log;
 
 class RentalController extends BaseApiController
 {
+    use HandlesApiExceptions;
+
     protected $rentalService;
 
     public function __construct(RentalService $rentalService)
@@ -20,130 +34,56 @@ class RentalController extends BaseApiController
         $this->rentalService = $rentalService;
     }
 
-    public function index(Request $request)
+    public function index(ListRentalsRequest $request)
     {
-        try {
-            // Validate pagination and sorting parameters
-            $request->validate([
-                'per_page' => 'nullable|integer|min:1|max:100',
-                'page' => 'nullable|integer|min:1',
-                'sort_by' => 'nullable|string|in:created_at,updated_at,move_in_date,tenant_full_name,base_rent_amount,status',
-                'sort_order' => 'nullable|string|in:asc,desc',
-                'q' => 'nullable|string|max:255',
-                'status' => 'nullable|string|in:active,inactive,terminated',
-                'building_id' => 'nullable',
-                'unit_id' => 'nullable|integer',
-                'project_id' => 'nullable|integer',
-                'paying_plan' => 'nullable|string|in:monthly,quarterly,semi_annual,annual',
-                'filter_by_month' => 'nullable|integer|min:1|max:12',
-                'filter_by_year' => 'nullable|integer|min:2000|max:2100',
-                'filter_by_day' => 'nullable|date',
-                'from_date' => 'nullable|date',
-                'to_date' => 'nullable|date|after_or_equal:from_date',
-            ]);
-
+        return $this->executeWithExceptionHandling(function () use ($request) {
             $rentals = $this->rentalService->listRentals($request);
 
-            // CLEAN: Use success helper with pagination meta
-            return response()->json([
-                'status' => true,
-                'data' => $rentals->items(),
-                'pagination' => [
-                    'current_page' => $rentals->currentPage(),
-                    'per_page' => $rentals->perPage(),
-                    'total' => $rentals->total(),
-                    'last_page' => $rentals->lastPage(),
-                    'from' => $rentals->firstItem(),
-                    'to' => $rentals->lastItem(),
-                    'has_more_pages' => $rentals->hasMorePages(),
-                    'next_page_url' => $rentals->nextPageUrl(),
-                    'prev_page_url' => $rentals->previousPageUrl(),
-                ]
-            ]);
-        } catch (ApiException $e) {
-            return $e->render();
-        } catch (\Exception $e) {
-            return $this->handleException($e);
-        }
+            return $this->paginated($rentals, RentalResource::class);
+        }, 'list rentals');
     }
 
-    public function store(Request $request)
+    public function store(StoreRentalRequest $request)
     {
-        try {
-            $data = $request->validate([
-                'tenant_full_name' => 'required|string|max:150',
-                'tenant_phone' => 'required|string|max:32',
-                'tenant_email' => 'nullable|email',
-                'tenant_job_title' => 'nullable|string|max:120',
-                'tenant_social_status' => 'nullable|in:single,married,divorced,widowed,other',
-                'tenant_national_id' => 'nullable|string|max:20',
-                'unit_id' => 'nullable|integer',
-                'project_id' => 'nullable|integer',
-                'building_id' => 'nullable',
-                'move_in_date' => 'nullable|date',
-                'rental_type' => 'required|in:monthly,annual',
-                'rental_duration' => 'required|integer|min:1',
-                'paying_plan' => 'required|in:monthly,quarterly,semi_annual,annual',
-                'total_rental_amount' => 'required|numeric|min:0',
-                'currency' => 'nullable|string|size:3',
-                'contract_number' => 'nullable|string|max:255',
-                'notes' => 'nullable|string',
-                'cost_items' => 'nullable|array',
-                'cost_items.*.name' => 'required|string|max:255',
-                'cost_items.*.cost' => 'required|numeric|min:0',
-                'cost_items.*.type' => 'required|in:fixed,percentage',
-                'cost_items.*.payer' => 'required|in:owner,tenant',
-                'cost_items.*.payment_frequency' => 'required|in:one_time,per_installment',
-                'cost_items.*.percentage_of' => 'nullable|numeric|min:0',
-                'cost_items.*.description' => 'nullable|string',
-            ]);
+        return $this->executeWithExceptionHandling(function () use ($request) {
+            $rental = $this->rentalService->createRental(
+                $this->getUserId(),
+                $request->validated()
+            );
 
-            $rental = $this->rentalService->createRental(auth()->id(), $data);
-
-            return $this->created($rental, 'Rental created successfully');
-        } catch (ApiException $e) {
-            return $e->render();
-        } catch (\Exception $e) {
-            return $this->handleException($e);
-        }
+            return $this->created(
+                RentalResource::make($rental),
+                'Rental created successfully'
+            );
+        }, 'create rental');
     }
 
     public function show($id)
     {
-        try {
-            $rental = $this->rentalService->getRentalDetails(auth()->id(), $id);
-            return $this->success($rental);
-        } catch (ApiException $e) {
-            return $e->render();
-        } catch (\Exception $e) {
-            return $this->handleException($e);
-        }
+        return $this->executeWithExceptionHandling(function () use ($id) {
+            $rental = $this->rentalService->getRentalDetails($this->getUserId(), $id);
+            return $this->success(RentalResource::make($rental));
+        }, 'retrieve rental details');
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateRentalRequest $request, $id)
     {
-        try {
-            $data = $request->only([
-                'tenant_full_name', 'tenant_phone', 'tenant_email', 'tenant_job_title',
-                'tenant_social_status', 'tenant_national_id', 'unit_id', 'project_id', 'building_id',
-                'move_in_date', 'rental_type', 'rental_duration', 'paying_plan',
-                'total_rental_amount', 'currency', 'contract_number', 'notes', 'cost_items'
-            ]);
-
-            // Handle payments if included in request
-            if ($request->has('payments')) {
-                $data['payments'] = $request->input('payments');
-            }
-
+        return $this->executeWithExceptionHandling(function () use ($request, $id) {
+            $data = $request->validated();
             $regenerate = $request->boolean('regenerate_schedule', false);
-            $rental = $this->rentalService->updateRental(auth()->id(), $id, $data, $regenerate);
 
-            return $this->success($rental, 'Rental updated successfully');
-        } catch (ApiException $e) {
-            return $e->render();
-        } catch (\Exception $e) {
-            return $this->handleException($e);
-        }
+            $rental = $this->rentalService->updateRental(
+                $this->getUserId(),
+                $id,
+                $data,
+                $regenerate
+            );
+
+            return $this->success(
+                RentalResource::make($rental),
+                'Rental updated successfully'
+            );
+        }, 'update rental');
     }
 
     /**
@@ -308,37 +248,16 @@ class RentalController extends BaseApiController
     /**
      * Collect payment for specific installments
      * Supports partial payments for individual installments
+     *
+     * NOTE: Phase 4 TODO - Move business logic (lines 275-376) to PaymentService
      */
-    public function collectPayment(Request $request, $id)
+    public function collectPayment(CollectPaymentRequest $request, $id)
     {
-        try {
-            $data = $request->validate([
-                'payments' => 'required|array|min:1',
-                'payments.*.installment_id' => 'required|exists:rm_payment_installments,id',
-                'payments.*.payment_type' => 'required|in:rent,cost_item,deposit',
-                'payments.*.cost_item_id' => 'required_if:payments.*.payment_type,cost_item|exists:rental_cost_items,id',
-                'payments.*.amount' => 'required|numeric|min:0.01',
-                'payments.*.notes' => 'nullable|string|max:255',
-                'payment_method' => 'required|in:cash,bank_transfer,credit_card,online_payment,check,other',
-                'payment_date' => 'nullable|date',
-                'reference' => 'nullable|string|max:100',
-                'notes' => 'nullable|string|max:255',
-                'bank_name' => 'nullable|string|max:100',
-                'receipt_image_path' => 'nullable|string|max:500',
-                'transfer_to' => 'required|in:منصة ناجز,المالك,المكتب'
-            ]);
+        return $this->executeWithExceptionHandling(function () use ($request, $id) {
+            $data = $request->validated();
 
-            // Validate bank_name is required when payment_method is bank_transfer
-            if ($data['payment_method'] === 'bank_transfer' && empty($data['bank_name'])) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Bank name is required when payment method is bank transfer',
-                    'errors' => ['bank_name' => ['Bank name is required when payment method is bank transfer']]
-                ], 422);
-            }
-
-            // Get the tenant owner ID (handles both direct owners and sub-users)
-            $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : auth()->id();
+            // NOTE: Phase 4 - Move this business logic to service layer
+            $ownerId = $this->getUserId();
 
             // Get rental for validation
             $rental = RmRental::with(['activeContract', 'tenantCostItems', 'ownerCostItems'])
@@ -443,243 +362,77 @@ class RentalController extends BaseApiController
             // Use $ownerId instead of auth()->id() to handle sub-users correctly
             $processedPayments = $paymentService->recordMultiplePayments($ownerId, $id, $paymentsData);
 
-            // Add receipt image URL to payments if available
-            $paymentsWithImageUrl = collect($processedPayments)->map(function ($payment) {
-                if (!empty($payment->receipt_image_path)) {
-                    // Generate URL for receipts stored in public/receipts
-                    $payment->receipt_image_url = url($payment->receipt_image_path);
-                }
-                return $payment;
-            });
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Payment collected successfully',
-                'data' => [
-                    'payments' => $paymentsWithImageUrl,
-                    'total_amount' => collect($processedPayments)->sum('amount'),
-                    'payment_count' => count($processedPayments)
-                ]
-            ], 201);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-
-        } catch (PaymentException $e) {
-            // Handle custom payment exceptions with structured error response
-            Log::warning('Payment validation failed', [
-                'user_id' => auth()->id(),
-                'rental_id' => $id,
-                'error_code' => $e->getErrorCode(),
-                'error_message' => $e->getMessage(),
-                'error_data' => $e->getErrorData()
-            ]);
-
-            return $e->render($request);
-
-        } catch (\InvalidArgumentException $e) {
-            // Handle business logic validation errors
-            return response()->json([
-                'status' => false,
-                'message' => $e->getMessage(),
-                'error_code' => 'INVALID_ARGUMENT'
-            ], 422);
-
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Rental contract or related record not found',
-                'error_code' => 'NOT_FOUND',
-                'error' => $e->getMessage()
-            ], 404);
-
-        } catch (\Exception $e) {
-            // Log the error for debugging
-            Log::error('Payment collection failed', [
-                'user_id' => auth()->id(),
-                'rental_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'status' => false,
-                'message' => 'Payment collection failed',
-                'error_code' => 'INTERNAL_ERROR',
-                'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
-            ], 500);
-        }
+            return $this->created([
+                'payments' => PaymentResource::collection($processedPayments),
+                'total_amount' => collect($processedPayments)->sum('amount'),
+                'payment_count' => count($processedPayments)
+            ], 'Payment collected successfully');
+        }, 'collect payment');
     }
 
     /**
      * Update rental status with validation
      */
-    public function updateStatus(Request $request, $id)
+    public function updateStatus(UpdateRentalStatusRequest $request, $id)
     {
-        try {
-            $data = $request->validate([
-                'status' => 'required|string',
-                'end_date' => 'nullable|date',
-                'termination_reason' => 'nullable|string|max:500',
-                'notes' => 'nullable|string|max:500'
-            ]);
+        return $this->executeWithExceptionHandling(function () use ($request, $id) {
+            $rental = $this->rentalService->updateRentalStatus(
+                $this->getUserId(),
+                $id,
+                $request->validated()
+            );
 
-            $rental = $this->rentalService->updateRentalStatus(auth()->id(), $id, $data);
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Rental status updated successfully',
-                'data' => $rental
-            ]);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Rental not found',
-                'error' => $e->getMessage()
-            ], 404);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Failed to update rental status',
-                'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
-            ], 500);
-        }
+            return $this->success(
+                RentalResource::make($rental),
+                'Rental status updated successfully'
+            );
+        }, 'update rental status');
     }
 
     /**
      * End rental contract by setting end date and updating status
      */
-    public function endContract(Request $request, $id)
+    public function endContract(EndContractRequest $request, $id)
     {
-        try {
-            $data = $request->validate([
-                'end_date' => 'required|date|after_or_equal:today',
-                'termination_reason' => 'nullable|string|max:255',
-                'notes' => 'nullable|string|max:500'
-            ]);
+        return $this->executeWithExceptionHandling(function () use ($request, $id) {
+            $rental = $this->rentalService->endRentalContract(
+                $this->getUserId(),
+                $id,
+                $request->validated()
+            );
 
-            $rental = $this->rentalService->endRentalContract(auth()->id(), $id, $data);
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Rental contract ended successfully',
-                'data' => $rental
-            ]);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Rental contract not found',
-                'error' => $e->getMessage()
-            ], 404);
-
-        } catch (\Exception $e) {
-            Log::error('End rental contract failed', [
-                'user_id' => auth()->id(),
-                'rental_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'status' => false,
-                'message' => 'Failed to end rental contract',
-                'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
-            ], 500);
-        }
+            return $this->success(
+                RentalResource::make($rental),
+                'Rental contract ended successfully'
+            );
+        }, 'end rental contract');
     }
 
     /**
      * Renew an ended rental by creating a new rental record
      */
-    public function renewRental(Request $request, $id)
+    public function renewRental(RenewRentalRequest $request, $id)
     {
-        try {
-            $data = $request->validate([
-                'rental_type' => 'required|in:monthly,annual',
-                'rental_duration' => 'required|integer|min:1',
-                'paying_plan' => 'required|in:monthly,quarterly,semi_annual,annual',
-                'total_rental_amount' => 'required|numeric|min:0',
-                'currency' => 'nullable|string|size:3',
-                'notes' => 'nullable|string',
-                'cost_items' => 'nullable|array',
-                'cost_items.*.name' => 'required|string|max:255',
-                'cost_items.*.cost' => 'required|numeric|min:0',
-                'cost_items.*.type' => 'required|in:fixed,percentage',
-                'cost_items.*.payer' => 'required|in:owner,tenant',
-                'cost_items.*.payment_frequency' => 'required|in:one_time,per_installment',
-                'cost_items.*.percentage_of' => 'nullable|numeric|min:0',
-                'cost_items.*.description' => 'nullable|string',
-            ]);
+        return $this->executeWithExceptionHandling(function () use ($request, $id) {
+            $newRental = $this->rentalService->renewRental(
+                $this->getUserId(),
+                $id,
+                $request->validated()
+            );
 
-            $newRental = $this->rentalService->renewRental(auth()->id(), $id, $data);
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Rental renewed successfully',
-                'data' => $newRental
-            ], 201);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Rental not found',
-                'error' => $e->getMessage()
-            ], 404);
-
-        } catch (\Exception $e) {
-            Log::error('Rental renewal failed', [
-                'user_id' => auth()->id(),
-                'rental_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'status' => false,
-                'message' => 'Failed to renew rental',
-                'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
-            ], 500);
-        }
+            return $this->created(
+                RentalResource::make($newRental),
+                'Rental renewed successfully'
+            );
+        }, 'renew rental');
     }
 
     /**
      * Upload receipt image for payment
      */
-    public function uploadReceiptImage(Request $request)
+    public function uploadReceiptImage(UploadReceiptImageRequest $request)
     {
-        try {
-            $request->validate([
-                'receipt_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
-            ]);
-
+        return $this->executeWithExceptionHandling(function () use ($request) {
             // Generate unique filename
             $file = $request->file('receipt_image');
             $filename = 'receipt_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
@@ -691,37 +444,12 @@ class RentalController extends BaseApiController
             // Get the full URL - directly accessible from public folder
             $url = url($path);
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Receipt image uploaded successfully',
-                'data' => [
-                    'image_path' => $path,
-                    'image_url' => $url,
-                    'filename' => $filename
-                ]
-            ], 201);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-
-        } catch (\Exception $e) {
-            // Log the error for debugging
-            Log::error('Receipt image upload failed', [
-                'user_id' => auth()->id(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'status' => false,
-                'message' => 'Receipt image upload failed',
-                'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
-            ], 500);
-        }
+            return $this->created([
+                'image_path' => $path,
+                'image_url' => $url,
+                'filename' => $filename
+            ], 'Receipt image uploaded successfully');
+        }, 'upload receipt image');
     }
 
     /**
@@ -778,13 +506,13 @@ class RentalController extends BaseApiController
             $validated = $request->validate([
                 'per_page' => 'nullable|integer|min:1|max:100',
                 'page' => 'nullable|integer|min:1',
-                'from_date' => 'nullable|date',
-                'to_date' => 'nullable|date|after_or_equal:from_date',
-                'building_id' => 'nullable|integer',
+                'from_date' => 'nullable|date|before_or_equal:today',
+                'to_date' => 'nullable|date|after_or_equal:from_date|before_or_equal:today',
+                'building_id' => 'nullable|integer|exists:buildings,id',
                 'status' => 'nullable|string|in:overdue,due_today,upcoming',
             ]);
 
-            $result = $this->rentalService->getDailyFollowUp(auth()->id(), $validated);
+            $result = $this->rentalService->getDailyFollowUp($validated);
 
             return response()->json([
                 'status' => true,
@@ -802,6 +530,12 @@ class RentalController extends BaseApiController
                 'errors' => $e->errors(),
             ], 422);
 
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 403);
+
         } catch (\Exception $e) {
             Log::error('Daily follow-up error: ' . $e->getMessage(), [
                 'user_id' => auth()->id(),
@@ -811,7 +545,6 @@ class RentalController extends BaseApiController
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to retrieve daily follow-up',
-                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error',
             ], 500);
         }
     }

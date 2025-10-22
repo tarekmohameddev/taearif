@@ -7,6 +7,7 @@ use App\Models\Api\Rms\RmContract;
 use App\Models\Api\Rms\RmPaymentInstallment;
 use App\Models\Api\Rms\RmPayment;
 use App\Models\User\RealestateManagement\Property;
+use App\Models\User\Language as UserLanguage;
 use App\Services\Rms\PaymentService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
@@ -19,6 +20,103 @@ class RentalService
     public function __construct(PaymentService $paymentService)
     {
         $this->paymentService = $paymentService;
+    }
+
+    /**
+     * Validate that user owns the requested building
+     *
+     * @param int $ownerId
+     * @param int $buildingId
+     * @return void
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
+    private function validateBuildingAccess(int $ownerId, int $buildingId): void
+    {
+        $hasAccess = \App\Models\Building::where('id', $buildingId)
+            ->where('user_id', $ownerId)
+            ->exists();
+
+        if (!$hasAccess) {
+            throw new \Illuminate\Auth\Access\AuthorizationException(
+                'You do not have access to this building'
+            );
+        }
+    }
+
+    /**
+     * Get user's default language ID with caching
+     *
+     * @param int $userId
+     * @return int
+     */
+    private function getUserLanguageId($userId): int
+    {
+        $userLanguage = \App\Models\User\Language::where('user_id', $userId)
+            ->where('is_default', 1)
+            ->first();
+
+        return $userLanguage?->id ?? 1; // Fallback to language ID 1 (Arabic)
+    }
+
+    /**
+     * Get property content (name and address) in user's default language
+     *
+     * @param Property|null $property
+     * @param int $userId
+     * @return array ['name' => string, 'address' => string]
+     */
+    protected function getPropertyContent($property, $userId)
+    {
+        if (!$property) {
+            return ['name' => 'لا يوجد اسم العقار', 'address' => 'لا يوجد عنوان العقار'];
+        }
+
+        // Get user's default language
+        $languageId = $this->getUserLanguageId($userId);
+
+        // Try to get content in user's language
+        $content = $property->contents()
+            ->where('language_id', $languageId)
+            ->first();
+
+        // If not found, get the first available content
+        if (!$content) {
+            $content = $property->contents()->first();
+        }
+
+        return [
+            'name' => $content?->title ?? 'لا يوجد اسم العقار',
+            'address' => $content?->address ?? 'لا يوجد عنوان العقار'
+        ];
+    }
+
+    /**
+     * Get project name in user's default language
+     *
+     * @param \App\Models\User\RealestateManagement\Project|null $project
+     * @param int $userId
+     * @return string
+     */
+    protected function getProjectName($project, $userId)
+    {
+        if (!$project) {
+            return 'لا يوجد اسم المشروع';
+        }
+
+        // Get user's default language
+        $languageId = $this->getUserLanguageId($userId);
+
+        // Try to get content in user's language
+        $content = $project->contents()
+            ->where('language_id', $languageId)
+            ->first();
+
+        // If not found, get the first available content
+        if (!$content) {
+            $content = $project->contents()->first();
+        }
+
+        return $content?->title ?? 'لا يوجد اسم المشروع';
     }
     public function listRentals($request)
     {
@@ -79,11 +177,18 @@ class RentalService
             $costItems = $data['cost_items'] ?? [];
             unset($data['cost_items']);
 
-            // Auto-populate building_id from property if not provided
-            if (empty($data['building_id']) && !empty($data['unit_id'])) {
+            // Auto-populate project_id and building_id from property if not provided
+            if (!empty($data['unit_id'])) {
                 $property = Property::find($data['unit_id']);
-                if ($property && $property->building_id) {
-                    $data['building_id'] = $property->building_id;
+                if ($property) {
+                    // Sync project_id from property
+                    if (empty($data['project_id']) && $property->project_id) {
+                        $data['project_id'] = $property->project_id;
+                    }
+                    // Sync building_id from property
+                    if (empty($data['building_id']) && $property->building_id) {
+                        $data['building_id'] = $property->building_id;
+                    }
                 }
             }
 
@@ -187,10 +292,15 @@ class RentalService
                     throw new \Exception('The selected unit already has an active contract. Please choose a different unit or end the existing contract first.');
                 }
 
-                // Auto-populate building_id from property when unit changes
-                if (empty($data['building_id'])) {
-                    $property = Property::find($data['unit_id']);
-                    if ($property && $property->building_id) {
+                // Auto-populate project_id and building_id from property when unit changes
+                $property = Property::find($data['unit_id']);
+                if ($property) {
+                    // Sync project_id from property
+                    if (empty($data['project_id']) && $property->project_id) {
+                        $data['project_id'] = $property->project_id;
+                    }
+                    // Sync building_id from property
+                    if (empty($data['building_id']) && $property->building_id) {
                         $data['building_id'] = $property->building_id;
                     }
                 }
@@ -652,7 +762,7 @@ class RentalService
                     'paid_amount' => $paidAmount,
                     'remaining' => $remainingAmount,
                     'status' => $this->getPaymentStatus($installment),
-                    'is_late' => now()->isAfter($installment->due_date),
+                    'is_late' => now()->startOfDay()->isAfter($installment->due_date),
                     'payment_status' => $installment->payment_status
                 ];
             }
@@ -693,7 +803,7 @@ class RentalService
                     'original_amount' => $totalAmount,
                     'paid_amount' => $paidAmount,
                     'status' => $this->getPaymentStatus($installment),
-                    'days_overdue' => now()->diffInDays($installment->due_date),
+                    'days_overdue' => now()->startOfDay()->diffInDays($installment->due_date),
                     'payment_status' => $installment->payment_status
                 ];
             }
@@ -779,9 +889,40 @@ class RentalService
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
 
-        $rental = RmRental::with(['activeContract', 'installments.payments', 'property.project', 'tenantCostItems', 'ownerCostItems'])
+        $rental = RmRental::with([
+            'activeContract',
+            'installments.payments',
+            'property.project.contents',
+            'property.contents',
+            'property.building',
+            'project.contents',
+            'building',
+            'tenantCostItems',
+            'ownerCostItems'
+        ])
             ->where('user_id', $ownerId)
             ->findOrFail($rentalId);
+
+        // Get property content in user's language
+        $propertyContent = $this->getPropertyContent($rental->property, $ownerId);
+
+        // Get project name in user's language
+        $project = $rental->property?->project ?? $rental->project;
+        $projectName = $this->getProjectName($project, $ownerId);
+
+        // Get building name
+        $building = $rental->property?->building ?? $rental->building;
+        $buildingName = 'لا يوجد اسم المبنى';
+
+        // Manually load the building if not an object (fix for relationship loading issue)
+        if ((!$building || !is_object($building)) && ($rental->building_id || $rental->property?->building_id)) {
+            $buildingId = $rental->building_id ?? $rental->property?->building_id;
+            $building = \App\Models\Building::find($buildingId);
+        }
+
+        if ($building && is_object($building)) {
+            $buildingName = $building->name ?? 'لا يوجد اسم المبنى';
+        }
 
         if (!$rental->activeContract) {
             return [
@@ -790,9 +931,9 @@ class RentalService
                     'tenant_name' => $rental->tenant_full_name,
                     'tenant_phone' => $rental->tenant_phone,
                     'tenant_email' => $rental->tenant_email,
-                    'property_address' => $rental->property?->name ?? 'N/A',
+                    'property_address' => $propertyContent['name'],
                     'building' => $rental->building,
-                    'contract_number' => $rental->activeContract?->contract_number ?? 'N/A'
+                    'contract_number' => $rental->activeContract?->contract_number ?? 'لا يوجد رقم العقد'
                 ],
                 'payment_details' => [
                     'items' => [],
@@ -826,7 +967,7 @@ class RentalService
                 'paid_amount' => $paidAmount,
                 'remaining_amount' => $remainingAmount,
                 'status' => $this->getInstallmentPaymentStatus($paidAmount, $rentAmount, $installment->due_date),
-                'is_overdue' => now()->isAfter($installment->due_date) && $remainingAmount > 0
+                'is_overdue' => now()->startOfDay()->isAfter($installment->due_date) && $remainingAmount > 0
             ];
         });
 
@@ -848,7 +989,7 @@ class RentalService
                 'tenant_name' => $rental->tenant_full_name,
                 'tenant_phone' => $rental->tenant_phone,
                 'tenant_email' => $rental->tenant_email,
-                'property_address' => $rental->property?->name ?? 'N/A',
+                'property_address' => $propertyContent['name'],
                 'building' => $rental->building,
                 'contract_number' => $rental->activeContract->contract_number
             ],
@@ -859,11 +1000,11 @@ class RentalService
             ],
             'property' => [
                 'id' => $rental->property?->id,
-                'name' => $rental->property?->name,
+                'name' => $propertyContent['name'],
                 'building' => $rental->building,
                 'project' => [
-                    'id' => $rental->property?->project?->id,
-                    'name' => $rental->property?->project?->name
+                    'id' => $rental->property?->project?->id ?? $rental->project_id,
+                    'name' => $projectName
                 ]
             ],
             'cost_items_breakdown' => $costItemsBreakdown,
@@ -1149,7 +1290,7 @@ class RentalService
         $page = $filters['page'] ?? 1;
 
         // Build base query
-        $query = RmRental::with(['activeContract', 'property.contents', 'project', 'tenantCostItems', 'ownerCostItems'])
+        $query = RmRental::with(['activeContract', 'property.contents', 'property.building', 'project.contents', 'building', 'tenantCostItems', 'ownerCostItems'])
             ->where('user_id', $ownerId);
 
         // Apply filters
@@ -1228,15 +1369,13 @@ class RentalService
                     'paid_amount' => $paidAmount,
                     'remaining_amount' => $remainingAmount,
                     'status' => $this->getInstallmentPaymentStatus($paidAmount, $rentAmount, $installment->due_date),
-                    'is_overdue' => now()->isAfter($installment->due_date) && $remainingAmount > 0
+                    'is_overdue' => now()->startOfDay()->isAfter($installment->due_date) && $remainingAmount > 0
                 ];
             });
 
-            // Get property name
-            $propertyName = 'N/A';
-            if ($rental->property && $rental->property->firstContent) {
-                $propertyName = $rental->property->firstContent->title;
-            }
+            // Get property content and project name in user's language
+            $propertyContent = $this->getPropertyContent($rental->property, $ownerId);
+            $projectName = $this->getProjectName($rental->project, $ownerId);
 
             // Build rental data
             $rentalData = [
@@ -1245,11 +1384,11 @@ class RentalService
                 'tenant_phone' => $rental->tenant_phone,
                 'tenant_email' => $rental->tenant_email,
                 'property_id' => $rental->unit_id,
-                'property_name' => $propertyName,
+                'property_name' => $propertyContent['name'],
                 'project_id' => $rental->project_id,
-                'project_name' => $rental->project?->name ?? 'N/A',
+                'project_name' => $projectName,
                 'building' => $rental->building,
-                'contract_number' => $rental->activeContract->contract_number ?? 'N/A',
+                'contract_number' => $rental->activeContract->contract_number ?? 'لا يوجد رقم العقد',
                 'status' => $rental->status,
                 'move_in_date' => $rental->move_in_date?->toDateString(),
                 'currency' => $rental->currency ?? 'SAR',
@@ -1556,12 +1695,21 @@ class RentalService
             $costItems = $data['cost_items'] ?? [];
             unset($data['cost_items']);
 
-            // Prepare building_id: use old rental's building_id or fetch from property
+            // Prepare project_id and building_id: use old rental's values or fetch from property
+            $projectId = $oldRental->project_id;
             $buildingId = $oldRental->building_id;
-            if (empty($buildingId) && !empty($oldRental->unit_id)) {
+
+            if (!empty($oldRental->unit_id)) {
                 $property = Property::find($oldRental->unit_id);
-                if ($property && $property->building_id) {
-                    $buildingId = $property->building_id;
+                if ($property) {
+                    // Sync project_id from property if not set
+                    if (empty($projectId) && $property->project_id) {
+                        $projectId = $property->project_id;
+                    }
+                    // Sync building_id from property if not set
+                    if (empty($buildingId) && $property->building_id) {
+                        $buildingId = $property->building_id;
+                    }
                 }
             }
 
@@ -1577,7 +1725,7 @@ class RentalService
                 'tenant_national_id' => $oldRental->tenant_national_id,
                 // Copy property information
                 'unit_id' => $oldRental->unit_id,
-                'project_id' => $oldRental->project_id,
+                'project_id' => $projectId,
                 'building_id' => $buildingId,
                 // New rental details from request
                 'rental_type' => $data['rental_type'],
@@ -1727,10 +1875,10 @@ class RentalService
         foreach ($properties as $property) {
             $propertyData = [
                 'property_id' => $property->id,
-                'property_name' => $property->name ?? 'N/A',
-                'property_address' => $property->address ?? 'N/A',
-                'building' => $property->building->name ?? 'N/A',
-                'project' => $property->project->name ?? 'N/A',
+                'property_name' => $property->name ?? 'لا يوجد اسم العقار',
+                'property_address' => $property->address ?? 'لا يوجد عنوان العقار',
+                'building' => $property->building->name ?? 'لا يوجد اسم المبنى',
+                'project' => $property->project->name ?? 'لا يوجد اسم المشروع',
                 'total_expected' => 0,
                 'total_collected' => 0,
                 'total_outstanding' => 0,
@@ -1897,34 +2045,52 @@ class RentalService
     /**
      * Get daily follow-up data for rentals with payment due dates
      *
-     * @param int $userId
      * @param array $filters
      * @return array
      */
-    public function getDailyFollowUp($userId, array $filters = [])
+    public function getDailyFollowUp(array $filters = [])
     {
-        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
+        // Always use authenticated user - no parameter
+        $ownerId = auth()->user()->tenantOwnerId();
+
+        // Validate building access if filter provided
+        if (!empty($filters['building_id'])) {
+            $this->validateBuildingAccess($ownerId, $filters['building_id']);
+        }
 
         // Pagination parameters
         $perPage = $filters['per_page'] ?? 15;
         $perPage = min($perPage, 100); // Max 100 per page
         $page = $filters['page'] ?? 1;
 
-        // Date parameters
-        $today = now()->toDateString();
-        $fromDate = $filters['from_date'] ?? $today;
-        $toDate = $filters['to_date'] ?? $today;
+        // Date parameters - use Carbon for type-safe comparisons
+        $today = now()->startOfDay();
+        $todayString = $today->toDateString();
+        $fromDate = $filters['from_date'] ?? $todayString;
+        $toDate = $filters['to_date'] ?? $todayString;
 
         // Status filter: overdue, due_today, upcoming
         $status = $filters['status'] ?? 'due_today';
 
+        // Get user's default language for optimized eager loading
+        $userLanguageId = $this->getUserLanguageId($ownerId);
+
         // Building query for installments based on status
         $installmentsQuery = RmPaymentInstallment::with([
             'rental.activeContract',
-            'rental.property.project',
+            'rental.property.contents' => function($query) use ($userLanguageId) {
+                $query->where('language_id', $userLanguageId);
+            },
+            'rental.property.project.contents' => function($query) use ($userLanguageId) {
+                $query->where('language_id', $userLanguageId);
+            },
             'rental.property.building',
+            'rental.building',
+            'rental.project.contents' => function($query) use ($userLanguageId) {
+                $query->where('language_id', $userLanguageId);
+            },
             'contract',
-            'payments'
+            'payments' // Load all payments for sum calculation
         ])
         ->whereHas('rental', function($q) use ($ownerId, $filters) {
             $q->where('user_id', $ownerId)
@@ -1945,7 +2111,7 @@ class RentalService
         // Apply status-based date filters
         switch ($status) {
             case 'overdue':
-                $installmentsQuery->whereDate('due_date', '<', $today);
+                $installmentsQuery->whereDate('due_date', '<', $todayString);
                 break;
             case 'due_today':
                 if (!empty($filters['from_date']) && !empty($filters['to_date'])) {
@@ -1953,11 +2119,11 @@ class RentalService
                     $installmentsQuery->whereBetween('due_date', [$fromDate, $toDate]);
                 } else {
                     // Default to today
-                    $installmentsQuery->whereDate('due_date', '=', $today);
+                    $installmentsQuery->whereDate('due_date', '=', $todayString);
                 }
                 break;
             case 'upcoming':
-                $installmentsQuery->whereDate('due_date', '>', $today);
+                $installmentsQuery->whereDate('due_date', '>', $todayString);
                 break;
             default:
                 // If date range is provided, use it
@@ -1965,7 +2131,7 @@ class RentalService
                     $installmentsQuery->whereBetween('due_date', [$fromDate, $toDate]);
                 } else {
                     // Default to today
-                    $installmentsQuery->whereDate('due_date', '=', $today);
+                    $installmentsQuery->whereDate('due_date', '=', $todayString);
                 }
         }
 
@@ -1981,54 +2147,99 @@ class RentalService
         $totalArrears = 0;
         $totalOverdueArrears = 0;
 
+        // Cache to prevent recalculating arrears for the same rental multiple times
+        $rentalArrearsCache = [];
+        // Track which rentals we've already counted in summary totals
+        $processedRentals = [];
+
         foreach ($installments as $installment) {
             $rental = $installment->rental;
 
             if (!$rental || !$rental->activeContract) {
+                // Log missing data for debugging
+                \Log::warning('Daily Follow-Up: Skipping installment due to missing rental or contract', [
+                    'installment_id' => $installment->id,
+                    'has_rental' => (bool)$rental,
+                    'has_contract' => $rental ? (bool)$rental->activeContract : false,
+                    'user_id' => $ownerId
+                ]);
                 continue;
             }
 
-            // Calculate paid amount for this installment
-            $paidAmount = $installment->payments()->sum('amount');
+            // Calculate paid amount for this installment (using eager loaded payments)
+            $paidAmount = $installment->payments->sum('amount');
             $remainingAmount = max(0, $installment->amount - $paidAmount);
 
-            // Calculate overdue arrears (only if past due date)
+            // Calculate overdue arrears for THIS specific installment
             $overdueArrears = 0;
             if ($installment->due_date < $today && $remainingAmount > 0) {
                 $overdueArrears = $remainingAmount;
             }
 
-            // Calculate total arrears for this rental (all unpaid amounts across all installments)
-            $allInstallments = $rental->installments()
-                ->where('contract_id', $rental->activeContract->id)
-                ->whereIn('status', ['pending', 'active'])
-                ->get();
+            // Calculate total arrears for this rental ONCE (not per installment)
+            // This prevents duplicate queries and double-counting
+            if (!isset($rentalArrearsCache[$rental->id])) {
+                // Only count OVERDUE installments as arrears (not future ones)
+                $overdueInstallments = $rental->installments()
+                    ->where('contract_id', $rental->activeContract->id)
+                    ->where('due_date', '<', $todayString)
+                    ->whereIn('status', ['pending', 'active'])
+                    ->withSum('payments', 'amount')
+                    ->get();
 
-            $totalUnpaidAmount = 0;
-            foreach ($allInstallments as $inst) {
-                $instPaid = $inst->payments()->sum('amount');
-                $instRemaining = max(0, $inst->amount - $instPaid);
-                $totalUnpaidAmount += $instRemaining;
+                $totalArrearsForRental = 0;
+                foreach ($overdueInstallments as $inst) {
+                    $instPaid = $inst->payments_sum_amount ?? 0;
+                    $instRemaining = max(0, $inst->amount - $instPaid);
+                    $totalArrearsForRental += $instRemaining;
+                }
+
+                // Cache the result to avoid recalculating
+                $rentalArrearsCache[$rental->id] = $totalArrearsForRental;
+            }
+
+            // Get the cached arrears value
+            $totalUnpaidAmount = $rentalArrearsCache[$rental->id];
+
+            // Get property content in user's default language
+            $propertyContent = $this->getPropertyContent($rental->property, $ownerId);
+
+            // Get project name in user's language (try property's project first, then rental's project)
+            $project = $rental->property?->project ?? $rental->project;
+            $projectName = $this->getProjectName($project, $ownerId);
+
+            // Get building name (try property's building first, then rental's building)
+            $building = $rental->property?->building ?? $rental->building;
+            $buildingName = 'لا يوجد اسم المبنى';
+
+            // Manually load the building if not an object (fix for relationship loading issue)
+            if ((!$building || !is_object($building)) && ($rental->building_id || $rental->property?->building_id)) {
+                $buildingId = $rental->building_id ?? $rental->property?->building_id;
+                $building = \App\Models\Building::find($buildingId);
+            }
+
+            if ($building && is_object($building)) {
+                $buildingName = $building->name ?? 'لا يوجد اسم المبنى';
             }
 
             $followUpItem = [
                 'rental_id' => $rental->id,
-                'contract_number' => $rental->contract_number ?? 'N/A',
+                'contract_number' => $rental->contract_number ?? 'لا يوجد رقم العقد',
                 'tenant_name' => $rental->tenant_full_name,
                 'mobile_number' => $rental->tenant_phone,
                 'email' => $rental->tenant_email,
                 'unit_information' => [
                     'unit_id' => $rental->unit_id,
-                    'unit_name' => $rental->property?->name ?? 'N/A',
-                    'unit_address' => $rental->property?->address ?? 'N/A',
+                    'unit_name' => $propertyContent['name'],
+                    'unit_address' => $propertyContent['address'],
                 ],
                 'building' => [
                     'building_id' => $rental->property?->building_id ?? $rental->building_id,
-                    'building_name' => $rental->property?->building?->name ?? 'N/A',
+                    'building_name' => $buildingName,
                 ],
                 'project' => [
                     'project_id' => $rental->property?->project_id ?? $rental->project_id,
-                    'project_name' => $rental->property?->project?->name ?? 'N/A',
+                    'project_name' => $projectName,
                 ],
                 'installment_info' => [
                     'installment_id' => $installment->id,
@@ -2045,7 +2256,7 @@ class RentalService
                 ],
                 'due_date' => $installment->due_date->format('Y-m-d'),
                 'days_overdue' => $installment->due_date < $today
-                    ? now()->diffInDays($installment->due_date)
+                    ? $today->diffInDays($installment->due_date)
                     : 0,
                 'contract_info' => [
                     'contract_id' => $rental->activeContract->id,
@@ -2060,9 +2271,17 @@ class RentalService
             $followUpList[] = $followUpItem;
 
             // Update totals
+            // Amount due for THIS installment
             $totalAmountDue += $remainingAmount;
-            $totalArrears += $totalUnpaidAmount;
+
+            // Overdue amount for THIS installment
             $totalOverdueArrears += $overdueArrears;
+
+            // Total arrears counted ONCE per rental (prevents double counting)
+            if (!in_array($rental->id, $processedRentals)) {
+                $totalArrears += $totalUnpaidAmount;
+                $processedRentals[] = $rental->id;
+            }
         }
 
         return [
@@ -2109,9 +2328,10 @@ class RentalService
 
         // Build the base query
         $query = RmContract::with([
-            'rental.property',
+            'rental.property.contents', // Eager load property contents for language support
+            'rental.property.building',
             'rental.building',
-            'rental.project',
+            'rental.project.contents',
             'installments'
         ])
         ->whereHas('rental', function($q) use ($ownerId) {
@@ -2168,27 +2388,41 @@ class RentalService
 
             // Get unit information
             $property = $rental->property;
+            $propertyContent = $this->getPropertyContent($property, $ownerId);
+
             $unitInfo = [
                 'unit_id' => $rental->unit_id,
-                'unit_number' => $property?->property_number ?? 'N/A',
-                'unit_name' => $property?->name ?? 'N/A',
-                'unit_type' => $property?->property_type ?? 'N/A',
-                'unit_size' => $property?->bedrooms ? $property->bedrooms . ' BR' : 'N/A',
-                'unit_address' => $property?->address ?? 'N/A',
+                'unit_number' => $property?->property_number ?? 'لا يوجد رقم الوحدة',
+                'unit_name' => $propertyContent['name'],
+                'unit_type' => $property?->property_type ?? 'لا يوجد نوع الوحدة',
+                'unit_size' => $property?->bedrooms ? $property->bedrooms . ' BR' : 'لا يوجد حجم الوحدة',
+                'unit_address' => $propertyContent['address'],
             ];
 
-            // Get building information
-            $building = $rental->building;
+            // Get building information (try property's building first, then rental's building)
+            $building = $property?->building ?? $rental->building;
+            $buildingName = 'لا يوجد اسم المبنى';
+
+            // Manually load the building if not an object (fix for relationship loading issue)
+            if ((!$building || !is_object($building)) && ($rental->building_id || $property?->building_id)) {
+                $buildingId = $rental->building_id ?? $property?->building_id;
+                $building = \App\Models\Building::find($buildingId);
+            }
+
+            if ($building && is_object($building)) {
+                $buildingName = $building->name ?? 'لا يوجد اسم المبنى';
+            }
+
             $buildingInfo = [
-                'building_id' => $rental->building_id,
-                'building_name' => $building?->name ?? 'N/A',
-                'building_address' => $property?->city ?? 'N/A', // Using property city as building address
+                'building_id' => $property?->building_id ?? $rental->building_id,
+                'building_name' => $buildingName,
+                'building_address' => $property?->city ?? 'لا يوجد عنوان المبنى', // Using property city as building address
             ];
 
             // Get tenant information
             $tenantInfo = [
                 'tenant_name' => $rental->tenant_full_name,
-                'tenant_email' => $rental->tenant_email ?? 'N/A',
+                'tenant_email' => $rental->tenant_email ?? 'لا يوجد بريد إلكتروني',
                 'tenant_phone' => $rental->tenant_phone,
             ];
 
@@ -2211,7 +2445,7 @@ class RentalService
 
             $contractData = [
                 'contract_id' => $contract->id,
-                'contract_number' => $rental->contract_number ?? 'N/A',
+                'contract_number' => $rental->contract_number ?? 'لا يوجد رقم العقد',
                 'contract_status' => $contract->status,
                 'tenant_information' => $tenantInfo,
                 'unit_information' => $unitInfo,
