@@ -2042,10 +2042,11 @@ class RentalService
         $perPage = min($perPage, 100); // Max 100 per page
         $page = $filters['page'] ?? 1;
 
-        // Date parameters
-        $today = now()->toDateString();
-        $fromDate = $filters['from_date'] ?? $today;
-        $toDate = $filters['to_date'] ?? $today;
+        // Date parameters - use Carbon for type-safe comparisons
+        $today = now()->startOfDay();
+        $todayString = $today->toDateString();
+        $fromDate = $filters['from_date'] ?? $todayString;
+        $toDate = $filters['to_date'] ?? $todayString;
 
         // Status filter: overdue, due_today, upcoming
         $status = $filters['status'] ?? 'due_today';
