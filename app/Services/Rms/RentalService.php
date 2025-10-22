@@ -51,13 +51,11 @@ class RentalService
      */
     private function getUserLanguageId($userId): int
     {
-        return \Cache::remember("user_language_{$userId}", 3600, function() use ($userId) {
-            $userLanguage = \App\Models\UserLanguage::where('user_id', $userId)
-                ->where('is_default', 1)
-                ->first();
+        $userLanguage = \App\Models\User\Language::where('user_id', $userId)
+            ->where('is_default', 1)
+            ->first();
 
-            return $userLanguage?->id ?? 1; // Fallback to language ID 1 (Arabic)
-        });
+        return $userLanguage?->id ?? 1; // Fallback to language ID 1 (Arabic)
     }
 
     /**
@@ -74,11 +72,7 @@ class RentalService
         }
 
         // Get user's default language
-        $userLanguage = UserLanguage::where('user_id', $userId)
-            ->where('is_default', 1)
-            ->first();
-
-        $languageId = $userLanguage ? $userLanguage->id : 1; // Fallback to language ID 1
+        $languageId = $this->getUserLanguageId($userId);
 
         // Try to get content in user's language
         $content = $property->contents()
@@ -110,11 +104,7 @@ class RentalService
         }
 
         // Get user's default language
-        $userLanguage = UserLanguage::where('user_id', $userId)
-            ->where('is_default', 1)
-            ->first();
-
-        $languageId = $userLanguage ? $userLanguage->id : 1; // Fallback to language ID 1
+        $languageId = $this->getUserLanguageId($userId);
 
         // Try to get content in user's language
         $content = $project->contents()
