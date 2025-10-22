@@ -1,17 +1,19 @@
 <?php
 
 namespace App\Http\Controllers\Api\V1\Rms;
+
+use App\Http\Controllers\Api\BaseApiController;
+use App\Traits\HandlesApiExceptions;
+use App\Http\Requests\Rms\Maintenance\StoreMaintenanceRequest;
+use App\Http\Requests\Rms\Maintenance\UpdateMaintenanceRequest;
+use App\Constants\RmsConstants;
 use Illuminate\Http\Request;
-use App\Models\Api\Rms\RmRental;
-use App\Models\Api\Rms\RmContract;
-use App\Http\Controllers\Controller;
-use App\Services\Rms\InstallmentService;
 use App\Services\Rms\MaintenanceService;
-use App\Models\Api\Rms\RmPaymentInstallment;
 
-
-class MaintenanceController extends Controller
+class MaintenanceController extends BaseApiController
 {
+    use HandlesApiExceptions;
+
     protected $maintenanceService;
 
     public function __construct(MaintenanceService $maintenanceService)
@@ -21,151 +23,65 @@ class MaintenanceController extends Controller
 
     public function index(Request $request)
     {
-        try {
+        return $this->executeWithExceptionHandling(function () use ($request) {
             $filters = $request->only(['status', 'priority', 'category', 'rental_id', 'from', 'to']);
-            $results = $this->maintenanceService->list(auth()->id(), $filters);
+            $results = $this->maintenanceService->list($this->getUserId(), $filters);
 
-            return response()->json(['status' => true, 'data' => $results]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+            return $this->success($results);
+        }, 'list maintenance tickets');
     }
 
-    public function store(Request $request)
+    public function store(StoreMaintenanceRequest $request)
     {
-        try {
-            $validated = $request->validate([
-                'rental_id' => 'required|integer|exists:rm_rentals,id',
-                'category' => 'required|string|max:50',
-                'priority' => 'required|in:low,medium,high,critical',
-                'title' => 'required|string|max:150',
-                'description' => 'required|string',
-                'estimated_cost' => 'nullable|numeric',
-                'payer' => 'nullable|in:landlord,tenant,shared',
-                'payer_share_percent' => 'nullable|integer|min:0|max:100',
-                'scheduled_date' => 'nullable|date',
-                'assigned_to_vendor_id' => 'nullable|integer',
-                'notes' => 'nullable|string',
-            ]);
+        return $this->executeWithExceptionHandling(function () use ($request) {
+            $ticket = $this->maintenanceService->create(
+                $request->validated(),
+                $this->getUserId()
+            );
 
-            $ticket = $this->maintenanceService->create($validated, auth()->id());
-
-            return response()->json(['status' => true, 'data' => $ticket], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 400);
-        }
+            return $this->created($ticket, 'Maintenance ticket created successfully');
+        }, 'create maintenance ticket');
     }
 
     public function show($id)
     {
-        try {
-            $ticket = $this->maintenanceService->find(auth()->id(), $id);
-            return response()->json(['status' => true, 'data' => $ticket]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Maintenance ticket not found'
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+        return $this->executeWithExceptionHandling(function () use ($id) {
+            $ticket = $this->maintenanceService->find($this->getUserId(), $id);
+            return $this->success($ticket);
+        }, 'retrieve maintenance ticket');
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateMaintenanceRequest $request, $id)
     {
-        try {
-            $validated = $request->validate([
-                'title' => 'sometimes|string|max:150',
-                'description' => 'sometimes|string',
-                'estimated_cost' => 'nullable|numeric',
-                'payer' => 'nullable|in:landlord,tenant,shared',
-                'payer_share_percent' => 'nullable|integer|min:0|max:100',
-                'scheduled_date' => 'nullable|date',
-                'assigned_to_vendor_id' => 'nullable|integer',
-                'notes' => 'nullable|string',
-            ]);
+        return $this->executeWithExceptionHandling(function () use ($request, $id) {
+            $ticket = $this->maintenanceService->update(
+                $id,
+                $request->validated(),
+                $this->getUserId()
+            );
 
-            $ticket = $this->maintenanceService->update($id, $validated, auth()->id());
-
-            return response()->json(['status' => true, 'data' => $ticket]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Maintenance ticket not found'
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 400);
-        }
+            return $this->success($ticket, 'Maintenance ticket updated successfully');
+        }, 'update maintenance ticket');
     }
 
     public function updateStatus(Request $request, $id)
     {
-        try {
+        return $this->executeWithExceptionHandling(function () use ($request, $id) {
             $validated = $request->validate([
-                'status' => 'required|in:open,in_progress,on_hold,resolved,cancelled'
+                'status' => ['required', RmsConstants::validationRule(RmsConstants::MAINTENANCE_STATUSES)],
             ]);
 
-            $ticket = $this->maintenanceService->changeStatus($id, $validated['status'], auth()->id());
+            $ticket = $this->maintenanceService->changeStatus($id, $validated['status'], $this->getUserId());
 
-            return response()->json(['status' => true, 'data' => $ticket]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Maintenance ticket not found'
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 400);
-        }
+            return $this->success($ticket, 'Maintenance ticket status updated successfully');
+        }, 'update maintenance ticket status');
     }
 
     public function destroy($id)
     {
-        try {
-            $this->maintenanceService->delete($id, auth()->id());
-            return response()->json([], 204);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Maintenance ticket not found'
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 400);
-        }
+        return $this->executeWithExceptionHandling(function () use ($id) {
+            $this->maintenanceService->delete($id, $this->getUserId());
+            return $this->noContent();
+        }, 'delete maintenance ticket');
     }
 }

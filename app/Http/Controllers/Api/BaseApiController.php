@@ -239,4 +239,90 @@ class BaseApiController extends Controller
             403
         );
     }
+
+    /**
+     * Get the authenticated user ID (handles sub-users via tenantOwnerId)
+     *
+     * @return int
+     */
+    protected function getUserId(): int
+    {
+        return auth()->user() ? auth()->user()->tenantOwnerId() : auth()->id();
+    }
+
+    /**
+     * Return paginated response
+     *
+     * @param \Illuminate\Contracts\Pagination\LengthAwarePaginator $paginator
+     * @param string|null $resourceClass Optional API Resource class
+     * @return \Illuminate\Http\JsonResponse
+     */
+    protected function paginated($paginator, ?string $resourceClass = null)
+    {
+        $data = $resourceClass
+            ? $resourceClass::collection($paginator->items())
+            : $paginator->items();
+
+        return response()->json([
+            'status' => true,
+            'data' => $data,
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
+                'has_more_pages' => $paginator->hasMorePages(),
+                'next_page_url' => $paginator->nextPageUrl(),
+                'prev_page_url' => $paginator->previousPageUrl(),
+            ]
+        ]);
+    }
+
+    /**
+     * Alias for notFoundResponse
+     */
+    protected function notFound(?string $message = null)
+    {
+        return $this->notFoundResponse($message);
+    }
+
+    /**
+     * Alias for validationErrorResponse
+     */
+    protected function validationError(array $errors, ?string $message = null)
+    {
+        return $this->validationErrorResponse($errors, $message);
+    }
+
+    /**
+     * Alias for unauthorizedResponse
+     */
+    protected function unauthorized(?string $message = null)
+    {
+        return $this->unauthorizedResponse($message);
+    }
+
+    /**
+     * Alias for forbiddenResponse
+     */
+    protected function forbidden(?string $message = null)
+    {
+        return $this->forbiddenResponse($message);
+    }
+
+    /**
+     * Return server error (500)
+     *
+     * @param string|null $message
+     * @return \Illuminate\Http\JsonResponse
+     */
+    protected function serverError(?string $message = null)
+    {
+        return $this->errorResponse(
+            $message ?? 'Internal server error',
+            500
+        );
+    }
 }
