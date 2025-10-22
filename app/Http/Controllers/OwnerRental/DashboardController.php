@@ -80,6 +80,7 @@ class DashboardController extends Controller
                     if ($rental->building_id) {
                         $building = DB::table('buildings')
                             ->where('id', $rental->building_id)
+                            ->select('id', 'name')
                             ->first();
                     }
 
