@@ -872,7 +872,17 @@ class RentalService
 
         // Get building name
         $building = $rental->property?->building ?? $rental->building;
-        $buildingName = $building?->name ?? 'N/A';
+        $buildingName = 'N/A';
+
+        // Manually load the building if not an object (fix for relationship loading issue)
+        if ((!$building || !is_object($building)) && ($rental->building_id || $rental->property?->building_id)) {
+            $buildingId = $rental->building_id ?? $rental->property?->building_id;
+            $building = \App\Models\Building::find($buildingId);
+        }
+
+        if ($building && is_object($building)) {
+            $buildingName = $building->name ?? 'N/A';
+        }
 
         if (!$rental->activeContract) {
             return [
@@ -2112,7 +2122,17 @@ class RentalService
 
             // Get building name (try property's building first, then rental's building)
             $building = $rental->property?->building ?? $rental->building;
-            $buildingName = $building?->name ?? 'N/A';
+            $buildingName = 'N/A';
+
+            // Manually load the building if not an object (fix for relationship loading issue)
+            if ((!$building || !is_object($building)) && ($rental->building_id || $rental->property?->building_id)) {
+                $buildingId = $rental->building_id ?? $rental->property?->building_id;
+                $building = \App\Models\Building::find($buildingId);
+            }
+
+            if ($building && is_object($building)) {
+                $buildingName = $building->name ?? 'N/A';
+            }
 
             $followUpItem = [
                 'rental_id' => $rental->id,
@@ -2285,9 +2305,21 @@ class RentalService
 
             // Get building information (try property's building first, then rental's building)
             $building = $property?->building ?? $rental->building;
+            $buildingName = 'N/A';
+
+            // Manually load the building if not an object (fix for relationship loading issue)
+            if ((!$building || !is_object($building)) && ($rental->building_id || $property?->building_id)) {
+                $buildingId = $rental->building_id ?? $property?->building_id;
+                $building = \App\Models\Building::find($buildingId);
+            }
+
+            if ($building && is_object($building)) {
+                $buildingName = $building->name ?? 'N/A';
+            }
+
             $buildingInfo = [
                 'building_id' => $property?->building_id ?? $rental->building_id,
-                'building_name' => $building?->name ?? 'N/A',
+                'building_name' => $buildingName,
                 'building_address' => $property?->city ?? 'N/A', // Using property city as building address
             ];
 
