@@ -113,21 +113,23 @@ class DashboardController extends Controller
                     )
                     ->first();
 
-                // Get project information
+                // Get project information (from property first, then from rental)
                 $project = null;
-                if ($rental->project_id) {
+                $projectId = $property->project_id ?? $rental->project_id;
+                if ($projectId) {
                     $project = DB::table('user_projects')
                         ->leftJoin('user_project_contents', 'user_projects.id', '=', 'user_project_contents.project_id')
-                        ->where('user_projects.id', $rental->project_id)
+                        ->where('user_projects.id', $projectId)
                         ->select('user_projects.*', 'user_project_contents.title as project_title')
                         ->first();
                 }
 
-                // Get building information
+                // Get building information (from property first, then from rental)
                 $building = null;
-                if ($rental->building_id) {
+                $buildingId = $property->building_id ?? $rental->building_id;
+                if ($buildingId) {
                     $building = DB::table('buildings')
-                        ->where('id', $rental->building_id)
+                        ->where('id', $buildingId)
                         ->select('id', 'name')
                         ->first();
                 }
