@@ -7,6 +7,7 @@ use App\Models\Api\Rms\RmContract;
 use App\Models\Api\Rms\RmPaymentInstallment;
 use App\Models\Api\Rms\RmPayment;
 use App\Models\User\RealestateManagement\Property;
+use App\Models\User\Language as UserLanguage;
 use App\Services\Rms\PaymentService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
@@ -19,6 +20,42 @@ class RentalService
     public function __construct(PaymentService $paymentService)
     {
         $this->paymentService = $paymentService;
+    }
+
+    /**
+     * Get property content (name and address) in user's default language
+     *
+     * @param Property|null $property
+     * @param int $userId
+     * @return array ['name' => string, 'address' => string]
+     */
+    protected function getPropertyContent($property, $userId)
+    {
+        if (!$property) {
+            return ['name' => 'N/A', 'address' => 'N/A'];
+        }
+
+        // Get user's default language
+        $userLanguage = UserLanguage::where('user_id', $userId)
+            ->where('is_default', 1)
+            ->first();
+
+        $languageId = $userLanguage ? $userLanguage->id : 1; // Fallback to language ID 1
+
+        // Try to get content in user's language
+        $content = $property->contents()
+            ->where('language_id', $languageId)
+            ->first();
+
+        // If not found, get the first available content
+        if (!$content) {
+            $content = $property->contents()->first();
+        }
+
+        return [
+            'name' => $content?->title ?? 'N/A',
+            'address' => $content?->address ?? 'N/A'
+        ];
     }
     public function listRentals($request)
     {
@@ -779,9 +816,12 @@ class RentalService
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
 
-        $rental = RmRental::with(['activeContract', 'installments.payments', 'property.project', 'tenantCostItems', 'ownerCostItems'])
+        $rental = RmRental::with(['activeContract', 'installments.payments', 'property.project', 'property.contents', 'tenantCostItems', 'ownerCostItems'])
             ->where('user_id', $ownerId)
             ->findOrFail($rentalId);
+
+        // Get property content in user's language
+        $propertyContent = $this->getPropertyContent($rental->property, $ownerId);
 
         if (!$rental->activeContract) {
             return [
@@ -790,7 +830,7 @@ class RentalService
                     'tenant_name' => $rental->tenant_full_name,
                     'tenant_phone' => $rental->tenant_phone,
                     'tenant_email' => $rental->tenant_email,
-                    'property_address' => $rental->property?->content(1)?->title ?? 'N/A',
+                    'property_address' => $propertyContent['name'],
                     'building' => $rental->building,
                     'contract_number' => $rental->activeContract?->contract_number ?? 'N/A'
                 ],
@@ -848,7 +888,7 @@ class RentalService
                 'tenant_name' => $rental->tenant_full_name,
                 'tenant_phone' => $rental->tenant_phone,
                 'tenant_email' => $rental->tenant_email,
-                'property_address' => $rental->property?->content(1)?->title ?? 'N/A',
+                'property_address' => $propertyContent['name'],
                 'building' => $rental->building,
                 'contract_number' => $rental->activeContract->contract_number
             ],
@@ -859,7 +899,7 @@ class RentalService
             ],
             'property' => [
                 'id' => $rental->property?->id,
-                'name' => $rental->property?->content(1)?->title,
+                'name' => $propertyContent['name'],
                 'building' => $rental->building,
                 'project' => [
                     'id' => $rental->property?->project?->id,
@@ -1923,6 +1963,7 @@ class RentalService
             'rental.activeContract',
             'rental.property.project',
             'rental.property.building',
+            'rental.property.contents', // Eager load property contents for language support
             'contract',
             'payments'
         ])
@@ -2011,6 +2052,9 @@ class RentalService
                 $totalUnpaidAmount += $instRemaining;
             }
 
+            // Get property content in user's default language
+            $propertyContent = $this->getPropertyContent($rental->property, $ownerId);
+
             $followUpItem = [
                 'rental_id' => $rental->id,
                 'contract_number' => $rental->contract_number ?? 'N/A',
@@ -2019,8 +2063,8 @@ class RentalService
                 'email' => $rental->tenant_email,
                 'unit_information' => [
                     'unit_id' => $rental->unit_id,
-                    'unit_name' => $rental->property?->content(1)?->title ?? 'N/A',
-                    'unit_address' => $rental->property?->content(1)?->address ?? 'N/A',
+                    'unit_name' => $propertyContent['name'],
+                    'unit_address' => $propertyContent['address'],
                 ],
                 'building' => [
                     'building_id' => $rental->property?->building_id ?? $rental->building_id,
@@ -2109,7 +2153,7 @@ class RentalService
 
         // Build the base query
         $query = RmContract::with([
-            'rental.property',
+            'rental.property.contents', // Eager load property contents for language support
             'rental.building',
             'rental.project',
             'installments'
@@ -2168,13 +2212,15 @@ class RentalService
 
             // Get unit information
             $property = $rental->property;
+            $propertyContent = $this->getPropertyContent($property, $ownerId);
+
             $unitInfo = [
                 'unit_id' => $rental->unit_id,
                 'unit_number' => $property?->property_number ?? 'N/A',
-                'unit_name' => $property?->content(1)?->title ?? 'N/A',
+                'unit_name' => $propertyContent['name'],
                 'unit_type' => $property?->property_type ?? 'N/A',
                 'unit_size' => $property?->bedrooms ? $property->bedrooms . ' BR' : 'N/A',
-                'unit_address' => $property?->content(1)?->address ?? 'N/A',
+                'unit_address' => $propertyContent['address'],
             ];
 
             // Get building information
