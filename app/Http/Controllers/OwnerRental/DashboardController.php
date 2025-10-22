@@ -31,12 +31,15 @@ class DashboardController extends Controller
         try {
             $ownerRental = $this->getOwnerRental();
 
-            // Get property IDs assigned to owner rental
-            $propertyIds = $ownerRental->properties()->pluck('user_properties.id');
+            // Get property IDs assigned to owner rental (rental purpose only)
+            $propertyIds = $ownerRental->properties()
+                ->where('purpose', 'rent')
+                ->pluck('user_properties.id');
 
             // Initialize statistics
             $stats = [
                 'total_properties' => $ownerRental->properties()->count(),
+                'rental_properties' => $ownerRental->properties()->where('purpose', 'rent')->count(),
                 'active_properties' => $ownerRental->properties()->where('status', 1)->count(),
                 'featured_properties' => $ownerRental->properties()->where('featured', 1)->count(),
                 'total_rentals' => 0,
