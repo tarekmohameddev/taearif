@@ -57,6 +57,39 @@ class RentalService
             'address' => $content?->address ?? 'N/A'
         ];
     }
+
+    /**
+     * Get project name in user's default language
+     *
+     * @param \App\Models\User\RealestateManagement\Project|null $project
+     * @param int $userId
+     * @return string
+     */
+    protected function getProjectName($project, $userId)
+    {
+        if (!$project) {
+            return 'N/A';
+        }
+
+        // Get user's default language
+        $userLanguage = UserLanguage::where('user_id', $userId)
+            ->where('is_default', 1)
+            ->first();
+
+        $languageId = $userLanguage ? $userLanguage->id : 1; // Fallback to language ID 1
+
+        // Try to get content in user's language
+        $content = $project->contents()
+            ->where('language_id', $languageId)
+            ->first();
+
+        // If not found, get the first available content
+        if (!$content) {
+            $content = $project->contents()->first();
+        }
+
+        return $content?->title ?? 'N/A';
+    }
     public function listRentals($request)
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : auth()->id();
@@ -816,12 +849,24 @@ class RentalService
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
 
-        $rental = RmRental::with(['activeContract', 'installments.payments', 'property.project', 'property.contents', 'tenantCostItems', 'ownerCostItems'])
+        $rental = RmRental::with([
+            'activeContract',
+            'installments.payments',
+            'property.project.contents',
+            'property.contents',
+            'project.contents',
+            'tenantCostItems',
+            'ownerCostItems'
+        ])
             ->where('user_id', $ownerId)
             ->findOrFail($rentalId);
 
         // Get property content in user's language
         $propertyContent = $this->getPropertyContent($rental->property, $ownerId);
+
+        // Get project name in user's language
+        $project = $rental->property?->project ?? $rental->project;
+        $projectName = $this->getProjectName($project, $ownerId);
 
         if (!$rental->activeContract) {
             return [
@@ -902,8 +947,8 @@ class RentalService
                 'name' => $propertyContent['name'],
                 'building' => $rental->building,
                 'project' => [
-                    'id' => $rental->property?->project?->id,
-                    'name' => $rental->property?->project?->name
+                    'id' => $rental->property?->project?->id ?? $rental->project_id,
+                    'name' => $projectName
                 ]
             ],
             'cost_items_breakdown' => $costItemsBreakdown,
@@ -1189,7 +1234,7 @@ class RentalService
         $page = $filters['page'] ?? 1;
 
         // Build base query
-        $query = RmRental::with(['activeContract', 'property.contents', 'project', 'tenantCostItems', 'ownerCostItems'])
+        $query = RmRental::with(['activeContract', 'property.contents', 'project.contents', 'tenantCostItems', 'ownerCostItems'])
             ->where('user_id', $ownerId);
 
         // Apply filters
@@ -1272,11 +1317,9 @@ class RentalService
                 ];
             });
 
-            // Get property name
-            $propertyName = 'N/A';
-            if ($rental->property && $rental->property->firstContent) {
-                $propertyName = $rental->property->firstContent->title;
-            }
+            // Get property content and project name in user's language
+            $propertyContent = $this->getPropertyContent($rental->property, $ownerId);
+            $projectName = $this->getProjectName($rental->project, $ownerId);
 
             // Build rental data
             $rentalData = [
@@ -1285,9 +1328,9 @@ class RentalService
                 'tenant_phone' => $rental->tenant_phone,
                 'tenant_email' => $rental->tenant_email,
                 'property_id' => $rental->unit_id,
-                'property_name' => $propertyName,
+                'property_name' => $propertyContent['name'],
                 'project_id' => $rental->project_id,
-                'project_name' => $rental->project?->name ?? 'N/A',
+                'project_name' => $projectName,
                 'building' => $rental->building,
                 'contract_number' => $rental->activeContract->contract_number ?? 'N/A',
                 'status' => $rental->status,
@@ -1961,9 +2004,10 @@ class RentalService
         // Building query for installments based on status
         $installmentsQuery = RmPaymentInstallment::with([
             'rental.activeContract',
-            'rental.property.project',
+            'rental.property.project.contents', // Eager load project contents for language support
             'rental.property.building',
             'rental.property.contents', // Eager load property contents for language support
+            'rental.project.contents', // Also load from rental's direct project relationship
             'contract',
             'payments'
         ])
@@ -2055,6 +2099,10 @@ class RentalService
             // Get property content in user's default language
             $propertyContent = $this->getPropertyContent($rental->property, $ownerId);
 
+            // Get project name in user's language (try property's project first, then rental's project)
+            $project = $rental->property?->project ?? $rental->project;
+            $projectName = $this->getProjectName($project, $ownerId);
+
             $followUpItem = [
                 'rental_id' => $rental->id,
                 'contract_number' => $rental->contract_number ?? 'N/A',
@@ -2072,7 +2120,7 @@ class RentalService
                 ],
                 'project' => [
                     'project_id' => $rental->property?->project_id ?? $rental->project_id,
-                    'project_name' => $rental->property?->project?->name ?? 'N/A',
+                    'project_name' => $projectName,
                 ],
                 'installment_info' => [
                     'installment_id' => $installment->id,
