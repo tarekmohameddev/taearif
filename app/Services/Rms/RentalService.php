@@ -854,7 +854,9 @@ class RentalService
             'installments.payments',
             'property.project.contents',
             'property.contents',
+            'property.building',
             'project.contents',
+            'building',
             'tenantCostItems',
             'ownerCostItems'
         ])
@@ -867,6 +869,10 @@ class RentalService
         // Get project name in user's language
         $project = $rental->property?->project ?? $rental->project;
         $projectName = $this->getProjectName($project, $ownerId);
+
+        // Get building name
+        $building = $rental->property?->building ?? $rental->building;
+        $buildingName = $building?->name ?? 'N/A';
 
         if (!$rental->activeContract) {
             return [
@@ -1234,7 +1240,7 @@ class RentalService
         $page = $filters['page'] ?? 1;
 
         // Build base query
-        $query = RmRental::with(['activeContract', 'property.contents', 'project.contents', 'tenantCostItems', 'ownerCostItems'])
+        $query = RmRental::with(['activeContract', 'property.contents', 'property.building', 'project.contents', 'building', 'tenantCostItems', 'ownerCostItems'])
             ->where('user_id', $ownerId);
 
         // Apply filters
@@ -2006,6 +2012,7 @@ class RentalService
             'rental.activeContract',
             'rental.property.project.contents', // Eager load project contents for language support
             'rental.property.building',
+            'rental.building', // Also load rental's direct building relationship
             'rental.property.contents', // Eager load property contents for language support
             'rental.project.contents', // Also load from rental's direct project relationship
             'contract',
@@ -2103,6 +2110,10 @@ class RentalService
             $project = $rental->property?->project ?? $rental->project;
             $projectName = $this->getProjectName($project, $ownerId);
 
+            // Get building name (try property's building first, then rental's building)
+            $building = $rental->property?->building ?? $rental->building;
+            $buildingName = $building?->name ?? 'N/A';
+
             $followUpItem = [
                 'rental_id' => $rental->id,
                 'contract_number' => $rental->contract_number ?? 'N/A',
@@ -2116,7 +2127,7 @@ class RentalService
                 ],
                 'building' => [
                     'building_id' => $rental->property?->building_id ?? $rental->building_id,
-                    'building_name' => $rental->property?->building?->name ?? 'N/A',
+                    'building_name' => $buildingName,
                 ],
                 'project' => [
                     'project_id' => $rental->property?->project_id ?? $rental->project_id,
@@ -2202,8 +2213,9 @@ class RentalService
         // Build the base query
         $query = RmContract::with([
             'rental.property.contents', // Eager load property contents for language support
+            'rental.property.building',
             'rental.building',
-            'rental.project',
+            'rental.project.contents',
             'installments'
         ])
         ->whereHas('rental', function($q) use ($ownerId) {
@@ -2271,10 +2283,10 @@ class RentalService
                 'unit_address' => $propertyContent['address'],
             ];
 
-            // Get building information
-            $building = $rental->building;
+            // Get building information (try property's building first, then rental's building)
+            $building = $property?->building ?? $rental->building;
             $buildingInfo = [
-                'building_id' => $rental->building_id,
+                'building_id' => $property?->building_id ?? $rental->building_id,
                 'building_name' => $building?->name ?? 'N/A',
                 'building_address' => $property?->city ?? 'N/A', // Using property city as building address
             ];
