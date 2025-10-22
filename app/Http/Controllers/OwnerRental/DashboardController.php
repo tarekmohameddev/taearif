@@ -108,8 +108,8 @@ class DashboardController extends Controller
                     $rentals[] = [
                         'rental_id' => $rental->id,
                         'property_name' => $property ? ($property->property_title ?? 'N/A') : 'N/A',
-                        'project_name' => $project ? ($project->project_title ?? 'N/A') : 'N/A',
-                        'building_name' => $building ? ($building->name ?? 'N/A') : 'N/A',
+                        'project_name' => $project ? ($project->project_title ?? null) : null,
+                        'building_name' => $building ? ($building->name ?? null) : null,
                         'amount_due' => $amountDue,
                         'due_date' => $nextInstallment ? $nextInstallment->due_date : null,
                         'overdue_amount' => $overdueAmount,
