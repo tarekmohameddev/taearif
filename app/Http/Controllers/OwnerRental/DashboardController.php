@@ -34,110 +34,175 @@ class DashboardController extends Controller
             // Get property IDs assigned to owner rental
             $propertyIds = $ownerRental->properties()->pluck('user_properties.id');
 
-            // Initialize statistics
-            $stats = [
-                'total_properties' => $ownerRental->properties()->count(),
-                'active_properties' => $ownerRental->properties()->where('status', 1)->count(),
-                'featured_properties' => $ownerRental->properties()->where('featured', 1)->count(),
-                'total_rentals' => 0,
-                'active_rentals' => 0,
-            ];
+            if ($propertyIds->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Dashboard data retrieved successfully',
+                    'data' => [
+                        'summary_cards' => [
+                            'total_properties' => 0,
+                            'due_rent' => 0,
+                            'overdue_rent' => 0,
+                            'collection_rate' => 0
+                        ],
+                        'properties_table' => []
+                    ],
+                ], 200);
+            }
 
-            $rentals = [];
-            $totalAmountDue = 0;
-            $totalOverdue = 0;
+            // Get all rentals for assigned properties
+            $rentalRecords = DB::table('rm_rentals')
+                ->whereIn('unit_id', $propertyIds)
+                ->whereNull('deleted_at')
+                ->where('status', 'active')
+                ->get();
 
-            if ($propertyIds->isNotEmpty()) {
-                // Get rentals with relationships
-                $rentalRecords = DB::table('rm_rentals')
-                    ->whereIn('unit_id', $propertyIds)
-                    ->whereNull('deleted_at')
+            // Calculate summary statistics
+            $totalProperties = $propertyIds->count();
+            $totalDueRent = 0;
+            $totalOverdueRent = 0;
+            $totalPaidAmount = 0;
+            $totalDueAmount = 0;
+            $propertiesTable = [];
+
+            foreach ($rentalRecords as $rental) {
+                // Get property information with image
+                $property = DB::table('user_properties')
+                    ->leftJoin('user_property_contents', 'user_properties.id', '=', 'user_property_contents.property_id')
+                    ->where('user_properties.id', $rental->unit_id)
+                    ->select(
+                        'user_properties.*',
+                        'user_property_contents.title as property_title',
+                        'user_property_contents.unit_number'
+                    )
+                    ->first();
+
+                // Get project information
+                $project = null;
+                if ($rental->project_id) {
+                    $project = DB::table('user_projects')
+                        ->leftJoin('user_project_contents', 'user_projects.id', '=', 'user_project_contents.project_id')
+                        ->where('user_projects.id', $rental->project_id)
+                        ->select('user_projects.*', 'user_project_contents.title as project_title')
+                        ->first();
+                }
+
+                // Get building information
+                $building = null;
+                if ($rental->building_id) {
+                    $building = DB::table('buildings')
+                        ->where('id', $rental->building_id)
+                        ->select('id', 'name')
+                        ->first();
+                }
+
+                // Get payment installments for this rental
+                $installments = DB::table('rm_payment_installments')
+                    ->where('rental_id', $rental->id)
+                    ->whereIn('status', ['pending', 'partial', 'overdue'])
+                    ->orderBy('due_date', 'asc')
                     ->get();
 
-                $stats['total_rentals'] = $rentalRecords->count();
-                $stats['active_rentals'] = $rentalRecords->where('status', 'active')->count();
+                // Calculate due and overdue amounts
+                $dueRent = 0;
+                $overdueRent = 0;
+                $nextDueDate = null;
+                $lastPaymentDate = null;
 
-                foreach ($rentalRecords as $rental) {
-                    // Get property information
-                    $property = DB::table('user_properties')
-                        ->leftJoin('user_property_contents', 'user_properties.id', '=', 'user_property_contents.property_id')
-                        ->where('user_properties.id', $rental->unit_id)
-                        ->select('user_properties.*', 'user_property_contents.title as property_title')
-                        ->first();
+                foreach ($installments as $installment) {
+                    $dueDate = \Carbon\Carbon::parse($installment->due_date);
+                    $today = now();
 
-                    // Get project information
-                    $project = null;
-                    if ($rental->project_id) {
-                        $project = DB::table('user_projects')
-                            ->leftJoin('user_project_contents', 'user_projects.id', '=', 'user_project_contents.project_id')
-                            ->where('user_projects.id', $rental->project_id)
-                            ->select('user_projects.*', 'user_project_contents.title as project_title')
-                            ->first();
+                    if ($dueDate->isFuture()) {
+                        // Future due date
+                        if ($nextDueDate === null) {
+                            $nextDueDate = $installment->due_date;
+                            $dueRent = (float) $installment->amount - (float) $installment->paid_amount;
+                        }
+                    } else {
+                        // Past due date
+                        $overdueRent += (float) $installment->amount - (float) $installment->paid_amount;
                     }
-
-                    // Get building information
-                    $building = null;
-                    if ($rental->building_id) {
-                        $building = DB::table('buildings')
-                            ->where('id', $rental->building_id)
-                            ->select('id', 'name')
-                            ->first();
-                    }
-
-                    // Get next payment due (upcoming installment)
-                    $nextInstallment = DB::table('rm_payment_installments')
-                        ->where('rental_id', $rental->id)
-                        ->whereIn('status', ['pending', 'active'])
-                        ->whereDate('due_date', '>=', now()->toDateString())
-                        ->orderBy('due_date', 'asc')
-                        ->first();
-
-                    // Calculate overdue amount (past due installments that are unpaid)
-                    $overdueAmount = DB::table('rm_payment_installments')
-                        ->where('rental_id', $rental->id)
-                        ->whereIn('status', ['pending', 'active'])
-                        ->whereDate('due_date', '<', now()->toDateString())
-                        ->sum('amount');
-
-                    $amountDue = $nextInstallment ? (float) $nextInstallment->amount : 0;
-                    $overdueAmount = (float) $overdueAmount;
-
-                    $totalAmountDue += $amountDue;
-                    $totalOverdue += $overdueAmount;
-
-                    // Build rental data with requested keys
-                    $rentals[] = [
-                        'rental_id' => $rental->id,
-                        'property_name' => $property ? ($property->property_title ?? 'N/A') : 'N/A',
-                        'project_name' => $project ? ($project->project_title ?? null) : null,
-                        'building_name' => $building ? ($building->name ?? null) : null,
-                        'amount_due' => $amountDue,
-                        'due_date' => $nextInstallment ? $nextInstallment->due_date : null,
-                        'overdue_amount' => $overdueAmount,
-                        'currency' => $rental->currency ?? 'SAR',
-                        'tenant_name' => $rental->tenant_full_name,
-                        'rental_status' => $rental->status,
-                    ];
                 }
+
+                // Get last payment date
+                $lastPayment = DB::table('rm_payments')
+                    ->where('rental_id', $rental->id)
+                    ->where('payment_type', 'rent')
+                    ->orderBy('payment_date', 'desc')
+                    ->first();
+
+                if ($lastPayment) {
+                    $lastPaymentDate = $lastPayment->payment_date;
+                }
+
+                // Calculate total amounts for collection rate
+                $totalDueAmount += $dueRent + $overdueRent;
+                $totalPaidAmount += $rental->base_rent_amount ? (float) $rental->base_rent_amount : 0;
+
+                // Determine status
+                $status = 'محدث'; // Updated (default)
+                $statusColor = 'green';
+                if ($overdueRent > 0) {
+                    $status = 'متأخر'; // Overdue
+                    $statusColor = 'red';
+                }
+
+                // Build property image URL
+                $propertyImageUrl = null;
+                if ($property && $property->featured_image) {
+                    $propertyImageUrl = asset('storage/' . ltrim($property->featured_image, '/'));
+                }
+
+                // Add to summary totals
+                $totalDueRent += $dueRent;
+                $totalOverdueRent += $overdueRent;
+
+                // Build properties table data
+                $propertiesTable[] = [
+                    'property' => [
+                        'id' => $property->id ?? null,
+                        'title' => $property->property_title ?? 'N/A',
+                        'unit_number' => $property->unit_number ?? 'N/A',
+                        'image_url' => $propertyImageUrl
+                    ],
+                    'project' => [
+                        'id' => $project->id ?? null,
+                        'name' => $project->project_title ?? null
+                    ],
+                    'building' => [
+                        'id' => $building->id ?? null,
+                        'name' => $building->name ?? null
+                    ],
+                    'due_rent' => $dueRent,
+                    'overdue_rent' => $overdueRent,
+                    'due_date' => $nextDueDate,
+                    'last_payment' => $lastPaymentDate,
+                    'status' => [
+                        'text' => $status,
+                        'color' => $statusColor
+                    ],
+                    'currency' => $rental->currency ?? 'SAR'
+                ];
+            }
+
+            // Calculate collection rate
+            $collectionRate = 0;
+            if ($totalDueAmount > 0) {
+                $collectionRate = round(($totalPaidAmount / $totalDueAmount) * 100, 1);
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Dashboard data retrieved successfully',
                 'data' => [
-                    'owner_rental' => [
-                        'id' => $ownerRental->id,
-                        'name' => $ownerRental->name,
-                        'email' => $ownerRental->email,
+                    'summary_cards' => [
+                        'total_properties' => $totalProperties,
+                        'due_rent' => $totalDueRent,
+                        'overdue_rent' => $totalOverdueRent,
+                        'collection_rate' => $collectionRate
                     ],
-                    'statistics' => $stats,
-                    'rentals' => $rentals,
-                    'summary' => [
-                        'total_amount_due' => $totalAmountDue,
-                        'total_overdue' => $totalOverdue,
-                        'properties_count' => $propertyIds->count(),
-                        'active_rentals' => $stats['active_rentals'],
-                    ],
+                    'properties_table' => $propertiesTable
                 ],
             ], 200);
 
