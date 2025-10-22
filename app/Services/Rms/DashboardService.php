@@ -150,19 +150,23 @@ class DashboardService
      */
     protected function getPropertyStats($userId)
     {
-        $totalProperties = Property::where('user_id', $userId)->count();
+        // Get only rental-purpose properties
+        $totalRentalProperties = Property::where('user_id', $userId)
+            ->where('purpose', 'rent')
+            ->count();
 
         $rentedProperties = Property::where('user_id', $userId)
+            ->where('purpose', 'rent')
             ->whereHas('rentals', function ($query) {
                 $query->where('status', 'active');
             })
             ->count();
 
-        $availableProperties = $totalProperties - $rentedProperties;
-        $occupancyRate = $totalProperties > 0 ? round(($rentedProperties / $totalProperties) * 100, 2) : 0;
+        $availableProperties = $totalRentalProperties - $rentedProperties;
+        $occupancyRate = $totalRentalProperties > 0 ? round(($rentedProperties / $totalRentalProperties) * 100, 2) : 0;
 
         return [
-            'total_properties' => $totalProperties,
+            'total_properties' => $totalRentalProperties,
             'rented_properties' => $rentedProperties,
             'available_properties' => $availableProperties,
             'occupancy_rate' => $occupancyRate,
