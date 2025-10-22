@@ -177,11 +177,18 @@ class RentalService
             $costItems = $data['cost_items'] ?? [];
             unset($data['cost_items']);
 
-            // Auto-populate building_id from property if not provided
-            if (empty($data['building_id']) && !empty($data['unit_id'])) {
+            // Auto-populate project_id and building_id from property if not provided
+            if (!empty($data['unit_id'])) {
                 $property = Property::find($data['unit_id']);
-                if ($property && $property->building_id) {
-                    $data['building_id'] = $property->building_id;
+                if ($property) {
+                    // Sync project_id from property
+                    if (empty($data['project_id']) && $property->project_id) {
+                        $data['project_id'] = $property->project_id;
+                    }
+                    // Sync building_id from property
+                    if (empty($data['building_id']) && $property->building_id) {
+                        $data['building_id'] = $property->building_id;
+                    }
                 }
             }
 
@@ -285,10 +292,15 @@ class RentalService
                     throw new \Exception('The selected unit already has an active contract. Please choose a different unit or end the existing contract first.');
                 }
 
-                // Auto-populate building_id from property when unit changes
-                if (empty($data['building_id'])) {
-                    $property = Property::find($data['unit_id']);
-                    if ($property && $property->building_id) {
+                // Auto-populate project_id and building_id from property when unit changes
+                $property = Property::find($data['unit_id']);
+                if ($property) {
+                    // Sync project_id from property
+                    if (empty($data['project_id']) && $property->project_id) {
+                        $data['project_id'] = $property->project_id;
+                    }
+                    // Sync building_id from property
+                    if (empty($data['building_id']) && $property->building_id) {
                         $data['building_id'] = $property->building_id;
                     }
                 }
@@ -1683,12 +1695,21 @@ class RentalService
             $costItems = $data['cost_items'] ?? [];
             unset($data['cost_items']);
 
-            // Prepare building_id: use old rental's building_id or fetch from property
+            // Prepare project_id and building_id: use old rental's values or fetch from property
+            $projectId = $oldRental->project_id;
             $buildingId = $oldRental->building_id;
-            if (empty($buildingId) && !empty($oldRental->unit_id)) {
+
+            if (!empty($oldRental->unit_id)) {
                 $property = Property::find($oldRental->unit_id);
-                if ($property && $property->building_id) {
-                    $buildingId = $property->building_id;
+                if ($property) {
+                    // Sync project_id from property if not set
+                    if (empty($projectId) && $property->project_id) {
+                        $projectId = $property->project_id;
+                    }
+                    // Sync building_id from property if not set
+                    if (empty($buildingId) && $property->building_id) {
+                        $buildingId = $property->building_id;
+                    }
                 }
             }
 
@@ -1704,7 +1725,7 @@ class RentalService
                 'tenant_national_id' => $oldRental->tenant_national_id,
                 // Copy property information
                 'unit_id' => $oldRental->unit_id,
-                'project_id' => $oldRental->project_id,
+                'project_id' => $projectId,
                 'building_id' => $buildingId,
                 // New rental details from request
                 'rental_type' => $data['rental_type'],
