@@ -13,11 +13,11 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('user_project_contents', function (Blueprint $table) {
-            // Remove unique constraint on user_id + slug combination
-            // Slugs don't need to be unique per tenant
-            $table->dropUnique('project_contents_user_slug_unique');
-        });
+        // Schema::table('user_project_contents', function (Blueprint $table) {
+        //     // Remove unique constraint on user_id + slug combination
+        //     // Slugs don't need to be unique per tenant
+        //     $table->dropUnique('project_contents_user_slug_unique');
+        // });
     }
 
     /**

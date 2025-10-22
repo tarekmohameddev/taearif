@@ -22,7 +22,6 @@ class ApiPropertyRequestController extends Controller
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'property_type' => 'nullable',
-            'category' => 'nullable|in:سكني,تجاري,صناعي,زراعي',
             'districts_id'       => ['nullable','integer', Rule::exists('user_districts','id')],
             'area_from' => 'nullable|integer|min:0',
             'area_to' => 'nullable|integer|min:0',

@@ -109,6 +109,7 @@ use App\Http\Controllers\Api\V1\TenantWebsite\{
     PublishController,
     FormController,
 };
+use App\Http\Controllers\Api\V1\Matching\MatchingController as V1MatchingController;
 
 use App\Http\Controllers\Api\PixelController; // Added import for PixelController
 
@@ -823,6 +824,20 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve'])->group(
     // Tenant Website Projects (public)
     Route::get('{tenantId}/projects', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'index']);
     Route::get('{tenantId}/projects/{slug}', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'show']);
+
+    // (moved Matching endpoints out of tenant-website scope)
+});
+
+// Matching Endpoints (Dashboard APIs, require auth)
+Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
+    Route::prefix('matching')->group(function () {
+        Route::get('requests', [V1MatchingController::class, 'indexRequests']);
+        Route::get('requests/{id}/matches', [V1MatchingController::class, 'requestMatches']);
+        Route::get('properties/{id}/requests', [V1MatchingController::class, 'propertyRequests']);
+        Route::post('requests/{id}/mark-read', [V1MatchingController::class, 'markRead']);
+        Route::post('bulk-rematch', [V1MatchingController::class, 'bulkRematch']);
+        Route::get('stats', [V1MatchingController::class, 'stats']);
+    });
 });
 
 // Direct public route for property categories (bypassing tenant.resolve middleware)
