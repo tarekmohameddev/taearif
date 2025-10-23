@@ -9,6 +9,7 @@ use App\Models\Api\Rms\RmPayment;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\Language as UserLanguage;
 use App\Services\Rms\PaymentService;
+use App\Exceptions\Rms\RentalException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -169,7 +170,7 @@ class RentalService
                     ->exists();
 
                 if ($existingActiveRental) {
-                    throw new \Exception('This unit already has an active contract. Please end the existing contract before creating a new one.');
+                    throw RentalException::unitHasActiveContract($data['unit_id']);
                 }
             }
 

@@ -108,5 +108,19 @@ class RentalException extends ApiException
             safeMessage: 'Cannot modify ended rental'
         );
     }
+
+    /**
+     * Unit already has an active contract
+     */
+    public static function unitHasActiveContract($unitId): self
+    {
+        return new self(
+            message: "Unit ID {$unitId} already has an active contract",
+            code: 'RMS_UNIT_HAS_ACTIVE_CONTRACT',
+            statusCode: 400,
+            details: ['unit_id' => $unitId],
+            safeMessage: 'This unit already has an active contract. Please end the existing contract before creating a new one.'
+        );
+    }
 }
 
