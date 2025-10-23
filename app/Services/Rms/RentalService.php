@@ -1542,8 +1542,10 @@ class RentalService
      */
     public function updateRentalStatus($userId, $id, array $data)
     {
-        return DB::transaction(function () use ($userId, $id, $data) {
-            $rental = RmRental::where('user_id', $userId)->findOrFail($id);
+        $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
+
+        return DB::transaction(function () use ($ownerId, $id, $data) {
+            $rental = RmRental::where('user_id', $ownerId)->findOrFail($id);
 
             $currentStatus = $rental->status;
             $newStatus = $data['status'];
@@ -1576,7 +1578,7 @@ class RentalService
                         'status' => 'terminated',
                         'end_date' => $endDate,
                         'termination_reason' => $data['termination_reason'] ?? 'Rental ended by user',
-                        'updated_by' => $userId
+                        'updated_by' => $ownerId
                     ]);
 
                     // Cancel future installments after end date
@@ -1591,7 +1593,7 @@ class RentalService
                     \Log::info('Contract automatically terminated due to rental status change', [
                         'rental_id' => $rental->id,
                         'contract_id' => $activeContract->id,
-                        'user_id' => $userId
+                        'user_id' => $ownerId
                     ]);
                 }
             }
@@ -1601,9 +1603,9 @@ class RentalService
                 $activeContract = $rental->activeContract;
                 if ($activeContract && in_array($activeContract->status, ['active', 'pending'])) {
                     $activeContract->update([
-                        'status' => 'cancelled',
+                        'status' => 'terminated',
                         'termination_reason' => $data['termination_reason'] ?? 'Rental cancelled by user',
-                        'updated_by' => $userId
+                        'updated_by' => $ownerId
                     ]);
 
                     // Cancel all pending installments
