@@ -149,17 +149,22 @@ class DashboardController extends Controller
 
                 foreach ($installments as $installment) {
                     $dueDate = \Carbon\Carbon::parse($installment->due_date);
-                    $today = now();
+                    $today = \Carbon\Carbon::today();
 
-                    if ($dueDate->isFuture()) {
-                        // Future due date
+                    $remaining = (float) $installment->amount - (float) $installment->paid_amount;
+                    if ($remaining < 0) {
+                        $remaining = 0; // guard against overpayment entries
+                    }
+
+                    if ($dueDate->isFuture() || $dueDate->isToday()) {
+                        // Next due (today or future)
                         if ($nextDueDate === null) {
                             $nextDueDate = $installment->due_date;
-                            $dueRent = (float) $installment->amount - (float) $installment->paid_amount;
+                            $dueRent = $remaining;
                         }
                     } else {
-                        // Past due date
-                        $overdueRent += (float) $installment->amount - (float) $installment->paid_amount;
+                        // Past due date => overdue
+                        $overdueRent += $remaining;
                     }
                 }
 
@@ -220,18 +225,18 @@ class DashboardController extends Controller
                 // Build properties table data
                 $propertiesTable[] = [
                     'property' => [
-                        'id' => $property->id ?? null,
-                        'title' => $property->property_title ?? 'N/A',
-                        'unit_number' => $property->building ?? ($property->id ?? 'N/A'),
+                        'id' => $property?->id,
+                        'title' => $property?->property_title ?? 'N/A',
+                        'unit_number' => $property?->building ?? ($property?->id ?? 'N/A'),
                         'image_url' => $propertyImageUrl
                     ],
                     'project' => [
-                        'id' => $project->id ?? null,
-                        'name' => $project->project_title ?? null
+                        'id' => $project?->id,
+                        'name' => $project?->project_title
                     ],
                     'building' => [
-                        'id' => $building->id ?? null,
-                        'name' => $building->name ?? null
+                        'id' => $building?->id,
+                        'name' => $building?->name
                     ],
                     'due_rent' => $dueRent,
                     'overdue_rent' => $overdueRent,
@@ -245,10 +250,12 @@ class DashboardController extends Controller
                 ];
             }
 
-            // Calculate collection rate
+            // Calculate collection rate: paid / (paid + outstanding)
             $collectionRate = 0;
-            if ($totalDueAmount > 0) {
-                $collectionRate = round(($totalPaidAmount / $totalDueAmount) * 100, 1);
+            $totalOutstanding = $totalDueAmount;
+            $totalBilled = $totalPaidAmount + $totalOutstanding;
+            if ($totalBilled > 0) {
+                $collectionRate = round(($totalPaidAmount / $totalBilled) * 100, 1);
             }
 
             return response()->json([
