@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
 use App\Models\Api\UserPropertyRequest;
 use Illuminate\Validation\Rule;
+use App\Models\User\UserCity;
 
 class ApiPropertyRequestController extends Controller
 {
@@ -22,6 +23,8 @@ class ApiPropertyRequestController extends Controller
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'property_type' => 'nullable',
+            'category' => 'nullable|string',
+            'region'          => ['required','integer', Rule::exists('user_cities','id')],
             'districts_id'       => ['nullable','integer', Rule::exists('user_districts','id')],
             'area_from' => 'nullable|integer|min:0',
             'area_to' => 'nullable|integer|min:0',
@@ -52,7 +55,33 @@ class ApiPropertyRequestController extends Controller
         $data = $validator->validated();
         unset($data['tenant_username']); // Remove tenant_username from data
         $data['user_id'] = $tenant->id; // Use tenant's ID
-        $data['region'] = $request->input('region', 'الرياض');
+
+        // Map region (city_id) → set city_id and Arabic name into region
+        $regionId = (int) $request->input('region');
+        $city = UserCity::find($regionId);
+        $data['city_id'] = $regionId;
+        $data['region'] = $city ? $city->name_ar : null;
+
+        // Map property/category fields
+        // property_type from request should go into category_id
+        if (array_key_exists('property_type', $data) && !is_null($data['property_type']) && $data['property_type'] !== '') {
+            $data['category_id'] = $data['property_type'];
+            unset($data['property_type']);
+        }
+
+        // category from request should go into property_type (Arabic → English)
+        if ($request->filled('category')) {
+            $categoryInput = $request->input('category');
+            $categoryMap = [
+                'تجاري' => 'Commercial',
+                'سكني' => 'Residential',
+                'صناعي' => 'Industrial',
+                'زراعي' => 'Agricultural',
+            ];
+            $data['property_type'] = $categoryMap[$categoryInput] ?? $categoryInput;
+            unset($data['category']);
+        }
+
         $data['is_read'] = false;
         $data['is_active'] = true;
 
