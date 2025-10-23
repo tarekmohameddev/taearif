@@ -245,10 +245,12 @@ class DashboardController extends Controller
                 ];
             }
 
-            // Calculate collection rate
+            // Calculate collection rate: paid / (paid + outstanding)
             $collectionRate = 0;
-            if ($totalDueAmount > 0) {
-                $collectionRate = round(($totalPaidAmount / $totalDueAmount) * 100, 1);
+            $totalOutstanding = $totalDueAmount;
+            $totalBilled = $totalPaidAmount + $totalOutstanding;
+            if ($totalBilled > 0) {
+                $collectionRate = round(($totalPaidAmount / $totalBilled) * 100, 1);
             }
 
             return response()->json([
