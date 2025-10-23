@@ -828,15 +828,12 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve'])->group(
     // (moved Matching endpoints out of tenant-website scope)
 });
 
-// Matching Endpoints (Dashboard APIs, require auth)
+// Matching Endpoints (Dashboard APIs, require auth) - observer-only, retrieval endpoints
 Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
     Route::prefix('matching')->group(function () {
-        Route::get('requests', [V1MatchingController::class, 'indexRequests']);
-        Route::get('requests/{id}/matches', [V1MatchingController::class, 'requestMatches']);
-        Route::get('properties/{id}/requests', [V1MatchingController::class, 'propertyRequests']);
-        Route::post('requests/{id}/mark-read', [V1MatchingController::class, 'markRead']);
-        Route::post('bulk-rematch', [V1MatchingController::class, 'bulkRematch']);
-        Route::get('stats', [V1MatchingController::class, 'stats']);
+        Route::get('customers', [V1MatchingController::class, 'customers']);
+        Route::get('customers/{customer_key}/properties', [V1MatchingController::class, 'customerProperties']);
+        Route::get('matches/{id}', [V1MatchingController::class, 'showMatch']);
     });
 });
 

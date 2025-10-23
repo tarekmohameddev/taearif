@@ -7,6 +7,7 @@ use App\Repositories\PropertyRepository;
 use App\Repositories\RequestRepository;
 use App\Support\DTO\MatchResult;
 use App\Support\DTO\UnifiedRequest;
+use App\Support\PhoneNormalizer;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -87,11 +88,14 @@ class MatchingService
                 ],
                 [
                     'user_id' => $unified->userId,
+                    'customer_key' => PhoneNormalizer::normalize($unified->phone),
                     'database_score' => $r->databaseScore,
                     'ai_score' => $r->aiScore ?? 0,
                     'match_score' => $r->matchScore,
                     'matched_criteria' => $r->matchedCriteria,
                     'match_explanation' => $r->explanation,
+                    // unread until viewed
+                    'is_reviewed' => false,
                 ]
             );
         }

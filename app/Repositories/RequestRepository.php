@@ -15,6 +15,8 @@ class RequestRepository
             if (!$row) return null;
             $u = new UnifiedRequest('web', $row->id);
             $u->userId = $row->user_id;
+            $u->phone = $row->phone ?? null;
+            $u->customerName = $row->full_name ?? null;
             $u->propertyType = $row->property_type;
             $u->categoryId = $row->category_id;
             $u->region = $row->region;
@@ -35,6 +37,8 @@ class RequestRepository
             if (!$row) return null;
             $u = new UnifiedRequest('whatsapp', $row->id);
             $u->userId = $row->user_id;
+            $u->phone = $row->phone_number ?? null;
+            $u->customerName = null;
             $u->propertyType = $row->property_type;
             $u->bedrooms = $row->bedrooms;
             $u->bathrooms = $row->bathrooms;

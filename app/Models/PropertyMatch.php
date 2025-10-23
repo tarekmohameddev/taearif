@@ -13,6 +13,7 @@ class PropertyMatch extends Model
 
     protected $fillable = [
         'user_id',
+        'customer_key',
         'request_type',
         'request_id',
         'property_id',

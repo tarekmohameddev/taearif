@@ -8,6 +8,8 @@ class UnifiedRequest
     public string $source;
     public int $id;
     public ?int $userId = null;
+    public ?string $phone = null;              // raw phone from source
+    public ?string $customerName = null;       // source-provided name if any
 
     // Core needs
     public ?string $propertyType = null;      // e.g., villa/apartment
