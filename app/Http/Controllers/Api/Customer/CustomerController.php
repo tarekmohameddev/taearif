@@ -130,7 +130,7 @@ class CustomerController extends Controller
             if ($customerInquiries->isNotEmpty()) {
                 $districts = $customerInquiries->pluck('district')->filter()->unique()->take(3)->implode(',');
                 $cities = $customerInquiries->pluck('city')->filter()->unique()->take(3)->implode(',');
-                
+
                 $districtInfo = [
                     'name_ar' => $districts,
                     'city_name_ar' => $cities,
@@ -426,7 +426,27 @@ class CustomerController extends Controller
             ], 404);
         }
 
-        $customer->delete();
+        try {
+            DB::transaction(function () use ($customer) {
+                // Defensive deletes to avoid FK violations on older schemas
+                DB::table('crm_cards')->where('card_customer_id', $customer->id)->delete();
+                DB::table('users_api_customers_reminders')->where('customer_id', $customer->id)->delete();
+                DB::table('users_api_customers_appointments')->where('customer_id', $customer->id)->delete();
+                DB::table('api_customer_property_interested')->where('customer_id', $customer->id)->delete();
+                DB::table('api_customer_inquiry')->where('customer_id', $customer->id)->delete();
+
+                $customer->delete();
+            });
+        } catch (QueryException $e) {
+            if ($e->getCode() === '23000') {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Cannot delete customer due to related records.',
+                    'sql_error' => config('app.debug') ? $e->getMessage() : null,
+                ], 409);
+            }
+            throw $e;
+        }
 
         TenantActivity::emit($request, 'customer.deleted', 'api_customers', $customer->id, $customer->toArray(), null);
 
@@ -565,7 +585,7 @@ class CustomerController extends Controller
             if ($customerInquiries->isNotEmpty()) {
                 $districts = $customerInquiries->pluck('district')->filter()->unique()->take(3)->implode(',');
                 $cities = $customerInquiries->pluck('city')->filter()->unique()->take(3)->implode(',');
-                
+
                 $districtInfo = [
                     'name_ar' => $districts,
                     'city_name_ar' => $cities,
