@@ -2115,8 +2115,10 @@ class RentalService
                 break;
             case 'due_today':
                 if (!empty($filters['from_date']) && !empty($filters['to_date'])) {
-                    // If date range is provided, use it
-                    $installmentsQuery->whereBetween('due_date', [$fromDate, $toDate]);
+                    // Ensure date range doesn't include overdue dates when using "due_today"
+                    // The range should only include today or future dates within the range
+                    $effectiveFromDate = max($fromDate, $todayString);
+                    $installmentsQuery->whereBetween('due_date', [$effectiveFromDate, $toDate]);
                 } else {
                     // Default to today
                     $installmentsQuery->whereDate('due_date', '=', $todayString);
@@ -2267,6 +2269,30 @@ class RentalService
                 'contract_expiration_date' => $rental->activeContract->end_date->format('Y-m-d'),
                 'payment_status' => $remainingAmount <= 0 ? 'paid' : ($installment->due_date < $today ? 'overdue' : 'pending'),
             ];
+
+            // Data integrity check: Detect inconsistent payment status
+            if ($followUpItem['payment_status'] === 'overdue' && $installment->due_date >= $today) {
+                \Log::warning('Data integrity issue: Installment marked as overdue but due date is today or in the future', [
+                    'installment_id' => $installment->id,
+                    'rental_id' => $rental->id,
+                    'due_date' => $installment->due_date->format('Y-m-d'),
+                    'today' => $todayString,
+                    'payment_status' => $followUpItem['payment_status'],
+                    'user_id' => $ownerId,
+                    'status_filter' => $status,
+                ]);
+            }
+
+            if ($followUpItem['payment_status'] !== 'overdue' && $followUpItem['arrears']['overdue_amount'] > 0) {
+                \Log::warning('Data integrity issue: Installment has overdue amount but status is not overdue', [
+                    'installment_id' => $installment->id,
+                    'rental_id' => $rental->id,
+                    'due_date' => $installment->due_date->format('Y-m-d'),
+                    'payment_status' => $followUpItem['payment_status'],
+                    'overdue_amount' => $followUpItem['arrears']['overdue_amount'],
+                    'user_id' => $ownerId,
+                ]);
+            }
 
             $followUpList[] = $followUpItem;
 
