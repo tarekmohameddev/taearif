@@ -243,23 +243,10 @@ class RentalService
                 ]);
 
                 $this->generateInstallments($userId, $rental->id, $contract->id, $data);
-
-                return [
-                    'id' => $rental->id,
-                    'status' => 'active',
-                    'contract' => [
-                        'id' => $contract->id,
-                        'status' => $contract->status,
-                    ],
-                    'cost_items' => $rental->costItems
-                ];
             }
 
-            return [
-                'id' => $rental->id,
-                'status' => 'active',
-                'cost_items' => $rental->costItems
-            ];
+            // Reload the rental with its relationships
+            return $rental->fresh(['costItems', 'activeContract', 'property', 'project', 'building']);
         });
     }
 
