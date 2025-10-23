@@ -1695,8 +1695,9 @@ class PropertyController extends Controller
             // Get properties (units) that don't have active or draft rentals
             $query = Property::with(['project.contents', 'building:id,name', 'contents'])
                 ->where('user_id', $userId)
-                ->whereDoesntHave('rentals', function ($q) {
-                    $q->whereIn('status', ['active', 'draft']);
+                ->whereDoesntHave('rentals', function ($q) use ($userId) {
+                    $q->where('user_id', $userId)
+                      ->whereIn('status', ['active', 'draft']);
                 })
                 ->where('property_status', '!=', 'rented');
 
