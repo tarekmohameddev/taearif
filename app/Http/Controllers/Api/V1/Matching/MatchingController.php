@@ -113,11 +113,12 @@ class MatchingController extends Controller
     // 2) GET /api/v1/matching/requests/{id}/matches
     public function requestMatches(Request $request, int $id)
     {
+        log::info('requestMatches', ['id' => $id]);
         $source = $request->query('source', 'web');
         $minScore = (int) $request->query('min_score', 60);
         $limit = (int) $request->query('limit', 50);
         $includeExplanation = filter_var($request->query('include_explanation', 'true'), FILTER_VALIDATE_BOOLEAN);
-
+log::info('generateMatchesForRequest', ['source' => $source, 'id' => $id, 'limit' => $limit, 'user_id' => $request->user()->id ?? null]);
         $this->matching->generateMatchesForRequest($source, $id, $limit, true, $request->user()->id ?? null);
 
         $rows = PropertyMatch::query()
