@@ -30,4 +30,9 @@ class UserCity extends Model
     {
         return $this->hasMany(UserDistrict::class, 'city_id', 'id');
     }
+
+    public function region()
+    {
+        return $this->belongsTo(Region::class, 'region_id', 'id');
+    }
 }

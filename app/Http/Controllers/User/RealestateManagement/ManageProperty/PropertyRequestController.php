@@ -152,7 +152,16 @@ class PropertyRequestController extends Controller
         $validated = $validator->validate();
         $tenant = getUser();
         $validated['user_id']   = $tenant->id;
-        $validated['region'] = $request->filled('region') ? $request->string('region')->toString() : null;
+
+        // Derive region from city_id if provided
+        if ($request->filled('city_id')) {
+            $city = \App\Models\User\UserCity::with('region')->find($request->city_id);
+            $validated['region'] = $city && $city->region ?
+                (app()->getLocale() === 'ar' ? $city->region->name_ar : $city->region->name_en) :
+                'الرياض'; // fallback to default
+        } else {
+            $validated['region'] = 'الرياض'; // default region
+        }
 
         $validated['is_read']   = false;
         $validated['is_active'] = true;
