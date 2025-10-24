@@ -19,19 +19,14 @@ class RouteAccess
      */
     public function handle(Request $request, Closure $next, $pages)
     {
+        // Phase 2: getUser() now consistently returns User|null
         $user = getUser();
-        
-        // HOTFIX: Ensure $user is actually a User instance
-        // getUser() can return View objects in error cases (will be fixed in Phase 2)
-        if (!$user || !($user instanceof \App\Models\User)) {
-            // If it's a View object, return 404
-            if ($user instanceof \Illuminate\View\View) {
-                return response($user, 404);
-            }
-            // Otherwise redirect to appropriate page
+
+        // If no user found, redirect to appropriate page
+        if (!$user) {
             return redirect()->route('front.user.detail.view', getParam());
         }
-        
+
         $currentPackage = UserPermissionHelper::userPackage($user->id);
         $packagePermissions = UserPermissionHelper::packagePermission($user->id);
         $packagePermissions = json_decode($packagePermissions, true);

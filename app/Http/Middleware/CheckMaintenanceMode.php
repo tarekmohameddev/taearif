@@ -83,16 +83,11 @@ class CheckMaintenanceMode
         }
 
         // Get the current user (tenant)
+        // Phase 2: getUser() now consistently returns User|null
         $user = getUser();
 
-        // HOTFIX: Check if $user is actually a User instance
-        // getUser() can return View objects in error cases (will be fixed in Phase 2)
-        if (!$user || !($user instanceof \App\Models\User)) {
-            // If it's a View object, return it as 404 response
-            if ($user instanceof \Illuminate\View\View) {
-                return response($user, 404);
-            }
-            // If null or other type, show 404 page
+        // If no user found (invalid domain/subdomain), show 404
+        if (!$user) {
             return response()->view('errors.404', [], 404);
         }
 

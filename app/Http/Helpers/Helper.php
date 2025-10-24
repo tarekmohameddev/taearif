@@ -302,7 +302,12 @@ if (!function_exists('create_menu')) {
 
 if (!function_exists('getUser')) {
 
-    function getUser()
+    /**
+     * Get the current user (tenant) based on domain/subdomain
+     *
+     * @return \App\Models\User|null Returns User instance or null if not found/unauthorized
+     */
+    function getUser(): ?\App\Models\User
     {
         if (app()->runningInConsole()) {
             return null;
@@ -341,14 +346,14 @@ if (!function_exists('getUser')) {
                     // })
                     ->first();
 // dd($user);
-                //if user expired
+                //if user not found
                 if (!$user) {
-                    abort(404);
+                    return null; // Phase 2: Return null instead of abort(404)
                 }
                 // if the current url is a subdomain
                 if ($host != env('WEBSITE_HOST')) {
                     if (!cPackageHasSubdomain($user)) {
-                        return view('errors.404');
+                        return null; // Phase 2: Return null instead of view
                     }
                 }
 
@@ -382,12 +387,12 @@ if (!function_exists('getUser')) {
             ->first();
 
         if (!$user) {
-            return view('errors.404');
+            return null; // Phase 2: Return null instead of view
         }
 
 
         if (!cPackageHasCdomain($user)) {
-            return view('errors.404');
+            return null; // Phase 2: Return null instead of view
         }
 
         return $user;

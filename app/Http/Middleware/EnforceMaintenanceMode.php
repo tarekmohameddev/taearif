@@ -10,12 +10,12 @@ use App\Models\Api\GeneralSetting;
 class EnforceMaintenanceMode
 {
     protected $membershipService;
-    
+
     public function __construct(MembershipService $membershipService)
     {
         $this->membershipService = $membershipService;
     }
-    
+
     /**
      * Handle an incoming request.
      *
@@ -25,17 +25,17 @@ class EnforceMaintenanceMode
      */
     public function handle(Request $request, Closure $next)
     {
+        // Phase 2: getUser() now consistently returns User|null
         $user = getUser();
-        
-        // HOTFIX: Ensure $user is actually a User instance before using it
-        // getUser() can return View objects in error cases (will be fixed in Phase 2)
-        if ($user && ($user instanceof \App\Models\User)) {
+
+        // If user found, check and enforce maintenance mode if needed
+        if ($user) {
             if (!$this->membershipService->canControlMaintenanceMode($user)) {
                 // Force enable maintenance mode for free package users
                 $this->membershipService->enableMaintenanceMode($user);
             }
         }
-        
+
         return $next($request);
     }
 }
