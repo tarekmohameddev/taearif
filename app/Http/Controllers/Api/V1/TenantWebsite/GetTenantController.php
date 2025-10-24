@@ -36,6 +36,14 @@ class GetTenantController extends Controller
         if (!$tenant) {
             return response()->json([], 204);
         }
+        // Auto-bootstrap tenant website data if missing
+        $hasPages = \App\Models\TenantPage::where('user_id', $tenant->id)->exists();
+        $hasGlobals = \App\Models\TenantGlobalComponent::where('user_id', $tenant->id)->exists();
+        $hasLayout = \App\Models\TenantWebsiteLayout::where('user_id', $tenant->id)->exists();
+
+        if (!$hasPages || !$hasGlobals || !$hasLayout) {
+            app(\App\Services\TenantWebsiteSeeder::class)->reseedWebsite($tenant);
+        }
         $pages = TenantPage::where('user_id', $tenant->id)->get()->keyBy('page_id')->map->components;
         $globals = TenantGlobalComponent::where('user_id', $tenant->id)->first();
         $layout = TenantWebsiteLayout::where('user_id', $tenant->id)->first();
