@@ -27,9 +27,13 @@ class EnforceMaintenanceMode
     {
         $user = getUser();
         
-        if ($user && !$this->membershipService->canControlMaintenanceMode($user)) {
-            // Force enable maintenance mode for free package users
-            $this->membershipService->enableMaintenanceMode($user);
+        // HOTFIX: Ensure $user is actually a User instance before using it
+        // getUser() can return View objects in error cases (will be fixed in Phase 2)
+        if ($user && ($user instanceof \App\Models\User)) {
+            if (!$this->membershipService->canControlMaintenanceMode($user)) {
+                // Force enable maintenance mode for free package users
+                $this->membershipService->enableMaintenanceMode($user);
+            }
         }
         
         return $next($request);

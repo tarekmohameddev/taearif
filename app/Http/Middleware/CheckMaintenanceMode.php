@@ -83,12 +83,17 @@ class CheckMaintenanceMode
         }
 
         // Get the current user (tenant)
-        // Note: getUser() returns User|null, or throws 404 if user not found/unauthorized
         $user = getUser();
 
-        // If no user in current context (e.g., running in console), skip maintenance check
-        if (!$user) {
-            return $next($request);
+        // HOTFIX: Check if $user is actually a User instance
+        // getUser() can return View objects in error cases (will be fixed in Phase 2)
+        if (!$user || !($user instanceof \App\Models\User)) {
+            // If it's a View object, return it as 404 response
+            if ($user instanceof \Illuminate\View\View) {
+                return response($user, 404);
+            }
+            // If null or other type, show 404 page
+            return response()->view('errors.404', [], 404);
         }
 
         // Force enable maintenance mode for free package users

@@ -21,8 +21,14 @@ class RouteAccess
     {
         $user = getUser();
         
-        // If no user is found, redirect to appropriate page
-        if (!$user) {
+        // HOTFIX: Ensure $user is actually a User instance
+        // getUser() can return View objects in error cases (will be fixed in Phase 2)
+        if (!$user || !($user instanceof \App\Models\User)) {
+            // If it's a View object, return 404
+            if ($user instanceof \Illuminate\View\View) {
+                return response($user, 404);
+            }
+            // Otherwise redirect to appropriate page
             return redirect()->route('front.user.detail.view', getParam());
         }
         
