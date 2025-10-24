@@ -22,7 +22,13 @@ class AuthorizenetController extends Controller
         if (app()->runningInConsole()) {
             return;
         }
-        $data = UserPaymentGeteway::whereKeyword('Authorize.net')->where('user_id', getUser()->id)->first();
+
+        $user = getUser();
+        if (!$user) {
+            abort(404, 'User not found');
+        }
+
+        $data = UserPaymentGeteway::whereKeyword('Authorize.net')->where('user_id', $user->id)->first();
         $paydata = $data->convertAutoData();
         $this->gateway = Omnipay::create('AuthorizeNetApi_Api');
         $this->gateway->setAuthName($paydata['login_id']);
@@ -60,7 +66,13 @@ class AuthorizenetController extends Controller
             $requestData = Session::get('user_request');
             if ($_title == "Room Booking") {
                 $roomBooking = new RoomBookingController();
-                $currencyInfo = MiscellaneousTrait::getCurrencyInfo(getUser()->id);
+
+                $user = getUser();
+                if (!$user) {
+                    return redirect()->back()->with('error', 'User session expired');
+                }
+
+                $currencyInfo = MiscellaneousTrait::getCurrencyInfo($user->id);
                 $information['currency_symbol'] = $currencyInfo->base_currency_symbol;
                 $information['currency_symbol_position'] = $currencyInfo->base_currency_symbol_position;
                 $information['currency_text'] = $currencyInfo->base_currency_text;
