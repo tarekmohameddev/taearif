@@ -400,6 +400,85 @@ class AnalyticsDashboardController extends Controller
     }
 
     /**
+     * Get page locations (full URLs) with views
+     * 
+     * Returns full URLs including domain (like Google Analytics shows)
+     * 
+     * Usage examples:
+     * - GET /api/analytics/page-locations?days=7
+     * - GET /api/analytics/page-locations?tenant_id=lira&days=30
+     */
+    public function getPageLocations(Request $request)
+    {
+        $days = (int) $request->input('days', 7);
+        $tenantId = $request->input('tenant_id', null);
+        
+        $startDate = Carbon::now()->subDays($days);
+        $endDate = Carbon::now();
+
+        $result = $this->analytics->getPageLocations($startDate, $endDate, $tenantId);
+
+        return response()->json([
+            'status' => 'success',
+            'date_range' => [
+                'start' => $startDate->toDateString(),
+                'end' => $endDate->toDateString(),
+                'days' => $days,
+            ],
+            'tenant_filter' => $tenantId,
+            ...$result,
+        ]);
+    }
+
+    /**
+     * Get today's analytics (near realtime with perfect tenant filtering)
+     * 
+     * Returns data from today only - better than realtime for multi-tenant!
+     * Updates every 1-2 hours but supports tenant_id filtering perfectly.
+     * 
+     * Usage examples:
+     * - GET /api/analytics/today
+     * - GET /api/analytics/today?tenant_id=lira
+     */
+    public function getToday(Request $request)
+    {
+        $tenantId = $request->input('tenant_id', null);
+
+        $result = $this->analytics->getTodayData($tenantId);
+
+        return response()->json([
+            'status' => 'success',
+            'tenant_filter' => $tenantId,
+            ...$result,
+        ]);
+    }
+
+    /**
+     * Get realtime data (last 30 minutes)
+     * 
+     * Returns data from the last 30 minutes (like Google Analytics Realtime)
+     * 
+     * NOTE: Realtime API cannot filter by tenant_id (GA4 limitation)
+     * For better tenant filtering, use /api/analytics/today instead!
+     * 
+     * Usage examples:
+     * - GET /api/analytics/realtime
+     * - GET /api/analytics/realtime?tenant_id=lira (limited filtering)
+     */
+    public function getRealtime(Request $request)
+    {
+        $tenantId = $request->input('tenant_id', null);
+
+        $result = $this->analytics->getRealtimeData($tenantId);
+
+        return response()->json([
+            'status' => 'success',
+            'tenant_filter' => $tenantId,
+            ...$result,
+        ]);
+    }
+
+    /**
      * Search/Filter analytics - Get all data with backend filtering
      *
      * Returns ALL GA4 data filtered by your criteria on the backend

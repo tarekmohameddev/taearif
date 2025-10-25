@@ -117,7 +117,7 @@ class GoogleAnalyticsService
         if ($tenantId) {
             $params['dimensionFilter'] = new FilterExpression([
                 'filter' => new Filter([
-                    'field_name' => 'customEvent:tenant_id',
+                    'field_name' => 'customEvent:tenantId',
                     'string_filter' => new StringFilter([
                         'value' => $tenantId,
                         'match_type' => MatchType::EXACT,
@@ -236,7 +236,7 @@ class GoogleAnalyticsService
     {
         $tenantFilter = new FilterExpression([
             'filter' => new Filter([
-                'field_name' => 'customEvent:tenant_id',
+                'field_name' => 'customEvent:tenantId',
                 'string_filter' => new StringFilter([
                     'value' => $tenantId,
                     'match_type' => MatchType::EXACT,  // Changed from CONTAINS to EXACT for precise filtering
@@ -393,7 +393,7 @@ class GoogleAnalyticsService
 
         $filterExpression = new FilterExpression([
             'filter' => new Filter([
-                'field_name'    => 'customEvent:tenant_id',
+                'field_name'    => 'customEvent:tenantId',
                 'string_filter' => new StringFilter([
                     'match_type'     => MatchType::EXACT,
                     'value'          => $tenantId,
@@ -460,7 +460,7 @@ class GoogleAnalyticsService
         if ($tenantId) {
             $params['dimensionFilter'] = new FilterExpression([
                 'filter' => new Filter([
-                    'field_name' => 'customEvent:tenant_id',
+                    'field_name' => 'customEvent:tenantId',
                     'string_filter' => new StringFilter([
                         'value' => $tenantId,
                         'match_type' => MatchType::EXACT,
@@ -493,7 +493,7 @@ class GoogleAnalyticsService
         // tenant filter (using custom event parameter sent with each page_view)
         $tenantFilter = new FilterExpression([
             'filter' => new Filter([
-                'field_name'    => 'customEvent:tenant_id',
+                'field_name'    => 'customEvent:tenantId',
                 'string_filter' => new StringFilter([
                     'value'      => $tenantId,
                     'match_type' => MatchType::EXACT,  // Changed from CONTAINS to EXACT for precise filtering
@@ -582,7 +582,7 @@ class GoogleAnalyticsService
         try {
             $tenantFilter = new FilterExpression([
                 'filter' => new Filter([
-                    'field_name'    => 'customEvent:tenant_id',
+                    'field_name'    => 'customEvent:tenantId',
                     'string_filter' => new StringFilter([
                         'value'      => $tenantId,
                         'match_type' => MatchType::EXACT,  // Changed from CONTAINS to EXACT for precise filtering
@@ -664,7 +664,7 @@ class GoogleAnalyticsService
                         'start_date' => $startDate->format('Y-m-d'),
                         'end_date'   => $endDate->format('Y-m-d'),
                     ])],
-                    'dimensions' => [new Dimension(['name' => 'customEvent:tenant_id'])],
+                    'dimensions' => [new Dimension(['name' => 'customEvent:tenantId'])],
                     'metrics'    => [new Metric(['name' => 'screenPageViews'])],
                     'limit'      => 50,
                 ]);
@@ -705,7 +705,7 @@ class GoogleAnalyticsService
                     ])],
                     'dimensions'      => [
                         new Dimension(['name' => 'pagePath']),
-                        new Dimension(['name' => 'customEvent:tenant_id']),
+                        new Dimension(['name' => 'customEvent:tenantId']),
                     ],
                     'metrics'         => [new Metric(['name' => 'screenPageViews'])],
                     'orderBys'        => [
@@ -875,9 +875,325 @@ class GoogleAnalyticsService
     }
 
     /**
+     * Get page locations (full URLs) with views
+     * Returns full URLs including domain, not just paths
+     * 
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @param string|null $tenantId - Optional filter by tenant
+     * @return array
+     */
+    public function getPageLocations(Carbon $startDate, Carbon $endDate, ?string $tenantId = null): array
+    {
+        try {
+            // Build params
+            $params = [
+                'property'        => $this->propertyId,
+                'dateRanges'      => [new DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date'   => $endDate->format('Y-m-d'),
+                ])],
+                'dimensions'      => [
+                    new Dimension(['name' => 'pageLocation']), // Full URL
+                    new Dimension(['name' => 'customEvent:tenantId']),
+                ],
+                'metrics'         => [new Metric(['name' => 'screenPageViews'])],
+                'orderBys'        => [
+                    new OrderBy([
+                        'metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']),
+                        'desc' => true,
+                    ]),
+                ],
+                'limit'           => 500,
+            ];
+
+            // Add tenant filter if specified
+            if ($tenantId) {
+                $params['dimensionFilter'] = new FilterExpression([
+                    'filter' => new Filter([
+                        'field_name'    => 'customEvent:tenantId',
+                        'string_filter' => new StringFilter([
+                            'value'      => $tenantId,
+                            'match_type' => MatchType::EXACT,
+                        ]),
+                    ]),
+                ]);
+            }
+
+            $response = $this->executeWithRetry(function() use ($params) {
+                return $this->client->runReport($params);
+            }, 'getPageLocations');
+
+            $locations = [];
+            $totalViews = 0;
+
+            foreach ($response->getRows() as $row) {
+                $pageLocation = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $tenantIdValue = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                
+                if ($pageLocation !== '') {
+                    // Parse URL to extract domain and path
+                    $parsedUrl = parse_url($pageLocation);
+                    
+                    $locations[] = [
+                        'full_url' => $pageLocation,
+                        'domain' => $parsedUrl['host'] ?? '',
+                        'path' => $parsedUrl['path'] ?? '/',
+                        'tenant_id' => $tenantIdValue,
+                        'views' => $views,
+                    ];
+                    $totalViews += $views;
+                }
+            }
+
+            return [
+                'locations' => $locations,
+                'total_views' => $totalViews,
+                'total_locations' => count($locations),
+            ];
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching page locations", [
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'locations' => [],
+                'total_views' => 0,
+                'total_locations' => 0,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Get realtime data (last 30 minutes)
+     * Returns currently active users and recent page views
+     * 
+     * NOTE: Realtime API does NOT support custom event parameters
+     * So we get all data and filter by path pattern on backend
+     * 
+     * @param string|null $tenantId - Optional filter by tenant (filters by matching subdomain in path)
+     * @return array
+     */
+    public function getRealtimeData(?string $tenantId = null): array
+    {
+        try {
+            // Realtime API - Note: customEvent parameters NOT supported!
+            $params = [
+                'property' => $this->propertyId,
+                'dimensions' => [
+                    new Dimension(['name' => 'unifiedScreenName']), // Page path
+                ],
+                'metrics' => [
+                    new Metric(['name' => 'activeUsers']),
+                    new Metric(['name' => 'screenPageViews']),
+                ],
+                'orderBys' => [
+                    new OrderBy([
+                        'metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']),
+                        'desc' => true,
+                    ]),
+                ],
+                'limit' => 100,
+            ];
+
+            // Use runRealtimeReport for last 30 minutes data
+            $response = $this->client->runRealtimeReport($params);
+
+            $pages = [];
+            $totalActiveUsers = 0;
+            $totalViews = 0;
+
+            foreach ($response->getRows() as $row) {
+                $pagePath = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $activeUsers = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                $views = (int) $this->getSafeValue($row->getMetricValues(), 1, 0);
+                
+                if ($pagePath !== '') {
+                    // Try to extract tenant from path
+                    // Paths like: /lira/property/xyz or /lira or just /ar
+                    $extractedTenant = $this->extractTenantFromPath($pagePath);
+                    
+                    $pages[] = [
+                        'path' => $pagePath,
+                        'tenant_id' => $extractedTenant, // Extracted from path
+                        'active_users' => $activeUsers,
+                        'views' => $views,
+                    ];
+                    $totalActiveUsers += $activeUsers;
+                    $totalViews += $views;
+                }
+            }
+
+            // Filter by tenant if specified
+            if ($tenantId) {
+                $pages = array_filter($pages, function($page) use ($tenantId) {
+                    return $page['tenant_id'] === $tenantId;
+                });
+                $pages = array_values($pages); // Re-index
+                
+                // Recalculate totals for filtered data
+                $totalActiveUsers = array_sum(array_column($pages, 'active_users'));
+                $totalViews = array_sum(array_column($pages, 'views'));
+            }
+
+            return [
+                'pages' => $pages,
+                'total_active_users' => $totalActiveUsers,
+                'total_views' => $totalViews,
+                'total_pages' => count($pages),
+                'timeframe' => 'Last 30 minutes',
+                'note' => $tenantId ? "Filtered by tenant: {$tenantId}" : "All tenants included",
+            ];
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching realtime data", [
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'pages' => [],
+                'total_active_users' => 0,
+                'total_views' => 0,
+                'total_pages' => 0,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Extract tenant ID from path
+     * Paths like /lira/property/xyz or /lira → tenant is "lira"
+     */
+    protected function extractTenantFromPath(string $path): ?string
+    {
+        // Remove leading slash and split
+        $parts = explode('/', trim($path, '/'));
+        
+        // If path is like /lira or /lira/property/xyz
+        // First segment might be tenant or language
+        $firstSegment = $parts[0] ?? '';
+        
+        // Common language codes - not tenants
+        $languages = ['ar', 'en', 'fr', 'es', 'de'];
+        
+        if (!empty($firstSegment) && !in_array($firstSegment, $languages)) {
+            // Likely a tenant subdomain path
+            return $firstSegment;
+        }
+        
+        return null; // Can't determine tenant from path
+    }
+
+    /**
+     * Get today's analytics data (near realtime with tenant filtering)
+     * Returns data from today only - updates every 1-2 hours
+     * 
+     * @param string|null $tenantId - Optional filter by tenant
+     * @return array
+     */
+    public function getTodayData(?string $tenantId = null): array
+    {
+        try {
+            // Query today's data (from midnight to now)
+            $startDate = Carbon::today();
+            $endDate = Carbon::now();
+
+            $params = [
+                'property' => $this->propertyId,
+                'dateRanges' => [new DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
+                ])],
+                'dimensions' => [
+                    new Dimension(['name' => 'pagePath']),
+                    new Dimension(['name' => 'customEvent:tenantId']),
+                ],
+                'metrics' => [
+                    new Metric(['name' => 'screenPageViews']),
+                    new Metric(['name' => 'totalUsers']),
+                ],
+                'orderBys' => [
+                    new OrderBy([
+                        'metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']),
+                        'desc' => true,
+                    ]),
+                ],
+                'limit' => 200,
+            ];
+
+            // Add tenant filter if specified
+            if ($tenantId) {
+                $params['dimensionFilter'] = new FilterExpression([
+                    'filter' => new Filter([
+                        'field_name'    => 'customEvent:tenantId',
+                        'string_filter' => new StringFilter([
+                            'value'      => $tenantId,
+                            'match_type' => MatchType::EXACT,
+                        ]),
+                    ]),
+                ]);
+            }
+
+            $response = $this->executeWithRetry(function() use ($params) {
+                return $this->client->runReport($params);
+            }, 'getTodayData');
+
+            $pages = [];
+            $totalViews = 0;
+            $totalUsers = 0;
+
+            foreach ($response->getRows() as $row) {
+                $path = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $tenantIdValue = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                $users = (int) $this->getSafeValue($row->getMetricValues(), 1, 0);
+                
+                if ($path !== '') {
+                    $pages[] = [
+                        'path' => $path,
+                        'tenant_id' => $tenantIdValue,
+                        'views' => $views,
+                        'users' => $users,
+                    ];
+                    $totalViews += $views;
+                    $totalUsers += $users;
+                }
+            }
+
+            return [
+                'pages' => $pages,
+                'total_views' => $totalViews,
+                'total_users' => $totalUsers,
+                'total_pages' => count($pages),
+                'timeframe' => 'Today (' . $startDate->format('Y-m-d') . ')',
+                'last_updated' => Carbon::now()->toIso8601String(),
+            ];
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching today's data", [
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'pages' => [],
+                'total_views' => 0,
+                'total_users' => 0,
+                'total_pages' => 0,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Get tenant-specific page views (production use)
      * Returns ONLY the specified tenant's paths and views
-     *
+     * 
      * @param string $tenantId
      * @param Carbon $startDate
      * @param Carbon $endDate
@@ -887,7 +1203,7 @@ class GoogleAnalyticsService
     {
         $tenantFilter = new FilterExpression([
             'filter' => new Filter([
-                'field_name'    => 'customEvent:tenant_id',
+                'field_name'    => 'customEvent:tenantId',
                 'string_filter' => new StringFilter([
                     'value'      => $tenantId,
                     'match_type' => MatchType::EXACT,
