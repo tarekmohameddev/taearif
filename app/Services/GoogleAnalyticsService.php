@@ -1090,6 +1090,107 @@ class GoogleAnalyticsService
     }
 
     /**
+     * Get today's analytics data (near realtime with tenant filtering)
+     * Returns data from today only - updates every 1-2 hours
+     * 
+     * @param string|null $tenantId - Optional filter by tenant
+     * @return array
+     */
+    public function getTodayData(?string $tenantId = null): array
+    {
+        try {
+            // Query today's data (from midnight to now)
+            $startDate = Carbon::today();
+            $endDate = Carbon::now();
+
+            $params = [
+                'property' => $this->propertyId,
+                'dateRanges' => [new DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
+                ])],
+                'dimensions' => [
+                    new Dimension(['name' => 'pagePath']),
+                    new Dimension(['name' => 'customEvent:tenant_id']),
+                ],
+                'metrics' => [
+                    new Metric(['name' => 'screenPageViews']),
+                    new Metric(['name' => 'totalUsers']),
+                ],
+                'orderBys' => [
+                    new OrderBy([
+                        'metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']),
+                        'desc' => true,
+                    ]),
+                ],
+                'limit' => 200,
+            ];
+
+            // Add tenant filter if specified
+            if ($tenantId) {
+                $params['dimensionFilter'] = new FilterExpression([
+                    'filter' => new Filter([
+                        'field_name'    => 'customEvent:tenant_id',
+                        'string_filter' => new StringFilter([
+                            'value'      => $tenantId,
+                            'match_type' => MatchType::EXACT,
+                        ]),
+                    ]),
+                ]);
+            }
+
+            $response = $this->executeWithRetry(function() use ($params) {
+                return $this->client->runReport($params);
+            }, 'getTodayData');
+
+            $pages = [];
+            $totalViews = 0;
+            $totalUsers = 0;
+
+            foreach ($response->getRows() as $row) {
+                $path = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $tenantIdValue = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                $users = (int) $this->getSafeValue($row->getMetricValues(), 1, 0);
+                
+                if ($path !== '') {
+                    $pages[] = [
+                        'path' => $path,
+                        'tenant_id' => $tenantIdValue,
+                        'views' => $views,
+                        'users' => $users,
+                    ];
+                    $totalViews += $views;
+                    $totalUsers += $users;
+                }
+            }
+
+            return [
+                'pages' => $pages,
+                'total_views' => $totalViews,
+                'total_users' => $totalUsers,
+                'total_pages' => count($pages),
+                'timeframe' => 'Today (' . $startDate->format('Y-m-d') . ')',
+                'last_updated' => Carbon::now()->toIso8601String(),
+            ];
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching today's data", [
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'pages' => [],
+                'total_views' => 0,
+                'total_users' => 0,
+                'total_pages' => 0,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Get tenant-specific page views (production use)
      * Returns ONLY the specified tenant's paths and views
      * 
