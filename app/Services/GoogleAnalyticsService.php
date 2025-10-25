@@ -969,6 +969,98 @@ class GoogleAnalyticsService
     }
 
     /**
+     * Get realtime data (last 30 minutes)
+     * Returns currently active users and recent page views
+     * 
+     * @param string|null $tenantId - Optional filter by tenant
+     * @return array
+     */
+    public function getRealtimeData(?string $tenantId = null): array
+    {
+        try {
+            // For realtime, we use runRealtimeReport instead of runReport
+            $params = [
+                'property' => $this->propertyId,
+                'dimensions' => [
+                    new Dimension(['name' => 'unifiedScreenName']), // Page path for realtime
+                    new Dimension(['name' => 'customEvent:tenant_id']),
+                ],
+                'metrics' => [
+                    new Metric(['name' => 'activeUsers']),
+                    new Metric(['name' => 'screenPageViews']),
+                ],
+                'orderBys' => [
+                    new OrderBy([
+                        'metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']),
+                        'desc' => true,
+                    ]),
+                ],
+                'limit' => 100,
+            ];
+
+            // Add tenant filter if specified
+            if ($tenantId) {
+                $params['dimensionFilter'] = new FilterExpression([
+                    'filter' => new Filter([
+                        'field_name'    => 'customEvent:tenant_id',
+                        'string_filter' => new StringFilter([
+                            'value'      => $tenantId,
+                            'match_type' => MatchType::EXACT,
+                        ]),
+                    ]),
+                ]);
+            }
+
+            // Use runRealtimeReport for last 30 minutes data
+            $response = $this->client->runRealtimeReport($params);
+
+            $pages = [];
+            $totalActiveUsers = 0;
+            $totalViews = 0;
+
+            foreach ($response->getRows() as $row) {
+                $pagePath = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $tenantIdValue = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $activeUsers = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                $views = (int) $this->getSafeValue($row->getMetricValues(), 1, 0);
+                
+                if ($pagePath !== '') {
+                    $pages[] = [
+                        'path' => $pagePath,
+                        'tenant_id' => $tenantIdValue,
+                        'active_users' => $activeUsers,
+                        'views' => $views,
+                    ];
+                    $totalActiveUsers += $activeUsers;
+                    $totalViews += $views;
+                }
+            }
+
+            return [
+                'pages' => $pages,
+                'total_active_users' => $totalActiveUsers,
+                'total_views' => $totalViews,
+                'total_pages' => count($pages),
+                'timeframe' => 'Last 30 minutes',
+            ];
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching realtime data", [
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'pages' => [],
+                'total_active_users' => 0,
+                'total_views' => 0,
+                'total_pages' => 0,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Get tenant-specific page views (production use)
      * Returns ONLY the specified tenant's paths and views
      * 

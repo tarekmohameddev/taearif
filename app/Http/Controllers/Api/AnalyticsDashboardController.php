@@ -431,6 +431,28 @@ class AnalyticsDashboardController extends Controller
     }
 
     /**
+     * Get realtime data (last 30 minutes)
+     * 
+     * Returns data from the last 30 minutes (like Google Analytics Realtime)
+     * 
+     * Usage examples:
+     * - GET /api/analytics/realtime
+     * - GET /api/analytics/realtime?tenant_id=lira
+     */
+    public function getRealtime(Request $request)
+    {
+        $tenantId = $request->input('tenant_id', null);
+
+        $result = $this->analytics->getRealtimeData($tenantId);
+
+        return response()->json([
+            'status' => 'success',
+            'tenant_filter' => $tenantId,
+            ...$result,
+        ]);
+    }
+
+    /**
      * Search/Filter analytics - Get all data with backend filtering
      *
      * Returns ALL GA4 data filtered by your criteria on the backend
