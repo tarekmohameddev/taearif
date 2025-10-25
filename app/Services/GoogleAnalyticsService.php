@@ -560,7 +560,10 @@ class GoogleAnalyticsService
                         'start_date' => $startDate->format('Y-m-d'),
                         'end_date'   => $endDate->format('Y-m-d'),
                     ])],
-                    'dimensions' => [new Dimension(['name' => 'pagePath'])],
+                    'dimensions' => [
+                        new Dimension(['name' => 'pagePath']),
+                        new Dimension(['name' => 'customEvent:tenant_id'])
+                    ],
                     'metrics'    => [new Metric(['name' => 'screenPageViews'])],
                     'limit'      => 100,
                 ]);
@@ -568,9 +571,14 @@ class GoogleAnalyticsService
 
             $allPaths = [];
             foreach ($response->getRows() as $row) {
-                $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
-                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
-                $allPaths[] = ['path' => $path, 'views' => $views];
+                $path     = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $tenantId = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $views    = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                $allPaths[] = [
+                    'path' => $path, 
+                    'tenant_id' => $tenantId,
+                    'views' => $views
+                ];
             }
             $results['all_paths'] = $allPaths;
             $results['total_paths_found'] = count($allPaths);
@@ -597,7 +605,10 @@ class GoogleAnalyticsService
                         'start_date' => $startDate->format('Y-m-d'),
                         'end_date'   => $endDate->format('Y-m-d'),
                     ])],
-                    'dimensions'      => [new Dimension(['name' => 'pagePath'])],
+                    'dimensions'      => [
+                        new Dimension(['name' => 'pagePath']),
+                        new Dimension(['name' => 'customEvent:tenant_id'])
+                    ],
                     'metrics'         => [new Metric(['name' => 'screenPageViews'])],
                     'dimensionFilter' => $tenantFilter,
                     'limit'           => 100,
@@ -606,9 +617,14 @@ class GoogleAnalyticsService
 
             $tenantPaths = [];
             foreach ($response->getRows() as $row) {
-                $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
-                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
-                $tenantPaths[] = ['path' => $path, 'views' => $views];
+                $path     = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $tenantId = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $views    = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                $tenantPaths[] = [
+                    'path' => $path, 
+                    'tenant_id' => $tenantId,
+                    'views' => $views
+                ];
             }
             $results['tenant_filtered_paths'] = $tenantPaths;
             $results['tenant_paths_found'] = count($tenantPaths);
@@ -636,7 +652,10 @@ class GoogleAnalyticsService
                             'start_date' => $startDate->format('Y-m-d'),
                             'end_date'   => $endDate->format('Y-m-d'),
                         ])],
-                        'dimensions'      => [new Dimension(['name' => 'pagePath'])],
+                        'dimensions'      => [
+                            new Dimension(['name' => 'pagePath']),
+                            new Dimension(['name' => 'customEvent:tenant_id'])
+                        ],
                         'metrics'         => [new Metric(['name' => 'screenPageViews'])],
                         'dimensionFilter' => $pathsFilter,
                         'limit'           => count($specificPaths),
@@ -645,9 +664,14 @@ class GoogleAnalyticsService
 
                 $specificPathsResult = [];
                 foreach ($response->getRows() as $row) {
-                    $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
-                    $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
-                    $specificPathsResult[] = ['path' => $path, 'views' => $views];
+                    $path     = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                    $tenantId = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                    $views    = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                    $specificPathsResult[] = [
+                        'path' => $path, 
+                        'tenant_id' => $tenantId,
+                        'views' => $views
+                    ];
                 }
                 $results['specific_paths_no_tenant_filter'] = $specificPathsResult;
             } catch (\Exception $e) {
