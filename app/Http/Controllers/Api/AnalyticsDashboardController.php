@@ -400,6 +400,75 @@ class AnalyticsDashboardController extends Controller
     }
 
     /**
+     * Search/Filter analytics - Get all data with backend filtering
+     *
+     * Returns ALL GA4 data filtered by your criteria on the backend
+     *
+     * Usage examples:
+     * - GET /api/analytics/search?tenant_ids=lira,john&days=7
+     * - GET /api/analytics/search?min_views=10&path_contains=/property/
+     * - GET /api/analytics/search?tenant_ids=lira&min_views=5&limit=20
+     * - GET /api/analytics/search?group_by_tenant=1
+     */
+    public function searchAnalytics(Request $request)
+    {
+        $days = (int) $request->input('days', 7);
+        $startDate = Carbon::now()->subDays($days);
+        $endDate = Carbon::now();
+
+        // Build filters from request
+        $filters = [];
+
+        // Tenant IDs filter
+        if ($request->has('tenant_ids')) {
+            $filters['tenant_ids'] = $request->input('tenant_ids');
+        }
+
+        // Views filters
+        if ($request->has('min_views')) {
+            $filters['min_views'] = (int) $request->input('min_views');
+        }
+        if ($request->has('max_views')) {
+            $filters['max_views'] = (int) $request->input('max_views');
+        }
+
+        // Path filters
+        if ($request->has('paths')) {
+            $filters['paths'] = $request->input('paths');
+        }
+        if ($request->has('path_prefix')) {
+            $filters['path_prefix'] = $request->input('path_prefix');
+        }
+        if ($request->has('path_contains')) {
+            $filters['path_contains'] = $request->input('path_contains');
+        }
+
+        // Other filters
+        if ($request->has('exclude_empty_tenant')) {
+            $filters['exclude_empty_tenant'] = (bool) $request->input('exclude_empty_tenant');
+        }
+        if ($request->has('limit')) {
+            $filters['limit'] = (int) $request->input('limit');
+        }
+        if ($request->has('group_by_tenant')) {
+            $filters['group_by_tenant'] = (bool) $request->input('group_by_tenant');
+        }
+
+        // Get filtered data
+        $result = $this->analytics->getAllAnalyticsWithFilters($startDate, $endDate, $filters);
+
+        return response()->json([
+            'status' => 'success',
+            'date_range' => [
+                'start' => $startDate->toDateString(),
+                'end' => $endDate->toDateString(),
+                'days' => $days,
+            ],
+            ...$result,
+        ]);
+    }
+
+    /**
      * Full diagnostics endpoint - For debugging GA4 issues
      *
      * Returns ALL GA4 data (all tenants, all paths) for troubleshooting
