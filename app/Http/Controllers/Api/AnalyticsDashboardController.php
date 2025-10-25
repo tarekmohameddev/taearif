@@ -400,6 +400,37 @@ class AnalyticsDashboardController extends Controller
     }
 
     /**
+     * Get page locations (full URLs) with views
+     * 
+     * Returns full URLs including domain (like Google Analytics shows)
+     * 
+     * Usage examples:
+     * - GET /api/analytics/page-locations?days=7
+     * - GET /api/analytics/page-locations?tenant_id=lira&days=30
+     */
+    public function getPageLocations(Request $request)
+    {
+        $days = (int) $request->input('days', 7);
+        $tenantId = $request->input('tenant_id', null);
+        
+        $startDate = Carbon::now()->subDays($days);
+        $endDate = Carbon::now();
+
+        $result = $this->analytics->getPageLocations($startDate, $endDate, $tenantId);
+
+        return response()->json([
+            'status' => 'success',
+            'date_range' => [
+                'start' => $startDate->toDateString(),
+                'end' => $endDate->toDateString(),
+                'days' => $days,
+            ],
+            'tenant_filter' => $tenantId,
+            ...$result,
+        ]);
+    }
+
+    /**
      * Search/Filter analytics - Get all data with backend filtering
      *
      * Returns ALL GA4 data filtered by your criteria on the backend
