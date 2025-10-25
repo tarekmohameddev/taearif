@@ -193,6 +193,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'require.acti
     Route::get('/dashboard/ga-full-diagnostics', [AnalyticsDashboardController::class, 'gaFullDiagnostics']); // Development: full diagnostic data
     Route::get('/analytics/search', [AnalyticsDashboardController::class, 'searchAnalytics']); // Flexible search with backend filtering
     Route::get('/analytics/page-locations', [AnalyticsDashboardController::class, 'getPageLocations']); // Get full URLs (page_location)
+    Route::get('/analytics/realtime', [AnalyticsDashboardController::class, 'getRealtime']); // Get realtime data (last 30 minutes)
 });
 
 Route::middleware('auth:sanctum')->group(function () {
