@@ -684,5 +684,83 @@ class GoogleAnalyticsService
         return $results;
     }
 
+    /**
+     * Get tenant-specific page views (production use)
+     * Returns ONLY the specified tenant's paths and views
+     *
+     * @param string $tenantId
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @return array
+     */
+    public function getTenantPageViews(string $tenantId, Carbon $startDate, Carbon $endDate): array
+    {
+        $tenantFilter = new FilterExpression([
+            'filter' => new Filter([
+                'field_name'    => 'customEvent:tenant_id',
+                'string_filter' => new StringFilter([
+                    'value'      => $tenantId,
+                    'match_type' => MatchType::EXACT,
+                ]),
+            ]),
+        ]);
+
+        try {
+            $response = $this->executeWithRetry(function() use ($startDate, $endDate, $tenantFilter) {
+                return $this->client->runReport([
+                    'property'        => $this->propertyId,
+                    'dateRanges'      => [new DateRange([
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date'   => $endDate->format('Y-m-d'),
+                    ])],
+                    'dimensions'      => [new Dimension(['name' => 'pagePath'])],
+                    'metrics'         => [new Metric(['name' => 'screenPageViews'])],
+                    'dimensionFilter' => $tenantFilter,
+                    'orderBys'        => [
+                        new OrderBy([
+                            'metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']),
+                            'desc' => true,
+                        ]),
+                    ],
+                    'limit'           => 100,
+                ]);
+            }, 'getTenantPageViews');
+
+            $paths = [];
+            $totalViews = 0;
+
+            foreach ($response->getRows() as $row) {
+                $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+
+                if ($path !== '') {
+                    $paths[] = [
+                        'path' => $path,
+                        'views' => $views,
+                    ];
+                    $totalViews += $views;
+                }
+            }
+
+            return [
+                'paths' => $paths,
+                'total_views' => $totalViews,
+                'total_paths' => count($paths),
+            ];
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching tenant page views", [
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'paths' => [],
+                'total_views' => 0,
+                'total_paths' => 0,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
 
 }
