@@ -35,7 +35,15 @@ class PropertyController extends Controller
 
 		// Filters
 		if ($purpose = $request->query('purpose')) {
-			$query->where('purpose', $purpose);
+			$purposeMap = [
+				'rent' => ['rent', 'rented'],
+				'sale' => ['sale', 'sold'],
+			];
+			if (isset($purposeMap[$purpose])) {
+				$query->whereIn('purpose', $purposeMap[$purpose]);
+			} else {
+				$query->where('purpose', $purpose);
+			}
 		}
 		if ($q = $request->query('q')) {
 			$query->whereHas('contents', function ($qbuilder) use ($q) {
@@ -178,7 +186,7 @@ class PropertyController extends Controller
             $viewsBySlug[$slug] = $totalViews;
         }
 
-        $items = $properties->getCollection()->map(function ($p) use ($viewsBySlug, $districtsMap) {
+		$items = $properties->getCollection()->map(function ($p) use ($viewsBySlug, $districtsMap) {
             $content = optional($p->contents->first());
             $slug    = $content?->slug;
 
@@ -194,7 +202,16 @@ class PropertyController extends Controller
             $gallery  = $p->galleryImages->pluck('image')->map(fn($img) => asset($img))->toArray();
             $images   = array_values(array_unique(array_filter(array_merge([$featured], $gallery))));
 
-            return [
+
+			// Normalize purpose for public API and map availability
+			$normalizedPurpose = match ($p->purpose) {
+				'rented' => 'rent',
+				'sold' => 'sale',
+				default => $p->purpose,
+			};
+			$isUnavailable = in_array($p->purpose, ['rented', 'sold'], true);
+
+			return [
                 'id' => (string) $p->id,
                 'slug' => $slug,
                 'title' => $content?->title ?? '',
@@ -205,11 +222,11 @@ class PropertyController extends Controller
                 'bathrooms' => (int) ($p->bath ?? 0),
                 'area' => isset($p->area) ? (string) $p->area : '0',
                 'type' => $this->translator->translateType($p->type),
-                'type_en' => $p->type,
-                'transactionType' => $this->translator->translatePurpose($p->purpose),
-                'transactionType_en' => $p->purpose,
+				'type_en' => $p->type,
+				'transactionType' => $this->translator->translatePurpose($normalizedPurpose),
+				'transactionType_en' => $normalizedPurpose,
                 'image' => $featured,
-                'status' => $p->status ? 'available' : 'rented',
+				'status' => $isUnavailable ? 'unavailable' : 'available',
                 'createdAt' => $p->created_at?->toISOString(),
                 'description' => $content?->description ?? '',
                 'features' => is_array($p->features) ? $p->features : [],
