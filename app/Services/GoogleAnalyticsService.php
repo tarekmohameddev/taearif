@@ -239,7 +239,7 @@ class GoogleAnalyticsService
                 'field_name' => 'customEvent:tenant_id',
                 'string_filter' => new StringFilter([
                     'value' => $tenantId,
-                    'match_type' => MatchType::CONTAINS,
+                    'match_type' => MatchType::EXACT,  // Changed from CONTAINS to EXACT for precise filtering
                 ]),
             ]),
         ]);
@@ -496,7 +496,7 @@ class GoogleAnalyticsService
                 'field_name'    => 'customEvent:tenant_id',
                 'string_filter' => new StringFilter([
                     'value'      => $tenantId,
-                    'match_type' => MatchType::CONTAINS,
+                    'match_type' => MatchType::EXACT,  // Changed from CONTAINS to EXACT for precise filtering
                 ]),
             ]),
         ]);
@@ -585,7 +585,7 @@ class GoogleAnalyticsService
                     'field_name'    => 'customEvent:tenant_id',
                     'string_filter' => new StringFilter([
                         'value'      => $tenantId,
-                        'match_type' => MatchType::CONTAINS,
+                        'match_type' => MatchType::EXACT,  // Changed from CONTAINS to EXACT for precise filtering
                     ]),
                 ]),
             ]);
