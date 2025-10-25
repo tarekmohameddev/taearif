@@ -431,13 +431,39 @@ class AnalyticsDashboardController extends Controller
     }
 
     /**
+     * Get today's analytics (near realtime with perfect tenant filtering)
+     * 
+     * Returns data from today only - better than realtime for multi-tenant!
+     * Updates every 1-2 hours but supports tenant_id filtering perfectly.
+     * 
+     * Usage examples:
+     * - GET /api/analytics/today
+     * - GET /api/analytics/today?tenant_id=lira
+     */
+    public function getToday(Request $request)
+    {
+        $tenantId = $request->input('tenant_id', null);
+
+        $result = $this->analytics->getTodayData($tenantId);
+
+        return response()->json([
+            'status' => 'success',
+            'tenant_filter' => $tenantId,
+            ...$result,
+        ]);
+    }
+
+    /**
      * Get realtime data (last 30 minutes)
      * 
      * Returns data from the last 30 minutes (like Google Analytics Realtime)
      * 
+     * NOTE: Realtime API cannot filter by tenant_id (GA4 limitation)
+     * For better tenant filtering, use /api/analytics/today instead!
+     * 
      * Usage examples:
      * - GET /api/analytics/realtime
-     * - GET /api/analytics/realtime?tenant_id=lira
+     * - GET /api/analytics/realtime?tenant_id=lira (limited filtering)
      */
     public function getRealtime(Request $request)
     {
