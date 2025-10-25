@@ -25,8 +25,14 @@ class StripeController extends Controller
         if (app()->runningInConsole()) {
             return;
         }
-        //Set Spripe Keys
-        $stripe = UserPaymentGeteway::whereKeyword('stripe')->where('user_id', getUser()->id)->first();
+
+        $user = getUser();
+        if (!$user) {
+            abort(404, 'User not found');
+        }
+
+        //Set Stripe Keys
+        $stripe = UserPaymentGeteway::whereKeyword('stripe')->where('user_id', $user->id)->first();
         $stripeConf = json_decode($stripe->information, true);
         Config::set('services.stripe.key', $stripeConf["key"]);
         Config::set('services.stripe.secret', $stripeConf["secret"]);
