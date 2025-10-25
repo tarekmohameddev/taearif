@@ -152,6 +152,7 @@ public function handleEvolutionWebhook(Request $request)
 
 public function handleWhatsappWebhook(Request $request)
 {
+    log::info('handleWhatsappWebhook', ['request' => $request->all()]);
     try {
         $payload = $request->all();
 
@@ -317,7 +318,7 @@ public function handleWhatsappWebhook(Request $request)
 
         return response()->json([
             'status' => 'error',
-            'message' => 'Internal error',
+            'message' => 'Internal error'.$e->getMessage(),
         ], 500);
     }
 }
