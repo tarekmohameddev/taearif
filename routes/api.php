@@ -192,6 +192,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'require.acti
     Route::get('/dashboard/debug-ga-views', [AnalyticsDashboardController::class, 'debugGAViews']); // Production: tenant-specific views only
     Route::get('/dashboard/ga-full-diagnostics', [AnalyticsDashboardController::class, 'gaFullDiagnostics']); // Development: full diagnostic data
     Route::get('/analytics/search', [AnalyticsDashboardController::class, 'searchAnalytics']); // Flexible search with backend filtering
+    Route::get('/analytics/page-locations', [AnalyticsDashboardController::class, 'getPageLocations']); // Get full URLs (page_location)
 });
 
 Route::middleware('auth:sanctum')->group(function () {
