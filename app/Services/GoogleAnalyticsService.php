@@ -875,9 +875,103 @@ class GoogleAnalyticsService
     }
 
     /**
+     * Get page locations (full URLs) with views
+     * Returns full URLs including domain, not just paths
+     * 
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @param string|null $tenantId - Optional filter by tenant
+     * @return array
+     */
+    public function getPageLocations(Carbon $startDate, Carbon $endDate, ?string $tenantId = null): array
+    {
+        try {
+            // Build params
+            $params = [
+                'property'        => $this->propertyId,
+                'dateRanges'      => [new DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date'   => $endDate->format('Y-m-d'),
+                ])],
+                'dimensions'      => [
+                    new Dimension(['name' => 'pageLocation']), // Full URL
+                    new Dimension(['name' => 'customEvent:tenant_id']),
+                ],
+                'metrics'         => [new Metric(['name' => 'screenPageViews'])],
+                'orderBys'        => [
+                    new OrderBy([
+                        'metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']),
+                        'desc' => true,
+                    ]),
+                ],
+                'limit'           => 500,
+            ];
+
+            // Add tenant filter if specified
+            if ($tenantId) {
+                $params['dimensionFilter'] = new FilterExpression([
+                    'filter' => new Filter([
+                        'field_name'    => 'customEvent:tenant_id',
+                        'string_filter' => new StringFilter([
+                            'value'      => $tenantId,
+                            'match_type' => MatchType::EXACT,
+                        ]),
+                    ]),
+                ]);
+            }
+
+            $response = $this->executeWithRetry(function() use ($params) {
+                return $this->client->runReport($params);
+            }, 'getPageLocations');
+
+            $locations = [];
+            $totalViews = 0;
+
+            foreach ($response->getRows() as $row) {
+                $pageLocation = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $tenantIdValue = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                
+                if ($pageLocation !== '') {
+                    // Parse URL to extract domain and path
+                    $parsedUrl = parse_url($pageLocation);
+                    
+                    $locations[] = [
+                        'full_url' => $pageLocation,
+                        'domain' => $parsedUrl['host'] ?? '',
+                        'path' => $parsedUrl['path'] ?? '/',
+                        'tenant_id' => $tenantIdValue,
+                        'views' => $views,
+                    ];
+                    $totalViews += $views;
+                }
+            }
+
+            return [
+                'locations' => $locations,
+                'total_views' => $totalViews,
+                'total_locations' => count($locations),
+            ];
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching page locations", [
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'locations' => [],
+                'total_views' => 0,
+                'total_locations' => 0,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Get tenant-specific page views (production use)
      * Returns ONLY the specified tenant's paths and views
-     *
+     * 
      * @param string $tenantId
      * @param Carbon $startDate
      * @param Carbon $endDate
