@@ -117,7 +117,7 @@ class GoogleAnalyticsService
         if ($tenantId) {
             $params['dimensionFilter'] = new FilterExpression([
                 'filter' => new Filter([
-                    'field_name' => 'customEvent:tenant_id',
+                    'field_name' => 'customEvent:tenantId',
                     'string_filter' => new StringFilter([
                         'value' => $tenantId,
                         'match_type' => MatchType::EXACT,
@@ -236,7 +236,7 @@ class GoogleAnalyticsService
     {
         $tenantFilter = new FilterExpression([
             'filter' => new Filter([
-                'field_name' => 'customEvent:tenant_id',
+                'field_name' => 'customEvent:tenantId',
                 'string_filter' => new StringFilter([
                     'value' => $tenantId,
                     'match_type' => MatchType::EXACT,  // Changed from CONTAINS to EXACT for precise filtering
@@ -393,7 +393,7 @@ class GoogleAnalyticsService
 
         $filterExpression = new FilterExpression([
             'filter' => new Filter([
-                'field_name'    => 'customEvent:tenant_id',
+                'field_name'    => 'customEvent:tenantId',
                 'string_filter' => new StringFilter([
                     'match_type'     => MatchType::EXACT,
                     'value'          => $tenantId,
@@ -460,7 +460,7 @@ class GoogleAnalyticsService
         if ($tenantId) {
             $params['dimensionFilter'] = new FilterExpression([
                 'filter' => new Filter([
-                    'field_name' => 'customEvent:tenant_id',
+                    'field_name' => 'customEvent:tenantId',
                     'string_filter' => new StringFilter([
                         'value' => $tenantId,
                         'match_type' => MatchType::EXACT,
@@ -493,7 +493,7 @@ class GoogleAnalyticsService
         // tenant filter (using custom event parameter sent with each page_view)
         $tenantFilter = new FilterExpression([
             'filter' => new Filter([
-                'field_name'    => 'customEvent:tenant_id',
+                'field_name'    => 'customEvent:tenantId',
                 'string_filter' => new StringFilter([
                     'value'      => $tenantId,
                     'match_type' => MatchType::EXACT,  // Changed from CONTAINS to EXACT for precise filtering
@@ -582,7 +582,7 @@ class GoogleAnalyticsService
         try {
             $tenantFilter = new FilterExpression([
                 'filter' => new Filter([
-                    'field_name'    => 'customEvent:tenant_id',
+                    'field_name'    => 'customEvent:tenantId',
                     'string_filter' => new StringFilter([
                         'value'      => $tenantId,
                         'match_type' => MatchType::EXACT,  // Changed from CONTAINS to EXACT for precise filtering
@@ -664,7 +664,7 @@ class GoogleAnalyticsService
                         'start_date' => $startDate->format('Y-m-d'),
                         'end_date'   => $endDate->format('Y-m-d'),
                     ])],
-                    'dimensions' => [new Dimension(['name' => 'customEvent:tenant_id'])],
+                    'dimensions' => [new Dimension(['name' => 'customEvent:tenantId'])],
                     'metrics'    => [new Metric(['name' => 'screenPageViews'])],
                     'limit'      => 50,
                 ]);
@@ -705,7 +705,7 @@ class GoogleAnalyticsService
                     ])],
                     'dimensions'      => [
                         new Dimension(['name' => 'pagePath']),
-                        new Dimension(['name' => 'customEvent:tenant_id']),
+                        new Dimension(['name' => 'customEvent:tenantId']),
                     ],
                     'metrics'         => [new Metric(['name' => 'screenPageViews'])],
                     'orderBys'        => [
@@ -895,7 +895,7 @@ class GoogleAnalyticsService
                 ])],
                 'dimensions'      => [
                     new Dimension(['name' => 'pageLocation']), // Full URL
-                    new Dimension(['name' => 'customEvent:tenant_id']),
+                    new Dimension(['name' => 'customEvent:tenantId']),
                 ],
                 'metrics'         => [new Metric(['name' => 'screenPageViews'])],
                 'orderBys'        => [
@@ -911,7 +911,7 @@ class GoogleAnalyticsService
             if ($tenantId) {
                 $params['dimensionFilter'] = new FilterExpression([
                     'filter' => new Filter([
-                        'field_name'    => 'customEvent:tenant_id',
+                        'field_name'    => 'customEvent:tenantId',
                         'string_filter' => new StringFilter([
                             'value'      => $tenantId,
                             'match_type' => MatchType::EXACT,
@@ -1111,7 +1111,7 @@ class GoogleAnalyticsService
                 ])],
                 'dimensions' => [
                     new Dimension(['name' => 'pagePath']),
-                    new Dimension(['name' => 'customEvent:tenant_id']),
+                    new Dimension(['name' => 'customEvent:tenantId']),
                 ],
                 'metrics' => [
                     new Metric(['name' => 'screenPageViews']),
@@ -1130,7 +1130,7 @@ class GoogleAnalyticsService
             if ($tenantId) {
                 $params['dimensionFilter'] = new FilterExpression([
                     'filter' => new Filter([
-                        'field_name'    => 'customEvent:tenant_id',
+                        'field_name'    => 'customEvent:tenantId',
                         'string_filter' => new StringFilter([
                             'value'      => $tenantId,
                             'match_type' => MatchType::EXACT,
@@ -1203,7 +1203,7 @@ class GoogleAnalyticsService
     {
         $tenantFilter = new FilterExpression([
             'filter' => new Filter([
-                'field_name'    => 'customEvent:tenant_id',
+                'field_name'    => 'customEvent:tenantId',
                 'string_filter' => new StringFilter([
                     'value'      => $tenantId,
                     'match_type' => MatchType::EXACT,
