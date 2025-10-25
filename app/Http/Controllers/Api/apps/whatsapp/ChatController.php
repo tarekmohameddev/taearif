@@ -152,7 +152,6 @@ public function handleEvolutionWebhook(Request $request)
 
 public function handleWhatsappWebhook(Request $request)
 {
-    log::info('handleWhatsappWebhook', ['request' => $request->all()]);
     try {
         $payload = $request->all();
 
@@ -198,8 +197,9 @@ public function handleWhatsappWebhook(Request $request)
                 'region_name' => $regionName,
             ]);
 
-            // 🔄 Find customer in ApiCustomer table to get user_id
-            $customer = ApiCustomer::where('phone_number', $whatsappNumber)->first();
+            // 🔄 Find customer in ApiCustomer table to get user_id (match with or without leading '+')
+            $normalizedNumber = ltrim($whatsappNumber, '+');
+            $customer = ApiCustomer::whereIn('phone_number', [$whatsappNumber, $normalizedNumber, '+' . $normalizedNumber])->first();
             $userId = $customer ? $customer->user_id : null;
 
             // Prepare data for saving
@@ -318,7 +318,7 @@ public function handleWhatsappWebhook(Request $request)
 
         return response()->json([
             'status' => 'error',
-            'message' => 'Internal error'.$e->getMessage(),
+            'message' => 'Internal error',
         ], 500);
     }
 }
