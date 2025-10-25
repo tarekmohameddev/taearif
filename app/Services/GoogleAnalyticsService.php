@@ -684,5 +684,273 @@ class GoogleAnalyticsService
         return $results;
     }
 
+    /**
+     * Get all analytics data with flexible backend filtering
+     *
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @param array $filters - ['tenant_ids' => [], 'min_views' => 0, 'paths' => [], 'limit' => 100]
+     * @return array
+     */
+    public function getAllAnalyticsWithFilters(Carbon $startDate, Carbon $endDate, array $filters = []): array
+    {
+        try {
+            // Step 1: Get ALL data from GA4 (no tenant filter)
+            $response = $this->executeWithRetry(function() use ($startDate, $endDate) {
+                return $this->client->runReport([
+                    'property'        => $this->propertyId,
+                    'dateRanges'      => [new DateRange([
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date'   => $endDate->format('Y-m-d'),
+                    ])],
+                    'dimensions'      => [
+                        new Dimension(['name' => 'pagePath']),
+                        new Dimension(['name' => 'customEvent:tenant_id']),
+                    ],
+                    'metrics'         => [new Metric(['name' => 'screenPageViews'])],
+                    'orderBys'        => [
+                        new OrderBy([
+                            'metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']),
+                            'desc' => true,
+                        ]),
+                    ],
+                    'limit'           => 1000, // Get more data for filtering
+                ]);
+            }, 'getAllAnalyticsWithFilters');
+
+            // Step 2: Parse all data
+            $allData = [];
+            foreach ($response->getRows() as $row) {
+                $path      = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $tenantId  = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $views     = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+
+                if ($path !== '') {
+                    $allData[] = [
+                        'tenant_id' => $tenantId,
+                        'path' => $path,
+                        'views' => $views,
+                    ];
+                }
+            }
+
+            // Step 3: Apply backend filters
+            $filteredData = $this->applyFilters($allData, $filters);
+
+            // Step 4: Group by tenant if requested
+            if (isset($filters['group_by_tenant']) && $filters['group_by_tenant']) {
+                return $this->groupByTenant($filteredData);
+            }
+
+            return [
+                'data' => $filteredData,
+                'total_items' => count($filteredData),
+                'total_views' => array_sum(array_column($filteredData, 'views')),
+                'filters_applied' => $filters,
+            ];
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching all analytics with filters", [
+                'error' => $e->getMessage(),
+                'filters' => $filters,
+            ]);
+
+            return [
+                'data' => [],
+                'total_items' => 0,
+                'total_views' => 0,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Apply filters to data array
+     */
+    protected function applyFilters(array $data, array $filters): array
+    {
+        $filtered = $data;
+
+        // Filter by tenant IDs
+        if (!empty($filters['tenant_ids'])) {
+            $tenantIds = is_array($filters['tenant_ids'])
+                ? $filters['tenant_ids']
+                : explode(',', $filters['tenant_ids']);
+
+            $filtered = array_filter($filtered, function($item) use ($tenantIds) {
+                return in_array($item['tenant_id'], $tenantIds);
+            });
+        }
+
+        // Filter by minimum views
+        if (isset($filters['min_views']) && $filters['min_views'] > 0) {
+            $filtered = array_filter($filtered, function($item) use ($filters) {
+                return $item['views'] >= $filters['min_views'];
+            });
+        }
+
+        // Filter by maximum views
+        if (isset($filters['max_views']) && $filters['max_views'] > 0) {
+            $filtered = array_filter($filtered, function($item) use ($filters) {
+                return $item['views'] <= $filters['max_views'];
+            });
+        }
+
+        // Filter by paths (contains)
+        if (!empty($filters['paths'])) {
+            $paths = is_array($filters['paths'])
+                ? $filters['paths']
+                : explode(',', $filters['paths']);
+
+            $filtered = array_filter($filtered, function($item) use ($paths) {
+                foreach ($paths as $path) {
+                    if (stripos($item['path'], trim($path)) !== false) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+        }
+
+        // Filter by path prefix
+        if (!empty($filters['path_prefix'])) {
+            $filtered = array_filter($filtered, function($item) use ($filters) {
+                return strpos($item['path'], $filters['path_prefix']) === 0;
+            });
+        }
+
+        // Filter by path contains
+        if (!empty($filters['path_contains'])) {
+            $filtered = array_filter($filtered, function($item) use ($filters) {
+                return stripos($item['path'], $filters['path_contains']) !== false;
+            });
+        }
+
+        // Exclude empty tenant_ids if requested
+        if (isset($filters['exclude_empty_tenant']) && $filters['exclude_empty_tenant']) {
+            $filtered = array_filter($filtered, function($item) {
+                return !empty($item['tenant_id']) && $item['tenant_id'] !== '(not set)';
+            });
+        }
+
+        // Limit results
+        if (isset($filters['limit']) && $filters['limit'] > 0) {
+            $filtered = array_slice(array_values($filtered), 0, $filters['limit']);
+        }
+
+        return array_values($filtered); // Re-index array
+    }
+
+    /**
+     * Group data by tenant
+     */
+    protected function groupByTenant(array $data): array
+    {
+        $grouped = [];
+
+        foreach ($data as $item) {
+            $tenantId = $item['tenant_id'];
+
+            if (!isset($grouped[$tenantId])) {
+                $grouped[$tenantId] = [
+                    'tenant_id' => $tenantId,
+                    'total_views' => 0,
+                    'total_paths' => 0,
+                    'paths' => [],
+                ];
+            }
+
+            $grouped[$tenantId]['total_views'] += $item['views'];
+            $grouped[$tenantId]['total_paths']++;
+            $grouped[$tenantId]['paths'][] = [
+                'path' => $item['path'],
+                'views' => $item['views'],
+            ];
+        }
+
+        return [
+            'tenants' => array_values($grouped),
+            'total_tenants' => count($grouped),
+        ];
+    }
+
+    /**
+     * Get tenant-specific page views (production use)
+     * Returns ONLY the specified tenant's paths and views
+     *
+     * @param string $tenantId
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @return array
+     */
+    public function getTenantPageViews(string $tenantId, Carbon $startDate, Carbon $endDate): array
+    {
+        $tenantFilter = new FilterExpression([
+            'filter' => new Filter([
+                'field_name'    => 'customEvent:tenant_id',
+                'string_filter' => new StringFilter([
+                    'value'      => $tenantId,
+                    'match_type' => MatchType::EXACT,
+                ]),
+            ]),
+        ]);
+
+        try {
+            $response = $this->executeWithRetry(function() use ($startDate, $endDate, $tenantFilter) {
+                return $this->client->runReport([
+                    'property'        => $this->propertyId,
+                    'dateRanges'      => [new DateRange([
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date'   => $endDate->format('Y-m-d'),
+                    ])],
+                    'dimensions'      => [new Dimension(['name' => 'pagePath'])],
+                    'metrics'         => [new Metric(['name' => 'screenPageViews'])],
+                    'dimensionFilter' => $tenantFilter,
+                    'orderBys'        => [
+                        new OrderBy([
+                            'metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']),
+                            'desc' => true,
+                        ]),
+                    ],
+                    'limit'           => 100,
+                ]);
+            }, 'getTenantPageViews');
+
+            $paths = [];
+            $totalViews = 0;
+
+            foreach ($response->getRows() as $row) {
+                $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+
+                if ($path !== '') {
+                    $paths[] = [
+                        'path' => $path,
+                        'views' => $views,
+                    ];
+                    $totalViews += $views;
+                }
+            }
+
+            return [
+                'paths' => $paths,
+                'total_views' => $totalViews,
+                'total_paths' => count($paths),
+            ];
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching tenant page views", [
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'paths' => [],
+                'total_views' => 0,
+                'total_paths' => 0,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
 
 }

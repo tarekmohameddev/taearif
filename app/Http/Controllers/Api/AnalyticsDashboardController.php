@@ -365,17 +365,120 @@ class AnalyticsDashboardController extends Controller
     }
 
     /**
-     * Debug endpoint to diagnose GA4 views issues
+     * Production endpoint - Get tenant-specific analytics views
+     *
+     * Returns ONLY the specified tenant's paths and views (clean, production-ready)
      *
      * Usage examples:
-     * - GET /api/dashboard/debug-ga-views
-     * - GET /api/dashboard/debug-ga-views?slug=shk-hdyth-moss
-     * - GET /api/dashboard/debug-ga-views?paths=/property/test1,/property/test2
-     * - GET /api/dashboard/debug-ga-views?days=7
-     * - GET /api/dashboard/debug-ga-views?tenant_id=newdddtest
-     * - GET /api/dashboard/debug-ga-views?slug=shk-hdyth-moss&tenant_id=newdddtest&days=7
+     * - GET /api/dashboard/debug-ga-views?tenant_id=lira&days=7
+     * - GET /api/dashboard/debug-ga-views?days=30
      */
     public function debugGAViews(Request $request)
+    {
+        // Allow custom tenant_id for testing, otherwise use authenticated user's tenant
+        $tenantId = $request->input('tenant_id', $this->tenantId($request));
+        $days = (int) $request->input('days', 7);
+
+        $startDate = Carbon::now()->subDays($days);
+        $endDate = Carbon::now();
+
+        // Get tenant-specific views only
+        $tenantViews = $this->analytics->getTenantPageViews($tenantId, $startDate, $endDate);
+
+        return response()->json([
+            'status' => 'success',
+            'tenant' => $tenantId,
+            'date_range' => [
+                'start' => $startDate->toDateString(),
+                'end' => $endDate->toDateString(),
+                'days' => $days,
+            ],
+            'paths' => $tenantViews['paths'],
+            'total_views' => $tenantViews['total_views'],
+            'total_paths' => $tenantViews['total_paths'],
+        ]);
+    }
+
+    /**
+     * Search/Filter analytics - Get all data with backend filtering
+     *
+     * Returns ALL GA4 data filtered by your criteria on the backend
+     *
+     * Usage examples:
+     * - GET /api/analytics/search?tenant_ids=lira,john&days=7
+     * - GET /api/analytics/search?min_views=10&path_contains=/property/
+     * - GET /api/analytics/search?tenant_ids=lira&min_views=5&limit=20
+     * - GET /api/analytics/search?group_by_tenant=1
+     */
+    public function searchAnalytics(Request $request)
+    {
+        $days = (int) $request->input('days', 7);
+        $startDate = Carbon::now()->subDays($days);
+        $endDate = Carbon::now();
+
+        // Build filters from request
+        $filters = [];
+
+        // Tenant IDs filter
+        if ($request->has('tenant_ids')) {
+            $filters['tenant_ids'] = $request->input('tenant_ids');
+        }
+
+        // Views filters
+        if ($request->has('min_views')) {
+            $filters['min_views'] = (int) $request->input('min_views');
+        }
+        if ($request->has('max_views')) {
+            $filters['max_views'] = (int) $request->input('max_views');
+        }
+
+        // Path filters
+        if ($request->has('paths')) {
+            $filters['paths'] = $request->input('paths');
+        }
+        if ($request->has('path_prefix')) {
+            $filters['path_prefix'] = $request->input('path_prefix');
+        }
+        if ($request->has('path_contains')) {
+            $filters['path_contains'] = $request->input('path_contains');
+        }
+
+        // Other filters
+        if ($request->has('exclude_empty_tenant')) {
+            $filters['exclude_empty_tenant'] = (bool) $request->input('exclude_empty_tenant');
+        }
+        if ($request->has('limit')) {
+            $filters['limit'] = (int) $request->input('limit');
+        }
+        if ($request->has('group_by_tenant')) {
+            $filters['group_by_tenant'] = (bool) $request->input('group_by_tenant');
+        }
+
+        // Get filtered data
+        $result = $this->analytics->getAllAnalyticsWithFilters($startDate, $endDate, $filters);
+
+        return response()->json([
+            'status' => 'success',
+            'date_range' => [
+                'start' => $startDate->toDateString(),
+                'end' => $endDate->toDateString(),
+                'days' => $days,
+            ],
+            ...$result,
+        ]);
+    }
+
+    /**
+     * Full diagnostics endpoint - For debugging GA4 issues
+     *
+     * Returns ALL GA4 data (all tenants, all paths) for troubleshooting
+     *
+     * Usage examples:
+     * - GET /api/dashboard/ga-full-diagnostics?tenant_id=lira&days=7
+     * - GET /api/dashboard/ga-full-diagnostics?slug=shk-hdyth-moss
+     * - GET /api/dashboard/ga-full-diagnostics?paths=/property/test1,/property/test2
+     */
+    public function gaFullDiagnostics(Request $request)
     {
         // Allow custom tenant_id for testing, otherwise use authenticated user's tenant
         $tenantId = $request->input('tenant_id', $this->tenantId($request));
@@ -426,9 +529,6 @@ class AnalyticsDashboardController extends Controller
         $startDate = Carbon::now()->subDays($days);
         $endDate = Carbon::now();
 
-        // Check if user wants focused results (specific tenant + slug/paths)
-        $isFocusedQuery = $request->has('tenant_id') && ($request->has('slug') || $request->has('paths'));
-
         $debugResults = $this->analytics->debugPageViews(
             $tenantId,
             $startDate,
@@ -436,36 +536,7 @@ class AnalyticsDashboardController extends Controller
             $paths
         );
 
-        // If focused query, return only relevant results
-        if ($isFocusedQuery) {
-            $focusedResults = [
-                'tenant_filtered_paths' => $debugResults['tenant_filtered_paths'] ?? [],
-                'tenant_paths_found' => $debugResults['tenant_paths_found'] ?? 0,
-            ];
-
-            return response()->json([
-                'status' => 'success',
-                'mode' => 'focused',
-                'tenant' => $tenantId,
-                'date_range' => [
-                    'start' => $startDate->toDateString(),
-                    'end' => $endDate->toDateString(),
-                    'days' => $days,
-                ],
-                'paths_tested' => $paths,
-                'results' => $focusedResults,
-                'summary' => [
-                    'total_views' => array_sum($focusedResults['tenant_filtered_paths']),
-                    'paths_with_views' => count(array_filter($focusedResults['tenant_filtered_paths'], fn($v) => $v['views'] > 0)),
-                    'paths_without_views' => count(array_filter($focusedResults['tenant_filtered_paths'], fn($v) => $v['views'] == 0)),
-                ],
-                'interpretation' => $focusedResults['tenant_paths_found'] > 0
-                    ? '✅ Views found for this tenant and property!'
-                    : '❌ No views found. Either no visits yet, or data still processing (wait 24-48 hours).',
-            ]);
-        }
-
-        // Full diagnostic mode (when no specific filters provided)
+        // Full diagnostic mode - show everything
         return response()->json([
             'status' => 'success',
             'mode' => 'full_diagnostic',
@@ -478,11 +549,9 @@ class AnalyticsDashboardController extends Controller
             'paths_tested' => $paths,
             'debug_results' => $debugResults,
             'usage_examples' => [
-                'Focused query (specific tenant + property)' => '/api/dashboard/debug-ga-views?tenant_id=newdddtest&slug=shk-hdyth-moss',
-                'Test specific slug' => '/api/dashboard/debug-ga-views?slug=shk-hdyth-moss',
-                'Test exact paths' => '/api/dashboard/debug-ga-views?paths=/property/test1,/ar/property/test2',
-                'Test with custom tenant' => '/api/dashboard/debug-ga-views?tenant_id=newdddtest',
-                'Change date range' => '/api/dashboard/debug-ga-views?days=7',
+                'Full diagnostics with slug' => '/api/dashboard/ga-full-diagnostics?tenant_id=lira&slug=shk-hdyth-moss',
+                'Test specific paths' => '/api/dashboard/ga-full-diagnostics?paths=/property/test1,/ar/property/test2',
+                'Custom tenant and date range' => '/api/dashboard/ga-full-diagnostics?tenant_id=lira&days=7',
             ],
             'instructions' => [
                 'all_paths' => 'All page views in GA4 (no filters) - if empty, GA4 has no data at all',

@@ -188,7 +188,11 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'require.acti
     Route::get('/dashboard/most-visited-pages', [AnalyticsDashboardController::class, 'mostVisitedPages']);
     Route::get('/dashboard/setup-progress', [AnalyticsDashboardController::class, 'setupProgress']);
     Route::get('/dashboard/recent-activity', [AnalyticsDashboardController::class, 'getRecentActivity']);
-    Route::get('/dashboard/debug-ga-views', [AnalyticsDashboardController::class, 'debugGAViews']);
+
+    // Analytics Views Endpoints
+    Route::get('/dashboard/debug-ga-views', [AnalyticsDashboardController::class, 'debugGAViews']); // Production: tenant-specific views only
+    Route::get('/dashboard/ga-full-diagnostics', [AnalyticsDashboardController::class, 'gaFullDiagnostics']); // Development: full diagnostic data
+    Route::get('/analytics/search', [AnalyticsDashboardController::class, 'searchAnalytics']); // Flexible search with backend filtering
 });
 
 Route::middleware('auth:sanctum')->group(function () {
