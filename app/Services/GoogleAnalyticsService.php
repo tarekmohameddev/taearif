@@ -561,6 +561,7 @@ class GoogleAnalyticsService
                         'end_date'   => $endDate->format('Y-m-d'),
                     ])],
                     'dimensions' => [
+                        new Dimension(['name' => 'pageLocation']),  // Full URL
                         new Dimension(['name' => 'pagePath']),
                         new Dimension(['name' => 'customEvent:tenant_id'])
                     ],
@@ -571,10 +572,12 @@ class GoogleAnalyticsService
 
             $allPaths = [];
             foreach ($response->getRows() as $row) {
-                $path     = $this->getSafeValue($row->getDimensionValues(), 0, '');
-                $tenantId = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $fullUrl  = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $path     = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $tenantId = $this->getSafeValue($row->getDimensionValues(), 2, '');
                 $views    = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
                 $allPaths[] = [
+                    'full_url' => $fullUrl,
                     'path' => $path, 
                     'tenant_id' => $tenantId,
                     'views' => $views
@@ -606,6 +609,7 @@ class GoogleAnalyticsService
                         'end_date'   => $endDate->format('Y-m-d'),
                     ])],
                     'dimensions'      => [
+                        new Dimension(['name' => 'pageLocation']),  // Full URL
                         new Dimension(['name' => 'pagePath']),
                         new Dimension(['name' => 'customEvent:tenant_id'])
                     ],
@@ -617,10 +621,12 @@ class GoogleAnalyticsService
 
             $tenantPaths = [];
             foreach ($response->getRows() as $row) {
-                $path     = $this->getSafeValue($row->getDimensionValues(), 0, '');
-                $tenantId = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $fullUrl  = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $path     = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $tenantId = $this->getSafeValue($row->getDimensionValues(), 2, '');
                 $views    = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
                 $tenantPaths[] = [
+                    'full_url' => $fullUrl,
                     'path' => $path, 
                     'tenant_id' => $tenantId,
                     'views' => $views
@@ -653,6 +659,7 @@ class GoogleAnalyticsService
                             'end_date'   => $endDate->format('Y-m-d'),
                         ])],
                         'dimensions'      => [
+                            new Dimension(['name' => 'pageLocation']),  // Full URL
                             new Dimension(['name' => 'pagePath']),
                             new Dimension(['name' => 'customEvent:tenant_id'])
                         ],
@@ -664,10 +671,12 @@ class GoogleAnalyticsService
 
                 $specificPathsResult = [];
                 foreach ($response->getRows() as $row) {
-                    $path     = $this->getSafeValue($row->getDimensionValues(), 0, '');
-                    $tenantId = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                    $fullUrl  = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                    $path     = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                    $tenantId = $this->getSafeValue($row->getDimensionValues(), 2, '');
                     $views    = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
                     $specificPathsResult[] = [
+                        'full_url' => $fullUrl,
                         'path' => $path, 
                         'tenant_id' => $tenantId,
                         'views' => $views
