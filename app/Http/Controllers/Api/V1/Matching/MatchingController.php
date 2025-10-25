@@ -22,13 +22,18 @@ class MatchingController extends Controller
     {
         $userId = $request->user()->id;
         $rows = PropertyMatch::query()
-            ->selectRaw('customer_key, 
-                MIN(COALESCE(NULLIF(TRIM(JSON_UNQUOTE(JSON_EXTRACT(match_explanation, "$.customer_name"))), ""), NULL)) as customer_name,
-                COUNT(DISTINCT CONCAT(request_type,":",request_id)) as number_of_requests,
-                COUNT(DISTINCT property_id) as number_of_matching_properties')
-            ->where('user_id', $userId)
-            ->whereNotNull('customer_key')
-            ->groupBy('customer_key')
+            ->from('property_matches as pm')
+            ->leftJoin('users_property_requests as upr', function ($join) {
+                $join->on('upr.id', '=', 'pm.request_id')
+                    ->where('pm.request_type', '=', 'web');
+            })
+            ->selectRaw('pm.customer_key,
+                MIN(NULLIF(TRIM(upr.full_name), "")) as customer_name,
+                COUNT(DISTINCT CONCAT(pm.request_type, ":", pm.request_id)) as number_of_requests,
+                COUNT(DISTINCT pm.property_id) as number_of_matching_properties')
+            ->where('pm.user_id', $userId)
+            ->whereNotNull('pm.customer_key')
+            ->groupBy('pm.customer_key')
             ->orderByDesc('number_of_matching_properties')
             ->get()
             ->map(function ($r) {
