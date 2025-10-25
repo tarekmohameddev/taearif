@@ -9,7 +9,7 @@ use App\Models\User\RealestateManagement\Project;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Http\StreamedResponse;
 
 class AiExportController extends Controller
 {
