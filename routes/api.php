@@ -407,6 +407,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
         Route::get   ('/filters',  [CustomerController::class, 'filterOptions'])->middleware('can:customers.view');
         Route::get   ('/',         [CustomerController::class, 'index'])->middleware('can:customers.view');
         Route::get   ('/search',   [CustomerController::class, 'search'])->middleware('can:customers.view');
+        Route::get   ('/{id}/with-inquiries', [CustomerController::class, 'showWithInquiries'])->middleware('can:customers.view');
         Route::get   ('/{id}',     [CustomerController::class, 'show'])->middleware('can:customers.view');
         Route::post  ('/',         [CustomerController::class, 'store'])->middleware('can:customers.create');
         Route::put   ('/{id}',     [CustomerController::class, 'update'])->middleware('can:customers.update');
