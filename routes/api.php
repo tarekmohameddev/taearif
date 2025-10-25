@@ -825,6 +825,10 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve'])->group(
     Route::get('{tenantId}/projects', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'index']);
     Route::get('{tenantId}/projects/{slug}', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'show']);
 
+    // Tenant Website AI Export (public)
+    Route::get('{tenantId}/ai-export', [\App\Http\Controllers\Api\V1\TenantWebsite\AiExportController::class, 'index']);
+    Route::get('{tenantId}/ai-export.txt', [\App\Http\Controllers\Api\V1\TenantWebsite\AiExportController::class, 'downloadTxt']);
+
     // (moved Matching endpoints out of tenant-website scope)
 });
 
