@@ -972,18 +972,20 @@ class GoogleAnalyticsService
      * Get realtime data (last 30 minutes)
      * Returns currently active users and recent page views
      * 
-     * @param string|null $tenantId - Optional filter by tenant
+     * NOTE: Realtime API does NOT support custom event parameters
+     * So we get all data and filter by path pattern on backend
+     * 
+     * @param string|null $tenantId - Optional filter by tenant (filters by matching subdomain in path)
      * @return array
      */
     public function getRealtimeData(?string $tenantId = null): array
     {
         try {
-            // For realtime, we use runRealtimeReport instead of runReport
+            // Realtime API - Note: customEvent parameters NOT supported!
             $params = [
                 'property' => $this->propertyId,
                 'dimensions' => [
-                    new Dimension(['name' => 'unifiedScreenName']), // Page path for realtime
-                    new Dimension(['name' => 'customEvent:tenant_id']),
+                    new Dimension(['name' => 'unifiedScreenName']), // Page path
                 ],
                 'metrics' => [
                     new Metric(['name' => 'activeUsers']),
@@ -998,19 +1000,6 @@ class GoogleAnalyticsService
                 'limit' => 100,
             ];
 
-            // Add tenant filter if specified
-            if ($tenantId) {
-                $params['dimensionFilter'] = new FilterExpression([
-                    'filter' => new Filter([
-                        'field_name'    => 'customEvent:tenant_id',
-                        'string_filter' => new StringFilter([
-                            'value'      => $tenantId,
-                            'match_type' => MatchType::EXACT,
-                        ]),
-                    ]),
-                ]);
-            }
-
             // Use runRealtimeReport for last 30 minutes data
             $response = $this->client->runRealtimeReport($params);
 
@@ -1020,14 +1009,17 @@ class GoogleAnalyticsService
 
             foreach ($response->getRows() as $row) {
                 $pagePath = $this->getSafeValue($row->getDimensionValues(), 0, '');
-                $tenantIdValue = $this->getSafeValue($row->getDimensionValues(), 1, '');
                 $activeUsers = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
                 $views = (int) $this->getSafeValue($row->getMetricValues(), 1, 0);
                 
                 if ($pagePath !== '') {
+                    // Try to extract tenant from path
+                    // Paths like: /lira/property/xyz or /lira or just /ar
+                    $extractedTenant = $this->extractTenantFromPath($pagePath);
+                    
                     $pages[] = [
                         'path' => $pagePath,
-                        'tenant_id' => $tenantIdValue,
+                        'tenant_id' => $extractedTenant, // Extracted from path
                         'active_users' => $activeUsers,
                         'views' => $views,
                     ];
@@ -1036,12 +1028,25 @@ class GoogleAnalyticsService
                 }
             }
 
+            // Filter by tenant if specified
+            if ($tenantId) {
+                $pages = array_filter($pages, function($page) use ($tenantId) {
+                    return $page['tenant_id'] === $tenantId;
+                });
+                $pages = array_values($pages); // Re-index
+                
+                // Recalculate totals for filtered data
+                $totalActiveUsers = array_sum(array_column($pages, 'active_users'));
+                $totalViews = array_sum(array_column($pages, 'views'));
+            }
+
             return [
                 'pages' => $pages,
                 'total_active_users' => $totalActiveUsers,
                 'total_views' => $totalViews,
                 'total_pages' => count($pages),
                 'timeframe' => 'Last 30 minutes',
+                'note' => $tenantId ? "Filtered by tenant: {$tenantId}" : "All tenants included",
             ];
 
         } catch (\Exception $e) {
@@ -1058,6 +1063,30 @@ class GoogleAnalyticsService
                 'error' => $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Extract tenant ID from path
+     * Paths like /lira/property/xyz or /lira → tenant is "lira"
+     */
+    protected function extractTenantFromPath(string $path): ?string
+    {
+        // Remove leading slash and split
+        $parts = explode('/', trim($path, '/'));
+        
+        // If path is like /lira or /lira/property/xyz
+        // First segment might be tenant or language
+        $firstSegment = $parts[0] ?? '';
+        
+        // Common language codes - not tenants
+        $languages = ['ar', 'en', 'fr', 'es', 'de'];
+        
+        if (!empty($firstSegment) && !in_array($firstSegment, $languages)) {
+            // Likely a tenant subdomain path
+            return $firstSegment;
+        }
+        
+        return null; // Can't determine tenant from path
     }
 
     /**
