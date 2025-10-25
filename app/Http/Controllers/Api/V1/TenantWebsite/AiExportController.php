@@ -9,7 +9,7 @@ use App\Models\User\RealestateManagement\Project;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Response;
-use Illuminate\Http\StreamedResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AiExportController extends Controller
 {
@@ -187,10 +187,12 @@ class AiExportController extends Controller
             }
         };
 
-        return Response::streamDownload($callback, $fileName, [
+        $response = new StreamedResponse($callback, 200, [
             'Content-Type' => 'text/plain; charset=UTF-8',
             'Cache-Control' => 'no-cache',
         ]);
+        $response->headers->set('Content-Disposition', 'attachment; filename="' . $fileName . '"');
+        return $response;
     }
 
     private function mapTenant(User $tenant): array
@@ -313,17 +315,24 @@ class AiExportController extends Controller
     private function buildTenantDocument(array $tenant): string
     {
         $lines = [];
-        $lines[] = 'Name: ' . ($tenant['name'] ?: $tenant['username']);
-        if (!empty($tenant['brand'])) $lines[] = 'Brand: ' . $tenant['brand'];
-        if (!empty($tenant['about'])) $lines[] = 'About: ' . $this->normalizeText($tenant['about']);
+        $lines[] = 'Name: ' . ($this->stringify($tenant['name']) ?: $this->stringify($tenant['username']));
+        if (!empty($tenant['brand'])) $lines[] = 'Brand: ' . $this->stringify($tenant['brand']);
+        if (!empty($tenant['about'])) $lines[] = 'About: ' . $this->normalizeText($this->stringify($tenant['about']));
         $contact = [];
-        if (!empty($tenant['contact_email'])) $contact[] = $tenant['contact_email'];
-        if (!empty($tenant['phone'])) $contact[] = $tenant['phone'];
+        if (!empty($tenant['contact_email'])) $contact[] = $this->stringify($tenant['contact_email']);
+        if (!empty($tenant['phone'])) $contact[] = $this->stringify($tenant['phone']);
         if ($contact) $lines[] = 'Contact: ' . implode(' | ', $contact);
-        if (!empty($tenant['website'])) $lines[] = 'Website: ' . $tenant['website'];
-        $addrParts = array_filter([$tenant['address'] ?? '', $tenant['city'] ?? '', $tenant['country'] ?? '']);
+        if (!empty($tenant['website'])) $lines[] = 'Website: ' . $this->stringify($tenant['website']);
+        $addrParts = array_filter([
+            $this->stringify($tenant['address'] ?? ''),
+            $this->stringify($tenant['city'] ?? ''),
+            $this->stringify($tenant['country'] ?? ''),
+        ]);
         if ($addrParts) $lines[] = 'Address: ' . implode(', ', $addrParts);
-        if (!empty($tenant['languages'])) $lines[] = 'Languages: ' . implode(', ', $tenant['languages']);
+        if (!empty($tenant['languages'])) {
+            $langs = array_map(fn($l) => $this->stringify($l), (array) $tenant['languages']);
+            $lines[] = 'Languages: ' . implode(', ', array_filter($langs));
+        }
         return implode("\n", $lines);
     }
 
@@ -345,13 +354,33 @@ class AiExportController extends Controller
             $lines[] = 'Location: ' . ($p['location']['latitude'] ?? '') . ', ' . ($p['location']['longitude'] ?? '');
         }
         if (!empty($p['features'])) {
-            $lines[] = 'Features: ' . implode(' - ', array_map(fn($f) => (string) $f, (array) $p['features']));
+            $feat = array_map(fn($f) => $this->stringify($f), (array) $p['features']);
+            $feat = array_filter($feat, fn($v) => $v !== '');
+            if ($feat) $lines[] = 'Features: ' . implode(' - ', $feat);
         }
-        if (!empty($p['characteristics']) && is_iterable($p['characteristics'])) {
-            $lines[] = 'Characteristics:';
-            foreach ($p['characteristics'] as $c) {
-                if (is_array($c) && isset($c['name'], $c['value'])) {
-                    $lines[] = '- ' . $c['name'] . ': ' . $c['value'];
+        if (!empty($p['characteristics'])) {
+            $chars = $p['characteristics'];
+            if (is_object($chars) && method_exists($chars, 'toArray')) {
+                $chars = $chars->toArray();
+            }
+            if (is_array($chars)) {
+                $lines[] = 'Characteristics:';
+                // 1) If array of {name,value}
+                $handled = false;
+                foreach ($chars as $ck => $cv) {
+                    if (is_array($cv) && isset($cv['name'], $cv['value'])) {
+                        $lines[] = '- ' . $this->stringify($cv['name']) . ': ' . $this->stringify($cv['value']);
+                        $handled = true;
+                    }
+                }
+                if (!$handled) {
+                    // 2) Key-value attributes
+                    foreach ($chars as $ck => $cv) {
+                        if (is_scalar($cv) && $cv !== '' && $cv !== null) {
+                            $label = ucwords(str_replace('_', ' ', (string) $ck));
+                            $lines[] = '- ' . $label . ': ' . $this->stringify($cv);
+                        }
+                    }
                 }
             }
         }
@@ -400,7 +429,9 @@ class AiExportController extends Controller
             $lines[] = 'Location: ' . ($p['location']['latitude'] ?? '') . ', ' . ($p['location']['longitude'] ?? '');
         }
         if (!empty($p['amenities'])) {
-            $lines[] = 'Amenities: ' . implode(' - ', array_map(fn($a) => (string) $a, (array) $p['amenities']));
+            $am = array_map(fn($a) => $this->stringify($a), (array) $p['amenities']);
+            $am = array_filter($am, fn($v) => $v !== '');
+            if ($am) $lines[] = 'Amenities: ' . implode(' - ', $am);
         }
         if (!empty($p['specifications'])) {
             $lines[] = 'Specifications:';
@@ -468,6 +499,15 @@ class AiExportController extends Controller
         $text = preg_replace('/[ \t\x0B\f\r]+/u', ' ', $text);
         $text = preg_replace('/\n{3,}/', "\n\n", $text);
         return trim($text);
+    }
+
+    private function stringify($value): string
+    {
+        if (is_null($value)) return '';
+        if (is_scalar($value)) return (string) $value;
+        if (is_object($value) && method_exists($value, '__toString')) return (string) $value;
+        if (is_array($value)) return implode(', ', array_map(fn($v) => $this->stringify($v), $value));
+        return '';
     }
 }
 
