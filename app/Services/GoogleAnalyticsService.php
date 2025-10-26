@@ -117,7 +117,7 @@ class GoogleAnalyticsService
         if ($tenantId) {
             $params['dimensionFilter'] = new FilterExpression([
                 'filter' => new Filter([
-                    'field_name' => 'customEvent:tenantId',
+                    'field_name' => 'customEvent:tenant_id',
                     'string_filter' => new StringFilter([
                         'value' => $tenantId,
                         'match_type' => MatchType::EXACT,
@@ -236,7 +236,7 @@ class GoogleAnalyticsService
     {
         $tenantFilter = new FilterExpression([
             'filter' => new Filter([
-                'field_name' => 'customEvent:tenantId',
+                'field_name' => 'customEvent:tenant_id',
                 'string_filter' => new StringFilter([
                     'value' => $tenantId,
                     'match_type' => MatchType::EXACT,  // Changed from CONTAINS to EXACT for precise filtering
@@ -393,7 +393,7 @@ class GoogleAnalyticsService
 
         $filterExpression = new FilterExpression([
             'filter' => new Filter([
-                'field_name'    => 'customEvent:tenantId',
+                'field_name'    => 'customEvent:tenant_id',
                 'string_filter' => new StringFilter([
                     'match_type'     => MatchType::EXACT,
                     'value'          => $tenantId,
@@ -460,7 +460,7 @@ class GoogleAnalyticsService
         if ($tenantId) {
             $params['dimensionFilter'] = new FilterExpression([
                 'filter' => new Filter([
-                    'field_name' => 'customEvent:tenantId',
+                    'field_name' => 'customEvent:tenant_id',
                     'string_filter' => new StringFilter([
                         'value' => $tenantId,
                         'match_type' => MatchType::EXACT,
@@ -493,7 +493,7 @@ class GoogleAnalyticsService
         // tenant filter (using custom event parameter sent with each page_view)
         $tenantFilter = new FilterExpression([
             'filter' => new Filter([
-                'field_name'    => 'customEvent:tenantId',
+                'field_name'    => 'customEvent:tenant_id',
                 'string_filter' => new StringFilter([
                     'value'      => $tenantId,
                     'match_type' => MatchType::EXACT,  // Changed from CONTAINS to EXACT for precise filtering
@@ -560,7 +560,11 @@ class GoogleAnalyticsService
                         'start_date' => $startDate->format('Y-m-d'),
                         'end_date'   => $endDate->format('Y-m-d'),
                     ])],
-                    'dimensions' => [new Dimension(['name' => 'pagePath'])],
+                    'dimensions' => [
+                        new Dimension(['name' => 'pageLocation']),  // Full URL
+                        new Dimension(['name' => 'pagePath']),
+                        new Dimension(['name' => 'customEvent:tenant_id'])
+                    ],
                     'metrics'    => [new Metric(['name' => 'screenPageViews'])],
                     'limit'      => 100,
                 ]);
@@ -568,9 +572,16 @@ class GoogleAnalyticsService
 
             $allPaths = [];
             foreach ($response->getRows() as $row) {
-                $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
-                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
-                $allPaths[] = ['path' => $path, 'views' => $views];
+                $fullUrl  = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $path     = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $tenantId = $this->getSafeValue($row->getDimensionValues(), 2, '');
+                $views    = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                $allPaths[] = [
+                    'full_url' => $fullUrl,
+                    'path' => $path, 
+                    'tenant_id' => $tenantId,
+                    'views' => $views
+                ];
             }
             $results['all_paths'] = $allPaths;
             $results['total_paths_found'] = count($allPaths);
@@ -582,7 +593,7 @@ class GoogleAnalyticsService
         try {
             $tenantFilter = new FilterExpression([
                 'filter' => new Filter([
-                    'field_name'    => 'customEvent:tenantId',
+                    'field_name'    => 'customEvent:tenant_id',
                     'string_filter' => new StringFilter([
                         'value'      => $tenantId,
                         'match_type' => MatchType::EXACT,  // Changed from CONTAINS to EXACT for precise filtering
@@ -597,7 +608,11 @@ class GoogleAnalyticsService
                         'start_date' => $startDate->format('Y-m-d'),
                         'end_date'   => $endDate->format('Y-m-d'),
                     ])],
-                    'dimensions'      => [new Dimension(['name' => 'pagePath'])],
+                    'dimensions'      => [
+                        new Dimension(['name' => 'pageLocation']),  // Full URL
+                        new Dimension(['name' => 'pagePath']),
+                        new Dimension(['name' => 'customEvent:tenant_id'])
+                    ],
                     'metrics'         => [new Metric(['name' => 'screenPageViews'])],
                     'dimensionFilter' => $tenantFilter,
                     'limit'           => 100,
@@ -606,9 +621,16 @@ class GoogleAnalyticsService
 
             $tenantPaths = [];
             foreach ($response->getRows() as $row) {
-                $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
-                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
-                $tenantPaths[] = ['path' => $path, 'views' => $views];
+                $fullUrl  = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $path     = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $tenantId = $this->getSafeValue($row->getDimensionValues(), 2, '');
+                $views    = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                $tenantPaths[] = [
+                    'full_url' => $fullUrl,
+                    'path' => $path, 
+                    'tenant_id' => $tenantId,
+                    'views' => $views
+                ];
             }
             $results['tenant_filtered_paths'] = $tenantPaths;
             $results['tenant_paths_found'] = count($tenantPaths);
@@ -636,7 +658,11 @@ class GoogleAnalyticsService
                             'start_date' => $startDate->format('Y-m-d'),
                             'end_date'   => $endDate->format('Y-m-d'),
                         ])],
-                        'dimensions'      => [new Dimension(['name' => 'pagePath'])],
+                        'dimensions'      => [
+                            new Dimension(['name' => 'pageLocation']),  // Full URL
+                            new Dimension(['name' => 'pagePath']),
+                            new Dimension(['name' => 'customEvent:tenant_id'])
+                        ],
                         'metrics'         => [new Metric(['name' => 'screenPageViews'])],
                         'dimensionFilter' => $pathsFilter,
                         'limit'           => count($specificPaths),
@@ -645,9 +671,16 @@ class GoogleAnalyticsService
 
                 $specificPathsResult = [];
                 foreach ($response->getRows() as $row) {
-                    $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
-                    $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
-                    $specificPathsResult[] = ['path' => $path, 'views' => $views];
+                    $fullUrl  = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                    $path     = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                    $tenantId = $this->getSafeValue($row->getDimensionValues(), 2, '');
+                    $views    = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                    $specificPathsResult[] = [
+                        'full_url' => $fullUrl,
+                        'path' => $path, 
+                        'tenant_id' => $tenantId,
+                        'views' => $views
+                    ];
                 }
                 $results['specific_paths_no_tenant_filter'] = $specificPathsResult;
             } catch (\Exception $e) {
@@ -664,7 +697,7 @@ class GoogleAnalyticsService
                         'start_date' => $startDate->format('Y-m-d'),
                         'end_date'   => $endDate->format('Y-m-d'),
                     ])],
-                    'dimensions' => [new Dimension(['name' => 'customEvent:tenantId'])],
+                    'dimensions' => [new Dimension(['name' => 'customEvent:tenant_id'])],
                     'metrics'    => [new Metric(['name' => 'screenPageViews'])],
                     'limit'      => 50,
                 ]);
@@ -705,7 +738,7 @@ class GoogleAnalyticsService
                     ])],
                     'dimensions'      => [
                         new Dimension(['name' => 'pagePath']),
-                        new Dimension(['name' => 'customEvent:tenantId']),
+                        new Dimension(['name' => 'customEvent:tenant_id']),
                     ],
                     'metrics'         => [new Metric(['name' => 'screenPageViews'])],
                     'orderBys'        => [
@@ -895,7 +928,7 @@ class GoogleAnalyticsService
                 ])],
                 'dimensions'      => [
                     new Dimension(['name' => 'pageLocation']), // Full URL
-                    new Dimension(['name' => 'customEvent:tenantId']),
+                    new Dimension(['name' => 'customEvent:tenant_id']),
                 ],
                 'metrics'         => [new Metric(['name' => 'screenPageViews'])],
                 'orderBys'        => [
@@ -911,7 +944,7 @@ class GoogleAnalyticsService
             if ($tenantId) {
                 $params['dimensionFilter'] = new FilterExpression([
                     'filter' => new Filter([
-                        'field_name'    => 'customEvent:tenantId',
+                        'field_name'    => 'customEvent:tenant_id',
                         'string_filter' => new StringFilter([
                             'value'      => $tenantId,
                             'match_type' => MatchType::EXACT,
@@ -1111,7 +1144,7 @@ class GoogleAnalyticsService
                 ])],
                 'dimensions' => [
                     new Dimension(['name' => 'pagePath']),
-                    new Dimension(['name' => 'customEvent:tenantId']),
+                    new Dimension(['name' => 'customEvent:tenant_id']),
                 ],
                 'metrics' => [
                     new Metric(['name' => 'screenPageViews']),
@@ -1130,7 +1163,7 @@ class GoogleAnalyticsService
             if ($tenantId) {
                 $params['dimensionFilter'] = new FilterExpression([
                     'filter' => new Filter([
-                        'field_name'    => 'customEvent:tenantId',
+                        'field_name'    => 'customEvent:tenant_id',
                         'string_filter' => new StringFilter([
                             'value'      => $tenantId,
                             'match_type' => MatchType::EXACT,
@@ -1203,7 +1236,7 @@ class GoogleAnalyticsService
     {
         $tenantFilter = new FilterExpression([
             'filter' => new Filter([
-                'field_name'    => 'customEvent:tenantId',
+                'field_name'    => 'customEvent:tenant_id',
                 'string_filter' => new StringFilter([
                     'value'      => $tenantId,
                     'match_type' => MatchType::EXACT,
