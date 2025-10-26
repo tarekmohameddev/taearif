@@ -224,6 +224,9 @@ class AiExportController extends Controller
         $gallery = $property->galleryImages ? $property->galleryImages->pluck('image')->map(fn($img) => asset($img))->toArray() : [];
         $images = array_values(array_unique(array_filter(array_merge([$featured], $gallery))));
 
+        $frontendBase = $this->tenantFrontendBase($tenantId);
+        $fullUrl = $slug && $frontendBase ? ($frontendBase . '/property/' . $slug) : null;
+
         return [
             'id' => (int) $property->id,
             'project_id' => $property->project_id,
@@ -257,7 +260,7 @@ class AiExportController extends Controller
             'category_id' => $property->category_id,
             'faqs' => $property->faqs ?? [],
             'floor_planning_image' => collect($property->floor_planning_image ?? [])->map(fn($img) => asset($img))->toArray(),
-            'url' => url("/api/v1/tenant-website/{$tenantId}/properties/{$slug}"),
+            'url' => $fullUrl,
         ];
     }
 
@@ -270,6 +273,9 @@ class AiExportController extends Controller
         $featured = $project->featured_image ? asset($project->featured_image) : null;
         $gallery  = $project->galleryImages ? $project->galleryImages->pluck('image')->map(fn($img) => asset($img))->toArray() : [];
         $images   = array_values(array_unique(array_filter(array_merge([$featured], $gallery))));
+
+        $frontendBase = $this->tenantFrontendBase($tenantId);
+        $fullUrl = $slug && $frontendBase ? ($frontendBase . '/project/' . $slug) : null;
 
         return [
             'id' => (int) $project->id,
@@ -308,7 +314,7 @@ class AiExportController extends Controller
             'description' => $description,
             'created_at' => optional($project->created_at)?->toISOString(),
             'updated_at' => optional($project->updated_at)?->toISOString(),
-            'url' => url("/api/v1/tenant-website/{$tenantId}/projects/{$slug}"),
+            'url' => $fullUrl,
         ];
     }
 
@@ -340,6 +346,9 @@ class AiExportController extends Controller
     {
         $lines = [];
         $lines[] = 'Property: ' . ($p['title'] ?: ('#' . $p['id'])) . ' (ID: ' . $p['id'] . ')';
+        if (!empty($p['url'])) {
+            $lines[] = 'URL: ' . $p['url'];
+        }
         if (!empty($p['address'])) $lines[] = 'Address: ' . $p['address'];
         $summary = [];
         if (!empty($p['purpose'])) $summary[] = 'Purpose: ' . $p['purpose'];
@@ -415,6 +424,9 @@ class AiExportController extends Controller
     {
         $lines = [];
         $lines[] = 'Project: ' . ($p['title'] ?: ('#' . $p['id'])) . ' (ID: ' . $p['id'] . ')';
+        if (!empty($p['url'])) {
+            $lines[] = 'URL: ' . $p['url'];
+        }
         $meta = [];
         if (!empty($p['developer'])) $meta[] = 'Developer: ' . $p['developer'];
         $meta[] = 'Published: ' . (!empty($p['published']) ? 'yes' : 'no');
@@ -508,6 +520,29 @@ class AiExportController extends Controller
         if (is_object($value) && method_exists($value, '__toString')) return (string) $value;
         if (is_array($value)) return implode(', ', array_map(fn($v) => $this->stringify($v), $value));
         return '';
+    }
+
+    private function tenantFrontendBase(string $tenantId): ?string
+    {
+        $base = (string) env('FRONTEND_URL', '');
+        if ($base === '') return null;
+        $base = rtrim($base, '/');
+
+        $scheme = parse_url($base, PHP_URL_SCHEME) ?: 'https';
+        $host = parse_url($base, PHP_URL_HOST);
+        if (!$host) {
+            // If FRONTEND_URL is just a host like "taearif.com"
+            $host = preg_replace('#^https?://#', '', $base);
+        }
+        // Drop leading www.
+        $host = preg_replace('/^www\./i', '', (string) $host);
+
+        // Sanitize tenant subdomain
+        $sub = strtolower(preg_replace('/[^a-z0-9-]/i', '-', $tenantId));
+        $sub = trim($sub, '-');
+        if ($sub === '') return $scheme . '://' . $host;
+
+        return $scheme . '://' . $sub . '.' . $host;
     }
 }
 
