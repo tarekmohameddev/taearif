@@ -24,6 +24,7 @@ use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\Api\{
     MeAbilitiesController,
     CRMController,
+    ReferralController,
     content\ApiContentSectionsController,
     ThemeSettingsController,
     AuthController,
@@ -174,6 +175,10 @@ Route::post('/login', [AuthController::class, 'login']);
 // Password reset routes
 Route::post('/auth/forgot-password', [ResetPasswordController::class, 'forgotPassword']); // Send reset link
 Route::post('/auth/verify-reset-code', [ResetPasswordController::class, 'verifyResetCode']); // Verify reset code
+
+// Public referral validation endpoints
+Route::get('/referrals', [ReferralController::class, 'validateCode']); // /api/referrals?code=ABCD1234
+Route::get('/referrals/{code}', [ReferralController::class, 'show']);  // /api/referrals/ABCD1234
 
 
 
@@ -805,7 +810,7 @@ if (!app()->environment('production')) {
 //Route::post('/whatsapp/webhook', [App\Http\Controllers\Api\WhatsAppWebhookController::class, 'handleWebhook']);
 
 // Tenant Website API
-Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve'])->group(function () {
+Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.id.response'])->group(function () {
     Route::post('getTenant', [GetTenantController::class, 'store']);
     Route::post('save-pages', [SavePagesController::class, 'store'])->middleware('auth:sanctum');
 

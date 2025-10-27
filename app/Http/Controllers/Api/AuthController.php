@@ -316,6 +316,11 @@ class AuthController extends Controller
                 ]);
             }
 
+            // Map ?code query param to referral_code if provided
+            if (!$request->filled('referral_code') && $request->filled('code')) {
+                $request->merge(['referral_code' => $request->code]);
+            }
+
             // Referral code (optional)
             $referrer = null;
             if ($request->filled('referral_code')) {
