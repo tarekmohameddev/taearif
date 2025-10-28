@@ -499,7 +499,7 @@ class PropertyController extends Controller
     }
 
 
-    public function show($id)
+    public function show($id, GoogleAnalyticsService $analytics)
     {
         try {
             $property = Property::with([
@@ -514,6 +514,43 @@ class PropertyController extends Controller
             $content = $property->contents->first();
             $characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
 
+            // Fetch views from Google Analytics
+            $views = 0;
+            if ($content && $content->slug && $property->user) {
+                try {
+                    $days = (int) request()->query('days', 30);
+                    
+                    // Build paths for this property (with and without language prefixes)
+                    $paths = [
+                        "/property/{$content->slug}",
+                        "/ar/property/{$content->slug}",
+                        "/en/property/{$content->slug}",
+                    ];
+
+                    $allData = $analytics->getAllAnalyticsWithFilters(
+                        now()->subDays($days),
+                        now(),
+                        [
+                            'tenant_ids' => [$property->user->username],
+                            'exclude_empty_tenant' => false,
+                            'limit' => count($paths) * 10,
+                        ]
+                    );
+
+                    // Sum views across all path variants
+                    foreach ($allData['data'] as $item) {
+                        if (in_array($item['path'], $paths)) {
+                            $views += (int) $item['views'];
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Google Analytics error in admin PropertyController show', [
+                        'property_id' => $property->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             $formattedProperty = array_merge([
                 'id' => $property->id,
                 'project_id' => $property->project_id,
@@ -521,6 +558,7 @@ class PropertyController extends Controller
                 'title' => optional($content)->title ?? '',
                 'address' => optional($content)->address ?? '',
                 'price' => $property->price ?? '0.00',
+                'views' => $views,
                 'pricePerMeter' => $property->pricePerMeter,
                 'purpose' => $property->purpose,
                 'type' => $property->type ?? '',
@@ -1515,16 +1553,42 @@ class PropertyController extends Controller
         $paths = [];
         foreach ($slugs as $slug) {
             $paths[] = "/property/{$slug}";
+            $paths[] = "/ar/property/{$slug}";
+            $paths[] = "/en/property/{$slug}";
         }
 
-        // Query GA4 once for this page’s paths
-        $viewsByPath = $analytics->getPageViewsForPaths($tenantId, $startDate, $endDate, $paths);
-
-        // Summarize views by slug (sum across any matching path variants)
+        // Query GA4 with backend filtering to get ALL data (including historical with empty tenant_id)
         $viewsBySlug = [];
-        foreach ($slugs as $slug) {
-            $viewsBySlug[$slug] =
-                ($viewsByPath["/property/{$slug}"] ?? 0);
+        if (!empty($paths)) {
+            try {
+                $allData = $analytics->getAllAnalyticsWithFilters(
+                    $startDate,
+                    $endDate,
+                    [
+                        'tenant_ids' => [$tenantId],
+                        'exclude_empty_tenant' => false,
+                        'limit' => count($paths) * 10,
+                    ]
+                );
+
+                // Build a map of slug => total views
+                foreach ($allData['data'] as $item) {
+                    $path = $item['path'];
+                    $views = (int) $item['views'];
+                    
+                    // Extract slug from path and add to slug view map
+                    foreach ($slugs as $slug) {
+                        if (strpos($path, $slug) !== false) {
+                            $viewsBySlug[$slug] = ($viewsBySlug[$slug] ?? 0) + $views;
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error('Google Analytics error in admin PropertyController', [
+                    'tenant' => $tenantId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         // ===== Get available purposes from properties =====
