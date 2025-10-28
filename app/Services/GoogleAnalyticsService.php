@@ -790,20 +790,28 @@ class GoogleAnalyticsService
                 ]);
             }, 'getAllAnalyticsWithFilters');
 
-            // Step 2: Parse all data
+            // Step 2: Parse all data and normalize tenant_id
             $allData = [];
             foreach ($response->getRows() as $row) {
                 $path      = $this->getSafeValue($row->getDimensionValues(), 0, '');
-                $tenantId  = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 1, '');
                 $views     = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
 
-                if ($path !== '') {
-                    $allData[] = [
-                        'tenant_id' => $tenantId,
-                        'path' => $path,
-                        'views' => $views,
-                    ];
+                if ($path === '') {
+                    continue;
                 }
+
+                // Normalize tenant_id: use recorded value if valid, otherwise derive from path slug
+                $derivedTenant = $recordedTenant;
+                if (empty($derivedTenant) || $derivedTenant === '(not set)') {
+                    $derivedTenant = $this->deriveTenantFromPathSlug($path);
+                }
+
+                $allData[] = [
+                    'tenant_id' => $derivedTenant,
+                    'path' => $path,
+                    'views' => $views,
+                ];
             }
 
             // Step 3: Apply backend filters
@@ -1203,6 +1211,80 @@ class GoogleAnalyticsService
         } catch (\Exception $e) {
             Log::warning('Failed to derive tenant from URL', [
                 'url' => $fullUrl,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Derive tenant from path slug by querying the database
+     * Paths like /ar/property/{slug} or /ar/project/{slug} are parsed
+     * The slug is looked up in the DB to find the owning tenant (user)
+     * 
+     * @param string $path - GA4 pagePath (e.g., /ar/property/shk-llaygar-fy-sharaa-rkm-399)
+     * @return string|null - tenant username or null if not found
+     */
+    protected function deriveTenantFromPathSlug(string $path): ?string
+    {
+        try {
+            // Parse path: /ar/property/{slug} or /en/project/{slug} etc.
+            // Remove leading slash and split
+            $parts = array_filter(explode('/', trim($path, '/')));
+            
+            if (count($parts) < 2) {
+                return null;
+            }
+
+            // Detect type and slug
+            // Paths can be: /property/{slug}, /ar/property/{slug}, /en/property/{slug}
+            $type = null;
+            $slug = null;
+
+            if (in_array($parts[0], ['property', 'project'])) {
+                // Path is /property/{slug} or /project/{slug}
+                $type = $parts[0];
+                $slug = $parts[1] ?? null;
+            } elseif (count($parts) >= 3 && in_array($parts[1], ['property', 'project'])) {
+                // Path is /ar/property/{slug} or /en/project/{slug}
+                $type = $parts[1];
+                $slug = $parts[2] ?? null;
+            }
+
+            if (!$type || !$slug) {
+                return null;
+            }
+
+            // Query database based on type
+            if ($type === 'property') {
+                // Look up property by slug in user_property_contents
+                $property = \DB::table('user_property_contents as upc')
+                    ->join('user_properties as up', 'up.id', '=', 'upc.property_id')
+                    ->join('users as u', 'u.id', '=', 'up.user_id')
+                    ->where('upc.slug', $slug)
+                    ->select('u.username')
+                    ->first();
+
+                if ($property) {
+                    return $property->username;
+                }
+            } elseif ($type === 'project') {
+                // Look up project by slug in project_contents
+                $project = \DB::table('project_contents as pc')
+                    ->join('projects as p', 'p.id', '=', 'pc.project_id')
+                    ->join('users as u', 'u.id', '=', 'p.user_id')
+                    ->where('pc.slug', $slug)
+                    ->select('u.username')
+                    ->first();
+
+                if ($project) {
+                    return $project->username;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to derive tenant from path slug', [
+                'path' => $path,
                 'error' => $e->getMessage(),
             ]);
         }
