@@ -115,24 +115,29 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
 @php
     $fullHost = request()->getHost();
-    $tenantId = explode('.', $fullHost)[0];
+    $hostParts = explode('.', $fullHost);
+    // Consider it a tenant subdomain only if there are 3+ parts (e.g., lira.taearif.com)
+    $subdomain = count($hostParts) > 2 ? $hostParts[0] : null;
 @endphp
 <!-- Google tag (gtag.js) -->
 
+@if ($subdomain && $subdomain !== 'www')
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-RVFKM2F9ZN"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
+  function gtag(){dataLayer.push(arguments);} 
   gtag('js', new Date());
 
   gtag('config', 'G-RVFKM2F9ZN', {
     'custom_map': {
       'dimension1': 'tenant_id'
     },
-    'tenant_id': '{{$user->username}}'
+    // Always send the tenant username as tenant_id
+    'tenant_id': '{{ $user->username }}'
   });
   console.log('GA4 tenant_id = {{ $user->username }}');
 </script>
+@endif
 
 </head>
 
