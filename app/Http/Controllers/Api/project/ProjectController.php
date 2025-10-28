@@ -90,7 +90,36 @@ class ProjectController extends Controller
         }
 
         // One GA call for this page
-        $viewsByPath = empty($paths) ? [] : $analytics->getPageViewsForPaths($tenantId, $startDate, $endDate, $paths);
+        // Use backend filtering to get ALL data (including historical), not just recent tenant-filtered data
+        $viewsByPath = [];
+        if (!empty($paths)) {
+            try {
+                $allData = $analytics->getAllAnalyticsWithFilters(
+                    $startDate,
+                    $endDate,
+                    [
+                        'tenant_ids' => [$tenantId],       // Filter by this tenant
+                        'exclude_empty_tenant' => false,   // Include old data (will be matched by slug)
+                        'limit' => count($paths) * 10,     // Get more to ensure we capture all variants
+                    ]
+                );
+
+                // Build a map of path => views from all returned data
+                foreach ($allData['data'] as $item) {
+                    $path = $item['path'];
+                    $views = (int) $item['views'];
+                    if (in_array($path, $paths)) {
+                        $viewsByPath[$path] = ($viewsByPath[$path] ?? 0) + $views;
+                    }
+                }
+            } catch (\Exception $e) {
+                // Log error but continue without views
+                \Log::error('Google Analytics error in ProjectController', [
+                    'tenant' => $tenantId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         // Sum views per project across its content slugs and language variations
         $visitsByProject = [];

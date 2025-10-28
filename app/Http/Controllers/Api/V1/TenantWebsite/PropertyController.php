@@ -147,15 +147,30 @@ class PropertyController extends Controller
         }
 
         // Get view counts from Google Analytics
+        // Use backend filtering to get ALL data (including historical), not just recent tenant-filtered data
         $viewsByPath = [];
         if (!empty($paths)) {
             try {
-                $viewsByPath = $analytics->getPageViewsForPaths(
-                    $tenant->username,
+                // Use getAllAnalyticsWithFilters to query all data, then filter by paths
+                // This includes historical data with empty tenant_id that will be derived from slug
+                $allData = $analytics->getAllAnalyticsWithFilters(
                     now()->subDays($days),
                     now(),
-                    $paths
+                    [
+                        'tenant_ids' => [$tenant->username],  // Filter by this tenant
+                        'exclude_empty_tenant' => false,      // Include old data (will be matched by slug)
+                        'limit' => count($paths) * 10,        // Get more to ensure we capture all variants
+                    ]
                 );
+
+                // Build a map of path => views from all returned data
+                foreach ($allData['data'] as $item) {
+                    $path = $item['path'];
+                    $views = (int) $item['views'];
+                    if (in_array($path, $paths)) {
+                        $viewsByPath[$path] = ($viewsByPath[$path] ?? 0) + $views;
+                    }
+                }
 
                 // Optional: Log for debugging (remove in production)
                 if ($request->boolean('debug_views')) {
