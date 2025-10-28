@@ -665,7 +665,7 @@ class AnalyticsDashboardController extends Controller
         $results = [
             'status' => 'testing',
             'tenant_id' => $tenantId,
-            'slug' => $slug,
+            'slug' => $slug ?: '(not provided - showing all tenant data)',
             'date_range' => [
                 'start' => $startDate->format('Y-m-d'),
                 'end' => $endDate->format('Y-m-d'),
@@ -674,6 +674,91 @@ class AnalyticsDashboardController extends Controller
             'tests' => [],
         ];
 
+        // If no slug provided, show overview of all tenant data
+        if (empty($slug)) {
+            \Log::info('=== OVERVIEW MODE: No slug provided, showing all tenant data ===', [
+                'tenant_id' => $tenantId,
+                'days' => $days,
+            ]);
+
+            // Get all analytics data for this tenant
+            try {
+                $allData = $this->analytics->getAllAnalyticsWithFilters(
+                    $startDate,
+                    $endDate,
+                    [
+                        'tenant_ids' => [$tenantId],
+                        'exclude_empty_tenant' => false,
+                        'limit' => 100,
+                    ]
+                );
+
+                // Group by path and sum views
+                $pathSummary = [];
+                foreach ($allData['data'] as $item) {
+                    $path = $item['path'];
+                    if (!isset($pathSummary[$path])) {
+                        $pathSummary[$path] = 0;
+                    }
+                    $pathSummary[$path] += (int) $item['views'];
+                }
+
+                // Sort by views descending
+                arsort($pathSummary);
+
+                $results['tests']['overview_all_pages'] = [
+                    'status' => 'success',
+                    'description' => 'All pages viewed by this tenant in the date range',
+                    'total_items' => count($pathSummary),
+                    'total_views' => array_sum($pathSummary),
+                    'top_pages' => array_slice($pathSummary, 0, 20, true),  // Top 20 pages
+                    'all_pages' => $pathSummary,
+                    'note' => 'Slug parameter was empty, showing overview of all pages',
+                ];
+                \Log::info('Overview Results:', $pathSummary);
+            } catch (\Exception $e) {
+                $results['tests']['overview_all_pages'] = [
+                    'status' => 'failed',
+                    'error' => $e->getMessage(),
+                ];
+                \Log::error('Overview Failed:', ['error' => $e->getMessage()]);
+            }
+
+            // Also get today's data
+            try {
+                $todayData = $this->analytics->getTodayData($tenantId);
+                $results['tests']['todays_overview'] = [
+                    'status' => 'success',
+                    'description' => 'Real-time data for today (updates every 1-2 hours)',
+                    'total_views_today' => $todayData['total_views'],
+                    'pages_count' => count($todayData['pages']),
+                    'pages' => array_slice($todayData['pages'], 0, 20, true),
+                ];
+                \Log::info('Today\'s Overview:', $todayData);
+            } catch (\Exception $e) {
+                $results['tests']['todays_overview'] = [
+                    'status' => 'failed',
+                    'error' => $e->getMessage(),
+                ];
+                \Log::error('Today\'s Overview Failed:', ['error' => $e->getMessage()]);
+            }
+
+            $results['summary'] = [
+                'all_tests_passed' => !array_filter($results['tests'], fn($t) => ($t['status'] ?? '') === 'failed'),
+                'interpretation' => [
+                    'If total_views > 0' => '✅ GA4 is receiving and processing data for this tenant!',
+                    'If total_items > 0' => '✅ Multiple pages are being tracked.',
+                    'If all shows 0' => '❌ No GA4 events for this tenant. Check: 1) Tenant tracking code, 2) GA4 configuration, 3) Measurement ID.',
+                    'If today\'s data shows pages' => '✅ GA4 is collecting real-time events (updates every 1-2 hours).',
+                ],
+                'next_steps' => 'To debug a specific page, provide the slug parameter: ?tenant_id=' . $tenantId . '&slug=YOUR_SLUG&days=' . $days,
+            ];
+
+            \Log::info('=== DIAGNOSTIC TEST (OVERVIEW) COMPLETE ===', $results);
+            return response()->json($results);
+        }
+
+        // ORIGINAL SLUG-SPECIFIC DIAGNOSTIC LOGIC (when slug IS provided)
         // TEST 1: Query with explicit tenant_id filter (new data)
         \Log::info('=== TEST 1: Query with tenant_id filter ===', [
             'tenant_id' => $tenantId,
@@ -705,7 +790,7 @@ class AnalyticsDashboardController extends Controller
 
         // TEST 2: Query ALL data for slug (without tenant filter)
         \Log::info('=== TEST 2: Query all data for slug ===');
-        
+
         try {
             $allData = $this->analytics->getAllAnalyticsWithFilters(
                 $startDate,
@@ -715,7 +800,7 @@ class AnalyticsDashboardController extends Controller
                     'limit' => 100,
                 ]
             );
-            
+
             $results['tests']['test2_all_data_for_slug'] = [
                 'status' => 'success',
                 'description' => 'Query ALL data for this slug (regardless of tenant_id)',
@@ -735,7 +820,7 @@ class AnalyticsDashboardController extends Controller
 
         // TEST 3: Check if slug exists in database
         \Log::info('=== TEST 3: Verify slug in database ===');
-        
+
         try {
             $property = \DB::table('user_property_contents as upc')
                 ->join('user_properties as up', 'up.id', '=', 'upc.property_id')
@@ -772,15 +857,15 @@ class AnalyticsDashboardController extends Controller
 
         // TEST 4: Get today's data for debugging
         \Log::info('=== TEST 4: Today\'s data (near real-time) ===');
-        
+
         try {
             $todayData = $this->analytics->getTodayData($tenantId);
-            
+
             // Filter for our slug
             $relevantPages = array_filter($todayData['pages'], function($page) use ($slug) {
                 return strpos($page['path'], $slug) !== false;
             });
-            
+
             $results['tests']['test4_todays_data'] = [
                 'status' => 'success',
                 'description' => 'Today\'s data (updates every 1-2 hours)',
@@ -802,7 +887,7 @@ class AnalyticsDashboardController extends Controller
 
         // TEST 5: Check GA4 property configuration
         \Log::info('=== TEST 5: GA4 Configuration ===');
-        
+
         $results['tests']['test5_ga4_config'] = [
             'status' => 'info',
             'measurement_id' => config('services.google.analytics_property_id'),
