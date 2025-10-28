@@ -490,17 +490,6 @@ class GoogleAnalyticsService
             return [];
         }
 
-        // tenant filter (using custom event parameter sent with each page_view)
-        $tenantFilter = new FilterExpression([
-            'filter' => new Filter([
-                'field_name'    => 'customEvent:tenant_id',
-                'string_filter' => new StringFilter([
-                    'value'      => $tenantId,
-                    'match_type' => MatchType::EXACT,  // Changed from CONTAINS to EXACT for precise filtering
-                ]),
-            ]),
-        ]);
-
         // only the specific page paths we care about
         $pathsFilter = new FilterExpression([
             'filter' => new Filter([
@@ -512,34 +501,84 @@ class GoogleAnalyticsService
             ]),
         ]);
 
-        $dimensionFilter = new FilterExpression([
+        $map = [];
+
+        // ===== QUERY 1: Get events WITH matching tenant_id (new data) =====
+        $tenantFilter = new FilterExpression([
+            'filter' => new Filter([
+                'field_name'    => 'customEvent:tenant_id',
+                'string_filter' => new StringFilter([
+                    'value'      => $tenantId,
+                    'match_type' => MatchType::EXACT,
+                ]),
+            ]),
+        ]);
+
+        $dimensionFilter1 = new FilterExpression([
             'and_group' => new FilterExpressionList([
                 'expressions' => [$tenantFilter, $pathsFilter],
             ]),
         ]);
 
-        $response = $this->executeWithRetry(function() use ($startDate, $endDate, $dimensionFilter, $paths) {
-            return $this->client->runReport([
-                'property'        => $this->propertyId,
-                'dateRanges'      => [new DateRange([
-                    'start_date' => $startDate->format('Y-m-d'),
-                    'end_date'   => $endDate->format('Y-m-d'),
-                ])],
-                'dimensions'      => [new Dimension(['name' => 'pagePath'])],
-                'metrics'         => [new Metric(['name' => 'screenPageViews'])],
-                'dimensionFilter' => $dimensionFilter,
-                'limit'           => count($paths), // enough to cover all candidates
-            ]);
-        }, 'getPageViewsForPaths');
+        try {
+            $response1 = $this->executeWithRetry(function() use ($startDate, $endDate, $dimensionFilter1, $paths) {
+                return $this->client->runReport([
+                    'property'        => $this->propertyId,
+                    'dateRanges'      => [new DateRange([
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date'   => $endDate->format('Y-m-d'),
+                    ])],
+                    'dimensions'      => [new Dimension(['name' => 'pagePath'])],
+                    'metrics'         => [new Metric(['name' => 'screenPageViews'])],
+                    'dimensionFilter' => $dimensionFilter1,
+                    'limit'           => count($paths),
+                ]);
+            }, 'getPageViewsForPaths_withTenant');
 
-        $map = [];
-        foreach ($response->getRows() as $row) {
-            $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
-            $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
-            if ($path !== '') {
-                $map[$path] = $views;
+            foreach ($response1->getRows() as $row) {
+                $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                if ($path !== '') {
+                    $map[$path] = ($map[$path] ?? 0) + $views;
+                }
             }
+        } catch (\Exception $e) {
+            Log::warning('Query 1 (with tenant_id) failed', ['error' => $e->getMessage()]);
         }
+
+        // ===== QUERY 2: Get events WITHOUT tenant filter (recover old data with empty tenant_id) =====
+        try {
+            $response2 = $this->executeWithRetry(function() use ($startDate, $endDate, $pathsFilter) {
+                return $this->client->runReport([
+                    'property'        => $this->propertyId,
+                    'dateRanges'      => [new DateRange([
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date'   => $endDate->format('Y-m-d'),
+                    ])],
+                    'dimensions'      => [
+                        new Dimension(['name' => 'pagePath']),
+                        new Dimension(['name' => 'customEvent:tenant_id']),
+                    ],
+                    'metrics'         => [new Metric(['name' => 'screenPageViews'])],
+                    'dimensionFilter' => $pathsFilter,
+                    'limit'           => count($paths),
+                ]);
+            }, 'getPageViewsForPaths_noTenant');
+
+            foreach ($response2->getRows() as $row) {
+                $path  = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+
+                // Only include if tenant_id was empty in GA4 (old data without tracking)
+                if ($path !== '' && empty($recordedTenant)) {
+                    $map[$path] = ($map[$path] ?? 0) + $views;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Query 2 (without tenant_id filter) failed', ['error' => $e->getMessage()]);
+        }
+
         return $map;
     }
 
@@ -962,22 +1001,35 @@ class GoogleAnalyticsService
 
             foreach ($response->getRows() as $row) {
                 $pageLocation = $this->getSafeValue($row->getDimensionValues(), 0, '');
-                $tenantIdValue = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 1, '');
                 $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
-                
-                if ($pageLocation !== '') {
-                    // Parse URL to extract domain and path
-                    $parsedUrl = parse_url($pageLocation);
-                    
-                    $locations[] = [
-                        'full_url' => $pageLocation,
-                        'domain' => $parsedUrl['host'] ?? '',
-                        'path' => $parsedUrl['path'] ?? '/',
-                        'tenant_id' => $tenantIdValue,
-                        'views' => $views,
-                    ];
-                    $totalViews += $views;
+
+                if ($pageLocation === '') {
+                    continue;
                 }
+
+                // Parse URL to extract domain and path
+                $parsedUrl = parse_url($pageLocation);
+
+                // Normalize tenant_id: use recorded value, or derive from URL if empty
+                $derivedTenant = $recordedTenant;
+                if (empty($derivedTenant)) {
+                    $derivedTenant = $this->deriveTenantFromUrl($pageLocation);
+                }
+
+                // If tenant filter is active, skip rows that don't match
+                if ($tenantId && $derivedTenant !== $tenantId) {
+                    continue;
+                }
+
+                $locations[] = [
+                    'full_url' => $pageLocation,
+                    'domain' => $parsedUrl['host'] ?? '',
+                    'path' => $parsedUrl['path'] ?? '/',
+                    'tenant_id' => $derivedTenant,
+                    'views' => $views,
+                ];
+                $totalViews += $views;
             }
 
             return [
@@ -1123,6 +1175,42 @@ class GoogleAnalyticsService
     }
 
     /**
+     * Derive tenant from page location URL
+     * Extracts subdomain from taearif.com URLs
+     * Returns null if subdomain is www, api, or not found
+     */
+    protected function deriveTenantFromUrl(string $fullUrl): ?string
+    {
+        $productionDomain = 'taearif.com';
+
+        try {
+            $parsed = parse_url($fullUrl);
+            $host = $parsed['host'] ?? '';
+
+            if (!$host) {
+                return null;
+            }
+
+            // Extract subdomain from taearif.com domain
+            if (strpos($host, $productionDomain) !== false) {
+                $subdomain = str_replace('.' . $productionDomain, '', $host);
+
+                // Filter out reserved subdomains
+                if ($subdomain && $subdomain !== 'www' && $subdomain !== 'api' && !empty($subdomain)) {
+                    return $subdomain;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to derive tenant from URL', [
+                'url' => $fullUrl,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return null;
+    }
+
+    /**
      * Get today's analytics data (near realtime with tenant filtering)
      * Returns data from today only - updates every 1-2 hours
      * 
@@ -1144,6 +1232,7 @@ class GoogleAnalyticsService
                 ])],
                 'dimensions' => [
                     new Dimension(['name' => 'pagePath']),
+                    new Dimension(['name' => 'pageLocation']),  // Add full URL to derive tenant
                     new Dimension(['name' => 'customEvent:tenant_id']),
                 ],
                 'metrics' => [
@@ -1182,20 +1271,34 @@ class GoogleAnalyticsService
 
             foreach ($response->getRows() as $row) {
                 $path = $this->getSafeValue($row->getDimensionValues(), 0, '');
-                $tenantIdValue = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $fullUrl = $this->getSafeValue($row->getDimensionValues(), 1, '');
+                $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 2, '');
                 $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
                 $users = (int) $this->getSafeValue($row->getMetricValues(), 1, 0);
-                
-                if ($path !== '') {
-                    $pages[] = [
-                        'path' => $path,
-                        'tenant_id' => $tenantIdValue,
-                        'views' => $views,
-                        'users' => $users,
-                    ];
-                    $totalViews += $views;
-                    $totalUsers += $users;
+
+                if ($path === '') {
+                    continue;
                 }
+
+                // Normalize tenant_id: use recorded value, or derive from URL if empty
+                $derivedTenant = $recordedTenant;
+                if (empty($derivedTenant)) {
+                    $derivedTenant = $this->deriveTenantFromUrl($fullUrl);
+                }
+
+                // If tenant filter is active, skip rows that don't match
+                if ($tenantId && $derivedTenant !== $tenantId) {
+                    continue;
+                }
+
+                $pages[] = [
+                    'path' => $path,
+                    'tenant_id' => $derivedTenant,
+                    'views' => $views,
+                    'users' => $users,
+                ];
+                $totalViews += $views;
+                $totalUsers += $users;
             }
 
             return [
