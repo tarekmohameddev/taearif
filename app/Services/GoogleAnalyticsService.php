@@ -570,9 +570,20 @@ class GoogleAnalyticsService
                 $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 1, '');
                 $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
 
+                if ($path === '') {
+                    continue;
+                }
+
                 // Only include if tenant_id was empty in GA4 (old data without tracking)
-                if ($path !== '' && empty($recordedTenant)) {
-                    $map[$path] = ($map[$path] ?? 0) + $views;
+                if (empty($recordedTenant)) {
+                    // Verify this path belongs to the requesting tenant by slug lookup
+                    $derivedTenant = $this->deriveTenantFromPathSlug($path);
+                    
+                    // Only include if slug matches requested tenant OR if we can't determine tenant
+                    // (in the latter case, include it anyway as fallback for historical data)
+                    if ($derivedTenant === null || $derivedTenant === $tenantId) {
+                        $map[$path] = ($map[$path] ?? 0) + $views;
+                    }
                 }
             }
         } catch (\Exception $e) {
