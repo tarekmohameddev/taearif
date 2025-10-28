@@ -197,6 +197,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'require.acti
     // Analytics Views Endpoints
     Route::get('/dashboard/debug-ga-views', [AnalyticsDashboardController::class, 'debugGAViews']); // Production: tenant-specific views only
     Route::get('/dashboard/ga-full-diagnostics', [AnalyticsDashboardController::class, 'gaFullDiagnostics']); // Development: full diagnostic data
+    Route::get('/dashboard/diagnostic-ga-test', [AnalyticsDashboardController::class, 'diagnosticGATest']); // Comprehensive GA4 diagnostic tests
     Route::get('/analytics/search', [AnalyticsDashboardController::class, 'searchAnalytics']); // Flexible search with backend filtering
     Route::get('/analytics/page-locations', [AnalyticsDashboardController::class, 'getPageLocations']); // Get full URLs (page_location)
     Route::get('/analytics/today', [AnalyticsDashboardController::class, 'getToday']); // Get today's data (near realtime, perfect tenant filtering)
