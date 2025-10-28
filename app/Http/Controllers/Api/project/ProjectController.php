@@ -71,23 +71,35 @@ class ProjectController extends Controller
             return [$project->id => $slugs];
         });
 
-        // Build GA pagePaths: /{username}/project/{slug}
+        // Build GA pagePaths to match public URLs: /project/{slug}, /ar/project/{slug}, /en/project/{slug}
+        $supportedLanguages = ['ar', 'en'];
         $paths = [];
+        $slugToPaths = [];
         foreach ($slugsPerProject as $slugs) {
             foreach ($slugs as $slug) {
-                $paths[] = "/{$tenantId}/project/{$slug}";
+                $slugToPaths[$slug] = [];
+                $withoutLang = "/project/{$slug}";
+                $paths[] = $withoutLang;
+                $slugToPaths[$slug][] = $withoutLang;
+                foreach ($supportedLanguages as $lang) {
+                    $withLang = "/{$lang}/project/{$slug}";
+                    $paths[] = $withLang;
+                    $slugToPaths[$slug][] = $withLang;
+                }
             }
         }
 
         // One GA call for this page
-        $viewsByPath = $analytics->getPageViewsForPaths($tenantId, $startDate, $endDate, $paths);
+        $viewsByPath = empty($paths) ? [] : $analytics->getPageViewsForPaths($tenantId, $startDate, $endDate, $paths);
 
-        // Sum views per project across its content slugs
+        // Sum views per project across its content slugs and language variations
         $visitsByProject = [];
         foreach ($slugsPerProject as $projectId => $slugs) {
             $sum = 0;
             foreach ($slugs as $slug) {
-                $sum += $viewsByPath["/{$tenantId}/project/{$slug}"] ?? 0;
+                foreach (($slugToPaths[$slug] ?? []) as $p) {
+                    $sum += (int) ($viewsByPath[$p] ?? 0);
+                }
             }
             $visitsByProject[$projectId] = $sum;
         }
