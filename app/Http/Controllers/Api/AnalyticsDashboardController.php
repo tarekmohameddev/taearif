@@ -647,4 +647,185 @@ class AnalyticsDashboardController extends Controller
         ]);
     }
 
+    /**
+     * Comprehensive GA4 Diagnostic Test Endpoint
+     * Tests GA4 tracking from multiple angles to identify issues
+     * 
+     * Usage: GET /api/dashboard/diagnostic-ga-test?tenant_id=lira&slug=shk-fakhr-llaygar-hy-alaaard-shmal-alryad&days=7
+     */
+    public function diagnosticGATest(Request $request)
+    {
+        $tenantId = $request->input('tenant_id', $this->tenantId($request));
+        $slug = $request->input('slug', '');
+        $days = (int) $request->input('days', 7);
+        
+        $startDate = Carbon::now()->subDays($days);
+        $endDate = Carbon::now();
+
+        $results = [
+            'status' => 'testing',
+            'tenant_id' => $tenantId,
+            'slug' => $slug,
+            'date_range' => [
+                'start' => $startDate->format('Y-m-d'),
+                'end' => $endDate->format('Y-m-d'),
+                'days' => $days,
+            ],
+            'tests' => [],
+        ];
+
+        // TEST 1: Query with explicit tenant_id filter (new data)
+        \Log::info('=== TEST 1: Query with tenant_id filter ===', [
+            'tenant_id' => $tenantId,
+        ]);
+        
+        $paths = [
+            "/property/{$slug}",
+            "/ar/property/{$slug}",
+            "/en/property/{$slug}",
+        ];
+
+        try {
+            $result1 = $this->analytics->getPageViewsForPaths($tenantId, $startDate, $endDate, $paths);
+            $results['tests']['test1_with_tenant_filter'] = [
+                'status' => 'success',
+                'description' => 'Query with tenant_id filter (new data with tracking)',
+                'paths_queried' => $paths,
+                'results' => $result1,
+                'total_views' => array_sum($result1),
+            ];
+            \Log::info('TEST 1 Results:', $result1);
+        } catch (\Exception $e) {
+            $results['tests']['test1_with_tenant_filter'] = [
+                'status' => 'failed',
+                'error' => $e->getMessage(),
+            ];
+            \Log::error('TEST 1 Failed:', ['error' => $e->getMessage()]);
+        }
+
+        // TEST 2: Query ALL data for slug (without tenant filter)
+        \Log::info('=== TEST 2: Query all data for slug ===');
+        
+        try {
+            $allData = $this->analytics->getAllAnalyticsWithFilters(
+                $startDate,
+                $endDate,
+                [
+                    'path_contains' => "/property/{$slug}",
+                    'limit' => 100,
+                ]
+            );
+            
+            $results['tests']['test2_all_data_for_slug'] = [
+                'status' => 'success',
+                'description' => 'Query ALL data for this slug (regardless of tenant_id)',
+                'path_filter' => "/property/{$slug}",
+                'data_found' => $allData['data'],
+                'total_items' => $allData['total_items'],
+                'total_views' => $allData['total_views'],
+            ];
+            \Log::info('TEST 2 Results:', $allData);
+        } catch (\Exception $e) {
+            $results['tests']['test2_all_data_for_slug'] = [
+                'status' => 'failed',
+                'error' => $e->getMessage(),
+            ];
+            \Log::error('TEST 2 Failed:', ['error' => $e->getMessage()]);
+        }
+
+        // TEST 3: Check if slug exists in database
+        \Log::info('=== TEST 3: Verify slug in database ===');
+        
+        try {
+            $property = \DB::table('user_property_contents as upc')
+                ->join('user_properties as up', 'up.id', '=', 'upc.property_id')
+                ->join('users as u', 'u.id', '=', 'up.user_id')
+                ->whereRaw('LOWER(upc.slug) = ?', [strtolower($slug)])
+                ->select('u.username', 'upc.slug', 'upc.title', 'upc.id')
+                ->first();
+
+            if ($property) {
+                $results['tests']['test3_slug_in_db'] = [
+                    'status' => 'found',
+                    'description' => 'Slug verified in database',
+                    'slug' => $property->slug,
+                    'title' => $property->title,
+                    'tenant_username' => $property->username,
+                    'content_id' => $property->id,
+                ];
+                \Log::info('TEST 3: Slug found in DB', (array)$property);
+            } else {
+                $results['tests']['test3_slug_in_db'] = [
+                    'status' => 'not_found',
+                    'description' => 'Slug NOT found in database',
+                    'slug_searched' => $slug,
+                ];
+                \Log::warning('TEST 3: Slug not found', ['slug' => $slug]);
+            }
+        } catch (\Exception $e) {
+            $results['tests']['test3_slug_in_db'] = [
+                'status' => 'error',
+                'error' => $e->getMessage(),
+            ];
+            \Log::error('TEST 3 Failed:', ['error' => $e->getMessage()]);
+        }
+
+        // TEST 4: Get today's data for debugging
+        \Log::info('=== TEST 4: Today\'s data (near real-time) ===');
+        
+        try {
+            $todayData = $this->analytics->getTodayData($tenantId);
+            
+            // Filter for our slug
+            $relevantPages = array_filter($todayData['pages'], function($page) use ($slug) {
+                return strpos($page['path'], $slug) !== false;
+            });
+            
+            $results['tests']['test4_todays_data'] = [
+                'status' => 'success',
+                'description' => 'Today\'s data (updates every 1-2 hours)',
+                'all_pages_count' => count($todayData['pages']),
+                'pages_with_slug' => array_values($relevantPages),
+                'total_views_today' => $todayData['total_views'],
+            ];
+            \Log::info('TEST 4 Results:', [
+                'all_pages_count' => count($todayData['pages']),
+                'relevant_pages' => $relevantPages,
+            ]);
+        } catch (\Exception $e) {
+            $results['tests']['test4_todays_data'] = [
+                'status' => 'failed',
+                'error' => $e->getMessage(),
+            ];
+            \Log::error('TEST 4 Failed:', ['error' => $e->getMessage()]);
+        }
+
+        // TEST 5: Check GA4 property configuration
+        \Log::info('=== TEST 5: GA4 Configuration ===');
+        
+        $results['tests']['test5_ga4_config'] = [
+            'status' => 'info',
+            'measurement_id' => config('services.google.analytics_property_id'),
+            'property_id' => 'properties/' . config('services.google.analytics_property_id'),
+            'note' => 'Verify this matches your GA4 property ID',
+        ];
+
+        // SUMMARY
+        $results['summary'] = [
+            'all_tests_passed' => !array_filter($results['tests'], fn($t) => ($t['status'] ?? '') === 'failed'),
+            'next_steps' => [
+                'If test1 shows views > 0' => 'Tracking is working! Data just needs 24-48 hours to process.',
+                'If test2 shows views > 0' => 'GA4 is receiving data but tenant_id may not be tracked. Check frontend GA4 code.',
+                'If test3 shows not_found' => 'Slug doesn\'t exist. Check the slug parameter.',
+                'If test4 shows pages' => 'GA4 is getting near-real-time data. Wait for full processing.',
+                'If all show 0' => 'GA4 may not be receiving any events. Check: 1) Frontend gtag code, 2) GA4 configuration, 3) Measurement ID.',
+            ],
+            'debugging_logs' => 'Check storage/logs/laravel.log for detailed output',
+        ];
+
+        \Log::info('=== DIAGNOSTIC TEST COMPLETE ===', $results);
+
+        return response()->json($results);
+    }
+
 }
