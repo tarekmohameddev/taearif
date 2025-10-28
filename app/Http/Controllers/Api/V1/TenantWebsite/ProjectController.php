@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\User\RealestateManagement\Project;
+use App\Services\GoogleAnalyticsService;
 
 class ProjectController extends Controller
 {
@@ -14,12 +15,12 @@ class ProjectController extends Controller
 		return User::where('username', $tenantId)->firstOrFail();
 	}
 
-    public function index(Request $request, string $tenantId)
+    public function index(Request $request, string $tenantId, GoogleAnalyticsService $analytics)
 	{
 		$tenant = $this->resolveTenant($tenantId);
 
 		$query = Project::query()
-			->with(['contents', 'galleryImages'])
+			->with(['contents', 'galleryImages', 'user'])
 			->where('user_id', $tenant->id);
 
 		// Published filter (optional)
@@ -39,7 +40,53 @@ class ProjectController extends Controller
         $perPage = min((int) $request->query('limit', 20), 50);
         $projects = $query->paginate($perPage);
 
-        $items = collect($projects->items())->map(function ($project) {
+        // Collect all slugs for GA4 query
+        $slugs = collect($projects->items())
+            ->map(fn($p) => optional($p->contents->first())?->slug)
+            ->filter()
+            ->values()
+            ->all();
+
+        // Fetch GA4 views for all projects
+        $viewsBySlug = [];
+        if (!empty($slugs)) {
+            try {
+                $days = (int) $request->query('days', 30);
+                $paths = [];
+                foreach ($slugs as $slug) {
+                    $paths[] = "/project/{$slug}";
+                    $paths[] = "/ar/project/{$slug}";
+                    $paths[] = "/en/project/{$slug}";
+                }
+
+                $allData = $analytics->getAllAnalyticsWithFilters(
+                    now()->subDays($days),
+                    now(),
+                    [
+                        'tenant_ids' => [$tenant->username],
+                        'exclude_empty_tenant' => false,
+                        'limit' => count($paths) * 10,
+                    ]
+                );
+
+                foreach ($allData['data'] as $item) {
+                    $path = $item['path'];
+                    $views = (int) $item['views'];
+                    foreach ($slugs as $slug) {
+                        if (strpos($path, $slug) !== false) {
+                            $viewsBySlug[$slug] = ($viewsBySlug[$slug] ?? 0) + $views;
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error('Google Analytics error in TenantWebsite ProjectController', [
+                    'tenant' => $tenant->username,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $items = collect($projects->items())->map(function ($project) use ($viewsBySlug) {
             $content = optional($project->contents->first());
             $slug    = $content?->slug;
 
@@ -64,6 +111,7 @@ class ProjectController extends Controller
                 'images' => $images,
                 'videoUrl' => $project->video_url ?? null,
                 'amenities' => is_array($project->amenities) ? $project->amenities : [],
+                'views' => $viewsBySlug[$slug] ?? 0,
                 'location' => [
                     'lat' => $project->latitude ? (float) $project->latitude : null,
                     'lng' => $project->longitude ? (float) $project->longitude : null,
@@ -85,7 +133,7 @@ class ProjectController extends Controller
         ]);
 	}
 
-	public function show(Request $request, string $tenantId, string $slug)
+	public function show(Request $request, string $tenantId, string $slug, GoogleAnalyticsService $analytics)
 	{
 		$tenant = $this->resolveTenant($tenantId);
 
@@ -154,6 +202,39 @@ class ProjectController extends Controller
 			];
 		})->toArray();
 
+		// Fetch views from Google Analytics
+		$views = 0;
+		try {
+			$days = (int) $request->query('days', 30);
+			$paths = [
+				"/project/{$slug}",
+				"/ar/project/{$slug}",
+				"/en/project/{$slug}",
+			];
+
+			$allData = $analytics->getAllAnalyticsWithFilters(
+				now()->subDays($days),
+				now(),
+				[
+					'tenant_ids' => [$tenant->username],
+					'exclude_empty_tenant' => false,
+					'limit' => count($paths) * 10,
+				]
+			);
+
+			foreach ($allData['data'] as $item) {
+				if (in_array($item['path'], $paths)) {
+					$views += (int) $item['views'];
+				}
+			}
+		} catch (\Exception $e) {
+			\Log::error('Google Analytics error in TenantWebsite ProjectController show', [
+				'tenant' => $tenant->username,
+				'slug' => $slug,
+				'error' => $e->getMessage(),
+			]);
+		}
+
 		$data = [
 			'id' => (string) $project->id,
 			'slug' => $content->slug ?? '',
@@ -172,6 +253,7 @@ class ProjectController extends Controller
 			'images' => $images,
 			'floorplans' => $floorplans,
 			'videoUrl' => $project->video_url ?? null,
+			'views' => $views,
 			'amenities' => is_array($project->amenities) ? $project->amenities : [],
 			'featured' => (bool) ($project->featured ?? false),
 			'published' => (bool) ($project->published ?? false),
