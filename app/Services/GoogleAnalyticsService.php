@@ -570,9 +570,20 @@ class GoogleAnalyticsService
                 $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 1, '');
                 $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
 
+                if ($path === '') {
+                    continue;
+                }
+
                 // Only include if tenant_id was empty in GA4 (old data without tracking)
-                if ($path !== '' && empty($recordedTenant)) {
-                    $map[$path] = ($map[$path] ?? 0) + $views;
+                if (empty($recordedTenant)) {
+                    // Verify this path belongs to the requesting tenant by slug lookup
+                    $derivedTenant = $this->deriveTenantFromPathSlug($path);
+                    
+                    // Only include if slug matches requested tenant OR if we can't determine tenant
+                    // (in the latter case, include it anyway as fallback for historical data)
+                    if ($derivedTenant === null || $derivedTenant === $tenantId) {
+                        $map[$path] = ($map[$path] ?? 0) + $views;
+                    }
                 }
             }
         } catch (\Exception $e) {
@@ -1259,10 +1270,11 @@ class GoogleAnalyticsService
             // Query database based on type
             if ($type === 'property') {
                 // Look up property by slug in user_property_contents
+                // Use LOWER() for case-insensitive matching to handle Arabic slugs
                 $property = \DB::table('user_property_contents as upc')
                     ->join('user_properties as up', 'up.id', '=', 'upc.property_id')
                     ->join('users as u', 'u.id', '=', 'up.user_id')
-                    ->where('upc.slug', $slug)
+                    ->whereRaw('LOWER(upc.slug) = ?', [strtolower($slug)])
                     ->select('u.username')
                     ->first();
 
@@ -1270,11 +1282,12 @@ class GoogleAnalyticsService
                     return $property->username;
                 }
             } elseif ($type === 'project') {
-                // Look up project by slug in project_contents
-                $project = \DB::table('project_contents as pc')
-                    ->join('projects as p', 'p.id', '=', 'pc.project_id')
+                // Look up project by slug in user_project_contents (NOT project_contents)
+                // Use LOWER() for case-insensitive matching to handle Arabic slugs
+                $project = \DB::table('user_project_contents as upc')
+                    ->join('projects as p', 'p.id', '=', 'upc.project_id')
                     ->join('users as u', 'u.id', '=', 'p.user_id')
-                    ->where('pc.slug', $slug)
+                    ->whereRaw('LOWER(upc.slug) = ?', [strtolower($slug)])
                     ->select('u.username')
                     ->first();
 
