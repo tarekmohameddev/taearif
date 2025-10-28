@@ -279,13 +279,52 @@ class PropertyController extends Controller
         $gallery  = $property->galleryImages->pluck('image')->map(fn($img) => asset($img))->toArray();
         $images   = array_values(array_unique(array_filter(array_merge([$featured], $gallery))));
 
+        // Fetch views from Google Analytics
+        $views = 0;
+        if ($content && $content->slug) {
+            try {
+                $analytics = app(\App\Services\GoogleAnalyticsService::class);
+                $days = (int) $request->query('days', 30);
+                
+                // Build paths for this property (with and without language prefixes)
+                $paths = [
+                    "/property/{$content->slug}",
+                    "/ar/property/{$content->slug}",
+                    "/en/property/{$content->slug}",
+                ];
+
+                $allData = $analytics->getAllAnalyticsWithFilters(
+                    now()->subDays($days),
+                    now(),
+                    [
+                        'tenant_ids' => [$tenant->username],
+                        'exclude_empty_tenant' => false,
+                        'limit' => count($paths) * 10,
+                    ]
+                );
+
+                // Sum views across all path variants
+                foreach ($allData['data'] as $item) {
+                    if (in_array($item['path'], $paths)) {
+                        $views += (int) $item['views'];
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error('Google Analytics error in PropertyController show', [
+                    'tenant' => $tenant->username,
+                    'slug' => $slug,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
 		$data = [
             'id' => (string) $property->id,
             'slug' => $content?->slug ?? '',
             'title' => $content?->title ?? '',
             'district' => $districtStr,
             'price' => isset($property->price) ? (string) $property->price : '0',
-            'views' => 0,
+            'views' => $views,
             'bedrooms' => (int) ($property->beds ?? 0),
             'bathrooms' => (int) ($property->bath ?? 0),
             'area' => isset($property->area) ? (string) $property->area : '0',
