@@ -202,7 +202,8 @@ class ProjectController extends Controller
             'floorplanImages',
             'specifications',
             'types',
-            'amenities.amenity'
+            'amenities.amenity',
+            'user',  // Add user relationship to get tenant
         ])->find($id);
 
         if (!$project) {
@@ -212,8 +213,53 @@ class ProjectController extends Controller
             ], 404);
         }
 
+        // Get views from Google Analytics
+        $visits = 0;
+        if ($project->user && $project->contents->first()) {
+            try {
+                $analytics = app(\App\Services\GoogleAnalyticsService::class);
+                $days = request()->query('days', 30);
+                
+                // Get all slugs for this project (multi-language support)
+                $slugs = $project->contents->pluck('slug')->filter()->values()->all();
+                
+                if (!empty($slugs)) {
+                    // Build paths for all slug variants
+                    $paths = [];
+                    foreach ($slugs as $slug) {
+                        $paths[] = "/project/{$slug}";
+                        $paths[] = "/ar/project/{$slug}";
+                        $paths[] = "/en/project/{$slug}";
+                    }
+
+                    $allData = $analytics->getAllAnalyticsWithFilters(
+                        now()->subDays($days),
+                        now(),
+                        [
+                            'tenant_ids' => [$project->user->username],
+                            'exclude_empty_tenant' => false,
+                            'limit' => count($paths) * 10,
+                        ]
+                    );
+
+                    // Sum views across all path variants
+                    foreach ($allData['data'] as $item) {
+                        if (in_array($item['path'], $paths)) {
+                            $visits += (int) $item['views'];
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error('Google Analytics error in ProjectController show', [
+                    'project_id' => $project->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         $formattedProject = [
             "id" => $project->id,
+            "visits" => $visits,
             "featured_image" => asset($project->featured_image),
             "video_url" => $project->video_url ? asset($project->video_url) : null,
             "price_range" => "From $" . number_format($project->min_price, 2) . " to $" . number_format($project->max_price, 2),
