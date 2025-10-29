@@ -193,7 +193,8 @@ class GoogleAnalyticsService
 
     public function getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter)
     {
-        $response = $this->executeWithRetry(function() use ($startDate, $endDate, $tenantFilter) {
+        // Get ALL device data (no GA4 filter) - filter on backend
+        $response = $this->executeWithRetry(function() use ($startDate, $endDate) {
             return $this->client->runReport([
                 'property' => $this->propertyId,
                 'dateRanges' => [
@@ -204,19 +205,50 @@ class GoogleAnalyticsService
                 ],
                 'dimensions' => [
                     new Dimension(['name' => 'deviceCategory']),
+                    new Dimension(['name' => 'pagePath']),
+                    new Dimension(['name' => 'customEvent:tenant_id']),
                 ],
                 'metrics' => [
                     new Metric(['name' => 'sessions']),
                     new Metric(['name' => 'screenPageViews']),
                 ],
-                'dimensionFilter' => $tenantFilter,
             ]);
         }, 'getDeviceBreakdown');
 
-        return collect($response->getRows())->map(function ($row) {
-            $deviceCategory = isset($row->getDimensionValues()[0]) ? $row->getDimensionValues()[0]->getValue() : 'Unknown Device';
-            $sessions = isset($row->getMetricValues()[0]) ? (int) $row->getMetricValues()[0]->getValue() : 0;
+        // Aggregate by device with smart tenant filtering
+        $deviceMap = [];
+        
+        foreach ($response->getRows() as $row) {
+            $deviceCategory = $this->getSafeValue($row->getDimensionValues(), 0, 'Unknown Device');
+            $pagePath = $this->getSafeValue($row->getDimensionValues(), 1, '');
+            $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 2, '');
+            $sessions = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
 
+            // Smart tenant matching
+            $belongsToTenant = false;
+            if (!empty($recordedTenant) && $recordedTenant === $tenantId) {
+                $belongsToTenant = true;
+            } elseif (empty($recordedTenant) || $recordedTenant === '(not set)') {
+                $derivedTenant = $this->deriveTenantFromPathSlug($pagePath);
+                if ($derivedTenant === $tenantId) {
+                    $belongsToTenant = true;
+                }
+            }
+
+            if (!$belongsToTenant) {
+                continue;
+            }
+
+            // Aggregate by device
+            if (!isset($deviceMap[$deviceCategory])) {
+                $deviceMap[$deviceCategory] = $sessions;
+            } else {
+                $deviceMap[$deviceCategory] += $sessions;
+            }
+        }
+
+        // Format response
+        return collect($deviceMap)->map(function ($sessions, $deviceCategory) {
             $color = match ($deviceCategory) {
                 'mobile' => '#4285F4',
                 'desktop' => '#34A853',
@@ -229,7 +261,7 @@ class GoogleAnalyticsService
                 'value' => $sessions,
                 'color' => $color,
             ];
-        });
+        })->values();
     }
 
     public function getDashboardData($tenantId, $startDate, $endDate)
@@ -254,10 +286,24 @@ class GoogleAnalyticsService
 
     protected function getOverviewMetrics($startDate, $endDate, FilterExpression $tenantFilter)
     {
-        $response = $this->executeWithRetry(function() use ($startDate, $endDate, $tenantFilter) {
+        // Extract tenant ID from filter
+        $tenantId = null;
+        if ($tenantFilter->hasFilter()) {
+            $filter = $tenantFilter->getFilter();
+            if ($filter->hasStringFilter()) {
+                $tenantId = $filter->getStringFilter()->getValue();
+            }
+        }
+
+        // Get ALL overview data (no GA4 filter) - filter on backend
+        $response = $this->executeWithRetry(function() use ($startDate, $endDate) {
             return $this->client->runReport([
                 'property' => $this->propertyId,
                 'dateRanges' => [new DateRange(['start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')])],
+                'dimensions' => [
+                    new Dimension(['name' => 'pagePath']),
+                    new Dimension(['name' => 'customEvent:tenant_id']),
+                ],
                 'metrics' => [
                     new Metric(['name' => 'screenPageViews']),
                     new Metric(['name' => 'sessions']),
@@ -265,30 +311,77 @@ class GoogleAnalyticsService
                     new Metric(['name' => 'bounceRate']),
                     new Metric(['name' => 'averageSessionDuration']),
                 ],
-                'dimensionFilter' => $tenantFilter,
             ]);
         }, 'getOverviewMetrics');
 
-        $rows = $response->getRows();
+        // Aggregate metrics with smart tenant filtering
+        $totals = [
+            'pageViews' => 0,
+            'sessions' => 0,
+            'users' => 0,
+            'bounceRateSum' => 0,
+            'durationSum' => 0,
+            'rowCount' => 0,
+        ];
 
-        if (count($rows) === 0) {
+        foreach ($response->getRows() as $row) {
+            $pagePath = $this->getSafeValue($row->getDimensionValues(), 0, '');
+            $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 1, '');
+
+            // Smart tenant matching
+            $belongsToTenant = false;
+            if ($tenantId) {
+                if (!empty($recordedTenant) && $recordedTenant === $tenantId) {
+                    $belongsToTenant = true;
+                } elseif (empty($recordedTenant) || $recordedTenant === '(not set)') {
+                    $derivedTenant = $this->deriveTenantFromPathSlug($pagePath);
+                    if ($derivedTenant === $tenantId) {
+                        $belongsToTenant = true;
+                    }
+                }
+            } else {
+                $belongsToTenant = true;
+            }
+
+            if (!$belongsToTenant) {
+                continue;
+            }
+
+            // Aggregate metrics
+            $totals['pageViews'] += (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+            $totals['sessions'] += (int) $this->getSafeValue($row->getMetricValues(), 1, 0);
+            $totals['users'] += (int) $this->getSafeValue($row->getMetricValues(), 2, 0);
+            $totals['bounceRateSum'] += (float) $this->getSafeValue($row->getMetricValues(), 3, 0);
+            $totals['durationSum'] += (float) $this->getSafeValue($row->getMetricValues(), 4, 0);
+            $totals['rowCount']++;
+        }
+
+        if ($totals['rowCount'] === 0) {
             return ['pageViews' => 0, 'sessions' => 0, 'users' => 0, 'bounceRate' => 0, 'averageSessionDuration' => 0];
         }
 
-        $metrics = $rows[0]->getMetricValues();
-
         return [
-            'pageViews' => $this->getSafeValue($metrics, 0, 0),
-            'sessions' => $this->getSafeValue($metrics, 1, 0),
-            'users' => $this->getSafeValue($metrics, 2, 0),
-            'bounceRate' => $this->getSafeValue($metrics, 3, 0),
-            'averageSessionDuration' => $this->getSafeValue($metrics, 4, 0),
+            'pageViews' => $totals['pageViews'],
+            'sessions' => $totals['sessions'],
+            'users' => $totals['users'],
+            'bounceRate' => $totals['bounceRateSum'] / $totals['rowCount'],  // Average bounce rate
+            'averageSessionDuration' => $totals['durationSum'] / $totals['rowCount'],  // Average duration
         ];
     }
 
     public function getTrafficSources($startDate, $endDate, FilterExpression $tenantFilter)
     {
-        $response = $this->executeWithRetry(function() use ($startDate, $endDate, $tenantFilter) {
+        // Extract tenant ID from filter
+        $tenantId = null;
+        if ($tenantFilter->hasFilter()) {
+            $filter = $tenantFilter->getFilter();
+            if ($filter->hasStringFilter()) {
+                $tenantId = $filter->getStringFilter()->getValue();
+            }
+        }
+
+        // Get ALL traffic sources (no GA4 filter) - filter on backend
+        $response = $this->executeWithRetry(function() use ($startDate, $endDate) {
             return $this->client->runReport([
                 'property' => $this->propertyId,
                 'dateRanges' => [
@@ -300,19 +393,55 @@ class GoogleAnalyticsService
                 'dimensions' => [
                     new Dimension(['name' => 'sessionSource']),
                     new Dimension(['name' => 'sessionMedium']),
+                    new Dimension(['name' => 'pagePath']),
+                    new Dimension(['name' => 'customEvent:tenant_id']),
                 ],
                 'metrics' => [
                     new Metric(['name' => 'sessions']),
                     new Metric(['name' => 'totalUsers']),
                 ],
-                'dimensionFilter' => $tenantFilter,
             ]);
         }, 'getTrafficSources');
 
-        return collect($response->getRows())->map(function ($row) {
+        // Aggregate by source with smart tenant filtering
+        $sourceMap = [];
+        
+        foreach ($response->getRows() as $row) {
             $source = $this->getSafeValue($row->getDimensionValues(), 0, 'unknown');
+            $medium = $this->getSafeValue($row->getDimensionValues(), 1, '');
+            $pagePath = $this->getSafeValue($row->getDimensionValues(), 2, '');
+            $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 3, '');
             $sessions = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
 
+            // Smart tenant matching
+            $belongsToTenant = false;
+            if ($tenantId) {
+                if (!empty($recordedTenant) && $recordedTenant === $tenantId) {
+                    $belongsToTenant = true;
+                } elseif (empty($recordedTenant) || $recordedTenant === '(not set)') {
+                    $derivedTenant = $this->deriveTenantFromPathSlug($pagePath);
+                    if ($derivedTenant === $tenantId) {
+                        $belongsToTenant = true;
+                    }
+                }
+            } else {
+                $belongsToTenant = true;
+            }
+
+            if (!$belongsToTenant) {
+                continue;
+            }
+
+            // Aggregate by source
+            if (!isset($sourceMap[$source])) {
+                $sourceMap[$source] = $sessions;
+            } else {
+                $sourceMap[$source] += $sessions;
+            }
+        }
+
+        // Format response
+        return collect($sourceMap)->map(function ($sessions, $source) {
             $color = match ($source) {
                 '(direct)' => '#34A853',
                 '(none)' => '#F4B400',
@@ -327,7 +456,7 @@ class GoogleAnalyticsService
                 'value' => $sessions,
                 'color' => $color,
             ];
-        });
+        })->values();
     }
 
     protected function getTopPages($startDate, $endDate, FilterExpression $tenantFilter)
@@ -452,18 +581,8 @@ class GoogleAnalyticsService
             ? $this->propertyId
             : "properties/{$this->propertyId}";
 
-        $filterExpression = new FilterExpression([
-            'filter' => new Filter([
-                'field_name'    => 'customEvent:tenant_id',
-                'string_filter' => new StringFilter([
-                    'match_type'     => MatchType::EXACT,
-                    'value'          => $tenantId,
-                    'case_sensitive' => false,
-                ]),
-            ]),
-        ]);
-
-        $response = $this->executeWithRetry(function() use ($propertyName, $startDate, $endDate, $filterExpression) {
+        // Get ALL visitor data (no GA4 filter) - we'll filter on backend to include historical data
+        $response = $this->executeWithRetry(function() use ($propertyName, $startDate, $endDate) {
             return $this->client->runReport([
                 'property'        => $propertyName,
                 'dateRanges'      => [
@@ -473,24 +592,69 @@ class GoogleAnalyticsService
                     ]),
                 ],
                 'dimensions'      => [
-                    new Dimension([ 'name' => 'date' ]),
+                    new Dimension(['name' => 'date']),
+                    new Dimension(['name' => 'pagePath']),
+                    new Dimension(['name' => 'customEvent:tenant_id']),
                 ],
                 'metrics'         => [
-                    new Metric([ 'name' => 'sessions'   ]),
-                    new Metric([ 'name' => 'totalUsers' ]),
+                    new Metric(['name' => 'sessions']),
+                    new Metric(['name' => 'totalUsers']),
                 ],
-                'dimensionFilter' => $filterExpression,
             ]);
         }, 'getVisitorData');
 
-        return collect($response->getRows())
-            ->map(function ($row) {
-                return [
-                    'date'     => Carbon::parse($row->getDimensionValues()[0]->getValue()),
-                    'sessions' => (int)$row->getMetricValues()[0]->getValue(),
-                    'users'    => (int)$row->getMetricValues()[1]->getValue(),
+        // Build a map: date => [sessions, users] with smart tenant filtering
+        $dateMap = [];
+        
+        foreach ($response->getRows() as $row) {
+            $date = $this->getSafeValue($row->getDimensionValues(), 0, '');
+            $pagePath = $this->getSafeValue($row->getDimensionValues(), 1, '');
+            $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 2, '');
+            $sessions = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+            $users = (int) $this->getSafeValue($row->getMetricValues(), 1, 0);
+
+            if ($date === '') {
+                continue;
+            }
+
+            // Smart tenant matching: Check if this row belongs to requested tenant
+            $belongsToTenant = false;
+            
+            // If tenant_id is recorded and matches, include it
+            if (!empty($recordedTenant) && $recordedTenant === $tenantId) {
+                $belongsToTenant = true;
+            }
+            // If tenant_id is empty, derive from path slug
+            elseif (empty($recordedTenant) || $recordedTenant === '(not set)') {
+                $derivedTenant = $this->deriveTenantFromPathSlug($pagePath);
+                if ($derivedTenant === $tenantId) {
+                    $belongsToTenant = true;
+                }
+            }
+
+            if (!$belongsToTenant) {
+                continue;
+            }
+
+            // Aggregate by date
+            if (!isset($dateMap[$date])) {
+                $dateMap[$date] = [
+                    'date' => Carbon::parse($date),
+                    'sessions' => $sessions,
+                    'users' => $users,
                 ];
-            });
+            } else {
+                $dateMap[$date]['sessions'] += $sessions;
+                $dateMap[$date]['users'] += $users;
+            }
+        }
+
+        // Sort by date and return
+        return collect($dateMap)
+            ->sortBy(function($item) {
+                return $item['date']->timestamp;
+            })
+            ->values();
     }
 
     public function getRecentEvents($startDate, $endDate, $tenantId = null)
