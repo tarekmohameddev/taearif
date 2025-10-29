@@ -258,7 +258,7 @@
                                         </td>
                                         <td>{{ \App\Models\User\BasicSetting::firstOrNew(['user_id' => $user->id])->company_name ?? '—' }}</td>
                                         <td>{{ $user->phone }}</td>
-                                        <td><a href="//{{env('WEBSITE_HOST') . '/' . $user->username}}" target="_blank">{{env('WEBSITE_HOST') . '/' . $user->username}}</a></td>
+                                        <td><a href="//{{env('FRONTEND_URL') . '/' . $user->username}}" target="_blank">{{env('FRONTEND_URL') . '/' . $user->username}}</a></td>
                                         @php
                                         $currPackage = \App\Http\Helpers\UserPermissionHelper::currPackageOrPending($user->id);
                                         $currMemb = \App\Http\Helpers\UserPermissionHelper::currMembOrPending($user->id);
