@@ -36,6 +36,10 @@ use App\Http\Helpers\UserPermissionHelper;
 use App\Models\User\Language as UserLanguage;
 use App\Models\Api\ApiPixel;
 use App\Models\Api\CustomerDropdownSetting;
+use App\Models\Api\UserPropertyRequest;
+use App\Models\Api\ApiCustomerInquiry;
+use App\Observers\Matching\UsersPropertyRequestObserver;
+use App\Observers\Matching\ApiCustomerInquiryObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -388,5 +392,12 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
+        // Register observers for matching triggers
+        try {
+            UserPropertyRequest::observe(UsersPropertyRequestObserver::class);
+            ApiCustomerInquiry::observe(ApiCustomerInquiryObserver::class);
+        } catch (\Throwable $e) {
+            \Log::warning('Failed to register matching observers', ['error' => $e->getMessage()]);
+        }
     }
 }
