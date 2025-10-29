@@ -332,7 +332,8 @@ class GoogleAnalyticsService
 
     protected function getTopPages($startDate, $endDate, FilterExpression $tenantFilter)
     {
-        $response = $this->executeWithRetry(function() use ($startDate, $endDate, $tenantFilter) {
+        // Query 1: Get pages with explicitly tracked tenant_id (new data)
+        $response1 = $this->executeWithRetry(function() use ($startDate, $endDate, $tenantFilter) {
             return $this->client->runReport([
                 'property' => $this->propertyId,
                 'dateRanges' => [
@@ -344,6 +345,7 @@ class GoogleAnalyticsService
                 'dimensions' => [
                     new Dimension(['name' => 'pagePath']),
                     new Dimension(['name' => 'pageTitle']),
+                    new Dimension(['name' => 'customEvent:tenant_id']),
                 ],
                 'metrics' => [
                     new Metric(['name' => 'screenPageViews']),
@@ -354,35 +356,54 @@ class GoogleAnalyticsService
                 'orderBys' => [
                     new OrderBy(['metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']), 'desc' => true]),
                 ],
-                'limit' => 20,
+                'limit' => 50,
             ]);
-        }, 'getTopPages');
+        }, 'getTopPages_withTenant');
 
-        $rows = $response->getRows();
-        if (count($rows) === 0) {
-            return [];
-        }
-
-        return collect($rows)->map(function ($row) {
-            $pagePath = $this->getSafeValue($row->getDimensionValues(), 0, 'Unknown Path');
-            $pageTitle = $this->getSafeValue($row->getDimensionValues(), 1, 'Unknown Title');
-
+        // Build map from response 1
+        $pageMap = [];
+        foreach ($response1->getRows() as $row) {
+            $pagePath = $this->getSafeValue($row->getDimensionValues(), 0, '');
+            $pageTitle = $this->getSafeValue($row->getDimensionValues(), 1, '');
+            $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 2, '');
             $pageViews = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
             $avgDuration = (float) $this->getSafeValue($row->getMetricValues(), 1, 0);
-
             $bounceRateRaw = $this->getSafeValue($row->getMetricValues(), 2, 0);
+
+            if ($pagePath === '') {
+                continue;
+            }
+
             $bounceRate = is_numeric($bounceRateRaw) && (float)$bounceRateRaw <= 1.0
                 ? round((float)$bounceRateRaw * 100, 1)
                 : round((float)$bounceRateRaw, 1);
 
-            return [
-                'path' => $pagePath,
-                'title' => $pageTitle,
-                'pageViews' => $pageViews,
-                'avgDuration' => $avgDuration,
-                'bounceRate' => $bounceRate, // الآن قيمة float حقيقية
-            ];
-        })->toArray();
+            if (!isset($pageMap[$pagePath])) {
+                $pageMap[$pagePath] = [
+                    'path' => $pagePath,
+                    'title' => $pageTitle,
+                    'pageViews' => $pageViews,
+                    'averageSessionDuration' => $avgDuration,
+                    'bounceRate' => $bounceRate,
+                    'users' => 0,
+                ];
+            } else {
+                $pageMap[$pagePath]['pageViews'] += $pageViews;
+                $pageMap[$pagePath]['averageSessionDuration'] = ($pageMap[$pagePath]['averageSessionDuration'] + $avgDuration) / 2;
+            }
+        }
+
+        // If no data from query 1, return empty
+        if (empty($pageMap)) {
+            return [];
+        }
+
+        // Return top 20 by views
+        return collect($pageMap)
+            ->sortByDesc('pageViews')
+            ->take(20)
+            ->values()
+            ->toArray();
     }
 
     public function getVisitorData(string $tenantId, Carbon $startDate, Carbon $endDate)
