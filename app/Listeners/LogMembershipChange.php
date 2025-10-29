@@ -4,9 +4,9 @@ namespace App\Listeners;
 
 use App\Events\UserDowngradedToFree;
 use App\Events\UserUpgradedFromFree;
+use App\Models\MembershipChangeLog;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\Log;
 
 class LogMembershipChange
 {
@@ -32,19 +32,20 @@ class LogMembershipChange
             'user_id' => $event->user->id,
             'username' => $event->user->username,
             'email' => $event->user->email,
-            'timestamp' => $event->timestamp,
+            'event_timestamp' => $event->timestamp,
         ];
 
         if ($event instanceof UserDowngradedToFree) {
             $logData['action'] = 'downgraded_to_free';
             $logData['previous_package'] = $event->previousPackage ? $event->previousPackage->title : 'Unknown';
-            
-            Log::channel('membership_changes')->info('User downgraded to free package', $logData);
+            $logData['new_package'] = null;
         } elseif ($event instanceof UserUpgradedFromFree) {
             $logData['action'] = 'upgraded_from_free';
+            $logData['previous_package'] = null;
             $logData['new_package'] = $event->newPackage ? $event->newPackage->title : 'Unknown';
-            
-            Log::channel('membership_changes')->info('User upgraded from free package', $logData);
         }
+
+        // Save to database
+        MembershipChangeLog::create($logData);
     }
 }
