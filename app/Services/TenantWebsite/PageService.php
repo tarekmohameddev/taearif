@@ -4,6 +4,7 @@ namespace App\Services\TenantWebsite;
 
 use App\Models\TenantPage;
 use App\Models\TenantGlobalComponent;
+use App\Models\TenantWebsiteLayout;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -48,9 +49,9 @@ class PageService
         TenantPage::where('user_id', $tenant->id)->where('page_id', $pageId)->delete();
     }
 
-    public function savePagesPayload(User $tenant, array $pages, ?array $globals): array
+    public function savePagesPayload(User $tenant, array $pages, ?array $globals, ?array $websiteLayout = null): array
     {
-        return DB::transaction(function () use ($tenant, $pages, $globals) {
+        return DB::transaction(function () use ($tenant, $pages, $globals, $websiteLayout) {
             $pagesSaved = 0;
             $pagesDeleted = 0;
             $componentsSaved = 0;
@@ -85,6 +86,13 @@ class PageService
                 TenantGlobalComponent::updateOrCreate(
                     ['user_id' => $tenant->id],
                     ['data' => $globals]
+                );
+            }
+
+            if ($websiteLayout !== null) {
+                TenantWebsiteLayout::updateOrCreate(
+                    ['user_id' => $tenant->id],
+                    ['data' => $websiteLayout]
                 );
             }
 

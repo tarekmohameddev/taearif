@@ -35,7 +35,12 @@ class PaypalController extends Controller
             return;
         }
 
-        $data = UserPaymentGeteway::whereKeyword('paypal')->where('user_id', getUser()->id)->first();
+        $user = getUser();
+        if (!$user) {
+            abort(404, 'User not found');
+        }
+
+        $data = UserPaymentGeteway::whereKeyword('paypal')->where('user_id', $user->id)->first();
         $paydata = $data->convertAutoData();
 
         $paypal_conf = Config::get('paypal');

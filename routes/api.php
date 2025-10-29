@@ -110,6 +110,7 @@ use App\Http\Controllers\Api\V1\TenantWebsite\{
     PublishController,
     FormController,
 };
+use App\Http\Controllers\Api\V1\Matching\MatchingController as V1MatchingController;
 
 use App\Http\Controllers\Api\PixelController; // Added import for PixelController
 
@@ -419,6 +420,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
         Route::get   ('/filters',  [CustomerController::class, 'filterOptions'])->middleware('can:customers.view');
         Route::get   ('/',         [CustomerController::class, 'index'])->middleware('can:customers.view');
         Route::get   ('/search',   [CustomerController::class, 'search'])->middleware('can:customers.view');
+        Route::get   ('/{id}/with-inquiries', [CustomerController::class, 'showWithInquiries'])->middleware('can:customers.view');
         Route::get   ('/{id}',     [CustomerController::class, 'show'])->middleware('can:customers.view');
         Route::post  ('/',         [CustomerController::class, 'store'])->middleware('can:customers.create');
         Route::put   ('/{id}',     [CustomerController::class, 'update'])->middleware('can:customers.update');
@@ -836,6 +838,21 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
     // Tenant Website Projects (public)
     Route::get('{tenantId}/projects', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'index']);
     Route::get('{tenantId}/projects/{slug}', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'show']);
+
+    // Tenant Website AI Export (public)
+    Route::get('{tenantId}/ai-export', [\App\Http\Controllers\Api\V1\TenantWebsite\AiExportController::class, 'index']);
+    Route::get('{tenantId}/ai-export.txt', [\App\Http\Controllers\Api\V1\TenantWebsite\AiExportController::class, 'downloadTxt']);
+
+    // (moved Matching endpoints out of tenant-website scope)
+});
+
+// Matching Endpoints (Dashboard APIs, require auth) - observer-only, retrieval endpoints
+Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
+    Route::prefix('matching')->group(function () {
+        Route::get('customers', [V1MatchingController::class, 'customers']);
+        Route::get('customers/{customer_key}/properties', [V1MatchingController::class, 'customerProperties']);
+        Route::get('matches/{id}', [V1MatchingController::class, 'showMatch']);
+    });
 });
 
 // Direct public route for property categories (bypassing tenant.resolve middleware)

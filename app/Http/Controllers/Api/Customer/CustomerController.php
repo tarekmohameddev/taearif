@@ -101,7 +101,42 @@ class CustomerController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        $formattedCustomers = $customers->map(function ($customer) {
+        // Helpers to map values to Arabic
+        $mapInquiryTypeToArabic = function ($type) {
+            if (is_null($type) || $type === '') return null;
+            $t = mb_strtolower(trim($type));
+            return match ($t) {
+                'inquire', 'inquiry', 'question' => 'استفسار',
+                'buy', 'purchase', 'sale', '购买' => 'شراء',
+                'rent', 'rental', 'lease' => 'إيجار',
+                default => 'استفسار', // fallback to generic
+            };
+        };
+
+        $mapPropertyTypeToArabic = function ($type) {
+            if (is_null($type) || $type === '') return null;
+            $val = trim($type);
+            // If already contains Arabic characters, keep as-is
+            if (preg_match('/\p{Arabic}/u', $val)) {
+                return $val;
+            }
+            $t = mb_strtolower($val);
+            $map = [
+                'residential' => 'سكني',
+                'commercial'  => 'تجاري',
+                'industrial'  => 'صناعي',
+                'agricultural'=> 'زراعي',
+                'apartment'   => 'شقة',
+                'villa'       => 'فيلا',
+                'land'        => 'أرض',
+                'office'      => 'مكتب',
+                'shop'        => 'محل',
+                'warehouse'   => 'مستودع',
+            ];
+            return $map[$t] ?? $val;
+        };
+
+        $formattedCustomers = $customers->map(function ($customer) use ($mapInquiryTypeToArabic, $mapPropertyTypeToArabic) {
             $interestedCategories = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
             ->join('api_user_categories', 'api_user_categories.id', '=', 'api_customer_property_interested.category_id')
             ->select('api_user_categories.id', 'api_user_categories.name')
@@ -115,25 +150,60 @@ class CustomerController extends Controller
             ->groupBy('up.id')
             ->get();
 
-            // Get customer inquiries for district information
-            $customerInquiries = DB::table('api_customer_inquiry')
+            // Collect and merge customer inquiries
+            $inquiries = DB::table('api_customer_inquiry')
                 ->where('customer_id', $customer->id)
-                ->whereNotNull('district')
-                ->whereNotNull('city')
-                ->select('district', 'city')
-                ->distinct()
-                ->limit(3)
-                ->get();
+                ->orderByDesc('created_at')
+                ->get(['message', 'inquiry_type', 'property_type', 'location', 'city', 'district']);
 
-            // Format district information
+            $agg = [
+                'message'       => null,
+                'inquiry_type'  => null,
+                'property_type' => null,
+                'location'      => null,
+                'city'          => null,
+                'district'      => null,
+            ];
+
+            foreach ($inquiries as $row) {
+                if (is_null($agg['message'])       && !empty($row->message))       $agg['message']       = $row->message;
+                if (is_null($agg['inquiry_type'])  && !empty($row->inquiry_type))  $agg['inquiry_type']  = $row->inquiry_type;
+                if (is_null($agg['property_type']) && !empty($row->property_type)) $agg['property_type'] = $row->property_type;
+                if (is_null($agg['city'])          && !empty($row->city))          $agg['city']          = $row->city;
+                if (is_null($agg['district'])      && !empty($row->district))      $agg['district']      = $row->district;
+                if (is_null($agg['location'])      && !empty($row->location))      $agg['location']      = $row->location;
+                // Break early if all fields are filled
+                if (!in_array(null, $agg, true)) {
+                    break;
+                }
+            }
+
+            // Prepare district info (up to 3 unique values); fallback to location if missing
             $districtInfo = null;
-            if ($customerInquiries->isNotEmpty()) {
-                $districts = $customerInquiries->pluck('district')->filter()->unique()->take(3)->implode(',');
-                $cities = $customerInquiries->pluck('city')->filter()->unique()->take(3)->implode(',');
+            if ($inquiries->isNotEmpty()) {
+                $districtsList = $inquiries->pluck('district')->filter()->unique()->take(3);
+                $citiesList    = $inquiries->pluck('city')->filter()->unique()->take(3);
 
-                $districtInfo = [
-                    'name_ar' => $districts,
-                    'city_name_ar' => $cities,
+                if ($districtsList->isNotEmpty() || $citiesList->isNotEmpty()) {
+                    $districtInfo = [
+                        'name_ar'     => $districtsList->implode(','),
+                        'city_name_ar'=> $citiesList->implode(','),
+                    ];
+                } elseif (!empty($agg['location'])) {
+                    $districtInfo = [
+                        'name_ar'      => null,
+                        'city_name_ar' => $agg['location'],
+                    ];
+                }
+            }
+
+            // Build merged inquiry object
+            $inquiryPayload = null;
+            if ($agg['message'] || $agg['inquiry_type'] || $agg['property_type']) {
+                $inquiryPayload = [
+                    'message'       => $agg['message'],
+                    'inquiry_type'  => $mapInquiryTypeToArabic($agg['inquiry_type']),
+                    'property_type' => $mapPropertyTypeToArabic($agg['property_type']),
                 ];
             }
 
@@ -162,6 +232,7 @@ class CustomerController extends Controller
                     'name' => $customer->procedure->procedure_name,
                 ] : null,
                 'note' => $customer->note ?? null,
+                'inquiry' => $inquiryPayload,
                 'city_id' => $customer->city_id ?? null,
                 'district' => $districtInfo,
                 'created_by' => $customer->user_id,
@@ -307,6 +378,127 @@ class CustomerController extends Controller
             'data' => $customer
         ]);
 
+    }
+
+    /**
+     * Return customer details along with all inquiries (Arabic mappings applied).
+     */
+    public function showWithInquiries(Request $request, $id)
+    {
+        $user = $request->user();
+
+        $customer = ApiCustomer::where('user_id', $user->id)
+            ->with([
+                'type:id,name',
+                'stage:id,stage_name',
+                'priorityRef:id,name',
+                'procedure:id,procedure_name',
+            ])
+            ->find($id);
+
+        if (!$customer) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Customer not found'
+            ], 404);
+        }
+
+        // Local mappers
+        $mapInquiryTypeToArabic = function ($type) {
+            if (is_null($type) || $type === '') return null;
+            $t = mb_strtolower(trim($type));
+            return match ($t) {
+                'inquire', 'inquiry', 'question' => 'استفسار',
+                'buy', 'purchase', 'sale', '购买' => 'شراء',
+                'rent', 'rental', 'lease' => 'إيجار',
+                default => 'استفسار',
+            };
+        };
+
+        $mapPropertyTypeToArabic = function ($type) {
+            if (is_null($type) || $type === '') return null;
+            $val = trim($type);
+            if (preg_match('/\p{Arabic}/u', $val)) {
+                return $val;
+            }
+            $t = mb_strtolower($val);
+            $map = [
+                'residential' => 'سكني',
+                'commercial'  => 'تجاري',
+                'industrial'  => 'صناعي',
+                'agricultural'=> 'زراعي',
+                'apartment'   => 'شقة',
+                'villa'       => 'فيلا',
+                'land'        => 'أرض',
+                'office'      => 'مكتب',
+                'shop'        => 'محل',
+                'warehouse'   => 'مستودع',
+            ];
+            return $map[$t] ?? $val;
+        };
+
+        // Fetch all inquiries
+        $rows = DB::table('api_customer_inquiry')
+            ->where('customer_id', $customer->id)
+            ->orderByDesc('created_at')
+            ->get(['id','message','inquiry_type','property_type','budget','currency','location','city','district','created_at']);
+
+        // Build district info with fallback
+        $districtInfo = null;
+        if ($rows->isNotEmpty()) {
+            $districtsList = $rows->pluck('district')->filter()->unique()->take(3);
+            $citiesList    = $rows->pluck('city')->filter()->unique()->take(3);
+            if ($districtsList->isNotEmpty() || $citiesList->isNotEmpty()) {
+                $districtInfo = [
+                    'name_ar'      => $districtsList->implode(','),
+                    'city_name_ar' => $citiesList->implode(','),
+                ];
+            } else {
+                $location = $rows->firstWhere('location', '!=', null)->location ?? null;
+                if (!empty($location)) {
+                    $districtInfo = [
+                        'name_ar'      => null,
+                        'city_name_ar' => $location,
+                    ];
+                }
+            }
+        }
+
+        // Shape inquiries with Arabic mapping
+        $inquiries = $rows->map(function ($r) use ($mapInquiryTypeToArabic, $mapPropertyTypeToArabic) {
+            return [
+                'id'            => $r->id,
+                'message'       => $r->message,
+                'inquiry_type'  => $mapInquiryTypeToArabic($r->inquiry_type),
+                'property_type' => $mapPropertyTypeToArabic($r->property_type),
+                'budget'        => $r->budget,
+                'currency'      => $r->currency,
+                'location'      => $r->location,
+                'city'          => $r->city,
+                'district'      => $r->district,
+                'created_at'    => optional($r->created_at)->toISOString(),
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'customer' => [
+                    'id' => $customer->id,
+                    'name' => $customer->name,
+                    'email' => $customer->email,
+                    'phone_number' => $customer->phone_number,
+                    'type' => $customer->type ? [ 'id' => $customer->type->id, 'name' => $customer->type->name ] : null,
+                    'stage' => $customer->stage ? [ 'id' => $customer->stage->id, 'name' => $customer->stage->stage_name ] : null,
+                    'priority' => $customer->priorityRef ? [ 'id' => $customer->priorityRef->id, 'name' => $customer->priorityRef->name ] : null,
+                    'procedure' => $customer->procedure ? [ 'id' => $customer->procedure->id, 'name' => $customer->procedure->procedure_name ] : null,
+                    'district' => $districtInfo,
+                    'created_at' => optional($customer->created_at)->toISOString(),
+                    'updated_at' => optional($customer->updated_at)->toISOString(),
+                ],
+                'inquiries' => $inquiries,
+            ],
+        ]);
     }
 
     /**

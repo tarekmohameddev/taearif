@@ -49,10 +49,6 @@ class ApiSideMenusController extends Controller
                 'section' => ['title' => 'لوحة التحكم', 'description' => 'نظره عامه عن الموقع', 'icon' => 'panel', 'path' => '/'],
             ],
             [
-                'perm'    => 'content.view',
-                'section' => ['title' => 'ادارة المحتوى', 'description' => 'ادارة محتوى الموقع', 'icon' => 'content-settings', 'path' => '/content'],
-            ],
-            [
                 'perm'    => 'settings.view',
                 'section' => ['title' => 'اعدادات الموقع', 'description' => 'تكوين اعدادات الموقع', 'icon' => 'web-settings', 'path' => '/settings'],
             ],
@@ -75,16 +71,26 @@ class ApiSideMenusController extends Controller
                 'when'    => fn() => $package && ($package->real_estate_limit_number > 0),
                 'section' => ['title' => 'العقارات', 'description' => 'ادارة العقارات', 'icon' => 'home', 'path' => '/properties'],
             ],
+            [
+                'perm'    => 'properties.view',
+                'when'    => fn() => $package && ($package->real_estate_limit_number > 0),
+                'section' => ['title' => 'طلبات العملاء', 'description' => 'ادارة طلبات العملاء العقارية', 'icon' => 'home', 'path' => '/property-requests'],
+            ],
+            [
+                'perm'    => 'properties.view',
+                'when'    => fn() => $package && ($package->real_estate_limit_number > 0),
+                'section' => ['title' => 'مركز توافق الطلبات الذكائي', 'description' => 'احصل على توافق ذكي مع الطلبات', 'icon' => 'sparkles', 'path' => '/matching'],
+            ],
             // [
             //     'perm'    => 'menu.blog',
             //     'when'    => fn() => $package && !empty($package->features) && str_contains($package->features, 'Blog'),
             //     'section' => ['title' => 'المدونة', 'description' => 'ادارة المدونة', 'icon' => 'blog', 'path' => '/blog'],
             // ],
             // Apps container
-            // [
-            //     'perm'    => 'menu.apps',
-            //     'section' => ['title' => 'التطبيقات', 'description' => 'ادارة تطبيقاتك', 'icon' => 'apps', 'path' => '/apps'],
-            // ],
+            [
+                'perm'    => 'menu.apps',
+                'section' => ['title' => 'التطبيقات', 'description' => 'ادارة تطبيقاتك', 'icon' => 'apps', 'path' => '/apps'],
+            ],
             // Feature switches inside Apps (still check a perm)
             [
                 'perm'    => 'apps.view',
@@ -101,6 +107,10 @@ class ApiSideMenusController extends Controller
                 'perm'    => 'affiliate.view',
                 'when'    => fn() => (bool) $isAffiliateApproved,
                 'section' => ['title' => 'برنامج الشراكة', 'description' => 'إدارة برنامج العمولة', 'icon' => 'lucide lucide-user-check h-5 w-5 text-primary', 'path' => '/affiliate'],
+            ],
+            [
+                'perm'    => 'content.view',
+                'section' => ['title' => 'تعديل تصميم الموقع', 'description' => 'ادارة محتوى الموقع', 'icon' => 'content-settings', 'path' => 'live-editor'],
             ],
         ];
 

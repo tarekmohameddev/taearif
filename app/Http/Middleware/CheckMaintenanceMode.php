@@ -83,12 +83,12 @@ class CheckMaintenanceMode
         }
 
         // Get the current user (tenant)
-        // Note: getUser() returns User|null, or throws 404 if user not found/unauthorized
+        // Phase 2: getUser() now consistently returns User|null
         $user = getUser();
 
-        // If no user in current context (e.g., running in console), skip maintenance check
+        // If no user found (invalid domain/subdomain), show 404
         if (!$user) {
-            return $next($request);
+            return response()->view('errors.404', [], 404);
         }
 
         // Force enable maintenance mode for free package users

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\TenantPage;
 use App\Models\TenantGlobalComponent;
+use App\Models\TenantWebsiteLayout;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
@@ -121,6 +122,11 @@ class TenantWebsiteSeeder
 
                 // Seed global components
                 $this->seedGlobalComponents($tenant, $template['globalComponentsData']);
+
+                // Seed website layout if provided
+                if (isset($template['WebsiteLayout']) && is_array($template['WebsiteLayout'])) {
+                    $this->seedWebsiteLayout($tenant, $template['WebsiteLayout']);
+                }
 
                 Log::info('Successfully seeded default website for tenant', [
                     'tenant_id' => $tenant->id,
@@ -254,6 +260,11 @@ class TenantWebsiteSeeder
                 // Update/recreate global components
                 $this->seedGlobalComponents($tenant, $template['globalComponentsData']);
 
+                // Update/recreate website layout if provided
+                if (isset($template['WebsiteLayout']) && is_array($template['WebsiteLayout'])) {
+                    $this->seedWebsiteLayout($tenant, $template['WebsiteLayout']);
+                }
+
                 Log::info('Successfully re-seeded website for tenant', [
                     'tenant_id' => $tenant->id,
                     'username' => $tenant->username,
@@ -271,6 +282,25 @@ class TenantWebsiteSeeder
 
             return false;
         }
+    }
+
+    /**
+     * Seed website layout for the tenant
+     *
+     * @param User $tenant
+     * @param array $layout
+     * @return void
+     */
+    protected function seedWebsiteLayout(User $tenant, array $layout): void
+    {
+        TenantWebsiteLayout::updateOrCreate(
+            [
+                'user_id' => $tenant->id,
+            ],
+            [
+                'data' => $layout,
+            ]
+        );
     }
 
     /**
@@ -309,6 +339,11 @@ class TenantWebsiteSeeder
         if (isset($template['globalComponentsData'])) {
             $template['globalComponentsData'] = $this->replaceInArray($template['globalComponentsData'], $replacementData);
         }
+
+		// Replace in website layout if present
+		if (isset($template['WebsiteLayout']) && is_array($template['WebsiteLayout'])) {
+			$template['WebsiteLayout'] = $this->replaceInArray($template['WebsiteLayout'], $replacementData);
+		}
 
         return $template;
     }

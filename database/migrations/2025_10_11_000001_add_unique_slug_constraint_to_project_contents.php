@@ -13,14 +13,14 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('user_project_contents', function (Blueprint $table) {
-            // Add unique constraint on user_id + slug combination
-            // This ensures each tenant has unique slugs
-            $table->unique(['user_id', 'slug'], 'project_contents_user_slug_unique');
+        // Schema::table('user_project_contents', function (Blueprint $table) {
+        //     // Add unique constraint on user_id + slug combination
+        //     // This ensures each tenant has unique slugs
+        //     $table->unique(['user_id', 'slug'], 'project_contents_user_slug_unique');
 
-            // Add index for better query performance
-            $table->index('slug', 'project_contents_slug_idx');
-        });
+        //     // Add index for better query performance
+        //     $table->index('slug', 'project_contents_slug_idx');
+        // });
     }
 
     /**

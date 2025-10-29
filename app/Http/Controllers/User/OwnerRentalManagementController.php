@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-
+use Illuminate\Support\Facades\Log;
 class OwnerRentalManagementController extends Controller
 {
     /**
@@ -28,6 +28,7 @@ class OwnerRentalManagementController extends Controller
      */
     public function index(Request $request)
     {
+
         try {
             $user = $this->getAuthUser();
 
@@ -37,7 +38,7 @@ class OwnerRentalManagementController extends Controller
 
             $query = OwnerRental::where('user_id', $user->id)
                 ->with(['properties' => function ($query) {
-                    $query->select('id', 'featured_image', 'price', 'status');
+                    $query->select('user_properties.id as id', 'user_properties.featured_image', 'user_properties.price', 'user_properties.status');
                 }]);
 
             // Search by name, email, or phone
