@@ -332,8 +332,17 @@ class GoogleAnalyticsService
 
     protected function getTopPages($startDate, $endDate, FilterExpression $tenantFilter)
     {
-        // Query 1: Get pages with explicitly tracked tenant_id (new data)
-        $response1 = $this->executeWithRetry(function() use ($startDate, $endDate, $tenantFilter) {
+        // Extract tenant ID from the filter for backend filtering
+        $tenantId = null;
+        if ($tenantFilter->hasFilter()) {
+            $filter = $tenantFilter->getFilter();
+            if ($filter->hasStringFilter()) {
+                $tenantId = $filter->getStringFilter()->getValue();
+            }
+        }
+
+        // Get ALL pages data (no GA4 filter) - we'll filter on backend
+        $response = $this->executeWithRetry(function() use ($startDate, $endDate) {
             return $this->client->runReport([
                 'property' => $this->propertyId,
                 'dateRanges' => [
@@ -351,26 +360,51 @@ class GoogleAnalyticsService
                     new Metric(['name' => 'screenPageViews']),
                     new Metric(['name' => 'averageSessionDuration']),
                     new Metric(['name' => 'bounceRate']),
+                    new Metric(['name' => 'totalUsers']),
                 ],
-                'dimensionFilter' => $tenantFilter,
                 'orderBys' => [
                     new OrderBy(['metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']), 'desc' => true]),
                 ],
-                'limit' => 50,
+                'limit' => 200,  // Get more to filter on backend
             ]);
-        }, 'getTopPages_withTenant');
+        }, 'getTopPages_allData');
 
-        // Build map from response 1
+        // Build map with smart tenant matching (backend filtering)
         $pageMap = [];
-        foreach ($response1->getRows() as $row) {
+        foreach ($response->getRows() as $row) {
             $pagePath = $this->getSafeValue($row->getDimensionValues(), 0, '');
             $pageTitle = $this->getSafeValue($row->getDimensionValues(), 1, '');
             $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 2, '');
             $pageViews = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
             $avgDuration = (float) $this->getSafeValue($row->getMetricValues(), 1, 0);
             $bounceRateRaw = $this->getSafeValue($row->getMetricValues(), 2, 0);
+            $users = (int) $this->getSafeValue($row->getMetricValues(), 3, 0);
 
             if ($pagePath === '') {
+                continue;
+            }
+
+            // Smart tenant matching: Check if this row belongs to requested tenant
+            $belongsToTenant = false;
+            
+            if ($tenantId) {
+                // If tenant_id is recorded and matches, include it
+                if (!empty($recordedTenant) && $recordedTenant === $tenantId) {
+                    $belongsToTenant = true;
+                }
+                // If tenant_id is empty, derive from slug
+                elseif (empty($recordedTenant) || $recordedTenant === '(not set)') {
+                    $derivedTenant = $this->deriveTenantFromPathSlug($pagePath);
+                    if ($derivedTenant === $tenantId) {
+                        $belongsToTenant = true;
+                    }
+                }
+            } else {
+                // No tenant filter, include all
+                $belongsToTenant = true;
+            }
+
+            if (!$belongsToTenant) {
                 continue;
             }
 
@@ -378,6 +412,7 @@ class GoogleAnalyticsService
                 ? round((float)$bounceRateRaw * 100, 1)
                 : round((float)$bounceRateRaw, 1);
 
+            // Aggregate by path
             if (!isset($pageMap[$pagePath])) {
                 $pageMap[$pagePath] = [
                     'path' => $pagePath,
@@ -385,15 +420,20 @@ class GoogleAnalyticsService
                     'pageViews' => $pageViews,
                     'averageSessionDuration' => $avgDuration,
                     'bounceRate' => $bounceRate,
-                    'users' => 0,
+                    'users' => $users,
                 ];
             } else {
                 $pageMap[$pagePath]['pageViews'] += $pageViews;
-                $pageMap[$pagePath]['averageSessionDuration'] = ($pageMap[$pagePath]['averageSessionDuration'] + $avgDuration) / 2;
+                $pageMap[$pagePath]['users'] += $users;
+                // Average the duration and bounce rate
+                $pageMap[$pagePath]['averageSessionDuration'] = 
+                    ($pageMap[$pagePath]['averageSessionDuration'] + $avgDuration) / 2;
+                $pageMap[$pagePath]['bounceRate'] = 
+                    ($pageMap[$pagePath]['bounceRate'] + $bounceRate) / 2;
             }
         }
 
-        // If no data from query 1, return empty
+        // If no data found, return empty
         if (empty($pageMap)) {
             return [];
         }
