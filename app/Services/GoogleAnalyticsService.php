@@ -834,15 +834,17 @@ class GoogleAnalyticsService
                 }
 
                 // Normalize tenant_id: use recorded value if valid, otherwise derive from path slug
-                $derivedTenant = $recordedTenant;
-                if (empty($derivedTenant) || $derivedTenant === '(not set)') {
-                    $derivedTenant = $this->deriveTenantFromPathSlug($path);
+                $normalizedTenant = $recordedTenant;
+                if (empty($normalizedTenant) || $normalizedTenant === '(not set)') {
+                    $normalizedTenant = $this->deriveTenantFromPathSlug($path);
                 }
 
                 $allData[] = [
-                    'tenant_id' => $derivedTenant,
+                    'tenant_id' => $normalizedTenant ?: null,  // Always show normalized tenant_id (or null if can't derive)
+                    'original_tenant_id' => $recordedTenant,    // Keep original for debugging
                     'path' => $path,
                     'views' => $views,
+                    'tenant_id_source' => empty($recordedTenant) || $recordedTenant === '(not set)' ? 'derived_from_slug' : 'recorded',
                 ];
             }
 
@@ -883,14 +885,27 @@ class GoogleAnalyticsService
     {
         $filtered = $data;
 
-        // Filter by tenant IDs
+        // Filter by tenant IDs (now includes smart fallback matching)
         if (!empty($filters['tenant_ids'])) {
             $tenantIds = is_array($filters['tenant_ids'])
                 ? $filters['tenant_ids']
                 : explode(',', $filters['tenant_ids']);
 
             $filtered = array_filter($filtered, function($item) use ($tenantIds) {
-                return in_array($item['tenant_id'], $tenantIds);
+                // If tenant_id is set and matches, include it
+                if (!empty($item['tenant_id']) && in_array($item['tenant_id'], $tenantIds, true)) {
+                    return true;
+                }
+
+                // If tenant_id is empty/null, check if path belongs to requested tenant by slug
+                // This is the FALLBACK strategy for historical data
+                if (empty($item['tenant_id']) || $item['tenant_id'] === '(not set)') {
+                    // Derive tenant from path slug
+                    $derivedTenant = $this->deriveTenantFromPathSlug($item['path']);
+                    return $derivedTenant && in_array($derivedTenant, $tenantIds, true);
+                }
+
+                return false;
             });
         }
 
