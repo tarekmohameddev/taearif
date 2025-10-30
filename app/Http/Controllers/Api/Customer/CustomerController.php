@@ -647,12 +647,6 @@ class CustomerController extends Controller
             throw $e;
         }
 
-        // TenantActivity::emit($request, 'customer.deleted', 'api_customers', $customer->id, $customer->toArray(), null);
-
-        // return response()->json([
-        //     'status' => 'success',
-        //     'message' => 'Customer deleted successfully'
-        // ]);
 
     }
 
