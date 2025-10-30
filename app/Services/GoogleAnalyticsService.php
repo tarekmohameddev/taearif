@@ -217,7 +217,7 @@ class GoogleAnalyticsService
 
         // Aggregate by device with smart tenant filtering
         $deviceMap = [];
-        
+
         foreach ($response->getRows() as $row) {
             $deviceCategory = $this->getSafeValue($row->getDimensionValues(), 0, 'Unknown Device');
             $pagePath = $this->getSafeValue($row->getDimensionValues(), 1, '');
@@ -405,7 +405,7 @@ class GoogleAnalyticsService
 
         // Aggregate by source with smart tenant filtering
         $sourceMap = [];
-        
+
         foreach ($response->getRows() as $row) {
             $source = $this->getSafeValue($row->getDimensionValues(), 0, 'unknown');
             $medium = $this->getSafeValue($row->getDimensionValues(), 1, '');
@@ -515,7 +515,7 @@ class GoogleAnalyticsService
 
             // Smart tenant matching: Check if this row belongs to requested tenant
             $belongsToTenant = false;
-            
+
             if ($tenantId) {
                 // If tenant_id is recorded and matches, include it
                 if (!empty($recordedTenant) && $recordedTenant === $tenantId) {
@@ -555,9 +555,9 @@ class GoogleAnalyticsService
                 $pageMap[$pagePath]['pageViews'] += $pageViews;
                 $pageMap[$pagePath]['users'] += $users;
                 // Average the duration and bounce rate
-                $pageMap[$pagePath]['averageSessionDuration'] = 
+                $pageMap[$pagePath]['averageSessionDuration'] =
                     ($pageMap[$pagePath]['averageSessionDuration'] + $avgDuration) / 2;
-                $pageMap[$pagePath]['bounceRate'] = 
+                $pageMap[$pagePath]['bounceRate'] =
                     ($pageMap[$pagePath]['bounceRate'] + $bounceRate) / 2;
             }
         }
@@ -605,7 +605,7 @@ class GoogleAnalyticsService
 
         // Build a map: date => [sessions, users] with smart tenant filtering
         $dateMap = [];
-        
+
         foreach ($response->getRows() as $row) {
             $date = $this->getSafeValue($row->getDimensionValues(), 0, '');
             $pagePath = $this->getSafeValue($row->getDimensionValues(), 1, '');
@@ -619,7 +619,7 @@ class GoogleAnalyticsService
 
             // Smart tenant matching: Check if this row belongs to requested tenant
             $belongsToTenant = false;
-            
+
             // If tenant_id is recorded and matches, include it
             if (!empty($recordedTenant) && $recordedTenant === $tenantId) {
                 $belongsToTenant = true;
@@ -803,7 +803,7 @@ class GoogleAnalyticsService
                 if (empty($recordedTenant)) {
                     // Verify this path belongs to the requesting tenant by slug lookup
                     $derivedTenant = $this->deriveTenantFromPathSlug($path);
-                    
+
                     // Only include if slug matches requested tenant OR if we can't determine tenant
                     // (in the latter case, include it anyway as fallback for historical data)
                     if ($derivedTenant === null || $derivedTenant === $tenantId) {
@@ -853,7 +853,7 @@ class GoogleAnalyticsService
                 $views    = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
                 $allPaths[] = [
                     'full_url' => $fullUrl,
-                    'path' => $path, 
+                    'path' => $path,
                     'tenant_id' => $tenantId,
                     'views' => $views
                 ];
@@ -902,7 +902,7 @@ class GoogleAnalyticsService
                 $views    = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
                 $tenantPaths[] = [
                     'full_url' => $fullUrl,
-                    'path' => $path, 
+                    'path' => $path,
                     'tenant_id' => $tenantId,
                     'views' => $views
                 ];
@@ -952,7 +952,7 @@ class GoogleAnalyticsService
                     $views    = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
                     $specificPathsResult[] = [
                         'full_url' => $fullUrl,
-                        'path' => $path, 
+                        'path' => $path,
                         'tenant_id' => $tenantId,
                         'views' => $views
                     ];
@@ -1208,7 +1208,7 @@ class GoogleAnalyticsService
     /**
      * Get page locations (full URLs) with views
      * Returns full URLs including domain, not just paths
-     * 
+     *
      * @param Carbon $startDate
      * @param Carbon $endDate
      * @param string|null $tenantId - Optional filter by tenant
@@ -1315,10 +1315,10 @@ class GoogleAnalyticsService
     /**
      * Get realtime data (last 30 minutes)
      * Returns currently active users and recent page views
-     * 
+     *
      * NOTE: Realtime API does NOT support custom event parameters
      * So we get all data and filter by path pattern on backend
-     * 
+     *
      * @param string|null $tenantId - Optional filter by tenant (filters by matching subdomain in path)
      * @return array
      */
@@ -1355,12 +1355,12 @@ class GoogleAnalyticsService
                 $pagePath = $this->getSafeValue($row->getDimensionValues(), 0, '');
                 $activeUsers = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
                 $views = (int) $this->getSafeValue($row->getMetricValues(), 1, 0);
-                
+
                 if ($pagePath !== '') {
                     // Try to extract tenant from path
                     // Paths like: /lira/property/xyz or /lira or just /ar
                     $extractedTenant = $this->extractTenantFromPath($pagePath);
-                    
+
                     $pages[] = [
                         'path' => $pagePath,
                         'tenant_id' => $extractedTenant, // Extracted from path
@@ -1378,7 +1378,7 @@ class GoogleAnalyticsService
                     return $page['tenant_id'] === $tenantId;
                 });
                 $pages = array_values($pages); // Re-index
-                
+
                 // Recalculate totals for filtered data
                 $totalActiveUsers = array_sum(array_column($pages, 'active_users'));
                 $totalViews = array_sum(array_column($pages, 'views'));
@@ -1417,19 +1417,19 @@ class GoogleAnalyticsService
     {
         // Remove leading slash and split
         $parts = explode('/', trim($path, '/'));
-        
+
         // If path is like /lira or /lira/property/xyz
         // First segment might be tenant or language
         $firstSegment = $parts[0] ?? '';
-        
+
         // Common language codes - not tenants
         $languages = ['ar', 'en', 'fr', 'es', 'de'];
-        
+
         if (!empty($firstSegment) && !in_array($firstSegment, $languages)) {
             // Likely a tenant subdomain path
             return $firstSegment;
         }
-        
+
         return null; // Can't determine tenant from path
     }
 
@@ -1473,7 +1473,7 @@ class GoogleAnalyticsService
      * Derive tenant from path slug by querying the database
      * Paths like /ar/property/{slug} or /ar/project/{slug} are parsed
      * The slug is looked up in the DB to find the owning tenant (user)
-     * 
+     *
      * @param string $path - GA4 pagePath (e.g., /ar/property/shk-llaygar-fy-sharaa-rkm-399)
      * @return string|null - tenant username or null if not found
      */
@@ -1483,7 +1483,7 @@ class GoogleAnalyticsService
             // Parse path: /ar/property/{slug} or /en/project/{slug} etc.
             // Remove leading slash and split
             $parts = array_filter(explode('/', trim($path, '/')));
-            
+
             if (count($parts) < 2) {
                 return null;
             }
@@ -1525,7 +1525,7 @@ class GoogleAnalyticsService
                 // Look up project by slug in user_project_contents (NOT project_contents)
                 // Use LOWER() for case-insensitive matching to handle Arabic slugs
                 $project = \DB::table('user_project_contents as upc')
-                    ->join('projects as p', 'p.id', '=', 'upc.project_id')
+                    ->join('user_projects as p', 'p.id', '=', 'upc.project_id')
                     ->join('users as u', 'u.id', '=', 'p.user_id')
                     ->whereRaw('LOWER(upc.slug) = ?', [strtolower($slug)])
                     ->select('u.username')
@@ -1548,7 +1548,7 @@ class GoogleAnalyticsService
     /**
      * Get today's analytics data (near realtime with tenant filtering)
      * Returns data from today only - updates every 1-2 hours
-     * 
+     *
      * @param string|null $tenantId - Optional filter by tenant
      * @return array
      */
@@ -1664,7 +1664,7 @@ class GoogleAnalyticsService
     /**
      * Get tenant-specific page views (production use)
      * Returns ONLY the specified tenant's paths and views
-     * 
+     *
      * @param string $tenantId
      * @param Carbon $startDate
      * @param Carbon $endDate
