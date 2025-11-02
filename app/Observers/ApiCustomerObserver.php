@@ -33,13 +33,21 @@ class ApiCustomerObserver
     }
 
     public function deleting(ApiCustomer $m): void {
-        $ctx = AuditContext::data();
-        CustomerLog::create(array_merge($ctx, [
-            'customer_id' => $m->id,
-            'tenant_id'   => $ctx['tenant_id'] ?? $m->user_id,
-            'action'      => 'deleted',
-            'changes'     => ['before' => $m->getOriginal()],
-        ]));
+        try {
+            $ctx = AuditContext::data();
+            CustomerLog::create(array_merge($ctx, [
+                'customer_id' => $m->id,
+                'tenant_id'   => $ctx['tenant_id'] ?? $m->user_id,
+                'action'      => 'deleted',
+                'changes'     => ['before' => $m->getOriginal()],
+            ]));
+        } catch (\Exception $e) {
+            \Log::error('Failed to log customer deletion', [
+                'customer_id' => $m->id,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't throw - allow deletion to proceed even if logging fails
+        }
     }
 
     public function restored(ApiCustomer $m): void {
