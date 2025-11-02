@@ -32,7 +32,7 @@ class ApiCustomerObserver
         ]));
     }
 
-    public function deleted(ApiCustomer $m): void {
+    public function deleting(ApiCustomer $m): void {
         $ctx = AuditContext::data();
         CustomerLog::create(array_merge($ctx, [
             'customer_id' => $m->id,
