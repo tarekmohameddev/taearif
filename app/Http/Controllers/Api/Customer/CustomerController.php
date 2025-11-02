@@ -622,8 +622,17 @@ class CustomerController extends Controller
             // Store customer data for activity log before deletion
             $customerData = $customer->toArray();
 
+            // Enable query logging to see what's happening
+            DB::enableQueryLog();
+
             // Delete customer - related records will be automatically deleted via CASCADE
             $customer->delete();
+
+            // Log successful deletion queries
+            Log::info('Customer deletion successful', [
+                'customer_id' => $customer->id,
+                'queries' => DB::getQueryLog()
+            ]);
 
             TenantActivity::emit($request, 'customer.deleted', 'api_customers', $customer->id, $customerData, null);
 
@@ -632,14 +641,35 @@ class CustomerController extends Controller
                 'message' => 'Customer deleted successfully'
             ]);
         } catch (QueryException $e) {
+            Log::error('QueryException during customer deletion', [
+                'customer_id' => $customer->id,
+                'code' => $e->getCode(),
+                'message' => $e->getMessage(),
+            ]);
+
             if ($e->getCode() === '23000' || str_contains($e->getMessage(), 'foreign key constraint')) {
                 return response()->json([
                     'status'  => 'error',
                     'message' => 'Cannot delete customer due to related records.',
-                    'sql_error' => config('app.debug') ? $e->getMessage() : null,
+                    'sql_error' => $e->getMessage(),
                 ], 409);
             }
             throw $e;
+        } catch (\Exception $e) {
+            Log::error('Unexpected exception during customer deletion', [
+                'customer_id' => $customer->id,
+                'exception' => get_class($e),
+                'code' => $e->getCode(),
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Cannot delete customer due to related records.',
+                'sql_error' => $e->getMessage(),
+                'exception_type' => get_class($e),
+            ], 409);
         }
     }
 
