@@ -626,6 +626,7 @@ class CustomerController extends Controller
                 DB::table('users_api_customers_appointments')->where('customer_id', $customer->id)->delete();
                 DB::table('api_customer_property_interested')->where('customer_id', $customer->id)->delete();
                 DB::table('api_customer_inquiry')->where('customer_id', $customer->id)->delete();
+                DB::table('customer_logs')->where('customer_id', $customer->id)->delete();
 
                 $customer->delete();
             });
