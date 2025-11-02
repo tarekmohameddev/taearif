@@ -66,24 +66,27 @@ return new class extends Migration
 
         // CRITICAL: Add index on customer_id if it doesn't exist
         // MySQL requires an index on foreign key columns
-        $indexExists = DB::selectOne("
-            SHOW INDEX FROM api_customer_inquiry
-            WHERE Column_name = 'customer_id'
-        ");
-
-        if (!$indexExists) {
-            Schema::table('api_customer_inquiry', function (Blueprint $table) {
-                $table->index('customer_id');
-            });
+        // Use raw SQL to ensure it works
+        try {
+            DB::statement("
+                ALTER TABLE api_customer_inquiry
+                ADD INDEX api_customer_inquiry_customer_id_index (customer_id)
+            ");
+        } catch (\Exception $e) {
+            // Index might already exist, that's OK
+            if (!str_contains($e->getMessage(), 'Duplicate key name')) {
+                throw $e;
+            }
         }
 
-        // Now recreate the foreign key with proper CASCADE
-        Schema::table('api_customer_inquiry', function (Blueprint $table) {
-            $table->foreign('customer_id')
-                ->references('id')
-                ->on('api_customers')
-                ->onDelete('cascade');
-        });
+        // Now recreate the foreign key with proper CASCADE using raw SQL
+        DB::statement("
+            ALTER TABLE api_customer_inquiry
+            ADD CONSTRAINT api_customer_inquiry_customer_id_foreign
+            FOREIGN KEY (customer_id)
+            REFERENCES api_customers(id)
+            ON DELETE CASCADE
+        ");
     }
 
     /**
