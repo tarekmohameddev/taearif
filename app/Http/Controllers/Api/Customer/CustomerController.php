@@ -619,26 +619,20 @@ class CustomerController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($customer) {
-                // Defensive deletes to avoid FK violations on older schemas
-                DB::table('crm_cards')->where('card_customer_id', $customer->id)->delete();
-                DB::table('users_api_customers_reminders')->where('customer_id', $customer->id)->delete();
-                DB::table('users_api_customers_appointments')->where('customer_id', $customer->id)->delete();
-                DB::table('api_customer_property_interested')->where('customer_id', $customer->id)->delete();
-                DB::table('api_customer_inquiry')->where('customer_id', $customer->id)->delete();
-                DB::table('customer_logs')->where('customer_id', $customer->id)->delete();
+            // Store customer data for activity log before deletion
+            $customerData = $customer->toArray();
 
-                $customer->delete();
-            });
+            // Delete customer - related records will be automatically deleted via CASCADE
+            $customer->delete();
 
-            TenantActivity::emit($request, 'customer.deleted', 'api_customers', $customer->id, $customer->toArray(), null);
+            TenantActivity::emit($request, 'customer.deleted', 'api_customers', $customer->id, $customerData, null);
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Customer deleted successfully'
             ]);
         } catch (QueryException $e) {
-            if ($e->getCode() === '23000') {
+            if ($e->getCode() === '23000' || str_contains($e->getMessage(), 'foreign key constraint')) {
                 return response()->json([
                     'status'  => 'error',
                     'message' => 'Cannot delete customer due to related records.',
@@ -647,8 +641,6 @@ class CustomerController extends Controller
             }
             throw $e;
         }
-
-
     }
 
     /**
