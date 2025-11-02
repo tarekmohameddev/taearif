@@ -31,6 +31,39 @@ return new class extends Migration
             });
         }
 
+        // Clean up orphaned records (inquiries with non-existent customers)
+        DB::statement("
+            DELETE FROM api_customer_inquiry
+            WHERE customer_id NOT IN (SELECT id FROM api_customers)
+        ");
+
+        // Ensure column types match
+        // Get the column type of api_customers.id
+        $customerIdType = DB::selectOne("
+            SELECT COLUMN_TYPE
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'api_customers'
+            AND COLUMN_NAME = 'id'
+        ");
+
+        $inquiryCustomerIdType = DB::selectOne("
+            SELECT COLUMN_TYPE
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'api_customer_inquiry'
+            AND COLUMN_NAME = 'customer_id'
+        ");
+
+        // If types don't match, fix it
+        if ($customerIdType && $inquiryCustomerIdType &&
+            $customerIdType->COLUMN_TYPE !== $inquiryCustomerIdType->COLUMN_TYPE) {
+            DB::statement("
+                ALTER TABLE api_customer_inquiry
+                MODIFY customer_id {$customerIdType->COLUMN_TYPE}
+            ");
+        }
+
         // Recreate the foreign key with proper CASCADE
         Schema::table('api_customer_inquiry', function (Blueprint $table) {
             $table->foreign('customer_id')
