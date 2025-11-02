@@ -64,7 +64,20 @@ return new class extends Migration
             ");
         }
 
-        // Recreate the foreign key with proper CASCADE
+        // CRITICAL: Add index on customer_id if it doesn't exist
+        // MySQL requires an index on foreign key columns
+        $indexExists = DB::selectOne("
+            SHOW INDEX FROM api_customer_inquiry
+            WHERE Column_name = 'customer_id'
+        ");
+
+        if (!$indexExists) {
+            Schema::table('api_customer_inquiry', function (Blueprint $table) {
+                $table->index('customer_id');
+            });
+        }
+
+        // Now recreate the foreign key with proper CASCADE
         Schema::table('api_customer_inquiry', function (Blueprint $table) {
             $table->foreign('customer_id')
                 ->references('id')
