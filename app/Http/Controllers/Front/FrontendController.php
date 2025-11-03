@@ -490,25 +490,31 @@ class FrontendController extends Controller
     {
         $user = getUser();
 
-        if (!empty($user) && isset($user->account_type) && $user->account_type === 'employee') {
+        // Guard clause: Ensure user exists
+        if (empty($user)) {
+            abort(404);
+        }
+
+        // Handle employee account type
+        if (isset($user->account_type) && $user->account_type === 'employee') {
             $user = \App\Models\User::find($user->tenant_id);
 
-            if ($user) {
-                $host = request()->getHost();
-                $primaryHost = str_replace('www.', '', env('WEBSITE_HOST'));
-                $hostNoWww   = str_replace('www.', '', $host);
+            if (empty($user)) {
+                abort(404);
+            }
 
-                if ($hostNoWww === $primaryHost) {
-                    $target = route('front.user.detail.view', ['username' => $user->username]);
-                    return redirect()->to($target);
-                }
+            $host = request()->getHost();
+            $primaryHost = str_replace('www.', '', env('WEBSITE_HOST'));
+            $hostNoWww   = str_replace('www.', '', $host);
 
-                $scheme = request()->getScheme();
-                $target = $scheme . '://' . $user->username . '.' . $primaryHost;
+            if ($hostNoWww === $primaryHost) {
+                $target = route('front.user.detail.view', ['username' => $user->username]);
                 return redirect()->to($target);
             }
 
-            abort(404);
+            $scheme = request()->getScheme();
+            $target = $scheme . '://' . $user->username . '.' . $primaryHost;
+            return redirect()->to($target);
         }
 
         $data['user'] = $user;
@@ -542,7 +548,7 @@ class FrontendController extends Controller
         } else {
             $userCurrentLang = UserLanguage::where('is_default', 1)->where('user_id', $user->id)->first();
         }
-        
+
         // If user has no language, redirect to error or create default language
         if (!$userCurrentLang) {
             abort(500, 'User language configuration is missing. Please contact support.');
@@ -550,7 +556,7 @@ class FrontendController extends Controller
         //
 
         $userBs = \App\Models\User\BasicSetting::where('user_id', $user->id)->first();
-        
+
         // If user has no basic settings, create them
         if (!$userBs) {
             $this->createBasicSettingForUser($user);
@@ -571,7 +577,7 @@ class FrontendController extends Controller
         $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
         $api_about_settingsData = ApiAboutSettings::where('user_id', $user->id)->first();
         $api_menu_settingsData = ApiMenuSetting::where('user_id', $user->id)->first();
-        
+
         // Get customer dropdown settings
         $api_customer_dropdown_settingsData = \App\Models\Api\CustomerDropdownSetting::where('user_id', $user->id)->first();
 
@@ -583,7 +589,7 @@ class FrontendController extends Controller
         $data['api_general_settingsData'] = $api_general_settingsData;
         $data['api_about_settingsData'] = $api_about_settingsData;
         $data['api_menu_settingsData'] = $api_menu_settingsData;
-        
+
         // Process customer dropdown settings and pass only the final values
         $data['customer_dropdown_visible'] = $api_customer_dropdown_settingsData ? $api_customer_dropdown_settingsData->is_visible : true;
         $data['customer_dropdown_show_login'] = $api_customer_dropdown_settingsData ? $api_customer_dropdown_settingsData->show_login : true;
@@ -592,7 +598,7 @@ class FrontendController extends Controller
         $data['customer_dropdown_show_logout'] = $api_customer_dropdown_settingsData ? $api_customer_dropdown_settingsData->show_logout : true;
 
         $data['home_sections'] = User\HomeSection::where('user_id', $user->id)->first();
-        
+
         // If user has no home sections, create them
         if (!$data['home_sections']) {
             $this->createHomeSectionsForUser($user);
@@ -2171,7 +2177,7 @@ class FrontendController extends Controller
             'topRegions' => $topRegions,
         ]);
     }
-    
+
     private function createBasicSettingForUser($user)
     {
         $basicSettingsJson = '{
@@ -2245,7 +2251,7 @@ class FrontendController extends Controller
 
         \App\Models\User\BasicSetting::create($basicSettingsArray);
     }
-    
+
     private function createHomeSectionsForUser($user)
     {
         $homeSectionsData = [
