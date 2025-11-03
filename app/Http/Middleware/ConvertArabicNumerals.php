@@ -20,18 +20,20 @@ class ConvertArabicNumerals
      */
     public function handle(Request $request, Closure $next)
     {
-        // Convert all input data
+        // Handle JSON requests separately
+        if ($request->isJson()) {
+            $this->convertJsonData($request);
+            return $next($request);
+        }
+
+        // Convert query parameters for GET requests
         if ($request->isMethod('get')) {
             $this->convertRequestData($request, 'query');
         }
 
+        // Convert form data for POST/PUT/PATCH
         if ($request->isMethod('post') || $request->isMethod('put') || $request->isMethod('patch')) {
             $this->convertRequestData($request, 'request');
-        }
-
-        // Also handle JSON requests
-        if ($request->isJson()) {
-            $this->convertJsonData($request);
         }
 
         return $next($request);
@@ -62,11 +64,12 @@ class ConvertArabicNumerals
      */
     protected function convertJsonData(Request $request): void
     {
-        $data = $request->json()->all();
+        $data = $request->all();
 
         if (!empty($data)) {
             $converted = NumberHelper::convertArrayToWestern($data);
-            $request->json()->replace($converted);
+            // Replace all input data with converted values
+            $request->replace($converted);
         }
     }
 }
