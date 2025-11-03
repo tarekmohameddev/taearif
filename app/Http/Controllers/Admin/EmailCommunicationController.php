@@ -89,12 +89,12 @@ class EmailCommunicationController extends Controller
         $abs->welcome_message_template = $request->welcome_message_template;
         $abs->subscription_expiration_template = $request->subscription_expiration_template;
         $abs->subscription_expired_template = $request->subscription_expired_template;
-        
+
         // Email notification enable/disable settings
         $abs->welcome_message_email_enabled = $request->has('welcome_message_email_enabled') ? true : false;
         $abs->subscription_expiration_email_enabled = $request->has('subscription_expiration_email_enabled') ? true : false;
         $abs->subscription_expired_email_enabled = $request->has('subscription_expired_email_enabled') ? true : false;
-        
+
         $abs->save();
 
         Session::flash('success', 'Email template settings updated successfully!');
@@ -110,7 +110,7 @@ class EmailCommunicationController extends Controller
         try {
             $emailService = new EmailService();
             $success = $emailService->testEmailConfiguration($request->test_email);
-            
+
             if ($success) {
                 return response()->json([
                     'success' => true,
@@ -128,5 +128,23 @@ class EmailCommunicationController extends Controller
                 'message' => 'Error: ' . $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Update master toggle for all Email notifications
+     */
+    public function updateMasterEmailToggle(Request $request)
+    {
+        $abs = BasicExtended::first();
+        if (!$abs) {
+            $abs = new BasicExtended();
+        }
+
+        $abs->email_notifications_enabled = $request->has('email_notifications_enabled') ? 1 : 0;
+        $abs->save();
+
+        $status = $abs->email_notifications_enabled ? 'تفعيل' : 'إيقاف';
+        Session::flash('success', "تم {$status} جميع إشعارات البريد الإلكتروني بنجاح!");
+        return redirect()->back();
     }
 }

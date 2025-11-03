@@ -20,6 +20,15 @@ class WhatsAppService
      */
     public function sendPasswordResetCode($phoneNumber, $code, $userName = null, $userLanguage = 'ar', $resetUrl = null, $templateName = null, $userId = null)
     {
+        // Check master toggle first - if all WhatsApp notifications are disabled, return early
+        if (!$this->settings || !($this->settings->whatsapp_notifications_enabled ?? true)) {
+            Log::info('WhatsApp notifications are disabled by master toggle', [
+                'phone' => $phoneNumber,
+                'type' => 'password_reset'
+            ]);
+            return false;
+        }
+
         // If WhatsApp service is not configured or disabled, use default message
         if (!$this->settings || !$this->settings->whatsapp_service || !$this->settings->password_reset_enabled) {
             // Prepare default message
@@ -671,6 +680,15 @@ class WhatsAppService
      */
     public function sendWelcomeMessage($phoneNumber, $message, $userName = null, $userEmail = null, $userId = null)
     {
+        // Check master toggle first
+        if (!$this->settings || !($this->settings->whatsapp_notifications_enabled ?? true)) {
+            Log::info('WhatsApp notifications are disabled by master toggle', [
+                'phone' => $phoneNumber,
+                'type' => 'welcome_message'
+            ]);
+            return false;
+        }
+
         // Get company name from user_basic_settings table (same logic as password reset)
         $displayName = $userName ?? 'عزيزي المستخدم'; // Default fallback
         if ($userId) {
@@ -704,6 +722,15 @@ class WhatsAppService
      */
     public function sendSubscriptionExpirationMessage($phoneNumber, $message, $userName = null, $packageName = null, $expiryDate = null)
     {
+        // Check master toggle first
+        if (!$this->settings || !($this->settings->whatsapp_notifications_enabled ?? true)) {
+            Log::info('WhatsApp notifications are disabled by master toggle', [
+                'phone' => $phoneNumber,
+                'type' => 'subscription_expiration'
+            ]);
+            return false;
+        }
+
         $message = str_replace('{name}', $userName ?? 'User', $message);
         $message = str_replace('{package_name}', $packageName ?? 'Package', $message);
         $message = str_replace('{expiry_date}', $expiryDate ?? 'N/A', $message);
@@ -722,6 +749,15 @@ class WhatsAppService
      */
     public function sendSubscriptionExpiredMessage($phoneNumber, $message, $userName = null, $packageName = null, $expiryDate = null)
     {
+        // Check master toggle first
+        if (!$this->settings || !($this->settings->whatsapp_notifications_enabled ?? true)) {
+            Log::info('WhatsApp notifications are disabled by master toggle', [
+                'phone' => $phoneNumber,
+                'type' => 'subscription_expired'
+            ]);
+            return false;
+        }
+
         $message = str_replace('{name}', $userName ?? 'User', $message);
         $message = str_replace('{package_name}', $packageName ?? 'Package', $message);
         $message = str_replace('{expiry_date}', $expiryDate ?? 'N/A', $message);
@@ -2090,7 +2126,7 @@ class WhatsAppService
 
     /**
      * Send a generic message to a phone number
-     * 
+     *
      * @param string $phoneNumber The phone number to send to
      * @param string $message The message content
      * @return bool True if sent successfully, false otherwise

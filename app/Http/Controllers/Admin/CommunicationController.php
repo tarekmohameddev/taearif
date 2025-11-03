@@ -169,14 +169,14 @@ class CommunicationController extends Controller
         try {
             $whatsappService = new WhatsAppService();
             $testCode = rand(100000, 999999);
-            
+
             Log::info('Attempting to send WhatsApp test message', [
                 'phone' => $request->test_phone,
                 'code' => $testCode
             ]);
-            
+
             $whatsappService->sendPasswordResetCode($request->test_phone, $testCode, 'Test User');
-            
+
             Log::info('WhatsApp test message sent successfully');
             Session::flash('success', "Test message sent successfully to {$request->test_phone}. Code: {$testCode}");
         } catch (\Exception $e) {
@@ -193,13 +193,13 @@ class CommunicationController extends Controller
     public function checkConfiguration()
     {
         Log::info('Configuration check request received');
-        
+
         try {
             $whatsappService = new WhatsAppService();
             $result = $whatsappService->testConfiguration();
-            
+
             Log::info('Configuration check result', $result);
-            
+
             if ($result['status'] === 'success') {
                 Session::flash('success', $result['message']);
             } else {
@@ -241,12 +241,12 @@ class CommunicationController extends Controller
         $abs->welcome_message_text = $request->welcome_message_text;
         $abs->welcome_message_delay = $request->welcome_message_delay ?? 5;
         $abs->welcome_message_template = $request->welcome_message_template;
-        
+
         // Store the selected API for this message type
         if ($request->selected_api) {
             $abs->welcome_message_api = $request->selected_api;
         }
-        
+
         $abs->save();
 
         $apiName = $request->selected_api === 'meta' ? 'Meta Cloud API' : 'Evolution API';
@@ -263,9 +263,9 @@ class CommunicationController extends Controller
         try {
             $whatsappService = new WhatsAppService();
             $testMessage = " مرحباً بك  في منصة تعاريف ! هذا اختبار لرسالة الترحيب.";
-            
+
             $whatsappService->sendWelcomeMessage($request->test_phone, $testMessage, 'مستخدم تجريبي');
-            
+
             Session::flash('success', "Test welcome message sent successfully to {$request->test_phone}");
         } catch (\Exception $e) {
             Session::flash('error', 'Test failed: ' . $e->getMessage());
@@ -302,12 +302,12 @@ class CommunicationController extends Controller
         $abs->subscription_expiration_days_before = $request->subscription_expiration_days_before ?? 3;
         $abs->subscription_expiration_template = $request->subscription_expiration_template;
         $abs->subscription_expiration_send_time = $request->subscription_expiration_send_time ?? '09:00';
-        
+
         // Store the selected API for this message type
         if ($request->selected_api) {
             $abs->subscription_expiration_api = $request->selected_api;
         }
-        
+
         $abs->save();
 
         $apiName = $request->selected_api === 'meta' ? 'Meta Cloud API' : 'Evolution API';
@@ -324,9 +324,9 @@ class CommunicationController extends Controller
         try {
             $whatsappService = new WhatsAppService();
             $testMessage = "{name}، تنبيه: اشتراكك في {package_name} سينتهي في {expiry_date}. يرجى تجديد اشتراكك لتجنب انقطاع الخدمة.";
-            
+
             $whatsappService->sendSubscriptionExpirationMessage($request->test_phone, $testMessage, 'مستخدم تجريبي', 'الباقة الذهبية', '2024-12-31');
-            
+
             Session::flash('success', "Test subscription expiration message sent successfully to {$request->test_phone}");
         } catch (\Exception $e) {
             Session::flash('error', 'Test failed: ' . $e->getMessage());
@@ -363,12 +363,12 @@ class CommunicationController extends Controller
 يمكنك الترقية في أي وقت.';
         $abs->subscription_expired_template = $request->subscription_expired_template;
         $abs->subscription_expired_send_time = $request->subscription_expired_send_time ?? '09:00';
-        
+
         // Store the selected API for this message type
         if ($request->selected_api) {
             $abs->subscription_expired_api = $request->selected_api;
         }
-        
+
         $abs->save();
 
         $apiName = $request->selected_api === 'meta' ? 'Meta Cloud API' : 'Evolution API';
@@ -385,7 +385,7 @@ class CommunicationController extends Controller
         try {
             $whatsappService = new WhatsAppService();
             $testMessage = "{name}، انتهت صلاحية اشتراكك في {package_name} في {expiry_date}. يرجى تجديد اشتراكك لاستعادة الخدمة.";
-            $whatsappService->sendSubscriptionExpiredMessage($request->test_phone, $testMessage, 'مستخدم تجريبي', 'الباقة الذهبية', '2024-12-31');          
+            $whatsappService->sendSubscriptionExpiredMessage($request->test_phone, $testMessage, 'مستخدم تجريبي', 'الباقة الذهبية', '2024-12-31');
             Session::flash('success', "Test subscription expired message sent successfully to {$request->test_phone}");
         } catch (\Exception $e) {
             Session::flash('error', 'Test failed: ' . $e->getMessage());
@@ -423,12 +423,12 @@ class CommunicationController extends Controller
 أو يمكنك الضغط على الرابط التالي:
 {reset_url}?code={code}';
         $abs->password_reset_template = $request->password_reset_template;
-        
+
         // Store the selected API for this message type
         if ($request->selected_api) {
             $abs->password_reset_api = $request->selected_api;
         }
-        
+
         $abs->save();
 
         // Check for Meta Cloud template warning
@@ -446,11 +446,11 @@ class CommunicationController extends Controller
 
         $apiName = $request->selected_api === 'meta' ? 'Meta Cloud API' : 'Evolution API';
         Session::flash('success', "Password reset message settings updated successfully for {$apiName}!");
-        
+
         if ($warningMessage) {
             Session::flash('warning', $warningMessage);
         }
-        
+
         return redirect()->back();
     }
 
@@ -464,9 +464,9 @@ class CommunicationController extends Controller
             $whatsappService = new WhatsAppService();
             $testCode = rand(100000, 999999);
             $resetUrl = env('FRONTEND_URL', 'https://app.taearif.com') . '/reset';
-            
+
             $whatsappService->sendPasswordResetCode($request->test_phone, $testCode, 'مستخدم تجريبي', 'ar', $resetUrl, 'password_reset');
-            
+
             Session::flash('success', "Test password reset message sent successfully to {$request->test_phone}. Code: {$testCode}");
         } catch (\Exception $e) {
             Session::flash('error', 'Test failed: ' . $e->getMessage());
@@ -483,7 +483,7 @@ class CommunicationController extends Controller
     {
         try {
             $abs = BasicSetting::first();
-            
+
             if (!$abs || !$abs->meta_access_token || !$abs->meta_business_account_id) {
                 return response()->json([
                     'success' => false,
@@ -493,12 +493,12 @@ class CommunicationController extends Controller
 
             $whatsappService = new WhatsAppService();
             $templates = $whatsappService->fetchMetaTemplates();
-            
+
             return response()->json([
                 'success' => true,
                 'templates' => $templates
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -567,14 +567,14 @@ class CommunicationController extends Controller
             ]);
 
             $abs = BasicSetting::first();
-            
+
             // Debug logging
             Log::info('Test template request', [
                 'test_phone' => $request->test_phone,
                 'meta_test_template_name' => $abs->meta_test_template_name ?? 'null',
                 'whatsapp_service' => $abs->whatsapp_service ?? 'null'
             ]);
-            
+
             if (!$abs || !$abs->meta_test_template_name) {
                 return response()->json([
                     'success' => false,
@@ -607,5 +607,23 @@ class CommunicationController extends Controller
                 'message' => 'Error sending test message: ' . $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Update master toggle for all WhatsApp notifications
+     */
+    public function updateMasterWhatsAppToggle(Request $request)
+    {
+        $abs = BasicSetting::first();
+        if (!$abs) {
+            $abs = new BasicSetting();
+        }
+
+        $abs->whatsapp_notifications_enabled = $request->has('whatsapp_notifications_enabled') ? 1 : 0;
+        $abs->save();
+
+        $status = $abs->whatsapp_notifications_enabled ? 'تفعيل' : 'إيقاف';
+        Session::flash('success', "تم {$status} جميع إشعارات واتس اب بنجاح!");
+        return redirect()->back();
     }
 }

@@ -21,6 +21,7 @@ class BasicExtended extends Model
         'from_mail',
         'from_name',
         'is_smtp',
+        'email_notifications_enabled',
         'smtp_host',
         'smtp_port',
         'encryption',
