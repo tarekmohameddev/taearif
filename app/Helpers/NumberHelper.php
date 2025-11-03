@@ -57,8 +57,16 @@ class NumberHelper
             return $value;
         }
 
-        // Remember original type
-        $wasString = is_string($value);
+        // If it's not a string, convert to string for checking
+        if (!is_string($value)) {
+            return $value;
+        }
+
+        // Check if the string contains Arabic or Persian numerals
+        // If not, return it unchanged to preserve type
+        if (!self::hasArabicNumerals($value)) {
+            return $value;
+        }
 
         // Convert to string for processing
         $string = (string) $value;
@@ -69,19 +77,7 @@ class NumberHelper
         // Replace Persian numerals
         $string = strtr($string, self::$persianNumerals);
 
-        // Keep as string to preserve data integrity (phone numbers, etc.)
-        // Only convert type if the original value wasn't a string
-        if (!$wasString && is_numeric($string)) {
-            // If it contains a decimal point, return as float
-            if (strpos($string, '.') !== false) {
-                return (float) $string;
-            }
-            // Otherwise return as integer if it's not too large
-            if ($string <= PHP_INT_MAX && $string >= PHP_INT_MIN) {
-                return (int) $string;
-            }
-        }
-
+        // Always return as string to preserve data integrity
         return $string;
     }
 

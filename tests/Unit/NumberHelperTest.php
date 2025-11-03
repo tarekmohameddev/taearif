@@ -147,5 +147,45 @@ class NumberHelperTest extends TestCase
         $this->assertTrue(is_numeric($convertedFrom));
         $this->assertTrue(is_numeric($convertedTo));
     }
+
+    /**
+     * Test that phone numbers without Arabic numerals stay as strings
+     *
+     * @return void
+     */
+    public function test_phone_numbers_remain_strings()
+    {
+        // Phone numbers with Western numerals should remain unchanged
+        $phone1 = '5555555555';
+        $phone2 = '0540215420';
+
+        $result1 = NumberHelper::convertToWestern($phone1);
+        $result2 = NumberHelper::convertToWestern($phone2);
+
+        // Should remain exactly the same (including type)
+        $this->assertSame($phone1, $result1);
+        $this->assertSame($phone2, $result2);
+
+        // Should be strings
+        $this->assertIsString($result1);
+        $this->assertIsString($result2);
+    }
+
+    /**
+     * Test that only values with Arabic numerals are converted
+     *
+     * @return void
+     */
+    public function test_only_convert_values_with_arabic_numerals()
+    {
+        // Values without Arabic numerals should be untouched
+        $this->assertSame('12345', NumberHelper::convertToWestern('12345'));
+        $this->assertSame('hello', NumberHelper::convertToWestern('hello'));
+        $this->assertSame('test123', NumberHelper::convertToWestern('test123'));
+
+        // Values with Arabic numerals should be converted
+        $this->assertEquals('12345', NumberHelper::convertToWestern('١٢٣٤٥'));
+        $this->assertEquals('test123', NumberHelper::convertToWestern('test١٢٣'));
+    }
 }
 
