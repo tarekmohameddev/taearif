@@ -57,6 +57,9 @@ class NumberHelper
             return $value;
         }
 
+        // Remember original type
+        $wasString = is_string($value);
+
         // Convert to string for processing
         $string = (string) $value;
 
@@ -66,8 +69,9 @@ class NumberHelper
         // Replace Persian numerals
         $string = strtr($string, self::$persianNumerals);
 
-        // If the original value was numeric, try to preserve the type
-        if (is_numeric($string)) {
+        // Keep as string to preserve data integrity (phone numbers, etc.)
+        // Only convert type if the original value wasn't a string
+        if (!$wasString && is_numeric($string)) {
             // If it contains a decimal point, return as float
             if (strpos($string, '.') !== false) {
                 return (float) $string;
