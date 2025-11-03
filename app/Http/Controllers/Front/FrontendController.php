@@ -499,8 +499,8 @@ class FrontendController extends Controller
         if (isset($user->account_type) && $user->account_type === 'employee') {
             $user = \App\Models\User::find($user->tenant_id);
 
-            if (empty($user)) {
-                abort(404);
+            if (empty($user) || empty($user->username)) {
+                abort(404, 'Tenant user not found or invalid.');
             }
 
             $host = request()->getHost();
@@ -515,6 +515,11 @@ class FrontendController extends Controller
             $scheme = request()->getScheme();
             $target = $scheme . '://' . $user->username . '.' . $primaryHost;
             return redirect()->to($target);
+        }
+
+        // Additional safety check for user
+        if (empty($user)) {
+            abort(404);
         }
 
         $data['user'] = $user;
@@ -568,9 +573,19 @@ class FrontendController extends Controller
         } else {
             $currentLang = Language::where('is_default', 1)->first();
         }
+
+        if (!$currentLang) {
+            abort(500, 'System language configuration is missing. Please contact support.');
+        }
+
         $lang_id = $currentLang->id;
         $bs = $currentLang->basic_setting;
         $be = $currentLang->basic_extended;
+
+        // Validate that basic_setting and basic_extended exist
+        if (!$bs || !$be) {
+            abort(500, 'System configuration is incomplete. Please contact support.');
+        }
 
         //
         $api_Banner_settingsData = ApiBannerSetting::where('user_id', $user->id)->first();
@@ -605,7 +620,8 @@ class FrontendController extends Controller
             $data['home_sections'] = User\HomeSection::where('user_id', $user->id)->first();
         }
 
-        $tenantId = getUser()->id;
+        // Use the already validated $user instead of calling getUser() again
+        $tenantId = $user->id;
 
 
         // Fetch categories with user-specific visibility settings (only active in api_user_category_settings)
