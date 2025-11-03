@@ -301,31 +301,31 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::get('/communication/whatsapp', 'Admin\CommunicationController@whatsapp')->name('communication.whatsapp');
         Route::post('/communication/whatsapp/update', 'Admin\CommunicationController@updateWhatsapp')->name('communication.whatsapp.update');
         Route::post('/communication/service/update', 'Admin\CommunicationController@updateServiceSelection')->name('communication.service.update');
-        
+
         // Meta Cloud API Routes
         Route::get('/communication/meta-cloud', 'Admin\CommunicationController@metaCloud')->name('communication.meta-cloud');
         Route::post('/communication/meta-cloud/update', 'Admin\CommunicationController@updateMetaCloud')->name('communication.meta-cloud.update');
-        
+
         // Evolution API Routes
         Route::get('/communication/evolution-api', 'Admin\CommunicationController@evolutionApi')->name('communication.evolution-api');
         Route::post('/communication/evolution-api/update', 'Admin\CommunicationController@updateEvolutionApi')->name('communication.evolution-api.update');
-        
+
         // Test Routes
         Route::post('/communication/test-whatsapp', 'Admin\CommunicationController@testWhatsAppService')->name('communication.test-whatsapp');
         Route::post('/communication/check-config', 'Admin\CommunicationController@checkConfiguration')->name('communication.check-config');
-        
+
         // Welcome Message Routes
         Route::post('/communication/welcome-message/update', 'Admin\CommunicationController@updateWelcomeMessage')->name('communication.welcome-message.update');
         Route::post('/communication/welcome-message/test', 'Admin\CommunicationController@testWelcomeMessage')->name('communication.welcome-message.test');
-        
+
         // Subscription Expiration Routes
         Route::post('/communication/subscription-expiration/update', 'Admin\CommunicationController@updateSubscriptionExpiration')->name('communication.subscription-expiration.update');
         Route::post('/communication/subscription-expiration/test', 'Admin\CommunicationController@testSubscriptionExpiration')->name('communication.subscription-expiration.test');
-        
+
         // On Expiration Notification Routes
         Route::post('/communication/subscription-expired/update', 'Admin\CommunicationController@updateSubscriptionExpired')->name('communication.subscription-expired.update');
         Route::post('/communication/subscription-expired/test', 'Admin\CommunicationController@testSubscriptionExpired')->name('communication.subscription-expired.test');
-        
+
         // Password Reset Routes
         Route::post('/communication/password-reset/update', 'Admin\CommunicationController@updatePasswordReset')->name('communication.password-reset.update');
         Route::post('/communication/password-reset/test', 'Admin\CommunicationController@testPasswordReset')->name('communication.password-reset.test');
@@ -335,12 +335,16 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/communication/email/smtp/update', 'Admin\EmailCommunicationController@updateSmtpSettings')->name('email-communication.smtp.update');
         Route::post('/communication/email/templates/update', 'Admin\EmailCommunicationController@updateEmailTemplates')->name('email-communication.templates.update');
         Route::post('/communication/email/test', 'Admin\EmailCommunicationController@testEmailConfiguration')->name('email-communication.test');
-        
+
         // Meta Templates
         Route::get('/communication/fetch-meta-templates', 'Admin\CommunicationController@fetchMetaTemplates')->name('communication.fetch-meta-templates');
         Route::post('/communication/save-selected-template', 'Admin\CommunicationController@saveSelectedTemplate')->name('communication.save-selected-template');
         Route::post('/communication/test-selected-template', 'Admin\CommunicationController@testSelectedTemplate')->name('communication.test-selected-template');
-        
+
+        // Master Toggle Routes
+        Route::post('/communication/master-toggle/whatsapp', 'Admin\CommunicationController@updateMasterWhatsAppToggle')->name('communication.master-toggle.whatsapp');
+        Route::post('/communication/master-toggle/email', 'Admin\EmailCommunicationController@updateMasterEmailToggle')->name('communication.master-toggle.email');
+
         // WhatsApp Templates Routes (Dedicated)
         Route::resource('/communication/whatsapp-templates', 'Admin\WhatsAppTemplateController')->names('whatsapp-templates');
         Route::post('/communication/whatsapp-templates/{whatsappTemplate}/toggle-status', 'Admin\WhatsAppTemplateController@toggleStatus')->name('whatsapp-templates.toggle-status');

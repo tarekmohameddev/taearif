@@ -24,20 +24,61 @@
     </ul>
   </div>
 
+  <!-- Master Toggle for All Email Notifications -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card bg-light border-success">
+        <div class="card-body py-3">
+          <form action="{{route('admin.communication.master-toggle.email')}}" method="POST" id="master-email-toggle-form">
+            @csrf
+            <div class="row align-items-center">
+              <div class="col-md-8">
+                <h5 class="mb-2">
+                  <i class="fas fa-power-off"></i>
+                  <strong>التحكم الرئيسي في إشعارات البريد الإلكتروني</strong>
+                </h5>
+                <p class="mb-0 text-muted">
+                  <i class="fas fa-info-circle"></i>
+                  استخدم هذا الزر للتحكم في جميع رسائل البريد الإلكتروني دفعة واحدة (رسائل الترحيب، انتهاء الباقة، إعادة تعيين كلمة المرور، إلخ)
+                </p>
+              </div>
+              <div class="col-md-4 text-right">
+                <div class="master-toggle-container">
+                  <div class="toggle-switch toggle-switch-lg">
+                    <input type="checkbox" id="email_notifications_enabled" name="email_notifications_enabled"
+                           value="1" {{($abs->email_notifications_enabled ?? true) ? 'checked' : ''}}
+                           onchange="document.getElementById('master-email-toggle-form').submit()">
+                    <label for="email_notifications_enabled" class="toggle-label">
+                      <span class="toggle-slider"></span>
+                      <span class="toggle-text">
+                        <span class="toggle-on">تفعيل الكل</span>
+                        <span class="toggle-off">إيقاف الكل</span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Tab Navigation -->
   <div class="row mb-4">
     <div class="col-12">
       <div class="tab-navigation">
         <div class="tab-bar">
-          <button class="tab-button {{(request('tab') == 'smtp_settings' || !request('tab')) ? 'active' : ''}}" 
+          <button class="tab-button {{(request('tab') == 'smtp_settings' || !request('tab')) ? 'active' : ''}}"
                   data-tab="smtp_settings">
             إعدادات SMTP
           </button>
-          <button class="tab-button {{request('tab') == 'email_templates' ? 'active' : ''}}" 
+          <button class="tab-button {{request('tab') == 'email_templates' ? 'active' : ''}}"
                   data-tab="email_templates">
             إعدادات القوالب
           </button>
-          <button class="tab-button {{request('tab') == 'test_email' ? 'active' : ''}}" 
+          <button class="tab-button {{request('tab') == 'test_email' ? 'active' : ''}}"
                   data-tab="test_email">
             اختبار البريد الإلكتروني
           </button>
@@ -61,7 +102,7 @@
           </div>
         </div>
         <div class="card-body">
-          
+
           <!-- SMTP Settings Tab -->
           <div id="smtp_settings-tab" class="tab-content {{(request('tab') == 'smtp_settings' || !request('tab')) ? 'active' : ''}}">
             <form action="{{route('admin.email-communication.smtp.update')}}" method="POST">
@@ -83,14 +124,14 @@
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="smtp_host"><strong>خادم SMTP</strong></label>
-                    <input type="text" class="form-control" id="smtp_host" name="smtp_host" 
+                    <input type="text" class="form-control" id="smtp_host" name="smtp_host"
                            value="{{$abs->smtp_host ?? ''}}" placeholder="smtp.gmail.com">
                   </div>
                 </div>
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="smtp_port"><strong>منفذ SMTP</strong></label>
-                    <input type="text" class="form-control" id="smtp_port" name="smtp_port" 
+                    <input type="text" class="form-control" id="smtp_port" name="smtp_port"
                            value="{{$abs->smtp_port ?? '587'}}" placeholder="587">
                   </div>
                 </div>
@@ -100,14 +141,14 @@
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="smtp_username"><strong>اسم المستخدم</strong></label>
-                    <input type="text" class="form-control" id="smtp_username" name="smtp_username" 
+                    <input type="text" class="form-control" id="smtp_username" name="smtp_username"
                            value="{{$abs->smtp_username ?? ''}}" placeholder="your-email@gmail.com">
                   </div>
                 </div>
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="smtp_password"><strong>كلمة المرور</strong></label>
-                    <input type="password" class="form-control" id="smtp_password" name="smtp_password" 
+                    <input type="password" class="form-control" id="smtp_password" name="smtp_password"
                            value="{{$abs->smtp_password ?? ''}}" placeholder="كلمة المرور">
                   </div>
                 </div>
@@ -126,7 +167,7 @@
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="from_mail"><strong>البريد الإلكتروني المرسل</strong></label>
-                    <input type="email" class="form-control" id="from_mail" name="from_mail" 
+                    <input type="email" class="form-control" id="from_mail" name="from_mail"
                            value="{{$abs->from_mail ?? ''}}" placeholder="noreply@example.com">
                   </div>
                 </div>
@@ -136,7 +177,7 @@
                 <div class="col-lg-12">
                   <div class="form-group">
                     <label for="from_name"><strong>اسم المرسل</strong></label>
-                    <input type="text" class="form-control" id="from_name" name="from_name" 
+                    <input type="text" class="form-control" id="from_name" name="from_name"
                            value="{{$abs->from_name ?? ''}}" placeholder="اسم الشركة">
                   </div>
                 </div>
@@ -156,7 +197,7 @@
           <div id="email_templates-tab" class="tab-content {{request('tab') == 'email_templates' ? 'active' : ''}}">
             <form action="{{route('admin.email-communication.templates.update')}}" method="POST">
               @csrf
-              
+
               <!-- Email Notification Controls -->
               <div class="row mb-4">
                 <div class="col-lg-12">
@@ -175,7 +216,7 @@
                     </label>
                     <div class="toggle-switch-container">
                       <div class="toggle-switch">
-                        <input type="checkbox" id="welcome_message_email_enabled" name="welcome_message_email_enabled" 
+                        <input type="checkbox" id="welcome_message_email_enabled" name="welcome_message_email_enabled"
                                value="1" {{($abs->welcome_message_email_enabled ?? true) ? 'checked' : ''}}>
                         <label for="welcome_message_email_enabled" class="toggle-label">
                           <span class="toggle-slider"></span>
@@ -196,7 +237,7 @@
                     </label>
                     <div class="toggle-switch-container">
                       <div class="toggle-switch">
-                        <input type="checkbox" id="subscription_expiration_email_enabled" name="subscription_expiration_email_enabled" 
+                        <input type="checkbox" id="subscription_expiration_email_enabled" name="subscription_expiration_email_enabled"
                                value="1" {{($abs->subscription_expiration_email_enabled ?? true) ? 'checked' : ''}}>
                         <label for="subscription_expiration_email_enabled" class="toggle-label">
                           <span class="toggle-slider"></span>
@@ -217,7 +258,7 @@
                     </label>
                     <div class="toggle-switch-container">
                       <div class="toggle-switch">
-                        <input type="checkbox" id="subscription_expired_email_enabled" name="subscription_expired_email_enabled" 
+                        <input type="checkbox" id="subscription_expired_email_enabled" name="subscription_expired_email_enabled"
                                value="1" {{($abs->subscription_expired_email_enabled ?? true) ? 'checked' : ''}}>
                         <label for="subscription_expired_email_enabled" class="toggle-label">
                           <span class="toggle-slider"></span>
@@ -252,7 +293,7 @@
                       @endforeach
                     </select>
                     <small class="text-info">
-                      <i class="fas fa-info-circle"></i> 
+                      <i class="fas fa-info-circle"></i>
                       <a href="{{route('admin.email-templates.create')}}?type=password_reset" target="_blank">إنشاء قالب جديد</a>
                     </small>
                   </div>
@@ -276,7 +317,7 @@
                       @endforeach
                     </select>
                     <small class="text-info">
-                      <i class="fas fa-info-circle"></i> 
+                      <i class="fas fa-info-circle"></i>
                       <a href="{{route('admin.email-templates.create')}}?type=welcome" target="_blank">إنشاء قالب جديد</a>
                     </small>
                   </div>
@@ -303,7 +344,7 @@
                       @endforeach
                     </select>
                     <small class="text-info">
-                      <i class="fas fa-info-circle"></i> 
+                      <i class="fas fa-info-circle"></i>
                       <a href="{{route('admin.email-templates.create')}}?type=subscription_expiration" target="_blank">إنشاء قالب جديد</a>
                     </small>
                   </div>
@@ -327,7 +368,7 @@
                       @endforeach
                     </select>
                     <small class="text-info">
-                      <i class="fas fa-info-circle"></i> 
+                      <i class="fas fa-info-circle"></i>
                       <a href="{{route('admin.email-templates.create')}}?type=subscription_expired" target="_blank">إنشاء قالب جديد</a>
                     </small>
                   </div>
@@ -369,7 +410,7 @@
                             $allEmailTemplates = collect();
                         }
                     @endphp
-                    
+
                     @if($allEmailTemplates->count() > 0)
                       <div class="table-responsive">
                         <table class="table table-striped">
@@ -421,7 +462,7 @@
                         لا توجد قوالب بعد.
                       </div>
                     @endif
-                    
+
                     <div class="text-center mt-3">
                       <a href="{{route('admin.email-templates.create')}}" class="btn btn-sm btn-primary mt-2">
                         <i class="fas fa-plus"></i> إنشاء قالب جديد
@@ -448,7 +489,7 @@
               <div class="col-lg-6">
                 <div class="form-group">
                   <label for="test_email_address"><strong>البريد الإلكتروني للاختبار</strong></label>
-                  <input type="email" class="form-control" id="test_email_address" 
+                  <input type="email" class="form-control" id="test_email_address"
                          placeholder="test@example.com">
                 </div>
               </div>
@@ -487,7 +528,7 @@ $(document).ready(function() {
     var activeTab = urlParams.get('tab') || 'smtp_settings';
     console.log('Initializing with tab:', activeTab);
     switchTab(activeTab);
-    
+
     // Tab switching functionality
     $('.tab-button').click(function() {
         var tabName = $(this).data('tab');
@@ -497,22 +538,22 @@ $(document).ready(function() {
 
 function switchTab(tabName) {
     console.log('Switching to tab:', tabName);
-    
+
     // Update URL with tab parameter
     var url = new URL(window.location);
     url.searchParams.set('tab', tabName);
     window.history.pushState({}, '', url);
-    
+
     // Update tab buttons
     $('.tab-button').removeClass('active');
     $('.tab-button[data-tab="' + tabName + '"]').addClass('active');
-    
+
     // Update tab content
     $('.tab-content').removeClass('active');
     var targetTab = '#' + tabName + '-tab';
     console.log('Looking for tab element:', targetTab);
     $(targetTab).addClass('active');
-    
+
     // Update card title
     var titles = {
         'smtp_settings': 'إعدادات SMTP',
@@ -524,15 +565,15 @@ function switchTab(tabName) {
 
 function testEmailConfiguration() {
     var testEmail = $('#test_email_address').val();
-    
+
     if (!testEmail || !testEmail.includes('@')) {
         showNotification('يرجى إدخال بريد إلكتروني صحيح', 'error');
         return;
     }
-    
+
     var resultDiv = $('#test-result');
     resultDiv.html('<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> جاري إرسال رسالة الاختبار...</div>').show();
-    
+
     $.post('{{route("admin.email-communication.test")}}', {
         _token: '{{csrf_token()}}',
         test_email: testEmail
@@ -550,20 +591,20 @@ function testEmailConfiguration() {
 function showNotification(message, type) {
     var alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
     var icon = type === 'success' ? 'fa-check' : 'fa-times';
-    
+
     var notification = '<div class="alert ' + alertClass + ' alert-dismissible fade show" role="alert">' +
         '<i class="fas ' + icon + '"></i> ' + message +
         '<button type="button" class="close" data-dismiss="alert" aria-label="Close">' +
         '<span aria-hidden="true">&times;</span>' +
         '</button>' +
         '</div>';
-    
+
     // Remove existing notifications
     $('.alert').remove();
-    
+
     // Add new notification at the top
     $('.page-header').after(notification);
-    
+
     // Auto-hide after 5 seconds
     setTimeout(function() {
         $('.alert').fadeOut();
@@ -753,7 +794,7 @@ function showNotification(message, type) {
         padding: 10px 15px;
         font-size: 14px;
     }
-    
+
     .toggle-switch-container {
         flex-direction: column;
         align-items: flex-start;

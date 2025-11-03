@@ -22,17 +22,26 @@ class EmailService
      */
     public function sendPasswordResetCode($email, $name, $code, $userLanguage = 'ar', $templateName = null, $resetUrl = null, $userId = null)
     {
+        // Check master toggle first - if all email notifications are disabled, return early
+        if (!$this->settings || !($this->settings->email_notifications_enabled ?? true)) {
+            Log::info('Email notifications are disabled by master toggle', [
+                'email' => $email,
+                'type' => 'password_reset'
+            ]);
+            return false;
+        }
+
         try {
             // Get template - first try with specific template name, then with user language, then fallback
             $template = null;
-            
+
             if ($templateName) {
                 $template = EmailTemplate::where('name', $templateName)
                     ->where('type', 'password_reset')
                     ->where('status', true)
                     ->first();
             }
-            
+
             // If no specific template found, try to get template by user language
             if (!$template) {
                 $template = EmailTemplate::where('type', 'password_reset')
@@ -41,7 +50,7 @@ class EmailService
                     ->orderBy('created_at', 'desc')
                     ->first();
             }
-            
+
             // If still no template found, try Arabic as fallback
             if (!$template && $userLanguage !== 'ar') {
                 $template = EmailTemplate::where('type', 'password_reset')
@@ -70,11 +79,11 @@ class EmailService
             if ($template) {
                 $subject = $template->subject;
                 $content = $template->content;
-                
+
                 // Replace variables
                 $content = str_replace('{name}', $companyName, $content);
                 $content = str_replace('{code}', $code, $content);
-                
+
                 // Add reset link if provided (only code, no identifier)
                 if ($resetUrl) {
                     $resetLink = $resetUrl . '?code=' . $code;
@@ -84,7 +93,7 @@ class EmailService
                 // Default email content (fallback) - only code and URL
                 $subject = 'إعادة تعيين كلمة المرور';
                 $content = "مرحبا {$companyName},\n\nرمز إعادة تعيين كلمة المرور: {$code}\n\nهذا الرمز صالح لمدة 15 دقيقة.";
-                
+
                 if ($resetUrl) {
                     $resetLink = $resetUrl . '?code=' . $code;
                     $content .= "\n\nأو يمكنك الضغط على الرابط التالي:\n{$resetLink}";
@@ -119,11 +128,11 @@ class EmailService
                 $mail->SMTPAuth = true;
                 $mail->Username = $this->settings->smtp_username;
                 $mail->Password = $this->settings->smtp_password;
-                
+
                 if ($this->settings->encryption == 'TLS') {
                     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                 }
-                
+
                 $mail->Port = $this->settings->smtp_port;
             }
 
@@ -168,7 +177,7 @@ class EmailService
         try {
             $subject = 'اختبار إعدادات البريد الإلكتروني';
             $content = "هذه رسالة اختبار للتأكد من عمل إعدادات البريد الإلكتروني بشكل صحيح.\n\nتم الإرسال في: " . now()->format('Y-m-d H:i:s');
-            
+
             return $this->sendEmail($testEmail, $subject, $content, 'Test User');
 
         } catch (\Exception $e) {
@@ -185,17 +194,26 @@ class EmailService
      */
     public function sendWelcomeEmail($email, $name, $userLanguage = 'ar', $templateName = null, $userId = null)
     {
+        // Check master toggle first
+        if (!$this->settings || !($this->settings->email_notifications_enabled ?? true)) {
+            Log::info('Email notifications are disabled by master toggle', [
+                'email' => $email,
+                'type' => 'welcome'
+            ]);
+            return false;
+        }
+
         try {
             // Get template - first try with specific template name, then with user language, then fallback
             $template = null;
-            
+
             if ($templateName) {
                 $template = EmailTemplate::where('name', $templateName)
                     ->where('type', 'welcome')
                     ->where('status', true)
                     ->first();
             }
-            
+
             // If no specific template found, try to get template by user language
             if (!$template) {
                 $template = EmailTemplate::where('type', 'welcome')
@@ -204,7 +222,7 @@ class EmailService
                     ->orderBy('created_at', 'desc')
                     ->first();
             }
-            
+
             // If still no template found, try Arabic as fallback
             if (!$template && $userLanguage !== 'ar') {
                 $template = EmailTemplate::where('type', 'welcome')
@@ -233,7 +251,7 @@ class EmailService
             if ($template) {
                 $subject = $template->subject;
                 $content = $template->content;
-                
+
                 // Replace variables
                 $content = str_replace('{name}', $companyName, $content);
                 $content = str_replace('{email}', $email, $content);
@@ -260,17 +278,26 @@ class EmailService
      */
     public function sendSubscriptionExpirationEmail($email, $name, $packageName = null, $expiryDate = null, $userLanguage = 'ar', $templateName = null)
     {
+        // Check master toggle first
+        if (!$this->settings || !($this->settings->email_notifications_enabled ?? true)) {
+            Log::info('Email notifications are disabled by master toggle', [
+                'email' => $email,
+                'type' => 'subscription_expiration'
+            ]);
+            return false;
+        }
+
         try {
             // Get template - first try with specific template name, then with user language, then fallback
             $template = null;
-            
+
             if ($templateName) {
                 $template = EmailTemplate::where('name', $templateName)
                     ->where('type', 'subscription_expiration')
                     ->where('status', true)
                     ->first();
             }
-            
+
             // If no specific template found, try to get template by user language
             if (!$template) {
                 $template = EmailTemplate::where('type', 'subscription_expiration')
@@ -279,7 +306,7 @@ class EmailService
                     ->orderBy('created_at', 'desc')
                     ->first();
             }
-            
+
             // If still no template found, try Arabic as fallback
             if (!$template && $userLanguage !== 'ar') {
                 $template = EmailTemplate::where('type', 'subscription_expiration')
@@ -293,7 +320,7 @@ class EmailService
             if ($template) {
                 $subject = $template->subject;
                 $content = $template->content;
-                
+
                 // Replace variables
                 $content = str_replace('{name}', $name, $content);
                 $content = str_replace('{package_name}', $packageName ?? 'الباقة المميزة', $content);
@@ -321,17 +348,26 @@ class EmailService
      */
     public function sendSubscriptionExpiredEmail($email, $name, $packageName = null, $expiryDate = null, $userLanguage = 'ar', $templateName = null)
     {
+        // Check master toggle first
+        if (!$this->settings || !($this->settings->email_notifications_enabled ?? true)) {
+            Log::info('Email notifications are disabled by master toggle', [
+                'email' => $email,
+                'type' => 'subscription_expired'
+            ]);
+            return false;
+        }
+
         try {
             // Get template - first try with specific template name, then with user language, then fallback
             $template = null;
-            
+
             if ($templateName) {
                 $template = EmailTemplate::where('name', $templateName)
                     ->where('type', 'subscription_expired')
                     ->where('status', true)
                     ->first();
             }
-            
+
             // If no specific template found, try to get template by user language
             if (!$template) {
                 $template = EmailTemplate::where('type', 'subscription_expired')
@@ -340,7 +376,7 @@ class EmailService
                     ->orderBy('created_at', 'desc')
                     ->first();
             }
-            
+
             // If still no template found, try Arabic as fallback
             if (!$template && $userLanguage !== 'ar') {
                 $template = EmailTemplate::where('type', 'subscription_expired')
@@ -354,7 +390,7 @@ class EmailService
             if ($template) {
                 $subject = $template->subject;
                 $content = $template->content;
-                
+
                 // Replace variables
                 $content = str_replace('{name}', $name, $content);
                 $content = str_replace('{package_name}', $packageName ?? 'الباقة المميزة', $content);

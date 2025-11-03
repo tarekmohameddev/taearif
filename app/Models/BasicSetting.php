@@ -48,6 +48,7 @@ class BasicSetting extends Model
         'whatsapp_number',
         'whatsapp_message',
         'whatsapp_status',
+        'whatsapp_notifications_enabled',
         'whatsapp_service',
         'meta_access_token',
         'meta_phone_number_id',
