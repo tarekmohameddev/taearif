@@ -247,7 +247,10 @@ class RentalController extends BaseApiController
 
     /**
      * Collect payment for specific installments
-     * Supports partial payments for individual installments
+     * Supports both manual selection and auto-selection modes
+     *
+     * Manual Mode: Client specifies exact installments to pay
+     * Auto-Select Mode: System automatically selects installments based on strategy
      *
      * NOTE: Phase 4 TODO - Move business logic (lines 275-376) to PaymentService
      */
@@ -255,119 +258,209 @@ class RentalController extends BaseApiController
     {
         return $this->executeWithExceptionHandling(function () use ($request, $id) {
             $data = $request->validated();
-
-            // NOTE: Phase 4 - Move this business logic to service layer
             $ownerId = $this->getUserId();
 
-            // Get rental for validation
-            $rental = RmRental::with(['activeContract', 'tenantCostItems', 'ownerCostItems'])
-                ->where('user_id', $ownerId)
-                ->findOrFail($id);
+            // SMART DETECTION: If payments is empty but amount is provided, use auto-select
+            if (empty($data['payments']) && !empty($data['amount'])) {
+                $data['auto_select'] = true;
+                $data['auto_select_amount'] = $data['amount'];
+                $data['auto_select_strategy'] = $data['auto_select_strategy'] ?? 'overdue_first';
+            }
 
-            // Enhanced installment validation (fixes Bug #3: Missing Installment Ownership Validation)
-            // Collect ALL installment_ids from any payment type (not just rent)
-            $installmentIds = collect($data['payments'])
-                ->pluck('installment_id')
-                ->filter()
-                ->unique();
+            // FEATURE: Auto-Selection Mode
+            if (!empty($data['auto_select'])) {
+                return $this->handleAutoSelectPayment($data, $id, $ownerId);
+            }
 
-            if ($installmentIds->isNotEmpty()) {
-                // Validate that installments belong to this rental and user owns the rental
-                $this->rentalService->validateInstallmentsForRental($ownerId, $id, $installmentIds);
+            // EXISTING: Manual Selection Mode
+            return $this->handleManualPayment($data, $id, $ownerId);
+        }, 'collect payment');
+    }
 
-                // Additional security: Verify installments belong to ACTIVE contract only
-                // This prevents payment to old/terminated contract installments
-                if ($rental->activeContract) {
-                    $validInstallmentIds = RmPaymentInstallment::where('contract_id', $rental->activeContract->id)
-                        ->whereIn('id', $installmentIds)
-                        ->pluck('id');
+    /**
+     * Handle auto-selection payment workflow
+     *
+     * @param array $data Validated request data
+     * @param int $rentalId
+     * @param int $ownerId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    private function handleAutoSelectPayment(array $data, $rentalId, $ownerId)
+    {
+        $paymentService = app(\App\Services\Rms\PaymentService::class);
 
-                    $invalidInstallments = $installmentIds->diff($validInstallmentIds);
+        // Step 1: Get auto-selected installments
+        $autoSelection = $paymentService->autoSelectInstallments(
+            $ownerId,
+            $rentalId,
+            $data['auto_select_amount'],
+            $data['auto_select_strategy'] ?? 'overdue_first'
+        );
 
-                    if ($invalidInstallments->isNotEmpty()) {
+        // Step 2: Check if any installments were selected
+        if (empty($autoSelection['selected_installments'])) {
+            return $this->success([
+                'message' => 'No outstanding installments to pay',
+                'auto_selection_preview' => $autoSelection,
+            ]);
+        }
+
+        // Step 3: Convert auto-selected installments to payment format
+        $data['payments'] = collect($autoSelection['selected_installments'])
+            ->map(function ($item) {
+                return [
+                    'installment_id' => $item['installment_id'],
+                    'payment_type' => 'rent', // Auto-selection only handles rent payments
+                    'amount' => $item['pay_amount'],
+                ];
+            })->toArray();
+
+        // Step 4: Process payments using existing manual payment logic
+        $processedPayments = $this->processPayments($data, $rentalId, $ownerId);
+
+        // Step 5: Return response with auto-selection details
+        return $this->created([
+            'payments' => PaymentResource::collection($processedPayments),
+            'total_amount' => collect($processedPayments)->sum('amount'),
+            'payment_count' => count($processedPayments),
+            'auto_selected' => true,
+            'selection_details' => $autoSelection,
+        ], 'Payment collected successfully using auto-selection');
+    }
+
+    /**
+     * Handle manual payment workflow
+     *
+     * @param array $data Validated request data
+     * @param int $rentalId
+     * @param int $ownerId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    private function handleManualPayment(array $data, $rentalId, $ownerId)
+    {
+        $processedPayments = $this->processPayments($data, $rentalId, $ownerId);
+
+        return $this->created([
+            'payments' => PaymentResource::collection($processedPayments),
+            'total_amount' => collect($processedPayments)->sum('amount'),
+            'payment_count' => count($processedPayments),
+            'auto_selected' => false,
+        ], 'Payment collected successfully');
+    }
+
+    /**
+     * Process payments (shared logic for both manual and auto-select modes)
+     * Extracts business logic for reusability
+     *
+     * @param array $data Payment data
+     * @param int $rentalId
+     * @param int $ownerId
+     * @return array Processed payments
+     */
+    private function processPayments(array $data, $rentalId, $ownerId)
+    {
+        // Get rental for validation
+        $rental = RmRental::with(['activeContract', 'tenantCostItems', 'ownerCostItems'])
+            ->where('user_id', $ownerId)
+            ->findOrFail($rentalId);
+
+        // Enhanced installment validation (fixes Bug #3: Missing Installment Ownership Validation)
+        // Collect ALL installment_ids from any payment type (not just rent)
+        $installmentIds = collect($data['payments'])
+            ->pluck('installment_id')
+            ->filter()
+            ->unique();
+
+        if ($installmentIds->isNotEmpty()) {
+            // Validate that installments belong to this rental and user owns the rental
+            $this->rentalService->validateInstallmentsForRental($ownerId, $rentalId, $installmentIds);
+
+            // Additional security: Verify installments belong to ACTIVE contract only
+            // This prevents payment to old/terminated contract installments
+            if ($rental->activeContract) {
+                $validInstallmentIds = RmPaymentInstallment::where('contract_id', $rental->activeContract->id)
+                    ->whereIn('id', $installmentIds)
+                    ->pluck('id');
+
+                $invalidInstallments = $installmentIds->diff($validInstallmentIds);
+
+                if ($invalidInstallments->isNotEmpty()) {
+                    throw new \InvalidArgumentException(
+                        'Installments do not belong to active contract: ' . $invalidInstallments->implode(', ')
+                    );
+                }
+            }
+        }
+
+        // Validate cost_item payments
+        foreach ($data['payments'] as $payment) {
+            if ($payment['payment_type'] === 'cost_item' && !empty($payment['cost_item_id'])) {
+                // Find the cost item
+                $costItem = \App\Models\Api\Rms\RentalCostItem::where('rental_id', $rentalId)
+                    ->where('id', $payment['cost_item_id'])
+                    ->first();
+
+                if (!$costItem) {
+                    throw new \InvalidArgumentException('Cost item does not belong to this rental');
+                }
+
+                // Check if one_time cost item already paid
+                if ($costItem->payment_frequency === 'one_time') {
+                    $alreadyPaid = \App\Models\Api\Rms\RmPayment::where('rental_id', $rentalId)
+                        ->where('cost_item_id', $payment['cost_item_id'])
+                        ->where('payment_type', 'cost_item')
+                        ->exists();
+
+                    if ($alreadyPaid) {
                         throw new \InvalidArgumentException(
-                            'Installments do not belong to active contract: ' . $invalidInstallments->implode(', ')
+                            "Cost item '{$costItem->name}' (one_time) has already been paid!"
+                        );
+                    }
+                }
+
+                // Check if per_installment cost item already paid for this installment
+                if ($costItem->payment_frequency === 'per_installment' && !empty($payment['installment_id'])) {
+                    $alreadyPaidForInstallment = \App\Models\Api\Rms\RmPayment::where('rental_id', $rentalId)
+                        ->where('cost_item_id', $payment['cost_item_id'])
+                        ->where('installment_id', $payment['installment_id'])
+                        ->where('payment_type', 'cost_item')
+                        ->exists();
+
+                    if ($alreadyPaidForInstallment) {
+                        throw new \InvalidArgumentException(
+                            "Cost item '{$costItem->name}' has already been paid for this installment!"
                         );
                     }
                 }
             }
+        }
 
-            // Validate cost_item payments
-            foreach ($data['payments'] as $payment) {
-                if ($payment['payment_type'] === 'cost_item' && !empty($payment['cost_item_id'])) {
-                    // Find the cost item
-                    $costItem = \App\Models\Api\Rms\RentalCostItem::where('rental_id', $id)
-                        ->where('id', $payment['cost_item_id'])
-                        ->first();
+        // Process payments using PaymentService
+        $paymentService = app(\App\Services\Rms\PaymentService::class);
 
-                    if (!$costItem) {
-                        throw new \InvalidArgumentException('Cost item does not belong to this rental');
-                    }
+        // Prepare all payment data with common fields
+        $paymentsData = collect($data['payments'])->map(function ($paymentData, $index) use ($data) {
+            // Generate unique reference for each payment if base reference provided
+            // Format: PAY-{timestamp}-{index} to ensure uniqueness within batch
+            $uniqueReference = !empty($data['reference'])
+                ? $data['reference'] . '-' . ($index + 1)
+                : null;
 
-                    // Check if one_time cost item already paid
-                    if ($costItem->payment_frequency === 'one_time') {
-                        $alreadyPaid = \App\Models\Api\Rms\RmPayment::where('rental_id', $id)
-                            ->where('cost_item_id', $payment['cost_item_id'])
-                            ->where('payment_type', 'cost_item')
-                            ->exists();
+            return array_merge($paymentData, [
+                'payment_method' => $data['payment_method'],
+                'payment_date' => $data['payment_date'] ?? now()->toDateString(),
+                'reference' => $uniqueReference,
+                'notes' => $paymentData['notes'] ?? $data['notes'],
+                'bank_name' => $data['bank_name'] ?? null,
+                'receipt_image_path' => $data['receipt_image_path'] ?? null,
+                'transfer_to' => $data['transfer_to'],
+            ]);
+        })->toArray();
 
-                        if ($alreadyPaid) {
-                            throw new \InvalidArgumentException(
-                                "Cost item '{$costItem->name}' (one_time) has already been paid!"
-                            );
-                        }
-                    }
-
-                    // Check if per_installment cost item already paid for this installment
-                    if ($costItem->payment_frequency === 'per_installment' && !empty($payment['installment_id'])) {
-                        $alreadyPaidForInstallment = \App\Models\Api\Rms\RmPayment::where('rental_id', $id)
-                            ->where('cost_item_id', $payment['cost_item_id'])
-                            ->where('installment_id', $payment['installment_id'])
-                            ->where('payment_type', 'cost_item')
-                            ->exists();
-
-                        if ($alreadyPaidForInstallment) {
-                            throw new \InvalidArgumentException(
-                                "Cost item '{$costItem->name}' has already been paid for this installment!"
-                            );
-                        }
-                    }
-                }
-            }
-
-            // Process payments using PaymentService
-            $paymentService = app(\App\Services\Rms\PaymentService::class);
-
-            // Prepare all payment data with common fields
-            $paymentsData = collect($data['payments'])->map(function ($paymentData, $index) use ($data) {
-                // Generate unique reference for each payment if base reference provided
-                // Format: PAY-{timestamp}-{index} to ensure uniqueness within batch
-                $uniqueReference = !empty($data['reference'])
-                    ? $data['reference'] . '-' . ($index + 1)
-                    : null;
-
-                return array_merge($paymentData, [
-                    'payment_method' => $data['payment_method'],
-                    'payment_date' => $data['payment_date'] ?? now()->toDateString(),
-                    'reference' => $uniqueReference,
-                    'notes' => $paymentData['notes'] ?? $data['notes'],
-                    'bank_name' => $data['bank_name'] ?? null,
-                    'receipt_image_path' => $data['receipt_image_path'] ?? null,
-                    'transfer_to' => $data['transfer_to'],
-                ]);
-            })->toArray();
-
-            // Process all payments in a single transaction (fixes Bug #2: Partial Transaction Failure)
-            // If any payment fails, all previous payments will be rolled back
-            // Use $ownerId instead of auth()->id() to handle sub-users correctly
-            $processedPayments = $paymentService->recordMultiplePayments($ownerId, $id, $paymentsData);
-
-            return $this->created([
-                'payments' => PaymentResource::collection($processedPayments),
-                'total_amount' => collect($processedPayments)->sum('amount'),
-                'payment_count' => count($processedPayments)
-            ], 'Payment collected successfully');
-        }, 'collect payment');
+        // Process all payments in a single transaction (fixes Bug #2: Partial Transaction Failure)
+        // If any payment fails, all previous payments will be rolled back
+        // Use $ownerId instead of auth()->id() to handle sub-users correctly
+        return $paymentService->recordMultiplePayments($ownerId, $rentalId, $paymentsData);
     }
 
     /**
