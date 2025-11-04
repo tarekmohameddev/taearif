@@ -515,6 +515,41 @@ class PaymentService
     }
 
     /**
+     * Calculate total outstanding amount for a rental
+     * Returns sum of all unpaid/partially paid installments
+     *
+     * @param int $userId
+     * @param int $rentalId
+     * @return float Total outstanding amount
+     */
+    public function calculateTotalOutstanding($userId, $rentalId)
+    {
+        $rental = RmRental::where('user_id', $userId)->findOrFail($rentalId);
+
+        // Check if rental has active contract
+        if (!$rental->activeContract) {
+            return 0;
+        }
+
+        // Get all unpaid/partially paid installments from active contract
+        $installments = RmPaymentInstallment::where('contract_id', $rental->activeContract->id)
+            ->where('status', '!=', 'cancelled')
+            ->whereColumn('paid_amount', '<', 'amount')
+            ->get();
+
+        // Calculate total outstanding
+        $totalOutstanding = 0;
+        foreach ($installments as $installment) {
+            $dueAmount = (float) $installment->amount;
+            $paidAmount = (float) ($installment->paid_amount ?? 0);
+            $remaining = max(0, $dueAmount - $paidAmount);
+            $totalOutstanding += $remaining;
+        }
+
+        return round($totalOutstanding, 2);
+    }
+
+    /**
      * Auto-select installments for payment based on strategy
      *
      * @param int $userId

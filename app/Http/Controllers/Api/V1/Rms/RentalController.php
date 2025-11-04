@@ -260,11 +260,33 @@ class RentalController extends BaseApiController
             $data = $request->validated();
             $ownerId = $this->getUserId();
 
-            // SMART DETECTION: If payments is empty but amount is provided, use auto-select
-            if (empty($data['payments']) && !empty($data['amount'])) {
+            // Normalize payment-amount to amount (support both field names)
+            $paymentAmount = $data['payment-amount'] ?? $data['amount'] ?? null;
+
+            // SMART DETECTION: Empty payments but amount specified = Auto-select with that amount
+            if (empty($data['payments']) && !empty($paymentAmount) && empty($data['auto_select'])) {
                 $data['auto_select'] = true;
-                $data['auto_select_amount'] = $data['amount'];
+                $data['auto_select_amount'] = $paymentAmount;
                 $data['auto_select_strategy'] = $data['auto_select_strategy'] ?? 'overdue_first';
+            }
+            // SMART DETECTION: Empty payments and no amount = Auto-pay ALL outstanding
+            elseif (empty($data['payments']) && empty($paymentAmount) && empty($data['auto_select'])) {
+                // Calculate total outstanding amount
+                $paymentService = app(\App\Services\Rms\PaymentService::class);
+                $totalOutstanding = $paymentService->calculateTotalOutstanding($ownerId, $id);
+
+                if ($totalOutstanding > 0) {
+                    // Convert to auto-select mode with full outstanding amount
+                    $data['auto_select'] = true;
+                    $data['auto_select_amount'] = $totalOutstanding;
+                    $data['auto_select_strategy'] = $data['auto_select_strategy'] ?? 'overdue_first';
+                } else {
+                    // No outstanding payments
+                    return $this->success([
+                        'message' => 'No outstanding payments found for this rental',
+                        'total_outstanding' => 0,
+                    ]);
+                }
             }
 
             // FEATURE: Auto-Selection Mode

@@ -30,6 +30,7 @@ class CollectPaymentRequest extends FormRequest
 
             // Fallback amount field (when payments is empty, use this for auto-select)
             'amount' => 'nullable|numeric|min:0.01',
+            'payment-amount' => 'nullable|numeric|min:0.01',  // Alternative field name
 
             // Manual payment fields (required unless auto_select is true OR amount is provided)
             'payments' => 'required_unless:auto_select,true|array',
@@ -126,20 +127,12 @@ class CollectPaymentRequest extends FormRequest
         $amount = $this['amount'] ?? null;
         $autoSelectAmount = $this['auto_select_amount'] ?? null;
 
-        $validator->after(function ($validator) use ($paymentMethod, $bankName, $autoSelect, $payments, $amount, $autoSelectAmount) {
+        $validator->after(function ($validator) use ($paymentMethod, $bankName, $autoSelect, $payments) {
             // Custom validation: bank_name required for bank transfers
             if ($paymentMethod === RmsConstants::PAYMENT_METHOD_BANK_TRANSFER && empty($bankName)) {
                 $validator->errors()->add(
                     'bank_name',
                     'Bank name is required when payment method is bank transfer.'
-                );
-            }
-
-            // Custom validation: Empty payments requires either auto_select OR amount
-            if (empty($payments) && !$autoSelect && empty($amount) && empty($autoSelectAmount)) {
-                $validator->errors()->add(
-                    'payments',
-                    'Either provide manual payments, enable auto-select, or specify an amount to pay.'
                 );
             }
 
@@ -151,8 +144,8 @@ class CollectPaymentRequest extends FormRequest
                 );
             }
 
-            // Custom validation: If payments is empty but amount is provided, interpret as auto-select
-            // This is handled in the controller by converting amount to auto_select_amount
+            // NOTE: Empty payments array is now VALID - will auto-pay all outstanding installments
+            // This is handled in the controller by auto-detecting and calculating total outstanding
         });
     }
 }
