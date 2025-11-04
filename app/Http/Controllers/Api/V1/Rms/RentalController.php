@@ -28,10 +28,14 @@ class RentalController extends BaseApiController
     use HandlesApiExceptions;
 
     protected $rentalService;
+    protected $paymentService;
 
-    public function __construct(RentalService $rentalService)
-    {
+    public function __construct(
+        RentalService $rentalService,
+        \App\Services\Rms\PaymentService $paymentService
+    ) {
         $this->rentalService = $rentalService;
+        $this->paymentService = $paymentService;
     }
 
     public function index(ListRentalsRequest $request)
@@ -260,27 +264,45 @@ class RentalController extends BaseApiController
             $data = $request->validated();
             $ownerId = $this->getUserId();
 
-            // Normalize payment-amount to amount (support both field names)
-            $paymentAmount = $data['payment-amount'] ?? $data['amount'] ?? null;
+            // Normalize payment_amount to amount (support both field names)
+            $requestedAmount = $data['payment_amount'] ?? $data['amount'] ?? null;
 
             // SMART DETECTION: Empty payments but amount specified = Auto-select with that amount
-            if (empty($data['payments']) && !empty($paymentAmount) && empty($data['auto_select'])) {
+            if (empty($data['payments']) && !empty($requestedAmount) && empty($data['auto_select'])) {
+                \Log::info('Auto-selection triggered with specified amount', [
+                    'rental_id' => $id,
+                    'user_id' => $ownerId,
+                    'requested_amount' => $requestedAmount,
+                    'trigger' => 'empty_payments_with_amount',
+                ]);
+
                 $data['auto_select'] = true;
-                $data['auto_select_amount'] = $paymentAmount;
+                $data['auto_select_amount'] = $requestedAmount;
                 $data['auto_select_strategy'] = $data['auto_select_strategy'] ?? 'overdue_first';
             }
             // SMART DETECTION: Empty payments and no amount = Auto-pay ALL outstanding
-            elseif (empty($data['payments']) && empty($paymentAmount) && empty($data['auto_select'])) {
+            elseif (empty($data['payments']) && empty($requestedAmount) && empty($data['auto_select'])) {
                 // Calculate total outstanding amount
-                $paymentService = app(\App\Services\Rms\PaymentService::class);
-                $totalOutstanding = $paymentService->calculateTotalOutstanding($ownerId, $id);
+                $totalOutstanding = $this->paymentService->calculateTotalOutstanding($ownerId, $id);
 
                 if ($totalOutstanding > 0) {
+                    \Log::info('Auto-selection triggered for all outstanding', [
+                        'rental_id' => $id,
+                        'user_id' => $ownerId,
+                        'total_outstanding' => $totalOutstanding,
+                        'trigger' => 'empty_payments_pay_all',
+                    ]);
+
                     // Convert to auto-select mode with full outstanding amount
                     $data['auto_select'] = true;
                     $data['auto_select_amount'] = $totalOutstanding;
                     $data['auto_select_strategy'] = $data['auto_select_strategy'] ?? 'overdue_first';
                 } else {
+                    \Log::info('No outstanding payments found', [
+                        'rental_id' => $id,
+                        'user_id' => $ownerId,
+                    ]);
+
                     // No outstanding payments
                     return $this->success([
                         'message' => 'No outstanding payments found for this rental',
@@ -307,16 +329,16 @@ class RentalController extends BaseApiController
      * @param int $ownerId
      * @return \Illuminate\Http\JsonResponse
      */
-    private function handleAutoSelectPayment(array $data, $rentalId, $ownerId)
+    private function handleAutoSelectPayment(array $data, int $rentalId, int $ownerId): \Illuminate\Http\JsonResponse
     {
-        $paymentService = app(\App\Services\Rms\PaymentService::class);
+        $strategy = $data['auto_select_strategy'] ?? 'overdue_first';
 
         // Step 1: Get auto-selected installments
-        $autoSelection = $paymentService->autoSelectInstallments(
+        $autoSelection = $this->paymentService->autoSelectInstallments(
             $ownerId,
             $rentalId,
             $data['auto_select_amount'],
-            $data['auto_select_strategy'] ?? 'overdue_first'
+            $strategy
         );
 
         // Step 2: Check if any installments were selected
@@ -340,7 +362,17 @@ class RentalController extends BaseApiController
         // Step 4: Process payments using existing manual payment logic
         $processedPayments = $this->processPayments($data, $rentalId, $ownerId);
 
-        // Step 5: Return response with auto-selection details
+        // Step 5: Log successful auto-payment
+        \Log::info('Auto-payment completed successfully', [
+            'rental_id' => $rentalId,
+            'user_id' => $ownerId,
+            'strategy' => $strategy,
+            'total_amount' => collect($processedPayments)->sum('amount'),
+            'payment_count' => count($processedPayments),
+            'installments_paid' => array_column($autoSelection['selected_installments'], 'installment_id'),
+        ]);
+
+        // Step 6: Return response with auto-selection details
         return $this->created([
             'payments' => PaymentResource::collection($processedPayments),
             'total_amount' => collect($processedPayments)->sum('amount'),
@@ -358,9 +390,16 @@ class RentalController extends BaseApiController
      * @param int $ownerId
      * @return \Illuminate\Http\JsonResponse
      */
-    private function handleManualPayment(array $data, $rentalId, $ownerId)
+    private function handleManualPayment(array $data, int $rentalId, int $ownerId): \Illuminate\Http\JsonResponse
     {
         $processedPayments = $this->processPayments($data, $rentalId, $ownerId);
+
+        \Log::info('Manual payment completed successfully', [
+            'rental_id' => $rentalId,
+            'user_id' => $ownerId,
+            'total_amount' => collect($processedPayments)->sum('amount'),
+            'payment_count' => count($processedPayments),
+        ]);
 
         return $this->created([
             'payments' => PaymentResource::collection($processedPayments),
@@ -379,7 +418,7 @@ class RentalController extends BaseApiController
      * @param int $ownerId
      * @return array Processed payments
      */
-    private function processPayments(array $data, $rentalId, $ownerId)
+    private function processPayments(array $data, int $rentalId, int $ownerId): array
     {
         // Get rental for validation
         $rental = RmRental::with(['activeContract', 'tenantCostItems', 'ownerCostItems'])

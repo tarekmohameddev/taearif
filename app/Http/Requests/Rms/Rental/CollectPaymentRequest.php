@@ -30,7 +30,7 @@ class CollectPaymentRequest extends FormRequest
 
             // Fallback amount field (when payments is empty, use this for auto-select)
             'amount' => 'nullable|numeric|min:0.01',
-            'payment-amount' => 'nullable|numeric|min:0.01',  // Alternative field name
+            'payment_amount' => 'nullable|numeric|min:0.01',  // Alternative field name
 
             // Manual payment fields (required unless auto_select is true OR amount is provided)
             'payments' => 'required_unless:auto_select,true|array',
@@ -124,8 +124,6 @@ class CollectPaymentRequest extends FormRequest
         $bankName = $this['bank_name'] ?? null;
         $autoSelect = $this['auto_select'] ?? false;
         $payments = $this['payments'] ?? [];
-        $amount = $this['amount'] ?? null;
-        $autoSelectAmount = $this['auto_select_amount'] ?? null;
 
         $validator->after(function ($validator) use ($paymentMethod, $bankName, $autoSelect, $payments) {
             // Custom validation: bank_name required for bank transfers
