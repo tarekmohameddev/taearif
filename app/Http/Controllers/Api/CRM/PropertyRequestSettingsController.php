@@ -7,7 +7,8 @@ use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Api\PropertyRequestAutoCustomerSetting;
 use App\Models\Api\UserApiCustomerStage;
-use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\UpdatePropertyRequestSettingsRequest;
+use App\Services\PropertyRequestCustomerService;
 
 class PropertyRequestSettingsController extends Controller
 {
@@ -22,81 +23,20 @@ class PropertyRequestSettingsController extends Controller
             ->with('defaultStage')
             ->first();
 
-        // Get all available stages for this tenant
-        $availableStages = UserApiCustomerStage::where('user_id', $user->id)
-            ->where('is_active', true)
-            ->orderBy('order')
-            ->get(['id', 'stage_name', 'color', 'icon', 'order']);
-
-        if (!$settings) {
-            return response()->json([
-                'status' => 'success',
-                'data' => [
-                    'settings' => [
-                        'auto_create_customer' => false,
-                        'default_stage_id' => null,
-                        'default_stage' => null,
-                    ],
-                    'available_stages' => $availableStages,
-                ],
-            ]);
-        }
+        $availableStages = $this->getAvailableStages($user->id);
 
         return response()->json([
             'status' => 'success',
-            'data' => [
-                'settings' => [
-                    'auto_create_customer' => $settings->auto_create_customer,
-                    'default_stage_id' => $settings->default_stage_id,
-                    'default_stage' => $settings->defaultStage,
-                ],
-                'available_stages' => $availableStages,
-            ],
+            'data' => $this->formatSettingsResponse($settings, $availableStages),
         ]);
     }
 
     /**
      * Update property request auto-customer settings
      */
-    public function update(Request $request): JsonResponse
+    public function update(UpdatePropertyRequestSettingsRequest $request): JsonResponse
     {
         $user = $request->user();
-
-        $validator = Validator::make($request->all(), [
-            'auto_create_customer' => 'required|boolean',
-            'default_stage_id' => 'nullable|integer|exists:users_api_customers_stages,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        // If auto_create_customer is true, default_stage_id is required
-        if ($request->auto_create_customer && !$request->default_stage_id) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'يجب اختيار مرحلة افتراضية عند تفعيل إنشاء العملاء تلقائياً',
-                'errors' => ['default_stage_id' => ['يجب اختيار مرحلة افتراضية']],
-            ], 422);
-        }
-
-        // Verify that the stage belongs to the current user
-        if ($request->default_stage_id) {
-            $stageExists = UserApiCustomerStage::where('id', $request->default_stage_id)
-                ->where('user_id', $user->id)
-                ->exists();
-
-            if (!$stageExists) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'المرحلة المحددة غير موجودة',
-                    'errors' => ['default_stage_id' => ['المرحلة المحددة غير موجودة']],
-                ], 422);
-            }
-        }
 
         $settings = PropertyRequestAutoCustomerSetting::updateOrCreate(
             ['user_id' => $user->id],
@@ -105,6 +45,9 @@ class PropertyRequestSettingsController extends Controller
                 'default_stage_id' => $request->auto_create_customer ? $request->default_stage_id : null,
             ]
         );
+
+        // Clear cache after update
+        PropertyRequestCustomerService::clearSettingsCache($user->id);
 
         $settings->load('defaultStage');
 
@@ -119,6 +62,32 @@ class PropertyRequestSettingsController extends Controller
                 ],
             ],
         ]);
+    }
+
+    /**
+     * Get available stages for the user
+     */
+    private function getAvailableStages(int $userId)
+    {
+        return UserApiCustomerStage::where('user_id', $userId)
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->get(['id', 'stage_name', 'color', 'icon', 'order']);
+    }
+
+    /**
+     * Format the settings response consistently
+     */
+    private function formatSettingsResponse(?PropertyRequestAutoCustomerSetting $settings, $availableStages): array
+    {
+        return [
+            'settings' => [
+                'auto_create_customer' => $settings?->auto_create_customer ?? false,
+                'default_stage_id' => $settings?->default_stage_id,
+                'default_stage' => $settings?->defaultStage,
+            ],
+            'available_stages' => $availableStages,
+        ];
     }
 }
 
