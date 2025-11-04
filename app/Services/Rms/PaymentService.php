@@ -513,4 +513,166 @@ class PaymentService
             throw PaymentException::duplicatePayment($reference, $existingPayment->id);
         }
     }
+
+    /**
+     * Auto-select installments for payment based on strategy
+     *
+     * @param int $userId
+     * @param int $rentalId
+     * @param float $totalAmount Total amount to distribute
+     * @param string $strategy Selection strategy (overdue_first, oldest_first, sequential)
+     * @return array Selected installments with amounts and metadata
+     *
+     * Strategy Details:
+     * - overdue_first: Prioritizes overdue installments, then upcoming by due date
+     * - oldest_first: Selects by oldest due date (chronological order)
+     * - sequential: Selects by sequence number (contract order)
+     */
+    public function autoSelectInstallments($userId, $rentalId, $totalAmount, $strategy = 'overdue_first')
+    {
+        // Validate inputs
+        if ($totalAmount <= 0) {
+            throw new \InvalidArgumentException('Total amount must be greater than zero');
+        }
+
+        // Get rental and validate
+        $rental = RmRental::where('user_id', $userId)->findOrFail($rentalId);
+        $this->validateRentalCanReceivePayment($rental);
+
+        // Get contract ID
+        $contractId = $rental->activeContract?->id;
+        if (!$contractId) {
+            throw PaymentException::noActiveContract($rentalId);
+        }
+
+        // Build query based on strategy
+        $query = RmPaymentInstallment::where('contract_id', $contractId)
+            ->where('status', '!=', 'cancelled')
+            ->whereColumn('paid_amount', '<', 'amount'); // Only unpaid/partially paid
+
+        // Apply ordering strategy
+        switch ($strategy) {
+            case 'overdue_first':
+                // Overdue first (using SQL CASE for priority), then by due date
+                $query->orderByRaw("
+                    CASE
+                        WHEN due_date < CURDATE() THEN 0
+                        ELSE 1
+                    END ASC,
+                    due_date ASC
+                ");
+                break;
+
+            case 'sequential':
+                $query->orderBy('sequence_no', 'ASC');
+                break;
+
+            case 'oldest_first':
+            default:
+                $query->orderBy('due_date', 'ASC');
+                break;
+        }
+
+        $installments = $query->get();
+
+        // No installments to pay
+        if ($installments->isEmpty()) {
+            return [
+                'selected_installments' => [],
+                'total_allocated' => 0,
+                'remaining_unallocated' => $totalAmount,
+                'strategy' => $strategy,
+                'message' => 'No outstanding installments found for this rental',
+            ];
+        }
+
+        // Distribute amount across installments
+        $selected = [];
+        $remaining = $totalAmount;
+        $now = now()->startOfDay();
+
+        foreach ($installments as $installment) {
+            if ($remaining <= 0) break;
+
+            $dueAmount = (float) $installment->amount;
+            $paidAmount = (float) ($installment->paid_amount ?? 0);
+            $unpaid = round(max(0, $dueAmount - $paidAmount), 2);
+
+            if ($unpaid > 0) {
+                $payAmount = round(min($unpaid, $remaining), 2);
+
+                // Calculate days overdue
+                $daysOverdue = 0;
+                $isOverdue = false;
+                if ($installment->due_date && $now->isAfter($installment->due_date)) {
+                    $isOverdue = true;
+                    $daysOverdue = $now->diffInDays($installment->due_date);
+                }
+
+                $selected[] = [
+                    'installment_id' => $installment->id,
+                    'sequence_no' => $installment->sequence_no,
+                    'due_date' => $installment->due_date,
+                    'due_amount' => $dueAmount,
+                    'paid_amount' => $paidAmount,
+                    'remaining_amount' => $unpaid,
+                    'pay_amount' => $payAmount,
+                    'will_be_fully_paid' => ($payAmount >= $unpaid),
+                    'is_overdue' => $isOverdue,
+                    'days_overdue' => $daysOverdue,
+                ];
+
+                $remaining = round($remaining - $payAmount, 2);
+            }
+        }
+
+        // Calculate summary statistics
+        $totalAllocated = round($totalAmount - $remaining, 2);
+        $overdueCount = collect($selected)->where('is_overdue', true)->count();
+        $fullPaidCount = collect($selected)->where('will_be_fully_paid', true)->count();
+        $partialPaidCount = count($selected) - $fullPaidCount;
+
+        return [
+            'selected_installments' => $selected,
+            'total_allocated' => $totalAllocated,
+            'remaining_unallocated' => $remaining,
+            'strategy' => $strategy,
+            'summary' => [
+                'total_installments_selected' => count($selected),
+                'overdue_installments' => $overdueCount,
+                'fully_paid_count' => $fullPaidCount,
+                'partially_paid_count' => $partialPaidCount,
+            ],
+            'warnings' => $this->generateAutoSelectionWarnings($selected, $remaining, $totalAmount),
+        ];
+    }
+
+    /**
+     * Generate warnings for auto-selection results
+     */
+    private function generateAutoSelectionWarnings($selected, $remaining, $totalAmount)
+    {
+        $warnings = [];
+
+        if (empty($selected)) {
+            $warnings[] = 'No installments were selected for payment';
+        }
+
+        if ($remaining > 0) {
+            $warnings[] = sprintf(
+                'Amount %.2f remains unallocated after paying selected installments',
+                $remaining
+            );
+        }
+
+        $partialPayments = collect($selected)->where('will_be_fully_paid', false);
+        if ($partialPayments->isNotEmpty()) {
+            $warnings[] = sprintf(
+                '%d installment(s) will be partially paid',
+                $partialPayments->count()
+            );
+        }
+
+        return $warnings;
+    }
 }
