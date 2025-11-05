@@ -5,11 +5,15 @@ namespace App\Services;
 use App\Models\ApiCustomer;
 use App\Models\Api\UserPropertyRequest;
 use App\Models\Api\PropertyRequestAutoCustomerSetting;
+use App\Models\Api\UserApiCustomerType;
+use App\Models\Api\UserApiCustomerPriority;
+use App\Models\Api\UserApiCustomerProcedure;
 use App\Support\PhoneNormalizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Database\QueryException;
 
 class PropertyRequestCustomerService
 {
@@ -73,6 +77,35 @@ class PropertyRequestCustomerService
     public static function clearSettingsCache(int $userId): void
     {
         Cache::forget("property_request_auto_customer_settings:{$userId}");
+        Cache::forget("customer_defaults:{$userId}");
+    }
+
+    /**
+     * Get default customer attributes for a user (cached)
+     * Returns array with default type_id, priority_id, procedure_id
+     */
+    private function getDefaultCustomerAttributes(int $userId): array
+    {
+        $cacheKey = "customer_defaults:{$userId}";
+
+        return Cache::remember($cacheKey, now()->addHours(6), function () use ($userId) {
+            return [
+                'type_id' => UserApiCustomerType::where('user_id', $userId)
+                    ->where('is_active', true)
+                    ->orderBy('order')
+                    ->value('id'),
+                
+                'priority_id' => UserApiCustomerPriority::where('user_id', $userId)
+                    ->where('is_active', true)
+                    ->orderBy('order')
+                    ->value('id'),
+                
+                'procedure_id' => UserApiCustomerProcedure::where('user_id', $userId)
+                    ->where('is_active', true)
+                    ->orderBy('order')
+                    ->value('id'),
+            ];
+        });
     }
 
     /**
@@ -105,6 +138,9 @@ class PropertyRequestCustomerService
     ): ApiCustomer {
         return DB::transaction(function () use ($propertyRequest, $settings, $normalizedPhone) {
             try {
+                // Get cached default attributes (avoids 3 queries per customer creation)
+                $defaults = $this->getDefaultCustomerAttributes($propertyRequest->user_id);
+
                 $customer = ApiCustomer::create([
                     'user_id' => $propertyRequest->user_id,
                     'name' => $propertyRequest->full_name,
@@ -114,10 +150,10 @@ class PropertyRequestCustomerService
                     'city_id' => $propertyRequest->city_id,
                     'district_id' => $propertyRequest->districts_id,
                     'note' => $this->buildCustomerNote($propertyRequest),
-                    'password' => bcrypt(Str::random(ApiCustomer::DEFAULT_PASSWORD_LENGTH ?? 16)),
-                    'type_id' => null,
-                    'priority_id' => null,
-                    'procedure_id' => null,
+                    'password' => bcrypt(Str::random(16)),
+                    'type_id' => $defaults['type_id'],
+                    'priority_id' => $defaults['priority_id'],
+                    'procedure_id' => $defaults['procedure_id'],
                     'created_by_type' => 'system',
                     'created_by_id' => null,
                 ]);
@@ -126,6 +162,8 @@ class PropertyRequestCustomerService
                     'property_request_id' => $propertyRequest->id,
                     'customer_id' => $customer->id,
                     'stage_id' => $settings->default_stage_id,
+                    'type_id' => $defaults['type_id'],
+                    'priority_id' => $defaults['priority_id'],
                     'phone' => $normalizedPhone,
                 ]);
 
@@ -134,15 +172,16 @@ class PropertyRequestCustomerService
 
                 return $customer;
 
-            } catch (\Illuminate\Database\QueryException $e) {
-                // Handle duplicate key constraint violation gracefully
-                if ($e->getCode() === '23000') {
-                    Log::info('Customer creation skipped - unique constraint violation', [
+            } catch (QueryException $e) {
+                // Handle duplicate key constraint violation gracefully (race condition)
+                // Error code 23000 = Integrity constraint violation (MySQL, PostgreSQL, SQLite)
+                if ($e->getCode() === '23000' || str_contains($e->getMessage(), 'Duplicate entry')) {
+                    Log::info('Customer creation skipped - unique constraint violation (race condition)', [
                         'property_request_id' => $propertyRequest->id,
                         'phone_number' => $normalizedPhone,
                     ]);
 
-                    // Return existing customer instead of null
+                    // Return existing customer instead of failing
                     return ApiCustomer::where('user_id', $propertyRequest->user_id)
                         ->where('phone_number', $normalizedPhone)
                         ->firstOrFail();
