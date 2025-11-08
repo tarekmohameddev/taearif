@@ -50,7 +50,7 @@ class SubscriptionCollection extends ResourceCollection
      *
      * @return array<string, mixed>
      */
-    public function with(Request $request): array
+    public function with($request): array
     {
         return [
             'meta' => [
