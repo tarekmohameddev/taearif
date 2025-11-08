@@ -16,9 +16,9 @@ class SetTenantForPermissions
 
     public function handle(Request $request, Closure $next)
     {
-        /** @var User|null $user */
+        /** @var mixed $user */
         $user = $request->user();
-        if (!$user) {
+        if (!$user || !$user instanceof User) {
             return $next($request);
         }
 
