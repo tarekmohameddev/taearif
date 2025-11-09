@@ -37,7 +37,7 @@ class UserActionsTest extends AdminApiTestCase
     /** @test */
     public function admin_can_send_a_whatsapp_message_to_user(): void
     {
-        /** @var \Mockery\MockInterface|\App\Services\WhatsAppService $mock */
+        /** @var WhatsAppService|\Mockery\MockInterface $mock */
         $mock = $this->app->make(WhatsAppService::class);
         $mock->shouldReceive('sendMessage')
             ->once()
