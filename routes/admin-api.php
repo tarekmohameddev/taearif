@@ -67,6 +67,7 @@ Route::prefix(config('admin-api.prefix'))
     ->name('admin.api.')
     ->middleware(['auth:' . config('admin-api.guard')])
     ->group(function () {
+        Route::pattern('user', '[0-9]+');
         // Test endpoint
         // Route::get('test', function () {
         //     return response()->json(['message' => 'API is working']);
