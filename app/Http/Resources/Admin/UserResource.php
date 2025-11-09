@@ -20,7 +20,8 @@ class UserResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id' => $this->uuid,
+            'id' => $this->id,
+            'uuid' => $this->uuid,
             'email' => $this->email,
             'username' => $this->username,
             'first_name' => $this->first_name,
@@ -48,7 +49,8 @@ class UserResource extends JsonResource
             'referral' => [
                 'code' => $this->referral_code,
                 'referred_by' => $this->when($this->referrer, [
-                    'id' => $this->referrer?->uuid,
+                    'id' => $this->referrer?->id,
+                    'uuid' => $this->referrer?->uuid,
                     'name' => $this->referrer?->full_name,
                     'email' => $this->referrer?->email,
                 ]),
