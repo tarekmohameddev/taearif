@@ -441,6 +441,12 @@ Route::prefix(config('admin-api.prefix'))
         Route::post('/', [EmployeeController::class, 'store'])
             ->name('store');
 
+        Route::get('roles/list', [EmployeeController::class, 'roles'])
+            ->name('roles.list');
+
+        Route::get('statistics', [EmployeeController::class, 'statistics'])
+            ->name('statistics');
+
         Route::get('{employee}', [EmployeeController::class, 'show'])
             ->name('show');
 
@@ -458,12 +464,6 @@ Route::prefix(config('admin-api.prefix'))
 
         Route::put('{employee}/role', [EmployeeController::class, 'updateRole'])
             ->name('role.update');
-
-        Route::get('roles/list', [EmployeeController::class, 'roles'])
-            ->name('roles.list');
-
-        Route::get('statistics', [EmployeeController::class, 'statistics'])
-            ->name('statistics');
     });
 
     // -------------------------------------------------------------------------
