@@ -52,7 +52,7 @@ abstract class BaseController extends Controller
      */
     protected function errorResponse(
         string $message,
-        string $code = 'ERROR',
+        int|string $code = 'ERROR',
         int $statusCode = 400,
         array $errors = []
     ): JsonResponse {

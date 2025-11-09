@@ -54,6 +54,15 @@ class RepositoryServiceProvider extends ServiceProvider
                 );
             }
         );
+
+        $this->app->bind(
+            \App\Domain\Billing\Repositories\InvoiceRepositoryInterface::class,
+            function () {
+                return new \App\Domain\Billing\Repositories\InvoiceRepository(
+                    new \App\Domain\Billing\Models\Invoice()
+                );
+            }
+        );
     }
 
     /**

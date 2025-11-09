@@ -21,7 +21,7 @@ class InvoiceResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'uuid' => $this->uuid,
+            'id' => $this->id,
             'transaction_id' => $this->transaction_id,
             'amount' => [
                 'total' => (float) $this->price,

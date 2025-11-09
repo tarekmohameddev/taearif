@@ -22,6 +22,10 @@ abstract class BaseService
      */
     protected function executeInTransaction(callable $callback): mixed
     {
+        if (DB::transactionLevel() > 0) {
+            return $callback();
+        }
+
         return DB::transaction($callback);
     }
 

@@ -181,6 +181,7 @@ abstract class AdminApiTestCase extends TestCase
         Schema::dropIfExists('memberships');
         Schema::create('memberships', function (Blueprint $table) {
             $table->id();
+            $table->uuid('uuid')->nullable()->unique();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->unsignedBigInteger('package_id')->nullable();
             $table->decimal('package_price', 10, 2)->default(0);
