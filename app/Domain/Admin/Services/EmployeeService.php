@@ -90,11 +90,7 @@ class EmployeeService extends BaseService
     {
         $admin = $this->adminRepository->findByUuidWithRole($uuid);
 
-        if (!$admin) {
-            throw new ResourceNotFoundException('Employee not found');
-        }
-
-        return $admin;
+        return $this->ensureFound($admin, 'Employee not found');
     }
 
     /**
@@ -109,12 +105,12 @@ class EmployeeService extends BaseService
     {
         // Check if email already exists
         if ($this->adminRepository->findByEmail($data['email'])) {
-            throw new BusinessLogicException('Email already exists', 'EMPLOYEE_EMAIL_EXISTS', 422);
+            $this->fail('Email already exists', 'EMPLOYEE_EMAIL_EXISTS', 422);
         }
 
         // Check if username already exists
         if (Admin::where('username', $data['username'])->exists()) {
-            throw new BusinessLogicException('Username already exists', 'EMPLOYEE_USERNAME_EXISTS', 422);
+            $this->fail('Username already exists', 'EMPLOYEE_USERNAME_EXISTS', 422);
         }
 
         // Hash password
@@ -149,21 +145,21 @@ class EmployeeService extends BaseService
 
         // Prevent deleting owner (ID 1)
         if ($admin->id == 1 && isset($data['status']) && $data['status'] == false) {
-            throw new BusinessLogicException('Cannot deactivate owner account', 'EMPLOYEE_OWNER_PROTECTED', 422);
+            $this->fail('Cannot deactivate owner account', 'EMPLOYEE_OWNER_PROTECTED', 422);
         }
 
         // Check if email is being changed and already exists
         if (isset($data['email']) && $data['email'] !== $admin->email) {
             $existingAdmin = $this->adminRepository->findByEmail($data['email']);
             if ($existingAdmin && $existingAdmin->uuid !== $uuid) {
-                throw new BusinessLogicException('Email already exists', 'EMPLOYEE_EMAIL_EXISTS', 422);
+                $this->fail('Email already exists', 'EMPLOYEE_EMAIL_EXISTS', 422);
             }
         }
 
         // Check if username is being changed and already exists
         if (isset($data['username']) && $data['username'] !== $admin->username) {
             if (Admin::where('username', $data['username'])->where('id', '!=', $admin->id)->exists()) {
-                throw new BusinessLogicException('Username already exists', 'EMPLOYEE_USERNAME_EXISTS', 422);
+                $this->fail('Username already exists', 'EMPLOYEE_USERNAME_EXISTS', 422);
             }
         }
 
@@ -215,7 +211,7 @@ class EmployeeService extends BaseService
 
         // Prevent deleting owner (ID 1)
         if ($admin->id == 1) {
-            throw new BusinessLogicException('Cannot delete owner account', 'EMPLOYEE_OWNER_PROTECTED', 422);
+            $this->fail('Cannot delete owner account', 'EMPLOYEE_OWNER_PROTECTED', 422);
         }
 
         return $this->executeInTransaction(function () use ($admin) {
@@ -271,7 +267,7 @@ class EmployeeService extends BaseService
 
         // Prevent deactivating owner
         if ($admin->id == 1 && $admin->status == true) {
-            throw new BusinessLogicException('Cannot deactivate owner account', 'EMPLOYEE_OWNER_PROTECTED', 422);
+            $this->fail('Cannot deactivate owner account', 'EMPLOYEE_OWNER_PROTECTED', 422);
         }
 
         return $this->executeInTransaction(function () use ($admin) {
@@ -301,10 +297,7 @@ class EmployeeService extends BaseService
         $admin = $this->getEmployeeByUuid($uuid);
 
         // Verify role exists
-        $role = Role::find($roleId);
-        if (!$role) {
-            throw new ResourceNotFoundException('Role not found');
-        }
+        $this->ensureFound(Role::find($roleId), 'Role not found');
 
         return $this->executeInTransaction(function () use ($admin, $roleId) {
             $admin->role_id = $roleId;

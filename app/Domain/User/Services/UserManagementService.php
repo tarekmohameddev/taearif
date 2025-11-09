@@ -79,7 +79,9 @@ class UserManagementService extends BaseService
             ['referrer', 'activeMembership.package', 'memberships']
         );
 
-        if (!$user || $user->account_type !== 'tenant') {
+        $user = $this->ensureFound($user, 'User not found');
+
+        if ($user->account_type !== 'tenant') {
             throw new ResourceNotFoundException('User not found');
         }
 
@@ -109,7 +111,7 @@ class UserManagementService extends BaseService
     {
         // Check if email already exists
         if ($this->userRepository->findByEmail($data['email'])) {
-            throw new BusinessLogicException('Email already exists', 'USER_EMAIL_EXISTS', 400);
+            $this->fail('Email already exists', 'USER_EMAIL_EXISTS', 400);
         }
 
         // Hash password
@@ -147,7 +149,7 @@ class UserManagementService extends BaseService
         if (isset($data['email']) && $data['email'] !== $user->email) {
             $existingUser = $this->userRepository->findByEmail($data['email']);
             if ($existingUser && $existingUser->uuid !== $uuid) {
-                throw new BusinessLogicException('Email already exists', 'USER_EMAIL_EXISTS', 400);
+                $this->fail('Email already exists', 'USER_EMAIL_EXISTS', 400);
             }
         }
 
@@ -361,7 +363,7 @@ class UserManagementService extends BaseService
         $user = $this->getUserByUuid($uuid);
 
         if (empty($user->phone)) {
-            throw new BusinessLogicException('User does not have a phone number on file', 'USER_NO_PHONE', 400);
+            $this->fail('User does not have a phone number on file', 'USER_NO_PHONE', 400);
         }
 
         $whatsappService = $this->resolveWhatsAppService();
@@ -371,7 +373,7 @@ class UserManagementService extends BaseService
                 $result = $whatsappService->sendTemplateToPhone(
                     $user->phone,
                     $templateName,
-                    config('services.meta.template_language', 'ar'),
+                    config('services.meta.template_language') ?? config('app.locale', 'ar'),
                     $templateVariables
                 );
 
@@ -385,7 +387,7 @@ class UserManagementService extends BaseService
                 }
             }
         } catch (\Throwable $e) {
-            throw new BusinessLogicException(
+            $this->fail(
                 'Failed to send WhatsApp message: ' . $e->getMessage(),
                 'WHATSAPP_SEND_FAILED',
                 500
@@ -427,7 +429,7 @@ class UserManagementService extends BaseService
 
         return $this->executeInTransaction(function () use ($user, $reason, $adminNotes) {
             if (!$user->active) {
-                throw new BusinessLogicException('User is already paused', 'USER_ALREADY_PAUSED', 400);
+                $this->fail('User is already paused', 'USER_ALREADY_PAUSED', 400);
             }
 
             $user->active = false;
@@ -459,7 +461,7 @@ class UserManagementService extends BaseService
 
         return $this->executeInTransaction(function () use ($user) {
             if ($user->active) {
-                throw new BusinessLogicException('User is already active', 'USER_ALREADY_ACTIVE', 400);
+                $this->fail('User is already active', 'USER_ALREADY_ACTIVE', 400);
             }
 
             $user->active = true;
@@ -489,16 +491,16 @@ class UserManagementService extends BaseService
 
         $newPlan = Plan::active()->find($newPlanId);
         if (!$newPlan) {
-            throw new BusinessLogicException('Selected plan is not available', 'PLAN_NOT_AVAILABLE', 404);
+            $this->fail('Selected plan is not available', 'PLAN_NOT_AVAILABLE', 404);
         }
 
         $currentSubscription = $user->activeMembership;
         if (!$currentSubscription) {
-            throw new BusinessLogicException('User does not have an active subscription', 'NO_ACTIVE_SUBSCRIPTION', 400);
+            $this->fail('User does not have an active subscription', 'NO_ACTIVE_SUBSCRIPTION', 400);
         }
 
         if ($currentSubscription->package_id === $newPlan->id) {
-            throw new BusinessLogicException('User is already on this plan', 'PLAN_ALREADY_APPLIED', 400);
+            $this->fail('User is already on this plan', 'PLAN_ALREADY_APPLIED', 400);
         }
 
         return $this->executeInTransaction(function () use ($user, $newPlan, $currentSubscription, $changeType, $adminNotes) {
@@ -569,7 +571,7 @@ class UserManagementService extends BaseService
 
         $subscription = $user->activeMembership;
         if (!$subscription) {
-            throw new BusinessLogicException('User has no active subscription', 'NO_ACTIVE_SUBSCRIPTION', 400);
+            $this->fail('User has no active subscription', 'NO_ACTIVE_SUBSCRIPTION', 400);
         }
 
         return $this->executeInTransaction(function () use ($user, $subscription, $cancelType, $reason, $adminNotes) {

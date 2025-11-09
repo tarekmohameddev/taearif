@@ -19,4 +19,12 @@ interface AdminRepositoryInterface extends BaseRepositoryInterface
      * @return Admin|null
      */
     public function findByEmail(string $email): ?Admin;
+
+    /**
+     * Find admin by UUID including role relationship.
+     *
+     * @param string $uuid
+     * @return Admin|null
+     */
+    public function findByUuidWithRole(string $uuid): ?Admin;
 }
