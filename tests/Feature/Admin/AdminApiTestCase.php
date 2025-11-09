@@ -27,6 +27,7 @@ abstract class AdminApiTestCase extends TestCase
         $this->ensureUsersTable();
         $this->ensureDailyTables();
         $this->ensureDomainTables();
+        $this->ensureMarketingTables();
         $this->ensureCrmTables();
         $this->ensureAnalyticsTables();
         $this->ensurePackagesTable();
@@ -222,6 +223,73 @@ abstract class AdminApiTestCase extends TestCase
             $table->string('requested_domain')->nullable();
             $table->string('current_domain')->nullable();
             $table->boolean('status')->default(false);
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Ensure supporting tables for marketing module exist.
+     */
+    private function ensureMarketingTables(): void
+    {
+        Schema::dropIfExists('whatsapp_templates');
+        Schema::dropIfExists('basic_settings');
+        Schema::dropIfExists('languages');
+
+        Schema::create('languages', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('code')->unique();
+            $table->boolean('is_default')->default(false);
+            $table->boolean('rtl')->default(false);
+            $table->timestamps();
+        });
+
+        Schema::create('basic_settings', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('language_id')->constrained('languages')->cascadeOnDelete();
+            $table->string('whatsapp_service')->nullable();
+            $table->boolean('whatsapp_notifications_enabled')->default(false);
+            $table->string('meta_access_token')->nullable();
+            $table->string('meta_phone_number_id')->nullable();
+            $table->string('meta_business_account_id')->nullable();
+            $table->string('evolution_api_url')->nullable();
+            $table->string('evolution_api_key')->nullable();
+            $table->string('evolution_instance_name')->nullable();
+            $table->string('evolution_phone_number')->nullable();
+            $table->boolean('welcome_message_enabled')->default(false);
+            $table->text('welcome_message_text')->nullable();
+            $table->unsignedInteger('welcome_message_delay')->default(5);
+            $table->string('welcome_message_template')->nullable();
+            $table->string('welcome_message_api')->nullable();
+            $table->boolean('subscription_expiration_enabled')->default(false);
+            $table->text('subscription_expiration_text')->nullable();
+            $table->unsignedInteger('subscription_expiration_days_before')->default(3);
+            $table->string('subscription_expiration_template')->nullable();
+            $table->string('subscription_expiration_send_time')->nullable();
+            $table->string('subscription_expiration_api')->nullable();
+            $table->boolean('subscription_expired_enabled')->default(false);
+            $table->text('subscription_expired_text')->nullable();
+            $table->string('subscription_expired_template')->nullable();
+            $table->string('subscription_expired_send_time')->nullable();
+            $table->string('subscription_expired_api')->nullable();
+            $table->boolean('password_reset_enabled')->default(false);
+            $table->text('password_reset_text')->nullable();
+            $table->string('password_reset_template')->nullable();
+            $table->string('password_reset_api')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('whatsapp_templates', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->unique();
+            $table->string('description')->nullable();
+            $table->text('content');
+            $table->string('type');
+            $table->string('language', 5);
+            $table->string('variables')->nullable();
+            $table->boolean('status')->default(true);
+            $table->unsignedInteger('character_count')->default(0);
             $table->timestamps();
         });
     }
@@ -470,6 +538,18 @@ abstract class AdminApiTestCase extends TestCase
 
         if (Schema::hasTable('packages')) {
             DB::table('packages')->truncate();
+        }
+
+        if (Schema::hasTable('whatsapp_templates')) {
+            DB::table('whatsapp_templates')->truncate();
+        }
+
+        if (Schema::hasTable('basic_settings')) {
+            DB::table('basic_settings')->truncate();
+        }
+
+        if (Schema::hasTable('languages')) {
+            DB::table('languages')->truncate();
         }
 
         if (Schema::hasTable('user_custom_domains')) {

@@ -90,6 +90,15 @@ class RepositoryServiceProvider extends ServiceProvider
                 );
             }
         );
+
+        $this->app->bind(
+            \App\Domain\Marketing\Repositories\WhatsAppTemplateRepositoryInterface::class,
+            function () {
+                return new \App\Domain\Marketing\Repositories\WhatsAppTemplateRepository(
+                    new \App\Domain\Marketing\Models\WhatsAppTemplate()
+                );
+            }
+        );
     }
 
     /**
