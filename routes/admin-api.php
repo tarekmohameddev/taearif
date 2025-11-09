@@ -17,6 +17,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Admin\AuthController;
+use App\Http\Controllers\Api\Admin\DailyController;
 
 // =============================================================================
 // PUBLIC ROUTES - No Authentication Required
@@ -66,8 +67,37 @@ Route::prefix(config('admin-api.prefix'))
         ->name('me');
 
     // -------------------------------------------------------------------------
-    // Dashboard Module — لوحة التحكم
-    // Unified endpoint returning all dashboard sections in one request
+    // Daily Follow-up Module — المتابعة اليومية
+    // Unified daily operations, reminders, appointments, and tasks
     // -------------------------------------------------------------------------
+
+    Route::prefix('daily')->name('daily.')->group(function () {
+        Route::get('/', [DailyController::class, 'index'])
+            ->name('index');
+
+        Route::get('today', [DailyController::class, 'today'])
+            ->name('today');
+
+        Route::get('overdue', [DailyController::class, 'overdue'])
+            ->name('overdue');
+
+        Route::get('statistics', [DailyController::class, 'statistics'])
+            ->name('statistics');
+
+        Route::get('reminders', [DailyController::class, 'reminders'])
+            ->name('reminders.index');
+
+        Route::get('reminders/{id}', [DailyController::class, 'showReminder'])
+            ->name('reminders.show');
+
+        Route::get('appointments', [DailyController::class, 'appointments'])
+            ->name('appointments.index');
+
+        Route::get('appointments/{id}', [DailyController::class, 'showAppointment'])
+            ->name('appointments.show');
+
+        Route::get('rms-reminders', [DailyController::class, 'rmsReminders'])
+            ->name('rms-reminders');
+    });
 
 });
