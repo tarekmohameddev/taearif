@@ -9,31 +9,17 @@ use App\Domain\Shared\Services\BaseService;
 use App\Exceptions\ResourceNotFoundException;
 use App\Exceptions\BusinessLogicException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Lead Service
- * 
+ *
  * Business logic for managing leads
  */
 class LeadService extends BaseService
 {
-    /**
-     * @var LeadRepositoryInterface
-     */
-    protected $leadRepository;
+    protected LeadRepositoryInterface $leadRepository;
+    protected UserRepositoryInterface $userRepository;
 
-    /**
-     * @var UserRepositoryInterface
-     */
-    protected $userRepository;
-
-    /**
-     * LeadService constructor.
-     *
-     * @param LeadRepositoryInterface $leadRepository
-     * @param UserRepositoryInterface $userRepository
-     */
     public function __construct(
         LeadRepositoryInterface $leadRepository,
         UserRepositoryInterface $userRepository
@@ -43,11 +29,7 @@ class LeadService extends BaseService
     }
 
     /**
-     * Get paginated leads with filters
-     *
-     * @param array $filters
-     * @param int $perPage
-     * @return LengthAwarePaginator
+     * Get paginated leads with filters.
      */
     public function getLeads(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
@@ -55,15 +37,13 @@ class LeadService extends BaseService
     }
 
     /**
-     * Get lead by UUID
+     * Retrieve a lead by its numeric ID.
      *
-     * @param string $uuid
-     * @return Lead
      * @throws ResourceNotFoundException
      */
-    public function getLeadByUuid(string $uuid): Lead
+    public function getLeadById(int $id): Lead
     {
-        $lead = $this->leadRepository->findByUuid($uuid);
+        $lead = $this->leadRepository->findById($id);
 
         if (!$lead) {
             throw new ResourceNotFoundException('Lead not found');
@@ -75,31 +55,25 @@ class LeadService extends BaseService
     }
 
     /**
-     * Create a new lead
-     *
-     * @param array $data
-     * @return Lead
+     * Create a new lead.
      */
     public function createLead(array $data): Lead
     {
         return $this->transaction(function () use ($data) {
             $lead = $this->leadRepository->create($data);
-            
+
             return $lead->load(['stage', 'assignedAdmin']);
         });
     }
 
     /**
-     * Update existing lead
+     * Update an existing lead.
      *
-     * @param string $uuid
-     * @param array $data
-     * @return Lead
      * @throws ResourceNotFoundException
      */
-    public function updateLead(string $uuid, array $data): Lead
+    public function updateLead(int $id, array $data): Lead
     {
-        $lead = $this->leadRepository->findByUuid($uuid);
+        $lead = $this->leadRepository->findById($id);
 
         if (!$lead) {
             throw new ResourceNotFoundException('Lead not found');
@@ -107,21 +81,19 @@ class LeadService extends BaseService
 
         return $this->transaction(function () use ($lead, $data) {
             $updated = $this->leadRepository->update($lead, $data);
-            
+
             return $updated->load(['stage', 'assignedAdmin']);
         });
     }
 
     /**
-     * Delete a lead
+     * Delete a lead.
      *
-     * @param string $uuid
-     * @return bool
      * @throws ResourceNotFoundException
      */
-    public function deleteLead(string $uuid): bool
+    public function deleteLead(int $id): bool
     {
-        $lead = $this->leadRepository->findByUuid($uuid);
+        $lead = $this->leadRepository->findById($id);
 
         if (!$lead) {
             throw new ResourceNotFoundException('Lead not found');
@@ -133,17 +105,13 @@ class LeadService extends BaseService
     }
 
     /**
-     * Move lead to different stage
+     * Move a lead to a different stage.
      *
-     * @param string $uuid
-     * @param int $stageId
-     * @param string|null $status
-     * @return Lead
      * @throws ResourceNotFoundException
      */
-    public function moveToStage(string $uuid, int $stageId, ?string $status = null): Lead
+    public function moveToStage(int $leadId, int $stageId, ?string $status = null): Lead
     {
-        $lead = $this->leadRepository->findByUuid($uuid);
+        $lead = $this->leadRepository->findById($leadId);
 
         if (!$lead) {
             throw new ResourceNotFoundException('Lead not found');
@@ -155,18 +123,14 @@ class LeadService extends BaseService
     }
 
     /**
-     * Convert lead to user/tenant
+     * Convert a lead to an existing user/tenant.
      *
-     * @param string $leadUuid
-     * @param string $userUuid
-     * @param string|null $notes
-     * @return Lead
      * @throws ResourceNotFoundException
      * @throws BusinessLogicException
      */
-    public function convertLead(string $leadUuid, string $userUuid, ?string $notes = null): Lead
+    public function convertLead(int $leadId, int $userId, ?string $notes = null): Lead
     {
-        $lead = $this->leadRepository->findByUuid($leadUuid);
+        $lead = $this->leadRepository->findById($leadId);
 
         if (!$lead) {
             throw new ResourceNotFoundException('Lead not found');
@@ -176,7 +140,7 @@ class LeadService extends BaseService
             throw new BusinessLogicException('Lead is already converted');
         }
 
-        $user = $this->userRepository->findByUuid($userUuid);
+        $user = $this->userRepository->findById($userId);
 
         if (!$user) {
             throw new ResourceNotFoundException('User not found');
@@ -188,10 +152,7 @@ class LeadService extends BaseService
     }
 
     /**
-     * Get leads by status
-     *
-     * @param string $status
-     * @return \Illuminate\Database\Eloquent\Collection
+     * Get leads by status.
      */
     public function getLeadsByStatus(string $status)
     {
@@ -199,10 +160,7 @@ class LeadService extends BaseService
     }
 
     /**
-     * Get leads assigned to admin
-     *
-     * @param int $adminId
-     * @return \Illuminate\Database\Eloquent\Collection
+     * Get leads assigned to a specific admin.
      */
     public function getLeadsAssignedTo(int $adminId)
     {
@@ -210,9 +168,7 @@ class LeadService extends BaseService
     }
 
     /**
-     * Get CRM overview/dashboard data
-     *
-     * @return array
+     * Retrieve CRM overview metrics.
      */
     public function getCrmOverview(): array
     {

@@ -42,13 +42,13 @@ class LeadActivityService extends BaseService
     /**
      * Get activities for a lead
      *
-     * @param string $leadUuid
+     * @param int $leadId
      * @return \Illuminate\Database\Eloquent\Collection
      * @throws ResourceNotFoundException
      */
-    public function getLeadActivities(string $leadUuid)
+    public function getLeadActivities(int $leadId)
     {
-        $lead = $this->leadRepository->findByUuid($leadUuid);
+        $lead = $this->leadRepository->findById($leadId);
 
         if (!$lead) {
             throw new ResourceNotFoundException('Lead not found');
@@ -60,14 +60,14 @@ class LeadActivityService extends BaseService
     /**
      * Create a new activity for a lead
      *
-     * @param string $leadUuid
+     * @param int $leadId
      * @param array $data
      * @return LeadActivity
      * @throws ResourceNotFoundException
      */
-    public function createActivity(string $leadUuid, array $data): LeadActivity
+    public function createActivity(int $leadId, array $data): LeadActivity
     {
-        $lead = $this->leadRepository->findByUuid($leadUuid);
+        $lead = $this->leadRepository->findById($leadId);
 
         if (!$lead) {
             throw new ResourceNotFoundException('Lead not found');

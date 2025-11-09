@@ -15,6 +15,7 @@ class LeadResource extends JsonResource
     public function toArray($request)
     {
         return [
+            'id' => $this->id,
             'uuid' => $this->uuid,
             'name' => $this->name,
             'email' => $this->email,
@@ -25,13 +26,13 @@ class LeadResource extends JsonResource
             'notes' => $this->notes,
             'custom_fields' => $this->custom_fields,
             'stage' => $this->when($this->relationLoaded('stage'), function () {
-                return [
+                return $this->stage ? [
                     'id' => $this->stage->id,
                     'uuid' => $this->stage->uuid,
                     'name' => $this->stage->name,
                     'slug' => $this->stage->slug,
                     'color' => $this->stage->color,
-                ];
+                ] : null;
             }),
             'assigned_admin' => $this->when($this->relationLoaded('assignedAdmin'), function () {
                 return $this->assignedAdmin ? [

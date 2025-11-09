@@ -116,18 +116,18 @@ class LeadController extends BaseController
     }
 
     /**
-     * Get lead by UUID
+     * Get lead by ID
      * 
-     * @param string $uuid
+     * @param int $lead
      * @return JsonResponse
      */
-    public function show(string $uuid): JsonResponse
+    public function show(int $lead): JsonResponse
     {
         try {
-            $lead = $this->leadService->getLeadByUuid($uuid);
+            $leadModel = $this->leadService->getLeadById($lead);
 
             return $this->successResponse(
-                new LeadResource($lead),
+                new LeadResource($leadModel),
                 'Lead retrieved successfully'
             );
         } catch (Throwable $e) {
@@ -139,17 +139,17 @@ class LeadController extends BaseController
      * Update existing lead
      * 
      * @param UpdateLeadRequest $request
-     * @param string $uuid
+     * @param int $lead
      * @return JsonResponse
      */
-    public function update(UpdateLeadRequest $request, string $uuid): JsonResponse
+    public function update(UpdateLeadRequest $request, int $lead): JsonResponse
     {
         try {
             $data = $request->validated();
-            $lead = $this->leadService->updateLead($uuid, $data);
+            $updatedLead = $this->leadService->updateLead($lead, $data);
 
             return $this->successResponse(
-                new LeadResource($lead),
+                new LeadResource($updatedLead),
                 'Lead updated successfully'
             );
         } catch (Throwable $e) {
@@ -160,13 +160,13 @@ class LeadController extends BaseController
     /**
      * Delete lead
      * 
-     * @param string $uuid
+     * @param int $lead
      * @return JsonResponse
      */
-    public function destroy(string $uuid): JsonResponse
+    public function destroy(int $lead): JsonResponse
     {
         try {
-            $this->leadService->deleteLead($uuid);
+            $this->leadService->deleteLead($lead);
 
             return $this->successResponse(
                 null,
@@ -181,21 +181,21 @@ class LeadController extends BaseController
      * Move lead to different stage
      * 
      * @param MoveLeadRequest $request
-     * @param string $uuid
+     * @param int $lead
      * @return JsonResponse
      */
-    public function moveStage(MoveLeadRequest $request, string $uuid): JsonResponse
+    public function moveStage(MoveLeadRequest $request, int $lead): JsonResponse
     {
         try {
             $data = $request->validated();
-            $lead = $this->leadService->moveToStage(
-                $uuid,
+            $updatedLead = $this->leadService->moveToStage(
+                $lead,
                 $data['stage_id'],
                 $data['status'] ?? null
             );
 
             return $this->successResponse(
-                new LeadResource($lead),
+                new LeadResource($updatedLead),
                 'Lead moved to new stage successfully'
             );
         } catch (Throwable $e) {
@@ -207,21 +207,21 @@ class LeadController extends BaseController
      * Convert lead to user/tenant
      * 
      * @param ConvertLeadRequest $request
-     * @param string $uuid
+     * @param int $lead
      * @return JsonResponse
      */
-    public function convert(ConvertLeadRequest $request, string $uuid): JsonResponse
+    public function convert(ConvertLeadRequest $request, int $lead): JsonResponse
     {
         try {
             $data = $request->validated();
-            $lead = $this->leadService->convertLead(
-                $uuid,
-                $data['user_uuid'],
+            $convertedLead = $this->leadService->convertLead(
+                $lead,
+                (int) $data['user_id'],
                 $data['notes'] ?? null
             );
 
             return $this->successResponse(
-                new LeadResource($lead),
+                new LeadResource($convertedLead),
                 'Lead converted to user successfully'
             );
         } catch (Throwable $e) {
@@ -232,13 +232,13 @@ class LeadController extends BaseController
     /**
      * Get activities for a lead
      * 
-     * @param string $uuid
+     * @param int $lead
      * @return JsonResponse
      */
-    public function activities(string $uuid): JsonResponse
+    public function activities(int $lead): JsonResponse
     {
         try {
-            $activities = $this->activityService->getLeadActivities($uuid);
+            $activities = $this->activityService->getLeadActivities($lead);
 
             return $this->successResponse(
                 new LeadActivityCollection($activities),
@@ -253,16 +253,16 @@ class LeadController extends BaseController
      * Create activity for a lead
      * 
      * @param StoreLeadActivityRequest $request
-     * @param string $uuid
+     * @param int $lead
      * @return JsonResponse
      */
-    public function storeActivity(StoreLeadActivityRequest $request, string $uuid): JsonResponse
+    public function storeActivity(StoreLeadActivityRequest $request, int $lead): JsonResponse
     {
         try {
             $data = $request->validated();
             $data['admin_id'] = auth('admin-sanctum')->id();
 
-            $activity = $this->activityService->createActivity($uuid, $data);
+            $activity = $this->activityService->createActivity($lead, $data);
 
             return $this->successResponse(
                 new LeadActivityResource($activity),
@@ -278,11 +278,11 @@ class LeadController extends BaseController
      * Update lead activity
      * 
      * @param UpdateLeadActivityRequest $request
-     * @param string $uuid
+     * @param int $lead
      * @param int $activityId
      * @return JsonResponse
      */
-    public function updateActivity(UpdateLeadActivityRequest $request, string $uuid, int $activityId): JsonResponse
+    public function updateActivity(UpdateLeadActivityRequest $request, int $lead, int $activityId): JsonResponse
     {
         try {
             $data = $request->validated();
@@ -300,11 +300,11 @@ class LeadController extends BaseController
     /**
      * Delete lead activity
      * 
-     * @param string $uuid
+     * @param int $lead
      * @param int $activityId
      * @return JsonResponse
      */
-    public function destroyActivity(string $uuid, int $activityId): JsonResponse
+    public function destroyActivity(int $lead, int $activityId): JsonResponse
     {
         try {
             $this->activityService->deleteActivity($activityId);

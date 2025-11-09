@@ -22,13 +22,15 @@ class ImpersonationResource extends JsonResource
         return [
             'id' => $this->id,
             'admin' => [
-                'id' => $this->admin->uuid ?? null,
-                'full_name' => $this->admin->full_name ?? null,
+                'id' => $this->admin->id ?? null,
+                'uuid' => $this->admin->uuid ?? null,
+                'full_name' => $this->admin->full_name ?? trim(($this->admin->first_name ?? '') . ' ' . ($this->admin->last_name ?? '')) ?: null,
                 'email' => $this->admin->email ?? null,
             ],
             'user' => [
-                'id' => $this->user->uuid ?? null,
-                'full_name' => $this->user->full_name ?? null,
+                'id' => $this->user->id ?? null,
+                'uuid' => $this->user->uuid ?? null,
+                'full_name' => $this->user->full_name ?? trim(($this->user->first_name ?? '') . ' ' . ($this->user->last_name ?? '')) ?: null,
                 'email' => $this->user->email ?? null,
                 'company_name' => $this->user->company_name ?? null,
             ],
