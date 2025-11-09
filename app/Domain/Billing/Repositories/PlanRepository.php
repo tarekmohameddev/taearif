@@ -130,8 +130,12 @@ class PlanRepository extends BaseRepository implements PlanRepositoryInterface
      */
     public function toggleActive(Plan $plan): Plan
     {
-        $plan->is_active = !$plan->is_active;
-        $plan->save();
+        $current = $plan->getRawOriginal('is_active');
+        $next = $this->boolToEnumString(!$this->isTruthy($current));
+
+        $this->model->newQuery()
+            ->whereKey($plan->getKey())
+            ->update(['is_active' => $next]);
 
         return $plan->refresh();
     }
@@ -144,10 +148,48 @@ class PlanRepository extends BaseRepository implements PlanRepositoryInterface
      */
     public function toggleFeatured(Plan $plan): Plan
     {
-        $plan->featured = $plan->featured ? 0 : 1;
-        $plan->save();
+        $current = $plan->getRawOriginal('featured');
+        $next = $this->boolToEnumString(!$this->isTruthy($current));
+
+        $this->model->newQuery()
+            ->whereKey($plan->getKey())
+            ->update(['featured' => $next]);
 
         return $plan->refresh();
+    }
+
+    /**
+     * Determine boolean truthiness from mixed database values.
+     *
+     * @param mixed $value
+     * @return bool
+     */
+    protected function isTruthy(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_numeric($value)) {
+            return (int) $value === 1;
+        }
+
+        if (is_string($value)) {
+            return in_array(strtolower($value), ['1', 'true', 'yes', 'on'], true);
+        }
+
+        return false;
+    }
+
+    /**
+     * Convert a boolean into the enum-compatible string representation.
+     *
+     * @param bool $value
+     * @return string
+     */
+    protected function boolToEnumString(bool $value): string
+    {
+        return $value ? '1' : '0';
     }
 }
 
