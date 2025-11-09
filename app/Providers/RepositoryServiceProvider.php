@@ -99,6 +99,15 @@ class RepositoryServiceProvider extends ServiceProvider
                 );
             }
         );
+
+        $this->app->bind(
+            \App\Domain\Support\Repositories\InquiryRepositoryInterface::class,
+            function () {
+                return new \App\Domain\Support\Repositories\InquiryRepository(
+                    new \App\Domain\Support\Models\Inquiry()
+                );
+            }
+        );
     }
 
     /**

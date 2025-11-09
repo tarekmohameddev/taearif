@@ -28,6 +28,7 @@ abstract class AdminApiTestCase extends TestCase
         $this->ensureDailyTables();
         $this->ensureDomainTables();
         $this->ensureMarketingTables();
+        $this->ensureSupportTables();
         $this->ensureCrmTables();
         $this->ensureAnalyticsTables();
         $this->ensurePackagesTable();
@@ -164,14 +165,15 @@ abstract class AdminApiTestCase extends TestCase
             $table->timestamps();
         });
 
-        Schema::dropIfExists('api_customers');
-        Schema::create('api_customers', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('name')->nullable();
-            $table->string('email')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('api_customers')) {
+            Schema::create('api_customers', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+                $table->string('name')->nullable();
+                $table->string('email')->nullable();
+                $table->timestamps();
+            });
+        }
 
         Schema::dropIfExists('rm_rentals');
         Schema::create('rm_rentals', function (Blueprint $table) {
@@ -292,6 +294,57 @@ abstract class AdminApiTestCase extends TestCase
             $table->unsignedInteger('character_count')->default(0);
             $table->timestamps();
         });
+    }
+
+    /**
+     * Ensure supporting tables for support/inquiries module exist.
+     */
+    private function ensureSupportTables(): void
+    {
+        if (!Schema::hasTable('api_customers')) {
+            Schema::create('api_customers', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+                $table->string('name')->nullable();
+                $table->string('email')->nullable();
+                $table->string('phone_number')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        if (!Schema::hasTable('api_customer_inquiry')) {
+            Schema::create('api_customer_inquiry', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+                $table->foreignId('customer_id')->nullable()->constrained('api_customers')->nullOnDelete();
+                $table->foreignId('assigned_to')->nullable()->constrained('admins')->nullOnDelete();
+                $table->string('phone_number')->nullable();
+                $table->text('message')->nullable();
+                $table->string('inquiry_type')->nullable();
+                $table->string('property_type')->nullable();
+                $table->decimal('budget', 12, 2)->nullable();
+                $table->string('currency', 10)->nullable();
+                $table->integer('bedrooms')->nullable();
+                $table->integer('bathrooms')->nullable();
+                $table->decimal('min_area_sqm', 12, 2)->nullable();
+                $table->decimal('max_area_sqm', 12, 2)->nullable();
+                $table->boolean('furnished')->default(false);
+                $table->string('urgency')->nullable();
+                $table->string('location')->nullable();
+                $table->string('country_code', 10)->nullable();
+                $table->string('region_code', 10)->nullable();
+                $table->string('region_name')->nullable();
+                $table->string('city')->nullable();
+                $table->string('district')->nullable();
+                $table->decimal('latitude', 10, 8)->nullable();
+                $table->decimal('longitude', 11, 8)->nullable();
+                $table->decimal('location_confidence', 5, 2)->nullable();
+                $table->string('source_channel')->nullable();
+                $table->string('lang', 10)->nullable();
+                $table->json('detected_entities_json')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**
@@ -538,6 +591,14 @@ abstract class AdminApiTestCase extends TestCase
 
         if (Schema::hasTable('packages')) {
             DB::table('packages')->truncate();
+        }
+
+        if (Schema::hasTable('api_customer_inquiry')) {
+            DB::table('api_customer_inquiry')->truncate();
+        }
+
+        if (Schema::hasTable('api_customers')) {
+            DB::table('api_customers')->truncate();
         }
 
         if (Schema::hasTable('whatsapp_templates')) {
