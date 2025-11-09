@@ -25,6 +25,7 @@ abstract class AdminApiTestCase extends TestCase
         $this->ensureRolesTable();
         $this->ensureUsersTable();
         $this->ensureDailyTables();
+        $this->ensurePackagesTable();
         $this->ensureSanctumTables();
         $this->ensureAdminImpersonationsTable();
         $this->resetAdminData();
@@ -174,11 +175,60 @@ abstract class AdminApiTestCase extends TestCase
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->unsignedBigInteger('package_id')->nullable();
-            $table->float('price')->default(0);
-            $table->boolean('status')->default(1);
+            $table->decimal('package_price', 10, 2)->default(0);
+            $table->decimal('discount', 10, 2)->default(0);
+            $table->string('coupon_code')->nullable();
+            $table->decimal('price', 10, 2)->default(0);
+            $table->string('currency', 10)->default('USD');
+            $table->string('currency_symbol', 5)->default('$');
+            $table->string('payment_method')->nullable();
+            $table->string('transaction_id')->nullable();
+            $table->unsignedTinyInteger('status')->default(1);
             $table->boolean('is_trial')->default(false);
+            $table->unsignedInteger('trial_days')->default(0);
+            $table->string('receipt')->nullable();
+            $table->json('transaction_details')->nullable();
+            $table->json('settings')->nullable();
             $table->date('start_date')->nullable();
             $table->date('expire_date')->nullable();
+            $table->boolean('modified')->default(false);
+            $table->string('conversation_id')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Ensure the packages (plans) table exists.
+     */
+    private function ensurePackagesTable(): void
+    {
+        if (Schema::hasTable('packages')) {
+            return;
+        }
+
+        Schema::create('packages', function (Blueprint $table) {
+            $table->id();
+            $table->string('title');
+            $table->string('subtitle')->nullable();
+            $table->string('slug')->unique();
+            $table->decimal('price', 10, 2)->default(0);
+            $table->string('term')->default('monthly');
+            $table->string('icon')->nullable();
+            $table->unsignedTinyInteger('featured')->default(0);
+            $table->boolean('is_trial')->default(false);
+            $table->unsignedInteger('trial_days')->default(0);
+            $table->unsignedTinyInteger('status')->default(1);
+            $table->boolean('is_active')->default(true);
+            $table->json('features')->nullable();
+            $table->json('new_features')->nullable();
+            $table->text('meta_keywords')->nullable();
+            $table->text('meta_description')->nullable();
+            $table->unsignedInteger('number_of_vcards')->default(0);
+            $table->unsignedInteger('project_limit_number')->default(0);
+            $table->unsignedInteger('real_estate_limit_number')->default(0);
+            $table->unsignedInteger('video_size_limit')->default(0);
+            $table->unsignedInteger('file_size_limit')->default(0);
+            $table->unsignedInteger('serial_number')->default(0);
             $table->timestamps();
         });
     }
@@ -277,6 +327,10 @@ abstract class AdminApiTestCase extends TestCase
 
         if (Schema::hasTable('api_customers')) {
             DB::table('api_customers')->truncate();
+        }
+
+        if (Schema::hasTable('packages')) {
+            DB::table('packages')->truncate();
         }
 
         if (Schema::hasTable('personal_access_tokens')) {
