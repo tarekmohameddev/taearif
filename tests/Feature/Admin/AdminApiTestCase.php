@@ -29,6 +29,7 @@ abstract class AdminApiTestCase extends TestCase
         $this->ensureDomainTables();
         $this->ensureMarketingTables();
         $this->ensureSupportTables();
+        $this->ensureReferralTables();
         $this->ensureCrmTables();
         $this->ensureAnalyticsTables();
         $this->ensurePackagesTable();
@@ -348,6 +349,46 @@ abstract class AdminApiTestCase extends TestCase
     }
 
     /**
+     * Ensure supporting tables for referrals module exist.
+     */
+    private function ensureReferralTables(): void
+    {
+        Schema::disableForeignKeyConstraints();
+
+        Schema::dropIfExists('affiliate_transactions');
+        Schema::dropIfExists('api_affiliate_users');
+
+        Schema::enableForeignKeyConstraints();
+
+        Schema::create('api_affiliate_users', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('fullname')->nullable();
+            $table->string('bank_name')->nullable();
+            $table->string('bank_account_number')->nullable();
+            $table->string('iban')->nullable();
+            $table->decimal('commission_percentage', 5, 2)->default(0);
+            $table->decimal('pending_amount', 10, 2)->default(0);
+            $table->string('request_status')->default('pending');
+            $table->date('start_date_value')->nullable();
+            $table->date('to_date_value')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('affiliate_transactions', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('affiliate_id')->nullable()->constrained('api_affiliate_users')->nullOnDelete();
+            $table->foreignId('referral_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('type')->default('pending');
+            $table->string('image')->nullable();
+            $table->decimal('amount', 10, 2)->default(0);
+            $table->text('note')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
+        });
+    }
+
+    /**
      * Ensure supporting tables for CRM module exist.
      */
     private function ensureCrmTables(): void
@@ -419,25 +460,6 @@ abstract class AdminApiTestCase extends TestCase
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
                 $table->unsignedTinyInteger('status')->default(1);
                 $table->boolean('is_active')->default(true);
-                $table->timestamps();
-            });
-        }
-
-        if (!Schema::hasTable('api_affiliate_users')) {
-            Schema::create('api_affiliate_users', function (Blueprint $table) {
-                $table->id();
-                $table->string('name')->nullable();
-                $table->string('email')->nullable();
-                $table->timestamps();
-            });
-        }
-
-        if (!Schema::hasTable('affiliate_transactions')) {
-            Schema::create('affiliate_transactions', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('affiliate_user_id')->nullable()->constrained('api_affiliate_users')->nullOnDelete();
-                $table->decimal('amount', 10, 2)->default(0);
-                $table->string('status')->nullable();
                 $table->timestamps();
             });
         }

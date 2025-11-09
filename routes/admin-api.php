@@ -403,31 +403,31 @@ Route::prefix(config('admin-api.prefix'))
         Route::post('/', [ReferralController::class, 'store'])
             ->name('store');
 
+        Route::get('statistics/all', [ReferralController::class, 'statistics'])
+            ->name('statistics');
+
+        Route::prefix('transactions')->name('transactions.')->group(function () {
+            Route::get('/', [ReferralController::class, 'transactions'])
+                ->name('index');
+
+            Route::get('{transaction}', [ReferralController::class, 'showTransaction'])
+                ->name('show');
+
+            Route::post('{transaction}/approve', [ReferralController::class, 'approveTransaction'])
+                ->name('approve');
+
+            Route::post('{transaction}/reject', [ReferralController::class, 'rejectTransaction'])
+                ->name('reject');
+
+            Route::post('{transaction}/mark-paid', [ReferralController::class, 'markAsPaid'])
+                ->name('mark-paid');
+        });
+
         Route::get('{referral}', [ReferralController::class, 'show'])
             ->name('show');
 
         Route::put('{referral}', [ReferralController::class, 'update'])
             ->name('update');
-
-        Route::get('statistics/all', [ReferralController::class, 'statistics'])
-            ->name('statistics');
-    });
-
-    Route::prefix('referrals/transactions')->name('referrals.transactions.')->group(function () {
-        Route::get('/', [ReferralController::class, 'transactions'])
-            ->name('index');
-
-        Route::get('{transaction}', [ReferralController::class, 'showTransaction'])
-            ->name('show');
-
-        Route::post('{transaction}/approve', [ReferralController::class, 'approveTransaction'])
-            ->name('approve');
-
-        Route::post('{transaction}/reject', [ReferralController::class, 'rejectTransaction'])
-            ->name('reject');
-
-        Route::post('{transaction}/mark-paid', [ReferralController::class, 'markAsPaid'])
-            ->name('mark-paid');
     });
 
     // -------------------------------------------------------------------------

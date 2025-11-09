@@ -1,0 +1,283 @@
+<?php
+
+namespace App\Domain\Referral\Services;
+
+use App\Domain\Referral\Models\Affiliate;
+use App\Domain\Referral\Models\AffiliateTransaction;
+use App\Domain\Referral\Repositories\AffiliateRepositoryInterface;
+use App\Domain\Referral\Repositories\AffiliateTransactionRepositoryInterface;
+use App\Domain\Shared\Services\BaseService;
+use App\Exceptions\ResourceNotFoundException;
+use App\Exceptions\BusinessLogicException;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+
+/**
+ * Referral Service
+ * 
+ * Business logic for managing affiliates and referral program
+ */
+class ReferralService extends BaseService
+{
+    /**
+     * @var AffiliateRepositoryInterface
+     */
+    protected $affiliateRepository;
+
+    /**
+     * @var AffiliateTransactionRepositoryInterface
+     */
+    protected $transactionRepository;
+
+    /**
+     * ReferralService constructor.
+     *
+     * @param AffiliateRepositoryInterface $affiliateRepository
+     * @param AffiliateTransactionRepositoryInterface $transactionRepository
+     */
+    public function __construct(
+        AffiliateRepositoryInterface $affiliateRepository,
+        AffiliateTransactionRepositoryInterface $transactionRepository
+    ) {
+        $this->affiliateRepository = $affiliateRepository;
+        $this->transactionRepository = $transactionRepository;
+    }
+
+    /**
+     * Get paginated affiliates with filters
+     *
+     * @param array $filters
+     * @param int $perPage
+     * @return LengthAwarePaginator
+     */
+    public function getAffiliates(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        return $this->affiliateRepository->searchAndPaginate($filters, $perPage);
+    }
+
+    /**
+     * Get affiliate by ID
+     *
+     * @param int $id
+     * @return Affiliate
+     * @throws ResourceNotFoundException
+     */
+    public function getAffiliateById(int $id): Affiliate
+    {
+        $affiliate = $this->affiliateRepository->findById($id);
+
+        if (!$affiliate) {
+            throw new ResourceNotFoundException('Affiliate not found');
+        }
+
+        $affiliate->load(['user', 'transactions']);
+
+        return $affiliate;
+    }
+
+    /**
+     * Create a new affiliate
+     *
+     * @param array $data
+     * @return Affiliate
+     */
+    public function createAffiliate(array $data): Affiliate
+    {
+        return $this->executeInTransaction(function () use ($data) {
+            $affiliate = $this->affiliateRepository->create($data);
+            
+            return $affiliate->load(['user']);
+        });
+    }
+
+    /**
+     * Update existing affiliate
+     *
+     * @param int $id
+     * @param array $data
+     * @return Affiliate
+     * @throws ResourceNotFoundException
+     */
+    public function updateAffiliate(int $id, array $data): Affiliate
+    {
+        $affiliate = $this->affiliateRepository->findById($id);
+
+        if (!$affiliate) {
+            throw new ResourceNotFoundException('Affiliate not found');
+        }
+
+        return $this->executeInTransaction(function () use ($affiliate, $data) {
+            $updated = $this->affiliateRepository->update($affiliate, $data);
+            
+            return $updated->load(['user']);
+        });
+    }
+
+    /**
+     * Update affiliate request status
+     *
+     * @param int $id
+     * @param string $status
+     * @return Affiliate
+     * @throws ResourceNotFoundException
+     */
+    public function updateAffiliateStatus(int $id, string $status): Affiliate
+    {
+        $affiliate = $this->affiliateRepository->findById($id);
+
+        if (!$affiliate) {
+            throw new ResourceNotFoundException('Affiliate not found');
+        }
+
+        return $this->executeInTransaction(function () use ($affiliate, $status) {
+            return $this->affiliateRepository->updateRequestStatus($affiliate, $status);
+        });
+    }
+
+    /**
+     * Get paginated transactions with filters
+     *
+     * @param array $filters
+     * @param int $perPage
+     * @return LengthAwarePaginator
+     */
+    public function getTransactions(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        return $this->transactionRepository->searchAndPaginate($filters, $perPage);
+    }
+
+    /**
+     * Get transaction by ID
+     *
+     * @param int $id
+     * @return AffiliateTransaction
+     * @throws ResourceNotFoundException
+     */
+    public function getTransactionById(int $id): AffiliateTransaction
+    {
+        $transaction = $this->transactionRepository->findById($id);
+
+        if (!$transaction) {
+            throw new ResourceNotFoundException('Transaction not found');
+        }
+
+        $transaction->load(['affiliate.user', 'referredUser']);
+
+        return $transaction;
+    }
+
+    /**
+     * Approve transaction/payout
+     *
+     * @param int $id
+     * @return AffiliateTransaction
+     * @throws ResourceNotFoundException
+     * @throws BusinessLogicException
+     */
+    public function approveTransaction(int $id): AffiliateTransaction
+    {
+        $transaction = $this->transactionRepository->findById($id);
+
+        if (!$transaction) {
+            throw new ResourceNotFoundException('Transaction not found');
+        }
+
+        if ($transaction->type !== 'pending') {
+            throw new BusinessLogicException(
+                'Only pending transactions can be approved',
+                'REFERRAL_TRANSACTION_NOT_PENDING',
+                422
+            );
+        }
+
+        return $this->executeInTransaction(function () use ($transaction) {
+            return $this->transactionRepository->approveTransaction($transaction);
+        });
+    }
+
+    /**
+     * Reject transaction/payout
+     *
+     * @param int $id
+     * @param string|null $note
+     * @return AffiliateTransaction
+     * @throws ResourceNotFoundException
+     * @throws BusinessLogicException
+     */
+    public function rejectTransaction(int $id, ?string $note = null): AffiliateTransaction
+    {
+        $transaction = $this->transactionRepository->findById($id);
+
+        if (!$transaction) {
+            throw new ResourceNotFoundException('Transaction not found');
+        }
+
+        if ($transaction->type !== 'pending') {
+            throw new BusinessLogicException(
+                'Only pending transactions can be rejected',
+                'REFERRAL_TRANSACTION_NOT_PENDING',
+                422
+            );
+        }
+
+        return $this->executeInTransaction(function () use ($transaction, $note) {
+            return $this->transactionRepository->rejectTransaction($transaction, $note);
+        });
+    }
+
+    /**
+     * Mark transaction as paid
+     *
+     * @param int $id
+     * @param string|null $note
+     * @return AffiliateTransaction
+     * @throws ResourceNotFoundException
+     * @throws BusinessLogicException
+     */
+    public function markTransactionAsPaid(int $id, ?string $note = null): AffiliateTransaction
+    {
+        $transaction = $this->transactionRepository->findById($id);
+
+        if (!$transaction) {
+            throw new ResourceNotFoundException('Transaction not found');
+        }
+
+        if ($transaction->type !== 'approved') {
+            throw new BusinessLogicException(
+                'Only approved transactions can be marked as paid',
+                'REFERRAL_TRANSACTION_NOT_APPROVED',
+                422
+            );
+        }
+
+        return $this->executeInTransaction(function () use ($transaction, $note) {
+            return $this->transactionRepository->markAsPaid($transaction, $note);
+        });
+    }
+
+    /**
+     * Get referral statistics
+     *
+     * @return array
+     */
+    public function getStatistics(): array
+    {
+        return [
+            'affiliates' => [
+                'total' => Affiliate::count(),
+                'pending' => Affiliate::byStatus('pending')->count(),
+                'approved' => Affiliate::byStatus('approved')->count(),
+                'rejected' => Affiliate::byStatus('rejected')->count(),
+            ],
+            'transactions' => [
+                'total' => AffiliateTransaction::count(),
+                'pending' => AffiliateTransaction::pending()->count(),
+                'approved' => AffiliateTransaction::approved()->count(),
+                'paid' => AffiliateTransaction::paid()->count(),
+                'total_amount' => (float) AffiliateTransaction::sum('amount'),
+                'pending_amount' => (float) AffiliateTransaction::pending()->sum('amount'),
+                'paid_amount' => (float) AffiliateTransaction::paid()->sum('amount'),
+            ],
+        ];
+    }
+}
+

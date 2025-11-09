@@ -16,6 +16,19 @@ class AffiliateCollection extends ResourceCollection
     {
         return [
             'data' => AffiliateResource::collection($this->collection),
+            'pagination' => [
+                'total' => $this->resource->total(),
+                'count' => $this->count(),
+                'per_page' => $this->resource->perPage(),
+                'current_page' => $this->resource->currentPage(),
+                'total_pages' => $this->resource->lastPage(),
+                'links' => [
+                    'first' => $this->resource->url(1),
+                    'last' => $this->resource->url($this->resource->lastPage()),
+                    'prev' => $this->resource->previousPageUrl(),
+                    'next' => $this->resource->nextPageUrl(),
+                ],
+            ],
         ];
     }
 }

@@ -10,12 +10,13 @@ class AffiliateResource extends JsonResource
      * Transform the resource into an array.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     * @return array<string, mixed>
      */
-    public function toArray($request)
+    public function toArray($request): array
     {
         return [
             'id' => $this->id,
+            'user_id' => $this->user_id,
             'user' => $this->when($this->relationLoaded('user'), function () {
                 return [
                     'id' => $this->user->id,
@@ -40,10 +41,10 @@ class AffiliateResource extends JsonResource
                 return (float) $this->paid_earnings;
             }),
             'transactions_count' => $this->when($this->relationLoaded('transactions'), function () {
-                return $this->transactions->count();
+                return $this->transactions ? $this->transactions->count() : 0;
             }),
-            'created_at' => $this->created_at->toIso8601String(),
-            'updated_at' => $this->updated_at->toIso8601String(),
+            'created_at' => $this->created_at?->toIso8601String(),
+            'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }
 }

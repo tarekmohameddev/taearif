@@ -108,6 +108,24 @@ class RepositoryServiceProvider extends ServiceProvider
                 );
             }
         );
+
+        $this->app->bind(
+            \App\Domain\Referral\Repositories\AffiliateRepositoryInterface::class,
+            function () {
+                return new \App\Domain\Referral\Repositories\AffiliateRepository(
+                    new \App\Domain\Referral\Models\Affiliate()
+                );
+            }
+        );
+
+        $this->app->bind(
+            \App\Domain\Referral\Repositories\AffiliateTransactionRepositoryInterface::class,
+            function () {
+                return new \App\Domain\Referral\Repositories\AffiliateTransactionRepository(
+                    new \App\Domain\Referral\Models\AffiliateTransaction()
+                );
+            }
+        );
     }
 
     /**
