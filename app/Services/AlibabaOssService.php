@@ -16,9 +16,19 @@ class AlibabaOssService
 
     public function __construct()
     {
-        // Use env() directly for debugging
+        // Lazy initialization - only initialize when actually used
         $this->bucket = env('OSS_BUCKET');
         $this->endpoint = env('OSS_ENDPOINT');
+    }
+    
+    /**
+     * Initialize the OSS client (lazy loading)
+     */
+    private function initializeClient()
+    {
+        if ($this->client !== null) {
+            return;
+        }
         
         $accessKeyId = env('OSS_ACCESS_KEY_ID');
         $accessKeySecret = env('OSS_ACCESS_KEY_SECRET');
@@ -56,6 +66,8 @@ class AlibabaOssService
      */
     public function uploadFile(UploadedFile $file, string $path = '', string $visibility = 'public'): array
     {
+        $this->initializeClient();
+        
         try {
             // Generate unique filename
             $extension = $file->getClientOriginalExtension();
@@ -139,6 +151,8 @@ class AlibabaOssService
      */
     public function deleteFile(string $filename): bool
     {
+        $this->initializeClient();
+        
         try {
             $this->client->deleteObject($this->bucket, $filename);
             return true;

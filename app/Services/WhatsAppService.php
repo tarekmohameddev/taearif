@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\BasicSetting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class WhatsAppService
 {
@@ -12,7 +13,9 @@ class WhatsAppService
 
     public function __construct()
     {
-        $this->settings = BasicSetting::first();
+        $this->settings = Schema::hasTable('basic_settings')
+            ? BasicSetting::first()
+            : null;
     }
 
     /**

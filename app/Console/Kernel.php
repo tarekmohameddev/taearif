@@ -24,7 +24,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\TestWhatsAppMessage::class,
         \App\Console\Commands\RunAllScheduledTasks::class,
         \App\Console\Commands\SendCrmAppointmentReminders::class,
-
+        \App\Console\Commands\BackfillInvoiceUuids::class,
     ];
 
     /**

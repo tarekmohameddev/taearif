@@ -54,4 +54,12 @@ class UserApiCustomerReminder extends Model
             default => 'Unknown',
         };
     }
+
+    /**
+     * Override factory resolution to use custom namespace.
+     */
+    protected static function newFactory()
+    {
+        return \Database\Factories\UserApiCustomerReminderFactory::new();
+    }
 }

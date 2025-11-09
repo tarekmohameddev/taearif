@@ -61,3 +61,4 @@ phpunit.xml
 postman_property_request_example.json
 app/Http/Helpers/Helper.php.backup
 /front-next
+test-admin-login.json
