@@ -56,7 +56,7 @@ class ImpersonationService extends BaseService
      * Start impersonation session.
      *
      * @param Admin $admin
-     * @param string $userUuid
+     * @param int $userId
      * @param string|null $reason
      * @param string|null $ipAddress
      * @param string|null $userAgent
@@ -66,13 +66,13 @@ class ImpersonationService extends BaseService
      */
     public function startImpersonation(
         Admin $admin,
-        string $userUuid,
+        int $userId,
         ?string $reason = null,
         ?string $ipAddress = null,
         ?string $userAgent = null
     ): array {
         // Find user
-        $user = $this->userRepository->findByUuid($userUuid);
+        $user = $this->userRepository->findById($userId);
 
         if (!$user) {
             throw new ResourceNotFoundException('User not found');
@@ -188,14 +188,14 @@ class ImpersonationService extends BaseService
     /**
      * Get impersonation history for a specific user.
      *
-     * @param string $userUuid
+     * @param int $userId
      * @param int $perPage
      * @return LengthAwarePaginator
      * @throws ResourceNotFoundException
      */
-    public function getUserImpersonationHistory(string $userUuid, int $perPage = 15): LengthAwarePaginator
+    public function getUserImpersonationHistory(int $userId, int $perPage = 15): LengthAwarePaginator
     {
-        $user = $this->userRepository->findByUuid($userUuid);
+        $user = $this->userRepository->findById($userId);
 
         if (!$user) {
             throw new ResourceNotFoundException('User not found');
@@ -213,6 +213,56 @@ class ImpersonationService extends BaseService
     {
         return $this->transaction(function () {
             return $this->impersonationRepository->markExpiredSessions($this->tokenExpirationHours);
+        });
+    }
+
+    /**
+     * End impersonation session for the given admin.
+     * If $tokenId is provided, it will target that specific session after validating ownership.
+     * Otherwise, it will end the most recent active session for this admin.
+     *
+     * @param Admin $admin
+     * @param int|null $tokenId
+     * @return AdminImpersonation
+     * @throws ImpersonationException
+     */
+    public function endImpersonationForAdmin(Admin $admin, ?int $tokenId = null): AdminImpersonation
+    {
+        if ($tokenId) {
+            $impersonation = $this->impersonationRepository->findByTokenId($tokenId);
+            if (
+                !$impersonation ||
+                $impersonation->status !== 'active' ||
+                (int) $impersonation->admin_id !== (int) $admin->id
+            ) {
+                throw new ImpersonationException(
+                    'No active impersonation session found for this admin and token',
+                    'IMPERSONATION_NOT_FOUND',
+                    404
+                );
+            }
+        } else {
+            $active = $this->impersonationRepository->getActive();
+            $impersonation = $active
+                ->where('admin_id', $admin->id)
+                ->sortByDesc('started_at')
+                ->first();
+
+            if (!$impersonation) {
+                throw new ImpersonationException(
+                    'No active impersonation session found for this admin',
+                    'IMPERSONATION_NOT_FOUND',
+                    404
+                );
+            }
+        }
+
+        return $this->transaction(function () use ($impersonation) {
+            // Revoke the Sanctum token
+            PersonalAccessToken::find($impersonation->token_id)?->delete();
+
+            // End the impersonation session
+            return $this->impersonationRepository->endSession($impersonation);
         });
     }
 

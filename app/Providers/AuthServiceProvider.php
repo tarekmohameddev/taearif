@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Models\Admin;
+use App\Domain\Admin\Models\Admin;
 use App\Models\MaintenanceMode;
 use App\Policies\MaintenanceModePolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;

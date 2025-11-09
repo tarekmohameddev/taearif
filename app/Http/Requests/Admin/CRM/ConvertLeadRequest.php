@@ -24,7 +24,7 @@ class ConvertLeadRequest extends FormRequest
     public function rules()
     {
         return [
-            'user_uuid' => ['required', 'string', 'exists:users,uuid'],
+            'user_id' => ['required', 'integer', 'exists:users,id'],
             'notes' => ['nullable', 'string'],
         ];
     }
@@ -37,7 +37,7 @@ class ConvertLeadRequest extends FormRequest
     public function attributes()
     {
         return [
-            'user_uuid' => 'user/tenant',
+            'user_id' => 'user/tenant',
             'notes' => 'conversion notes',
         ];
     }

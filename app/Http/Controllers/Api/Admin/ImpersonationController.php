@@ -11,6 +11,7 @@ use App\Exceptions\ImpersonationException;
 use App\Exceptions\ResourceNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Impersonation Controller
@@ -38,20 +39,22 @@ class ImpersonationController extends BaseController
      * Start impersonation session for a user.
      *
      * @param StartImpersonationRequest $request
-     * @param string $userUuid
+     * @param int $userId
      * @return JsonResponse
      */
-    public function start(StartImpersonationRequest $request, string $userUuid): JsonResponse
+    public function start(StartImpersonationRequest $request, int $userId): JsonResponse
     {
         try {
-            $admin = $request->user('admin-sanctum');
+            $admin = auth('admin-sanctum')->user();
+            $adminId = $admin?->id;
+            $validated = $request->validated();
 
             $result = $this->impersonationService->startImpersonation(
                 $admin,
-                $userUuid,
-                $request->input('reason'),
-                $request->ip(),
-                $request->userAgent()
+                $userId,
+                $validated['reason'] ?? null,
+                request()->getClientIp(),
+                request()->userAgent()
             );
 
             return $this->successResponse([
@@ -63,15 +66,18 @@ class ImpersonationController extends BaseController
             ], 'Impersonation session started successfully', 201);
 
         } catch (ImpersonationException $e) {
-            return $this->errorResponse($e->getMessage(), $e->getCode(), [
-                'error_code' => $e->errorCode,
-            ]);
+            return $this->errorResponse(
+                $e->getMessage(),
+                $e->errorCode,
+                $e->getCode() ?: 400,
+                ['error_code' => $e->errorCode]
+            );
         } catch (ResourceNotFoundException $e) {
             return $this->notFoundResponse($e->getMessage());
         } catch (\Exception $e) {
-            \Log::error('Impersonation start failed', [
-                'admin' => $request->user('admin-sanctum')?->id,
-                'user_uuid' => $userUuid,
+            Log::error('Impersonation start failed', [
+                'admin' => $adminId,
+                'user_id' => $userId,
                 'error' => $e->getMessage(),
             ]);
             return $this->errorResponse('Failed to start impersonation session', 500);
@@ -87,13 +93,20 @@ class ImpersonationController extends BaseController
     public function exit(Request $request): JsonResponse
     {
         try {
-            $token = $request->bearerToken();
+            $admin = auth('admin-sanctum')->user();
+            $adminId = $admin?->id;
 
-            if (!$token) {
-                return $this->errorResponse('No token provided', 400);
+            // Optional: allow targeting a specific session via header
+            $headerToken = $request->header('X-Impersonation-Token');
+            $tokenId = null;
+            if (!empty($headerToken)) {
+                $tokenIdPart = explode('|', $headerToken)[0] ?? null;
+                if ($tokenIdPart !== null && $tokenIdPart !== '') {
+                    $tokenId = (int) $tokenIdPart;
+                }
             }
 
-            $impersonation = $this->impersonationService->endImpersonation($token);
+            $impersonation = $this->impersonationService->endImpersonationForAdmin($admin, $tokenId);
 
             return $this->successResponse([
                 'impersonation' => new ImpersonationResource($impersonation),
@@ -101,11 +114,15 @@ class ImpersonationController extends BaseController
             ], 'Impersonation session ended');
 
         } catch (ImpersonationException $e) {
-            return $this->errorResponse($e->getMessage(), $e->getCode(), [
-                'error_code' => $e->errorCode,
-            ]);
+            return $this->errorResponse(
+                $e->getMessage(),
+                $e->errorCode,
+                $e->getCode() ?: 400,
+                ['error_code' => $e->errorCode]
+            );
         } catch (\Exception $e) {
-            \Log::error('Impersonation exit failed', [
+            Log::error('Impersonation exit failed', [
+                'admin' => $adminId ?? null,
                 'error' => $e->getMessage(),
             ]);
             return $this->errorResponse('Failed to end impersonation session', 500);
@@ -172,15 +189,15 @@ class ImpersonationController extends BaseController
      * Get impersonation history for a specific user.
      *
      * @param Request $request
-     * @param string $userUuid
+     * @param int $userId
      * @return JsonResponse
      */
-    public function userHistory(Request $request, string $userUuid): JsonResponse
+    public function userHistory(Request $request, int $userId): JsonResponse
     {
         try {
             $perPage = $request->input('per_page', 15);
 
-            $history = $this->impersonationService->getUserImpersonationHistory($userUuid, $perPage);
+            $history = $this->impersonationService->getUserImpersonationHistory($userId, $perPage);
 
             return $this->successResponse(
                 new ImpersonationCollection($history),
