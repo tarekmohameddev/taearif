@@ -2,6 +2,8 @@
 
 namespace App\Domain\Shared\Services;
 
+use App\Exceptions\BusinessLogicException;
+use App\Exceptions\ResourceNotFoundException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -96,16 +98,53 @@ abstract class BaseService
      * @param bool $condition
      * @param string $message
      * @param string $code
-     * @throws \Exception
+     * @param int $httpCode
+     * @throws BusinessLogicException
      */
     protected function validateBusinessRule(
         bool $condition,
         string $message,
-        string $code = 'BIZ_001'
+        string $code = 'BIZ_001',
+        int $httpCode = 400
     ): void {
         if (!$condition) {
-            throw new \Exception($message);
+            throw new BusinessLogicException($message, $code, $httpCode);
         }
+    }
+
+    /**
+     * Throw a business logic exception.
+     *
+     * @param string $message
+     * @param string $code
+     * @param int $httpCode
+     * @return never
+     * @throws BusinessLogicException
+     */
+    protected function fail(
+        string $message,
+        string $code = 'BIZ_001',
+        int $httpCode = 400
+    ): never {
+        throw new BusinessLogicException($message, $code, $httpCode);
+    }
+
+    /**
+     * Ensure a value exists or throw a not found exception.
+     *
+     * @template TValue
+     * @param TValue|null $value
+     * @param string $message
+     * @return TValue
+     * @throws ResourceNotFoundException
+     */
+    protected function ensureFound(mixed $value, string $message = 'Resource not found'): mixed
+    {
+        if ($value === null) {
+            throw new ResourceNotFoundException($message);
+        }
+
+        return $value;
     }
 
     /**
