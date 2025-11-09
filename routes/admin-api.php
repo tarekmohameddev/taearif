@@ -511,12 +511,10 @@ Route::prefix(config('admin-api.prefix'))
             ->name('settings.index');
 
         Route::get('settings/{section}', [PlatformController::class, 'show'])
-            ->name('settings.show')
-            ->where('section', 'general|email|whatsapp|seo|maintenance|appearance');
+            ->name('settings.show');
 
         Route::put('settings/{section}', [PlatformController::class, 'update'])
-            ->name('settings.update')
-            ->where('section', 'general|email|whatsapp|seo|maintenance|appearance');
+            ->name('settings.update');
     });
 
     // -------------------------------------------------------------------------

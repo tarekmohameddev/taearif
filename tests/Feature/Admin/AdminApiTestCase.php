@@ -30,6 +30,7 @@ abstract class AdminApiTestCase extends TestCase
         $this->ensureMarketingTables();
         $this->ensureSupportTables();
         $this->ensureReferralTables();
+        $this->ensurePlatformTables();
         $this->ensureCrmTables();
         $this->ensureAnalyticsTables();
         $this->ensurePackagesTable();
@@ -250,12 +251,18 @@ abstract class AdminApiTestCase extends TestCase
 
         Schema::create('basic_settings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('language_id')->constrained('languages')->cascadeOnDelete();
+            $table->foreignId('language_id')->nullable();
+            $table->string('website_title')->nullable();
+            $table->string('timezone')->nullable();
+            $table->boolean('email_verification_status')->default(false);
+            $table->string('base_color')->nullable();
             $table->string('whatsapp_service')->nullable();
             $table->boolean('whatsapp_notifications_enabled')->default(false);
             $table->string('meta_access_token')->nullable();
             $table->string('meta_phone_number_id')->nullable();
             $table->string('meta_business_account_id')->nullable();
+            $table->string('meta_template_name')->nullable();
+            $table->string('meta_template_language')->nullable();
             $table->string('evolution_api_url')->nullable();
             $table->string('evolution_api_key')->nullable();
             $table->string('evolution_instance_name')->nullable();
@@ -280,6 +287,16 @@ abstract class AdminApiTestCase extends TestCase
             $table->text('password_reset_text')->nullable();
             $table->string('password_reset_template')->nullable();
             $table->string('password_reset_api')->nullable();
+            $table->boolean('whatsapp_status')->default(false);
+            $table->string('whatsapp_number')->nullable();
+            $table->boolean('maintenance_status')->default(false);
+            $table->text('maintainance_text')->nullable();
+            $table->string('maintenance_img')->nullable();
+            $table->string('secret_path')->nullable();
+            $table->string('logo')->nullable();
+            $table->string('footer_logo')->nullable();
+            $table->string('favicon')->nullable();
+            $table->string('preloader')->nullable();
             $table->timestamps();
         });
 
@@ -346,6 +363,46 @@ abstract class AdminApiTestCase extends TestCase
                 $table->timestamps();
             });
         }
+    }
+
+    /**
+     * Ensure supporting tables for platform settings module exist.
+     */
+    private function ensurePlatformTables(): void
+    {
+        Schema::dropIfExists('basic_extendeds');
+        Schema::dropIfExists('seos');
+
+        Schema::create('basic_extendeds', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('language_id')->nullable();
+            $table->boolean('is_smtp')->default(false);
+            $table->boolean('email_notifications_enabled')->default(false);
+            $table->string('smtp_host')->nullable();
+            $table->string('smtp_port')->nullable();
+            $table->string('smtp_username')->nullable();
+            $table->string('smtp_password')->nullable();
+            $table->string('encryption')->nullable();
+            $table->string('smtp_encryption')->nullable();
+            $table->string('from_mail')->nullable();
+            $table->string('from_name')->nullable();
+            $table->string('to_mail')->nullable();
+            $table->string('base_currency_symbol')->nullable();
+            $table->string('base_currency_symbol_position')->nullable();
+            $table->string('base_currency_text')->nullable();
+            $table->string('base_currency_text_position')->nullable();
+            $table->decimal('base_currency_rate', 12, 6)->default(1.000000);
+            $table->string('timezone')->nullable();
+        });
+
+        Schema::create('seos', function (Blueprint $table) {
+            $table->id();
+            $table->text('meta_keywords')->nullable();
+            $table->text('meta_description')->nullable();
+            $table->longText('google_analytics')->nullable();
+            $table->longText('facebook_pixel')->nullable();
+            $table->timestamps();
+        });
     }
 
     /**
@@ -629,6 +686,14 @@ abstract class AdminApiTestCase extends TestCase
 
         if (Schema::hasTable('basic_settings')) {
             DB::table('basic_settings')->truncate();
+        }
+
+        if (Schema::hasTable('basic_extendeds')) {
+            DB::table('basic_extendeds')->truncate();
+        }
+
+        if (Schema::hasTable('seos')) {
+            DB::table('seos')->truncate();
         }
 
         if (Schema::hasTable('languages')) {
