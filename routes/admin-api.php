@@ -18,6 +18,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Admin\AuthController;
 use App\Http\Controllers\Api\Admin\DailyController;
+use App\Http\Controllers\Api\Admin\ImpersonationController;
 
 // =============================================================================
 // PUBLIC ROUTES - No Authentication Required
@@ -98,6 +99,34 @@ Route::prefix(config('admin-api.prefix'))
 
         Route::get('rms-reminders', [DailyController::class, 'rmsReminders'])
             ->name('rms-reminders');
+    });
+
+    // -------------------------------------------------------------------------
+    // User Impersonation Routes (scoped under users)
+    // -------------------------------------------------------------------------
+
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::post('{user}/impersonate', [ImpersonationController::class, 'start'])
+            ->name('impersonate.start')
+            ->middleware('can:impersonate-users');
+
+        Route::get('{user}/impersonation-history', [ImpersonationController::class, 'userHistory'])
+            ->name('impersonate.user-history');
+    });
+
+    // -------------------------------------------------------------------------
+    // Impersonation Module — انتحال الشخصية
+    // -------------------------------------------------------------------------
+
+    Route::prefix('impersonate')->name('impersonate.')->group(function () {
+        Route::post('exit', [ImpersonationController::class, 'exit'])
+            ->name('exit');
+
+        Route::get('active', [ImpersonationController::class, 'active'])
+            ->name('active');
+
+        Route::get('history', [ImpersonationController::class, 'history'])
+            ->name('history');
     });
 
 });

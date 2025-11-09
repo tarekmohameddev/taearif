@@ -27,6 +27,24 @@ class RepositoryServiceProvider extends ServiceProvider
                 );
             }
         );
+
+        $this->app->bind(
+            \App\Domain\Admin\Repositories\ImpersonationRepositoryInterface::class,
+            function () {
+                return new \App\Domain\Admin\Repositories\ImpersonationRepository(
+                    new \App\Domain\Admin\Models\AdminImpersonation()
+                );
+            }
+        );
+
+        $this->app->bind(
+            \App\Domain\User\Repositories\UserRepositoryInterface::class,
+            function () {
+                return new \App\Domain\User\Repositories\UserRepository(
+                    new \App\Domain\User\Models\User()
+                );
+            }
+        );
     }
 
     /**

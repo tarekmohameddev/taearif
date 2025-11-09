@@ -25,6 +25,8 @@ abstract class AdminApiTestCase extends TestCase
         $this->ensureRolesTable();
         $this->ensureUsersTable();
         $this->ensureDailyTables();
+        $this->ensureSanctumTables();
+        $this->ensureAdminImpersonationsTable();
         $this->resetAdminData();
     }
 
@@ -182,6 +184,54 @@ abstract class AdminApiTestCase extends TestCase
     }
 
     /**
+     * Ensure Sanctum personal access tokens table exists.
+     */
+    private function ensureSanctumTables(): void
+    {
+        if (!Schema::hasTable('personal_access_tokens')) {
+            Schema::create('personal_access_tokens', function (Blueprint $table) {
+                $table->id();
+                $table->morphs('tokenable');
+                $table->string('name');
+                $table->string('token', 64)->unique();
+                $table->text('abilities')->nullable();
+                $table->timestamp('last_used_at')->nullable();
+                $table->timestamp('expires_at')->nullable();
+                $table->timestamps();
+            });
+        }
+    }
+
+    /**
+     * Ensure admin impersonations table exists.
+     */
+    private function ensureAdminImpersonationsTable(): void
+    {
+        if (!Schema::hasTable('admin_impersonations')) {
+            Schema::create('admin_impersonations', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('admin_id');
+                $table->unsignedBigInteger('user_id');
+                $table->unsignedBigInteger('token_id')->nullable();
+                $table->timestamp('started_at')->useCurrent();
+                $table->timestamp('ended_at')->nullable();
+                $table->integer('duration_seconds')->nullable();
+                $table->string('ip_address', 45)->nullable();
+                $table->text('user_agent')->nullable();
+                $table->string('reason')->nullable();
+                $table->integer('actions_count')->default(0);
+                $table->enum('status', ['active', 'ended', 'expired', 'revoked'])->default('active');
+                $table->timestamps();
+
+                $table->index('admin_id');
+                $table->index('user_id');
+                $table->index('status');
+                $table->index('started_at');
+            });
+        }
+    }
+
+    /**
      * Reset admin-related tables between tests to avoid unique constraint collisions.
      */
     private function resetAdminData(): void
@@ -227,6 +277,14 @@ abstract class AdminApiTestCase extends TestCase
 
         if (Schema::hasTable('api_customers')) {
             DB::table('api_customers')->truncate();
+        }
+
+        if (Schema::hasTable('personal_access_tokens')) {
+            DB::table('personal_access_tokens')->truncate();
+        }
+
+        if (Schema::hasTable('admin_impersonations')) {
+            DB::table('admin_impersonations')->truncate();
         }
 
         Schema::enableForeignKeyConstraints();
