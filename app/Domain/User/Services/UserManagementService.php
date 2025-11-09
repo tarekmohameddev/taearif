@@ -373,7 +373,7 @@ class UserManagementService extends BaseService
                 $result = $whatsappService->sendTemplateToPhone(
                     $user->phone,
                     $templateName,
-                    config('services.meta.template_language') ?? config('app.locale', 'ar'),
+                    'ar',
                     $templateVariables
                 );
 
