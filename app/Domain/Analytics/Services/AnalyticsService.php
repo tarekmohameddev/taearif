@@ -655,7 +655,7 @@ class AnalyticsService extends BaseService
                 DB::raw('COUNT(affiliate_transactions.id) as transaction_count'),
                 DB::raw('COALESCE(SUM(affiliate_transactions.amount), 0) as total_earnings')
             )
-            ->leftJoin('affiliate_transactions', 'api_affiliate_users.id', '=', 'affiliate_transactions.affiliate_user_id')
+            ->leftJoin('affiliate_transactions', 'api_affiliate_users.id', '=', 'affiliate_transactions.affiliate_id')
             ->groupBy('api_affiliate_users.id')
             ->orderByDesc('total_earnings')
             ->limit(10)
@@ -663,13 +663,11 @@ class AnalyticsService extends BaseService
 
         // Referral conversion rate
         $totalReferrals = DB::table('users')
-            ->where('referral_id', '!=', '')
-            ->whereNotNull('referral_id')
+            ->whereNotNull('referred_by')
             ->count();
 
         $convertedReferrals = DB::table('users')
-            ->where('referral_id', '!=', '')
-            ->whereNotNull('referral_id')
+            ->whereNotNull('referred_by')
             ->whereExists(function ($query) {
                 $query->select(DB::raw(1))
                     ->from('memberships')

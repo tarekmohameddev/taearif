@@ -14,6 +14,7 @@
 # Environment files and backups
 .env
 .env.backup
+.env.testing
 # PHPUnit cache
 .phpunit.result.cache
 # Homestead files for Vagrant (if using Homestead)
@@ -62,3 +63,4 @@ postman_property_request_example.json
 app/Http/Helpers/Helper.php.backup
 /front-next
 test-admin-login.json
+compare_routes_postman.php
