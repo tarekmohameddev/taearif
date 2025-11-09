@@ -26,6 +26,7 @@ abstract class AdminApiTestCase extends TestCase
         $this->ensureRolesTable();
         $this->ensureUsersTable();
         $this->ensureDailyTables();
+        $this->ensureDomainTables();
         $this->ensureCrmTables();
         $this->ensureAnalyticsTables();
         $this->ensurePackagesTable();
@@ -204,6 +205,23 @@ abstract class AdminApiTestCase extends TestCase
             $table->date('expire_date')->nullable();
             $table->boolean('modified')->default(false);
             $table->string('conversation_id')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Ensure supporting tables for domains module exist.
+     */
+    private function ensureDomainTables(): void
+    {
+        Schema::dropIfExists('user_custom_domains');
+
+        Schema::create('user_custom_domains', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('requested_domain')->nullable();
+            $table->string('current_domain')->nullable();
+            $table->boolean('status')->default(false);
             $table->timestamps();
         });
     }
@@ -452,6 +470,10 @@ abstract class AdminApiTestCase extends TestCase
 
         if (Schema::hasTable('packages')) {
             DB::table('packages')->truncate();
+        }
+
+        if (Schema::hasTable('user_custom_domains')) {
+            DB::table('user_custom_domains')->truncate();
         }
 
         if (Schema::hasTable('lead_activities')) {

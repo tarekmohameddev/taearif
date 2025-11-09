@@ -16,6 +16,13 @@ class CustomDomainCollection extends ResourceCollection
     {
         return [
             'data' => CustomDomainResource::collection($this->collection),
+            'meta' => [
+                'total' => $this->total(),
+                'count' => $this->count(),
+                'per_page' => $this->perPage(),
+                'current_page' => $this->currentPage(),
+                'total_pages' => $this->lastPage(),
+            ],
         ];
     }
 }

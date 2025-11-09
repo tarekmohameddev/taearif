@@ -17,11 +17,17 @@ class CustomDomainResource extends JsonResource
         return [
             'id' => $this->id,
             'user' => $this->when($this->relationLoaded('user'), function () {
+                $user = $this->user;
+
+                if (!$user) {
+                    return null;
+                }
+
                 return [
-                    'id' => $this->user->id,
-                    'uuid' => $this->user->uuid,
-                    'username' => $this->user->username,
-                    'email' => $this->user->email,
+                    'id' => $user->id,
+                    'uuid' => $user->uuid,
+                    'username' => $user->username,
+                    'email' => $user->email,
                 ];
             }),
             'requested_domain' => $this->requested_domain,

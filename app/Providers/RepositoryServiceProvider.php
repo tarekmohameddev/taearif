@@ -81,6 +81,15 @@ class RepositoryServiceProvider extends ServiceProvider
                 );
             }
         );
+
+        $this->app->bind(
+            \App\Domain\Domain\Repositories\CustomDomainRepositoryInterface::class,
+            function () {
+                return new \App\Domain\Domain\Repositories\CustomDomainRepository(
+                    new \App\Domain\Domain\Models\CustomDomain()
+                );
+            }
+        );
     }
 
     /**

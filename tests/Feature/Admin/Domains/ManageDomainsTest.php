@@ -1,0 +1,269 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Admin\Domains;
+
+use App\Domain\Domain\Models\CustomDomain;
+use App\Models\User as TenantUser;
+use Illuminate\Support\Str;
+use Tests\Feature\Admin\AdminApiTestCase;
+
+class ManageDomainsTest extends AdminApiTestCase
+{
+    /** @test */
+    public function admin_can_list_domains(): void
+    {
+        $this->signInAdmin();
+
+        CustomDomain::factory()->count(2)->create();
+
+        $response = $this->getJson(route('admin.api.domains.index'));
+
+        $response->assertOk()
+            ->assertJsonPath('data.data.0.id', CustomDomain::first()->id)
+            ->assertJsonPath('data.meta.total', 2);
+    }
+
+    /** @test */
+    public function listing_domains_requires_authentication(): void
+    {
+        $this->getJson(route('admin.api.domains.index'))
+            ->assertUnauthorized();
+    }
+
+    /** @test */
+    public function admin_can_create_a_custom_domain(): void
+    {
+        $this->signInAdmin();
+
+        $tenant = TenantUser::factory()->create([
+            'uuid' => (string) Str::uuid(),
+            'account_type' => 'tenant',
+        ]);
+
+        $payload = [
+            'user_id' => $tenant->id,
+            'requested_domain' => 'tenant.example.com',
+        ];
+
+        $response = $this->postJson(route('admin.api.domains.store'), $payload);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.requested_domain', 'tenant.example.com')
+            ->assertJsonPath('data.is_pending', true);
+
+        $this->assertDatabaseHas('user_custom_domains', [
+            'user_id' => $tenant->id,
+            'requested_domain' => 'tenant.example.com',
+        ]);
+    }
+
+    /** @test */
+    public function validation_errors_are_returned_when_creating_domain_with_invalid_payload(): void
+    {
+        $this->signInAdmin();
+
+        $this->postJson(route('admin.api.domains.store'), [
+            'user_id' => 999,
+            'requested_domain' => 'invalid_domain',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['user_id', 'requested_domain']);
+    }
+
+    /** @test */
+    public function admin_can_view_a_domain(): void
+    {
+        $this->signInAdmin();
+
+        $domain = CustomDomain::factory()->create([
+            'requested_domain' => 'view.example.com',
+        ]);
+
+        $response = $this->getJson(route('admin.api.domains.show', $domain->id));
+
+        $response->assertOk()
+            ->assertJsonPath('data.id', $domain->id)
+            ->assertJsonPath('data.requested_domain', 'view.example.com');
+    }
+
+    /** @test */
+    public function viewing_a_domain_requires_authentication(): void
+    {
+        $this->getJson(route('admin.api.domains.show', 1))
+            ->assertUnauthorized();
+    }
+
+    /** @test */
+    public function not_found_is_returned_when_viewing_missing_domain(): void
+    {
+        $this->signInAdmin();
+
+        $this->getJson(route('admin.api.domains.show', 999999))
+            ->assertNotFound()
+            ->assertJsonPath('code', 'NOT_FOUND');
+    }
+
+    /** @test */
+    public function admin_can_delete_a_domain(): void
+    {
+        $this->signInAdmin();
+
+        $domain = CustomDomain::factory()->create();
+
+        $response = $this->deleteJson(route('admin.api.domains.destroy', $domain->id));
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success');
+
+        $this->assertDatabaseMissing('user_custom_domains', [
+            'id' => $domain->id,
+        ]);
+    }
+
+    /** @test */
+    public function deleting_a_domain_requires_authentication(): void
+    {
+        $domain = CustomDomain::factory()->create();
+
+        $this->deleteJson(route('admin.api.domains.destroy', $domain->id))
+            ->assertUnauthorized();
+    }
+
+    /** @test */
+    public function not_found_is_returned_when_deleting_missing_domain(): void
+    {
+        $this->signInAdmin();
+
+        $this->deleteJson(route('admin.api.domains.destroy', 999999))
+            ->assertNotFound()
+            ->assertJsonPath('code', 'NOT_FOUND');
+    }
+
+    /** @test */
+    public function admin_can_approve_a_domain(): void
+    {
+        $this->signInAdmin();
+
+        $domain = CustomDomain::factory()->create([
+            'requested_domain' => 'pending.example.com',
+            'current_domain' => null,
+            'status' => false,
+        ]);
+
+        $response = $this->postJson(route('admin.api.domains.approve', $domain->id));
+
+        $response->assertOk()
+            ->assertJsonPath('data.current_domain', 'pending.example.com')
+            ->assertJsonPath('data.status', true);
+
+        $this->assertTrue($domain->fresh()->status);
+        $this->assertEquals('pending.example.com', $domain->fresh()->current_domain);
+    }
+
+    /** @test */
+    public function approving_domain_requires_authentication(): void
+    {
+        $domain = CustomDomain::factory()->create();
+
+        $this->postJson(route('admin.api.domains.approve', $domain->id))
+            ->assertUnauthorized();
+    }
+
+    /** @test */
+    public function approving_nonexistent_domain_returns_not_found(): void
+    {
+        $this->signInAdmin();
+
+        $this->postJson(route('admin.api.domains.approve', 999999))
+            ->assertNotFound()
+            ->assertJsonPath('code', 'NOT_FOUND');
+    }
+
+    /** @test */
+    public function approving_already_approved_domain_returns_error(): void
+    {
+        $this->signInAdmin();
+
+        $domain = CustomDomain::factory()->approved()->create([
+            'requested_domain' => 'approved.example.com',
+        ]);
+
+        $this->postJson(route('admin.api.domains.approve', $domain->id))
+            ->assertStatus(422)
+            ->assertJsonPath('code', 'DOMAIN_ALREADY_APPROVED')
+            ->assertJsonPath('errors.error_code', 'DOMAIN_ALREADY_APPROVED');
+    }
+
+    /** @test */
+    public function admin_can_reject_a_domain(): void
+    {
+        $this->signInAdmin();
+
+        $domain = CustomDomain::factory()->create([
+            'requested_domain' => 'reject-me.example.com',
+            'status' => false,
+        ]);
+
+        $response = $this->postJson(route('admin.api.domains.reject', $domain->id));
+
+        $response->assertOk()
+            ->assertJsonPath('data.requested_domain', null)
+            ->assertJsonPath('data.status', false);
+
+        $this->assertNull($domain->fresh()->requested_domain);
+    }
+
+    /** @test */
+    public function rejecting_nonexistent_domain_returns_not_found(): void
+    {
+        $this->signInAdmin();
+
+        $this->postJson(route('admin.api.domains.reject', 999999))
+            ->assertNotFound()
+            ->assertJsonPath('code', 'NOT_FOUND');
+    }
+
+    /** @test */
+    public function admin_can_toggle_domain_status(): void
+    {
+        $this->signInAdmin();
+
+        $domain = CustomDomain::factory()->create([
+            'status' => false,
+        ]);
+
+        $response = $this->postJson(route('admin.api.domains.toggle-status', $domain->id));
+
+        $response->assertOk()
+            ->assertJsonPath('data.status', true);
+
+        $this->assertTrue($domain->fresh()->status);
+    }
+
+    /** @test */
+    public function toggling_domain_status_requires_authentication(): void
+    {
+        $domain = CustomDomain::factory()->create();
+
+        $this->postJson(route('admin.api.domains.toggle-status', $domain->id))
+            ->assertUnauthorized();
+    }
+
+    /** @test */
+    public function admin_can_view_domain_statistics(): void
+    {
+        $this->signInAdmin();
+
+        CustomDomain::factory()->create(['status' => true, 'current_domain' => 'live.example.com']);
+        CustomDomain::factory()->create(['requested_domain' => 'pending.example.com', 'current_domain' => null]);
+
+        $response = $this->getJson(route('admin.api.domains.statistics'));
+
+        $response->assertOk()
+            ->assertJsonPath('data.total_domains', 2)
+            ->assertJsonPath('data.approved_domains', 1)
+            ->assertJsonPath('data.pending_requests', 1);
+    }
+}
+
