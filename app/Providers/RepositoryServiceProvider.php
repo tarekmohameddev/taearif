@@ -63,6 +63,24 @@ class RepositoryServiceProvider extends ServiceProvider
                 );
             }
         );
+
+        $this->app->bind(
+            \App\Domain\Crm\Repositories\LeadRepositoryInterface::class,
+            function () {
+                return new \App\Domain\Crm\Repositories\LeadRepository(
+                    new \App\Domain\Crm\Models\Lead()
+                );
+            }
+        );
+
+        $this->app->bind(
+            \App\Domain\Crm\Repositories\LeadActivityRepositoryInterface::class,
+            function () {
+                return new \App\Domain\Crm\Repositories\LeadActivityRepository(
+                    new \App\Domain\Crm\Models\LeadActivity()
+                );
+            }
+        );
     }
 
     /**

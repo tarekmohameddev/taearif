@@ -7,6 +7,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -25,6 +26,7 @@ abstract class AdminApiTestCase extends TestCase
         $this->ensureRolesTable();
         $this->ensureUsersTable();
         $this->ensureDailyTables();
+        $this->ensureCrmTables();
         $this->ensureAnalyticsTables();
         $this->ensurePackagesTable();
         $this->ensureSanctumTables();
@@ -204,6 +206,67 @@ abstract class AdminApiTestCase extends TestCase
             $table->string('conversation_id')->nullable();
             $table->timestamps();
         });
+    }
+
+    /**
+     * Ensure supporting tables for CRM module exist.
+     */
+    private function ensureCrmTables(): void
+    {
+        Schema::dropIfExists('lead_activities');
+        Schema::dropIfExists('leads');
+        Schema::dropIfExists('admin_crm_cards');
+
+        Schema::create('admin_crm_cards', function (Blueprint $table) {
+            $table->id();
+            $table->uuid('uuid')->unique();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->unsignedInteger('order')->default(0);
+            $table->string('color')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        Schema::create('leads', function (Blueprint $table) {
+            $table->id();
+            $table->uuid('uuid')->unique();
+            $table->string('name');
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('company')->nullable();
+            $table->string('source')->default('manual');
+            $table->string('status')->default('new');
+            $table->foreignId('stage_id')->nullable()->constrained('admin_crm_cards')->nullOnDelete();
+            $table->foreignId('assigned_admin_id')->nullable()->constrained('admins')->nullOnDelete();
+            $table->foreignId('converted_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('converted_at')->nullable();
+            $table->text('notes')->nullable();
+            $table->json('custom_fields')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('lead_activities', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('lead_id')->constrained('leads')->cascadeOnDelete();
+            $table->foreignId('admin_id')->nullable()->constrained('admins')->nullOnDelete();
+            $table->string('type');
+            $table->text('description')->nullable();
+            $table->timestamp('scheduled_at')->nullable();
+            $table->timestamp('completed_at')->nullable();
+            $table->timestamps();
+        });
+
+        DB::table('admin_crm_cards')->insert([
+            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'name' => 'New',
+            'slug' => 'new',
+            'order' => 1,
+            'color' => '#2563eb',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     /**
@@ -389,6 +452,29 @@ abstract class AdminApiTestCase extends TestCase
 
         if (Schema::hasTable('packages')) {
             DB::table('packages')->truncate();
+        }
+
+        if (Schema::hasTable('lead_activities')) {
+            DB::table('lead_activities')->truncate();
+        }
+
+        if (Schema::hasTable('leads')) {
+            DB::table('leads')->truncate();
+        }
+
+        if (Schema::hasTable('admin_crm_cards')) {
+            DB::table('admin_crm_cards')->truncate();
+
+            DB::table('admin_crm_cards')->insert([
+                'uuid' => (string) Str::uuid(),
+                'name' => 'New',
+                'slug' => 'new',
+                'order' => 1,
+                'color' => '#2563eb',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         }
 
         if (Schema::hasTable('user_properties')) {
