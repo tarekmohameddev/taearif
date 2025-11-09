@@ -96,15 +96,15 @@ class UserController extends BaseController
 
     /**
      * Display the specified user.
-     * GET /api/v1/admin/users/{uuid}
+     * GET /api/v1/admin/users/{id}
      *
-     * @param string $user UUID
+     * @param int $userId
      * @return JsonResponse
      */
-    public function show(string $user): JsonResponse
+    public function show(int $userId): JsonResponse
     {
         try {
-            $user = $this->userManagementService->getUser($user);
+            $user = $this->userManagementService->getUser($userId);
 
             return $this->successResponse(
                 new UserResource($user),
@@ -117,15 +117,15 @@ class UserController extends BaseController
 
     /**
      * Display invoices/subscriptions for a user.
-     * GET /api/v1/admin/users/{uuid}/invoices
+     * GET /api/v1/admin/users/{id}/invoices
      */
-    public function invoices(Request $request, string $user): JsonResponse
+    public function invoices(Request $request, int $userId): JsonResponse
     {
         try {
             $filters = $request->only(['status', 'from_date', 'to_date', 'plan_id']);
             $perPage = (int) $request->query('per_page', 20);
 
-            $invoices = $this->userManagementService->getUserInvoices($user, $filters, $perPage);
+            $invoices = $this->userManagementService->getUserInvoices($userId, $filters, $perPage);
 
             return $this->successResponse(
                 new InvoiceCollection($invoices),
@@ -138,15 +138,15 @@ class UserController extends BaseController
 
     /**
      * Display the activity log for a user.
-     * GET /api/v1/admin/users/{uuid}/activity
+     * GET /api/v1/admin/users/{id}/activity
      */
-    public function activity(Request $request, string $user): JsonResponse
+    public function activity(Request $request, int $userId): JsonResponse
     {
         try {
             $filters = $request->only(['action', 'from_date', 'to_date', 'admin_id']);
             $perPage = (int) $request->query('per_page', 20);
 
-            $activities = $this->userManagementService->getActivityLog($user, $filters, $perPage);
+            $activities = $this->userManagementService->getActivityLog($userId, $filters, $perPage);
 
             return $this->successResponse(
                 new UserActivityCollection($activities),
@@ -159,15 +159,15 @@ class UserController extends BaseController
 
     /**
      * Send WhatsApp message to a user.
-     * POST /api/v1/admin/users/{uuid}/send-whatsapp
+     * POST /api/v1/admin/users/{id}/send-whatsapp
      */
-    public function sendWhatsApp(SendWhatsAppRequest $request, string $user): JsonResponse
+    public function sendWhatsApp(SendWhatsAppRequest $request, int $userId): JsonResponse
     {
         try {
             $data = $request->validated();
 
             $result = $this->userManagementService->sendWhatsAppMessage(
-                $user,
+                $userId,
                 $data['message'],
                 $data['template_name'] ?? null,
                 $data['template_variables'] ?? []
@@ -184,15 +184,15 @@ class UserController extends BaseController
 
     /**
      * Pause user account.
-     * POST /api/v1/admin/users/{uuid}/pause
+     * POST /api/v1/admin/users/{id}/pause
      */
-    public function pause(PauseUserRequest $request, string $user): JsonResponse
+    public function pause(PauseUserRequest $request, int $userId): JsonResponse
     {
         try {
             $data = $request->validated();
 
             $updatedUser = $this->userManagementService->pauseUser(
-                $user,
+                $userId,
                 $data['reason'],
                 $data['admin_notes'] ?? null
             );
@@ -208,12 +208,12 @@ class UserController extends BaseController
 
     /**
      * Resume paused user account.
-     * POST /api/v1/admin/users/{uuid}/resume
+     * POST /api/v1/admin/users/{id}/resume
      */
-    public function resume(string $user): JsonResponse
+    public function resume(int $userId): JsonResponse
     {
         try {
-            $updatedUser = $this->userManagementService->resumeUser($user);
+            $updatedUser = $this->userManagementService->resumeUser($userId);
 
             return $this->successResponse(
                 new UserResource($updatedUser),
@@ -226,15 +226,15 @@ class UserController extends BaseController
 
     /**
      * Change user's subscription plan.
-     * POST /api/v1/admin/users/{uuid}/change-plan
+     * POST /api/v1/admin/users/{id}/change-plan
      */
-    public function changePlan(ChangePlanRequest $request, string $user): JsonResponse
+    public function changePlan(ChangePlanRequest $request, int $userId): JsonResponse
     {
         try {
             $data = $request->validated();
 
             $updatedUser = $this->userManagementService->changePlan(
-                $user,
+                $userId,
                 (int) $data['new_plan_id'],
                 $data['change_type'],
                 $data['admin_notes'] ?? null
@@ -251,15 +251,15 @@ class UserController extends BaseController
 
     /**
      * Cancel user's subscription.
-     * POST /api/v1/admin/users/{uuid}/cancel-subscription
+     * POST /api/v1/admin/users/{id}/cancel-subscription
      */
-    public function cancelSubscription(CancelSubscriptionRequest $request, string $user): JsonResponse
+    public function cancelSubscription(CancelSubscriptionRequest $request, int $userId): JsonResponse
     {
         try {
             $data = $request->validated();
 
             $updatedUser = $this->userManagementService->cancelSubscription(
-                $user,
+                $userId,
                 $data['cancel_type'],
                 $data['reason'],
                 $data['admin_notes'] ?? null
@@ -276,16 +276,16 @@ class UserController extends BaseController
 
     /**
      * Update the specified user in storage.
-     * PUT /api/v1/admin/users/{uuid}
+     * PUT /api/v1/admin/users/{id}
      *
      * @param UpdateUserRequest $request
-     * @param string $user UUID
+     * @param int $userId
      * @return JsonResponse
      */
-    public function update(UpdateUserRequest $request, string $user): JsonResponse
+    public function update(UpdateUserRequest $request, int $userId): JsonResponse
     {
         try {
-            $user = $this->userManagementService->updateUser($user, $request->validated());
+            $user = $this->userManagementService->updateUser($userId, $request->validated());
 
             return $this->successResponse(
                 new UserResource($user),
@@ -298,15 +298,15 @@ class UserController extends BaseController
 
     /**
      * Remove the specified user from storage.
-     * DELETE /api/v1/admin/users/{uuid}
+     * DELETE /api/v1/admin/users/{id}
      *
-     * @param string $user UUID
+     * @param int $userId
      * @return JsonResponse
      */
-    public function destroy(string $user): JsonResponse
+    public function destroy(int $userId): JsonResponse
     {
         try {
-            $this->userManagementService->deleteUser($user);
+            $this->userManagementService->deleteUser($userId);
 
             return $this->noContentResponse();
         } catch (Throwable $e) {
@@ -316,18 +316,18 @@ class UserController extends BaseController
 
     /**
      * Update the specified user's password.
-     * PUT /api/v1/admin/users/{uuid}/password
+     * PUT /api/v1/admin/users/{id}/password
      *
      * @param UpdatePasswordRequest $request
-     * @param string $user UUID
+     * @param int $userId
      * @return JsonResponse
      */
-    public function updatePassword(UpdatePasswordRequest $request, string $user): JsonResponse
+    public function updatePassword(UpdatePasswordRequest $request, int $userId): JsonResponse
     {
         try {
             $data = $request->validated();
 
-            $user = $this->userManagementService->updatePassword($user, $data['password']);
+            $user = $this->userManagementService->updatePassword($userId, $data['password']);
 
             return $this->successResponse(
                 new UserResource($user),
@@ -340,15 +340,15 @@ class UserController extends BaseController
 
     /**
      * Toggle the ban status of the specified user.
-     * POST /api/v1/admin/users/{uuid}/ban
+     * POST /api/v1/admin/users/{id}/ban
      *
-     * @param string $user UUID
+     * @param int $userId
      * @return JsonResponse
      */
-    public function toggleBan(string $user): JsonResponse
+    public function toggleBan(int $userId): JsonResponse
     {
         try {
-            $updatedUser = $this->userManagementService->toggleBan($user);
+            $updatedUser = $this->userManagementService->toggleBan($userId);
 
             return $this->successResponse(
                 new UserResource($updatedUser),
@@ -361,15 +361,15 @@ class UserController extends BaseController
 
     /**
      * Toggle the featured status of the specified user.
-     * POST /api/v1/admin/users/{uuid}/featured
+     * POST /api/v1/admin/users/{id}/featured
      *
-     * @param string $user UUID
+     * @param int $userId
      * @return JsonResponse
      */
-    public function toggleFeatured(string $user): JsonResponse
+    public function toggleFeatured(int $userId): JsonResponse
     {
         try {
-            $updatedUser = $this->userManagementService->toggleFeatured($user);
+            $updatedUser = $this->userManagementService->toggleFeatured($userId);
 
             return $this->successResponse(
                 new UserResource($updatedUser),

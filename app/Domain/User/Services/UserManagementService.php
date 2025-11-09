@@ -66,16 +66,16 @@ class UserManagementService extends BaseService
     }
 
     /**
-     * Get user by UUID
+     * Get user by ID
      *
-     * @param string $uuid
+     * @param int $id
      * @return User
      * @throws ResourceNotFoundException
      */
-    public function getUserByUuid(string $uuid): User
+    public function getUserById(int $id): User
     {
-        $user = $this->userRepository->findByUuidWith(
-            $uuid,
+        $user = $this->userRepository->findByIdWith(
+            $id,
             ['referrer', 'activeMembership.package', 'memberships']
         );
 
@@ -89,15 +89,15 @@ class UserManagementService extends BaseService
     }
 
     /**
-     * Retrieve user details by UUID (API alias).
+     * Retrieve user details by ID (API alias).
      *
-     * @param string $uuid
+     * @param int $id
      * @return User
      * @throws ResourceNotFoundException
      */
-    public function getUser(string $uuid): User
+    public function getUser(int $id): User
     {
-        return $this->getUserByUuid($uuid);
+        return $this->getUserById($id);
     }
 
     /**
@@ -135,20 +135,20 @@ class UserManagementService extends BaseService
     /**
      * Update user
      *
-     * @param string $uuid
+     * @param int $id
      * @param array $data
      * @return User
      * @throws ResourceNotFoundException
      * @throws BusinessLogicException
      */
-    public function updateUser(string $uuid, array $data): User
+    public function updateUser(int $id, array $data): User
     {
-        $user = $this->getUserByUuid($uuid);
+        $user = $this->getUserById($id);
 
         // Check if email is being changed and already exists
         if (isset($data['email']) && $data['email'] !== $user->email) {
             $existingUser = $this->userRepository->findByEmail($data['email']);
-            if ($existingUser && $existingUser->uuid !== $uuid) {
+            if ($existingUser && $existingUser->id !== $user->id) {
                 $this->fail('Email already exists', 'USER_EMAIL_EXISTS', 400);
             }
         }
@@ -166,13 +166,13 @@ class UserManagementService extends BaseService
     /**
      * Delete user
      *
-     * @param string $uuid
+     * @param int $id
      * @return bool
      * @throws ResourceNotFoundException
      */
-    public function deleteUser(string $uuid): bool
+    public function deleteUser(int $id): bool
     {
-        $user = $this->getUserByUuid($uuid);
+        $user = $this->getUserById($id);
 
         return $this->executeInTransaction(function () use ($user) {
             return $user->delete();
@@ -182,14 +182,14 @@ class UserManagementService extends BaseService
     /**
      * Change user password
      *
-     * @param string $uuid
+     * @param int $id
      * @param string $newPassword
      * @return User
      * @throws ResourceNotFoundException
      */
-    public function changePassword(string $uuid, string $newPassword): User
+    public function changePassword(int $id, string $newPassword): User
     {
-        $user = $this->getUserByUuid($uuid);
+        $user = $this->getUserById($id);
 
         return $this->executeInTransaction(function () use ($user, $newPassword) {
             $user->password = Hash::make($newPassword);
@@ -205,27 +205,27 @@ class UserManagementService extends BaseService
     /**
      * Update user password (API alias).
      *
-     * @param string $uuid
+     * @param int $id
      * @param string $newPassword
      * @return User
      * @throws ResourceNotFoundException
      */
-    public function updatePassword(string $uuid, string $newPassword): User
+    public function updatePassword(int $id, string $newPassword): User
     {
-        return $this->changePassword($uuid, $newPassword);
+        return $this->changePassword($id, $newPassword);
     }
 
     /**
      * Ban/Unban user (toggle active status)
      *
-     * @param string $uuid
+     * @param int $id
      * @param bool|null $status
      * @return User
      * @throws ResourceNotFoundException
      */
-    public function toggleBan(string $uuid, ?bool $status = null): User
+    public function toggleBan(int $id, ?bool $status = null): User
     {
-        $user = $this->getUserByUuid($uuid);
+        $user = $this->getUserById($id);
 
         return $this->executeInTransaction(function () use ($user, $status) {
             if ($status === null) {
@@ -243,14 +243,14 @@ class UserManagementService extends BaseService
     /**
      * Toggle featured status
      *
-     * @param string $uuid
+     * @param int $id
      * @param bool|null $featured
      * @return User
      * @throws ResourceNotFoundException
      */
-    public function toggleFeatured(string $uuid, ?bool $featured = null): User
+    public function toggleFeatured(int $id, ?bool $featured = null): User
     {
-        $user = $this->getUserByUuid($uuid);
+        $user = $this->getUserById($id);
 
         return $this->executeInTransaction(function () use ($user, $featured) {
             if ($featured === null) {
@@ -269,13 +269,13 @@ class UserManagementService extends BaseService
      * Log activity performed on a user account
      */
     public function logUserActivity(
-        string $uuid,
+        int $userId,
         string $action,
         ?string $description = null,
         array $metadata = [],
         ?int $adminId = null
     ): UserActivityLog {
-        $user = $this->getUserByUuid($uuid);
+        $user = $this->getUserById($userId);
 
         return UserActivityLog::create([
             'user_id' => $user->id,
@@ -292,9 +292,9 @@ class UserManagementService extends BaseService
     /**
      * Retrieve paginated activity log for a user account
      */
-    public function getActivityLog(string $uuid, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    public function getActivityLog(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        $user = $this->getUserByUuid($uuid);
+        $user = $this->getUserById($userId);
 
         $query = UserActivityLog::with(['admin'])
             ->where('user_id', $user->id);
@@ -323,9 +323,9 @@ class UserManagementService extends BaseService
     /**
      * Get a paginated list of invoices/subscriptions for a user
      */
-    public function getUserInvoices(string $uuid, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    public function getUserInvoices(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        $user = $this->getUserByUuid($uuid);
+        $user = $this->getUserById($userId);
 
         $query = Invoice::with(['package'])
             ->where('user_id', $user->id);
@@ -355,12 +355,12 @@ class UserManagementService extends BaseService
      * Send WhatsApp message to user
      */
     public function sendWhatsAppMessage(
-        string $uuid,
+        int $userId,
         string $message,
         ?string $templateName = null,
         array $templateVariables = []
     ): array {
-        $user = $this->getUserByUuid($uuid);
+        $user = $this->getUserById($userId);
 
         if (empty($user->phone)) {
             $this->fail('User does not have a phone number on file', 'USER_NO_PHONE', 400);
@@ -395,7 +395,7 @@ class UserManagementService extends BaseService
         }
 
         $this->logUserActivity(
-            $user->uuid,
+            $user->id,
             'whatsapp_sent',
             "WhatsApp message sent to {$user->phone}",
             [
@@ -423,9 +423,9 @@ class UserManagementService extends BaseService
     /**
      * Pause/suspend user account
      */
-    public function pauseUser(string $uuid, string $reason, ?string $adminNotes = null): User
+    public function pauseUser(int $userId, string $reason, ?string $adminNotes = null): User
     {
-        $user = $this->getUserByUuid($uuid);
+        $user = $this->getUserById($userId);
 
         return $this->executeInTransaction(function () use ($user, $reason, $adminNotes) {
             if (!$user->active) {
@@ -439,7 +439,7 @@ class UserManagementService extends BaseService
             $user->tokens()->delete();
 
             $this->logUserActivity(
-                $user->uuid,
+                $user->id,
                 'user_paused',
                 "User paused: {$reason}",
                 [
@@ -455,9 +455,9 @@ class UserManagementService extends BaseService
     /**
      * Resume paused user account
      */
-    public function resumeUser(string $uuid): User
+    public function resumeUser(int $userId): User
     {
-        $user = $this->getUserByUuid($uuid);
+        $user = $this->getUserById($userId);
 
         return $this->executeInTransaction(function () use ($user) {
             if ($user->active) {
@@ -468,7 +468,7 @@ class UserManagementService extends BaseService
             $user->save();
 
             $this->logUserActivity(
-                $user->uuid,
+                $user->id,
                 'user_resumed',
                 'User account resumed',
                 []
@@ -482,12 +482,12 @@ class UserManagementService extends BaseService
      * Change user's subscription plan
      */
     public function changePlan(
-        string $uuid,
+        int $userId,
         int $newPlanId,
         string $changeType,
         ?string $adminNotes = null
     ): User {
-        $user = $this->getUserByUuid($uuid);
+        $user = $this->getUserById($userId);
 
         $newPlan = Plan::active()->find($newPlanId);
         if (!$newPlan) {
@@ -538,7 +538,7 @@ class UserManagementService extends BaseService
             }
 
             $this->logUserActivity(
-                $user->uuid,
+                $user->id,
                 'plan_changed',
                 sprintf(
                     'Plan change from %s to %s (%s)',
@@ -562,12 +562,12 @@ class UserManagementService extends BaseService
      * Cancel user's active subscription
      */
     public function cancelSubscription(
-        string $uuid,
+        int $userId,
         string $cancelType,
         string $reason,
         ?string $adminNotes = null
     ): User {
-        $user = $this->getUserByUuid($uuid);
+        $user = $this->getUserById($userId);
 
         $subscription = $user->activeMembership;
         if (!$subscription) {
@@ -593,7 +593,7 @@ class UserManagementService extends BaseService
             }
 
             $this->logUserActivity(
-                $user->uuid,
+                $user->id,
                 'subscription_cancelled',
                 "Subscription cancelled ({$cancelType}): {$reason}",
                 [

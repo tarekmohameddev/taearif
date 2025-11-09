@@ -126,6 +126,25 @@ abstract class BaseRepository implements BaseRepositoryInterface
     }
 
     /**
+     * Find record by ID with relationships.
+     *
+     * @param int $id
+     * @param array $relations
+     * @param array $columns
+     * @return Model|null
+     */
+    public function findByIdWith(int $id, array $relations = [], array $columns = ['*']): ?Model
+    {
+        $query = $this->model->newQuery();
+
+        if (!empty($relations)) {
+            $query->with($relations);
+        }
+
+        return $query->where('id', $id)->first($columns);
+    }
+
+    /**
      * Create a new record
      *
      * @param array $data

@@ -56,6 +56,16 @@ interface BaseRepositoryInterface
     public function findById(int $id): ?Model;
 
     /**
+     * Find record by ID with relationships.
+     *
+     * @param int $id
+     * @param array $relations
+     * @param array $columns
+     * @return Model|null
+     */
+    public function findByIdWith(int $id, array $relations = [], array $columns = ['*']): ?Model;
+
+    /**
      * Create a new record
      *
      * @param array $data
