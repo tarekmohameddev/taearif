@@ -51,6 +51,21 @@ class UserManagementService extends BaseService
     }
 
     /**
+     * List tenant users with normalized filters.
+     *
+     * @param array $filters
+     * @param int $perPage
+     * @return LengthAwarePaginator
+     */
+    public function listUsers(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        $normalizedFilters = $this->normalizeListFilters($filters);
+        $perPage = $perPage > 0 ? min($perPage, 100) : 20;
+
+        return $this->userRepository->searchAndPaginate($normalizedFilters, $perPage);
+    }
+
+    /**
      * Get user by UUID
      *
      * @param string $uuid
@@ -59,13 +74,28 @@ class UserManagementService extends BaseService
      */
     public function getUserByUuid(string $uuid): User
     {
-        $user = $this->userRepository->find($uuid, ['*'], ['referrer', 'activeMembership.package', 'memberships']);
+        $user = $this->userRepository->findByUuidWith(
+            $uuid,
+            ['referrer', 'activeMembership.package', 'memberships']
+        );
 
         if (!$user || $user->account_type !== 'tenant') {
             throw new ResourceNotFoundException('User not found');
         }
 
         return $user;
+    }
+
+    /**
+     * Retrieve user details by UUID (API alias).
+     *
+     * @param string $uuid
+     * @return User
+     * @throws ResourceNotFoundException
+     */
+    public function getUser(string $uuid): User
+    {
+        return $this->getUserByUuid($uuid);
     }
 
     /**
@@ -93,8 +123,10 @@ class UserManagementService extends BaseService
         $data['status'] = $data['status'] ?? 1;
         $data['email_verified'] = $data['email_verified'] ?? false;
 
-        return $this->transaction(function () use ($data) {
-            return $this->userRepository->create($data);
+        return $this->executeInTransaction(function () use ($data) {
+            $user = $this->userRepository->create($data);
+
+            return $user->fresh(['referrer', 'activeMembership.package']);
         });
     }
 
@@ -123,7 +155,7 @@ class UserManagementService extends BaseService
         unset($data['password']);
         unset($data['account_type']);
 
-        return $this->transaction(function () use ($user, $data) {
+        return $this->executeInTransaction(function () use ($user, $data) {
             $user->update($data);
             return $user->fresh(['referrer', 'activeMembership.package']);
         });
@@ -140,7 +172,7 @@ class UserManagementService extends BaseService
     {
         $user = $this->getUserByUuid($uuid);
 
-        return $this->transaction(function () use ($user) {
+        return $this->executeInTransaction(function () use ($user) {
             return $user->delete();
         });
     }
@@ -157,30 +189,52 @@ class UserManagementService extends BaseService
     {
         $user = $this->getUserByUuid($uuid);
 
-        return $this->transaction(function () use ($user, $newPassword) {
+        return $this->executeInTransaction(function () use ($user, $newPassword) {
             $user->password = Hash::make($newPassword);
             $user->save();
 
             // Revoke all existing tokens (logout from all devices)
             $user->tokens()->delete();
 
-            return $user;
+            return $user->fresh(['referrer', 'activeMembership.package']);
         });
+    }
+
+    /**
+     * Update user password (API alias).
+     *
+     * @param string $uuid
+     * @param string $newPassword
+     * @return User
+     * @throws ResourceNotFoundException
+     */
+    public function updatePassword(string $uuid, string $newPassword): User
+    {
+        return $this->changePassword($uuid, $newPassword);
     }
 
     /**
      * Ban/Unban user (toggle active status)
      *
      * @param string $uuid
+     * @param bool|null $status
      * @return User
      * @throws ResourceNotFoundException
      */
-    public function toggleBan(string $uuid): User
+    public function toggleBan(string $uuid, ?bool $status = null): User
     {
         $user = $this->getUserByUuid($uuid);
 
-        return $this->transaction(function () use ($user) {
-            return $this->userRepository->toggleActive($user);
+        return $this->executeInTransaction(function () use ($user, $status) {
+            if ($status === null) {
+                $user->status = $user->status === 1 ? 0 : 1;
+            } else {
+                $user->status = $status ? 1 : 0;
+            }
+
+            $user->save();
+
+            return $user->fresh(['referrer', 'activeMembership.package']);
         });
     }
 
@@ -188,15 +242,24 @@ class UserManagementService extends BaseService
      * Toggle featured status
      *
      * @param string $uuid
+     * @param bool|null $featured
      * @return User
      * @throws ResourceNotFoundException
      */
-    public function toggleFeatured(string $uuid): User
+    public function toggleFeatured(string $uuid, ?bool $featured = null): User
     {
         $user = $this->getUserByUuid($uuid);
 
-        return $this->transaction(function () use ($user) {
-            return $this->userRepository->toggleFeatured($user);
+        return $this->executeInTransaction(function () use ($user, $featured) {
+            if ($featured === null) {
+                $user->featured = $user->featured ? 0 : 1;
+            } else {
+                $user->featured = $featured ? 1 : 0;
+            }
+
+            $user->save();
+
+            return $user->fresh(['referrer', 'activeMembership.package']);
         });
     }
 
@@ -301,9 +364,11 @@ class UserManagementService extends BaseService
             throw new BusinessLogicException('User does not have a phone number on file', 'USER_NO_PHONE', 400);
         }
 
+        $whatsappService = $this->resolveWhatsAppService();
+
         try {
             if ($templateName) {
-                $result = $this->whatsappService->sendTemplateToPhone(
+                $result = $whatsappService->sendTemplateToPhone(
                     $user->phone,
                     $templateName,
                     config('services.meta.template_language', 'ar'),
@@ -314,7 +379,7 @@ class UserManagementService extends BaseService
                     throw new \RuntimeException($result['message'] ?? 'Failed to send WhatsApp template message');
                 }
             } else {
-                $sent = $this->whatsappService->sendMessage($user->phone, $message);
+                $sent = $whatsappService->sendMessage($user->phone, $message);
                 if (!$sent) {
                     throw new \RuntimeException('WhatsApp service returned failure response');
                 }
@@ -346,13 +411,21 @@ class UserManagementService extends BaseService
     }
 
     /**
+     * Resolve the WhatsApp service, allowing runtime overrides (e.g. during testing).
+     */
+    protected function resolveWhatsAppService(): WhatsAppService
+    {
+        return app(WhatsAppService::class);
+    }
+
+    /**
      * Pause/suspend user account
      */
     public function pauseUser(string $uuid, string $reason, ?string $adminNotes = null): User
     {
         $user = $this->getUserByUuid($uuid);
 
-        return $this->transaction(function () use ($user, $reason, $adminNotes) {
+        return $this->executeInTransaction(function () use ($user, $reason, $adminNotes) {
             if (!$user->active) {
                 throw new BusinessLogicException('User is already paused', 'USER_ALREADY_PAUSED', 400);
             }
@@ -373,7 +446,7 @@ class UserManagementService extends BaseService
                 ]
             );
 
-            return $user->fresh();
+            return $user->fresh(['referrer', 'activeMembership.package']);
         });
     }
 
@@ -384,7 +457,7 @@ class UserManagementService extends BaseService
     {
         $user = $this->getUserByUuid($uuid);
 
-        return $this->transaction(function () use ($user) {
+        return $this->executeInTransaction(function () use ($user) {
             if ($user->active) {
                 throw new BusinessLogicException('User is already active', 'USER_ALREADY_ACTIVE', 400);
             }
@@ -399,7 +472,7 @@ class UserManagementService extends BaseService
                 []
             );
 
-            return $user->fresh();
+            return $user->fresh(['referrer', 'activeMembership.package']);
         });
     }
 
@@ -428,8 +501,9 @@ class UserManagementService extends BaseService
             throw new BusinessLogicException('User is already on this plan', 'PLAN_ALREADY_APPLIED', 400);
         }
 
-        return $this->transaction(function () use ($user, $newPlan, $currentSubscription, $changeType, $adminNotes) {
+        return $this->executeInTransaction(function () use ($user, $newPlan, $currentSubscription, $changeType, $adminNotes) {
             $previousPlan = $currentSubscription->package;
+            $termDays = $this->resolvePlanDurationInDays($newPlan->term ?? null);
 
             if ($changeType === 'immediate') {
                 $currentSubscription->expire_date = now()->toDateString();
@@ -448,7 +522,7 @@ class UserManagementService extends BaseService
                     'status' => 1,
                     'is_trial' => false,
                     'start_date' => now()->toDateString(),
-                    'expire_date' => now()->addDays($newPlan->term ?? 30)->toDateString(),
+                    'expire_date' => now()->addDays($termDays)->toDateString(),
                 ]);
             } else {
                 $currentSubscription->metadata = array_merge($currentSubscription->metadata ?? [], [
@@ -478,7 +552,7 @@ class UserManagementService extends BaseService
                 ]
             );
 
-            return $user->fresh(['activeMembership.package']);
+            return $user->fresh(['referrer', 'activeMembership.package']);
         });
     }
 
@@ -498,7 +572,7 @@ class UserManagementService extends BaseService
             throw new BusinessLogicException('User has no active subscription', 'NO_ACTIVE_SUBSCRIPTION', 400);
         }
 
-        return $this->transaction(function () use ($user, $subscription, $cancelType, $reason, $adminNotes) {
+        return $this->executeInTransaction(function () use ($user, $subscription, $cancelType, $reason, $adminNotes) {
             $originalExpireDate = $subscription->expire_date;
 
             if ($cancelType === 'immediate') {
@@ -530,8 +604,151 @@ class UserManagementService extends BaseService
                 ]
             );
 
-            return $user->fresh(['activeMembership.package']);
+            return $user->fresh(['referrer', 'activeMembership.package']);
         });
+    }
+
+    /**
+     * Normalize list filters for repository consumption.
+     *
+     * @param array $filters
+     * @return array
+     */
+    protected function normalizeListFilters(array $filters): array
+    {
+        $normalized = [];
+
+        if (isset($filters['search']) && trim($filters['search']) !== '') {
+            $normalized['search'] = trim($filters['search']);
+        }
+
+        foreach (['start_date', 'end_date', 'referred_by'] as $key) {
+            if (isset($filters[$key]) && $filters[$key] !== '') {
+                $normalized[$key] = $filters[$key];
+            }
+        }
+
+        if (array_key_exists('status', $filters)) {
+            $statusValue = $filters['status'];
+
+            if (is_numeric($statusValue)) {
+                $normalized['status'] = (int) $statusValue;
+            } else {
+                $statusKey = strtolower((string) $statusValue);
+                $statusMap = [
+                    'active' => 1,
+                    'approved' => 1,
+                    'banned' => 0,
+                    'inactive' => 0,
+                    'disabled' => 0,
+                    'pending' => 2,
+                ];
+
+                if (array_key_exists($statusKey, $statusMap)) {
+                    $normalized['status'] = $statusMap[$statusKey];
+                } elseif ($statusKey === 'paused') {
+                    $normalized['active'] = false;
+                }
+            }
+        }
+
+        if (array_key_exists('featured', $filters)) {
+            $featured = filter_var($filters['featured'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($featured !== null) {
+                $normalized['featured'] = $featured ? 1 : 0;
+            }
+        }
+
+        if (!empty($filters['plan'])) {
+            $normalized['plan'] = $filters['plan'];
+        }
+
+        if (array_key_exists('subscription_status', $filters)) {
+            $status = strtolower((string) $filters['subscription_status']);
+            if ($status === 'active') {
+                $normalized['has_active_subscription'] = true;
+            } elseif (in_array($status, ['none', 'inactive'], true)) {
+                $normalized['has_active_subscription'] = false;
+            } elseif (in_array($status, ['trial', 'expired'], true)) {
+                $normalized['subscription_status'] = $status;
+            }
+        }
+
+        [$orderBy, $orderDir] = $this->resolveSort($filters['sort'] ?? null);
+        $normalized['order_by'] = $orderBy;
+        $normalized['order_dir'] = $orderDir;
+
+        return $normalized;
+    }
+
+    /**
+     * Resolve sort parameter into column and direction.
+     *
+     * @param string|null $sort
+     * @return array{0:string,1:string}
+     */
+    protected function resolveSort(?string $sort): array
+    {
+        $default = ['created_at', 'desc'];
+
+        if (empty($sort)) {
+            return $default;
+        }
+
+        $sort = strtolower(trim($sort));
+
+        $aliases = [
+            'latest' => ['created_at', 'desc'],
+            'oldest' => ['created_at', 'asc'],
+            'name_asc' => ['username', 'asc'],
+            'name_desc' => ['username', 'desc'],
+            'company_asc' => ['company_name', 'asc'],
+            'company_desc' => ['company_name', 'desc'],
+        ];
+
+        if (isset($aliases[$sort])) {
+            return $aliases[$sort];
+        }
+
+        if (str_contains($sort, ':')) {
+            [$field, $direction] = explode(':', $sort, 2);
+        } elseif (str_contains($sort, '|')) {
+            [$field, $direction] = explode('|', $sort, 2);
+        } elseif (str_contains($sort, ',')) {
+            [$field, $direction] = explode(',', $sort, 2);
+        } else {
+            $field = $sort;
+            $direction = 'desc';
+        }
+
+        $allowedFields = ['created_at', 'username', 'company_name', 'email', 'status'];
+        $field = in_array($field, $allowedFields, true) ? $field : 'created_at';
+        $direction = strtolower($direction) === 'asc' ? 'asc' : 'desc';
+
+        return [$field, $direction];
+    }
+
+    /**
+     * Resolve plan term into duration in days.
+     */
+    protected function resolvePlanDurationInDays(?string $term): int
+    {
+        if (empty($term)) {
+            return 30;
+        }
+
+        $normalized = strtolower(trim($term));
+
+        return match (true) {
+            $normalized === 'monthly' => 30,
+            $normalized === 'quarterly' => 90,
+            $normalized === 'semiannual',
+            $normalized === 'semi-annual' => 182,
+            $normalized === 'yearly',
+            $normalized === 'annual' => 365,
+            is_numeric($normalized) => max((int) $normalized, 1),
+            default => 30,
+        };
     }
 }
 
