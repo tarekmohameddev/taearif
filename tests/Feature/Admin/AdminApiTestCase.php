@@ -93,18 +93,31 @@ abstract class AdminApiTestCase extends TestCase
             Schema::create('users', function (Blueprint $table) {
                 $table->id();
                 $table->uuid('uuid')->unique();
+                $table->unsignedBigInteger('tenant_id')->nullable();
+                $table->unsignedBigInteger('referred_by')->nullable();
                 $table->string('first_name')->nullable();
                 $table->string('last_name')->nullable();
                 $table->string('email')->unique();
                 $table->string('username')->unique();
+                $table->string('photo')->nullable();
+                $table->string('company_name')->nullable();
                 $table->string('phone')->nullable();
+                $table->string('city')->nullable();
+                $table->string('state')->nullable();
+                $table->string('address')->nullable();
+                $table->string('country')->nullable();
                 $table->boolean('email_verified')->default(false);
                 $table->timestamp('email_verified_at')->nullable();
                 $table->string('password');
                 $table->rememberToken();
-                $table->boolean('status')->default(true);
+                $table->unsignedTinyInteger('status')->default(1);
                 $table->string('account_type')->default('tenant');
                 $table->boolean('active')->default(true);
+                $table->boolean('featured')->default(false);
+                $table->boolean('online_status')->default(false);
+                $table->boolean('subscribed')->default(false);
+                $table->decimal('subscription_amount', 10, 2)->default(0);
+                $table->timestamp('trial_ends_at')->nullable();
                 $table->string('referral_code')->nullable();
                 $table->string('referral_id')->nullable();
                 $table->timestamps();
@@ -113,6 +126,31 @@ abstract class AdminApiTestCase extends TestCase
             Schema::table('users', function (Blueprint $table) {
                 $table->uuid('uuid')->unique()->after('id');
             });
+        }
+
+        $columns = [
+            'tenant_id' => fn (Blueprint $table) => $table->unsignedBigInteger('tenant_id')->nullable()->after('uuid'),
+            'referred_by' => fn (Blueprint $table) => $table->unsignedBigInteger('referred_by')->nullable()->after('tenant_id'),
+            'photo' => fn (Blueprint $table) => $table->string('photo')->nullable()->after('last_name'),
+            'company_name' => fn (Blueprint $table) => $table->string('company_name')->nullable()->after('username'),
+            'city' => fn (Blueprint $table) => $table->string('city')->nullable()->after('company_name'),
+            'state' => fn (Blueprint $table) => $table->string('state')->nullable()->after('city'),
+            'address' => fn (Blueprint $table) => $table->string('address')->nullable()->after('state'),
+            'country' => fn (Blueprint $table) => $table->string('country')->nullable()->after('address'),
+            'featured' => fn (Blueprint $table) => $table->boolean('featured')->default(false)->after('active'),
+            'online_status' => fn (Blueprint $table) => $table->boolean('online_status')->default(false)->after('featured'),
+            'subscribed' => fn (Blueprint $table) => $table->boolean('subscribed')->default(false)->after('online_status'),
+            'subscription_amount' => fn (Blueprint $table) => $table->decimal('subscription_amount', 10, 2)->default(0)->after('subscribed'),
+            'trial_ends_at' => fn (Blueprint $table) => $table->timestamp('trial_ends_at')->nullable()->after('subscription_amount'),
+            'referral_code' => fn (Blueprint $table) => $table->string('referral_code')->nullable()->after('active'),
+        ];
+
+        foreach ($columns as $column => $callback) {
+            if (!Schema::hasColumn('users', $column)) {
+                Schema::table('users', function (Blueprint $table) use ($callback) {
+                    $callback($table);
+                });
+            }
         }
 
         if (!Schema::hasColumn('users', 'referral_id')) {
