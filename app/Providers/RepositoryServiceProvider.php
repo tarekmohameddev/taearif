@@ -126,6 +126,15 @@ class RepositoryServiceProvider extends ServiceProvider
                 );
             }
         );
+
+        $this->app->bind(
+            \App\Domain\Billing\Repositories\PlanRepositoryInterface::class,
+            function () {
+                return new \App\Domain\Billing\Repositories\PlanRepository(
+                    new \App\Domain\Billing\Models\Plan()
+                );
+            }
+        );
     }
 
     /**

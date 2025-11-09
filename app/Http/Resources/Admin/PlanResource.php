@@ -28,7 +28,7 @@ class PlanResource extends JsonResource
             'term' => $this->term,
             'icon' => $this->icon ? url($this->icon) : null,
             'status' => [
-                'is_active' => $this->is_active,
+                'is_active' => (bool) $this->is_active,
                 'status_code' => $this->status,
                 'featured' => $this->featured === 1,
             ],
@@ -50,7 +50,11 @@ class PlanResource extends JsonResource
                 'meta_description' => $this->meta_description,
             ],
             'serial_number' => $this->serial_number,
-            'subscribers_count' => $this->subscribers_count ?? 0,
+            'subscribers_count' => $this->active_memberships_count
+                ?? $this->memberships()
+                    ->where('status', 1)
+                    ->whereDate('expire_date', '>=', now()->toDateString())
+                    ->count(),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

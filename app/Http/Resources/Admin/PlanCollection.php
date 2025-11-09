@@ -13,6 +13,13 @@ use Illuminate\Http\Resources\Json\ResourceCollection;
 class PlanCollection extends ResourceCollection
 {
     /**
+     * The resource that this resource collects.
+     *
+     * @var string
+     */
+    public $collects = PlanResource::class;
+
+    /**
      * Transform the resource collection into an array.
      *
      * @return array<int|string, mixed>
@@ -20,24 +27,21 @@ class PlanCollection extends ResourceCollection
     public function toArray($request): array
     {
         return [
-            'data' => $this->collection->transform(function ($plan) {
-                return [
-                    'id' => $plan->id,
-                    'title' => $plan->title,
-                    'subtitle' => $plan->subtitle,
-                    'slug' => $plan->slug,
-                    'price' => (float) $plan->price,
-                    'term' => $plan->term,
-                    'icon' => $plan->icon ? url($plan->icon) : null,
-                    'is_active' => $plan->is_active,
-                    'featured' => $plan->featured === 1,
-                    'is_trial' => $plan->is_trial,
-                    'trial_days' => $plan->trial_days,
-                    'subscribers_count' => $plan->subscribers_count ?? 0,
-                    'serial_number' => $plan->serial_number,
-                    'created_at' => $plan->created_at?->toIso8601String(),
-                ];
-            }),
+            'data' => $this->collection,
+            'meta' => [
+                'total' => $this->total(),
+                'per_page' => $this->perPage(),
+                'current_page' => $this->currentPage(),
+                'last_page' => $this->lastPage(),
+                'from' => $this->firstItem(),
+                'to' => $this->lastItem(),
+            ],
+            'links' => [
+                'first' => $this->url(1),
+                'last' => $this->url($this->lastPage()),
+                'prev' => $this->previousPageUrl(),
+                'next' => $this->nextPageUrl(),
+            ],
         ];
     }
 
@@ -48,16 +52,7 @@ class PlanCollection extends ResourceCollection
      */
     public function with($request): array
     {
-        return [
-            'meta' => [
-                'total' => $this->total(),
-                'per_page' => $this->perPage(),
-                'current_page' => $this->currentPage(),
-                'last_page' => $this->lastPage(),
-                'from' => $this->firstItem(),
-                'to' => $this->lastItem(),
-            ],
-        ];
+        return [];
     }
 }
 
