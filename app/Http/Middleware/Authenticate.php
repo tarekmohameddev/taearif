@@ -7,6 +7,22 @@ use Request;
 
 class Authenticate extends Middleware
 {
+    public function handle($request, \Closure $next, ...$guards)
+    {
+        try {
+            return parent::handle($request, $next, ...$guards);
+        } catch (\Throwable $e) {
+            \Log::error('auth.middleware.exception', [
+                'guards' => $guards,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            throw $e;
+        }
+    }
+
     /**
      * Get the path the user should be redirected to when they are not authenticated.
      *

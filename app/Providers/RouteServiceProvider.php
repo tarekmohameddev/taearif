@@ -62,6 +62,7 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapApiRoutes();
         $this->mapWebRoutes();
         $this->mapAdminRoutes();
+        $this->mapAdminApiRoutes();
     }
 
     /**
@@ -103,5 +104,20 @@ class RouteServiceProvider extends ServiceProvider
     protected function mapAdminRoutes()
     {
         // Admin routes are loaded in boot() method to avoid duplication
+    }
+
+    /**
+     * Define the "admin-api" routes for the application.
+     *
+     * These routes are for Admin Dashboard API with Sanctum authentication.
+     *
+     * @return void
+     */
+    protected function mapAdminApiRoutes()
+    {
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/admin-api.php'));
     }
 }

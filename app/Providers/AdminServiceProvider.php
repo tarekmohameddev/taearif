@@ -38,11 +38,6 @@ class AdminServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Configure admin Sanctum guard
-        config([
-            'sanctum.guard' => [config('admin-api.guard')],
-        ]);
-
         // Load admin API routes
         $this->loadAdminRoutes();
     }
@@ -54,7 +49,7 @@ class AdminServiceProvider extends ServiceProvider
      */
     protected function loadAdminRoutes(): void
     {
-        Route::middleware('api')
+        Route::middleware('admin-api')
             ->prefix('api')
             ->group(base_path('routes/admin-api.php'));
     }

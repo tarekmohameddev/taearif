@@ -45,6 +45,11 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\SetTenantSessionDomain::class,
             \App\Http\Middleware\SetTenantForPermissions::class,
         ],
+
+        'admin-api' => [
+            'throttle:120,1',
+            'bindings',
+        ],
         // 'api' => [
         //     \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         //     'throttle:api',
