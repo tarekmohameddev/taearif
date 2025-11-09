@@ -25,6 +25,7 @@ abstract class AdminApiTestCase extends TestCase
         $this->ensureRolesTable();
         $this->ensureUsersTable();
         $this->ensureDailyTables();
+        $this->ensureAnalyticsTables();
         $this->ensurePackagesTable();
         $this->ensureSanctumTables();
         $this->ensureAdminImpersonationsTable();
@@ -98,11 +99,18 @@ abstract class AdminApiTestCase extends TestCase
                 $table->string('account_type')->default('tenant');
                 $table->boolean('active')->default(true);
                 $table->string('referral_code')->nullable();
+                $table->string('referral_id')->nullable();
                 $table->timestamps();
             });
         } elseif (!Schema::hasColumn('users', 'uuid')) {
             Schema::table('users', function (Blueprint $table) {
                 $table->uuid('uuid')->unique()->after('id');
+            });
+        }
+
+        if (!Schema::hasColumn('users', 'referral_id')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->string('referral_id')->nullable()->after('referral_code');
             });
         }
     }
@@ -195,6 +203,55 @@ abstract class AdminApiTestCase extends TestCase
             $table->string('conversation_id')->nullable();
             $table->timestamps();
         });
+    }
+
+    /**
+     * Ensure supporting tables for analytics module exist.
+     */
+    private function ensureAnalyticsTables(): void
+    {
+        if (!Schema::hasTable('user_properties')) {
+            Schema::create('user_properties', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+                $table->unsignedTinyInteger('status')->default(1);
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+            });
+        }
+
+        if (!Schema::hasTable('api_affiliate_users')) {
+            Schema::create('api_affiliate_users', function (Blueprint $table) {
+                $table->id();
+                $table->string('name')->nullable();
+                $table->string('email')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        if (!Schema::hasTable('affiliate_transactions')) {
+            Schema::create('affiliate_transactions', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('affiliate_user_id')->nullable()->constrained('api_affiliate_users')->nullOnDelete();
+                $table->decimal('amount', 10, 2)->default(0);
+                $table->string('status')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        if (!Schema::hasTable('user_activity_logs')) {
+            Schema::create('user_activity_logs', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+                $table->foreignId('admin_id')->nullable()->constrained('admins')->nullOnDelete();
+                $table->string('action');
+                $table->text('description')->nullable();
+                $table->json('metadata')->nullable();
+                $table->string('ip_address')->nullable();
+                $table->string('user_agent')->nullable();
+                $table->timestamp('created_at')->useCurrent();
+            });
+        }
     }
 
     /**
@@ -331,6 +388,22 @@ abstract class AdminApiTestCase extends TestCase
 
         if (Schema::hasTable('packages')) {
             DB::table('packages')->truncate();
+        }
+
+        if (Schema::hasTable('user_properties')) {
+            DB::table('user_properties')->truncate();
+        }
+
+        if (Schema::hasTable('api_affiliate_users')) {
+            DB::table('api_affiliate_users')->truncate();
+        }
+
+        if (Schema::hasTable('affiliate_transactions')) {
+            DB::table('affiliate_transactions')->truncate();
+        }
+
+        if (Schema::hasTable('user_activity_logs')) {
+            DB::table('user_activity_logs')->truncate();
         }
 
         if (Schema::hasTable('personal_access_tokens')) {
