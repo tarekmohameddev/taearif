@@ -445,7 +445,8 @@ class RegisterUserController extends Controller
                     return redirect()->back()->with('error', 'Admin role not found.');
                 }
 
-                $permissions = json_decode($role->permissions ?? '[]', true);
+                $raw = $role->permissions ?? [];
+                $permissions = is_array($raw) ? $raw : (json_decode($raw, true) ?: []);
                 if (!in_array('Registered Users', $permissions)) {
                     return redirect()->back()->with('error', 'You do not have permission to impersonate users.');
                 }

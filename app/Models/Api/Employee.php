@@ -36,8 +36,9 @@ class Employee extends Authenticatable
     public function hasPermission(string $perm): bool
     {
         return $this->roles()->get()->flatMap(function ($role) {
-            $perms = json_decode($role->permissions ?? '[]', true);
-            return is_array($perms) ? $perms : [];
+            $raw = $role->permissions ?? [];
+            $perms = is_array($raw) ? $raw : (json_decode($raw, true) ?: []);
+            return $perms;
         })->contains($perm);
     }
 }
