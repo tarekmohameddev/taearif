@@ -4,7 +4,7 @@
 	$admin = Auth::guard('admin')->user();
 	if (!empty($admin->role)) {
 		$permissions = $admin->role->permissions;
-		$permissions = json_decode($permissions, true);
+		$permissions = is_array($permissions) ? $permissions : (json_decode($permissions, true) ?: []);
 	}
 @endphp
 
