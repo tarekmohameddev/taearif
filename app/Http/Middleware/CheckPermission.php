@@ -25,13 +25,6 @@ class CheckPermission
             $permissions = is_array($rawPermissions)
                 ? $rawPermissions
                 : (json_decode($rawPermissions, true) ?: []);
-            Log::debug('CheckPermission middleware permissions', [
-                'admin_id' => $admin->id ?? null,
-                'raw_permissions_type' => gettype($rawPermissions),
-                'raw_permissions' => $rawPermissions,
-                'permissions' => $permissions,
-                'required_permission' => $permission,
-            ]);
             if (!in_array($permission, $permissions)) {
                 return redirect()->route('admin.dashboard');
             }
