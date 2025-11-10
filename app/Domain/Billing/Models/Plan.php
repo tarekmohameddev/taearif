@@ -4,6 +4,7 @@ namespace App\Domain\Billing\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use App\Models\Membership;
 
 /**
@@ -67,10 +68,7 @@ class Plan extends Model
      */
     protected $casts = [
         'price' => 'decimal:2',
-        'featured' => 'integer',
-        'is_trial' => 'boolean',
         'trial_days' => 'integer',
-        'status' => 'integer',
         'is_active' => 'boolean',
         'features' => 'array',
         'new_features' => 'array',
@@ -122,7 +120,7 @@ class Plan extends Model
      */
     public function isFeatured(): bool
     {
-        return $this->featured === 1;
+        return $this->featured === true;
     }
 
     /**
@@ -154,7 +152,7 @@ class Plan extends Model
      */
     public function scopeFeatured($query)
     {
-        return $query->where('featured', 1);
+        return $query->where('featured', '1');
     }
 
     /**
@@ -175,6 +173,70 @@ class Plan extends Model
               ->orWhere('subtitle', 'like', "%{$term}%")
               ->orWhere('slug', 'like', "%{$term}%");
         });
+    }
+
+    /**
+     * Accessor & mutator for featured flag stored as enum('0','1').
+     */
+    protected function featured(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value === '1' || $value === 1 || $value === true,
+            set: fn ($value) => $this->convertToEnumFlag($value)
+        );
+    }
+
+    /**
+     * Accessor & mutator for trial flag stored as enum('0','1').
+     */
+    protected function isTrial(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value === '1' || $value === 1 || $value === true,
+            set: fn ($value) => $this->convertToEnumFlag($value)
+        );
+    }
+
+    /**
+     * Mutator for status flag stored as enum('0','1').
+     */
+    public function setStatusAttribute($value): void
+    {
+        $this->attributes['status'] = $this->convertToEnumFlag($value);
+    }
+
+    /**
+     * Mutator for is_active flag when backed by enum('0','1').
+     */
+    public function setIsActiveAttribute($value): void
+    {
+        $this->attributes['is_active'] = $this->convertToEnumFlag($value);
+    }
+
+    /**
+     * Normalize boolean-like values to legacy enum strings.
+     */
+    protected function convertToEnumFlag(mixed $value): string
+    {
+        if (is_string($value)) {
+            $value = strtolower($value);
+            if (in_array($value, ['1', 'true', 'yes', 'on'], true)) {
+                return '1';
+            }
+            if (in_array($value, ['0', 'false', 'no', 'off'], true)) {
+                return '0';
+            }
+        }
+
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+
+        if (is_numeric($value)) {
+            return ((int) $value) === 1 ? '1' : '0';
+        }
+
+        return '0';
     }
 }
 

@@ -30,7 +30,7 @@ class PlanResource extends JsonResource
             'status' => [
                 'is_active' => (bool) $this->is_active,
                 'status_code' => $this->status,
-                'featured' => $this->featured === 1,
+                'featured' => $this->isFeatured(),
             ],
             'trial' => [
                 'enabled' => $this->is_trial,

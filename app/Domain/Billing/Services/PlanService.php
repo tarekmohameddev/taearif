@@ -106,6 +106,8 @@ class PlanService extends BaseService
         $data['trial_days'] = $data['trial_days'] ?? 0;
         $data['featured'] = $data['featured'] ?? 0;
 
+        $data = $this->normalizePlanFlags($data);
+
         $plan = $this->executeInTransaction(function () use ($data) {
             return $this->planRepository->create($data);
         });
@@ -133,6 +135,8 @@ class PlanService extends BaseService
                 throw new BusinessLogicException('Slug already exists', 'PLAN_SLUG_EXISTS', 400);
             }
         }
+
+        $data = $this->normalizePlanFlags($data);
 
         $plan = $this->executeInTransaction(function () use ($plan, $data) {
             $plan->update($data);
@@ -207,6 +211,52 @@ class PlanService extends BaseService
         });
 
         return $this->loadActiveSubscribersCount($plan);
+    }
+
+    /**
+     * Normalize enum-backed boolean flags before persisting.
+     *
+     * @param array $data
+     * @return array
+     */
+    protected function normalizePlanFlags(array $data): array
+    {
+        foreach (['featured', 'is_trial', 'status', 'is_active'] as $flag) {
+            if (array_key_exists($flag, $data)) {
+                $data[$flag] = $this->normalizeBooleanFlag($data[$flag]);
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Convert mixed boolean input to the string values expected by legacy enums.
+     *
+     * @param mixed $value
+     * @return string
+     */
+    protected function normalizeBooleanFlag(mixed $value): string
+    {
+        if (is_string($value)) {
+            $value = strtolower($value);
+            if (in_array($value, ['1', 'true', 'yes', 'on'], true)) {
+                return '1';
+            }
+            if (in_array($value, ['0', 'false', 'no', 'off'], true)) {
+                return '0';
+            }
+        }
+
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+
+        if (is_numeric($value)) {
+            return ((int) $value) === 1 ? '1' : '0';
+        }
+
+        return '0';
     }
 
     /**
