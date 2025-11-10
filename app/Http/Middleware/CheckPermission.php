@@ -3,7 +3,7 @@
 namespace App\Http\Middleware;
 
 use Closure;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 
 class CheckPermission
 {
@@ -20,7 +20,10 @@ class CheckPermission
         // if the admin is logged in & he has a role defined then this check will be applied
         if (Auth::guard('admin')->check() && !empty(Auth::guard('admin')->user()->role)) {
             $admin = Auth::guard('admin')->user();
-            $permissions = json_decode($admin->role->permissions, true);
+            $rawPermissions = $admin->role->permissions;
+            $permissions = is_array($rawPermissions)
+                ? $rawPermissions
+                : (json_decode($rawPermissions, true) ?: []);
             if (!in_array($permission, $permissions)) {
                 return redirect()->route('admin.dashboard');
             }
