@@ -111,7 +111,7 @@
                                 @php
                                     $permissions = $package->features;
                                     if (!empty($package->features)) {
-                                        $permissions = json_decode($permissions, true);
+                                        $permissions = is_array($permissions) ? $permissions : (json_decode($permissions, true) ?: []);
                                     }
                                 @endphp
 
