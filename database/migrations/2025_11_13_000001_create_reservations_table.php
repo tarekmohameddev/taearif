@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Drop legacy reservations table if it exists (to avoid schema conflicts)
+        Schema::dropIfExists('reservations');
+
         Schema::create('reservations', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('tenant_id')->index();
