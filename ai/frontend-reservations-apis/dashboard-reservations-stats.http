@@ -1,0 +1,9 @@
+@baseUrl = https://your-app.test
+@token = YOUR_BEARER_TOKEN
+
+### Reservations Stats
+GET {{baseUrl}}/api/v1/reservations/stats
+Authorization: Bearer {{token}}
+Accept: application/json
+
+

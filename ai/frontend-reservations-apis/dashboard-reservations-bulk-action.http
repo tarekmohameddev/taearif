@@ -1,0 +1,15 @@
+@baseUrl = https://your-app.test
+@token = YOUR_BEARER_TOKEN
+
+### Bulk Action (accept|reject) on multiple reservations
+POST {{baseUrl}}/api/v1/reservations/bulk-action
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "action": "accept",
+  "reservationIds": ["res-001", "res-002", "res-003"],
+  "notes": "دفعة قبول جماعي"
+}
+
+

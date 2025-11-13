@@ -747,6 +747,17 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(funct
 
 Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
+		// Reservations (Dashboard - v1)
+		Route::prefix('reservations')->group(function () {
+			Route::get('/', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'index']);
+			Route::get('/stats', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'stats']);
+			Route::get('/export/csv', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'exportCsv']);
+			Route::get('/{id}', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'show']);
+			Route::post('/{id}/accept', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'accept'])->name('reservations.accept');
+			Route::post('/{id}/reject', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'reject'])->name('reservations.reject');
+			Route::post('/bulk-action', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'bulkAction']);
+		});
+
         Route::get('/customers/{id}/logs',  [CustomerLogController::class, 'index'])->middleware('can:projects.view');
         Route::get('/projects/{id}/logs',   [ProjectLogController::class, 'index'])->middleware('can:projects.view');
         Route::get('/properties/{id}/logs', [PropertyLogController::class, 'index'])->middleware('can:properties.view');
@@ -834,6 +845,9 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
     Route::put('{tenantId}/settings', [SettingsController::class, 'update'])->middleware('auth:sanctum');
     Route::post('{tenantId}/publish', [PublishController::class, 'store'])->middleware('auth:sanctum');
     Route::post('{tenantId}/forms/contact', [FormController::class, 'store']);
+
+	// Tenant Website Reservations (public - rate limited)
+	Route::post('{tenantId}/reservations', [\App\Http\Controllers\Api\V1\TenantWebsite\ReservationController::class, 'store'])->middleware('throttle:5,1');
 
     // Tenant Website Properties (public)
     Route::get('{tenantId}/properties', [\App\Http\Controllers\Api\V1\TenantWebsite\PropertyController::class, 'index']);
