@@ -87,6 +87,7 @@ use App\Http\Controllers\Api\V1\{
     EmployeeController,
     CustomerInquiryController,
     Crm\CrmCardController,
+    Crm\CrmRequestController,
     Em\CustomerController as EmployeeCustomerController,
 };
 
@@ -672,6 +673,15 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('cards/{id}', [CrmCardController::class, 'show']);
         Route::match(['put','patch'], 'cards/{id}', [CrmCardController::class, 'update']);
         Route::delete('cards/{id}', [CrmCardController::class, 'destroy']);
+
+        // Requests
+        Route::apiResource('requests', CrmRequestController::class);
+        Route::post('requests/{id}/change-stage', [CrmRequestController::class, 'changeStage']);
+        Route::post('requests/reorder', [CrmRequestController::class, 'reorder']);
+        Route::get('requests/{id}/details', [CrmRequestController::class, 'details']);
+
+        // User Stages (v1 scoped)
+        Route::get('stages', [CrmRequestController::class, 'stages']);
     });
 
     // Marketing Channels Routes

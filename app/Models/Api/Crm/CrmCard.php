@@ -20,6 +20,7 @@ class CrmCard extends Model
     protected $fillable = [
         'user_id',
         'card_customer_id',
+		'card_request_id',
         'card_content',
         'card_procedure',
         'card_project',
