@@ -124,8 +124,9 @@ class CollectPaymentRequest extends FormRequest
         $bankName = $this['bank_name'] ?? null;
         $autoSelect = $this['auto_select'] ?? false;
         $payments = $this['payments'] ?? [];
+        $paymentAmount = $this['payment_amount'] ?? $this['amount'] ?? null;
 
-        $validator->after(function ($validator) use ($paymentMethod, $bankName, $autoSelect, $payments) {
+        $validator->after(function ($validator) use ($paymentMethod, $bankName, $autoSelect, $payments, $paymentAmount) {
             // Custom validation: bank_name required for bank transfers
             if ($paymentMethod === RmsConstants::PAYMENT_METHOD_BANK_TRANSFER && empty($bankName)) {
                 $validator->errors()->add(
@@ -142,8 +143,12 @@ class CollectPaymentRequest extends FormRequest
                 );
             }
 
-            // NOTE: Empty payments array is now VALID - will auto-pay all outstanding installments
-            // This is handled in the controller by auto-detecting and calculating total outstanding
+            // Allow empty payments array if payment_amount/amount is provided
+            //matches the controller auto-select logic
+            if (empty($payments) && !$autoSelect && !empty($paymentAmount)) {
+                // Remove the validation error for payments since we have payment_amount
+                $validator->errors()->forget('payments');
+            }
         });
     }
 }
