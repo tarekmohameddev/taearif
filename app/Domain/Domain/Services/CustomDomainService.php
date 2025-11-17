@@ -72,6 +72,9 @@ class CustomDomainService extends BaseService
     public function createDomain(array $data): CustomDomain
     {
         return $this->transaction(function () use ($data) {
+            // Ensure status has a default value if not provided
+            $data['status'] = $data['status'] ?? false;
+            
             $domain = $this->domainRepository->create($data);
             
             return $domain->load(['user']);
