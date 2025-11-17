@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Admin\AuthController;
 use App\Http\Controllers\Api\Admin\DailyController;
 use App\Http\Controllers\Api\Admin\UserController;
+use App\Http\Controllers\Api\Admin\LookupController;
 use App\Http\Controllers\Api\Admin\PlanController;
 use App\Http\Controllers\Api\Admin\SubscriptionController;
 use App\Http\Controllers\Api\Admin\ImpersonationController;
@@ -26,7 +27,7 @@ use App\Http\Controllers\Api\Admin\CrmController;
 use App\Http\Controllers\Api\Admin\LeadController;
 use App\Http\Controllers\Api\Admin\DomainController;
 use App\Http\Controllers\Api\Admin\MarketingController;
-use App\Http\Controllers\Api\Admin\ReferralController;
+use App\Http\Controllers\Api\Admin\AffiliateController;
 use App\Http\Controllers\Api\Admin\BillingController;
 use App\Http\Controllers\Api\Admin\EmployeeController;
 use App\Http\Controllers\Api\Admin\InquiryController;
@@ -68,6 +69,7 @@ Route::prefix(config('admin-api.prefix'))
     ->middleware(['auth:' . config('admin-api.guard')])
     ->group(function () {
         Route::pattern('user', '[0-9]+');
+        Route::pattern('employee', '[0-9]+');
         // Test endpoint
         // Route::get('test', function () {
         //     return response()->json(['message' => 'API is working']);
@@ -90,6 +92,10 @@ Route::prefix(config('admin-api.prefix'))
     Route::prefix('daily')->name('daily.')->group(function () {
         Route::get('/', [DailyController::class, 'index'])
             ->name('index');
+        
+        // Daily follow-up
+        Route::get('follow-up', [DailyController::class, 'followUp'])
+            ->name('daily.follow-up');
 
         Route::get('today', [DailyController::class, 'today'])
             ->name('today');
@@ -116,18 +122,7 @@ Route::prefix(config('admin-api.prefix'))
             ->name('rms-reminders');
     });
 
-    // -------------------------------------------------------------------------
-    // User Impersonation Routes (scoped under users)
-    // -------------------------------------------------------------------------
 
-    Route::prefix('users')->name('users.')->group(function () {
-        Route::post('{user}/impersonate', [ImpersonationController::class, 'start'])
-            ->name('impersonate.start')
-            ->middleware('can:impersonate-users');
-
-        Route::get('{user}/impersonation-history', [ImpersonationController::class, 'userHistory'])
-            ->name('impersonate.user-history');
-    });
 
     // -------------------------------------------------------------------------
     // Impersonation Module — انتحال الشخصية
@@ -154,13 +149,26 @@ Route::prefix(config('admin-api.prefix'))
     Route::get('dashboard/quick-stats', [DashboardController::class, 'quickStats'])
         ->name('dashboard.quick-stats');
 
+
+
     // -------------------------------------------------------------------------
     // User Management Module — إدارة المستخدمين
     // -------------------------------------------------------------------------
 
+    // Lookups for cities and districts
+    Route::prefix('lookups')->name('lookups.')->group(function () {
+        Route::get('cities', [LookupController::class, 'cities'])->name('cities');
+        Route::get('districts', [LookupController::class, 'districts'])->name('districts');
+        Route::get('plans', [LookupController::class, 'plans'])->name('plans');
+    });
+
     Route::prefix('users')->name('users.')->group(function () {
         Route::get('/', [UserController::class, 'index'])
             ->name('index');
+
+        // Tenants table endpoint (offset-based filters + filter options)
+        Route::get('table', [UserController::class, 'table'])
+            ->name('table');
 
         Route::post('/', [UserController::class, 'store'])
             ->name('store');
@@ -198,11 +206,24 @@ Route::prefix(config('admin-api.prefix'))
         Route::put('{user}/password', [UserController::class, 'updatePassword'])
             ->name('password');
 
+        Route::post('{user}/send-password-reset', [UserController::class, 'sendPasswordReset'])
+            ->name('send-password-reset');
+
         Route::post('{user}/ban', [UserController::class, 'toggleBan'])
             ->name('ban');
 
         Route::post('{user}/featured', [UserController::class, 'toggleFeatured'])
             ->name('featured');
+
+        // -------------------------------------------------------------------------
+        // User Impersonation Routes (scoped under users)
+        // -------------------------------------------------------------------------
+        Route::post('{user}/impersonate', [ImpersonationController::class, 'start'])
+            ->name('impersonate.start')
+            ->middleware('can:impersonate-users');
+
+        Route::get('{user}/impersonation-history', [ImpersonationController::class, 'userHistory'])
+            ->name('impersonate.user-history');
     });
 
     // -------------------------------------------------------------------------
@@ -243,9 +264,15 @@ Route::prefix(config('admin-api.prefix'))
         Route::get('statistics', [SubscriptionController::class, 'statistics'])
             ->name('statistics');
 
+        Route::post('{subscription}/change-plan', [SubscriptionController::class, 'changePlan'])
+            ->name('change-plan');
+
         Route::get('{subscriptionId}', [SubscriptionController::class, 'show'])
             ->name('show');
     });
+
+    Route::get('users/{user}/subscription', [SubscriptionController::class, 'showByUser'])
+        ->name('users.subscription.show');
 
     // -------------------------------------------------------------------------
     // Billing & Invoices Module — الفوترة
@@ -255,6 +282,9 @@ Route::prefix(config('admin-api.prefix'))
         Route::prefix('invoices')->name('invoices.')->group(function () {
             Route::get('/', [BillingController::class, 'index'])
                 ->name('index');
+
+            Route::get('user/{userId}', [BillingController::class, 'showByUser'])
+                ->name('showByUser');
 
             Route::get('{invoiceId}', [BillingController::class, 'show'])
                 ->name('show');
@@ -346,6 +376,44 @@ Route::prefix(config('admin-api.prefix'))
 
         Route::get('statistics/all', [DomainController::class, 'statistics'])
             ->name('statistics');
+
+        // Domains metadata (registrar / expiry / auto-renewal)
+        Route::patch('{domain}/metadata', [DomainController::class, 'updateMetadata'])
+            ->name('update-metadata');
+
+        // Renewal summary & action
+        Route::get('{domain}/renewal', [DomainController::class, 'renewalSummary'])
+            ->name('renewal-summary');
+        Route::post('{domain}/renew', [DomainController::class, 'renew'])
+            ->name('renew');
+
+        // SSL management
+        Route::patch('{domain}/ssl', [DomainController::class, 'updateSsl'])
+            ->name('update-ssl');
+
+        // DNS Records management
+        Route::get('{domain}/dns-records', [DomainController::class, 'getDnsRecords'])
+            ->name('get-dns-records');
+        Route::put('{domain}/dns-records', [DomainController::class, 'updateDnsRecords'])
+            ->name('update-dns-records');
+    });
+
+    // Domain Renewal Pricing Management
+    Route::prefix('domain-renewal-pricings')->name('domain-renewal-pricings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\Admin\DomainRenewalPricingController::class, 'index'])
+            ->name('index');
+
+        Route::post('/', [\App\Http\Controllers\Api\Admin\DomainRenewalPricingController::class, 'store'])
+            ->name('store');
+
+        Route::get('{id}', [\App\Http\Controllers\Api\Admin\DomainRenewalPricingController::class, 'show'])
+            ->name('show');
+
+        Route::put('{id}', [\App\Http\Controllers\Api\Admin\DomainRenewalPricingController::class, 'update'])
+            ->name('update');
+
+        Route::delete('{id}', [\App\Http\Controllers\Api\Admin\DomainRenewalPricingController::class, 'destroy'])
+            ->name('destroy');
     });
 
     // -------------------------------------------------------------------------
@@ -394,41 +462,38 @@ Route::prefix(config('admin-api.prefix'))
         ->name('marketing.automated-messages.update');
 
     // -------------------------------------------------------------------------
-    // Referrals Management Module — برنامج الإحالة
+    // Affiliates Management Module — برنامج الإحالة
     // -------------------------------------------------------------------------
 
-    Route::prefix('referrals')->name('referrals.')->group(function () {
-        Route::get('/', [ReferralController::class, 'index'])
+    Route::prefix('affiliates')->name('affiliates.')->group(function () {
+        Route::get('/', [AffiliateController::class, 'index'])
             ->name('index');
 
-        Route::post('/', [ReferralController::class, 'store'])
+        Route::post('/', [AffiliateController::class, 'store'])
             ->name('store');
 
-        Route::get('statistics/all', [ReferralController::class, 'statistics'])
+        Route::get('statistics/all', [AffiliateController::class, 'statistics'])
             ->name('statistics');
 
         Route::prefix('transactions')->name('transactions.')->group(function () {
-            Route::get('/', [ReferralController::class, 'transactions'])
+            Route::get('/', [AffiliateController::class, 'transactions'])
                 ->name('index');
 
-            Route::get('{transaction}', [ReferralController::class, 'showTransaction'])
+            Route::get('{transaction}', [AffiliateController::class, 'showTransaction'])
                 ->name('show');
 
-            Route::post('{transaction}/approve', [ReferralController::class, 'approveTransaction'])
-                ->name('approve');
-
-            Route::post('{transaction}/reject', [ReferralController::class, 'rejectTransaction'])
-                ->name('reject');
-
-            Route::post('{transaction}/mark-paid', [ReferralController::class, 'markAsPaid'])
-                ->name('mark-paid');
+            Route::post('{transaction}/collect', [AffiliateController::class, 'collectTransaction'])
+                ->name('collect');
         });
 
-        Route::get('{referral}', [ReferralController::class, 'show'])
+        Route::get('{affiliate}', [AffiliateController::class, 'show'])
             ->name('show');
 
-        Route::put('{referral}', [ReferralController::class, 'update'])
+        Route::put('{affiliate}', [AffiliateController::class, 'update'])
             ->name('update');
+
+        Route::post('{affiliate}/request-status', [AffiliateController::class, 'updateStatus'])
+            ->name('request-status.update');
     });
 
     // -------------------------------------------------------------------------
@@ -441,6 +506,9 @@ Route::prefix(config('admin-api.prefix'))
 
         Route::post('/', [EmployeeController::class, 'store'])
             ->name('store');
+
+        Route::post('upload-image', [EmployeeController::class, 'uploadImage'])
+            ->name('upload-image');
 
         Route::get('roles/list', [EmployeeController::class, 'roles'])
             ->name('roles.list');
