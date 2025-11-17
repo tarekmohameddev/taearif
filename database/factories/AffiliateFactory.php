@@ -2,13 +2,13 @@
 
 namespace Database\Factories;
 
-use App\Domain\Referral\Models\Affiliate;
+use App\Domain\Affiliate\Models\Affiliate;
 use App\Domain\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends Factory<\App\Domain\Referral\Models\Affiliate>
+ * @extends Factory<\App\Domain\Affiliate\Models\Affiliate>
  */
 class AffiliateFactory extends Factory
 {

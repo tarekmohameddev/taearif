@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Admin\Referrals;
 
-use App\Domain\Referral\Models\Affiliate;
+use App\Domain\Affiliate\Models\Affiliate;
 use Tests\Feature\Admin\AdminApiTestCase;
 
 class UpdateAffiliateTest extends AdminApiTestCase
@@ -28,7 +28,7 @@ class UpdateAffiliateTest extends AdminApiTestCase
         ];
 
         $response = $this->putJson(
-            route('admin.api.referrals.update', $affiliate->id),
+            route('admin.api.affiliates.update', $affiliate->id),
             $payload
         );
 
@@ -55,7 +55,7 @@ class UpdateAffiliateTest extends AdminApiTestCase
         $this->signInAdmin();
 
         $response = $this->putJson(
-            route('admin.api.referrals.update', $affiliate->id),
+            route('admin.api.affiliates.update', $affiliate->id),
             ['commission_percentage' => 150]
         );
 
@@ -69,7 +69,7 @@ class UpdateAffiliateTest extends AdminApiTestCase
         $affiliate = Affiliate::factory()->create();
 
         $response = $this->putJson(
-            route('admin.api.referrals.update', $affiliate->id),
+            route('admin.api.affiliates.update', $affiliate->id),
             ['fullname' => 'Attempted Update']
         );
 
@@ -82,7 +82,7 @@ class UpdateAffiliateTest extends AdminApiTestCase
         $this->signInAdmin();
 
         $response = $this->putJson(
-            route('admin.api.referrals.update', 999999),
+            route('admin.api.affiliates.update', 999999),
             ['fullname' => 'Updated Affiliate']
         );
 

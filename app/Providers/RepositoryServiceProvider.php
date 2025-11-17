@@ -110,19 +110,19 @@ class RepositoryServiceProvider extends ServiceProvider
         );
 
         $this->app->bind(
-            \App\Domain\Referral\Repositories\AffiliateRepositoryInterface::class,
+            \App\Domain\Affiliate\Repositories\AffiliateRepositoryInterface::class,
             function () {
-                return new \App\Domain\Referral\Repositories\AffiliateRepository(
-                    new \App\Domain\Referral\Models\Affiliate()
+                return new \App\Domain\Affiliate\Repositories\AffiliateRepository(
+                    new \App\Domain\Affiliate\Models\Affiliate()
                 );
             }
         );
 
         $this->app->bind(
-            \App\Domain\Referral\Repositories\AffiliateTransactionRepositoryInterface::class,
+            \App\Domain\Affiliate\Repositories\AffiliateTransactionRepositoryInterface::class,
             function () {
-                return new \App\Domain\Referral\Repositories\AffiliateTransactionRepository(
-                    new \App\Domain\Referral\Models\AffiliateTransaction()
+                return new \App\Domain\Affiliate\Repositories\AffiliateTransactionRepository(
+                    new \App\Domain\Affiliate\Models\AffiliateTransaction()
                 );
             }
         );

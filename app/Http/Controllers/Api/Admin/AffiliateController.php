@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\BaseController;
-use App\Domain\Referral\Services\ReferralService;
-use App\Http\Requests\Admin\Referral\StoreAffiliateRequest;
-use App\Http\Requests\Admin\Referral\UpdateAffiliateRequest;
-use App\Http\Requests\Admin\Referral\TransactionActionRequest;
+use App\Domain\Affiliate\Services\AffiliateService;
+use App\Http\Requests\Admin\Affiliate\StoreAffiliateRequest;
+use App\Http\Requests\Admin\Affiliate\UpdateAffiliateRequest;
+use App\Http\Requests\Admin\Affiliate\UpdateAffiliateStatusRequest;
+use App\Http\Requests\Admin\Affiliate\TransactionActionRequest;
 use App\Http\Resources\Admin\AffiliateResource;
+use App\Http\Resources\Admin\AffiliateDetailResource;
 use App\Http\Resources\Admin\AffiliateCollection;
 use App\Http\Resources\Admin\AffiliateTransactionResource;
 use App\Http\Resources\Admin\AffiliateTransactionCollection;
@@ -20,30 +22,30 @@ use Illuminate\Validation\ValidationException;
 use Throwable;
 
 /**
- * Referral Controller
- * 
- * Handles referral/affiliate program endpoints
+ * Affiliate Controller
+ *
+ * Handles affiliate program endpoints
  */
-class ReferralController extends BaseController
+class AffiliateController extends BaseController
 {
     /**
-     * @var ReferralService
+     * @var AffiliateService
      */
-    protected $referralService;
+    protected $affiliateService;
 
     /**
-     * ReferralController constructor.
+     * AffiliateController constructor.
      *
-     * @param ReferralService $referralService
+     * @param AffiliateService $affiliateService
      */
-    public function __construct(ReferralService $referralService)
+    public function __construct(AffiliateService $affiliateService)
     {
-        $this->referralService = $referralService;
+        $this->affiliateService = $affiliateService;
     }
 
     /**
      * Get paginated list of affiliates
-     * 
+     *
      * @param Request $request
      * @return JsonResponse
      */
@@ -60,10 +62,19 @@ class ReferralController extends BaseController
             ]);
 
             $perPage = min((int) $request->input('per_page', 20), 100);
-            $affiliates = $this->referralService->getAffiliates($filters, $perPage);
+            $affiliates = $this->affiliateService->getAffiliates($filters, $perPage);
+
+            $collection = new AffiliateCollection($affiliates);
+            $resolved = $collection->toArray($request);
+
+            $payload = [
+                'affiliates_cards' => $this->formatAffiliateCards($this->affiliateService->getStatistics()),
+                'affiliates_users' => $resolved['data'] ?? [],
+                'pagination' => $resolved['pagination'] ?? [],
+            ];
 
             return $this->successResponse(
-                new AffiliateCollection($affiliates),
+                $payload,
                 'Affiliates retrieved successfully'
             );
         } catch (Throwable $e) {
@@ -73,7 +84,7 @@ class ReferralController extends BaseController
 
     /**
      * Create a new affiliate
-     * 
+     *
      * @param StoreAffiliateRequest $request
      * @return JsonResponse
      */
@@ -81,7 +92,7 @@ class ReferralController extends BaseController
     {
         try {
             $data = $request->validated();
-            $affiliate = $this->referralService->createAffiliate($data);
+            $affiliate = $this->affiliateService->createAffiliate($data);
 
             return $this->successResponse(
                 new AffiliateResource($affiliate),
@@ -95,17 +106,18 @@ class ReferralController extends BaseController
 
     /**
      * Get affiliate by ID
-     * 
+     *
      * @param int $id
      * @return JsonResponse
      */
     public function show(int $id): JsonResponse
     {
         try {
-            $affiliate = $this->referralService->getAffiliateById($id);
+            $affiliate = $this->affiliateService->getAffiliateById($id);
+            $affiliate->load(['transactions.referredUser']);
 
             return $this->successResponse(
-                new AffiliateResource($affiliate),
+                new AffiliateDetailResource($affiliate),
                 'Affiliate retrieved successfully'
             );
         } catch (Throwable $e) {
@@ -115,7 +127,7 @@ class ReferralController extends BaseController
 
     /**
      * Update existing affiliate
-     * 
+     *
      * @param UpdateAffiliateRequest $request
      * @param int $id
      * @return JsonResponse
@@ -124,7 +136,7 @@ class ReferralController extends BaseController
     {
         try {
             $data = $request->validated();
-            $affiliate = $this->referralService->updateAffiliate($id, $data);
+            $affiliate = $this->affiliateService->updateAffiliate($id, $data);
 
             return $this->successResponse(
                 new AffiliateResource($affiliate),
@@ -136,27 +148,49 @@ class ReferralController extends BaseController
     }
 
     /**
-     * Get referral statistics
-     * 
+     * Update affiliate request status
+     *
+     * @param UpdateAffiliateStatusRequest $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function updateStatus(UpdateAffiliateStatusRequest $request, int $id): JsonResponse
+    {
+        try {
+            $data = $request->validated();
+            $affiliate = $this->affiliateService->updateAffiliateStatus($id, $data['request_status']);
+
+            return $this->successResponse(
+                new AffiliateResource($affiliate),
+                'Affiliate request_status updated successfully'
+            );
+        } catch (Throwable $e) {
+            return $this->handleException($e, 'Failed to update affiliate request_status.');
+        }
+    }
+
+    /**
+     * Get affiliate statistics
+     *
      * @return JsonResponse
      */
     public function statistics(): JsonResponse
     {
         try {
-            $stats = $this->referralService->getStatistics();
+            $stats = $this->affiliateService->getStatistics();
 
             return $this->successResponse(
                 $stats,
-                'Referral statistics retrieved successfully'
+                'Affiliate statistics retrieved successfully'
             );
         } catch (Throwable $e) {
-            return $this->handleException($e, 'Failed to retrieve referral statistics.');
+            return $this->handleException($e, 'Failed to retrieve affiliate statistics.');
         }
     }
 
     /**
      * Get paginated list of transactions
-     * 
+     *
      * @param Request $request
      * @return JsonResponse
      */
@@ -175,7 +209,7 @@ class ReferralController extends BaseController
             ]);
 
             $perPage = min((int) $request->input('per_page', 20), 100);
-            $transactions = $this->referralService->getTransactions($filters, $perPage);
+            $transactions = $this->affiliateService->getTransactions($filters, $perPage);
 
             return $this->successResponse(
                 new AffiliateTransactionCollection($transactions),
@@ -188,14 +222,14 @@ class ReferralController extends BaseController
 
     /**
      * Get transaction by ID
-     * 
+     *
      * @param int $id
      * @return JsonResponse
      */
     public function showTransaction(int $id): JsonResponse
     {
         try {
-            $transaction = $this->referralService->getTransactionById($id);
+            $transaction = $this->affiliateService->getTransactionById($id);
 
             return $this->successResponse(
                 new AffiliateTransactionResource($transaction),
@@ -207,71 +241,29 @@ class ReferralController extends BaseController
     }
 
     /**
-     * Approve transaction/payout
-     * 
-     * @param int $id
-     * @return JsonResponse
-     */
-    public function approveTransaction(int $id): JsonResponse
-    {
-        try {
-            $transaction = $this->referralService->approveTransaction($id);
-
-            return $this->successResponse(
-                new AffiliateTransactionResource($transaction),
-                'Transaction approved successfully'
-            );
-        } catch (Throwable $e) {
-            return $this->handleException($e, 'Failed to approve transaction.');
-        }
-    }
-
-    /**
-     * Reject transaction/payout
-     * 
+     * Collect transaction/payout
+     *
      * @param TransactionActionRequest $request
      * @param int $id
      * @return JsonResponse
      */
-    public function rejectTransaction(TransactionActionRequest $request, int $id): JsonResponse
+    public function collectTransaction(TransactionActionRequest $request, int $id): JsonResponse
     {
         try {
             $data = $request->validated();
-            $transaction = $this->referralService->rejectTransaction($id, $data['note'] ?? null);
+            $transaction = $this->affiliateService->collectTransaction($id, $data['note'] ?? null);
 
             return $this->successResponse(
                 new AffiliateTransactionResource($transaction),
-                'Transaction rejected successfully'
+                'Transaction collected successfully'
             );
         } catch (Throwable $e) {
-            return $this->handleException($e, 'Failed to reject transaction.');
+            return $this->handleException($e, 'Failed to collect transaction.');
         }
     }
 
     /**
-     * Mark transaction as paid
-     * 
-     * @param TransactionActionRequest $request
-     * @param int $id
-     * @return JsonResponse
-     */
-    public function markAsPaid(TransactionActionRequest $request, int $id): JsonResponse
-    {
-        try {
-            $data = $request->validated();
-            $transaction = $this->referralService->markTransactionAsPaid($id, $data['note'] ?? null);
-
-            return $this->successResponse(
-                new AffiliateTransactionResource($transaction),
-                'Transaction marked as paid successfully'
-            );
-        } catch (Throwable $e) {
-            return $this->handleException($e, 'Failed to mark transaction as paid.');
-        }
-    }
-
-    /**
-     * Centralized error handling for referral endpoints.
+     * Centralized error handling for affiliate endpoints.
      */
     protected function handleException(Throwable $e, string $fallbackMessage): JsonResponse
     {
@@ -289,7 +281,7 @@ class ReferralController extends BaseController
 
         if ($e instanceof BusinessLogicException) {
             $status = $e->getCode() ?: Response::HTTP_UNPROCESSABLE_ENTITY;
-            $errorCode = method_exists($e, 'getErrorCode') ? $e->getErrorCode() : 'REFERRAL_BUSINESS_RULE';
+            $errorCode = method_exists($e, 'getErrorCode') ? $e->getErrorCode() : 'AFFILIATE_BUSINESS_RULE';
 
             return $this->errorResponse(
                 $e->getMessage(),
@@ -300,10 +292,27 @@ class ReferralController extends BaseController
 
         return $this->errorResponse(
             $fallbackMessage,
-            'REFERRAL_ERROR',
+            'AFFILIATE_ERROR',
             Response::HTTP_INTERNAL_SERVER_ERROR,
             ['error' => $e->getMessage()]
         );
     }
+
+    /**
+     * Format the affiliate statistics for dashboard cards.
+     */
+    protected function formatAffiliateCards(array $stats): array
+    {
+        $affiliates = $stats['affiliates'] ?? [];
+        $transactions = $stats['transactions'] ?? [];
+
+        return [
+            'total_partners' => (int) ($affiliates['total'] ?? 0),
+            'total_referrals' => (int) ($transactions['total'] ?? 0),
+            'total_conversions' => (int) ($transactions['approved'] ?? 0),
+            'total_profits' => (float) ($transactions['total_amount'] ?? 0.0),
+        ];
+    }
 }
+
 

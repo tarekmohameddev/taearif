@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Domain\Referral\Repositories;
+namespace App\Domain\Affiliate\Repositories;
 
 use App\Domain\Shared\Repositories\BaseRepositoryInterface;
-use App\Domain\Referral\Models\Affiliate;
+use App\Domain\Affiliate\Models\Affiliate;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**

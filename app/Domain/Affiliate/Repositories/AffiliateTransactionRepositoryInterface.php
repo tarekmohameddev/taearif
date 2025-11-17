@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Domain\Referral\Repositories;
+namespace App\Domain\Affiliate\Repositories;
 
 use App\Domain\Shared\Repositories\BaseRepositoryInterface;
-use App\Domain\Referral\Models\AffiliateTransaction;
+use App\Domain\Affiliate\Models\AffiliateTransaction;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
  * Affiliate Transaction Repository Interface
- * 
+ *
  * Defines the contract for AffiliateTransaction data access operations
  */
 interface AffiliateTransactionRepositoryInterface extends BaseRepositoryInterface
@@ -39,29 +39,12 @@ interface AffiliateTransactionRepositoryInterface extends BaseRepositoryInterfac
     public function getForAffiliate(int $affiliateId);
 
     /**
-     * Approve transaction
-     *
-     * @param AffiliateTransaction $transaction
-     * @return AffiliateTransaction
-     */
-    public function approveTransaction(AffiliateTransaction $transaction): AffiliateTransaction;
-
-    /**
-     * Reject transaction
+     * Collect transaction (move pending to collected)
      *
      * @param AffiliateTransaction $transaction
      * @param string|null $note
      * @return AffiliateTransaction
      */
-    public function rejectTransaction(AffiliateTransaction $transaction, ?string $note = null): AffiliateTransaction;
-
-    /**
-     * Mark transaction as paid
-     *
-     * @param AffiliateTransaction $transaction
-     * @param string|null $note
-     * @return AffiliateTransaction
-     */
-    public function markAsPaid(AffiliateTransaction $transaction, ?string $note = null): AffiliateTransaction;
+    public function collectTransaction(AffiliateTransaction $transaction, ?string $note = null): AffiliateTransaction;
 }
 

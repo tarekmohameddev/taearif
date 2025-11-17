@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Domain\Referral\Repositories;
+namespace App\Domain\Affiliate\Repositories;
 
-use App\Domain\Referral\Models\AffiliateTransaction;
+use App\Domain\Affiliate\Models\AffiliateTransaction;
 use App\Domain\Shared\Repositories\BaseRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -100,48 +100,16 @@ class AffiliateTransactionRepository extends BaseRepository implements Affiliate
     }
 
     /**
-     * Approve transaction
-     *
-     * @param AffiliateTransaction $transaction
-     * @return AffiliateTransaction
-     */
-    public function approveTransaction(AffiliateTransaction $transaction): AffiliateTransaction
-    {
-        $transaction->update([
-            'type' => 'approved',
-        ]);
-
-        return $transaction->fresh(['affiliate.user', 'referredUser']);
-    }
-
-    /**
-     * Reject transaction
+     * Collect transaction (mark pending as collected)
      *
      * @param AffiliateTransaction $transaction
      * @param string|null $note
      * @return AffiliateTransaction
      */
-    public function rejectTransaction(AffiliateTransaction $transaction, ?string $note = null): AffiliateTransaction
+    public function collectTransaction(AffiliateTransaction $transaction, ?string $note = null): AffiliateTransaction
     {
         $transaction->update([
-            'type' => 'rejected',
-            'note' => $note ?? $transaction->note,
-        ]);
-
-        return $transaction->fresh(['affiliate.user', 'referredUser']);
-    }
-
-    /**
-     * Mark transaction as paid
-     *
-     * @param AffiliateTransaction $transaction
-     * @param string|null $note
-     * @return AffiliateTransaction
-     */
-    public function markAsPaid(AffiliateTransaction $transaction, ?string $note = null): AffiliateTransaction
-    {
-        $transaction->update([
-            'type' => 'paid',
+            'type' => 'collected',
             'note' => $note ?? $transaction->note,
         ]);
 

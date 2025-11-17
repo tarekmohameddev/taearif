@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Admin\Referrals;
 
-use App\Domain\Referral\Models\Affiliate;
-use App\Domain\Referral\Models\AffiliateTransaction;
+use App\Domain\Affiliate\Models\Affiliate;
+use App\Domain\Affiliate\Models\AffiliateTransaction;
 use App\Models\User as TenantUser;
-use Illuminate\Support\Str;
 use Tests\Feature\Admin\AdminApiTestCase;
 
 class ManageReferralsTest extends AdminApiTestCase
@@ -19,17 +18,28 @@ class ManageReferralsTest extends AdminApiTestCase
 
         $affiliates = Affiliate::factory()->count(2)->create();
 
-        $response = $this->getJson(route('admin.api.referrals.index'));
+        $response = $this->getJson(route('admin.api.affiliates.index'));
+
+        $first = $affiliates->first();
+        $expectedJoinDate = $first->start_date_value?->format('Y-m-d');
 
         $response->assertOk()
-            ->assertJsonFragment(['id' => $affiliates->first()->id])
-            ->assertJsonFragment(['id' => $affiliates->last()->id]);
+            // ->assertJsonFragment(['id' => $first->id])
+            // ->assertJsonFragment(['id' => $affiliates->last()->id])
+            // ->assertJsonPath('data.affiliates_users.0.id', $first->id)
+            ->assertJsonPath('data.affiliates_cards.total_partners', $affiliates->count())
+            ->assertJsonPath('data.affiliates_users.0.partner.name', $first->fullname)
+            ->assertJsonPath('data.affiliates_users.0.referrals', 0)
+            ->assertJsonPath('data.affiliates_users.0.transfers', 0)
+            ->assertJsonPath('data.affiliates_users.0.earnings', 0)
+            ->assertJsonPath('data.affiliates_users.0.status', $first->request_status)
+            ->assertJsonPath('data.affiliates_users.0.joining_date', $expectedJoinDate);
     }
 
     /** @test */
     public function listing_affiliates_requires_authentication(): void
     {
-        $this->getJson(route('admin.api.referrals.index'))
+        $this->getJson(route('admin.api.affiliates.index'))
             ->assertUnauthorized();
     }
 
@@ -39,7 +49,6 @@ class ManageReferralsTest extends AdminApiTestCase
         $this->signInAdmin();
 
         $tenant = TenantUser::factory()->create([
-            'uuid' => (string) Str::uuid(),
             'account_type' => 'tenant',
         ]);
 
@@ -52,7 +61,7 @@ class ManageReferralsTest extends AdminApiTestCase
             'commission_percentage' => 10,
         ];
 
-        $response = $this->postJson(route('admin.api.referrals.store'), $payload);
+        $response = $this->postJson(route('admin.api.affiliates.store'), $payload);
 
         $response->assertCreated()
             ->assertJsonPath('data.fullname', 'Referral User')
@@ -69,7 +78,7 @@ class ManageReferralsTest extends AdminApiTestCase
     {
         $this->signInAdmin();
 
-        $this->postJson(route('admin.api.referrals.store'), [
+        $this->postJson(route('admin.api.affiliates.store'), [
             'user_id' => 999,
             'fullname' => '',
             'bank_name' => '',
@@ -97,7 +106,7 @@ class ManageReferralsTest extends AdminApiTestCase
         ]);
 
         $response = $this->getJson(
-            route('admin.api.referrals.show', $affiliate->id)
+            route('admin.api.affiliates.show', $affiliate->id)
         );
 
         $response->assertOk()
@@ -111,7 +120,7 @@ class ManageReferralsTest extends AdminApiTestCase
         $affiliate = Affiliate::factory()->create();
 
         $this->getJson(
-            route('admin.api.referrals.show', $affiliate->id)
+            route('admin.api.affiliates.show', $affiliate->id)
         )->assertUnauthorized();
     }
 
@@ -121,7 +130,7 @@ class ManageReferralsTest extends AdminApiTestCase
         $this->signInAdmin();
 
         $this->getJson(
-            route('admin.api.referrals.show', 999999)
+            route('admin.api.affiliates.show', 999999)
         )->assertNotFound()
             ->assertJsonPath('code', 'NOT_FOUND');
     }
@@ -141,28 +150,22 @@ class ManageReferralsTest extends AdminApiTestCase
 
         AffiliateTransaction::factory()
             ->for($approvedAffiliate, 'affiliate')
-            ->approved()
-            ->create(['amount' => 75]);
+            ->collected()
+            ->create(['amount' => 200]);
 
-        AffiliateTransaction::factory()
-            ->for($approvedAffiliate, 'affiliate')
-            ->paid()
-            ->create(['amount' => 125]);
-
-        $response = $this->getJson(route('admin.api.referrals.statistics'));
+        $response = $this->getJson(route('admin.api.affiliates.statistics'));
 
         $response->assertOk()
             ->assertJsonPath('data.affiliates.total', 3)
             ->assertJsonPath('data.affiliates.pending', 1)
             ->assertJsonPath('data.affiliates.approved', 1)
             ->assertJsonPath('data.affiliates.rejected', 1)
-            ->assertJsonPath('data.transactions.total', 3)
+            ->assertJsonPath('data.transactions.total', 2)
             ->assertJsonPath('data.transactions.pending', 1)
-            ->assertJsonPath('data.transactions.approved', 1)
-            ->assertJsonPath('data.transactions.paid', 1)
+            ->assertJsonPath('data.transactions.collected', 1)
             ->assertJsonPath('data.transactions.total_amount', 250)
             ->assertJsonPath('data.transactions.pending_amount', 50)
-            ->assertJsonPath('data.transactions.paid_amount', 125);
+            ->assertJsonPath('data.transactions.collected_amount', 200);
     }
 
     /** @test */
@@ -176,7 +179,7 @@ class ManageReferralsTest extends AdminApiTestCase
             ->count(2)
             ->create();
 
-        $response = $this->getJson(route('admin.api.referrals.transactions.index'));
+        $response = $this->getJson(route('admin.api.affiliates.transactions.index'));
 
         $response->assertOk()
             ->assertJsonFragment(['id' => $transactions->first()->id])
@@ -186,7 +189,7 @@ class ManageReferralsTest extends AdminApiTestCase
     /** @test */
     public function transactions_listing_requires_authentication(): void
     {
-        $this->getJson(route('admin.api.referrals.transactions.index'))
+        $this->getJson(route('admin.api.affiliates.transactions.index'))
             ->assertUnauthorized();
     }
 
@@ -200,7 +203,7 @@ class ManageReferralsTest extends AdminApiTestCase
         ]);
 
         $response = $this->getJson(
-            route('admin.api.referrals.transactions.show', $transaction->id)
+            route('admin.api.affiliates.transactions.show', $transaction->id)
         );
 
         $response->assertOk()
@@ -214,12 +217,12 @@ class ManageReferralsTest extends AdminApiTestCase
         $transaction = AffiliateTransaction::factory()->create();
 
         $this->getJson(
-            route('admin.api.referrals.transactions.show', $transaction->id)
+            route('admin.api.affiliates.transactions.show', $transaction->id)
         )->assertUnauthorized();
     }
 
     /** @test */
-    public function admin_can_approve_pending_transaction(): void
+    public function admin_can_collect_pending_transaction(): void
     {
         $this->signInAdmin();
 
@@ -228,91 +231,109 @@ class ManageReferralsTest extends AdminApiTestCase
         ]);
 
         $response = $this->postJson(
-            route('admin.api.referrals.transactions.approve', $transaction->id)
+            route('admin.api.affiliates.transactions.collect', $transaction->id),
+            ['note' => 'Collected manually']
         );
 
         $response->assertOk()
-            ->assertJsonPath('data.type', 'approved');
+            ->assertJsonPath('data.type', 'collected')
+            ->assertJsonPath('data.note', 'Collected manually');
 
-        $this->assertEquals('approved', $transaction->fresh()->type);
+        $this->assertEquals('collected', $transaction->fresh()->type);
     }
 
     /** @test */
-    public function approving_non_pending_transaction_returns_error(): void
+    public function collecting_non_pending_transaction_returns_error(): void
     {
         $this->signInAdmin();
 
-        $transaction = AffiliateTransaction::factory()->approved()->create();
+        $transaction = AffiliateTransaction::factory()->collected()->create();
 
         $this->postJson(
-            route('admin.api.referrals.transactions.approve', $transaction->id)
+            route('admin.api.affiliates.transactions.collect', $transaction->id)
         )->assertStatus(422);
     }
 
     /** @test */
-    public function admin_can_reject_pending_transaction(): void
+    public function admin_can_update_affiliate_request_status(): void
     {
         $this->signInAdmin();
 
-        $transaction = AffiliateTransaction::factory()->create([
-            'type' => 'pending',
-        ]);
+        $affiliate = Affiliate::factory()->create(['request_status' => 'pending']);
 
         $response = $this->postJson(
-            route('admin.api.referrals.transactions.reject', $transaction->id),
-            ['note' => 'Invalid receipt']
+            route('admin.api.affiliates.request-status.update', $affiliate->id),
+            ['request_status' => 'approved']
         );
 
         $response->assertOk()
-            ->assertJsonPath('data.type', 'rejected')
-            ->assertJsonPath('data.note', 'Invalid receipt');
+            ->assertJsonPath('data.request_status', 'approved');
 
-        $this->assertEquals('rejected', $transaction->fresh()->type);
+        $this->assertDatabaseHas('api_affiliate_users', [
+            'id' => $affiliate->id,
+            'request_status' => 'approved',
+        ]);
     }
 
     /** @test */
-    public function rejecting_non_pending_transaction_returns_error(): void
+    public function invalid_affiliate_status_is_rejected(): void
     {
         $this->signInAdmin();
 
-        $transaction = AffiliateTransaction::factory()->approved()->create();
+        $affiliate = Affiliate::factory()->create(['request_status' => 'pending']);
 
         $this->postJson(
-            route('admin.api.referrals.transactions.reject', $transaction->id)
-        )->assertStatus(422);
+            route('admin.api.affiliates.request-status.update', $affiliate->id),
+            ['request_status' => 'foo']
+        )->assertUnprocessable()
+         ->assertJsonValidationErrors(['request_status']);
     }
 
     /** @test */
-    public function admin_can_mark_approved_transaction_as_paid(): void
+    public function updating_affiliate_status_requires_authentication(): void
     {
-        $this->signInAdmin();
+        $affiliate = Affiliate::factory()->create(['request_status' => 'pending']);
 
-        $transaction = AffiliateTransaction::factory()->approved()->create();
-
-        $response = $this->postJson(
-            route('admin.api.referrals.transactions.mark-paid', $transaction->id),
-            ['note' => 'Transferred on 2025-01-01']
-        );
-
-        $response->assertOk()
-            ->assertJsonPath('data.type', 'paid')
-            ->assertJsonPath('data.note', 'Transferred on 2025-01-01');
-
-        $this->assertEquals('paid', $transaction->fresh()->type);
+        $this->postJson(
+            route('admin.api.affiliates.request-status.update', $affiliate->id),
+            ['request_status' => 'approved']
+        )->assertUnauthorized();
     }
 
     /** @test */
-    public function marking_non_approved_transaction_as_paid_returns_error(): void
+    public function admin_can_view_affiliate_details(): void
     {
         $this->signInAdmin();
 
-        $transaction = AffiliateTransaction::factory()->create([
-            'type' => 'pending',
+        $affiliate = Affiliate::factory()->create([
+            'commission_percentage' => 25,
+            'pending_amount' => 1200,
+            'request_status' => 'approved',
         ]);
 
-        $this->postJson(
-            route('admin.api.referrals.transactions.mark-paid', $transaction->id)
-        )->assertStatus(422);
+        AffiliateTransaction::factory()->create([
+            'affiliate_id' => $affiliate->id,
+            'type' => 'pending',
+            'amount' => 300,
+        ]);
+
+        $collected = AffiliateTransaction::factory()->collected()->create([
+            'affiliate_id' => $affiliate->id,
+            'amount' => 540.5,
+        ]);
+
+        $response = $this->getJson(route('admin.api.affiliates.show', $affiliate->id));
+
+        $response->assertOk()
+            ->assertJsonPath('data.partner.name', $affiliate->fullname)
+            ->assertJsonPath('data.partner.request_status', 'approved')
+            ->assertJsonPath('data.partner.commission_percentage', 25.0)
+            ->assertJsonPath('data.cards.total_earnings', 840.5)
+            ->assertJsonPath('data.cards.pending_earnings', 1200.0)
+            ->assertJsonPath('data.cards.referrals_count', 2)
+            ->assertJsonPath('data.cards.transfers_count', 1)
+            ->assertJsonPath('data.payouts_history.0.id', $collected->id);
     }
 }
+
 

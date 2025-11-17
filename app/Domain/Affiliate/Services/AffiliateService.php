@@ -1,22 +1,22 @@
 <?php
 
-namespace App\Domain\Referral\Services;
+namespace App\Domain\Affiliate\Services;
 
-use App\Domain\Referral\Models\Affiliate;
-use App\Domain\Referral\Models\AffiliateTransaction;
-use App\Domain\Referral\Repositories\AffiliateRepositoryInterface;
-use App\Domain\Referral\Repositories\AffiliateTransactionRepositoryInterface;
+use App\Domain\Affiliate\Models\Affiliate;
+use App\Domain\Affiliate\Models\AffiliateTransaction;
+use App\Domain\Affiliate\Repositories\AffiliateRepositoryInterface;
+use App\Domain\Affiliate\Repositories\AffiliateTransactionRepositoryInterface;
 use App\Domain\Shared\Services\BaseService;
 use App\Exceptions\ResourceNotFoundException;
 use App\Exceptions\BusinessLogicException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
- * Referral Service
- * 
- * Business logic for managing affiliates and referral program
+ * Affiliate Service
+ *
+ * Business logic for managing affiliates and the affiliate program
  */
-class ReferralService extends BaseService
+class AffiliateService extends BaseService
 {
     /**
      * @var AffiliateRepositoryInterface
@@ -29,7 +29,7 @@ class ReferralService extends BaseService
     protected $transactionRepository;
 
     /**
-     * ReferralService constructor.
+     * AffiliateService constructor.
      *
      * @param AffiliateRepositoryInterface $affiliateRepository
      * @param AffiliateTransactionRepositoryInterface $transactionRepository
@@ -84,7 +84,7 @@ class ReferralService extends BaseService
     {
         return $this->executeInTransaction(function () use ($data) {
             $affiliate = $this->affiliateRepository->create($data);
-            
+
             return $affiliate->load(['user']);
         });
     }
@@ -107,7 +107,7 @@ class ReferralService extends BaseService
 
         return $this->executeInTransaction(function () use ($affiliate, $data) {
             $updated = $this->affiliateRepository->update($affiliate, $data);
-            
+
             return $updated->load(['user']);
         });
     }
@@ -166,14 +166,15 @@ class ReferralService extends BaseService
     }
 
     /**
-     * Approve transaction/payout
+     * Collect transaction (finalize payout)
      *
      * @param int $id
+     * @param string|null $note
      * @return AffiliateTransaction
      * @throws ResourceNotFoundException
      * @throws BusinessLogicException
      */
-    public function approveTransaction(int $id): AffiliateTransaction
+    public function collectTransaction(int $id, ?string $note = null): AffiliateTransaction
     {
         $transaction = $this->transactionRepository->findById($id);
 
@@ -183,79 +184,19 @@ class ReferralService extends BaseService
 
         if ($transaction->type !== 'pending') {
             throw new BusinessLogicException(
-                'Only pending transactions can be approved',
-                'REFERRAL_TRANSACTION_NOT_PENDING',
-                422
-            );
-        }
-
-        return $this->executeInTransaction(function () use ($transaction) {
-            return $this->transactionRepository->approveTransaction($transaction);
-        });
-    }
-
-    /**
-     * Reject transaction/payout
-     *
-     * @param int $id
-     * @param string|null $note
-     * @return AffiliateTransaction
-     * @throws ResourceNotFoundException
-     * @throws BusinessLogicException
-     */
-    public function rejectTransaction(int $id, ?string $note = null): AffiliateTransaction
-    {
-        $transaction = $this->transactionRepository->findById($id);
-
-        if (!$transaction) {
-            throw new ResourceNotFoundException('Transaction not found');
-        }
-
-        if ($transaction->type !== 'pending') {
-            throw new BusinessLogicException(
-                'Only pending transactions can be rejected',
-                'REFERRAL_TRANSACTION_NOT_PENDING',
+                'Only pending transactions can be collected',
+                'AFFILIATE_TRANSACTION_NOT_PENDING',
                 422
             );
         }
 
         return $this->executeInTransaction(function () use ($transaction, $note) {
-            return $this->transactionRepository->rejectTransaction($transaction, $note);
+            return $this->transactionRepository->collectTransaction($transaction, $note);
         });
     }
 
     /**
-     * Mark transaction as paid
-     *
-     * @param int $id
-     * @param string|null $note
-     * @return AffiliateTransaction
-     * @throws ResourceNotFoundException
-     * @throws BusinessLogicException
-     */
-    public function markTransactionAsPaid(int $id, ?string $note = null): AffiliateTransaction
-    {
-        $transaction = $this->transactionRepository->findById($id);
-
-        if (!$transaction) {
-            throw new ResourceNotFoundException('Transaction not found');
-        }
-
-        if ($transaction->type !== 'approved') {
-            throw new BusinessLogicException(
-                'Only approved transactions can be marked as paid',
-                'REFERRAL_TRANSACTION_NOT_APPROVED',
-                422
-            );
-        }
-
-        return $this->executeInTransaction(function () use ($transaction, $note) {
-            return $this->transactionRepository->markAsPaid($transaction, $note);
-        });
-    }
-
-    /**
-     * Get referral statistics
+     * Get affiliate statistics
      *
      * @return array
      */
@@ -271,13 +212,13 @@ class ReferralService extends BaseService
             'transactions' => [
                 'total' => AffiliateTransaction::count(),
                 'pending' => AffiliateTransaction::pending()->count(),
-                'approved' => AffiliateTransaction::approved()->count(),
-                'paid' => AffiliateTransaction::paid()->count(),
+                'collected' => AffiliateTransaction::collected()->count(),
                 'total_amount' => (float) AffiliateTransaction::sum('amount'),
                 'pending_amount' => (float) AffiliateTransaction::pending()->sum('amount'),
-                'paid_amount' => (float) AffiliateTransaction::paid()->sum('amount'),
+                'collected_amount' => (float) AffiliateTransaction::collected()->sum('amount'),
             ],
         ];
     }
 }
+
 
