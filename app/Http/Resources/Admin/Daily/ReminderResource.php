@@ -31,7 +31,6 @@ class ReminderResource extends JsonResource
             'is_overdue' => $this->datetime ? $this->datetime->isPast() : false,
             'user' => [
                 'id' => $this->user?->id,
-                'uuid' => $this->user?->uuid,
                 'username' => $this->user?->username,
                 'email' => $this->user?->email,
                 'full_name' => $this->user ? trim($this->user->first_name . ' ' . $this->user->last_name) : null,

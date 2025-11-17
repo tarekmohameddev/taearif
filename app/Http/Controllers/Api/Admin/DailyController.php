@@ -7,6 +7,7 @@ use App\Domain\Daily\Services\DailyService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Daily Follow-up Controller
@@ -304,6 +305,31 @@ class DailyController extends BaseController
         } catch (\Exception $e) {
             return $this->errorResponse(
                 $e->getMessage(),
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
+     * GET /api/v1/admin/follow-up
+     * Returns counts for the four daily follow-up cards.
+     */
+    public function followUp(Request $request): JsonResponse
+    {
+        try {
+            $windowDays = (int) $request->query('window_days', 30);
+            $tableLimit = (int) $request->query('table_limit', 50);
+
+            $payload = $this->dailyService->getFollowUpOverview($windowDays, $tableLimit);
+
+            return $this->successResponse(
+                $payload,
+                'Daily follow-up retrieved successfully.'
+            );
+        } catch (\Throwable $e) {
+            return $this->errorResponse(
+                config('app.debug') ? $e->getMessage() : 'Failed to retrieve follow-up data.',
+                'SYS_ERROR',
                 Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }
