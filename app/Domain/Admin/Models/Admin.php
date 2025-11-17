@@ -32,7 +32,6 @@ class Admin extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'uuid',
         'role_id',
         'username',
         'email',
@@ -41,6 +40,8 @@ class Admin extends Authenticatable
         'last_name',
         'image',
         'status',
+        'last_login_at',
+        'permissions',
     ];
 
     /**
@@ -64,6 +65,7 @@ class Admin extends Authenticatable
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'last_login_at' => 'datetime',
+        'permissions' => 'array',
     ];
 
     /**
@@ -73,7 +75,7 @@ class Admin extends Authenticatable
      */
     public function getRouteKeyName(): string
     {
-        return 'uuid';
+        return 'id';
     }
 
     /**
@@ -111,25 +113,65 @@ class Admin extends Authenticatable
 
     /**
      * Check if admin has a specific permission
+     * 
+     * Priority: Employee-specific permissions > Role permissions
      *
      * @param string $permission
      * @return bool
      */
     public function hasPermission(string $permission): bool
     {
+        // First check employee-specific permissions (overrides)
+        if ($this->permissions && is_array($this->permissions)) {
+            if (in_array($permission, $this->permissions)) {
+                return true;
+            }
+        }
+        
+        // Fall back to role permissions
         if (!$this->role) {
             return false;
         }
 
-        $permissions = is_string($this->role->permissions)
-            ? json_decode($this->role->permissions, true)
-            : $this->role->permissions;
+        $rolePermissions = is_array($this->role->permissions)
+            ? $this->role->permissions
+            : json_decode($this->role->permissions, true);
 
-        if (!is_array($permissions)) {
+        if (!is_array($rolePermissions)) {
             return false;
         }
 
-        return in_array($permission, $permissions);
+        return in_array($permission, $rolePermissions);
+    }
+
+    /**
+     * Get all permissions for this admin (employee-specific + role permissions merged)
+     * 
+     * Returns employee-specific permissions if set, otherwise role permissions
+     *
+     * @return array
+     */
+    public function getAllPermissions(): array
+    {
+        $permissions = [];
+        
+        // Start with role permissions
+        if ($this->role && $this->role->permissions) {
+            $rolePermissions = is_array($this->role->permissions)
+                ? $this->role->permissions
+                : json_decode($this->role->permissions, true);
+            
+            if (is_array($rolePermissions)) {
+                $permissions = $rolePermissions;
+            }
+        }
+        
+        // Override with employee-specific permissions if they exist
+        if ($this->permissions && is_array($this->permissions)) {
+            $permissions = $this->permissions;
+        }
+        
+        return array_unique($permissions);
     }
 
     /**
