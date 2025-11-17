@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Domain\Referral\Repositories;
+namespace App\Domain\Affiliate\Repositories;
 
-use App\Domain\Referral\Models\Affiliate;
+use App\Domain\Affiliate\Models\Affiliate;
 use App\Domain\Shared\Repositories\BaseRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;

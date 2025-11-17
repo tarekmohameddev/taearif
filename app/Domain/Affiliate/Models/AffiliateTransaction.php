@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Referral\Models;
+namespace App\Domain\Affiliate\Models;
 
 use App\Domain\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -97,19 +97,11 @@ class AffiliateTransaction extends Model
     }
 
     /**
-     * Scope a query to only include approved transactions.
+     * Scope a query to only include collected transactions.
      */
-    public function scopeApproved($query)
+    public function scopeCollected($query)
     {
-        return $query->where('type', 'approved');
-    }
-
-    /**
-     * Scope a query to only include paid transactions.
-     */
-    public function scopePaid($query)
-    {
-        return $query->where('type', 'paid');
+        return $query->where('type', 'collected');
     }
 
     /**

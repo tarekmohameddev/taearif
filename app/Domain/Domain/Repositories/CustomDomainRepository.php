@@ -33,7 +33,20 @@ class CustomDomainRepository extends BaseRepository implements CustomDomainRepos
      */
     public function searchAndPaginate(array $filters, int $perPage = 20): LengthAwarePaginator
     {
-        $query = $this->model->with(['user']);
+        $query = $this->model
+            ->newQuery()
+            ->select('user_custom_domains.*')
+            ->leftJoin('api_domains_settings as ads', 'ads.custom_domain_id', '=', 'user_custom_domains.id')
+            ->with([
+            'user' => function ($userQuery) {
+                $userQuery->with([
+                    'generalSettings' => function ($settingsQuery) {
+                        $settingsQuery->select('user_id', 'site_name');
+                    },
+                ]);
+            },
+            'apiDomainSetting',
+        ]);
 
         // Search filter
         if (!empty($filters['search'])) {
@@ -42,14 +55,48 @@ class CustomDomainRepository extends BaseRepository implements CustomDomainRepos
 
         // Status filter
         if (isset($filters['status'])) {
-            if ($filters['status'] === 'active') {
+            $statusFilter = $filters['status'];
+
+            if (in_array($statusFilter, ['active', 'pending', 'failed'], true)) {
+                $query->where('ads.status', $statusFilter);
+            } elseif ($statusFilter === 'legacy_active') {
                 $query->active();
-            } elseif ($filters['status'] === 'inactive') {
+            } elseif ($statusFilter === 'legacy_inactive') {
                 $query->inactive();
-            } elseif ($filters['status'] === 'pending') {
+            } elseif ($statusFilter === 'legacy_pending') {
                 $query->pending();
-            } elseif ($filters['status'] === 'approved') {
+            } elseif ($statusFilter === 'legacy_approved') {
                 $query->approved();
+            }
+        }
+
+        // Optional expiry filters
+        if (!empty($filters['expires_before'])) {
+            $query->whereDate('ads.expires_at', '<=', $filters['expires_before']);
+        }
+        if (!empty($filters['expires_after'])) {
+            $query->whereDate('ads.expires_at', '>=', $filters['expires_after']);
+        }
+
+        // Optional auto_renewal filter
+        if (isset($filters['auto_renewal'])) {
+            $auto = filter_var($filters['auto_renewal'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if (!is_null($auto)) {
+                $query->where('ads.auto_renewal', $auto);
+            }
+        }
+
+        if (isset($filters['ssl'])) {
+            $sslFilter = filter_var($filters['ssl'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if (!is_null($sslFilter)) {
+                $query->where('ads.ssl', $sslFilter);
+            }
+        }
+
+        if (isset($filters['primary'])) {
+            $primaryFilter = filter_var($filters['primary'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if (!is_null($primaryFilter)) {
+                $query->where('ads.primary', $primaryFilter);
             }
         }
 
@@ -69,7 +116,14 @@ class CustomDomainRepository extends BaseRepository implements CustomDomainRepos
         // Order by
         $orderBy = $filters['order_by'] ?? 'created_at';
         $orderDir = $filters['order_dir'] ?? 'desc';
-        $query->orderBy($orderBy, $orderDir);
+        $columnMap = [
+            'created_at' => 'user_custom_domains.created_at',
+            'updated_at' => 'user_custom_domains.updated_at',
+            'added_date' => 'ads.added_date',
+            'domain' => 'user_custom_domains.current_domain',
+        ];
+        $orderColumn = $columnMap[$orderBy] ?? 'user_custom_domains.created_at';
+        $query->orderBy($orderColumn, $orderDir);
 
         return $query->paginate($perPage);
     }

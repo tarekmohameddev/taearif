@@ -32,8 +32,8 @@ class CollectPaymentRequest extends FormRequest
             'amount' => 'nullable|numeric|min:0.01',
             'payment_amount' => 'nullable|numeric|min:0.01',  // Alternative field name
 
-            // Manual payment fields (required unless auto_select is true OR amount is provided)
-            'payments' => 'required_unless:auto_select,true|array',
+            // Manual payment fields nullable, will be validated in withValidator
+            'payments' => 'nullable|array',
             'payments.*.installment_id' => 'required_without:auto_select|exists:rm_payment_installments,id',
             'payments.*.payment_type' => [
                 'required_without:auto_select',
@@ -124,8 +124,9 @@ class CollectPaymentRequest extends FormRequest
         $bankName = $this['bank_name'] ?? null;
         $autoSelect = $this['auto_select'] ?? false;
         $payments = $this['payments'] ?? [];
+        $paymentAmount = $this['payment_amount'] ?? $this['amount'] ?? null;
 
-        $validator->after(function ($validator) use ($paymentMethod, $bankName, $autoSelect, $payments) {
+        $validator->after(function ($validator) use ($paymentMethod, $bankName, $autoSelect, $payments, $paymentAmount) {
             // Custom validation: bank_name required for bank transfers
             if ($paymentMethod === RmsConstants::PAYMENT_METHOD_BANK_TRANSFER && empty($bankName)) {
                 $validator->errors()->add(
@@ -142,8 +143,13 @@ class CollectPaymentRequest extends FormRequest
                 );
             }
 
-            // NOTE: Empty payments array is now VALID - will auto-pay all outstanding installments
-            // This is handled in the controller by auto-detecting and calculating total outstanding
+            //  validation: payments required unless auto_select or payment_amount is provided
+            if (empty($payments) && !$autoSelect && empty($paymentAmount)) {
+                $validator->errors()->add(
+                    'payments',
+                    'Please provide at least one payment or enable auto-select.'
+                );
+            }
         });
     }
 }

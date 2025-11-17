@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\Employee\StoreEmployeeRequest;
 use App\Http\Requests\Admin\Employee\UpdateEmployeeRequest;
 use App\Http\Requests\Admin\Employee\UpdatePasswordRequest;
 use App\Http\Requests\Admin\Employee\UpdateRoleRequest;
+use App\Http\Requests\Admin\Employee\UploadImageRequest;
 use App\Http\Resources\Admin\Employee\EmployeeResource;
 use App\Http\Resources\Admin\Employee\EmployeeCollection;
 use App\Domain\Admin\Services\EmployeeService;
@@ -91,16 +92,41 @@ class EmployeeController extends BaseController
     }
 
     /**
-     * Display the specified employee.
-     * GET /api/v1/admin/employees/{uuid}
+     * Upload employee profile image.
+     * POST /api/v1/admin/employees/upload-image
      *
-     * @param string $uuid
+     * @param UploadImageRequest $request
      * @return JsonResponse
      */
-    public function show(string $uuid): JsonResponse
+    public function uploadImage(UploadImageRequest $request): JsonResponse
     {
         try {
-            $employee = $this->employeeService->getEmployeeByUuid($uuid);
+            $image = $request->file('image');
+            $filename = $this->employeeService->uploadImage($image);
+
+            return $this->successResponse(
+                [
+                    'filename' => $filename,
+                    'url' => asset('assets/admin/img/propics/' . $filename),
+                ],
+                'Image uploaded successfully.'
+            );
+        } catch (Throwable $e) {
+            return $this->handleException($e, 'Failed to upload image.');
+        }
+    }
+
+    /**
+     * Display the specified employee.
+     * GET /api/v1/admin/employees/{id}
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function show(int $id): JsonResponse
+    {
+        try {
+            $employee = $this->employeeService->getEmployeeById($id);
 
             return $this->successResponse(
                 new EmployeeResource($employee),
@@ -113,18 +139,49 @@ class EmployeeController extends BaseController
 
     /**
      * Update the specified employee.
-     * PUT /api/v1/admin/employees/{uuid}
+     * PUT /api/v1/admin/employees/{id}
      *
      * @param UpdateEmployeeRequest $request
-     * @param string $uuid
+     * @param int $id
      * @return JsonResponse
      */
-    public function update(UpdateEmployeeRequest $request, string $uuid): JsonResponse
+    public function update(UpdateEmployeeRequest $request, int $id): JsonResponse
     {
         try {
             $data = $request->validated();
-            $image = $request->hasFile('image') ? $request->file('image') : null;
-            $employee = $this->employeeService->updateEmployee($uuid, $data, $image);
+            
+            // Handle permissions: check if it's a string (form-data) or array (JSON)
+            if ($request->has('permissions')) {
+                $permissions = $request->input('permissions');
+                
+                // If it's a string, try to decode it as JSON
+                if (is_string($permissions)) {
+                    $decoded = json_decode($permissions, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        $data['permissions'] = $decoded;
+                    } elseif (preg_match('/^\[.*\]$/', $permissions)) {
+                        // If it looks like JSON array string, try to decode
+                        $data['permissions'] = json_decode($permissions, true) ?: [];
+                    }
+                } elseif (is_array($permissions)) {
+                    // Already an array, use it directly
+                    $data['permissions'] = $permissions;
+                }
+            }
+            
+            // Handle image: either file upload OR string path
+            $image = null;
+            if ($request->hasFile('image')) {
+                // Image is a file upload - pass as $image parameter
+                $image = $request->file('image');
+                // Remove from data array since we'll handle it via $image parameter
+                unset($data['image']);
+            } elseif (isset($data['image']) && is_string($data['image']) && !empty($data['image'])) {
+                // Image is a string path - already in validated data, keep it there
+                // Don't pass to service as $image parameter (will be null)
+            }
+            
+            $employee = $this->employeeService->updateEmployeeById($id, $data, $image);
 
             return $this->successResponse(
                 new EmployeeResource($employee),
@@ -137,15 +194,15 @@ class EmployeeController extends BaseController
 
     /**
      * Remove the specified employee.
-     * DELETE /api/v1/admin/employees/{uuid}
+     * DELETE /api/v1/admin/employees/{id}
      *
-     * @param string $uuid
+     * @param int $id
      * @return JsonResponse
      */
-    public function destroy(string $uuid): JsonResponse
+    public function destroy(int $id): JsonResponse
     {
         try {
-            $this->employeeService->deleteEmployee($uuid);
+            $this->employeeService->deleteEmployeeById($id);
 
             return $this->successResponse(
                 null,
@@ -158,16 +215,16 @@ class EmployeeController extends BaseController
 
     /**
      * Update employee password.
-     * PUT /api/v1/admin/employees/{uuid}/password
+     * PUT /api/v1/admin/employees/{id}/password
      *
      * @param UpdatePasswordRequest $request
-     * @param string $uuid
+     * @param int $id
      * @return JsonResponse
      */
-    public function updatePassword(UpdatePasswordRequest $request, string $uuid): JsonResponse
+    public function updatePassword(UpdatePasswordRequest $request, int $id): JsonResponse
     {
         try {
-            $employee = $this->employeeService->updatePassword($uuid, $request->validated()['password']);
+            $employee = $this->employeeService->updatePasswordById($id, $request->validated()['password']);
 
             return $this->successResponse(
                 new EmployeeResource($employee),
@@ -180,15 +237,15 @@ class EmployeeController extends BaseController
 
     /**
      * Toggle employee status (activate/deactivate).
-     * POST /api/v1/admin/employees/{uuid}/toggle-status
+     * POST /api/v1/admin/employees/{id}/toggle-status
      *
-     * @param string $uuid
+     * @param int $id
      * @return JsonResponse
      */
-    public function toggleStatus(string $uuid): JsonResponse
+    public function toggleStatus(int $id): JsonResponse
     {
         try {
-            $employee = $this->employeeService->toggleStatus($uuid);
+            $employee = $this->employeeService->toggleStatusById($id);
 
             return $this->successResponse(
                 new EmployeeResource($employee),
@@ -201,16 +258,16 @@ class EmployeeController extends BaseController
 
     /**
      * Update employee role.
-     * PUT /api/v1/admin/employees/{uuid}/role
+     * PUT /api/v1/admin/employees/{id}/role
      *
      * @param UpdateRoleRequest $request
-     * @param string $uuid
+     * @param int $id
      * @return JsonResponse
      */
-    public function updateRole(UpdateRoleRequest $request, string $uuid): JsonResponse
+    public function updateRole(UpdateRoleRequest $request, int $id): JsonResponse
     {
         try {
-            $employee = $this->employeeService->updateRole($uuid, $request->validated()['role_id']);
+            $employee = $this->employeeService->updateRoleById($id, $request->validated()['role_id']);
 
             return $this->successResponse(
                 new EmployeeResource($employee),

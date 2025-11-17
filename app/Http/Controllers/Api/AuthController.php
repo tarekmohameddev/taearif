@@ -310,6 +310,9 @@ class AuthController extends Controller
                     'username' => 'required|string|unique:users,username',
                     'password' => 'required|string|min:6',
                     'phone'    => 'required|string|max:191|unique:users,phone',
+                    // Optional company/industry fields
+                    'industry_type' => 'nullable|string|max:100',
+                    'company_size'  => 'nullable|string|max:50',
                 ], [
                     'phone.required' => 'رقم الهاتف مطلوب.',
                     'phone.unique'   => 'تم استخدام رقم الهاتف، اختر مختلفًا.',
@@ -917,6 +920,9 @@ class AuthController extends Controller
                     'verification_link' => $token,
                     'referral_code' => $request['referral_code'] ?? strtoupper(Str::random(8)),
                     'referred_by' => $request['referred_by'] ?? null,
+                    // Optional attributes
+                    'industry_type' => $request['industry_type'] ?? null,
+                    'company_size'  => $request['company_size'] ?? null,
                 ]);
 
                 $deLang = User\Language::firstOrFail();

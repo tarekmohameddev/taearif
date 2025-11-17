@@ -53,7 +53,7 @@ class ImpersonationEndpointsTest extends AdminApiTestCase
         [$impersonation] = $this->createActiveImpersonation($admin);
         $user = $impersonation->user;
 
-        $this->getJson(route('admin.api.users.impersonate.user-history', $user->uuid))
+        $this->getJson(route('admin.api.users.impersonate.user-history', $user->id))
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [

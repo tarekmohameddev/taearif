@@ -362,6 +362,7 @@ class AnalyticsService extends BaseService
      */
     public function getClvAnalytics(): array
     {
+        // CLV (Customer Lifetime Value) represents the total revenue a tenant user generates across all active memberships
         // Average CLV calculation
         $customerMetrics = DB::table('users')
             ->select(

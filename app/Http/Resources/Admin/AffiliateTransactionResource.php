@@ -23,7 +23,6 @@ class AffiliateTransactionResource extends JsonResource
                     'user' => $this->when($this->affiliate->relationLoaded('user'), function () {
                         return [
                             'id' => $this->affiliate->user->id,
-                            'uuid' => $this->affiliate->user->uuid,
                             'username' => $this->affiliate->user->username,
                             'email' => $this->affiliate->user->email,
                         ];
@@ -33,7 +32,6 @@ class AffiliateTransactionResource extends JsonResource
             'referred_user' => $this->when($this->relationLoaded('referredUser'), function () {
                 return $this->referredUser ? [
                     'id' => $this->referredUser->id,
-                    'uuid' => $this->referredUser->uuid,
                     'username' => $this->referredUser->username,
                     'email' => $this->referredUser->email,
                 ] : null;

@@ -34,10 +34,12 @@ class StoreUserRequest extends FormRequest
             'password' => ['required', 'string', 'min:8'],
             'phone' => ['nullable', 'string', 'max:20'],
             'company_name' => ['nullable', 'string', 'max:255'],
-            'city' => ['nullable', 'string', 'max:255'],
-            'state' => ['nullable', 'string', 'max:255'],
+            // Accept city / district as id or name; resolution happens in service
+            'city' => ['nullable'],      // can be integer (id) or string (name)
+            'district' => ['nullable'],  // can be integer (id) or string (name)
             'address' => ['nullable', 'string', 'max:500'],
-            'country' => ['nullable', 'string', 'max:255'],
+            'industry_type' => ['nullable', 'string', 'max:100'],
+            'company_size' => ['nullable', 'string', 'max:50'],
             'active' => ['sometimes', 'boolean'],
             'featured' => ['sometimes', 'integer', 'in:0,1'],
             'email_verified' => ['sometimes', 'boolean'],

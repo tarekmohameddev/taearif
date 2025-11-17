@@ -9,6 +9,7 @@ use App\Domain\Shared\Services\BaseService;
 use App\Exceptions\ResourceNotFoundException;
 use App\Exceptions\BusinessLogicException;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
@@ -80,15 +81,15 @@ class EmployeeService extends BaseService
     }
 
     /**
-     * Get employee by UUID
+     * Get employee by ID
      *
-     * @param string $uuid
+     * @param int $id
      * @return Admin
      * @throws ResourceNotFoundException
      */
-    public function getEmployeeByUuid(string $uuid): Admin
+    public function getEmployeeById(int $id): Admin
     {
-        $admin = $this->adminRepository->findByUuidWithRole($uuid);
+        $admin = Admin::with('role')->find($id);
 
         return $this->ensureFound($admin, 'Employee not found');
     }
@@ -97,7 +98,7 @@ class EmployeeService extends BaseService
      * Create new admin user
      *
      * @param array $data
-     * @param \Illuminate\Http\UploadedFile|null $image
+     * @param string|null $image
      * @return Admin
      * @throws BusinessLogicException
      */
@@ -119,6 +120,19 @@ class EmployeeService extends BaseService
         // Set default status if not provided
         $data['status'] = $data['status'] ?? true;
 
+        // Handle permissions: normalize to array if provided
+        if (isset($data['permissions'])) {
+            if ($data['permissions'] === null) {
+                $data['permissions'] = null;
+            } elseif (is_array($data['permissions'])) {
+                // Remove empty values and re-index array
+                $data['permissions'] = array_values(array_filter($data['permissions']));
+            } else {
+                // Invalid format, set to empty array
+                $data['permissions'] = [];
+            }
+        }
+
         // Handle image upload
         if ($image) {
             $data['image'] = $this->handleImageUpload($image);
@@ -134,14 +148,14 @@ class EmployeeService extends BaseService
      *
      * @param string $uuid
      * @param array $data
-     * @param \Illuminate\Http\UploadedFile|null $image
+     * @param string|null $image
      * @return Admin
      * @throws ResourceNotFoundException
      * @throws BusinessLogicException
      */
-    public function updateEmployee(string $uuid, array $data, $image = null): Admin
+    public function updateEmployee(int $id, array $data, $image = null): Admin
     {
-        $admin = $this->getEmployeeByUuid($uuid);
+        $admin = $this->getEmployeeById($id);
 
         // Prevent deleting owner (ID 1)
         if ($admin->id == 1 && isset($data['status']) && $data['status'] == false) {
@@ -151,7 +165,7 @@ class EmployeeService extends BaseService
         // Check if email is being changed and already exists
         if (isset($data['email']) && $data['email'] !== $admin->email) {
             $existingAdmin = $this->adminRepository->findByEmail($data['email']);
-            if ($existingAdmin && $existingAdmin->uuid !== $uuid) {
+            if ($existingAdmin && $existingAdmin->id !== $id) {
                 $this->fail('Email already exists', 'EMPLOYEE_EMAIL_EXISTS', 422);
             }
         }
@@ -185,6 +199,85 @@ class EmployeeService extends BaseService
     }
 
     /**
+     * Update admin user by ID
+     *
+     * @param int $id
+     * @param array $data
+     * @param \Illuminate\Http\UploadedFile|string|null $image
+     * @return Admin
+     * @throws ResourceNotFoundException
+     * @throws BusinessLogicException
+     */
+    public function updateEmployeeById(int $id, array $data, $image = null): Admin
+    {
+        $admin = $this->getEmployeeById($id);
+
+        // Prevent deleting owner (ID 1)
+        if ($admin->id == 1 && isset($data['status']) && $data['status'] == false) {
+            $this->fail('Cannot deactivate owner account', 'EMPLOYEE_OWNER_PROTECTED', 422);
+        }
+
+        // Check if email is being changed and already exists
+        if (isset($data['email']) && $data['email'] !== $admin->email) {
+            $existingAdmin = $this->adminRepository->findByEmail($data['email']);
+            if ($existingAdmin && (int)$existingAdmin->id !== (int)$admin->id) {
+                $this->fail('Email already exists', 'EMPLOYEE_EMAIL_EXISTS', 422);
+            }
+        }
+
+        // Check if username is being changed and already exists
+        if (isset($data['username']) && $data['username'] !== $admin->username) {
+            if (Admin::where('username', $data['username'])->where('id', '!=', $admin->id)->exists()) {
+                $this->fail('Username already exists', 'EMPLOYEE_USERNAME_EXISTS', 422);
+            }
+        }
+
+        // Don't allow changing password through update (use separate endpoint)
+        unset($data['password']);
+
+        // Handle permissions: normalize to array if provided
+        if (isset($data['permissions'])) {
+            // Allow null to clear custom permissions (use role defaults)
+            if ($data['permissions'] === null) {
+                $data['permissions'] = null;
+            } elseif (is_array($data['permissions'])) {
+                // Remove empty values and re-index array
+                $data['permissions'] = array_values(array_filter($data['permissions']));
+            } else {
+                // Invalid format, set to empty array
+                $data['permissions'] = [];
+            }
+        }
+
+        // Handle image: either file upload OR string path
+        if ($image) {
+            // Image is a file - upload it
+            // Delete old image if exists
+            if ($admin->image) {
+                $oldImagePath = public_path('assets/admin/img/propics/' . $admin->image);
+                if (file_exists($oldImagePath)) {
+                    @unlink($oldImagePath);
+                }
+            }
+            $data['image'] = $this->handleImageUpload($image);
+        } elseif (isset($data['image']) && is_string($data['image']) && !empty($data['image'])) {
+            // Image is a string path - delete old image if exists and different
+            if ($admin->image && $admin->image !== $data['image']) {
+                $oldImagePath = public_path('assets/admin/img/propics/' . $admin->image);
+                if (file_exists($oldImagePath)) {
+                    @unlink($oldImagePath);
+                }
+            }
+            // $data['image'] is already set, no need to modify it
+        }
+        
+        return $this->executeInTransaction(function () use ($admin, $data) {
+            $result = $admin->update($data);            
+            return $admin->fresh(['role']);
+        });
+    }
+
+    /**
      * Handle image upload
      *
      * @param \Illuminate\Http\UploadedFile $image
@@ -193,21 +286,72 @@ class EmployeeService extends BaseService
     protected function handleImageUpload($image): string
     {
         $name = uniqid() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('assets/admin/img/propics/'), $name);
+        $directory = public_path('assets/admin/img/propics/');
+        
+        // Ensure directory exists
+        if (!file_exists($directory)) {
+            mkdir($directory, 0775, true);
+        }
+        
+        $image->move($directory, $name);
         return $name;
+    }
+
+    /**
+     * Upload employee profile image (public method for API endpoint)
+     *
+     * @param \Illuminate\Http\UploadedFile $image
+     * @return string Filename of uploaded image
+     */
+    public function uploadImage($image): string
+    {
+        return $this->handleImageUpload($image);
     }
 
     /**
      * Delete admin user
      *
-     * @param string $uuid
+     * @param int $id
      * @return bool
      * @throws ResourceNotFoundException
      * @throws BusinessLogicException
      */
-    public function deleteEmployee(string $uuid): bool
+    public function deleteEmployee(int $id): bool
     {
-        $admin = $this->getEmployeeByUuid($uuid);
+        $admin = $this->getEmployeeById($id);
+
+        // Prevent deleting owner (ID 1)
+        if ($admin->id == 1) {
+            $this->fail('Cannot delete owner account', 'EMPLOYEE_OWNER_PROTECTED', 422);
+        }
+
+        return $this->executeInTransaction(function () use ($admin) {
+            // Delete profile image if exists
+            if ($admin->image) {
+                $imagePath = public_path('assets/admin/img/propics/' . $admin->image);
+                if (file_exists($imagePath)) {
+                    @unlink($imagePath);
+                }
+            }
+
+            // Revoke all tokens
+            $admin->tokens()->delete();
+
+            return $admin->delete();
+        });
+    }
+
+    /**
+     * Delete admin user by ID
+     *
+     * @param int $id
+     * @return bool
+     * @throws ResourceNotFoundException
+     * @throws BusinessLogicException
+     */
+    public function deleteEmployeeById(int $id): bool
+    {
+        $admin = $this->getEmployeeById($id);
 
         // Prevent deleting owner (ID 1)
         if ($admin->id == 1) {
@@ -233,14 +377,37 @@ class EmployeeService extends BaseService
     /**
      * Update employee password
      *
-     * @param string $uuid
+     * @param int $id
      * @param string $newPassword
      * @return Admin
      * @throws ResourceNotFoundException
      */
-    public function updatePassword(string $uuid, string $newPassword): Admin
+    public function updatePassword(int $id, string $newPassword): Admin
     {
-        $admin = $this->getEmployeeByUuid($uuid);
+        $admin = $this->getEmployeeById($id);
+
+        return $this->executeInTransaction(function () use ($admin, $newPassword) {
+            $admin->password = Hash::make($newPassword);
+            $admin->save();
+
+            // Revoke all existing tokens (force re-login)
+            $admin->tokens()->delete();
+
+            return $admin->fresh(['role']);
+        });
+    }
+
+    /**
+     * Update employee password by ID
+     *
+     * @param int $id
+     * @param string $newPassword
+     * @return Admin
+     * @throws ResourceNotFoundException
+     */
+    public function updatePasswordById(int $id, string $newPassword): Admin
+    {
+        $admin = $this->getEmployeeById($id);
 
         return $this->executeInTransaction(function () use ($admin, $newPassword) {
             $admin->password = Hash::make($newPassword);
@@ -256,14 +423,44 @@ class EmployeeService extends BaseService
     /**
      * Toggle employee status (activate/deactivate)
      *
-     * @param string $uuid
+     * @param int $id
      * @return Admin
      * @throws ResourceNotFoundException
      * @throws BusinessLogicException
      */
-    public function toggleStatus(string $uuid): Admin
+    public function toggleStatus(int $id): Admin
     {
-        $admin = $this->getEmployeeByUuid($uuid);
+        $admin = $this->getEmployeeById($id);
+
+        // Prevent deactivating owner
+        if ($admin->id == 1 && $admin->status == true) {
+            $this->fail('Cannot deactivate owner account', 'EMPLOYEE_OWNER_PROTECTED', 422);
+        }
+
+        return $this->executeInTransaction(function () use ($admin) {
+            $admin->status = !$admin->status;
+            $admin->save();
+
+            // If deactivating, revoke all tokens
+            if (!$admin->status) {
+                $admin->tokens()->delete();
+            }
+
+            return $admin->fresh(['role']);
+        });
+    }
+
+    /**
+     * Toggle employee status by ID (activate/deactivate)
+     *
+     * @param int $id
+     * @return Admin
+     * @throws ResourceNotFoundException
+     * @throws BusinessLogicException
+     */
+    public function toggleStatusById(int $id): Admin
+    {
+        $admin = $this->getEmployeeById($id);
 
         // Prevent deactivating owner
         if ($admin->id == 1 && $admin->status == true) {
@@ -286,15 +483,39 @@ class EmployeeService extends BaseService
     /**
      * Update employee roles
      *
-     * @param string $uuid
+     * @param int $id
      * @param int $roleId
      * @return Admin
      * @throws ResourceNotFoundException
      * @throws BusinessLogicException
      */
-    public function updateRole(string $uuid, int $roleId): Admin
+    public function updateRole(int $id, int $roleId): Admin
     {
-        $admin = $this->getEmployeeByUuid($uuid);
+        $admin = $this->getEmployeeById($id);
+
+        // Verify role exists
+        $this->ensureFound(Role::find($roleId), 'Role not found');
+
+        return $this->executeInTransaction(function () use ($admin, $roleId) {
+            $admin->role_id = $roleId;
+            $admin->save();
+
+            return $admin->fresh(['role']);
+        });
+    }
+
+    /**
+     * Update employee roles by ID
+     *
+     * @param int $id
+     * @param int $roleId
+     * @return Admin
+     * @throws ResourceNotFoundException
+     * @throws BusinessLogicException
+     */
+    public function updateRoleById(int $id, int $roleId): Admin
+    {
+        $admin = $this->getEmployeeById($id);
 
         // Verify role exists
         $this->ensureFound(Role::find($roleId), 'Role not found');

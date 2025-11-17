@@ -53,7 +53,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $response = $this->postJson(
-            route('admin.api.users.send-whatsapp', $tenant->uuid),
+            route('admin.api.users.send-whatsapp', $tenant->id),
             [
                 'message' => 'Hello there!',
             ]
@@ -76,7 +76,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $this->postJson(
-            route('admin.api.users.send-whatsapp', $tenant->uuid),
+            route('admin.api.users.send-whatsapp', $tenant->id),
             [
                 'message' => '',
             ]
@@ -96,7 +96,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $this->postJson(
-            route('admin.api.users.send-whatsapp', $tenant->uuid),
+            route('admin.api.users.send-whatsapp', $tenant->id),
             [
                 'message' => 'Test',
             ]
@@ -128,7 +128,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $pauseResponse = $this->postJson(
-            route('admin.api.users.pause', $tenant->uuid),
+            route('admin.api.users.pause', $tenant->id),
             [
                 'reason' => 'Fraudulent activity detected',
                 'admin_notes' => 'Temporarily locking account.',
@@ -139,7 +139,7 @@ class UserActionsTest extends AdminApiTestCase
             ->assertJsonPath('data.status.active', false);
 
         $resumeResponse = $this->postJson(
-            route('admin.api.users.resume', $tenant->uuid)
+            route('admin.api.users.resume', $tenant->id)
         );
 
         $resumeResponse->assertOk()
@@ -158,7 +158,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $this->postJson(
-            route('admin.api.users.pause', $tenant->uuid),
+            route('admin.api.users.pause', $tenant->id),
             [
                 'reason' => '',
             ]
@@ -178,7 +178,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $this->postJson(
-            route('admin.api.users.pause', $tenant->uuid),
+            route('admin.api.users.pause', $tenant->id),
             [
                 'reason' => 'Already paused',
             ]
@@ -198,7 +198,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $this->postJson(
-            route('admin.api.users.resume', $tenant->uuid)
+            route('admin.api.users.resume', $tenant->id)
         )->assertStatus(400)
             ->assertJsonPath('errors.error_code', 'USER_ALREADY_ACTIVE');
     }
@@ -215,14 +215,14 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $banResponse = $this->postJson(
-            route('admin.api.users.ban', $tenant->uuid)
+            route('admin.api.users.ban', $tenant->id)
         );
 
         $banResponse->assertOk()
             ->assertJsonPath('data.status.status_code', 0);
 
         $unbanResponse = $this->postJson(
-            route('admin.api.users.ban', $tenant->uuid)
+            route('admin.api.users.ban', $tenant->id)
         );
 
         $unbanResponse->assertOk()
@@ -241,14 +241,14 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $featuredResponse = $this->postJson(
-            route('admin.api.users.featured', $tenant->uuid)
+            route('admin.api.users.featured', $tenant->id)
         );
 
         $featuredResponse->assertOk()
             ->assertJsonPath('data.status.featured', true);
 
         $unfeaturedResponse = $this->postJson(
-            route('admin.api.users.featured', $tenant->uuid)
+            route('admin.api.users.featured', $tenant->id)
         );
 
         $unfeaturedResponse->assertOk()
@@ -276,7 +276,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $response = $this->getJson(
-            route('admin.api.users.invoices', $tenant->uuid)
+            route('admin.api.users.invoices', $tenant->id)
         );
 
         $response->assertOk()
@@ -305,7 +305,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $response = $this->getJson(
-            route('admin.api.users.activity', $tenant->uuid)
+            route('admin.api.users.activity', $tenant->id)
         );
 
         $response->assertOk()
@@ -359,7 +359,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $response = $this->postJson(
-            route('admin.api.users.change-plan', $tenant->uuid),
+            route('admin.api.users.change-plan', $tenant->id),
             [
                 'new_plan_id' => $newPlan->id,
                 'change_type' => 'immediate',
@@ -367,7 +367,7 @@ class UserActionsTest extends AdminApiTestCase
         );
 
         $response->assertOk()
-            ->assertJsonPath('data.id', $tenant->uuid);
+            ->assertJsonPath('data.id', $tenant->id);
 
         $this->assertDatabaseHas('memberships', [
             'user_id' => $tenant->id,
@@ -393,7 +393,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $this->postJson(
-            route('admin.api.users.change-plan', $tenant->uuid),
+            route('admin.api.users.change-plan', $tenant->id),
             [
                 'new_plan_id' => null,
                 'change_type' => 'invalid',
@@ -443,7 +443,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $this->postJson(
-            route('admin.api.users.change-plan', $tenant->uuid),
+            route('admin.api.users.change-plan', $tenant->id),
             [
                 'new_plan_id' => 999999,
                 'change_type' => 'immediate',
@@ -482,7 +482,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $this->postJson(
-            route('admin.api.users.change-plan', $tenant->uuid),
+            route('admin.api.users.change-plan', $tenant->id),
             [
                 'new_plan_id' => $newPlan->id,
                 'change_type' => 'immediate',
@@ -520,7 +520,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $response = $this->postJson(
-            route('admin.api.users.cancel-subscription', $tenant->uuid),
+            route('admin.api.users.cancel-subscription', $tenant->id),
             [
                 'cancel_type' => 'immediate',
                 'reason' => 'Requested by tenant',
@@ -528,7 +528,7 @@ class UserActionsTest extends AdminApiTestCase
         );
 
         $response->assertOk()
-            ->assertJsonPath('data.id', $tenant->uuid);
+            ->assertJsonPath('data.id', $tenant->id);
 
         $this->assertDatabaseHas('memberships', [
             'user_id' => $tenant->id,
@@ -549,7 +549,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $this->postJson(
-            route('admin.api.users.cancel-subscription', $tenant->uuid),
+            route('admin.api.users.cancel-subscription', $tenant->id),
             [
                 'cancel_type' => 'immediate',
                 'reason' => '',
@@ -581,7 +581,7 @@ class UserActionsTest extends AdminApiTestCase
         ]);
 
         $this->postJson(
-            route('admin.api.users.cancel-subscription', $tenant->uuid),
+            route('admin.api.users.cancel-subscription', $tenant->id),
             [
                 'cancel_type' => 'immediate',
                 'reason' => 'No active sub test',

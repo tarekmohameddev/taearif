@@ -21,7 +21,7 @@ class EmployeeResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'uuid' => $this->uuid,
+            'id' => $this->id,
             'username' => $this->username,
             'email' => $this->email,
             'first_name' => $this->first_name,
@@ -35,6 +35,10 @@ class EmployeeResource extends JsonResource
                 'name' => $this->role?->name,
                 'permissions' => $this->role?->permissions,
             ],
+            // Employee-specific permissions (null if using role defaults)
+            'permissions' => $this->permissions,
+            // All effective permissions (employee-specific if exists, otherwise role permissions)
+            'effective_permissions' => $this->getAllPermissions(),
             'last_login_at' => $this->last_login_at?->format('Y-m-d H:i:s'),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),

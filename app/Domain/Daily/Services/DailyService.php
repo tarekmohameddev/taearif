@@ -9,6 +9,9 @@ use App\Models\Api\UserApiCustomerAppointment;
 use App\Models\Membership;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * Daily Service
@@ -71,6 +74,7 @@ class DailyService extends BaseService
 
         $query->orderBy('datetime', 'asc');
 
+        /** @var LengthAwarePaginator $paginated */
         $paginated = $query->paginate($perPage);
 
         return [
@@ -134,6 +138,7 @@ class DailyService extends BaseService
 
         $query->orderBy('datetime', 'asc');
 
+        /** @var LengthAwarePaginator $paginated */
         $paginated = $query->paginate($perPage);
 
         return [
@@ -193,6 +198,7 @@ class DailyService extends BaseService
 
         $query->orderBy('due_on', 'asc');
 
+        /** @var LengthAwarePaginator $paginated */
         $paginated = $query->paginate($perPage);
 
         return [
@@ -449,6 +455,362 @@ class DailyService extends BaseService
         return Membership::whereDate('expire_date', $date->toDateString())
             ->where('status', 1)
             ->count();
+    }
+
+    /**
+     * Build the daily follow-up payload (cards + tables).
+     */
+    public function getFollowUpOverview(int $windowDays = 30, int $tableLimit = 50): array
+    {
+        $windowDays = max(1, min(90, $windowDays));
+        $tableLimit = max(1, min(100, $tableLimit));
+
+        $context = $this->makeFollowUpContext($windowDays);
+
+        $expiringSoonQuery = $this->baseTenantQuery($context)
+            ->whereNotNull('m.id')
+            ->where('m.status', 1)
+            ->whereBetween('m.expire_date', [
+                $context['today']->toDateString(),
+                $context['future_boundary']->toDateString(),
+            ]);
+
+        $inTrialQuery = $this->baseTenantQuery($context)
+            ->whereNotNull('m.id')
+            ->where('m.is_trial', 1)
+            ->whereDate('m.expire_date', '>=', $context['today']->toDateString())
+            ->whereNotExists(function ($sub) {
+                $sub->select(DB::raw(1))
+                    ->from('memberships as m2')
+                    ->whereColumn('m2.user_id', 'u.id')
+                    ->where('m2.is_trial', 0)
+                    ->where('m2.status', 1);
+            });
+
+        $expiredNotRenewedQuery = $this->baseTenantQuery($context)
+            ->whereNotNull('m.id')
+            ->whereDate('m.expire_date', '<', $context['today']->toDateString())
+            ->whereDate('m.expire_date', '>=', $context['look_back_boundary']->toDateString())
+            ->whereNotExists(function ($sub) use ($context) {
+                $sub->select(DB::raw(1))
+                    ->from('memberships as m3')
+                    ->whereColumn('m3.user_id', 'u.id')
+                    ->where('m3.status', 1)
+                    ->whereDate('m3.expire_date', '>=', $context['today']->toDateString());
+            });
+
+        $noContentQuery = $this->baseTenantQuery($context)
+            ->whereNotExists(function ($sub) {
+                $sub->select(DB::raw(1))
+                    ->from('user_properties as up')
+                    ->whereColumn('up.user_id', 'u.id');
+            })
+            ->selectSub(function ($sub) {
+                $sub->from('user_properties as up')
+                    ->selectRaw('COUNT(*)')
+                    ->whereColumn('up.user_id', 'u.id');
+            }, 'properties_count')
+            ->selectSub(function ($sub) {
+                $sub->from('user_projects as upj')
+                    ->selectRaw('COUNT(*)')
+                    ->whereColumn('upj.user_id', 'u.id');
+            }, 'projects_count');
+
+        return [
+            'follow_up' => [
+                'cards' => $this->buildFollowUpCards(
+                    $expiringSoonQuery,
+                    $inTrialQuery,
+                    $expiredNotRenewedQuery,
+                    $noContentQuery,
+                    $windowDays
+                ),
+                'tables' => [
+                    'expiring_soon' => $this->buildTenantTable($expiringSoonQuery, $context, $tableLimit),
+                    'in_trial_not_subscribed' => $this->buildTenantTable($inTrialQuery, $context, $tableLimit),
+                    'expired_not_renewed' => $this->buildTenantTable(
+                        $expiredNotRenewedQuery,
+                        $context,
+                        $tableLimit,
+                        'm.expire_date',
+                        'desc'
+                    ),
+                    'no_content' => $this->buildTenantTable(
+                        $noContentQuery,
+                        $context,
+                        $tableLimit,
+                        'u.created_at',
+                        'desc',
+                        function (array $payload, object $row) {
+                            $payload['metrics'] = [
+                                'properties' => (int) ($row->properties_count ?? 0),
+                                'projects' => (int) ($row->projects_count ?? 0),
+                            ];
+
+                            return $payload;
+                        }
+                    ),
+                    'reminders' => $this->buildReminderTable($context, $windowDays, $tableLimit),
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Prepare shared context (dates + reusable subqueries).
+     */
+    protected function makeFollowUpContext(int $windowDays): array
+    {
+        $today = Carbon::today();
+
+        return [
+            'today' => $today,
+            'future_boundary' => $today->copy()->addDays($windowDays)->endOfDay(),
+            'look_back_boundary' => $today->copy()->subDays($windowDays)->startOfDay(),
+            'latest_membership_sub' => DB::table('memberships as m1')
+                ->select('m1.user_id', DB::raw('MAX(m1.id) as latest_id'))
+                ->groupBy('m1.user_id'),
+            'latest_contact_sub' => DB::table('lead_activities as la')
+                ->join('leads as l', 'l.id', '=', 'la.lead_id')
+                ->whereNotNull('l.converted_user_id')
+                ->selectRaw('l.converted_user_id as user_id')
+                ->selectRaw('MAX(COALESCE(la.completed_at, la.scheduled_at)) as last_contact_at')
+                ->groupBy('l.converted_user_id'),
+        ];
+    }
+
+    /**
+     * Base tenant query used by all follow-up segments.
+     */
+    protected function baseTenantQuery(array $context): Builder
+    {
+        return DB::table('users as u')
+            ->leftJoinSub($context['latest_membership_sub'], 'lm', 'lm.user_id', '=', 'u.id')
+            ->leftJoin('memberships as m', 'm.id', '=', 'lm.latest_id')
+            ->leftJoin('packages as p', 'p.id', '=', 'm.package_id')
+            ->leftJoinSub($context['latest_contact_sub'], 'lc', 'lc.user_id', '=', 'u.id')
+            ->where('u.account_type', 'tenant')
+            ->whereNull('u.deleted_at')
+            ->select([
+                'u.id as user_id',
+                'u.first_name',
+                'u.last_name',
+                'u.email',
+                'u.phone',
+                'u.created_at as registered_at',
+                'm.id as membership_id',
+                'm.status as membership_status',
+                'm.is_trial',
+                'm.start_date',
+                'm.expire_date',
+                'p.title as package_title',
+                'p.price as package_price',
+                'lc.last_contact_at',
+            ]);
+    }
+
+    /**
+     * Build the summary cards.
+     */
+    protected function buildFollowUpCards(
+        Builder $expiringSoon,
+        Builder $inTrial,
+        Builder $expired,
+        Builder $noContent,
+        int $windowDays
+    ): array {
+        return [
+            'expiring_soon' => [
+                'total' => $this->countBuilder($expiringSoon),
+                'window_days' => $windowDays,
+                'description' => "الاشتراكات التي تنتهي خلال {$windowDays} يوم",
+            ],
+            'in_trial_not_subscribed' => [
+                'total' => $this->countBuilder($inTrial),
+                'window_days' => $windowDays,
+                'description' => 'مستخدمو التجربة المجانية الذين لم يشتركوا بعد',
+            ],
+            'expired_not_renewed' => [
+                'total' => $this->countBuilder($expired),
+                'window_days' => $windowDays,
+                'description' => "اشتراكات انتهت خلال آخر {$windowDays} يوم",
+            ],
+            'no_content' => [
+                'total' => $this->countBuilder($noContent),
+                'description' => 'مستخدمون بدون عقارات أو مشاريع مضافة',
+            ],
+        ];
+    }
+
+    /**
+     * Build a tenant table (shared mapper + optional row mutator).
+     */
+    protected function buildTenantTable(
+        Builder $query,
+        array $context,
+        int $limit,
+        string $orderColumn = 'm.expire_date',
+        string $direction = 'asc',
+        ?callable $rowMutator = null
+    ): array {
+        $baseQuery = clone $query;
+
+        return [
+            'total' => $this->countBuilder($baseQuery),
+            'items' => $query
+                ->orderBy($orderColumn, $direction)
+                ->limit($limit)
+                ->get()
+                ->map(function ($row) use ($context, $rowMutator) {
+                    $payload = $this->formatTenantRow($row, $context['today']);
+
+                    return $rowMutator ? $rowMutator($payload, $row) : $payload;
+                })
+                ->values()
+                ->toArray(),
+        ];
+    }
+
+    /**
+     * Normalize tenant rows for UI consumption.
+     */
+    protected function formatTenantRow(object $row, Carbon $today): array
+    {
+        $expireDate = $row->expire_date ? Carbon::parse($row->expire_date) : null;
+        return [
+            'user' => [
+                'id' => (int) $row->user_id,
+                'name' => trim(($row->first_name ?? '') . ' ' . ($row->last_name ?? '')) ?: $row->email,
+                'email' => $row->email,
+                'phone' => $row->phone,
+            ],
+            'package' => [
+                'title' => $row->package_title,
+                'price' => $row->package_price !== null ? (float) $row->package_price : null,
+            ],
+            'membership' => [
+                'start_date' => $row->start_date,
+                'expire_date' => $expireDate?->toDateString(),
+                'days_remaining' => $expireDate ? $today->diffInDays($expireDate, false) : null,
+                'days_overdue' => ($expireDate && $expireDate->lt($today))
+                    ? $expireDate->diffInDays($today)
+                    : null,
+                'is_trial' => (bool) $row->is_trial,
+            ],
+        ];
+    }
+
+    /**
+     * Build the reminders table (lead activities).
+     */
+    protected function buildReminderTable(array $context, int $windowDays, int $limit): array
+    {
+        $query = DB::table('lead_activities as la')
+            ->join('leads as l', 'l.id', '=', 'la.lead_id')
+            ->leftJoin('admin_crm_cards as s', 's.id', '=', 'l.stage_id')
+            ->leftJoin('admins as a', 'a.id', '=', 'la.admin_id')
+            ->whereIn('la.type', ['call', 'email', 'meeting', 'note', 'other'])
+            ->whereNull('la.completed_at')
+            ->whereNotNull('la.scheduled_at')
+            ->whereBetween('la.scheduled_at', [
+                $context['today']->copy()->subDays($windowDays)->startOfDay(),
+                $context['future_boundary'],
+            ])
+            ->select([
+                'la.id',
+                'la.type',
+                'la.description',
+                'la.scheduled_at',
+                'l.id as lead_id',
+                'l.name as lead_name',
+                'l.email as lead_email',
+                'l.phone as lead_phone',
+                's.name as stage_name',
+                's.slug as stage_slug',
+                's.color as stage_color',
+                'a.id as admin_id',
+                DB::raw("CONCAT(a.first_name, ' ', a.last_name) as admin_name"),
+            ]);
+
+        $base = clone $query;
+
+        return [
+            'total' => $base->count(),
+            'items' => $query
+                ->orderBy('la.scheduled_at')
+                ->limit($limit)
+                ->get()
+                ->map(fn ($row) => $this->formatReminderRow($row, $context['today']))
+                ->values()
+                ->toArray(),
+        ];
+    }
+
+    /**
+     * Normalize reminder rows.
+     */
+    protected function formatReminderRow(object $row, Carbon $today): array
+    {
+        $scheduledAt = Carbon::parse($row->scheduled_at);
+
+        $labelMap = [
+            'meeting' => 'اجتماع',
+            'call' => 'مكالمة',
+            'email' => 'بريد إلكتروني',
+            'note' => 'ملاحظة',
+            'other' => 'أخرى',
+        ];
+
+        $priority = match ($row->type) {
+            'meeting' => ['code' => 'high', 'label' => 'عالي', 'badge' => 'danger'],
+            'call' => ['code' => 'medium', 'label' => 'متوسط', 'badge' => 'warning'],
+            default => ['code' => 'low', 'label' => 'منخفض', 'badge' => 'info'],
+        };
+
+        return [
+            'id' => (int) $row->id,
+            'lead' => [
+                'id' => (int) $row->lead_id,
+                'name' => $row->lead_name,
+                'email' => $row->lead_email,
+                'phone' => $row->lead_phone,
+                'stage' => [
+                    'name' => $row->stage_name,
+                    'slug' => $row->stage_slug,
+                    'color' => $row->stage_color,
+                ],
+            ],
+            'owner' => [
+                'id' => $row->admin_id ? (int) $row->admin_id : null,
+                'name' => $row->admin_name,
+            ],
+            'title' => $row->description,
+            'type' => [
+                'code' => $row->type,
+                'label' => $labelMap[$row->type] ?? ucfirst($row->type),
+            ],
+            'priority' => $priority,
+            'scheduled_at' => [
+                'date' => $scheduledAt->toDateString(),
+                'time' => $scheduledAt->format('H:i'),
+                'iso' => $scheduledAt->toIso8601String(),
+            ],
+            'status' => [
+                'code' => $scheduledAt->isPast() ? 'overdue' : 'pending',
+                'label' => $scheduledAt->isPast() ? 'متأخر' : 'قيد الانتظار',
+                'badge' => $scheduledAt->isPast() ? 'danger' : 'warning',
+            ],
+        ];
+    }
+
+    /**
+     * Clone and count a query builder safely for static analysis.
+     */
+    protected function countBuilder(Builder $builder): int
+    {
+        $clone = clone $builder;
+
+        return $clone->count();
     }
 }
 

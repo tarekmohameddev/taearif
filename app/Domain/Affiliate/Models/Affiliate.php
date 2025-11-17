@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Referral\Models;
+namespace App\Domain\Affiliate\Models;
 
 use App\Domain\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -127,7 +127,7 @@ class Affiliate extends Model
      */
     public function getPaidEarningsAttribute(): float
     {
-        return $this->transactions()->where('type', 'paid')->sum('amount');
+        return $this->transactions()->where('type', 'collected')->sum('amount');
     }
 }
 

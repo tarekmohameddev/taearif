@@ -3,6 +3,7 @@
 namespace App\Domain\Domain\Models;
 
 use App\Domain\User\Models\User;
+use App\Models\Api\ApiDomainSetting;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -52,6 +53,15 @@ class CustomDomain extends Model
     ];
 
     /**
+     * The model's default attribute values.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'status' => 0,
+    ];
+
+    /**
      * Get the route key for the model.
      *
      * @return string
@@ -67,6 +77,14 @@ class CustomDomain extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Linked API domain settings entry (new schema with FK).
+     */
+    public function apiDomainSetting()
+    {
+        return $this->hasOne(ApiDomainSetting::class, 'custom_domain_id', 'id');
     }
 
     /**

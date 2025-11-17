@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Admin\Domains;
 
 use App\Domain\Domain\Models\CustomDomain;
+use App\Models\Api\ApiDomainSetting;
 use App\Models\User as TenantUser;
 use Illuminate\Support\Str;
 use Tests\Feature\Admin\AdminApiTestCase;
@@ -23,6 +24,85 @@ class ManageDomainsTest extends AdminApiTestCase
         $response->assertOk()
             ->assertJsonPath('data.data.0.id', CustomDomain::first()->id)
             ->assertJsonPath('data.meta.total', 2);
+    }
+
+    /** @test */
+    public function domain_list_includes_primary_and_ssl_metadata(): void
+    {
+        $this->signInAdmin();
+
+        $domain = CustomDomain::factory()->create([
+            'current_domain' => 'tenant-primary.example.com',
+        ]);
+
+        ApiDomainSetting::create([
+            'user_id' => $domain->user_id,
+            'custom_domain_id' => $domain->id,
+            'name' => 'Tenant Primary',
+            'custom_name' => $domain->current_domain,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now()->toDateString(),
+        ]);
+
+        $response = $this->getJson(route('admin.api.domains.index'));
+
+        $response->assertOk()
+            ->assertJsonPath('data.data.0.is_primary', true)
+            ->assertJsonPath('data.data.0.status_key', 'active')
+            ->assertJsonPath('data.data.0.status_source', 'api')
+            ->assertJsonPath('data.data.0.ssl_enabled', true)
+            ->assertJsonPath('data.data.0.added_date', now()->toDateString());
+    }
+
+    /** @test */
+    public function domain_list_can_be_filtered_by_status_ssl_and_primary(): void
+    {
+        $this->signInAdmin();
+
+        $activeDomain = CustomDomain::factory()->create([
+            'current_domain' => 'active.example.com',
+        ]);
+        ApiDomainSetting::create([
+            'user_id' => $activeDomain->user_id,
+            'custom_domain_id' => $activeDomain->id,
+            'name' => 'Active Domain',
+            'custom_name' => $activeDomain->current_domain,
+            'status' => 'active',
+            'primary' => true,
+            'ssl' => true,
+            'added_date' => now()->subDay()->toDateString(),
+        ]);
+
+        $failedDomain = CustomDomain::factory()->create([
+            'current_domain' => 'failed.example.com',
+        ]);
+        ApiDomainSetting::create([
+            'user_id' => $failedDomain->user_id,
+            'custom_domain_id' => $failedDomain->id,
+            'name' => 'Failed Domain',
+            'custom_name' => $failedDomain->current_domain,
+            'status' => 'failed',
+            'primary' => false,
+            'ssl' => false,
+            'added_date' => now()->toDateString(),
+        ]);
+
+        $this->getJson(route('admin.api.domains.index', ['status' => 'active']))
+            ->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.id', $activeDomain->id);
+
+        $this->getJson(route('admin.api.domains.index', ['ssl' => false]))
+            ->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.id', $failedDomain->id);
+
+        $this->getJson(route('admin.api.domains.index', ['primary' => true]))
+            ->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.id', $activeDomain->id);
     }
 
     /** @test */

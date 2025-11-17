@@ -4,7 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Http\Helpers\UserPermissionHelper;
 use Closure;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 
 class CheckPermissionUser
 {
@@ -23,7 +23,7 @@ class CheckPermissionUser
             $user = Auth::user();
             $permissions = UserPermissionHelper::packagePermission($user->id);
             if (!empty($user)) {
-                $packagePermissions = json_decode($permissions, true);
+                $packagePermissions = is_array($permissions) ? $permissions : (json_decode($permissions, true) ?: []);
                 $permissions = explode("|", $permission);
                 $access = false;
 

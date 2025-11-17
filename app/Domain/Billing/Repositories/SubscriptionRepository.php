@@ -5,6 +5,7 @@ namespace App\Domain\Billing\Repositories;
 use App\Domain\Billing\Models\Subscription;
 use App\Domain\Shared\Repositories\BaseRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Subscription Repository
@@ -61,7 +62,7 @@ class SubscriptionRepository extends BaseRepository implements SubscriptionRepos
             ->where('status', 1)
             ->where('expire_date', '<', $expiredDate)
             ->whereNotExists(function ($query) {
-                $query->select(\DB::raw(1))
+                $query->select(DB::raw(1))
                       ->from('memberships as m2')
                       ->whereColumn('m2.user_id', 'memberships.user_id')
                       ->where('m2.status', 1)
@@ -95,7 +96,90 @@ class SubscriptionRepository extends BaseRepository implements SubscriptionRepos
      */
     public function getSubscriptions(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = $this->model->with(['user', 'package']);
+        $latestIds = DB::table('memberships')
+            ->selectRaw('MAX(id) as id')
+            ->whereNotNull('user_id')
+            ->groupBy('user_id');
+
+        $query = $this->model
+            ->with(['user.generalSetting', 'package', 'latestInvoice'])
+            ->whereHas('user')
+            ->whereIn('id', $latestIds);
+
+        // Unified search filter
+        if (!empty($filters['search'])) {
+            $term = trim($filters['search']);
+            $likeTerm = '%' . $term . '%';
+
+            $query->where(function ($q) use ($term, $likeTerm) {
+                // Tenant (user) search
+                $q->whereHas('user', function ($userQuery) use ($term, $likeTerm) {
+                    $userQuery->where(function ($inner) use ($likeTerm) {
+                        $inner->where('first_name', 'like', $likeTerm)
+                            ->orWhere('last_name', 'like', $likeTerm)
+                            ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", [$likeTerm])
+                            ->orWhere('username', 'like', $likeTerm)
+                            ->orWhere('email', 'like', $likeTerm)
+                            ->orWhere('company_name', 'like', $likeTerm);
+                    })->orWhereHas('generalSetting', function ($settingQuery) use ($likeTerm) {
+                        $settingQuery->where('site_name', 'like', $likeTerm);
+                    });
+                });
+
+                // Plan search
+                $q->orWhereHas('package', function ($planQuery) use ($likeTerm) {
+                    $planQuery->where('title', 'like', $likeTerm)
+                        ->orWhere('slug', 'like', $likeTerm);
+                });
+
+                // Price search
+                if (is_numeric($term)) {
+                    $numericTerm = (float) $term;
+                    $q->orWhere('package_price', $numericTerm)
+                        ->orWhere('price', $numericTerm);
+                } else {
+                    $q->orWhere('package_price', 'like', $likeTerm)
+                        ->orWhere('price', 'like', $likeTerm);
+                }
+
+                // Status search (English & Arabic keywords)
+                $statusMap = [
+                    'active' => 1,
+                    'expired' => 0,
+                    'inactive' => 0,
+                    'trial' => 'trial',
+                ];
+                $statusMapAr = [
+                    'نشط' => 1,
+                    'فعال' => 1,
+                    'مفعل' => 1,
+                    'منتهي' => 0,
+                    'منتهية' => 0,
+                    'غير نشط' => 0,
+                    'تجريبي' => 'trial',
+                    'تجريبية' => 'trial',
+                ];
+
+                $normalizedTerm = strtolower($term);
+                $statusSearch = $statusMap[$normalizedTerm] ?? ($statusMapAr[$term] ?? null);
+                if ($statusSearch === 'trial') {
+                    $q->orWhere('is_trial', true);
+                } elseif ($statusSearch !== null) {
+                    $q->orWhere('status', $statusSearch);
+                }
+
+                // Upcoming billing (expire date) search
+                $date = date_create($term);
+                if ($date !== false) {
+                    $formattedDate = $date->format('Y-m-d');
+                    $q->orWhereDate('expire_date', $formattedDate)
+                        ->orWhereDate('start_date', $formattedDate);
+                }
+
+                // Payment method search
+                $q->orWhere('payment_method', 'like', $likeTerm);
+            });
+        }
 
         // Status filter
         if (isset($filters['status'])) {
@@ -140,6 +224,22 @@ class SubscriptionRepository extends BaseRepository implements SubscriptionRepos
         $query->orderBy($orderBy, $orderDir);
 
         return $query->paginate($perPage);
+    }
+
+    /**
+     * Get latest subscription for a specific user.
+     *
+     * @param int $userId
+     * @return Subscription|null
+     */
+    public function getLatestForUser(int $userId): ?Subscription
+    {
+        return $this->model
+            ->where('user_id', $userId)
+            ->orderByDesc('expire_date')
+            ->orderByDesc('created_at')
+            ->with(['user.generalSetting', 'package', 'latestInvoice'])
+            ->first();
     }
 }
 

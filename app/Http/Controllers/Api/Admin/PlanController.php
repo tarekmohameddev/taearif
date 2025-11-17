@@ -140,9 +140,15 @@ class PlanController extends BaseController
     public function destroy(int $id): JsonResponse
     {
         try {
-            $this->planService->deletePlan($id);
+            $plan = $this->planService->deletePlan($id);
 
-            return $this->noContentResponse();
+            return $this->successResponse(
+                [
+                    'plan_id' => $plan->id,
+                    'plan_title' => $plan->title,
+                ],
+                sprintf('Plan #%d deleted successfully', $plan->id)
+            );
         } catch (Throwable $e) {
             return $this->handleException($e, 'Failed to delete plan.');
         }

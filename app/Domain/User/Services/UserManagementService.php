@@ -5,13 +5,18 @@ namespace App\Domain\User\Services;
 use App\Domain\User\Models\User;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\Domain\User\Models\UserActivityLog;
+use App\Models\Api\GeneralSetting;
+use App\Models\PasswordResetLog;
 use App\Services\WhatsAppService;
+use App\Services\EmailService;
 use App\Domain\Billing\Models\Plan;
 use App\Domain\Billing\Models\Invoice;
 use App\Domain\Shared\Services\BaseService;
 use App\Exceptions\ResourceNotFoundException;
 use App\Exceptions\BusinessLogicException;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
@@ -126,7 +131,33 @@ class UserManagementService extends BaseService
         $data['email_verified'] = $data['email_verified'] ?? false;
 
         return $this->executeInTransaction(function () use ($data) {
+            // Normalize city/district (accept id or name)
+            $cityId = $this->resolveCityId($data['city'] ?? null);
+            if ($cityId !== null) {
+                $data['city'] = (string) $cityId;
+            } else {
+                unset($data['city']); // don't store invalid value
+            }
+            if (array_key_exists('district', $data)) {
+                $districtId = $this->resolveDistrictId($data['district'], $cityId);
+                if ($districtId !== null) {
+                    $data['state'] = (string) $districtId; // state column used for district id
+                }
+                unset($data['district']);
+            }
             $user = $this->userRepository->create($data);
+
+            // Ensure api_general_settings has baseline record for this tenant
+            $siteName = $data['company_name'] ?? ($data['first_name'] ?? 'Tenant');
+            GeneralSetting::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'site_name' => $siteName,
+                    // Insert default assets if not provided
+                    'logo' => 'logo.png',
+                    'favicon' => 'favicon.png',
+                ]
+            );
 
             return $user->fresh(['referrer', 'activeMembership.package']);
         });
@@ -158,9 +189,113 @@ class UserManagementService extends BaseService
         unset($data['account_type']);
 
         return $this->executeInTransaction(function () use ($user, $data) {
+            // Handle subdomain (domain -> username)
+            if (array_key_exists('domain', $data) && $data['domain'] !== null && $data['domain'] !== '') {
+                $slug = Str::slug((string) $data['domain']);
+                if ($slug === '') {
+                    $this->fail('Invalid subdomain', 'INVALID_SUBDOMAIN', 422);
+                }
+                $exists = DB::table('users')
+                    ->where('username', $slug)
+                    ->where('id', '!=', $user->id)
+                    ->exists();
+                if ($exists) {
+                    $this->fail('Subdomain already in use', 'SUBDOMAIN_TAKEN', 422);
+                }
+                $data['username'] = $slug;
+                unset($data['domain']);
+            }
+            // Normalize city/district (accept id or name)
+            if (array_key_exists('city', $data)) {
+                $cityId = $this->resolveCityId($data['city']);
+                if ($cityId !== null) {
+                    $data['city'] = (string) $cityId;
+                } else {
+                    unset($data['city']);
+                }
+            } else {
+                $cityId = null;
+            }
+
+            if (array_key_exists('district', $data)) {
+                $districtId = $this->resolveDistrictId($data['district'], $cityId);
+                if ($districtId !== null) {
+                    $data['state'] = (string) $districtId;
+                }
+                unset($data['district']);
+            }
+            // Sync company_name to api_general_settings.site_name (keep defaults for assets)
+            if (array_key_exists('company_name', $data) && $data['company_name'] !== null) {
+                GeneralSetting::updateOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'site_name' => $data['company_name'],
+                        'logo'     => DB::raw("COALESCE(logo, 'logo.png')"),
+                        'favicon'  => DB::raw("COALESCE(favicon, 'favicon.png')"),
+                    ]
+                );
+            }
+
             $user->update($data);
+
+            // Inline plan change when requested
+            if (array_key_exists('package_id', $data) && $data['package_id']) {
+                $changeType = $data['plan_change_type'] ?? 'immediate';
+                $this->changePlan($user->id, (int) $data['package_id'], $changeType, 'Inline plan change via updateUser');
+            }
+
             return $user->fresh(['referrer', 'activeMembership.package']);
         });
+    }
+
+    /**
+     * Resolve a city input (id or name) to city_id (int) from user_districts.
+     */
+    protected function resolveCityId($input): ?int
+    {
+        if ($input === null || $input === '') {
+            return null;
+        }
+        if (is_numeric($input)) {
+            // verify existence
+            $exists = DB::table('user_districts')->where('city_id', (int) $input)->exists();
+            return $exists ? (int) $input : null;
+        }
+        $row = DB::table('user_districts')
+            ->select('city_id')
+            ->where('city_name_ar', $input)
+            ->orWhere('city_name_en', $input)
+            ->orderByDesc('id')
+            ->first();
+        return $row ? (int) $row->city_id : null;
+    }
+
+    /**
+     * Resolve a district input (id or name) to id (int) from user_districts.
+     * Optionally restrict by city_id if provided.
+     */
+    protected function resolveDistrictId($input, ?int $cityId = null): ?int
+    {
+        if ($input === null || $input === '') {
+            return null;
+        }
+        if (is_numeric($input)) {
+            $q = DB::table('user_districts')->where('id', (int) $input);
+            if ($cityId !== null) {
+                $q->where('city_id', $cityId);
+            }
+            return $q->exists() ? (int) $input : null;
+        }
+        $q = DB::table('user_districts')
+            ->select('id')
+            ->where(function ($qq) use ($input) {
+                $qq->where('name_ar', $input)->orWhere('name_en', $input);
+            });
+        if ($cityId !== null) {
+            $q->where('city_id', $cityId);
+        }
+        $row = $q->orderByDesc('id')->first();
+        return $row ? (int) $row->id : null;
     }
 
     /**
@@ -175,7 +310,13 @@ class UserManagementService extends BaseService
         $user = $this->getUserById($id);
 
         return $this->executeInTransaction(function () use ($user) {
-            return $user->delete();
+            // Revoke all tokens before soft-deleting
+            try {
+                $user->tokens()->delete();
+            } catch (\Throwable $e) {
+                // ignore token errors; proceed with delete
+            }
+            return (bool) $user->delete();
         });
     }
 
@@ -213,6 +354,145 @@ class UserManagementService extends BaseService
     public function updatePassword(int $id, string $newPassword): User
     {
         return $this->changePassword($id, $newPassword);
+    }
+
+    /**
+     * Send password reset code to user (admin-initiated)
+     *
+     * @param int $userId
+     * @param string $method (email or whatsapp)
+     * @param string|null $countryCode Optional country code for WhatsApp
+     * @return array
+     * @throws ResourceNotFoundException
+     * @throws BusinessLogicException
+     */
+    public function sendPasswordResetCode(int $userId, string $method, ?string $countryCode = null): array
+    {
+        $user = $this->getUserById($userId);
+
+        // Validate method
+        if (!in_array($method, ['email', 'whatsapp'])) {
+            $this->fail('Invalid method. Must be email or whatsapp', 'INVALID_METHOD', 400);
+        }
+
+        // Validate user has required contact info
+        if ($method === 'email' && empty($user->email)) {
+            $this->fail('User does not have an email address', 'USER_NO_EMAIL', 400);
+        }
+
+        if ($method === 'whatsapp' && empty($user->phone)) {
+            $this->fail('User does not have a phone number', 'USER_NO_PHONE', 400);
+        }
+
+        return $this->executeInTransaction(function () use ($user, $method, $countryCode) {
+            // Generate 6-digit code
+            $code = rand(100000, 999999);
+            
+            // Create reset log entry
+            $resetLog = PasswordResetLog::create([
+                'user_id' => $user->id,
+                'method' => $method,
+                'code' => (string) $code,
+                'used' => false,
+                'expires_at' => now()->addMinutes(15),
+                'attempts' => 1,
+                'blocked' => false,
+                'blocked_until' => null,
+            ]);
+
+            // Get user's preferred language
+            $userLanguage = $this->getUserLanguage($user);
+            
+            // Get frontend URL for reset link
+            $frontendUrl = rtrim(env('FRONTEND_URL', url('/')), '/');
+            $resetUrl = $frontendUrl . '/reset';
+
+            // Send code based on method
+            if ($method === 'email') {
+                $emailService = new EmailService();
+                $emailSent = $emailService->sendPasswordResetCode(
+                    $user->email,
+                    $user->name ?? $user->username ?? 'User',
+                    (string) $code,
+                    $userLanguage,
+                    null, // templateName - let service choose
+                    $resetUrl,
+                    $user->id
+                );
+                
+                if (!$emailSent) {
+                    $this->fail('Failed to send reset code via email', 'EMAIL_SEND_FAILED', 500);
+                }
+            } else {
+                // WhatsApp method
+                $whatsappService = $this->resolveWhatsAppService();
+                
+                // Format phone number with country code if provided
+                $phoneForSending = $user->phone;
+                if ($countryCode) {
+                    // Remove + if present and add country code
+                    $phoneForSending = ltrim($countryCode, '+') . ltrim($phoneForSending, '+');
+                }
+                
+                try {
+                    $whatsappResult = $whatsappService->sendPasswordResetCode(
+                        $phoneForSending,
+                        (string) $code,
+                        $user->name ?? $user->username ?? 'User',
+                        $userLanguage,
+                        $resetUrl,
+                        'password_reset', // templateName
+                        $user->id
+                    );
+                    
+                    // WhatsApp service may return string (default message) or bool
+                    if ($whatsappResult === false) {
+                        $this->fail('Failed to send reset code via WhatsApp', 'WHATSAPP_SEND_FAILED', 500);
+                    }
+                } catch (\Throwable $e) {
+                    $this->fail(
+                        'Failed to send reset code via WhatsApp: ' . $e->getMessage(),
+                        'WHATSAPP_SEND_FAILED',
+                        500
+                    );
+                }
+            }
+
+            // Log activity
+            $contact = $method === 'email' ? $user->email : $user->phone;
+            $this->logUserActivity(
+                $user->id,
+                'password_reset_sent',
+                "Password reset code sent via {$method} to {$contact}",
+                [
+                    'method' => $method,
+                    'code' => (string) $code,
+                    'expires_at' => $resetLog->expires_at->toDateTimeString(),
+                ]
+            );
+
+            return [
+                'code' => (string) $code,
+                'expires_at' => $resetLog->expires_at->toDateTimeString(),
+            ];
+        });
+    }
+
+    /**
+     * Get user's preferred language or default to Arabic
+     *
+     * @param User $user
+     * @return string
+     */
+    private function getUserLanguage($user): string
+    {
+        try {
+            $defaultLanguage = $user->languages()->where('is_default', true)->first();
+            return $defaultLanguage ? $defaultLanguage->code : 'ar';
+        } catch (\Exception $e) {
+            // Fallback to Arabic if language lookup fails
+            return 'ar';
+        }
     }
 
     /**
@@ -753,4 +1033,3 @@ class UserManagementService extends BaseService
         };
     }
 }
-

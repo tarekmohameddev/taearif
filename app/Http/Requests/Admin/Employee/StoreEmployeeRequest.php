@@ -34,8 +34,34 @@ class StoreEmployeeRequest extends FormRequest
             'last_name' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role_id' => ['required', 'integer', 'exists:roles,id'],
+            'permissions' => ['sometimes', 'nullable', 'array'],
+            'permissions.*' => ['string', 'max:255'],
             'status' => ['sometimes', 'boolean'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:2048'],
+            'image' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    // If it's a file upload, validate as image
+                    if (request()->hasFile('image')) {
+                        $file = request()->file('image');
+                        $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png'];
+                        $maxSize = 2048; // 2MB in KB
+                        
+                        if (!in_array($file->getMimeType(), $allowedMimes)) {
+                            $fail('The image must be a file of type: jpeg, jpg, png.');
+                        }
+                        
+                        if ($file->getSize() > $maxSize * 1024) {
+                            $fail('The image must not be larger than ' . $maxSize . ' kilobytes.');
+                        }
+                    } 
+                    // If it's a string, validate it's a valid filename
+                    elseif (is_string($value) && !empty($value)) {
+                        if (!preg_match('/^[a-zA-Z0-9._-]+\.(jpg|jpeg|png)$/i', $value)) {
+                            $fail('The image path must be a valid image filename (jpg, jpeg, or png).');
+                        }
+                    }
+                },
+            ],
         ];
     }
 

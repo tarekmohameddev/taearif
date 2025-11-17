@@ -105,11 +105,11 @@ class ManageUsersTest extends AdminApiTestCase
         ]);
 
         $response = $this->getJson(
-            route('admin.api.users.show', $tenant->uuid)
+            route('admin.api.users.show', $tenant->id)
         );
 
         $response->assertOk()
-            ->assertJsonPath('data.id', $tenant->uuid)
+            ->assertJsonPath('data.id', $tenant->id)
             ->assertJsonPath('data.email', $tenant->email);
     }
 
@@ -144,7 +144,7 @@ class ManageUsersTest extends AdminApiTestCase
         ]);
 
         $response = $this->deleteJson(
-            route('admin.api.users.destroy', $tenant->uuid)
+            route('admin.api.users.destroy', $tenant->id)
         );
 
         $response->assertStatus(204);
@@ -160,7 +160,7 @@ class ManageUsersTest extends AdminApiTestCase
         $tenant = TenantUser::factory()->create();
 
         $this->deleteJson(
-            route('admin.api.users.destroy', $tenant->uuid)
+            route('admin.api.users.destroy', $tenant->id)
         )->assertUnauthorized();
     }
 

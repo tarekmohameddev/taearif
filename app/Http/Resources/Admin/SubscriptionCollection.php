@@ -21,38 +21,51 @@ class SubscriptionCollection extends ResourceCollection
     {
         return [
             'data' => $this->collection->transform(function ($subscription) {
+                $isActive = $subscription->isActive();
+                $isExpired = $subscription->isExpired();
+                $isTrial = (bool) $subscription->is_trial;
+
                 return [
-                    'id' => $subscription->id,
-                    'user' => [
-                        'id' => $subscription->user?->uuid,
-                        'name' => $subscription->user?->full_name,
-                        'email' => $subscription->user?->email,
-                    ],
+                    'id' => $subscription->user?->id,
+                    'username' => $subscription->user?->username,
+                    'company' => $subscription->user?->company_name,
+                    'tenant_name' => $subscription->user?->generalSetting?->site_name,
                     'plan' => [
                         'id' => $subscription->package?->id,
                         'title' => $subscription->package?->title,
+                        'slug' => $subscription->package?->slug,
                     ],
-                    'price' => (float) $subscription->price,
-                    'currency' => $subscription->currency,
-                    'is_active' => $subscription->isActive(),
-                    'is_trial' => $subscription->is_trial,
-                    'start_date' => $subscription->start_date?->format('Y-m-d'),
-                    'expire_date' => $subscription->expire_date?->format('Y-m-d'),
-                    'days_until_expiration' => $subscription->days_until_expiration,
-                    'created_at' => $subscription->created_at?->toIso8601String(),
+                    'pricing' => [
+                        'package_price' => $subscription->package_price !== null ? (float) $subscription->package_price : null,
+                        'final_price' => $subscription->price !== null ? (float) $subscription->price : null,
+                        'currency' => $subscription->currency,
+                        'currency_symbol' => $subscription->currency_symbol,
+                    ],
+                    'payment_method' => $subscription->payment_method,
+                    'status' => [
+                        'is_active' => $isActive,
+                        'is_trial' => $isTrial,
+                        'is_expired' => $isExpired,
+                        'label' => $isTrial ? 'trial' : ($isExpired ? 'expired' : ($isActive ? 'active' : 'inactive')),
+                    ],
+                    'upcoming_billing' => $subscription->expire_date?->format('Y-m-d'),
+                    'invoice' => $subscription->latestInvoice ? [
+                        'id' => $subscription->latestInvoice->id,
+                        'transaction_id' => $subscription->latestInvoice->transaction_id,
+                        'status' => [
+                            'code' => $subscription->latestInvoice->status,
+                            'label' => $subscription->latestInvoice->status_text ?? null,
+                        ],
+                        'amount' => [
+                            'total' => $subscription->latestInvoice->price !== null ? (float) $subscription->latestInvoice->price : null,
+                            'currency' => $subscription->latestInvoice->currency,
+                            'currency_symbol' => $subscription->latestInvoice->currency_symbol,
+                        ],
+                        'payment_method' => $subscription->latestInvoice->payment_method,
+                        'created_at' => $subscription->latestInvoice->created_at?->toIso8601String(),
+                    ] : null,
                 ];
             }),
-        ];
-    }
-
-    /**
-     * Get additional data that should be returned with the resource array.
-     *
-     * @return array<string, mixed>
-     */
-    public function with($request): array
-    {
-        return [
             'meta' => [
                 'total' => $this->total(),
                 'per_page' => $this->perPage(),

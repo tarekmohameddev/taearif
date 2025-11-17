@@ -29,7 +29,6 @@ class ImpersonationResource extends JsonResource
             ],
             'user' => [
                 'id' => $this->user->id ?? null,
-                'uuid' => $this->user->uuid ?? null,
                 'full_name' => $this->user->full_name ?? trim(($this->user->first_name ?? '') . ' ' . ($this->user->last_name ?? '')) ?: null,
                 'email' => $this->user->email ?? null,
                 'company_name' => $this->user->company_name ?? null,

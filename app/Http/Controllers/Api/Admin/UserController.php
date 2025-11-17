@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\BaseController;
+use App\Domain\Analytics\Services\DashboardService;
 use App\Http\Requests\Admin\User\StoreUserRequest;
 use App\Http\Requests\Admin\User\UpdateUserRequest;
 use App\Http\Requests\Admin\User\UpdatePasswordRequest;
+use App\Http\Requests\Admin\User\SendPasswordResetRequest;
 use App\Http\Resources\Admin\UserResource;
 use App\Http\Resources\Admin\UserCollection;
 use App\Http\Resources\Admin\User\UserActivityCollection;
@@ -34,15 +36,20 @@ class UserController extends BaseController
      * @var UserManagementService
      */
     protected UserManagementService $userManagementService;
+    protected DashboardService $dashboardService;
 
     /**
      * UserController constructor.
      *
      * @param UserManagementService $userManagementService
      */
-    public function __construct(UserManagementService $userManagementService)
+    public function __construct(
+        UserManagementService $userManagementService,
+        DashboardService $dashboardService
+    )
     {
         $this->userManagementService = $userManagementService;
+        $this->dashboardService = $dashboardService;
     }
 
     /**
@@ -69,6 +76,51 @@ class UserController extends BaseController
             );
         } catch (Throwable $e) {
             return $this->handleException($e, 'Failed to retrieve users.');
+        }
+    }
+
+    /**
+     * Tenants table payload (same structure as dashboard.tenants).
+     * GET /api/v1/admin/users/table
+     */
+    public function table(Request $request): JsonResponse
+    {
+        try {
+            $limitInput = $request->input('limit', 10);
+            $offsetInput = $request->input('offset', 0);
+            $limit = max(1, min(100, (int) $limitInput));
+            $offset = max(0, (int) $offsetInput);
+
+            $result = $this->dashboardService->getTenantsOverview($limit, $offset);
+
+            $total = (int) ($result['total'] ?? 0);
+            $totalPages = $limit > 0 ? (int) ceil($total / $limit) : 0;
+
+            $payload = [
+                'users' => [
+                    'items' => $result['items'] ?? [],
+                    'pagination' => [
+                        'offset' => $offset,
+                        'limit' => $limit,
+                        'total' => $total,
+                        'total_pages' => $totalPages,
+                        'has_next' => ($offset + $limit) < $total,
+                        'has_previous' => $offset > 0,
+                    ],
+                    'filters' => $result['filters'] ?? [],
+                    'filter_options' => $result['filter_options'] ?? [
+                        'plans' => [],
+                        'statuses' => [],
+                    ],
+                ],
+            ];
+
+            return $this->successResponse(
+                $payload,
+                'Tenants table retrieved successfully.'
+            );
+        } catch (Throwable $e) {
+            return $this->handleException($e, 'Failed to retrieve tenants table.');
         }
     }
 
@@ -104,12 +156,13 @@ class UserController extends BaseController
     public function show(int $userId): JsonResponse
     {
         try {
-            $user = $this->userManagementService->getUser($userId);
+            // Return the minimal profile payload used by the dashboard UI
+            $profile = $this->dashboardService->getTenantProfile($userId);
+            if ($profile === null) {
+                return $this->errorResponse('User not found or not a tenant.', \Illuminate\Http\Response::HTTP_NOT_FOUND);
+            }
 
-            return $this->successResponse(
-                new UserResource($user),
-                'User retrieved successfully.'
-            );
+            return $this->successResponse($profile, 'User retrieved successfully.');
         } catch (Throwable $e) {
             return $this->handleException($e, 'Failed to retrieve user.');
         }
@@ -308,7 +361,13 @@ class UserController extends BaseController
         try {
             $this->userManagementService->deleteUser($userId);
 
-            return $this->noContentResponse();
+            return $this->successResponse(
+                [
+                    'id' => $userId,
+                    'deleted' => true,
+                ],
+                'User soft-deleted successfully.'
+            );
         } catch (Throwable $e) {
             return $this->handleException($e, 'Failed to delete user.');
         }
@@ -335,6 +394,37 @@ class UserController extends BaseController
             );
         } catch (Throwable $e) {
             return $this->handleException($e, 'Failed to update user password.');
+        }
+    }
+
+    /**
+     * Send password reset code to user (admin-initiated)
+     * POST /api/v1/admin/users/{id}/send-password-reset
+     *
+     * @param SendPasswordResetRequest $request
+     * @param int $userId
+     * @return JsonResponse
+     */
+    public function sendPasswordReset(SendPasswordResetRequest $request, int $userId): JsonResponse
+    {
+        try {
+            $result = $this->userManagementService->sendPasswordResetCode(
+                $userId,
+                $request->method,
+                $request->country_code
+            );
+
+            return $this->successResponse(
+                [
+                    'user_id' => $userId,
+                    'method' => $request->method,
+                    'code' => $result['code'],
+                    'expires_at' => $result['expires_at'],
+                ],
+                'Password reset code sent successfully.'
+            );
+        } catch (Throwable $e) {
+            return $this->handleException($e, 'Failed to send password reset code.');
         }
     }
 

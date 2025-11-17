@@ -2,13 +2,13 @@
 
 namespace Database\Factories;
 
-use App\Domain\Referral\Models\Affiliate;
-use App\Domain\Referral\Models\AffiliateTransaction;
+use App\Domain\Affiliate\Models\Affiliate;
+use App\Domain\Affiliate\Models\AffiliateTransaction;
 use App\Models\User as TenantUser;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<\App\Domain\Referral\Models\AffiliateTransaction>
+ * @extends Factory<\App\Domain\Affiliate\Models\AffiliateTransaction>
  */
 class AffiliateTransactionFactory extends Factory
 {
@@ -36,19 +36,11 @@ class AffiliateTransactionFactory extends Factory
     }
 
     /**
-     * Mark the transaction as approved.
+     * Mark the transaction as collected.
      */
-    public function approved(): self
+    public function collected(): self
     {
-        return $this->state(fn () => ['type' => 'approved']);
-    }
-
-    /**
-     * Mark the transaction as paid.
-     */
-    public function paid(): self
-    {
-        return $this->state(fn () => ['type' => 'paid']);
+        return $this->state(fn () => ['type' => 'collected']);
     }
 }
 

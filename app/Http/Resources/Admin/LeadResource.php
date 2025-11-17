@@ -45,7 +45,6 @@ class LeadResource extends JsonResource
             'converted_user' => $this->when($this->relationLoaded('convertedUser'), function () {
                 return $this->convertedUser ? [
                     'id' => $this->convertedUser->id,
-                    'uuid' => $this->convertedUser->uuid,
                     'username' => $this->convertedUser->username,
                     'email' => $this->convertedUser->email,
                 ] : null;

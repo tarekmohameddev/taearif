@@ -21,7 +21,18 @@ class AnalyticsDashboardController extends Controller
 
     protected function tenantId(Request $request): string
     {
-        return $request->user()->username;
+		$tenant = $request->input('tenant_id');
+
+		if ($tenant === null || $tenant === '') {
+			$user = $request->user();
+			$tenant = $user?->username;
+		}
+
+		if (!is_string($tenant) || $tenant === '') {
+			abort(422, 'Missing tenant identifier. Provide tenant_id or ensure the user has a username.');
+		}
+
+		return $tenant;
     }
 
     protected function parseRange(Request $req, int $default = 7): array

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Billing\Repositories;
 
+use App\Domain\Billing\Models\Subscription;
 use App\Domain\Shared\Repositories\BaseRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -50,4 +51,12 @@ interface SubscriptionRepositoryInterface extends BaseRepositoryInterface
      * @return LengthAwarePaginator
      */
     public function getSubscriptions(array $filters = [], int $perPage = 15): LengthAwarePaginator;
+
+    /**
+     * Get latest subscription for user.
+     *
+     * @param int $userId
+     * @return Subscription|null
+     */
+    public function getLatestForUser(int $userId): ?Subscription;
 }

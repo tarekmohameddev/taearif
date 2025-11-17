@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Domain\Referral\Repositories;
+namespace App\Domain\Affiliate\Repositories;
 
-use App\Domain\Referral\Models\Referral;
+use App\Domain\Affiliate\Models\Affiliate;
 use App\Domain\Shared\Repositories\BaseRepositoryInterface;
 
 /**
@@ -16,9 +16,9 @@ interface ReferralRepositoryInterface extends BaseRepositoryInterface
      * Find referral by code
      *
      * @param string $code
-     * @return Referral|null
+     * @return Affiliate|null
      */
-    public function findByCode(string $code): ?Referral;
+    public function findByCode(string $code): ?Affiliate;
 
     /**
      * Get top performers

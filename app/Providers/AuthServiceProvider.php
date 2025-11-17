@@ -43,7 +43,8 @@ class AuthServiceProvider extends ServiceProvider
             
             // Check if admin has "Registered Users" permission
             if (!empty($admin->role) && !empty($admin->role->permissions)) {
-                $permissions = json_decode($admin->role->permissions, true);
+                $raw = $admin->role->permissions;
+                $permissions = is_array($raw) ? $raw : (json_decode($raw, true) ?: []);
                 return in_array('Registered Users', $permissions);
             }
             

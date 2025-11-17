@@ -4,9 +4,11 @@ namespace App\Domain\User\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\Membership;
+use App\Models\Api\GeneralSetting;
 use Database\Factories\UserFactory;
 
 /**
@@ -17,7 +19,7 @@ use Database\Factories\UserFactory;
  */
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The table associated with the model.
@@ -32,7 +34,6 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'uuid',
         'tenant_id',
         'referred_by',
         'account_type',
@@ -85,6 +86,7 @@ class User extends Authenticatable
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+    protected $dates = ['deleted_at'];
 
     /**
      * Get the route key for the model.
@@ -93,22 +95,7 @@ class User extends Authenticatable
      */
     public function getRouteKeyName(): string
     {
-        return 'uuid';
-    }
-
-    /**
-     * Boot the model.
-     */
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        // Auto-generate UUID on creation if not provided
-        static::creating(function ($user) {
-            if (empty($user->uuid)) {
-                $user->uuid = (string) \Illuminate\Support\Str::uuid();
-            }
-        });
+        return 'id';
     }
 
     /**
@@ -217,6 +204,22 @@ class User extends Authenticatable
     public function scopeFeatured($query)
     {
         return $query->where('featured', 1);
+    }
+
+    /**
+     * General API settings associated with the tenant.
+     */
+    public function generalSetting()
+    {
+        return $this->hasOne(GeneralSetting::class, 'user_id', 'id');
+    }
+
+    /**
+     * Alias for generalSetting to match legacy relationship name.
+     */
+    public function generalSettings()
+    {
+        return $this->generalSetting();
     }
 
     /**
