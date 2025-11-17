@@ -92,7 +92,6 @@ abstract class AdminApiTestCase extends TestCase
         if (!Schema::hasTable('users')) {
             Schema::create('users', function (Blueprint $table) {
                 $table->id();
-                $table->uuid('uuid')->unique();
                 $table->unsignedBigInteger('tenant_id')->nullable();
                 $table->unsignedBigInteger('referred_by')->nullable();
                 $table->string('first_name')->nullable();
@@ -122,14 +121,10 @@ abstract class AdminApiTestCase extends TestCase
                 $table->string('referral_id')->nullable();
                 $table->timestamps();
             });
-        } elseif (!Schema::hasColumn('users', 'uuid')) {
-            Schema::table('users', function (Blueprint $table) {
-                $table->uuid('uuid')->unique()->after('id');
-            });
         }
 
         $columns = [
-            'tenant_id' => fn (Blueprint $table) => $table->unsignedBigInteger('tenant_id')->nullable()->after('uuid'),
+            'tenant_id' => fn (Blueprint $table) => $table->unsignedBigInteger('tenant_id')->nullable()->after('id'),
             'referred_by' => fn (Blueprint $table) => $table->unsignedBigInteger('referred_by')->nullable()->after('tenant_id'),
             'photo' => fn (Blueprint $table) => $table->string('photo')->nullable()->after('last_name'),
             'company_name' => fn (Blueprint $table) => $table->string('company_name')->nullable()->after('username'),

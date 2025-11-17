@@ -22,7 +22,7 @@ class UpdateUserPasswordTest extends AdminApiTestCase
         ]);
 
         $response = $this->putJson(
-            route('admin.api.users.password', $tenant->uuid),
+            route('admin.api.users.password', $tenant->id),
             [
                 'password' => 'NewPassword123!',
                 'password_confirmation' => 'NewPassword123!',
@@ -30,7 +30,7 @@ class UpdateUserPasswordTest extends AdminApiTestCase
         );
 
         $response->assertOk()
-            ->assertJsonPath('data.id', $tenant->uuid)
+            ->assertJsonPath('data.id', $tenant->id)
             ->assertJsonPath('data.status.status_code', $tenant->status);
 
         $this->assertTrue(
@@ -49,7 +49,7 @@ class UpdateUserPasswordTest extends AdminApiTestCase
         ]);
 
         $response = $this->putJson(
-            route('admin.api.users.password', $tenant->uuid),
+            route('admin.api.users.password', $tenant->id),
             [
                 'password' => 'short',
                 'password_confirmation' => 'short',

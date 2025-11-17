@@ -24,12 +24,13 @@ class ImpersonationCollection extends ResourceCollection
                 return [
                     'id' => $impersonation->id,
                     'admin' => [
-                        'id' => $impersonation->admin->uuid ?? null,
+                        'id' => $impersonation->admin->id ?? null,
+                        // 'uuid' => $impersonation->admin->uuid ?? null,
                         'full_name' => $impersonation->admin->full_name ?? null,
                         'email' => $impersonation->admin->email ?? null,
                     ],
                     'user' => [
-                        'id' => $impersonation->user->uuid ?? null,
+                        'id' => $impersonation->user->id ?? null,
                         'full_name' => $impersonation->user->full_name ?? null,
                         'email' => $impersonation->user->email ?? null,
                     ],

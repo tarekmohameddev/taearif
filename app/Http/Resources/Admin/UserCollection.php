@@ -23,7 +23,6 @@ class UserCollection extends ResourceCollection
             'data' => $this->collection->transform(function ($user) {
                 return [
                     'id' => $user->id,
-                    'uuid' => $user->uuid,
                     'email' => $user->email,
                     'username' => $user->username,
                     'first_name' => $user->first_name,
@@ -38,7 +37,6 @@ class UserCollection extends ResourceCollection
                     'has_active_subscription' => $user->hasActiveSubscription(),
                     'referred_by' => $user->referrer ? [
                         'id' => $user->referrer->id,
-                        'uuid' => $user->referrer->uuid,
                         'name' => $user->referrer->full_name,
                     ] : null,
                     'active_membership' => $user->activeMembership ? [

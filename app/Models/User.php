@@ -48,12 +48,14 @@ use App\Models\User\DonationManagement\DonationCategories;
 use App\Models\User\CourseManagement\Instructor\Instructor;
 use App\Models\User\CourseManagement\LessonContentComplete;
 use App\Models\User\CourseManagement\Coupon as CourseManagementCoupon;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
     use HasApiTokens;
     use Notifiable;
     use HasFactory;
+    use SoftDeletes;
     use \Spatie\Permission\Traits\HasRoles;
     // use \Spatie\Permission\Traits\HasPermissions;
 
@@ -87,6 +89,7 @@ class User extends Authenticatable
         'show_home',
         'onboarding_completed',
         'industry_type',
+        'company_size',
         'short_description',
         'logo',
         'icon',
@@ -126,6 +129,7 @@ class User extends Authenticatable
         'active' => 'boolean',
         'last_login_at' => 'datetime',
     ];
+    protected $dates = ['deleted_at'];
 
     public function tenant() { return $this->belongsTo(User::class, 'tenant_id'); }
     public function employees(){ return $this->hasMany(User::class, 'tenant_id'); }

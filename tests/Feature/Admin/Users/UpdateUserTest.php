@@ -29,7 +29,7 @@ class UpdateUserTest extends AdminApiTestCase
         ];
 
         $response = $this->putJson(
-            route('admin.api.users.update', $tenant->uuid),
+            route('admin.api.users.update', $tenant->id),
             $payload
         );
 
@@ -57,7 +57,7 @@ class UpdateUserTest extends AdminApiTestCase
         ]);
 
         $response = $this->putJson(
-            route('admin.api.users.update', $tenant->uuid),
+            route('admin.api.users.update', $tenant->id),
             ['email' => 'not-an-email']
         );
 

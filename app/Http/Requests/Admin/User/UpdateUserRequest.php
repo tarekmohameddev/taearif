@@ -27,7 +27,8 @@ class UpdateUserRequest extends FormRequest
      */
     public function rules(): array
     {
-        $userId = $this->route('uuid'); // UUID
+        // Retrieve the user id from the route parameter named 'user'
+        $userId = request()->route('user'); // user ID
 
         return [
             'first_name' => ['sometimes', 'string', 'max:255'],
@@ -37,7 +38,7 @@ class UpdateUserRequest extends FormRequest
                 'email',
                 'max:255',
                 Rule::unique('users', 'email')->where(function ($query) use ($userId) {
-                    return $query->where('uuid', '!=', $userId);
+                    return $query->where('id', '!=', $userId);
                 })
             ],
             'username' => [
@@ -45,15 +46,21 @@ class UpdateUserRequest extends FormRequest
                 'string',
                 'max:255',
                 Rule::unique('users', 'username')->where(function ($query) use ($userId) {
-                    return $query->where('uuid', '!=', $userId);
+                    return $query->where('id', '!=', $userId);
                 })
             ],
             'phone' => ['nullable', 'string', 'max:20'],
             'company_name' => ['nullable', 'string', 'max:255'],
-            'city' => ['nullable', 'string', 'max:255'],
-            'state' => ['nullable', 'string', 'max:255'],
+            'domain' => ['nullable', 'string', 'max:50'],
+            // Accept id or name; normalize in service
+            'city'     => ['nullable'],
+            'district' => ['nullable'],
             'address' => ['nullable', 'string', 'max:500'],
-            'country' => ['nullable', 'string', 'max:255'],
+            // country no longer used for this flow
+            'industry_type' => ['nullable', 'string', 'max:100'],
+            'company_size' => ['nullable', 'string', 'max:50'],
+            'package_id' => ['nullable','integer','exists:packages,id'],
+            'plan_change_type' => ['nullable','in:immediate,scheduled'],
             'active' => ['sometimes', 'boolean'],
             'featured' => ['sometimes', 'integer', 'in:0,1'],
             'email_verified' => ['sometimes', 'boolean'],
