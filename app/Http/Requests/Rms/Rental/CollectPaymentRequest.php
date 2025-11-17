@@ -32,8 +32,8 @@ class CollectPaymentRequest extends FormRequest
             'amount' => 'nullable|numeric|min:0.01',
             'payment_amount' => 'nullable|numeric|min:0.01',  // Alternative field name
 
-            // Manual payment fields (required unless auto_select is true OR amount is provided)
-            'payments' => 'required_unless:auto_select,true|array',
+            // Manual payment fields nullable, will be validated in withValidator
+            'payments' => 'nullable|array',
             'payments.*.installment_id' => 'required_without:auto_select|exists:rm_payment_installments,id',
             'payments.*.payment_type' => [
                 'required_without:auto_select',
@@ -143,11 +143,12 @@ class CollectPaymentRequest extends FormRequest
                 );
             }
 
-            // Allow empty payments array if payment_amount/amount is provided
-            //matches the controller auto-select logic
-            if (empty($payments) && !$autoSelect && !empty($paymentAmount)) {
-                // Remove the validation error for payments since we have payment_amount
-                $validator->errors()->forget('payments');
+            //  validation: payments required unless auto_select or payment_amount is provided
+            if (empty($payments) && !$autoSelect && empty($paymentAmount)) {
+                $validator->errors()->add(
+                    'payments',
+                    'Please provide at least one payment or enable auto-select.'
+                );
             }
         });
     }
