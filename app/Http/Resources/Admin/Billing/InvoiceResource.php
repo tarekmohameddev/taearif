@@ -40,7 +40,6 @@ class InvoiceResource extends JsonResource
             'receipt' => $this->receipt ? asset('assets/receipts/' . $this->receipt) : null,
             'user' => [
                 'id' => $this->user->id,
-                'uuid' => $this->user->uuid ?? null,
                 'username' => $this->user->username,
                 'email' => $this->user->email,
                 'first_name' => $this->user->first_name,

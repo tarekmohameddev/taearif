@@ -10,6 +10,7 @@ use App\Exceptions\ResourceNotFoundException;
 use App\Exceptions\BusinessLogicException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use App\Domain\Billing\Models\Plan;
 use App\Domain\User\Models\User;
 
@@ -70,6 +71,24 @@ class InvoiceService extends BaseService
 
         if (!$invoice) {
             throw new ResourceNotFoundException('Invoice not found');
+        }
+
+        return $invoice->load(['user', 'package']);
+    }
+
+    /**
+     * Get latest invoice for a user.
+     *
+     * @param int $userId
+     * @return Invoice
+     * @throws ResourceNotFoundException
+     */
+    public function getInvoiceByUserId(int $userId): Invoice
+    {
+        $invoice = $this->invoiceRepository->findLatestForUser($userId);
+
+        if (!$invoice) {
+            throw new ResourceNotFoundException('Invoice not found for this user');
         }
 
         return $invoice->load(['user', 'package']);
@@ -299,7 +318,7 @@ class InvoiceService extends BaseService
             : 'paymentAcceptedForRegistration';
 
         // TODO: Integrate with existing MegaMailer or Queue email job
-        \Log::info('Invoice approved - Email queued', [
+        Log::info('Invoice approved - Email queued', [
             'invoice_id' => $invoice->id,
             'user_id' => $user->id,
             'mail_type' => $mailType,
@@ -326,7 +345,7 @@ class InvoiceService extends BaseService
             : 'paymentRejectedForRegistration';
 
         // TODO: Integrate with existing MegaMailer or Queue email job
-        \Log::info('Invoice rejected - Email queued', [
+        Log::info('Invoice rejected - Email queued', [
             'invoice_id' => $invoice->id,
             'user_id' => $user->id,
             'reason' => $reason,

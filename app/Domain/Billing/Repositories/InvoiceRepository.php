@@ -91,7 +91,9 @@ class InvoiceRepository extends BaseRepository implements InvoiceRepositoryInter
      */
     public function getInvoices(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $query = $this->model->with(['user', 'package']);
+        $query = $this->model
+            ->with(['user', 'package'])
+            ->whereHas('user');
 
         // Status filter
         if (isset($filters['status'])) {
@@ -256,6 +258,21 @@ class InvoiceRepository extends BaseRepository implements InvoiceRepositoryInter
             ->where('start_date', '<=', now()->toDateString())
             ->where('expire_date', '>=', now()->toDateString())
             ->orderBy('created_at', 'desc')
+            ->first();
+    }
+
+    /**
+     * Find latest invoice for user.
+     *
+     * @param int $userId
+     * @return Invoice|null
+     */
+    public function findLatestForUser(int $userId): ?Invoice
+    {
+        return $this->model
+            ->where('user_id', $userId)
+            ->with(['user', 'package'])
+            ->orderByDesc('created_at')
             ->first();
     }
 

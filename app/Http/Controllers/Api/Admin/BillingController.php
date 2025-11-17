@@ -89,6 +89,24 @@ class BillingController extends BaseController
     }
 
     /**
+     * Display latest invoice for a user.
+     * GET /api/v1/admin/billing/invoices/user/{userId}
+     */
+    public function showByUser(int $userId): JsonResponse
+    {
+        try {
+            $invoice = $this->invoiceService->getInvoiceByUserId($userId);
+
+            return $this->successResponse(
+                new InvoiceResource($invoice),
+                'Invoice retrieved successfully.'
+            );
+        } catch (Throwable $e) {
+            return $this->handleException($e, 'Failed to retrieve invoice.');
+        }
+    }
+
+    /**
      * Approve invoice and activate subscription.
      * POST /api/v1/admin/billing/invoices/{id}/approve
      *

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Domain\User\Models\User;
 use App\Domain\Billing\Models\Plan;
+use App\Domain\Billing\Models\Invoice;
 
 /**
  * Subscription Model
@@ -96,15 +97,26 @@ class Subscription extends Model
     }
 
     /**
+     * Get the most recent invoice associated with the subscription.
+     */
+    public function latestInvoice()
+    {
+        return $this->hasOne(Invoice::class, 'id', 'id');
+    }
+
+    /**
      * Check if subscription is active
      *
      * @return bool
      */
     public function isActive(): bool
     {
+        $today = now()->toDateString();
+
         return $this->status === 1
             && $this->expire_date
-            && $this->expire_date >= now()->toDateString();
+            && $this->expire_date >= $today
+            && (!$this->start_date || $this->start_date <= $today);
     }
 
     /**
@@ -149,8 +161,14 @@ class Subscription extends Model
      */
     public function scopeActive($query)
     {
+        $today = now()->toDateString();
+
         return $query->where('status', 1)
-                    ->where('expire_date', '>=', now()->toDateString());
+                    ->where('expire_date', '>=', $today)
+                    ->where(function ($q) use ($today) {
+                        $q->whereNull('start_date')
+                          ->orWhere('start_date', '<=', $today);
+                    });
     }
 
     /**

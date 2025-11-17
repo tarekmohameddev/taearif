@@ -150,11 +150,11 @@ class PlanService extends BaseService
      * Delete plan
      *
      * @param int $id
-     * @return bool
+     * @return Plan
      * @throws ResourceNotFoundException
      * @throws BusinessLogicException
      */
-    public function deletePlan(int $id): bool
+    public function deletePlan(int $id): Plan
     {
         $plan = $this->getPlanById($id);
 
@@ -172,9 +172,11 @@ class PlanService extends BaseService
             );
         }
 
-        return $this->executeInTransaction(function () use ($plan) {
-            return $plan->delete();
+        $this->executeInTransaction(function () use ($plan) {
+            $plan->delete();
         });
+
+        return $plan;
     }
 
     /**

@@ -90,6 +90,14 @@ interface InvoiceRepositoryInterface extends BaseRepositoryInterface
     public function findPreviousActiveInvoiceForUser(int $userId): ?Invoice;
 
     /**
+     * Find latest invoice for user.
+     *
+     * @param int $userId
+     * @return Invoice|null
+     */
+    public function findLatestForUser(int $userId): ?Invoice;
+
+    /**
      * Get user invoice count.
      *
      * @param int $userId
