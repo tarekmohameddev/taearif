@@ -508,6 +508,8 @@ class UserManagementService extends BaseService
         $user = $this->getUserById($id);
 
         return $this->executeInTransaction(function () use ($user, $status) {
+            $previousStatus = $user->status;
+            
             if ($status === null) {
                 $user->status = $user->status === 1 ? 0 : 1;
             } else {
@@ -515,6 +517,25 @@ class UserManagementService extends BaseService
             }
 
             $user->save();
+
+            // Revoke all tokens when banning (status = 0) so the user can't access while banned
+            if ($user->status == 0 && $previousStatus == 1) {
+                $user->tokens()->delete();
+            }
+
+            // Log activity
+            $action = $user->status == 0 ? 'user_banned' : 'user_unbanned';
+            $description = $user->status == 0 ? 'User banned' : 'User unbanned';
+            
+            $this->logUserActivity(
+                $user->id,
+                $action,
+                $description,
+                [
+                    'previous_status' => $previousStatus,
+                    'new_status' => $user->status,
+                ]
+            );
 
             return $user->fresh(['referrer', 'activeMembership.package']);
         });
