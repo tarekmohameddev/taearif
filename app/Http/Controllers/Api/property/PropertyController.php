@@ -319,6 +319,7 @@ class PropertyController extends Controller
             'characteristics' => $responseProperty->UserPropertyCharacteristics ?? null,
             'status' => (bool) $responseProperty->status,
             'featured' => (bool) $responseProperty->featured,
+            'show_reservations' => (bool) $responseProperty->show_reservations,
             'featured_image' => asset($responseProperty->featured_image),
             'gallery' => $responseProperty->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
             'description' => optional($content)->description ?? 'No Description',
@@ -574,6 +575,7 @@ class PropertyController extends Controller
                 'latitude' => $property->latitude ? (float) $property->latitude : null,
                 'longitude' => $property->longitude ? (float) $property->longitude : null,
                 'featured' => (bool) $property->featured,
+                'show_reservations' => (bool) $property->show_reservations,
                 'city_id' => optional($content)->city_id,
                 'state_id' => optional($content)->state_id,
                 'video_url' => $property->video_url ? asset($property->video_url) : null,
@@ -768,6 +770,7 @@ class PropertyController extends Controller
                 'water_meter_number',
                 'electricity_meter_number',
                 'deed_number',
+                'show_reservations',
 
                 "facade_id",
                 "length",
@@ -926,6 +929,7 @@ class PropertyController extends Controller
             'characteristics' => $responseProperty->UserPropertyCharacteristics ?? null,
             'status' => (bool) $responseProperty->status,
             'featured' => (bool) $responseProperty->featured,
+            'show_reservations' => (bool) $responseProperty->show_reservations,
             'featured_image' => asset($responseProperty->featured_image),
             'gallery' => $responseProperty->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
             'description' => optional($content)->description ?? 'No Description',
@@ -1092,6 +1096,7 @@ class PropertyController extends Controller
             'video_url' => 'nullable|string',// For direct URL or OSS URL
             'virtual_tour' => 'nullable|string',
             'video_file' => 'nullable|file', // Video upload now handled separately via VideoUploadController
+            'show_reservations' => 'nullable|boolean',
 
         ];
 
@@ -1241,6 +1246,7 @@ class PropertyController extends Controller
             'latitude' => $responseProperty->latitude ? (float) $responseProperty->latitude : null,
             'longitude' => $responseProperty->longitude ? (float) $responseProperty->longitude : null,
             'featured' => (bool) $responseProperty->featured,
+            'show_reservations' => (bool) $responseProperty->show_reservations,
             'city_id' => optional($content)->city_id,
             'state_id' => optional($content)->state_id,
             'category_id' => $responseProperty->category_id,
@@ -1702,6 +1708,7 @@ class PropertyController extends Controller
                 'status'           => $property->status,
                 'featured_image'   => asset($property->featured_image),
                 'featured'         => (bool) $property->featured,
+                'show_reservations' => (bool) $property->show_reservations,
                 'created_at'       => $property->created_at->toISOString(),
                 'updated_at'       => $property->updated_at->toISOString(),
                 'payment_method'   => $property->payment_method,
@@ -1808,6 +1815,7 @@ class PropertyController extends Controller
                         'name' => $projectContent->title ?? 'N/A',
                     ],
                     'property_status' => $property->property_status,
+                    'show_reservations' => (bool) $property->show_reservations,
                     'is_available' => true,
                 ];
             });

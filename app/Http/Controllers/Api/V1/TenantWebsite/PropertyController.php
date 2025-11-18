@@ -242,6 +242,7 @@ class PropertyController extends Controller
 				'transactionType_en' => $normalizedPurpose,
                 'image' => $featured,
 				'status' => $isUnavailable ? 'unavailable' : 'available',
+                'show_reservations' => (bool) $p->show_reservations,
                 'createdAt' => $p->created_at?->toISOString(),
                 'description' => $content?->description ?? '',
                 'features' => is_array($p->features) ? $p->features : [],

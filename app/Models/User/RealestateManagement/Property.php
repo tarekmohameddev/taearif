@@ -51,6 +51,7 @@ class Property extends Model
         'status',
         'property_status',
         'featured',
+        'show_reservations',
         'features',
         'faqs',
         'latitude',
@@ -131,6 +132,7 @@ class Property extends Model
             'deed_number' => $request['deed_number'] ?? null,
             'reorder_featured' => $reorderFeatured,
             'reorder' => 0,
+            'show_reservations' => $request['show_reservations'] ?? true,
         ]);
     }
 
@@ -171,6 +173,7 @@ class Property extends Model
             'deed_number' => $requestData['deed_number'] ?? $this->deed_number,
             'reorder_featured' => $requestData['reorder_featured'] ?? $this->reorder_featured,
             'reorder' => $requestData['reorder'] ?? $this->reorder,
+            'show_reservations' => $requestData['show_reservations'] ?? $this->show_reservations,
         ]);
     }
 
