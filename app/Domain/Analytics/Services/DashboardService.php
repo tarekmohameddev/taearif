@@ -451,7 +451,7 @@ class DashboardService extends BaseService
     {
         $properties = $this->getPropertiesMetrics($period);
         $projects = $this->getProjectsMetrics($period);
-        $pending = $this->getPendingReviewMetrics($period);
+        
         $totalProperties = $properties['total'] ?? 0;
         $activeProperties = $properties['active'] ?? 0;
 
@@ -462,10 +462,6 @@ class DashboardService extends BaseService
             : 0;
 
         return [
-            'pending_review' => [
-                'total' => $pending['total'] ?? 0,
-                'change_percentage' => $pending['change_percentage'] ?? 0,
-            ],
             'active_properties' => [
                 'total' => $activeProperties,
                 'percentage_of_total' => $activePercentage,
