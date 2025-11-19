@@ -21,6 +21,13 @@ class ProjectController extends Controller
 	private function getAmenitiesArray($project): array
 	{
 		$amenities = $project->getAttribute('amenities');
+		
+		// Handle null values (when database column is NULL, Laravel's array cast returns null)
+		if (is_null($amenities)) {
+			return [];
+		}
+		
+		// Ensure it's an array
 		return is_array($amenities) ? $amenities : [];
 	}
 

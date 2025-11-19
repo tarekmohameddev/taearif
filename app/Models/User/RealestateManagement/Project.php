@@ -8,6 +8,7 @@ use App\Models\User\RealestateManagement\Category;
 use App\Models\User\RealestateManagement\Property;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\User\RealestateManagement\ProjectContent;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Project extends Model
 {
@@ -35,6 +36,55 @@ class Project extends Model
     protected $casts = [
         'amenities' => 'array'
     ];
+
+    /**
+     * Get the amenities attribute, ensuring it always returns an array.
+     * Handles cases where:
+     * - Database value is NULL -> returns []
+     * - Database value is a JSON array -> returns array
+     * - Database value is a JSON string (comma-separated) -> splits and returns array
+     * - Database value is already an array -> returns as is
+     */
+    protected function amenities(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                // If already an array, return as is
+                if (is_array($value)) {
+                    return $value;
+                }
+                
+                // If null, return empty array
+                if (is_null($value)) {
+                    return [];
+                }
+                
+                // If it's a string, try to decode JSON first
+                if (is_string($value)) {
+                    $decoded = json_decode($value, true);
+                    
+                    // If decoding succeeded
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        // If result is an array, return it
+                        if (is_array($decoded)) {
+                            return $decoded;
+                        }
+                        // If result is a string (comma-separated), split it
+                        if (is_string($decoded)) {
+                            return array_filter(array_map('trim', explode(',', $decoded)));
+                        }
+                    }
+                    
+                    // If JSON decode failed, try splitting the string directly
+                    // This handles cases where it's stored as plain comma-separated string
+                    return array_filter(array_map('trim', explode(',', $value)));
+                }
+                
+                // Fallback to empty array
+                return [];
+            },
+        );
+    }
 
     public static function storeProject($userId, $request)
     {
