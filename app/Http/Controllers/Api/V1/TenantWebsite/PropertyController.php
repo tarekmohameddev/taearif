@@ -84,14 +84,29 @@ class PropertyController extends Controller
 			case 'price_desc':
 				$query->orderBy('price', 'desc');
 				break;
+			case 'area_asc':
+				$query->orderBy('area', 'asc');
+				break;
 			case 'area_desc':
 				$query->orderBy('area', 'desc');
 				break;
+			case 'reorder_asc':
+				$query->orderBy('reorder', 'asc');
+				break;
+			case 'reorder_desc':
+				$query->orderBy('reorder', 'desc');
+				break;
+			case 'reorder_featured_asc':
+				$query->orderBy('reorder_featured', 'asc');
+				break;
+			case 'reorder_featured_desc':
+				$query->orderBy('reorder_featured', 'desc');
+				break;
 			case 'featured_first':
-				$query->orderBy('featured', 'desc')->orderBy('reorder_featured', 'desc')->orderBy('created_at', 'desc');
+				$query->orderBy('featured', 'desc')->orderBy('reorder_featured', 'desc')->orderBy('reorder', 'asc')->orderBy('created_at', 'desc');
 				break;
 			default:
-				$query->orderBy('featured', 'desc')->orderBy('reorder_featured', 'desc')->orderBy('created_at', 'desc');
+				$query->orderBy('featured', 'desc')->orderBy('reorder_featured', 'desc')->orderBy('reorder', 'asc')->orderBy('created_at', 'desc');
 		}
 
 		// Homepage helpers

@@ -1538,10 +1538,45 @@ class PropertyController extends Controller
             }
         }
 
-        $properties = $propertiesQuery
-            ->orderBy('reorder_featured', 'desc')
-            ->orderBy('reorder', 'asc')
-            ->paginate(10);
+        // Apply sorting
+        $sortParam = $request->input('sort', 'default');
+        switch ($sortParam) {
+            case 'price_asc':
+                $propertiesQuery->orderBy('price', 'asc');
+                break;
+            case 'price_desc':
+                $propertiesQuery->orderBy('price', 'desc');
+                break;
+            case 'area_asc':
+                $propertiesQuery->orderBy('area', 'asc');
+                break;
+            case 'area_desc':
+                $propertiesQuery->orderBy('area', 'desc');
+                break;
+            case 'reorder_asc':
+                $propertiesQuery->orderBy('reorder', 'asc');
+                break;
+            case 'reorder_desc':
+                $propertiesQuery->orderBy('reorder', 'desc');
+                break;
+            case 'reorder_featured_asc':
+                $propertiesQuery->orderBy('reorder_featured', 'asc');
+                break;
+            case 'reorder_featured_desc':
+                $propertiesQuery->orderBy('reorder_featured', 'desc');
+                break;
+            case 'created_at_asc':
+                $propertiesQuery->orderBy('created_at', 'asc');
+                break;
+            case 'created_at_desc':
+                $propertiesQuery->orderBy('created_at', 'desc');
+                break;
+            default:
+                // Default: reorder_featured desc, then reorder asc (current behavior)
+                $propertiesQuery->orderBy('reorder_featured', 'desc')->orderBy('reorder', 'asc');
+        }
+
+        $properties = $propertiesQuery->paginate(10);
 
         // === GA4: views per property (last 30 days by default) ===
         $tenantId  = $owner->username;                     // align GA context with tenant owner
