@@ -369,7 +369,7 @@ class PropertyController extends Controller
             'status' => $property->status ? 'available' : 'rented',
             'createdAt' => $property->created_at?->toISOString(),
             'description' => $content?->description ?? '',
-            'features' => is_array($property->features) ? $property->features : [],
+            'features' => is_string($property->features) ? [$property->features] : (is_array($property->features) ? $property->features : []),
             'location' => [
                 'lat' => $property->latitude ? (float) $property->latitude : null,
                 'lng' => $property->longitude ? (float) $property->longitude : null,

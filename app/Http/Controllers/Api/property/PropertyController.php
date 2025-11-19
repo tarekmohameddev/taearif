@@ -801,6 +801,25 @@ class PropertyController extends Controller
 
             ]);
 
+            // Normalize features to array format
+            if (isset($propertyData['features'])) {
+                if (is_string($propertyData['features'])) {
+                    // Try to decode as JSON first
+                    $decoded = json_decode($propertyData['features'], true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        $propertyData['features'] = $decoded;
+                    } else {
+                        // If it's a plain string, wrap it in an array
+                        $propertyData['features'] = [$propertyData['features']];
+                    }
+                } elseif (!is_array($propertyData['features'])) {
+                    // If it's neither string nor array, default to empty array
+                    $propertyData['features'] = [];
+                }
+            } else {
+                $propertyData['features'] = [];
+            }
+
             $videoUrl = $request->video_url; // Video URL from separate upload
 
             $property = Property::storeProperty(
@@ -1117,6 +1136,25 @@ class PropertyController extends Controller
             $requestData = $request->all();
             if ($videoUrl) {
                 $requestData['video_url'] = $videoUrl;
+            }
+
+            // Normalize features to array format
+            if (isset($requestData['features'])) {
+                if (is_string($requestData['features'])) {
+                    // Try to decode as JSON first
+                    $decoded = json_decode($requestData['features'], true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        $requestData['features'] = $decoded;
+                    } else {
+                        // If it's a plain string, wrap it in an array
+                        $requestData['features'] = [$requestData['features']];
+                    }
+                } elseif (!is_array($requestData['features'])) {
+                    // If it's neither string nor array, default to empty array
+                    $requestData['features'] = [];
+                }
+            } else {
+                // If features is not provided, don't override existing value (handled in updateProperty)
             }
 
             $property->updateProperty($requestData);
