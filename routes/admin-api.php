@@ -89,7 +89,9 @@ Route::prefix(config('admin-api.prefix'))
     // Unified daily operations, reminders, appointments, and tasks
     // -------------------------------------------------------------------------
 
-    Route::prefix('daily')->name('daily.')->group(function () {
+    Route::prefix('daily')->name('daily.')
+        ->middleware('checkAdminApiPermission:Dashboard')
+        ->group(function () {
         Route::get('/', [DailyController::class, 'index'])
             ->name('index');
         
@@ -143,11 +145,13 @@ Route::prefix(config('admin-api.prefix'))
     // Dashboard Module — لوحة التحكم
     // -------------------------------------------------------------------------
 
-    Route::get('dashboard', [DashboardController::class, 'index'])
-        ->name('dashboard');
+    Route::middleware('checkAdminApiPermission:Dashboard')->group(function () {
+        Route::get('dashboard', [DashboardController::class, 'index'])
+            ->name('dashboard');
 
-    Route::get('dashboard/quick-stats', [DashboardController::class, 'quickStats'])
-        ->name('dashboard.quick-stats');
+        Route::get('dashboard/quick-stats', [DashboardController::class, 'quickStats'])
+            ->name('dashboard.quick-stats');
+    });
 
 
 
@@ -162,7 +166,9 @@ Route::prefix(config('admin-api.prefix'))
         Route::get('plans', [LookupController::class, 'plans'])->name('plans');
     });
 
-    Route::prefix('users')->name('users.')->group(function () {
+    Route::prefix('users')->name('users.')
+        ->middleware('checkAdminApiPermission:Registered Users')
+        ->group(function () {
         Route::get('/', [UserController::class, 'index'])
             ->name('index');
 
@@ -230,7 +236,9 @@ Route::prefix(config('admin-api.prefix'))
     // Plans Management Module — إدارة الباقات
     // -------------------------------------------------------------------------
 
-    Route::prefix('plans')->name('plans.')->group(function () {
+    Route::prefix('plans')->name('plans.')
+        ->middleware('checkAdminApiPermission:Packages')
+        ->group(function () {
         Route::get('/', [PlanController::class, 'index'])
             ->name('index');
 
@@ -257,7 +265,9 @@ Route::prefix(config('admin-api.prefix'))
     // Subscriptions Module — الاشتراكات
     // -------------------------------------------------------------------------
 
-    Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
+    Route::prefix('subscriptions')->name('subscriptions.')
+        ->middleware('checkAdminApiPermission:Packages')
+        ->group(function () {
         Route::get('/', [SubscriptionController::class, 'index'])
             ->name('index');
 
@@ -272,13 +282,16 @@ Route::prefix(config('admin-api.prefix'))
     });
 
     Route::get('users/{user}/subscription', [SubscriptionController::class, 'showByUser'])
-        ->name('users.subscription.show');
+        ->name('users.subscription.show')
+        ->middleware('checkAdminApiPermission:Packages');
 
     // -------------------------------------------------------------------------
     // Billing & Invoices Module — الفوترة
     // -------------------------------------------------------------------------
 
-    Route::prefix('billing')->name('billing.')->group(function () {
+    Route::prefix('billing')->name('billing.')
+        ->middleware('checkAdminApiPermission:Payment Log')
+        ->group(function () {
         Route::prefix('invoices')->name('invoices.')->group(function () {
             Route::get('/', [BillingController::class, 'index'])
                 ->name('index');
@@ -307,49 +320,53 @@ Route::prefix(config('admin-api.prefix'))
     // CRM Module — إدارة علاقات العملاء
     // -------------------------------------------------------------------------
 
-    Route::get('crm', [CrmController::class, 'index'])
-        ->name('crm.index');
+    Route::middleware('checkAdminApiPermission:Registered Users')->group(function () {
+        Route::get('crm', [CrmController::class, 'index'])
+            ->name('crm.index');
 
-    Route::prefix('crm/leads')->name('crm.leads.')->group(function () {
-        Route::get('/', [LeadController::class, 'index'])
-            ->name('index');
+        Route::prefix('crm/leads')->name('crm.leads.')->group(function () {
+            Route::get('/', [LeadController::class, 'index'])
+                ->name('index');
 
-        Route::post('/', [LeadController::class, 'store'])
-            ->name('store');
+            Route::post('/', [LeadController::class, 'store'])
+                ->name('store');
 
-        Route::get('{lead}', [LeadController::class, 'show'])
-            ->name('show');
+            Route::get('{lead}', [LeadController::class, 'show'])
+                ->name('show');
 
-        Route::put('{lead}', [LeadController::class, 'update'])
-            ->name('update');
+            Route::put('{lead}', [LeadController::class, 'update'])
+                ->name('update');
 
-        Route::delete('{lead}', [LeadController::class, 'destroy'])
-            ->name('destroy');
+            Route::delete('{lead}', [LeadController::class, 'destroy'])
+                ->name('destroy');
 
-        Route::post('{lead}/move', [LeadController::class, 'moveStage'])
-            ->name('move');
+            Route::post('{lead}/move', [LeadController::class, 'moveStage'])
+                ->name('move');
 
-        Route::post('{lead}/convert', [LeadController::class, 'convert'])
-            ->name('convert');
+            Route::post('{lead}/convert', [LeadController::class, 'convert'])
+                ->name('convert');
 
-        Route::get('{lead}/activities', [LeadController::class, 'activities'])
-            ->name('activities.index');
+            Route::get('{lead}/activities', [LeadController::class, 'activities'])
+                ->name('activities.index');
 
-        Route::post('{lead}/activities', [LeadController::class, 'storeActivity'])
-            ->name('activities.store');
+            Route::post('{lead}/activities', [LeadController::class, 'storeActivity'])
+                ->name('activities.store');
 
-        Route::put('{lead}/activities/{activity}', [LeadController::class, 'updateActivity'])
-            ->name('activities.update');
+            Route::put('{lead}/activities/{activity}', [LeadController::class, 'updateActivity'])
+                ->name('activities.update');
 
-        Route::delete('{lead}/activities/{activity}', [LeadController::class, 'destroyActivity'])
-            ->name('activities.destroy');
+            Route::delete('{lead}/activities/{activity}', [LeadController::class, 'destroyActivity'])
+                ->name('activities.destroy');
+        });
     });
 
     // -------------------------------------------------------------------------
     // Domains Management Module — النطاقات
     // -------------------------------------------------------------------------
 
-    Route::prefix('domains')->name('domains.')->group(function () {
+    Route::prefix('domains')->name('domains.')
+        ->middleware('checkAdminApiPermission:Settings')
+        ->group(function () {
         Route::get('/', [DomainController::class, 'index'])
             ->name('index');
 
@@ -399,73 +416,79 @@ Route::prefix(config('admin-api.prefix'))
     });
 
     // Domain Renewal Pricing Management
-    Route::prefix('domain-renewal-pricings')->name('domain-renewal-pricings.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Api\Admin\DomainRenewalPricingController::class, 'index'])
-            ->name('index');
+    Route::prefix('domain-renewal-pricings')->name('domain-renewal-pricings.')
+        ->middleware('checkAdminApiPermission:Settings')
+        ->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\Admin\DomainRenewalPricingController::class, 'index'])
+                ->name('index');
 
-        Route::post('/', [\App\Http\Controllers\Api\Admin\DomainRenewalPricingController::class, 'store'])
-            ->name('store');
+            Route::post('/', [\App\Http\Controllers\Api\Admin\DomainRenewalPricingController::class, 'store'])
+                ->name('store');
 
-        Route::get('{id}', [\App\Http\Controllers\Api\Admin\DomainRenewalPricingController::class, 'show'])
-            ->name('show');
+            Route::get('{id}', [\App\Http\Controllers\Api\Admin\DomainRenewalPricingController::class, 'show'])
+                ->name('show');
 
-        Route::put('{id}', [\App\Http\Controllers\Api\Admin\DomainRenewalPricingController::class, 'update'])
-            ->name('update');
+            Route::put('{id}', [\App\Http\Controllers\Api\Admin\DomainRenewalPricingController::class, 'update'])
+                ->name('update');
 
-        Route::delete('{id}', [\App\Http\Controllers\Api\Admin\DomainRenewalPricingController::class, 'destroy'])
-            ->name('destroy');
-    });
+            Route::delete('{id}', [\App\Http\Controllers\Api\Admin\DomainRenewalPricingController::class, 'destroy'])
+                ->name('destroy');
+        });
 
     // -------------------------------------------------------------------------
     // Marketing Module — التسويق
     // -------------------------------------------------------------------------
 
-    Route::get('marketing', [MarketingController::class, 'index'])
-        ->name('marketing.index');
+    Route::middleware('checkAdminApiPermission:Settings')->group(function () {
+        Route::get('marketing', [MarketingController::class, 'index'])
+            ->name('marketing.index');
 
-    Route::get('marketing/statistics', [MarketingController::class, 'statistics'])
-        ->name('marketing.statistics');
+        Route::get('marketing/statistics', [MarketingController::class, 'statistics'])
+            ->name('marketing.statistics');
 
-    Route::prefix('marketing/whatsapp/templates')->name('marketing.whatsapp.templates.')->group(function () {
-        Route::get('/', [MarketingController::class, 'templates'])
-            ->name('index');
+        Route::prefix('marketing/whatsapp/templates')->name('marketing.whatsapp.templates.')->group(function () {
+            Route::get('/', [MarketingController::class, 'templates'])
+                ->name('index');
 
-        Route::post('/', [MarketingController::class, 'storeTemplate'])
-            ->name('store');
+            Route::post('/', [MarketingController::class, 'storeTemplate'])
+                ->name('store');
 
-        Route::get('{template}', [MarketingController::class, 'showTemplate'])
-            ->name('show');
+            Route::get('{template}', [MarketingController::class, 'showTemplate'])
+                ->name('show');
 
-        Route::put('{template}', [MarketingController::class, 'updateTemplate'])
-            ->name('update');
+            Route::put('{template}', [MarketingController::class, 'updateTemplate'])
+                ->name('update');
 
-        Route::delete('{template}', [MarketingController::class, 'destroyTemplate'])
-            ->name('destroy');
+            Route::delete('{template}', [MarketingController::class, 'destroyTemplate'])
+                ->name('destroy');
 
-        Route::post('{template}/toggle-status', [MarketingController::class, 'toggleTemplateStatus'])
-            ->name('toggle-status');
+            Route::post('{template}/toggle-status', [MarketingController::class, 'toggleTemplateStatus'])
+                ->name('toggle-status');
+        });
+
+        Route::get('marketing/whatsapp/settings', [MarketingController::class, 'getWhatsAppSettings'])
+            ->name('marketing.whatsapp.settings');
+
+        Route::put('marketing/whatsapp/settings', [MarketingController::class, 'updateWhatsAppSettings'])
+            ->name('marketing.whatsapp.settings.update');
+
+        Route::get('marketing/automated-messages', [MarketingController::class, 'getAutomatedMessages'])
+            ->name('marketing.automated-messages');
+
+        Route::get('marketing/automated-messages/{type}', [MarketingController::class, 'getAutomatedMessage'])
+            ->name('marketing.automated-messages.show');
+
+        Route::put('marketing/automated-messages/{type}', [MarketingController::class, 'updateAutomatedMessage'])
+            ->name('marketing.automated-messages.update');
     });
-
-    Route::get('marketing/whatsapp/settings', [MarketingController::class, 'getWhatsAppSettings'])
-        ->name('marketing.whatsapp.settings');
-
-    Route::put('marketing/whatsapp/settings', [MarketingController::class, 'updateWhatsAppSettings'])
-        ->name('marketing.whatsapp.settings.update');
-
-    Route::get('marketing/automated-messages', [MarketingController::class, 'getAutomatedMessages'])
-        ->name('marketing.automated-messages');
-
-    Route::get('marketing/automated-messages/{type}', [MarketingController::class, 'getAutomatedMessage'])
-        ->name('marketing.automated-messages.show');
-
-    Route::put('marketing/automated-messages/{type}', [MarketingController::class, 'updateAutomatedMessage'])
-        ->name('marketing.automated-messages.update');
 
     // -------------------------------------------------------------------------
     // Affiliates Management Module — برنامج الإحالة
     // -------------------------------------------------------------------------
 
-    Route::prefix('affiliates')->name('affiliates.')->group(function () {
+    Route::prefix('affiliates')->name('affiliates.')
+        ->middleware('checkAdminApiPermission:Settings')
+        ->group(function () {
         Route::get('/', [AffiliateController::class, 'index'])
             ->name('index');
 
@@ -500,7 +523,9 @@ Route::prefix(config('admin-api.prefix'))
     // Employees Management Module — إدارة الموظفين
     // -------------------------------------------------------------------------
 
-    Route::prefix('employees')->name('employees.')->group(function () {
+    Route::prefix('employees')->name('employees.')
+        ->middleware('checkAdminApiPermission:Admins Management')
+        ->group(function () {
         Route::get('/', [EmployeeController::class, 'index'])
             ->name('index');
 
@@ -539,7 +564,9 @@ Route::prefix(config('admin-api.prefix'))
     // Inquiries/Support Module — الاستفسارات والدعم
     // -------------------------------------------------------------------------
 
-    Route::prefix('inquiries')->name('inquiries.')->group(function () {
+    Route::prefix('inquiries')->name('inquiries.')
+        ->middleware('checkAdminApiPermission:Contact Page')
+        ->group(function () {
         Route::get('statistics', [InquiryController::class, 'statistics'])
             ->name('statistics');
 
@@ -575,7 +602,9 @@ Route::prefix(config('admin-api.prefix'))
     // Platform Settings Module — إعدادات المنصة
     // -------------------------------------------------------------------------
 
-    Route::prefix('platform')->name('platform.')->group(function () {
+    Route::prefix('platform')->name('platform.')
+        ->middleware('checkAdminApiPermission:Settings')
+        ->group(function () {
         Route::get('settings', [PlatformController::class, 'index'])
             ->name('settings.index');
 
@@ -590,7 +619,9 @@ Route::prefix(config('admin-api.prefix'))
     // Analytics Module — التحليلات المتقدمة
     // -------------------------------------------------------------------------
 
-    Route::prefix('analytics')->name('analytics.')->group(function () {
+    Route::prefix('analytics')->name('analytics.')
+        ->middleware('checkAdminApiPermission:Dashboard')
+        ->group(function () {
         Route::get('overview', [AnalyticsController::class, 'overview'])
             ->name('overview');
 
