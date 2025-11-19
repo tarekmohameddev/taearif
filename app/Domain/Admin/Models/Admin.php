@@ -147,7 +147,7 @@ class Admin extends Authenticatable
     /**
      * Get all permissions for this admin (employee-specific + role permissions merged)
      * 
-     * Returns employee-specific permissions if set, otherwise role permissions
+     * Merges employee-specific permissions with role permissions (union)
      *
      * @return array
      */
@@ -166,9 +166,9 @@ class Admin extends Authenticatable
             }
         }
         
-        // Override with employee-specific permissions if they exist
+        // Merge employee-specific permissions (add to role, don't replace)
         if ($this->permissions && is_array($this->permissions)) {
-            $permissions = $this->permissions;
+            $permissions = array_merge($permissions, $this->permissions);
         }
         
         return array_unique($permissions);

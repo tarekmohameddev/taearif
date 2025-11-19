@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\Admin\InquiryController;
 use App\Http\Controllers\Api\Admin\PlatformController;
 use App\Http\Controllers\Api\Admin\AnalyticsController;
 use App\Http\Controllers\Api\Admin\DashboardController;
+use App\Http\Controllers\Api\Admin\PermissionController;
 
 // =============================================================================
 // PUBLIC ROUTES - No Authentication Required
@@ -83,6 +84,13 @@ Route::prefix(config('admin-api.prefix'))
 
     Route::get('me', [AuthController::class, 'me'])
         ->name('me');
+
+    // -------------------------------------------------------------------------
+    // Permissions Module — الأذونات
+    // -------------------------------------------------------------------------
+
+    Route::get('permissions', [PermissionController::class, 'index'])
+        ->name('permissions.index');
 
     // -------------------------------------------------------------------------
     // Daily Follow-up Module — المتابعة اليومية
