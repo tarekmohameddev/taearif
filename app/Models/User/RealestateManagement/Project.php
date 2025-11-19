@@ -73,7 +73,7 @@ class Project extends Model
             'completion_date' => $request['completion_date'] ?? $this->completion_date,
             'latitude' => $request['latitude'],
             'longitude' => $request['longitude'],
-            'amenities' => $request['amenities'] ?? [],
+            'amenities' => $request['amenities'] ?? $this->getAttribute('amenities') ?? [],
         ]);
     }
 
@@ -120,11 +120,6 @@ class Project extends Model
     public function types()
     {
         return $this->hasMany(ProjectType::class, 'project_id');
-    }
-
-    public function amenities()
-    {
-        return $this->hasMany(PropertyAmenity::class, 'property_id')->with('amenity');
     }
 
     public function categories()

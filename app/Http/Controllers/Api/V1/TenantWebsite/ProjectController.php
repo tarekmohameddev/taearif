@@ -15,6 +15,15 @@ class ProjectController extends Controller
 		return User::where('username', $tenantId)->firstOrFail();
 	}
 
+	/**
+	 * Get amenities array from project, ensuring it's always an array.
+	 */
+	private function getAmenitiesArray($project): array
+	{
+		$amenities = $project->getAttribute('amenities');
+		return is_array($amenities) ? $amenities : [];
+	}
+
     public function index(Request $request, string $tenantId, GoogleAnalyticsService $analytics)
 	{
 		$tenant = $this->resolveTenant($tenantId);
@@ -110,7 +119,7 @@ class ProjectController extends Controller
                 'image' => $featured,
                 'images' => $images,
                 'videoUrl' => $project->video_url ?? null,
-                'amenities' => is_array($project->amenities) ? $project->amenities : [],
+                'amenities' => $this->getAmenitiesArray($project),
                 'views' => $viewsBySlug[$slug] ?? 0,
                 'location' => [
                     'lat' => $project->latitude ? (float) $project->latitude : null,
@@ -254,7 +263,7 @@ class ProjectController extends Controller
 			'floorplans' => $floorplans,
 			'videoUrl' => $project->video_url ?? null,
 			'views' => $views,
-			'amenities' => is_array($project->amenities) ? $project->amenities : [],
+			'amenities' => $this->getAmenitiesArray($project),
 			'featured' => (bool) ($project->featured ?? false),
 			'published' => (bool) ($project->published ?? false),
 			'location' => [
