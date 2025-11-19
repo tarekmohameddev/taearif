@@ -140,7 +140,7 @@ class ProjectController extends Controller
                 "visits"          => (int)($visitsByProject[$project->id] ?? 0),   // << here
                 "featured_image"  => $project->featured_image ? asset($project->featured_image) : null,
                 "video_url"       => $project->video_url ? asset($project->video_url) : null,
-                "price_range"     => number_format($project->min_price, 2),
+                "price_range"     => formatNumberWithoutTrailingZeros($project->min_price ?? 0),
                 "latitude"        => $project->latitude,
                 "longitude"       => $project->longitude,
                 "featured"        => (bool) $project->featured,
@@ -262,7 +262,7 @@ class ProjectController extends Controller
             "visits" => $visits,
             "featured_image" => asset($project->featured_image),
             "video_url" => $project->video_url ? asset($project->video_url) : null,
-            "price_range" => "From $" . number_format($project->min_price, 2) . " to $" . number_format($project->max_price, 2),
+            "price_range" => "From $" . formatNumberWithoutTrailingZeros($project->min_price ?? 0) . " to $" . formatNumberWithoutTrailingZeros($project->max_price ?? 0),
             "latitude" => $project->latitude,
             "longitude" => $project->longitude,
             "featured" => $project->featured,

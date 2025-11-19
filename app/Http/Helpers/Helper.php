@@ -711,6 +711,31 @@ if (!function_exists('formatNumber')) {
     }
 }
 
+if (!function_exists('formatNumberWithoutTrailingZeros')) {
+    /**
+     * Format a number by removing trailing zeros after decimal point.
+     * 
+     * @param int|float|string|null $number
+     * @return string Returns formatted number without trailing zeros, or '0' if input is null/empty
+     */
+    function formatNumberWithoutTrailingZeros($number): string
+    {
+        if ($number === null || $number === '' || $number === 0) {
+            return '0';
+        }
+
+        $floatValue = (float) $number;
+        
+        // If it's a whole number, return without decimals
+        if ($floatValue == (int) $floatValue) {
+            return (string) (int) $floatValue;
+        }
+
+        // Format with 2 decimals and remove trailing zeros
+        return rtrim(rtrim(number_format($floatValue, 2, '.', ''), '0'), '.');
+    }
+}
+
 if (!function_exists('paytabInfo')) {
     function paytabInfo($type, $user_id = null)
     {
