@@ -88,6 +88,7 @@ if (!function_exists('make_slug')) {
         $slug = preg_replace('/\s+/u', '-', trim($string));
         $slug = str_replace("/", "", $slug);
         $slug = str_replace("?", "", $slug);
+        $slug = str_replace(".", "", $slug);
         return mb_strtolower($slug, 'UTF-8');
     }
 }

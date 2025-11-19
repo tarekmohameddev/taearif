@@ -653,7 +653,7 @@ class ProjectController extends Controller
                     'description' => $content['description'],
                     'meta_keyword' => $content['meta_keyword'],
                     'meta_description' => $content['meta_description'],
-                    'slug' => Str::slug($content['title']),
+                    'slug' => str_replace('.', '', Str::slug($content['title'])),
                 ]);
             }
 

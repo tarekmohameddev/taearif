@@ -57,7 +57,7 @@ class PropertyContent extends Model
 
     public static function generateUniqueSlug($title, $propertyId = null)
     {
-        $slug = Str::slug($title);
+        $slug = str_replace('.', '', Str::slug($title));
         $originalSlug = $slug;
         $counter = 1;
 
