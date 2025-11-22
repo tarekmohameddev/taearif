@@ -1001,6 +1001,7 @@ Route::domain($domain)->group(function () {
                     //#==========property slider image end
                     Route::post('delete', 'delete')->name('user.property_management.delete_property');
                     Route::post('bulk-delete', 'bulkDelete')->name('user.property_management.bulk_delete_property');
+                    Route::get('/bulk-import/template', 'downloadTemplate')->name('user.property_management.bulk_import_template');
                 });
                 // property messages
                 Route::controller(PropertyMessageController::class)->group(function () {
