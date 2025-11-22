@@ -45,8 +45,50 @@ class PropertyController extends Controller
             'file' => 'required|mimes:xlsx,csv',
         ]);
 
+        $user = auth()->user();
+
+        // Check if user has active membership
+        $membership = Membership::where('user_id', $user->id)
+            ->where('status', 1)
+            ->orderBy('id', 'desc')
+            ->with('package')
+            ->first();
+
+        if (!$membership || !$membership->package) {
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'No active package found for the user.',
+            ], 403);
+        }
+
+        // Check property limit before processing the file
+        $realEstateLimit = $membership->package->real_estate_limit_number;
+        $currentPropertyCount = Property::where('user_id', $user->id)->count();
+
+        // Estimate row count from uploaded file
         try {
-            Excel::import(new PropertiesImport(auth()->id()), $request->file('file'));
+            $collection = Excel::toCollection(new PropertiesImport($user->id), $request->file('file'));
+            $incomingRowCount = $collection->first()->count(); // Header already excluded by WithHeadingRow
+            
+            if (!is_null($realEstateLimit) && ($currentPropertyCount + $incomingRowCount) > $realEstateLimit) {
+                return response()->json([
+                    'status' => 'fail',
+                    'message' => 'Bulk import would exceed your property listing limit.',
+                    'limit' => $realEstateLimit,
+                    'current_count' => $currentPropertyCount,
+                    'incoming_count' => $incomingRowCount,
+                    'available_slots' => max(0, $realEstateLimit - $currentPropertyCount)
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to read uploaded file: ' . $e->getMessage(),
+            ], 422);
+        }
+
+        try {
+            Excel::import(new PropertiesImport($user->id), $request->file('file'));
 
             return response()->json([
                 'status' => 'success',
@@ -60,14 +102,31 @@ class PropertyController extends Controller
                     'row' => $failure->row(),
                     'attribute' => $failure->attribute(),
                     'errors' => $failure->errors(),
+                    'values' => $failure->values(),
                 ];
             }
             return response()->json([
                 'status' => 'fail',
-                'message' => 'Validation failed for some rows.',
+                'message' => 'Validation failed for some rows. Please check the errors and correct your spreadsheet.',
                 'errors' => $errors,
             ], 422);
         } catch (\Exception $e) {
+            // Log the full error for debugging
+            Log::error('Bulk property import failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Check if this is a relation-specific error (contains "Row X:")
+            if (preg_match('/Row (\d+):/', $e->getMessage(), $matches)) {
+                return response()->json([
+                    'status' => 'fail',
+                    'message' => $e->getMessage(),
+                    'row' => (int)$matches[1],
+                ], 422);
+            }
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'An error occurred during import: ' . $e->getMessage(),

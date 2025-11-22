@@ -130,6 +130,7 @@ use App\Http\Controllers\Api\PixelController; // Added import for PixelControlle
 // });
 
 Route::get('public-user/{id}', [PublicUserController::class, 'show']);
+Route::get('/properties/bulk-import/template', [PropertyController::class, 'downloadTemplate']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/affiliate/register', [AffiliateController::class, 'register']);
@@ -277,6 +278,8 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::get   ('/properties',                         [PropertyController::class, 'index'])->middleware('can:properties.view');
     Route::get   ('/properties/available-units',         [PropertyController::class, 'availableUnits'])->middleware('can:properties.view');
     Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
+    Route::post  ('/properties/bulk-import',             [PropertyController::class, 'bulkImport'])->middleware('can:properties.create');
+    // Route::get   ('/properties/bulk-import/template',    [PropertyController::class, 'downloadTemplate']); // Moved to public routes
     Route::post  ('/properties',                         [PropertyController::class, 'store'])->middleware('can:properties.create');
     Route::post  ('/properties/upload-deed-image',       [PropertyController::class, 'uploadDeedImage'])->middleware('can:properties.create');
     Route::post  ('/properties/{id}',                    [PropertyController::class, 'update'])->middleware('can:properties.update');
