@@ -34,8 +34,51 @@ use Carbon\Carbon;
 use App\Services\AlibabaOssService;
 
 
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\PropertiesImport;
+
 class PropertyController extends Controller
 {
+    public function bulkImport(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,csv',
+        ]);
+
+        try {
+            Excel::import(new PropertiesImport(auth()->id()), $request->file('file'));
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Properties imported successfully.',
+            ]);
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $failures = $e->failures();
+            $errors = [];
+            foreach ($failures as $failure) {
+                $errors[] = [
+                    'row' => $failure->row(),
+                    'attribute' => $failure->attribute(),
+                    'errors' => $failure->errors(),
+                ];
+            }
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'Validation failed for some rows.',
+                'errors' => $errors,
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occurred during import: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function downloadTemplate()
+    {
+        return Excel::download(new \App\Exports\PropertiesTemplateExport, 'properties_import_template.xlsx');
+    }
 
 
 
@@ -558,14 +601,14 @@ class PropertyController extends Controller
                 'payment_method' => $property->payment_method,
                 'title' => optional($content)->title ?? '',
                 'address' => optional($content)->address ?? '',
-                'price' => $property->price ? formatNumberWithoutTrailingZeros($property->price) : '0',
+                'price' => isset($property->price) ? formatNumberWithoutTrailingZeros($property->price) : '0',
                 'views' => $views,
-                'pricePerMeter' => $property->pricePerMeter ? formatNumberWithoutTrailingZeros($property->pricePerMeter) : null,
+                'pricePerMeter' => isset($property->pricePerMeter) ? formatNumberWithoutTrailingZeros($property->pricePerMeter) : null,
                 'purpose' => $property->purpose,
                 'type' => $property->type ?? '',
                 'beds' => $property->beds,
                 'bath' => $property->bath,
-                'area' => $property->area ? formatNumberWithoutTrailingZeros($property->area) : null,
+                'area' => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : null,
                 'features' => $property->features ?? [],
                 'status' => (int) $property->status,
                 'featured_image' => asset($property->featured_image),
@@ -1267,14 +1310,14 @@ class PropertyController extends Controller
             'title' => optional($content)->title ?? '',
             'slug' => optional($content)->slug ?? '',
             'address' => optional($content)->address ?? '',
-            'price' => $responseProperty->price ? formatNumberWithoutTrailingZeros($responseProperty->price) : '0',
-            'pricePerMeter' => $responseProperty->pricePerMeter ? formatNumberWithoutTrailingZeros($responseProperty->pricePerMeter) : null,
+            'price' => isset($responseProperty->price) ? formatNumberWithoutTrailingZeros($responseProperty->price) : '0',
+            'pricePerMeter' => isset($responseProperty->pricePerMeter) ? formatNumberWithoutTrailingZeros($responseProperty->pricePerMeter) : null,
             'purpose' => $responseProperty->purpose,
             'project_id' => $responseProperty->project_id ?? '',
             'type' => $responseProperty->type ?? '',
             'beds' => $responseProperty->beds,
             'bath' => $responseProperty->bath,
-            'area' => $responseProperty->area ? formatNumberWithoutTrailingZeros($responseProperty->area) : null,
+            'area' => isset($responseProperty->area) ? formatNumberWithoutTrailingZeros($responseProperty->area) : null,
             'features' => $responseProperty->features ?? [],
             'status' => (int) $responseProperty->status,
             'featured_image' => asset($responseProperty->featured_image),
@@ -1775,7 +1818,7 @@ class PropertyController extends Controller
                 'type'             => $property->type,
                 'beds'             => $property->beds,
                 'bath'             => $property->bath,
-                'area'             => $property->area ? formatNumberWithoutTrailingZeros($property->area) : null,
+                'area'             => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : null,
                 'transaction_type' => $property->purpose,
                 'features'         => $property->features,
                 'status'           => $property->status,

@@ -383,7 +383,7 @@ class PropertyController extends Controller
 		$extra = [
 			'payment_method' => $this->translator->translatePaymentMethod($property->payment_method),
 			'payment_method_en' => $property->payment_method,
-			'pricePerMeter' => $property->pricePerMeter ? formatNumberWithoutTrailingZeros($property->pricePerMeter) : null,
+			'pricePerMeter' => isset($property->pricePerMeter) ? formatNumberWithoutTrailingZeros($property->pricePerMeter) : null,
 			'floor_planning_image' => collect($property->floor_planning_image)->map(fn($img) => asset($img))->toArray(),
 			'video_url' => $property->video_url ? asset($property->video_url) : null,
 			'virtual_tour' => $property->virtual_tour ? asset($property->virtual_tour) : null,
