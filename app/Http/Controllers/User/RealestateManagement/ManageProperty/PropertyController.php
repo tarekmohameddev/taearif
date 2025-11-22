@@ -481,4 +481,9 @@ class PropertyController extends Controller
         Session::flash('success', 'Properties deleted successfully!');
         return response()->json(['status' => 'success'], 200);
     }
+
+    public function downloadTemplate()
+    {
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\PropertiesTemplateExport, 'properties_import_template.xlsx');
+    }
 }
