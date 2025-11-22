@@ -161,7 +161,7 @@ class Property extends Model
             'video_url' => $requestData['video_url'] ?? null,
             'virtual_tour' => $requestData['virtual_tour'] ?? null,
             'status' => $requestData['status'] ?? 0,
-            'features' => $requestData['features'] ?? [],
+            'features' => $requestData['features'] ?? $this->features,
             'latitude' => $requestData['latitude'] ?? null,
             'longitude' => $requestData['longitude'] ?? null,
             'category_id' => $requestData['category_id'] ?? $this->category_id,
