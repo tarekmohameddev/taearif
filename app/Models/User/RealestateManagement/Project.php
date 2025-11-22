@@ -83,6 +83,38 @@ class Project extends Model
                 // Fallback to empty array
                 return [];
             },
+            set: function ($value) {
+                // Normalize the input value to always be a clean array
+                
+                // Handle null or empty values
+                if (is_null($value) || $value === '') {
+                    return [];
+                }
+                
+                // If it's already an array, filter and clean it
+                if (is_array($value)) {
+                    // Filter out null/empty values and reindex
+                    $cleaned = array_values(array_filter($value, function ($item) {
+                        return $item !== null && $item !== '';
+                    }));
+                    return $cleaned;
+                }
+                
+                // If it's a string, try to decode as JSON first
+                if (is_string($value)) {
+                    $decoded = json_decode($value, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        return array_values(array_filter($decoded, function ($item) {
+                            return $item !== null && $item !== '';
+                        }));
+                    }
+                    // If it's a plain string, wrap it in an array
+                    return [trim($value)];
+                }
+                
+                // Fallback to empty array
+                return [];
+            },
         );
     }
 
