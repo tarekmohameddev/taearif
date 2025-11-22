@@ -114,21 +114,22 @@ class Admin extends Authenticatable
     /**
      * Check if admin has a specific permission
      * 
-     * Priority: Employee-specific permissions > Role permissions
+     * Checks both employee-specific permissions and role permissions (union)
+     * Permission is granted if found in either employee permissions OR role permissions
      *
      * @param string $permission
      * @return bool
      */
     public function hasPermission(string $permission): bool
     {
-        // First check employee-specific permissions (overrides)
+        // Check employee-specific permissions
         if ($this->permissions && is_array($this->permissions)) {
             if (in_array($permission, $this->permissions)) {
                 return true;
             }
         }
         
-        // Fall back to role permissions
+        // Also check role permissions (additive, not override)
         if (!$this->role) {
             return false;
         }
@@ -147,7 +148,7 @@ class Admin extends Authenticatable
     /**
      * Get all permissions for this admin (employee-specific + role permissions merged)
      * 
-     * Merges employee-specific permissions with role permissions (union)
+     * Merges role permissions + employee permissions
      *
      * @return array
      */
