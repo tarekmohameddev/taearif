@@ -155,7 +155,7 @@ class Project extends Model
             'completion_date' => $request['completion_date'] ?? $this->completion_date,
             'latitude' => $request['latitude'],
             'longitude' => $request['longitude'],
-            'amenities' => $request['amenities'] ?? $this->getAttribute('amenities') ?? [],
+            'amenities' => $request['amenities'] ?? $this->amenities ?? [],
         ]);
     }
 

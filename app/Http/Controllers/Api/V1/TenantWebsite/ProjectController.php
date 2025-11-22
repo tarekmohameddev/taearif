@@ -17,18 +17,11 @@ class ProjectController extends Controller
 
 	/**
 	 * Get amenities array from project, ensuring it's always an array.
+	 * Uses the Attribute accessor which properly handles JSON decoding.
 	 */
 	private function getAmenitiesArray($project): array
 	{
-		$amenities = $project->getAttribute('amenities');
-		
-		// Handle null values (when database column is NULL, Laravel's array cast returns null)
-		if (is_null($amenities)) {
-			return [];
-		}
-		
-		// Ensure it's an array
-		return is_array($amenities) ? $amenities : [];
+		return $project->amenities ?? [];
 	}
 
     public function index(Request $request, string $tenantId, GoogleAnalyticsService $analytics)

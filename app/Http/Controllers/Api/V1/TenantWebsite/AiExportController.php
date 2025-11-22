@@ -292,7 +292,7 @@ class AiExportController extends Controller
                 'latitude' => $project->latitude,
                 'longitude' => $project->longitude,
             ],
-            'amenities' => array_values((array) ($project->getAttribute('amenities') ?? [])),
+            'amenities' => array_values($project->amenities ?? []),
             'specifications' => $project->specifications?->map(function ($spec) {
                 return [
                     'title' => $spec->title,

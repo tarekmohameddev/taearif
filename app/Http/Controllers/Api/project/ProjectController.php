@@ -151,7 +151,7 @@ class ProjectController extends Controller
                 "published"       => (bool) $project->published,
                 "created_at"      => $project->created_at->toISOString(),
                 "updated_at"      => $project->updated_at->toISOString(),
-                "amenities"       => is_array($project->getAttribute('amenities')) ? $project->getAttribute('amenities') : [],
+                "amenities"       => $project->amenities ?? [],
                 "contents"        => $project->contents->map(function ($content) {
                     return [
                         "id"               => $content->id,
@@ -272,7 +272,7 @@ class ProjectController extends Controller
             "published" => $project->published,
             "created_at" => $project->created_at,
             "updated_at" => $project->updated_at,
-            "amenities" => is_array($project->getAttribute('amenities')) ? $project->getAttribute('amenities') : [],
+            "amenities" => $project->amenities ?? [],
             "contents" => $project->contents->map(function ($content) {
                 return [
                     "id" => $content->id,
@@ -625,7 +625,7 @@ class ProjectController extends Controller
             $requestData = $request->all();
             $requestData['featured_image'] = $request->featured_image;
             $requestData['video_url'] = $request->video_url; // Video URL from separate upload
-            $requestData['amenities'] = $this->normalizeAmenities($request->input('amenities', $project->getAttribute('amenities')));
+            $requestData['amenities'] = $this->normalizeAmenities($request->input('amenities', $project->amenities));
 
             $project->updateProject($requestData);
             if ($request->has('gallery_images')) {
