@@ -122,27 +122,21 @@ class Admin extends Authenticatable
      */
     public function hasPermission(string $permission): bool
     {
-        // Check employee-specific permissions
-        if ($this->permissions && is_array($this->permissions)) {
-            if (in_array($permission, $this->permissions)) {
-                return true;
-            }
+        // Super admins (role_id is null) implicitly have all permissions
+        if (is_null($this->role_id)) {
+            return true;
         }
-        
-        // Also check role permissions (additive, not override)
-        if (!$this->role) {
+
+        // Get all permissions (union of employee-specific + role permissions)
+        // getAllPermissions() handles missing roles gracefully - it will still return
+        // employee-specific permissions even if the role is orphaned/deleted
+        $permissions = $this->getAllPermissions();
+
+        if (empty($permissions)) {
             return false;
         }
 
-        $rolePermissions = is_array($this->role->permissions)
-            ? $this->role->permissions
-            : json_decode($this->role->permissions, true);
-
-        if (!is_array($rolePermissions)) {
-            return false;
-        }
-
-        return in_array($permission, $rolePermissions);
+        return in_array($permission, $permissions);
     }
 
     /**

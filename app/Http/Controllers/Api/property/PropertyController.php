@@ -67,8 +67,45 @@ class PropertyController extends Controller
 
         // Estimate row count from uploaded file
         try {
-            $collection = Excel::toCollection(new PropertiesImport($user->id), $request->file('file'));
-            $incomingRowCount = $collection->first()->count(); // Header already excluded by WithHeadingRow
+            // Smart Method: Calculate the exact number of rows with data
+            // This avoids reading thousands of empty rows
+            $filePath = $request->file('file')->getPathname();
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($filePath);
+            $reader->setReadDataOnly(true); // Optimization: Read only data, ignore formatting
+            $spreadsheet = $reader->load($filePath);
+            $worksheet = $spreadsheet->getActiveSheet();
+            $highestRow = $worksheet->getHighestDataRow(); // This gets the last row with actual data
+            
+            // Pass the smart limit to the import class
+            // highestRow includes header, so we pass it as the limit
+            $import = new PropertiesImport($user->id, $highestRow);
+            
+            $collection = Excel::toCollection($import, $request->file('file'));
+            
+            // Count only actual data rows (excluding header which is row 1)
+            // The collection excludes the header due to WithHeadingRow trait
+            $firstSheet = $collection->first();
+            // Filter out empty rows (all values are null or empty)
+            $incomingRowCount = $firstSheet->filter(function($row) {
+                $rowArray = $row->toArray();
+                
+                // Skip rows marked as empty by prepareForValidation
+                if (isset($rowArray['_skip_empty_row']) && $rowArray['_skip_empty_row'] === true) {
+                    return false;
+                }
+                
+                // Skip rows where title is the dummy empty marker
+                if (isset($rowArray['title']) && $rowArray['title'] === '_EMPTY_ROW_SKIP_') {
+                    return false;
+                }
+                
+                // Skip completely empty rows (all values are null or empty)
+                $hasData = !empty(array_filter($rowArray, function($value) {
+                    return !is_null($value) && $value !== '';
+                }));
+                
+                return $hasData;
+            })->count();
             
             if (!is_null($realEstateLimit) && ($currentPropertyCount + $incomingRowCount) > $realEstateLimit) {
                 return response()->json([
@@ -88,50 +125,72 @@ class PropertyController extends Controller
         }
 
         try {
-            Excel::import(new PropertiesImport($user->id), $request->file('file'));
+        // Use the same smart limit for the actual import
+        $import = new PropertiesImport($user->id, $highestRow);
+        Excel::import($import, $request->file('file'));
 
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Properties imported successfully.',
-            ]);
-        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
-            $failures = $e->failures();
-            $errors = [];
-            foreach ($failures as $failure) {
-                $errors[] = [
-                    'row' => $failure->row(),
-                    'attribute' => $failure->attribute(),
-                    'errors' => $failure->errors(),
-                    'values' => $failure->values(),
-                ];
-            }
-            return response()->json([
-                'status' => 'fail',
-                'message' => 'Validation failed for some rows. Please check the errors and correct your spreadsheet.',
-                'errors' => $errors,
-            ], 422);
-        } catch (\Exception $e) {
-            // Log the full error for debugging
-            Log::error('Bulk property import failed', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+        $failures = $import->sheetImport->failures();
+        $errors = $import->sheetImport->errors();
+        $detailedErrors = [];
 
-            // Check if this is a relation-specific error (contains "Row X:")
-            if (preg_match('/Row (\d+):/', $e->getMessage(), $matches)) {
-                return response()->json([
-                    'status' => 'fail',
-                    'message' => $e->getMessage(),
-                    'row' => (int)$matches[1],
-                ], 422);
-            }
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'An error occurred during import: ' . $e->getMessage(),
-            ], 500);
+        // Collect Validation Failures
+        foreach ($failures as $failure) {
+            $detailedErrors[] = [
+                'row' => $failure->row(),
+                'message' => 'Validation Error: ' . implode(', ', $failure->errors()),
+                'values' => $failure->values(),
+            ];
         }
+
+        // Collect Logic Errors (Exceptions)
+        foreach ($errors as $error) {
+            $message = $error->getMessage();
+            $row = null;
+            
+            // Extract row number if present in exception message
+            if (preg_match('/Row (\d+):/', $message, $matches)) {
+                $row = (int)$matches[1];
+            }
+
+            $detailedErrors[] = [
+                'row' => $row,
+                'message' => $message,
+            ];
+        }
+
+        $importedCount = $import->sheetImport->importedCount;
+        $failedCount = count($detailedErrors);
+
+        if ($failedCount > 0) {
+            return response()->json([
+                'status' => 'partial_success', // or 'fail' if 0 imported
+                'message' => "Import completed with issues. Imported: {$importedCount}, Failed: {$failedCount}.",
+                'imported_count' => $importedCount,
+                'failed_count' => $failedCount,
+                'errors' => $detailedErrors,
+            ], 422);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Import successful. {$importedCount} properties created.",
+            'imported_count' => $importedCount,
+            'failed_count' => 0,
+            'errors' => [],
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Bulk property import critical error', [
+            'user_id' => $user->id,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'A critical error occurred during import: ' . $e->getMessage(),
+        ], 500);
+    }
     }
 
     public function downloadTemplate()
