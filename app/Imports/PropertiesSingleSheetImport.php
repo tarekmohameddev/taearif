@@ -684,7 +684,27 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
 
         if ($cityId) {
             $cityKey = $this->districtCityKey($cityId, $normalized);
-            $cityMatches = $this->districtNameLookup[$cityKey] ?? [];
+            
+            // Check runtime cache first
+            if (isset($this->districtNameLookup[$cityKey])) {
+                $cityMatches = $this->districtNameLookup[$cityKey];
+            } else {
+                // Use Laravel cache with lazy loading for district lookup by city
+                $cacheKey = "district_lookup_city:{$cityId}:{$normalized}";
+                $cityMatches = Cache::remember($cacheKey, self::CACHE_TTL, function() use ($normalized, $cityId) {
+                    return UserDistrict::where('city_id', $cityId)
+                        ->where(function($query) use ($normalized) {
+                            $query->whereRaw('LOWER(name_ar) = ?', [$normalized])
+                                  ->orWhereRaw('LOWER(name_en) = ?', [$normalized]);
+                        })
+                        ->pluck('id')
+                        ->map(fn($id) => (int) $id)
+                        ->toArray();
+                });
+                
+                // Store in runtime cache
+                $this->districtNameLookup[$cityKey] = $cityMatches;
+            }
 
             if (count($cityMatches) === 1) {
                 return $cityMatches[0];
@@ -701,7 +721,26 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             throw new \Exception("{$prefix}District '{$value}' not found in the specified city. Please verify the district name or use state_id.");
         }
 
-        $matches = $this->districtNameLookup[$normalized] ?? [];
+        // Global district lookup (no city specified)
+        // Check runtime cache first
+        if (isset($this->districtNameLookup[$normalized])) {
+            $matches = $this->districtNameLookup[$normalized];
+        } else {
+            // Use Laravel cache for global district lookup
+            $cacheKey = "district_lookup_global:{$normalized}";
+            $matches = Cache::remember($cacheKey, self::CACHE_TTL, function() use ($normalized) {
+                return UserDistrict::where(function($query) use ($normalized) {
+                    $query->whereRaw('LOWER(name_ar) = ?', [$normalized])
+                          ->orWhereRaw('LOWER(name_en) = ?', [$normalized]);
+                })
+                ->pluck('id')
+                ->map(fn($id) => (int) $id)
+                ->toArray();
+            });
+            
+            // Store in runtime cache
+            $this->districtNameLookup[$normalized] = $matches;
+        }
 
         if (empty($matches)) {
             return null;
