@@ -64,3 +64,8 @@ app/Http/Helpers/Helper.php.backup
 /front-next
 test-admin-login.json
 compare_routes_postman.php
+
+check_cities.php
+check_city_columns.php
+debug_district.php
+fetch_amenities.php
