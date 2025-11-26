@@ -18,7 +18,7 @@ use App\Models\User\UserDistrict;
 use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\User\UserCity;
 use App\Models\ApiCustomer;
-use App\Models\ApiCustomerInquiry;
+use App\Models\Api\ApiCustomerInquiry;
 use App\Models\WhatsappUser;
 use Illuminate\Support\Str;
 
