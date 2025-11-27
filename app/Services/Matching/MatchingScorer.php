@@ -38,17 +38,27 @@ class MatchingScorer
             $this->logger->info('MatchingScorer: OpenAI raw response', [
                 'content' => $content,
             ]);
+            
             $data = json_decode($content, true);
-            if (!is_array($data) || !isset($data['results']) || !is_array($data['results'])) {
+            
+            // Accept both 'results' and 'properties' keys (OpenAI may use either)
+            $resultsArray = null;
+            if (isset($data['results']) && is_array($data['results'])) {
+                $resultsArray = $data['results'];
+            } elseif (isset($data['properties']) && is_array($data['properties'])) {
+                $resultsArray = $data['properties'];
+            }
+            
+            if (!is_array($data) || $resultsArray === null) {
                 throw new \RuntimeException('Invalid AI response schema');
             }
 
             $map = [];
-            foreach ($data['results'] as $row) {
-                $pid = $row['property_id'] ?? null;
+            foreach ($resultsArray as $row) {
+                $pid = $row['property_id'] ?? $row['id'] ?? null;
                 if (!$pid) continue;
                 $map[(int) $pid] = [
-                    'ai_score' => (int) ($row['ai_score'] ?? 0),
+                    'ai_score' => (int) ($row['ai_score'] ?? $row['score'] ?? 0),
                     'matched_criteria' => $row['matched_criteria'] ?? [],
                     'explanation' => $row['explanation'] ?? null,
                 ];

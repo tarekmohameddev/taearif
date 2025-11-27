@@ -38,15 +38,64 @@ class MatchingService
             return [];
         }
 
+
         $query = $this->search->buildCandidatesQuery($unified)->limit($limit);
         $candidates = $query->get();
 
         $count = $candidates->count();
-        Log::info('MatchingService: candidate properties fetched', [
+        $usedTextFallback = false;
+        
+        Log::info('MatchingService: candidate properties fetched (structured)', [
             'source' => $source,
             'request_id' => $requestId,
             'count' => $count,
         ]);
+        
+        // Fallback to text-based search if structured search returned insufficient results
+        $fallbackThreshold = 5;
+        if ($count < $fallbackThreshold && $source === 'whatsapp') {
+            Log::info('MatchingService: attempting text-based fallback search', [
+                'source' => $source,
+                'request_id' => $requestId,
+                'structured_count' => $count,
+            ]);
+            
+            $textQuery = $this->search->buildTextBasedQuery($unified)->limit($limit);
+            $textCandidates = $textQuery->get();
+            
+            Log::info('MatchingService: text-based search completed', [
+                'source' => $source,
+                'request_id' => $requestId,
+                'text_count' => $textCandidates->count(),
+            ]);
+            
+            // Merge candidates, removing duplicates
+            $candidateIds = $candidates->pluck('id')->all();
+            $newCandidates = $textCandidates->filter(function($prop) use ($candidateIds) {
+                return !in_array($prop->id, $candidateIds);
+            });
+            
+            if ($newCandidates->count() > 0) {
+                $candidates = $candidates->merge($newCandidates);
+                $usedTextFallback = true;
+                
+                Log::info('MatchingService: merged text-based candidates', [
+                    'source' => $source,
+                    'request_id' => $requestId,
+                    'new_candidates' => $newCandidates->count(),
+                    'total_after_merge' => $candidates->count(),
+                ]);
+            }
+        }
+        
+        $count = $candidates->count();
+        Log::info('MatchingService: final candidate count', [
+            'source' => $source,
+            'request_id' => $requestId,
+            'count' => $count,
+            'used_text_fallback' => $usedTextFallback,
+        ]);
+        
         if ($count === 0) {
             Log::info('MatchingService: no candidate properties found', [
                 'source' => $source,
@@ -55,6 +104,7 @@ class MatchingService
             $this->logNoCandidateDiagnostics($unified);
             return [];
         }
+
         Log::info('MatchingService: candidate property IDs', [
             'source' => $source,
             'request_id' => $requestId,
@@ -117,6 +167,16 @@ class MatchingService
 
         // Location
         if ($u->regionId && $p->region_id == $u->regionId) $score += 10;
+        
+        // Text-based location matching bonus (for WhatsApp inquiries without structured location)
+        if ($u->source === 'whatsapp' && !$u->regionId && !empty($u->message)) {
+            $locationKeywords = $this->extractLocationKeywordsForScoring($u);
+            if (!empty($locationKeywords)) {
+                $textMatchScore = $this->computeTextMatchScore($p, $locationKeywords);
+                $score += $textMatchScore;
+            }
+        }
+        
         // Bedrooms
         if ($u->bedrooms && $p->beds >= $u->bedrooms) $score += 10;
         // Area
@@ -134,6 +194,114 @@ class MatchingService
 
         return min(50, $score);
     }
+
+    /**
+     * Extract location keywords for scoring purposes.
+     */
+    private function extractLocationKeywordsForScoring(UnifiedRequest $u): array
+    {
+        $keywords = [];
+        
+        // Try city/district names first
+        if (!empty($u->cityName)) {
+            $keywords[] = $u->cityName;
+        }
+        if (!empty($u->districtName)) {
+            $keywords[] = $u->districtName;
+        }
+        
+        // Extract from message
+        if (!empty($u->message)) {
+            $message = $u->message;
+            $locationMarkers = ['في', 'بـ', 'ب', 'حي', 'شارع', 'منطقة', 'مدينة'];
+            
+            foreach ($locationMarkers as $marker) {
+                if (strpos($message, $marker) !== false) {
+                    $parts = explode($marker, $message);
+                    if (count($parts) > 1) {
+                        $locationPart = trim($parts[1]);
+                        $words = preg_split('/[\s،؛.]+/', $locationPart, 3);
+                        if (!empty($words)) {
+                            // Take first 1-2 words after marker
+                            $keywords[] = trim($words[0]);
+                            if (isset($words[1]) && mb_strlen($words[1]) > 2) {
+                                $keywords[] = trim($words[0] . ' ' . $words[1]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return array_unique($keywords);
+    }
+
+    /**
+     * Compute text match score by checking property content for location keywords.
+     */
+    private function computeTextMatchScore($property, array $keywords): int
+    {
+        if (empty($keywords)) {
+            return 0;
+        }
+        
+        $score = 0;
+        $content = $property->contents->first();
+        
+        if (!$content) {
+            return 0;
+        }
+        
+        $title = $content->title ?? '';
+        $address = $content->address ?? '';
+        
+        // Normalize Arabic text for matching
+        $normalizedTitle = $this->normalizeArabic($title);
+        $normalizedAddress = $this->normalizeArabic($address);
+        
+        foreach ($keywords as $keyword) {
+            $normalizedKeyword = $this->normalizeArabic($keyword);
+            
+            // Exact phrase match in title (highest priority)
+            if (mb_stripos($normalizedTitle, $normalizedKeyword) !== false) {
+                $score += 15;
+                break; // Don't double count
+            }
+            
+            // Exact phrase match in address
+            if (mb_stripos($normalizedAddress, $normalizedKeyword) !== false) {
+                $score += 10;
+                break;
+            }
+        }
+        
+        return min(15, $score); // Cap at 15 points for text matches
+    }
+
+    /**
+     * Normalize Arabic text (same logic as PropertySearchService).
+     */
+    private function normalizeArabic(string $text): string
+    {
+        $replacements = [
+            'أ' => 'ا',
+            'إ' => 'ا',
+            'آ' => 'ا',
+            'ى' => 'ي',
+            'ئ' => 'ي',
+            'ؤ' => 'و',
+            'ة' => 'ه',
+            'ٱ' => 'ا',
+            'گ' => 'ك',
+            'چ' => 'ج',
+            'ژ' => 'ز',
+            'ڤ' => 'ف',
+            'پ' => 'ب',
+        ];
+        
+        return strtr($text, $replacements);
+    }
+
 
     private function logNoCandidateDiagnostics(UnifiedRequest $u): void
     {
