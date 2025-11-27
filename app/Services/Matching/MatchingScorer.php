@@ -41,12 +41,14 @@ class MatchingScorer
             
             $data = json_decode($content, true);
             
-            // Accept both 'results' and 'properties' keys (OpenAI may use either)
+            // Accept 'results', 'properties', or 'evaluations' keys (OpenAI may use either)
             $resultsArray = null;
             if (isset($data['results']) && is_array($data['results'])) {
                 $resultsArray = $data['results'];
             } elseif (isset($data['properties']) && is_array($data['properties'])) {
                 $resultsArray = $data['properties'];
+            } elseif (isset($data['evaluations']) && is_array($data['evaluations'])) {
+                $resultsArray = $data['evaluations'];
             }
             
             if (!is_array($data) || $resultsArray === null) {
