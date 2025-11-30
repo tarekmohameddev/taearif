@@ -84,14 +84,29 @@ class PropertyController extends Controller
 			case 'price_desc':
 				$query->orderBy('price', 'desc');
 				break;
+			case 'area_asc':
+				$query->orderBy('area', 'asc');
+				break;
 			case 'area_desc':
 				$query->orderBy('area', 'desc');
 				break;
+			case 'reorder_asc':
+				$query->orderBy('reorder', 'asc');
+				break;
+			case 'reorder_desc':
+				$query->orderBy('reorder', 'desc');
+				break;
+			case 'reorder_featured_asc':
+				$query->orderBy('reorder_featured', 'asc');
+				break;
+			case 'reorder_featured_desc':
+				$query->orderBy('reorder_featured', 'desc');
+				break;
 			case 'featured_first':
-				$query->orderBy('featured', 'desc')->orderBy('reorder_featured', 'desc')->orderBy('created_at', 'desc');
+				$query->orderBy('featured', 'desc')->orderBy('reorder_featured', 'desc')->orderBy('reorder', 'asc')->orderBy('created_at', 'desc');
 				break;
 			default:
-				$query->orderBy('featured', 'desc')->orderBy('reorder_featured', 'desc')->orderBy('created_at', 'desc');
+				$query->orderBy('featured', 'desc')->orderBy('reorder_featured', 'desc')->orderBy('reorder', 'asc')->orderBy('created_at', 'desc');
 		}
 
 		// Homepage helpers
@@ -231,17 +246,18 @@ class PropertyController extends Controller
                 'slug' => $slug,
                 'title' => $content?->title ?? '',
                 'district' => $districtStr,
-                'price' => isset($p->price) ? (string) $p->price : '0',
+                'price' => isset($p->price) ? formatNumberWithoutTrailingZeros($p->price) : '0',
                 'views' => (int) ($viewsBySlug[$slug] ?? 0),
                 'bedrooms' => (int) ($p->beds ?? 0),
                 'bathrooms' => (int) ($p->bath ?? 0),
-                'area' => isset($p->area) ? (string) $p->area : '0',
+                'area' => isset($p->area) ? formatNumberWithoutTrailingZeros($p->area) : '0',
                 'type' => $this->translator->translateType($p->type),
 				'type_en' => $p->type,
 				'transactionType' => $this->translator->translatePurpose($normalizedPurpose),
 				'transactionType_en' => $normalizedPurpose,
                 'image' => $featured,
 				'status' => $isUnavailable ? 'unavailable' : 'available',
+                'show_reservations' => (bool) $p->show_reservations,
                 'createdAt' => $p->created_at?->toISOString(),
                 'description' => $content?->description ?? '',
                 'features' => is_array($p->features) ? $p->features : [],
@@ -340,11 +356,11 @@ class PropertyController extends Controller
             'slug' => $content?->slug ?? '',
             'title' => $content?->title ?? '',
             'district' => $districtStr,
-            'price' => isset($property->price) ? (string) $property->price : '0',
+            'price' => isset($property->price) ? formatNumberWithoutTrailingZeros($property->price) : '0',
             'views' => $views,
             'bedrooms' => (int) ($property->beds ?? 0),
             'bathrooms' => (int) ($property->bath ?? 0),
-            'area' => isset($property->area) ? (string) $property->area : '0',
+            'area' => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : '0',
             'type' => $this->translator->translateType($property->type),
             'type_en' => $property->type ?? '',
             'transactionType' => $this->translator->translatePurpose($property->purpose),
@@ -353,7 +369,7 @@ class PropertyController extends Controller
             'status' => $property->status ? 'available' : 'rented',
             'createdAt' => $property->created_at?->toISOString(),
             'description' => $content?->description ?? '',
-            'features' => is_array($property->features) ? $property->features : [],
+            'features' => is_string($property->features) ? [$property->features] : (is_array($property->features) ? $property->features : []),
             'location' => [
                 'lat' => $property->latitude ? (float) $property->latitude : null,
                 'lng' => $property->longitude ? (float) $property->longitude : null,
@@ -367,7 +383,7 @@ class PropertyController extends Controller
 		$extra = [
 			'payment_method' => $this->translator->translatePaymentMethod($property->payment_method),
 			'payment_method_en' => $property->payment_method,
-			'pricePerMeter' => $property->pricePerMeter,
+			'pricePerMeter' => isset($property->pricePerMeter) ? formatNumberWithoutTrailingZeros($property->pricePerMeter) : null,
 			'floor_planning_image' => collect($property->floor_planning_image)->map(fn($img) => asset($img))->toArray(),
 			'video_url' => $property->video_url ? asset($property->video_url) : null,
 			'virtual_tour' => $property->virtual_tour ? asset($property->virtual_tour) : null,

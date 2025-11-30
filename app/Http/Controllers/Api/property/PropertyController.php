@@ -34,8 +34,169 @@ use Carbon\Carbon;
 use App\Services\AlibabaOssService;
 
 
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\PropertiesImport;
+
 class PropertyController extends Controller
 {
+    public function bulkImport(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,csv',
+        ]);
+
+        $user = auth()->user();
+
+        // Check if user has active membership
+        $membership = Membership::where('user_id', $user->id)
+            ->where('status', 1)
+            ->orderBy('id', 'desc')
+            ->with('package')
+            ->first();
+
+        if (!$membership || !$membership->package) {
+            return response()->json([
+                'status' => 'fail',
+                'message' => 'No active package found for the user.',
+            ], 403);
+        }
+
+        // Check property limit before processing the file
+        $realEstateLimit = $membership->package->real_estate_limit_number;
+        $currentPropertyCount = Property::where('user_id', $user->id)->count();
+
+        // Estimate row count from uploaded file
+        try {
+            // Smart Method: Calculate the exact number of rows with data
+            // This avoids reading thousands of empty rows
+            $filePath = $request->file('file')->getPathname();
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($filePath);
+            $reader->setReadDataOnly(true); // Optimization: Read only data, ignore formatting
+            $spreadsheet = $reader->load($filePath);
+            $worksheet = $spreadsheet->getActiveSheet();
+            $highestRow = $worksheet->getHighestDataRow(); // This gets the last row with actual data
+            
+            // Pass the smart limit to the import class
+            // highestRow includes header, so we pass it as the limit
+            $import = new PropertiesImport($user->id, $highestRow);
+            
+            $collection = Excel::toCollection($import, $request->file('file'));
+            
+            // Count only actual data rows (excluding header which is row 1)
+            // The collection excludes the header due to WithHeadingRow trait
+            $firstSheet = $collection->first();
+            // Filter out empty rows (all values are null or empty)
+            $incomingRowCount = $firstSheet->filter(function($row) {
+                $rowArray = $row->toArray();
+                
+                // Skip rows marked as empty by prepareForValidation
+                if (isset($rowArray['_skip_empty_row']) && $rowArray['_skip_empty_row'] === true) {
+                    return false;
+                }
+                
+                // Skip rows where title is the dummy empty marker
+                if (isset($rowArray['title']) && $rowArray['title'] === '_EMPTY_ROW_SKIP_') {
+                    return false;
+                }
+                
+                // Skip completely empty rows (all values are null or empty)
+                $hasData = !empty(array_filter($rowArray, function($value) {
+                    return !is_null($value) && $value !== '';
+                }));
+                
+                return $hasData;
+            })->count();
+            
+            if (!is_null($realEstateLimit) && ($currentPropertyCount + $incomingRowCount) > $realEstateLimit) {
+                return response()->json([
+                    'status' => 'fail',
+                    'message' => 'Bulk import would exceed your property listing limit.',
+                    'limit' => $realEstateLimit,
+                    'current_count' => $currentPropertyCount,
+                    'incoming_count' => $incomingRowCount,
+                    'available_slots' => max(0, $realEstateLimit - $currentPropertyCount)
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to read uploaded file: ' . $e->getMessage(),
+            ], 422);
+        }
+
+        try {
+        // Use the same smart limit for the actual import
+        $import = new PropertiesImport($user->id, $highestRow);
+        Excel::import($import, $request->file('file'));
+
+        $failures = $import->sheetImport->failures();
+        $errors = $import->sheetImport->errors();
+        $detailedErrors = [];
+
+        // Collect Validation Failures
+        foreach ($failures as $failure) {
+            $detailedErrors[] = [
+                'row' => $failure->row(),
+                'message' => 'Validation Error: ' . implode(', ', $failure->errors()),
+                'values' => $failure->values(),
+            ];
+        }
+
+        // Collect Logic Errors (Exceptions)
+        foreach ($errors as $error) {
+            $message = $error->getMessage();
+            $row = null;
+            
+            // Extract row number if present in exception message
+            if (preg_match('/Row (\d+):/', $message, $matches)) {
+                $row = (int)$matches[1];
+            }
+
+            $detailedErrors[] = [
+                'row' => $row,
+                'message' => $message,
+            ];
+        }
+
+        $importedCount = $import->sheetImport->importedCount;
+        $failedCount = count($detailedErrors);
+
+        if ($failedCount > 0) {
+            return response()->json([
+                'status' => 'partial_success', // or 'fail' if 0 imported
+                'message' => "Import completed with issues. Imported: {$importedCount}, Failed: {$failedCount}.",
+                'imported_count' => $importedCount,
+                'failed_count' => $failedCount,
+                'errors' => $detailedErrors,
+            ], 422);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Import successful. {$importedCount} properties created.",
+            'imported_count' => $importedCount,
+            'failed_count' => 0,
+            'errors' => [],
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Bulk property import critical error', [
+            'user_id' => $user->id,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'A critical error occurred during import: ' . $e->getMessage(),
+        ], 500);
+    }
+    }
+
+    public function downloadTemplate()
+    {
+        return Excel::download(new \App\Exports\PropertiesTemplateExport, 'properties_import_template.xlsx');
+    }
 
 
 
@@ -261,7 +422,7 @@ class PropertyController extends Controller
                     'state_id' => $originalContent->state_id,
                     'city_id' => $originalContent->city_id,
                     'title' => $request->title ?? ($originalContent->title . ' (Copy)'),
-                    'slug' => Str::slug($request->title ?? ($originalContent->title . ' Copy')),
+                    'slug' => str_replace('.', '', Str::slug($request->title ?? ($originalContent->title . ' Copy'))),
                     'address' => $request->address ?? $originalContent->address,
                     'description' => $request->description ?? $originalContent->description,
                     'meta_keyword' => $originalContent->meta_keyword,
@@ -319,6 +480,7 @@ class PropertyController extends Controller
             'characteristics' => $responseProperty->UserPropertyCharacteristics ?? null,
             'status' => (bool) $responseProperty->status,
             'featured' => (bool) $responseProperty->featured,
+            'show_reservations' => (bool) $responseProperty->show_reservations,
             'featured_image' => asset($responseProperty->featured_image),
             'gallery' => $responseProperty->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
             'description' => optional($content)->description ?? 'No Description',
@@ -557,14 +719,14 @@ class PropertyController extends Controller
                 'payment_method' => $property->payment_method,
                 'title' => optional($content)->title ?? '',
                 'address' => optional($content)->address ?? '',
-                'price' => $property->price ?? '0.00',
+                'price' => isset($property->price) ? formatNumberWithoutTrailingZeros($property->price) : '0',
                 'views' => $views,
-                'pricePerMeter' => $property->pricePerMeter,
+                'pricePerMeter' => isset($property->pricePerMeter) ? formatNumberWithoutTrailingZeros($property->pricePerMeter) : null,
                 'purpose' => $property->purpose,
                 'type' => $property->type ?? '',
                 'beds' => $property->beds,
                 'bath' => $property->bath,
-                'area' => $property->area,
+                'area' => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : null,
                 'features' => $property->features ?? [],
                 'status' => (int) $property->status,
                 'featured_image' => asset($property->featured_image),
@@ -574,6 +736,7 @@ class PropertyController extends Controller
                 'latitude' => $property->latitude ? (float) $property->latitude : null,
                 'longitude' => $property->longitude ? (float) $property->longitude : null,
                 'featured' => (bool) $property->featured,
+                'show_reservations' => (bool) $property->show_reservations,
                 'city_id' => optional($content)->city_id,
                 'state_id' => optional($content)->state_id,
                 'video_url' => $property->video_url ? asset($property->video_url) : null,
@@ -768,6 +931,7 @@ class PropertyController extends Controller
                 'water_meter_number',
                 'electricity_meter_number',
                 'deed_number',
+                'show_reservations',
 
                 "facade_id",
                 "length",
@@ -797,6 +961,25 @@ class PropertyController extends Controller
                 "private_parking"
 
             ]);
+
+            // Normalize features to array format
+            if (isset($propertyData['features'])) {
+                if (is_string($propertyData['features'])) {
+                    // Try to decode as JSON first
+                    $decoded = json_decode($propertyData['features'], true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        $propertyData['features'] = $decoded;
+                    } else {
+                        // If it's a plain string, wrap it in an array
+                        $propertyData['features'] = [$propertyData['features']];
+                    }
+                } elseif (!is_array($propertyData['features'])) {
+                    // If it's neither string nor array, default to empty array
+                    $propertyData['features'] = [];
+                }
+            } else {
+                $propertyData['features'] = [];
+            }
 
             $videoUrl = $request->video_url; // Video URL from separate upload
 
@@ -868,7 +1051,7 @@ class PropertyController extends Controller
                 'state_id' => $request->state_id ?? 3,
                 'city_id' => $request->city_id,
                 'title' => $request->title,
-                'slug' => Str::slug($request->title),
+                'slug' => str_replace('.', '', Str::slug($request->title)),
                 'address' => $request->address,
                 'description' => $request->description,
                 'meta_keyword' => $request->meta_keyword ?? null,
@@ -926,6 +1109,7 @@ class PropertyController extends Controller
             'characteristics' => $responseProperty->UserPropertyCharacteristics ?? null,
             'status' => (bool) $responseProperty->status,
             'featured' => (bool) $responseProperty->featured,
+            'show_reservations' => (bool) $responseProperty->show_reservations,
             'featured_image' => asset($responseProperty->featured_image),
             'gallery' => $responseProperty->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
             'description' => optional($content)->description ?? 'No Description',
@@ -1092,6 +1276,7 @@ class PropertyController extends Controller
             'video_url' => 'nullable|string',// For direct URL or OSS URL
             'virtual_tour' => 'nullable|string',
             'video_file' => 'nullable|file', // Video upload now handled separately via VideoUploadController
+            'show_reservations' => 'nullable|boolean',
 
         ];
 
@@ -1112,6 +1297,25 @@ class PropertyController extends Controller
             $requestData = $request->all();
             if ($videoUrl) {
                 $requestData['video_url'] = $videoUrl;
+            }
+
+            // Normalize features to array format
+            if (isset($requestData['features'])) {
+                if (is_string($requestData['features'])) {
+                    // Try to decode as JSON first
+                    $decoded = json_decode($requestData['features'], true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        $requestData['features'] = $decoded;
+                    } else {
+                        // If it's a plain string, wrap it in an array
+                        $requestData['features'] = [$requestData['features']];
+                    }
+                } elseif (!is_array($requestData['features'])) {
+                    // If it's neither string nor array, default to empty array
+                    $requestData['features'] = [];
+                }
+            } else {
+                // If features is not provided, don't override existing value (handled in updateProperty)
             }
 
             $property->updateProperty($requestData);
@@ -1192,7 +1396,7 @@ class PropertyController extends Controller
                 'state_id' => $request->state_id ?? 3,
                 'city_id' => $request->city_id,
                 'title' => $request->title,
-                'slug' => Str::slug($request->title),
+                'slug' => str_replace('.', '', Str::slug($request->title)),
                 'address' => $request->address,
                 'description' => $request->description,
                 'meta_keyword' => $request->meta_keyword ?? null,
@@ -1224,14 +1428,14 @@ class PropertyController extends Controller
             'title' => optional($content)->title ?? '',
             'slug' => optional($content)->slug ?? '',
             'address' => optional($content)->address ?? '',
-            'price' => $responseProperty->price ?? '0.00',
-            'pricePerMeter' => $responseProperty->pricePerMeter,
+            'price' => isset($responseProperty->price) ? formatNumberWithoutTrailingZeros($responseProperty->price) : '0',
+            'pricePerMeter' => isset($responseProperty->pricePerMeter) ? formatNumberWithoutTrailingZeros($responseProperty->pricePerMeter) : null,
             'purpose' => $responseProperty->purpose,
             'project_id' => $responseProperty->project_id ?? '',
             'type' => $responseProperty->type ?? '',
             'beds' => $responseProperty->beds,
             'bath' => $responseProperty->bath,
-            'area' => $responseProperty->area,
+            'area' => isset($responseProperty->area) ? formatNumberWithoutTrailingZeros($responseProperty->area) : null,
             'features' => $responseProperty->features ?? [],
             'status' => (int) $responseProperty->status,
             'featured_image' => asset($responseProperty->featured_image),
@@ -1241,6 +1445,7 @@ class PropertyController extends Controller
             'latitude' => $responseProperty->latitude ? (float) $responseProperty->latitude : null,
             'longitude' => $responseProperty->longitude ? (float) $responseProperty->longitude : null,
             'featured' => (bool) $responseProperty->featured,
+            'show_reservations' => (bool) $responseProperty->show_reservations,
             'city_id' => optional($content)->city_id,
             'state_id' => optional($content)->state_id,
             'category_id' => $responseProperty->category_id,
@@ -1532,10 +1737,45 @@ class PropertyController extends Controller
             }
         }
 
-        $properties = $propertiesQuery
-            ->orderBy('reorder_featured', 'desc')
-            ->orderBy('reorder', 'asc')
-            ->paginate(10);
+        // Apply sorting
+        $sortParam = $request->input('sort', 'default');
+        switch ($sortParam) {
+            case 'price_asc':
+                $propertiesQuery->orderBy('price', 'asc');
+                break;
+            case 'price_desc':
+                $propertiesQuery->orderBy('price', 'desc');
+                break;
+            case 'area_asc':
+                $propertiesQuery->orderBy('area', 'asc');
+                break;
+            case 'area_desc':
+                $propertiesQuery->orderBy('area', 'desc');
+                break;
+            case 'reorder_asc':
+                $propertiesQuery->orderBy('reorder', 'asc');
+                break;
+            case 'reorder_desc':
+                $propertiesQuery->orderBy('reorder', 'desc');
+                break;
+            case 'reorder_featured_asc':
+                $propertiesQuery->orderBy('reorder_featured', 'asc');
+                break;
+            case 'reorder_featured_desc':
+                $propertiesQuery->orderBy('reorder_featured', 'desc');
+                break;
+            case 'created_at_asc':
+                $propertiesQuery->orderBy('created_at', 'asc');
+                break;
+            case 'created_at_desc':
+                $propertiesQuery->orderBy('created_at', 'desc');
+                break;
+            default:
+                // Default: reorder_featured desc, then reorder asc (current behavior)
+                $propertiesQuery->orderBy('reorder_featured', 'desc')->orderBy('reorder', 'asc');
+        }
+
+        $properties = $propertiesQuery->paginate(10);
 
         // === GA4: views per property (last 30 days by default) ===
         $tenantId  = $owner->username;                     // align GA context with tenant owner
@@ -1696,12 +1936,13 @@ class PropertyController extends Controller
                 'type'             => $property->type,
                 'beds'             => $property->beds,
                 'bath'             => $property->bath,
-                'area'             => $property->area,
+                'area'             => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : null,
                 'transaction_type' => $property->purpose,
                 'features'         => $property->features,
                 'status'           => $property->status,
                 'featured_image'   => asset($property->featured_image),
                 'featured'         => (bool) $property->featured,
+                'show_reservations' => (bool) $property->show_reservations,
                 'created_at'       => $property->created_at->toISOString(),
                 'updated_at'       => $property->updated_at->toISOString(),
                 'payment_method'   => $property->payment_method,
@@ -1808,6 +2049,7 @@ class PropertyController extends Controller
                         'name' => $projectContent->title ?? 'N/A',
                     ],
                     'property_status' => $property->property_status,
+                    'show_reservations' => (bool) $property->show_reservations,
                     'is_available' => true,
                 ];
             });

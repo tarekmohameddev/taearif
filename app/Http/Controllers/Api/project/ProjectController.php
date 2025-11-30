@@ -140,7 +140,7 @@ class ProjectController extends Controller
                 "visits"          => (int)($visitsByProject[$project->id] ?? 0),   // << here
                 "featured_image"  => $project->featured_image ? asset($project->featured_image) : null,
                 "video_url"       => $project->video_url ? asset($project->video_url) : null,
-                "price_range"     => number_format($project->min_price, 2),
+                "price_range"     => formatNumberWithoutTrailingZeros($project->min_price ?? 0),
                 "latitude"        => $project->latitude,
                 "longitude"       => $project->longitude,
                 "featured"        => (bool) $project->featured,
@@ -202,7 +202,6 @@ class ProjectController extends Controller
             'floorplanImages',
             'specifications',
             'types',
-            'amenities.amenity',
             'user',  // Add user relationship to get tenant
         ])->find($id);
 
@@ -262,7 +261,7 @@ class ProjectController extends Controller
             "visits" => $visits,
             "featured_image" => asset($project->featured_image),
             "video_url" => $project->video_url ? asset($project->video_url) : null,
-            "price_range" => "From $" . number_format($project->min_price, 2) . " to $" . number_format($project->max_price, 2),
+            "price_range" => "From $" . formatNumberWithoutTrailingZeros($project->min_price ?? 0) . " to $" . formatNumberWithoutTrailingZeros($project->max_price ?? 0),
             "latitude" => $project->latitude,
             "longitude" => $project->longitude,
             "featured" => $project->featured,
@@ -273,7 +272,7 @@ class ProjectController extends Controller
             "published" => $project->published,
             "created_at" => $project->created_at,
             "updated_at" => $project->updated_at,
-            "amenities" => $project->amenities,
+            "amenities" => $project->amenities ?? [],
             "contents" => $project->contents->map(function ($content) {
                 return [
                     "id" => $content->id,
@@ -407,6 +406,7 @@ class ProjectController extends Controller
             $requestData = $request->all();
             $requestData['featured_image'] = asset($request->featured_image);
             $requestData['video_url'] = $request->video_url; // Video URL from separate upload
+            $requestData['amenities'] = $this->normalizeAmenities($request->input('amenities'));
 
             $project = Project::storeProject($ownerId, $requestData);
 
@@ -513,6 +513,28 @@ class ProjectController extends Controller
      * If it doesn't exist, create it.
      */
 
+    /**
+     * Normalize amenities input to array format.
+     * Handles string (JSON or plain), array, or null/empty input.
+     */
+    private function normalizeAmenities($value): array
+    {
+        if (is_string($value)) {
+            // Try to decode as JSON first
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                return $decoded;
+            }
+            // If it's a plain string, wrap it in an array
+            return [trim($value)];
+        } elseif (is_array($value)) {
+            // Filter out empty/null values and reindex
+            return array_values(array_filter($value, fn($item) => $item !== null && $item !== ''));
+        }
+        // Return empty array for null/empty input
+        return [];
+    }
+
     private function ensureProjectsMenuExistsForUser($userId)
     {
         $exists = ApiMenuItem::where('user_id', $userId)
@@ -603,6 +625,8 @@ class ProjectController extends Controller
             $requestData = $request->all();
             $requestData['featured_image'] = $request->featured_image;
             $requestData['video_url'] = $request->video_url; // Video URL from separate upload
+            $requestData['amenities'] = $this->normalizeAmenities($request->input('amenities', $project->amenities));
+
             $project->updateProject($requestData);
             if ($request->has('gallery_images')) {
                 ProjectGalleryImg::where('project_id', $project->id)->delete();
@@ -629,7 +653,7 @@ class ProjectController extends Controller
                     'description' => $content['description'],
                     'meta_keyword' => $content['meta_keyword'],
                     'meta_description' => $content['meta_description'],
-                    'slug' => Str::slug($content['title']),
+                    'slug' => str_replace('.', '', Str::slug($content['title'])),
                 ]);
             }
 
@@ -708,7 +732,6 @@ class ProjectController extends Controller
                 'floorplanImages',
                 'specifications',
                 'types',
-                'amenities'
             ])->find($id);
 
 
@@ -738,8 +761,6 @@ class ProjectController extends Controller
             $project->specifications()->delete();
 
             $project->types()->delete();
-
-            $project->amenities()->delete();
 
             if ($project->featured_image) {
                 \Storage::disk('public')->delete($project->featured_image);

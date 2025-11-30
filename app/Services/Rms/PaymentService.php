@@ -708,4 +708,219 @@ class PaymentService
 
         return $warnings;
     }
+
+    /**
+     * Reverse (soft-delete) a payment and recalculate installment data
+     *
+     * @param int $userId Owner/user ID
+     * @param int $rentalId Rental ID
+     * @param int $paymentId Payment ID
+     * @return array Deleted payment info and updated installment snapshot
+     * @throws PaymentException
+     */
+    public function reversePayment(int $userId, int $rentalId, int $paymentId): array
+    {
+        return DB::transaction(function () use ($userId, $rentalId, $paymentId) {
+            // Fetch payment scoped by user and rental
+            $payment = RmPayment::where('id', $paymentId)
+                ->where('rental_id', $rentalId)
+                ->where('user_id', $userId)
+                ->first();
+
+            if (!$payment) {
+                throw PaymentException::installmentNotFound($paymentId);
+            }
+
+            // Check if already soft-deleted
+            if ($payment->trashed()) {
+                throw new \InvalidArgumentException('Payment has already been reversed');
+            }
+
+            // Store payment info before deletion
+            $paymentData = $payment->toArray();
+            $installmentId = $payment->installment_id;
+            $paymentType = $payment->payment_type;
+
+            // Soft delete the payment
+            $payment->delete();
+
+            // If it was a rent payment with an installment, recalculate installment totals
+            $installmentSnapshot = null;
+            if ($paymentType === 'rent' && $installmentId) {
+                $installmentSnapshot = $this->recalculateInstallmentAfterReversal($installmentId);
+            }
+
+            \Log::info('Payment reversed successfully', [
+                'payment_id' => $paymentId,
+                'rental_id' => $rentalId,
+                'user_id' => $userId,
+                'payment_type' => $paymentType,
+                'amount' => $paymentData['amount'],
+                'installment_id' => $installmentId,
+            ]);
+
+            return [
+                'reversed_payment' => array_merge($paymentData, [
+                    'deleted_at' => now()->toISOString(),
+                ]),
+                'installment' => $installmentSnapshot,
+            ];
+        });
+    }
+
+    /**
+     * Recalculate installment paid_amount, status, and paid_at after a reversal
+     *
+     * @param int $installmentId
+     * @return array|null Updated installment data
+     */
+    private function recalculateInstallmentAfterReversal(int $installmentId): ?array
+    {
+        $installment = RmPaymentInstallment::find($installmentId);
+        if (!$installment) {
+            return null;
+        }
+
+        // Recalculate total paid from remaining (non-deleted) payments
+        $totalPaid = RmPayment::where('installment_id', $installmentId)
+            ->where('payment_type', 'rent')
+            ->sum('amount');
+
+        // Ensure paid_amount doesn't go below zero
+        $totalPaid = max(0, $totalPaid);
+
+        // Determine new status
+        $newStatus = $this->getInstallmentStatus($totalPaid, $installment->amount);
+
+        // Update installment
+        $installment->update([
+            'paid_amount' => $totalPaid,
+            'status' => $newStatus,
+            'paid_at' => $totalPaid >= $installment->amount ? $installment->paid_at : null,
+        ]);
+
+        return [
+            'id' => $installment->id,
+            'sequence_no' => $installment->sequence_no,
+            'due_date' => $installment->due_date?->toDateString(),
+            'amount' => (float) $installment->amount,
+            'paid_amount' => (float) $totalPaid,
+            'remaining_amount' => (float) max(0, $installment->amount - $totalPaid),
+            'status' => $newStatus,
+            'paid_at' => $installment->paid_at?->toISOString(),
+        ];
+    }
+
+    /**
+     * Get paginated list of payments for a rental
+     *
+     * @param int $userId Owner/user ID
+     * @param int $rentalId Rental ID
+     * @param array $filters Optional filters (payment_type, from_date, to_date, include_reversed, per_page)
+     * @return array Paginated payments with summary
+     */
+    public function getRentalPayments(int $userId, int $rentalId, array $filters = []): array
+    {
+        // Validate rental belongs to user
+        $rental = RmRental::where('user_id', $userId)->findOrFail($rentalId);
+
+        $perPage = $filters['per_page'] ?? 15;
+        $includeReversed = $filters['include_reversed'] ?? false;
+
+        // Build query
+        $query = RmPayment::where('rental_id', $rentalId)
+            ->where('user_id', $userId)
+            ->with(['installment', 'costItem']);
+
+        // Include soft-deleted if requested
+        if ($includeReversed) {
+            $query->withTrashed();
+        }
+
+        // Apply filters
+        if (!empty($filters['payment_type'])) {
+            $query->where('payment_type', $filters['payment_type']);
+        }
+
+        if (!empty($filters['from_date'])) {
+            $query->where('payment_date', '>=', $filters['from_date']);
+        }
+
+        if (!empty($filters['to_date'])) {
+            $query->where('payment_date', '<=', $filters['to_date']);
+        }
+
+        // Order by most recent first
+        $query->orderBy('payment_date', 'desc')
+              ->orderBy('created_at', 'desc');
+
+        // Paginate
+        $paginated = $query->paginate($perPage);
+
+        // Transform payments with can_reverse flag
+        $payments = $paginated->getCollection()->map(function ($payment) {
+            return [
+                'id' => $payment->id,
+                'rental_id' => $payment->rental_id,
+                'installment_id' => $payment->installment_id,
+                'cost_item_id' => $payment->cost_item_id,
+                'payment_type' => $payment->payment_type,
+                'payment_type_label' => $payment->payment_type_label,
+                'amount' => (float) $payment->amount,
+                'payment_method' => $payment->payment_method,
+                'payment_method_label' => $payment->payment_method_label,
+                'payment_date' => $payment->payment_date?->toDateString(),
+                'reference' => $payment->reference,
+                'bank_name' => $payment->bank_name,
+                'transfer_to' => $payment->transfer_to,
+                'notes' => $payment->notes,
+                'receipt_image_path' => $payment->receipt_image_path,
+                'receipt_image_url' => $payment->receipt_image_path ? url($payment->receipt_image_path) : null,
+                'created_by' => $payment->created_by,
+                'created_at' => $payment->created_at?->toISOString(),
+                'updated_at' => $payment->updated_at?->toISOString(),
+                'deleted_at' => $payment->deleted_at?->toISOString(),
+                'can_reverse' => is_null($payment->deleted_at),
+                'installment' => $payment->installment ? [
+                    'id' => $payment->installment->id,
+                    'sequence_no' => $payment->installment->sequence_no,
+                    'due_date' => $payment->installment->due_date?->toDateString(),
+                    'amount' => (float) $payment->installment->amount,
+                ] : null,
+                'cost_item' => $payment->costItem ? [
+                    'id' => $payment->costItem->id,
+                    'name' => $payment->costItem->name,
+                ] : null,
+            ];
+        });
+
+        // Calculate summary (only non-deleted payments)
+        $summaryQuery = RmPayment::where('rental_id', $rentalId)
+            ->where('user_id', $userId);
+
+        $totalPayments = $summaryQuery->count();
+        $totalAmount = (float) $summaryQuery->sum('amount');
+
+        // Count reversed (soft-deleted) payments
+        $reversedCount = RmPayment::where('rental_id', $rentalId)
+            ->where('user_id', $userId)
+            ->onlyTrashed()
+            ->count();
+
+        return [
+            'payments' => $payments,
+            'pagination' => [
+                'current_page' => $paginated->currentPage(),
+                'per_page' => $paginated->perPage(),
+                'total' => $paginated->total(),
+                'last_page' => $paginated->lastPage(),
+            ],
+            'summary' => [
+                'total_payments' => $totalPayments,
+                'total_amount' => round($totalAmount, 2),
+                'reversible_count' => $totalPayments,
+                'reversed_count' => $reversedCount,
+            ],
+        ];
+    }
 }

@@ -32,6 +32,12 @@ class AdminResource extends JsonResource
                 'name' => $this->role?->name,
                 'permissions' => $this->role?->permissions,
             ],
+            // Only include if employee has custom permissions (omitted if null/using role defaults)
+            'permissions' => $this->when($this->permissions !== null, $this->permissions),
+            // Final permissions array (employee-specific if exists, otherwise role permissions)
+            'effective_permissions' => $this->getAllPermissions(),
+            // Super admin flag (role_id === null means super admin)
+            'is_super_admin' => is_null($this->role_id),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

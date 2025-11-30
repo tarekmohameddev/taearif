@@ -754,4 +754,73 @@ class RentalController extends BaseApiController
             ], 500);
         }
     }
+
+    /**
+     * List payments for a rental
+     *
+     * GET /api/v1/rms/rentals/{id}/payments
+     *
+     * Optional query params:
+     * - per_page: int (default 15)
+     * - payment_type: string (rent, cost_item, deposit, etc.)
+     * - from_date: date
+     * - to_date: date
+     * - include_reversed: bool (default false)
+     *
+     * @param Request $request
+     * @param int $id Rental ID
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function listPayments(Request $request, $id)
+    {
+        return $this->executeWithExceptionHandling(function () use ($request, $id) {
+            $validated = $request->validate([
+                'per_page' => 'nullable|integer|min:1|max:100',
+                'payment_type' => 'nullable|string|in:rent,cost_item,platform_fee,water_fee,office_fee,deposit',
+                'from_date' => 'nullable|date',
+                'to_date' => 'nullable|date|after_or_equal:from_date',
+                'include_reversed' => 'nullable|boolean',
+            ]);
+
+            $filters = [
+                'per_page' => $validated['per_page'] ?? 15,
+                'payment_type' => $validated['payment_type'] ?? null,
+                'from_date' => $validated['from_date'] ?? null,
+                'to_date' => $validated['to_date'] ?? null,
+                'include_reversed' => filter_var($validated['include_reversed'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            ];
+
+            $result = $this->paymentService->getRentalPayments(
+                $this->getUserId(),
+                (int) $id,
+                $filters
+            );
+
+            return $this->success($result, 'Payments retrieved successfully');
+        }, 'list rental payments');
+    }
+
+    /**
+     * Reverse (soft-delete) a specific payment
+     *
+     * POST /api/v1/rms/rentals/{rental}/payments/{payment}/reverse
+     *
+     * @param int $rental Rental ID
+     * @param int $payment Payment ID
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function reversePayment($rental, $payment)
+    {
+        return $this->executeWithExceptionHandling(function () use ($rental, $payment) {
+            $ownerId = $this->getUserId();
+
+            $result = $this->paymentService->reversePayment(
+                $ownerId,
+                (int) $rental,
+                (int) $payment
+            );
+
+            return $this->success($result, 'Payment reversed successfully');
+        }, 'reverse payment');
+    }
 }

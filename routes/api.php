@@ -131,6 +131,8 @@ use App\Http\Controllers\Api\PixelController; // Added import for PixelControlle
 // });
 
 Route::get('public-user/{id}', [PublicUserController::class, 'show']);
+Route::get('/properties/bulk-import/template', [PropertyController::class, 'downloadTemplate']);
+Route::get('/customers/bulk-import/template', [CustomerController::class, 'downloadTemplate'])->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/affiliate/register', [AffiliateController::class, 'register']);
@@ -278,6 +280,8 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::get   ('/properties',                         [PropertyController::class, 'index'])->middleware('can:properties.view');
     Route::get   ('/properties/available-units',         [PropertyController::class, 'availableUnits'])->middleware('can:properties.view');
     Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
+    Route::post  ('/properties/bulk-import',             [PropertyController::class, 'bulkImport'])->middleware('can:properties.create');
+    // Route::get   ('/properties/bulk-import/template',    [PropertyController::class, 'downloadTemplate']); // Moved to public routes
     Route::post  ('/properties',                         [PropertyController::class, 'store'])->middleware('can:properties.create');
     Route::post  ('/properties/upload-deed-image',       [PropertyController::class, 'uploadDeedImage'])->middleware('can:properties.create');
     Route::post  ('/properties/{id}',                    [PropertyController::class, 'update'])->middleware('can:properties.update');
@@ -421,6 +425,8 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
         Route::get   ('/filters',  [CustomerController::class, 'filterOptions'])->middleware('can:customers.view');
         Route::get   ('/',         [CustomerController::class, 'index'])->middleware('can:customers.view');
         Route::get   ('/search',   [CustomerController::class, 'search'])->middleware('can:customers.view');
+        Route::get   ('/export',   [CustomerController::class, 'export'])->middleware('can:customers.view');
+        Route::post  ('/bulk-import', [CustomerController::class, 'bulkImport'])->middleware('can:customers.create');
         Route::get   ('/{id}/with-inquiries', [CustomerController::class, 'showWithInquiries'])->middleware('can:customers.view');
         Route::get   ('/{id}',     [CustomerController::class, 'show'])->middleware('can:customers.view');
         Route::post  ('/',         [CustomerController::class, 'store'])->middleware('can:customers.create');
@@ -522,6 +528,10 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         // Dashboard
         Route::get('dashboard', [RmsDashboardController::class, 'index']);
 
+        // Filtered Payments Endpoints
+        Route::get('payments/collections', [RmsDashboardController::class, 'paymentsCollections']);
+        Route::get('payments/due', [RmsDashboardController::class, 'paymentsDue']);
+
         // Rentals
         Route::get('rentals', [RentalController::class, 'index']);
         Route::post('rentals', [RentalController::class, 'store']);
@@ -534,6 +544,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         // get and post payment collection for specific rental
         Route::get('rentals/{id}/payment-collection', [RentalController::class, 'paymentCollection']);
         Route::post('rentals/{id}/collect-payment', [RentalController::class, 'collectPayment']);
+        Route::get('rentals/{id}/payments', [RentalController::class, 'listPayments']);
+        Route::post('rentals/{rental}/payments/{payment}/reverse', [RentalController::class, 'reversePayment']);
 
         // Upload receipt image
         Route::post('rentals/upload-receipt-image', [RentalController::class, 'uploadReceiptImage']);

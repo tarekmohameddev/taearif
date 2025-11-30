@@ -860,4 +860,100 @@ class RentalControllerTest extends TestCase
         // Act & Assert
         $this->assertEquals(0.0, $rental->total_rental_amount);
     }
+
+    // ========================================
+    // Payment Reversal Tests
+    // ========================================
+
+    /** @test */
+    public function it_can_reverse_a_payment_successfully()
+    {
+        // Arrange
+        $paymentService = Mockery::mock(\App\Services\Rms\PaymentService::class);
+        $this->app->instance(\App\Services\Rms\PaymentService::class, $paymentService);
+
+        $expectedResult = [
+            'reversed_payment' => [
+                'id' => 1,
+                'rental_id' => 10,
+                'amount' => '500.00',
+                'payment_type' => 'rent',
+                'deleted_at' => now()->toISOString(),
+            ],
+            'installment' => [
+                'id' => 5,
+                'sequence_no' => 1,
+                'due_date' => '2025-01-01',
+                'amount' => 1000.00,
+                'paid_amount' => 500.00,
+                'remaining_amount' => 500.00,
+                'status' => 'partial',
+                'paid_at' => null,
+            ],
+        ];
+
+        $paymentService
+            ->shouldReceive('reversePayment')
+            ->once()
+            ->with($this->user->id, 10, 1)
+            ->andReturn($expectedResult);
+
+        // Act
+        $response = $this->postJson('/api/v1/rms/rentals/10/payments/1/reverse');
+
+        // Assert
+        $response->assertStatus(200)
+            ->assertJson([
+                'status' => true,
+                'message' => 'Payment reversed successfully',
+                'data' => $expectedResult,
+            ]);
+    }
+
+    /** @test */
+    public function it_returns_404_when_reversing_nonexistent_payment()
+    {
+        // Arrange
+        $paymentService = Mockery::mock(\App\Services\Rms\PaymentService::class);
+        $this->app->instance(\App\Services\Rms\PaymentService::class, $paymentService);
+
+        $paymentService
+            ->shouldReceive('reversePayment')
+            ->once()
+            ->with($this->user->id, 10, 999)
+            ->andThrow(\App\Exceptions\PaymentException::installmentNotFound(999));
+
+        // Act
+        $response = $this->postJson('/api/v1/rms/rentals/10/payments/999/reverse');
+
+        // Assert
+        $response->assertStatus(404)
+            ->assertJson([
+                'status' => false,
+                'error_code' => 'INSTALLMENT_NOT_FOUND',
+            ]);
+    }
+
+    /** @test */
+    public function it_returns_error_when_reversing_already_reversed_payment()
+    {
+        // Arrange
+        $paymentService = Mockery::mock(\App\Services\Rms\PaymentService::class);
+        $this->app->instance(\App\Services\Rms\PaymentService::class, $paymentService);
+
+        $paymentService
+            ->shouldReceive('reversePayment')
+            ->once()
+            ->with($this->user->id, 10, 1)
+            ->andThrow(new \InvalidArgumentException('Payment has already been reversed'));
+
+        // Act
+        $response = $this->postJson('/api/v1/rms/rentals/10/payments/1/reverse');
+
+        // Assert
+        $response->assertStatus(500)
+            ->assertJson([
+                'status' => false,
+            ]);
+    }
 }

@@ -114,40 +114,35 @@ class Admin extends Authenticatable
     /**
      * Check if admin has a specific permission
      * 
-     * Priority: Employee-specific permissions > Role permissions
+     * Checks both employee-specific permissions and role permissions (union)
+     * Permission is granted if found in either employee permissions OR role permissions
      *
      * @param string $permission
      * @return bool
      */
     public function hasPermission(string $permission): bool
     {
-        // First check employee-specific permissions (overrides)
-        if ($this->permissions && is_array($this->permissions)) {
-            if (in_array($permission, $this->permissions)) {
-                return true;
-            }
+        // Super admins (role_id is null) implicitly have all permissions
+        if (is_null($this->role_id)) {
+            return true;
         }
-        
-        // Fall back to role permissions
-        if (!$this->role) {
+
+        // Get all permissions (union of employee-specific + role permissions)
+        // getAllPermissions() handles missing roles gracefully - it will still return
+        // employee-specific permissions even if the role is orphaned/deleted
+        $permissions = $this->getAllPermissions();
+
+        if (empty($permissions)) {
             return false;
         }
 
-        $rolePermissions = is_array($this->role->permissions)
-            ? $this->role->permissions
-            : json_decode($this->role->permissions, true);
-
-        if (!is_array($rolePermissions)) {
-            return false;
-        }
-
-        return in_array($permission, $rolePermissions);
+        return in_array($permission, $permissions);
     }
 
     /**
      * Get all permissions for this admin (employee-specific + role permissions merged)
      * 
-     * Returns employee-specific permissions if set, otherwise role permissions
+     * Merges role permissions + employee permissions
      *
      * @return array
      */
@@ -166,9 +161,9 @@ class Admin extends Authenticatable
             }
         }
         
-        // Override with employee-specific permissions if they exist
+        // Merge employee-specific permissions (add to role, don't replace)
         if ($this->permissions && is_array($this->permissions)) {
-            $permissions = $this->permissions;
+            $permissions = array_merge($permissions, $this->permissions);
         }
         
         return array_unique($permissions);

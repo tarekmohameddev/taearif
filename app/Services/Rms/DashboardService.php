@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
-    public function getDashboardData($userId, $range = 7)
+    public function getDashboardData($userId, $range = 7, array $filters = [])
     {
         $now = Carbon::now('Asia/Riyadh');
         $end = $now->copy()->addDays($range);
@@ -24,8 +24,15 @@ class DashboardService
         $nextMonthStart = $now->copy()->addMonth()->startOfMonth();
         $nextMonthEnd = $now->copy()->addMonth()->endOfMonth();
 
-        return [
-            'range_days' => $range, // Add this to make it clear what range is being used
+        // Check if collections or payments due filters are applied
+        $collectionsFilters = $filters['collections'] ?? [];
+        $paymentsDueFilters = $filters['payments_due'] ?? [];
+
+        $hasCollectionsFilter = $this->hasFilters($collectionsFilters);
+        $hasPaymentsDueFilter = $this->hasFilters($paymentsDueFilters);
+
+        // Build base response
+        $response = [
             'counts' => [
                 'ongoing_rentals' => RmRental::where('user_id', $userId)->where('status', 'active')->count(),
                 'expiring_contracts_next_' . $range . 'd' => RmContract::where('user_id', $userId)
@@ -61,12 +68,9 @@ class DashboardService
             ],
             'property_stats' => $this->getPropertyStats($userId),
             'contract_stats' => $this->getContractStats($userId),
-            'monthly_collections' => $this->getRentalAmounts($userId),
             'yearly_overview' => $this->getYearlyFinancialOverview($userId),
             'contracts_expiring' => $this->getContractsExpiring($userId),
             'ongoing_rentals' => $this->getOngoingRentals($userId),
-            'payments_due_next_month_details' => $this->getPaymentsDueNextMonthDetails($userId, $nextMonthStart, $nextMonthEnd),
-            'payments_due_current_month_details' => $this->getPaymentsDueCurrentMonthDetails($userId, $currentMonthStart, $currentMonthEnd),
             'expiring_contracts_current_month_details' => $this->getExpiringContractsCurrentMonthDetails($userId, $currentMonthStart, $currentMonthEnd),
             'expiring_contracts_next_month_details' => $this->getExpiringContractsNextMonthDetails($userId, $nextMonthStart, $nextMonthEnd),
             'overdue_payments_details' => $this->getOverduePaymentsDetails($userId, $now),
@@ -81,6 +85,333 @@ class DashboardService
                 ->orderBy('scheduled_date')
                 ->take(5)
                 ->get()
+        ];
+
+        // Handle collections - filtered or default
+        if ($hasCollectionsFilter) {
+            $response['collections_filtered'] = $this->getFilteredPaymentsCollections($userId, $collectionsFilters);
+        } else {
+            $response['monthly_collections'] = $this->getRentalAmounts($userId);
+        }
+
+        // Handle payments due - filtered or default
+        if ($hasPaymentsDueFilter) {
+            $response['payments_due_filtered'] = $this->getFilteredPaymentsDue($userId, $paymentsDueFilters);
+        } else {
+            $response['payments_due_next_month_details'] = $this->getPaymentsDueNextMonthDetails($userId, $nextMonthStart, $nextMonthEnd);
+            $response['payments_due_current_month_details'] = $this->getPaymentsDueCurrentMonthDetails($userId, $currentMonthStart, $currentMonthEnd);
+        }
+
+        // Add applied filters metadata
+        if ($hasCollectionsFilter || $hasPaymentsDueFilter) {
+            $response['applied_filters'] = [
+                'collections' => $hasCollectionsFilter ? $collectionsFilters : null,
+                'payments_due' => $hasPaymentsDueFilter ? $paymentsDueFilters : null,
+            ];
+        }
+
+        return $response;
+    }
+
+    /**
+     * Calculate date range based on period and optional from/to dates
+     * Quick filters set the base range, then from/to can narrow it
+     *
+     * @param string|null $period this_week, this_month, this_year, custom
+     * @param string|null $fromDate
+     * @param string|null $toDate
+     * @return array ['start' => Carbon, 'end' => Carbon, 'label' => string]
+     */
+    public function calculateDateRange(?string $period, ?string $fromDate = null, ?string $toDate = null): array
+    {
+        $now = Carbon::now('Asia/Riyadh');
+        $start = null;
+        $end = null;
+        $label = 'Custom Range';
+
+        // First, determine base range from period
+        switch ($period) {
+            case 'this_week':
+                $start = $now->copy()->startOfWeek(Carbon::SATURDAY); // Week starts Saturday for Saudi
+                $end = $now->copy()->endOfWeek(Carbon::FRIDAY);
+                $label = 'This Week (' . $start->format('M d') . ' - ' . $end->format('M d, Y') . ')';
+                break;
+
+            case 'this_month':
+                $start = $now->copy()->startOfMonth();
+                $end = $now->copy()->endOfMonth();
+                $label = $now->format('F Y');
+                break;
+
+            case 'this_year':
+                $start = $now->copy()->startOfYear();
+                $end = $now->copy()->endOfYear();
+                $label = 'Year ' . $now->year;
+                break;
+
+            case 'custom':
+                // For custom period, from_date and to_date are required
+                if ($fromDate && $toDate) {
+                    $start = Carbon::parse($fromDate, 'Asia/Riyadh')->startOfDay();
+                    $end = Carbon::parse($toDate, 'Asia/Riyadh')->endOfDay();
+                    $label = $start->format('M d, Y') . ' - ' . $end->format('M d, Y');
+                }
+                break;
+
+            default:
+                // No period specified, use from/to dates if provided
+                if ($fromDate && $toDate) {
+                    $start = Carbon::parse($fromDate, 'Asia/Riyadh')->startOfDay();
+                    $end = Carbon::parse($toDate, 'Asia/Riyadh')->endOfDay();
+                    $label = $start->format('M d, Y') . ' - ' . $end->format('M d, Y');
+                }
+                break;
+        }
+
+        // If period is set AND from/to dates are provided, narrow the range
+        if ($period && $period !== 'custom' && $start && $end) {
+            if ($fromDate) {
+                $customStart = Carbon::parse($fromDate, 'Asia/Riyadh')->startOfDay();
+                // Clamp to within period range
+                if ($customStart->gt($start)) {
+                    $start = $customStart;
+                }
+            }
+            if ($toDate) {
+                $customEnd = Carbon::parse($toDate, 'Asia/Riyadh')->endOfDay();
+                // Clamp to within period range
+                if ($customEnd->lt($end)) {
+                    $end = $customEnd;
+                }
+            }
+
+            // Update label if narrowed
+            if ($fromDate || $toDate) {
+                $label .= ' (filtered: ' . $start->format('M d') . ' - ' . $end->format('M d') . ')';
+            }
+        }
+
+        return [
+            'start' => $start,
+            'end' => $end,
+            'label' => $label,
+            'period' => $period,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+        ];
+    }
+
+    /**
+     * Check if filters are applied
+     */
+    protected function hasFilters(?array $filters): bool
+    {
+        if (!$filters) {
+            return false;
+        }
+
+        return !empty($filters['period']) || !empty($filters['from_date']) || !empty($filters['to_date']);
+    }
+
+    /**
+     * Get filtered payments collections data
+     * For use in dashboard with filters or separate endpoint
+     */
+    public function getFilteredPaymentsCollections($userId, array $filters): array
+    {
+        $dateRange = $this->calculateDateRange(
+            $filters['period'] ?? null,
+            $filters['from_date'] ?? null,
+            $filters['to_date'] ?? null
+        );
+
+        $start = $dateRange['start'];
+        $end = $dateRange['end'];
+
+        if (!$start || !$end) {
+            // Default to current month if no valid range
+            $now = Carbon::now('Asia/Riyadh');
+            $start = $now->copy()->startOfMonth();
+            $end = $now->copy()->endOfMonth();
+            $dateRange['label'] = $now->format('F Y') . ' (default)';
+        }
+
+        $now = Carbon::now('Asia/Riyadh');
+
+        // Calculate collections for the filtered range
+        $totalExpected = RmPaymentInstallment::where('user_id', $userId)
+            ->whereBetween('due_date', [$start, $end])
+            ->sum('amount');
+
+        $totalCollected = RmPaymentInstallment::where('user_id', $userId)
+            ->where('status', 'paid')
+            ->whereBetween('paid_at', [$start, $end])
+            ->sum('amount');
+
+        $totalPending = RmPaymentInstallment::where('user_id', $userId)
+            ->where('status', 'pending')
+            ->whereBetween('due_date', [$start, $end])
+            ->where('due_date', '>=', $now)
+            ->sum('amount');
+
+        $totalOverdue = RmPaymentInstallment::where('user_id', $userId)
+            ->whereBetween('due_date', [$start, $end])
+            ->where(function ($query) use ($now) {
+                $query->where('status', 'overdue')
+                    ->orWhere(function ($q) use ($now) {
+                        $q->where('status', 'pending')
+                          ->where('due_date', '<', $now);
+                    });
+            })
+            ->sum('amount');
+
+        $collectionRate = $totalExpected > 0
+            ? round(($totalCollected / $totalExpected) * 100, 2)
+            : 0;
+
+        // Payment breakdown
+        $onTimePayments = RmPaymentInstallment::where('user_id', $userId)
+            ->where('status', 'paid')
+            ->whereBetween('paid_at', [$start, $end])
+            ->whereColumn('paid_at', '<=', 'due_date')
+            ->sum('amount');
+
+        $lateButPaidPayments = RmPaymentInstallment::where('user_id', $userId)
+            ->where('status', 'paid')
+            ->whereBetween('paid_at', [$start, $end])
+            ->whereColumn('paid_at', '>', 'due_date')
+            ->sum('amount');
+
+        // Get count of properties with active rentals
+        $rentedPropertiesCount = Property::where('user_id', $userId)
+            ->whereHas('rentals', function ($query) {
+                $query->where('status', 'active');
+            })
+            ->count();
+
+        return [
+            'filter_applied' => $dateRange,
+            'date_range' => [
+                'start_date' => $start->format('Y-m-d'),
+                'end_date' => $end->format('Y-m-d'),
+                'label' => $dateRange['label'],
+            ],
+            'summary' => [
+                'total_expected' => (float) $totalExpected,
+                'total_collected' => (float) $totalCollected,
+                'total_pending' => (float) $totalPending,
+                'total_overdue' => (float) $totalOverdue,
+                'collection_rate' => $collectionRate,
+            ],
+            'payment_breakdown' => [
+                'on_time' => (float) $onTimePayments,
+                'late_but_paid' => (float) $lateButPaidPayments,
+                'pending_not_due' => (float) $totalPending,
+                'overdue' => (float) $totalOverdue,
+            ],
+            'rented_properties_count' => $rentedPropertiesCount,
+            'currency' => 'SAR',
+        ];
+    }
+
+    /**
+     * Get filtered payments due data
+     * For use in dashboard with filters or separate endpoint
+     */
+    public function getFilteredPaymentsDue($userId, array $filters): array
+    {
+        $dateRange = $this->calculateDateRange(
+            $filters['period'] ?? null,
+            $filters['from_date'] ?? null,
+            $filters['to_date'] ?? null
+        );
+
+        $start = $dateRange['start'];
+        $end = $dateRange['end'];
+
+        if (!$start || !$end) {
+            // Default to current month if no valid range
+            $now = Carbon::now('Asia/Riyadh');
+            $start = $now->copy()->startOfMonth();
+            $end = $now->copy()->endOfMonth();
+            $dateRange['label'] = $now->format('F Y') . ' (default)';
+        }
+
+        $now = Carbon::now('Asia/Riyadh');
+
+        // Get all payments due in the filtered range with relationships
+        $payments = RmPaymentInstallment::with(['rental.property.contents', 'rental.activeContract'])
+            ->where('user_id', $userId)
+            ->whereBetween('due_date', [$start, $end])
+            ->orderBy('due_date')
+            ->get()
+            ->map(function ($payment) use ($now) {
+                $rental = $payment->rental;
+                $property = optional($rental)->property;
+                $contract = optional($rental)->activeContract;
+
+                return [
+                    'payment_id' => $payment->id,
+                    'rental_id' => $payment->rental_id,
+                    'tenant_name' => optional($rental)->tenant_full_name,
+                    'tenant_phone' => optional($rental)->tenant_phone,
+                    'tenant_email' => optional($rental)->tenant_email,
+                    'property' => [
+                        'id' => optional($property)->id,
+                        'name' => optional($property)->firstContent ? $property->firstContent->title : null,
+                        'unit_label' => optional($property)->unit_label,
+                        'address' => optional($property)->address,
+                    ],
+                    'contract' => [
+                        'id' => optional($contract)->id,
+                        'start_date' => optional($contract)->start_date,
+                        'end_date' => optional($contract)->end_date,
+                        'status' => optional($contract)->status,
+                    ],
+                    'payment_details' => [
+                        'amount' => (float) $payment->amount,
+                        'due_date' => $payment->due_date->format('Y-m-d'),
+                        'currency' => 'SAR',
+                        'payment_type' => $payment->payment_type ?? 'monthly_rent',
+                        'payment_status' => $payment->status,
+                        'paid_date' => $payment->paid_at ? $payment->paid_at->format('Y-m-d') : null,
+                        'payment_method' => $payment->payment_method,
+                    ],
+                    'days_remaining' => $now->diffInDays($payment->due_date, false),
+                ];
+            });
+
+        // Calculate aggregates
+        $totalAmount = $payments->sum('payment_details.amount');
+        $paidPayments = $payments->filter(function ($payment) {
+            return $payment['payment_details']['payment_status'] === 'paid';
+        });
+        $pendingPayments = $payments->filter(function ($payment) {
+            return $payment['payment_details']['payment_status'] === 'pending';
+        });
+        $overduePayments = $payments->filter(function ($payment) {
+            return $payment['payment_details']['payment_status'] === 'overdue';
+        });
+
+        return [
+            'filter_applied' => $dateRange,
+            'date_range' => [
+                'start_date' => $start->format('Y-m-d'),
+                'end_date' => $end->format('Y-m-d'),
+                'label' => $dateRange['label'],
+            ],
+            'summary' => [
+                'count' => $payments->count(),
+                'total_amount' => (float) $totalAmount,
+                'paid_count' => $paidPayments->count(),
+                'paid_amount' => (float) $paidPayments->sum('payment_details.amount'),
+                'pending_count' => $pendingPayments->count(),
+                'pending_amount' => (float) $pendingPayments->sum('payment_details.amount'),
+                'overdue_count' => $overduePayments->count(),
+                'overdue_amount' => (float) $overduePayments->sum('payment_details.amount'),
+            ],
+            'payments' => $payments->values()->toArray(),
+            'currency' => 'SAR',
         ];
     }
 
