@@ -80,6 +80,10 @@ class RentalResource extends JsonResource
             'end_date' => $this->end_date,
             'termination_reason' => $this->termination_reason,
 
+            // Payment Information (تاريخ الاستحقاق)
+            'next_payment_due_date' => $this->next_payment_due_date,
+            'next_payment_amount' => $this->next_payment_amount ? (float) $this->next_payment_amount : null,
+
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
 
