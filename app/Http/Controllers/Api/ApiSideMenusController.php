@@ -112,6 +112,11 @@ class ApiSideMenusController extends Controller
                 'perm'    => 'content.view',
                 'section' => ['title' => 'تعديل تصميم الموقع', 'description' => 'ادارة محتوى الموقع', 'icon' => 'content-settings', 'path' => 'live-editor'],
             ],
+            // Add this new entry for rental management
+            [
+                'perm'    => 'rentals.view',
+                'section' => ['title' => 'إدارة الإيجارات', 'description' => 'إدارة عقارات الإيجار', 'icon' => 'rental', 'path' => '/rental-management'],
+            ],
         ];
 
         $sections = [];
