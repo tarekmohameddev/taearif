@@ -71,6 +71,9 @@ class ListRentalsRequest extends FormRequest
             'from_date.date' => 'From date must be a valid date.',
             'to_date.date' => 'To date must be a valid date.',
             'to_date.after_or_equal' => 'To date must be equal to or after from date.',
+            'contract_created_from_date.date' => 'Contract created from date must be a valid date.',
+            'contract_created_to_date.date' => 'Contract created to date must be a valid date.',
+            'contract_created_to_date.after_or_equal' => 'Contract created to date must be equal to or after contract created from date.',
         ];
     }
 
@@ -95,6 +98,8 @@ class ListRentalsRequest extends FormRequest
             'filter_by_day' => 'day',
             'from_date' => 'from date',
             'to_date' => 'to date',
+            'contract_created_from_date' => 'contract created from date',
+            'contract_created_to_date' => 'contract created to date',
         ];
     }
 }
