@@ -136,7 +136,9 @@ class RentalService
         $sortOrder = in_array($sortOrder, ['asc', 'desc']) ? $sortOrder : 'desc';
 
         $query = RmRental::with([
-            'activeContract', 
+            'activeContract',
+            'activeContract.rental.property.contents',
+            'activeContract.rental.project.contents',
             'property.contents', 
             'project.contents',
             'building'

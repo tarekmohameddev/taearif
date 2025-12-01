@@ -79,8 +79,8 @@ class RentalResource extends JsonResource
             'property' => $this->whenLoaded('property', function () {
                 return [
                     'id' => $this->property->id,
-                    'property_name' => $this->property->property_name,
-                    'property_type' => $this->property->property_type,
+                    'property_name' => optional($this->property->contents->first())->title ?? null,
+                    'property_type' => $this->property->type ?? null,
                 ];
             }),
         ];
