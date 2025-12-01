@@ -151,7 +151,16 @@ class RentalService
             }
         ])
             ->where('user_id', $ownerId)
-            ->when($request->q, fn($q) => $q->where('tenant_full_name', 'like', "%{$request->q}%"))
+            ->when($request->q, function($q) use ($request) {
+                $searchTerm = "%{$request->q}%";
+                $q->where(function($query) use ($searchTerm) {
+                    $query->where('tenant_full_name', 'like', $searchTerm)
+                          ->orWhere('tenant_phone', 'like', $searchTerm)
+                          ->orWhereHas('property.contents', function($propertyQuery) use ($searchTerm) {
+                              $propertyQuery->where('title', 'like', $searchTerm);
+                          });
+                });
+            })
             ->when($request->status, fn($q) => $q->where('status', $request->status))
             ->when($request->building_id, fn($q) => $q->where('building_id', $request->building_id))
             ->when($request->unit_id, fn($q) => $q->where('unit_id', $request->unit_id))
