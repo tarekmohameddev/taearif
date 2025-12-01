@@ -453,24 +453,39 @@ class RentalService
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
 
-        $rental = RmRental::with(['property.contents', 'project', 'contracts', 'installments', 'activeExpenses', 'tenantCostItems', 'ownerCostItems'])
+        $rental = RmRental::with(['property.contents', 'project', 'contracts', 'installments.payments', 'activeExpenses', 'tenantCostItems', 'ownerCostItems'])
             ->where('user_id', $ownerId)
             ->findOrFail($rentalId);
 
         $activeContract = $rental->contracts()->whereIn('status', ['active', 'pending'])->orderByDesc('status')->orderBy('start_date')->first();
 
-        $payments = $rental->installments()->orderBy('due_date')->get()->map(function ($i) {
+        $payments = $rental->installments()->orderBy('due_date')->get()->map(function ($installment) {
+            // Get non-reversed payments for this installment, ordered by most recent first
+            $reversiblePayments = $installment->payments()
+                ->whereNull('deleted_at')
+                ->orderBy('payment_date', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            // Get the most recent payment ID (if any)
+            $paymentId = $reversiblePayments->isNotEmpty() ? $reversiblePayments->first()->id : null;
+            
+            // Can reverse if there are any non-reversed payments
+            $canReverse = $reversiblePayments->isNotEmpty();
+            
             return [
-                'id' => $i->id,
-                'sequence_no' => $i->sequence_no,
-                'due_date' => $i->due_date,
-                'amount' => (float) $i->amount,
-                'paid_amount' => (float) ($i->paid_amount ?? 0),
-                'status' => $i->status,
-                'payment_type' => $i->payment_type,
-                'payment_status' => $i->payment_status,
-                'reference' => $i->reference,
-                'paid_at' => $i->paid_at,
+                'id' => $installment->id,
+                'sequence_no' => $installment->sequence_no,
+                'due_date' => $installment->due_date,
+                'amount' => (float) $installment->amount,
+                'paid_amount' => (float) ($installment->paid_amount ?? 0),
+                'status' => $installment->status,
+                'payment_type' => $installment->payment_type,
+                'payment_status' => $installment->payment_status,
+                'reference' => $installment->reference,
+                'paid_at' => $installment->paid_at,
+                'payment_id' => $paymentId,
+                'can_reverse' => $canReverse,
             ];
         });
 
