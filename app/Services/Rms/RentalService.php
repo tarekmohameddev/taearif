@@ -143,7 +143,12 @@ class RentalService
             'property.contents',
             'property.UserPropertyCharacteristics',
             'project.contents',
-            'building'
+            'building',
+            'installments' => function($q) {
+                $q->whereIn('status', ['pending', 'active'])
+                  ->whereDate('due_date', '>=', now()->toDateString())
+                  ->orderBy('due_date');
+            }
         ])
             ->where('user_id', $ownerId)
             ->when($request->q, fn($q) => $q->where('tenant_full_name', 'like', "%{$request->q}%"))
