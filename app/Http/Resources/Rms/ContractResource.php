@@ -2,10 +2,13 @@
 
 namespace App\Http\Resources\Rms;
 
+use App\Http\Resources\Rms\Concerns\ResolvesLocalizedNames;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ContractResource extends JsonResource
 {
+    use ResolvesLocalizedNames;
+
     /**
      * Transform the resource into an array.
      *
@@ -14,16 +17,29 @@ class ContractResource extends JsonResource
      */
     public function toArray($request): array
     {
+        $rental = $this->relationLoaded('rental') ? $this->rental : null;
+        $propertyModel = $rental && $rental->relationLoaded('property') ? $rental->property : null;
+        $projectModel = $rental && $rental->relationLoaded('project') ? $rental->project : null;
+        $ownerId = $this->user_id ?? $rental?->user_id;
+
+        $propertyId = $this->property_id ?? $rental?->unit_id;
+        $projectId = $this->project_id ?? $rental?->project_id;
+
+        $propertyName = $this->property_name
+            ?? $this->resolvePropertyName($propertyModel, $propertyId, $ownerId);
+        $projectName = $this->project_name
+            ?? $this->resolveProjectName($projectModel, $projectId, $ownerId);
+
         return [
             'id' => $this->id,
             'rental_id' => $this->rental_id,
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
             'status' => $this->status,
-            'property_id' => $this->property_id,
-            'project_id' => $this->project_id,
-            'property_name' => $this->property_name,
-            'project_name' => $this->project_name,
+            'property_id' => $propertyId,
+            'project_id' => $projectId,
+            'property_name' => $propertyName,
+            'project_name' => $projectName,
             'grace_period_months' => $this->grace_period_months,
             'file_path' => $this->file_path,
             'termination_reason' => $this->termination_reason,
