@@ -2,10 +2,13 @@
 
 namespace App\Http\Resources\Rms;
 
+use App\Http\Resources\Rms\Concerns\ResolvesLocalizedNames;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class RentalResource extends JsonResource
 {
+    use ResolvesLocalizedNames;
+
     /**
      * Transform the resource into an array.
      *
@@ -14,6 +17,14 @@ class RentalResource extends JsonResource
      */
     public function toArray($request): array
     {
+        $propertyModel = $this->relationLoaded('property') ? $this->property : null;
+        $projectModel = $this->relationLoaded('project') ? $this->project : null;
+        $buildingModel = $this->relationLoaded('building') ? $this->building : null;
+
+        $propertyName = $this->resolvePropertyName($propertyModel, $this->unit_id, $this->user_id);
+        $projectName = $this->resolveProjectName($projectModel, $this->project_id, $this->user_id);
+        $buildingName = $this->resolveBuildingName($buildingModel, $this->building_id);
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
@@ -28,25 +39,13 @@ class RentalResource extends JsonResource
 
             // Property Information
             'unit_id' => $this->unit_id,
-            'unit_name' => $this->when(
-                $this->relationLoaded('property') && $this->property,
-                fn() => optional($this->property->contents->first())->title ?? null
-            ),
+            'unit_name' => $propertyName,
             'project_id' => $this->project_id,
             'building_id' => $this->building_id,
             'property_id' => $this->unit_id, // Use unit_id as property_id
-            'property_name' => $this->when(
-                $this->relationLoaded('property') && $this->property,
-                fn() => optional($this->property->contents->first())->title ?? null
-            ),
-            'project_name' => $this->when(
-                $this->relationLoaded('project') && $this->project,
-                fn() => optional($this->project->contents->first())->title ?? null
-            ),
-            'building_name' => $this->when(
-                $this->relationLoaded('building') && $this->building,
-                fn() => $this->building->name ?? null
-            ),
+            'property_name' => $propertyName,
+            'project_name' => $projectName,
+            'building_name' => $buildingName,
 
             // Unit/Property Details
             'bedrooms' => $this->when(
@@ -102,10 +101,10 @@ class RentalResource extends JsonResource
             ),
 
             // Optional: Include property if loaded
-            'property' => $this->whenLoaded('property', function () {
+            'property' => $this->whenLoaded('property', function () use ($propertyName) {
                 return [
                     'id' => $this->property->id,
-                    'property_name' => optional($this->property->contents->first())->title ?? null,
+                    'property_name' => $propertyName,
                     'property_type' => $this->property->type ?? null,
                     'bedrooms' => $this->property->beds ?? null,
                     'bathrooms' => $this->property->bath ?? null,
