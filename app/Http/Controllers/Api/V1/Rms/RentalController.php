@@ -663,8 +663,8 @@ class RentalController extends BaseApiController
             $validated = $request->validate([
                 'per_page' => 'nullable|integer|min:1|max:100',
                 'page' => 'nullable|integer|min:1',
-                'from_date' => 'nullable|date|before_or_equal:today',
-                'to_date' => 'nullable|date|after_or_equal:from_date|before_or_equal:today',
+                'from_date' => 'nullable|date',
+                'to_date' => 'nullable|date|after_or_equal:from_date',
                 'building_id' => 'nullable|integer|exists:buildings,id',
                 'status' => 'nullable|string|in:overdue,due_today,upcoming',
             ]);
