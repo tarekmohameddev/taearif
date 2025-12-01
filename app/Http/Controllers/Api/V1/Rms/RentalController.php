@@ -19,6 +19,9 @@ use Illuminate\Http\Request;
 use App\Services\Rms\RentalService;
 use App\Models\Api\Rms\RmRental;
 use App\Models\Api\Rms\RmPaymentInstallment;
+use App\Models\Building;
+use App\Models\User\RealestateManagement\Project;
+use App\Models\User\RealestateManagement\Property;
 use App\Exceptions\PaymentException;
 use App\Exceptions\Api\ApiException;
 use Illuminate\Support\Facades\Log;
@@ -822,5 +825,112 @@ class RentalController extends BaseApiController
 
             return $this->success($result, 'Payment reversed successfully');
         }, 'reverse payment');
+    }
+
+    /**
+     * Get filter options for rentals (buildings, projects, units, statuses, etc.)
+     * Returns all available filter options with id and name for frontend dropdowns
+     */
+    public function filterOptions(Request $request)
+    {
+        return $this->executeWithExceptionHandling(function () use ($request) {
+            $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : auth()->id();
+
+            // Get buildings that have rentals
+            $buildings = Building::where('user_id', $ownerId)
+                ->whereHas('rentals', function($q) use ($ownerId) {
+                    $q->where('user_id', $ownerId);
+                })
+                ->select('id', 'name')
+                ->orderBy('name')
+                ->get()
+                ->map(function($building) {
+                    return [
+                        'id' => $building->id,
+                        'name' => $building->name
+                    ];
+                });
+
+            // Get projects that have rentals (through RmRental's project_id)
+            $projectIds = RmRental::where('user_id', $ownerId)
+                ->whereNotNull('project_id')
+                ->distinct()
+                ->pluck('project_id');
+            
+            $projects = Project::where('user_id', $ownerId)
+                ->whereIn('id', $projectIds)
+                ->with(['contents' => function($q) {
+                    $q->select('id', 'project_id', 'title')->limit(1);
+                }])
+                ->get()
+                ->map(function($project) {
+                    return [
+                        'id' => $project->id,
+                        'name' => optional($project->contents->first())->title ?? 'Project #' . $project->id
+                    ];
+                });
+
+            // Get units (properties) that have rentals
+            $units = Property::where('user_id', $ownerId)
+                ->whereHas('rentals', function($q) use ($ownerId) {
+                    $q->where('user_id', $ownerId);
+                })
+                ->with(['contents' => function($q) {
+                    $q->select('id', 'property_id', 'title')->limit(1);
+                }])
+                ->select('id')
+                ->get()
+                ->map(function($unit) {
+                    return [
+                        'id' => $unit->id,
+                        'name' => optional($unit->contents->first())->title ?? 'Unit #' . $unit->id
+                    ];
+                });
+
+            // Contract statuses
+            $contractStatuses = [
+                ['id' => 'pending', 'name' => 'Pending'],
+                ['id' => 'active', 'name' => 'Active'],
+                ['id' => 'expired', 'name' => 'Expired'],
+                ['id' => 'terminated', 'name' => 'Terminated'],
+            ];
+
+            // Rental statuses
+            $rentalStatuses = [
+                ['id' => 'active', 'name' => 'Active'],
+                ['id' => 'inactive', 'name' => 'Inactive'],
+                ['id' => 'terminated', 'name' => 'Terminated'],
+                ['id' => 'ended', 'name' => 'Ended'],
+                ['id' => 'cancelled', 'name' => 'Cancelled'],
+                ['id' => 'draft', 'name' => 'Draft'],
+            ];
+
+            // Payment statuses
+            $paymentStatuses = [
+                ['id' => 'paid', 'name' => 'Paid'],
+                ['id' => 'partial', 'name' => 'Partial'],
+                ['id' => 'overdue', 'name' => 'Overdue'],
+                ['id' => 'pending', 'name' => 'Pending'],
+                ['id' => 'unpaid', 'name' => 'Unpaid'],
+            ];
+
+            // Paying plans
+            $payingPlans = [
+                ['id' => 'monthly', 'name' => 'Monthly'],
+                ['id' => 'quarterly', 'name' => 'Quarterly'],
+                ['id' => 'semi_annual', 'name' => 'Semi-Annual'],
+                ['id' => 'annual', 'name' => 'Annual'],
+            ];
+
+            return $this->success([
+                'buildings' => $buildings,
+                'projects' => $projects,
+                'units' => $units,
+                'contract_statuses' => $contractStatuses,
+                'rental_statuses' => $rentalStatuses,
+                'payment_statuses' => $paymentStatuses,
+                'paying_plans' => $payingPlans,
+            ]);
+        }, 'retrieve filter options');
     }
 }

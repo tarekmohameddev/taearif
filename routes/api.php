@@ -532,6 +532,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('payments/due', [RmsDashboardController::class, 'paymentsDue']);
 
         // Rentals
+        Route::get('rentals/filter-options', [RentalController::class, 'filterOptions']);
         Route::get('rentals', [RentalController::class, 'index']);
         Route::post('rentals', [RentalController::class, 'store']);
         Route::get('rentals/{id}', [RentalController::class, 'show']);

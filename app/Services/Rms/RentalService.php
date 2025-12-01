@@ -135,7 +135,12 @@ class RentalService
         $sortBy = in_array($sortBy, $allowedSortFields) ? $sortBy : 'created_at';
         $sortOrder = in_array($sortOrder, ['asc', 'desc']) ? $sortOrder : 'desc';
 
-        $query = RmRental::with(['activeContract', 'property', 'project'])
+        $query = RmRental::with([
+            'activeContract', 
+            'property.contents', 
+            'project.contents',
+            'building'
+        ])
             ->where('user_id', $ownerId)
             ->when($request->q, fn($q) => $q->where('tenant_full_name', 'like', "%{$request->q}%"))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
@@ -152,6 +157,54 @@ class RentalService
             })
             ->when($request->from_date, fn($q) => $q->whereDate('move_in_date', '>=', $request->from_date))
             ->when($request->to_date, fn($q) => $q->whereDate('move_in_date', '<=', $request->to_date))
+            ->when($request->contract_status, function($q) use ($request) {
+                $q->whereHas('activeContract', function($contractQuery) use ($request) {
+                    $contractQuery->where('status', $request->contract_status);
+                });
+            })
+            ->when($request->contract_created_from_date, function($q) use ($request) {
+                $q->whereHas('activeContract', function($contractQuery) use ($request) {
+                    $contractQuery->whereDate('created_at', '>=', $request->contract_created_from_date);
+                });
+            })
+            ->when($request->contract_created_to_date, function($q) use ($request) {
+                $q->whereHas('activeContract', function($contractQuery) use ($request) {
+                    $contractQuery->whereDate('created_at', '<=', $request->contract_created_to_date);
+                });
+            })
+            ->when($request->payment_status, function($q) use ($request) {
+                $q->whereHas('installments', function($installmentQuery) use ($request) {
+                    $today = now()->toDateString();
+                    
+                    switch($request->payment_status) {
+                        case 'paid':
+                            // Has at least one fully paid installment
+                            $installmentQuery->whereColumn('paid_amount', '>=', 'amount')
+                                             ->where('amount', '>', 0);
+                            break;
+                        case 'partial':
+                            // Has at least one partially paid installment
+                            $installmentQuery->whereColumn('paid_amount', '<', 'amount')
+                                             ->where('paid_amount', '>', 0);
+                            break;
+                        case 'overdue':
+                            // Has at least one overdue installment (unpaid or partially paid past due date)
+                            $installmentQuery->whereColumn('paid_amount', '<', 'amount')
+                                             ->whereDate('due_date', '<', $today);
+                            break;
+                        case 'pending':
+                            // Has at least one pending installment (unpaid, not yet due)
+                            $installmentQuery->where('paid_amount', 0)
+                                             ->whereDate('due_date', '>=', $today);
+                            break;
+                        case 'unpaid':
+                            // Has at least one unpaid installment (regardless of due date)
+                            $installmentQuery->where('paid_amount', 0)
+                                             ->where('amount', '>', 0);
+                            break;
+                    }
+                });
+            })
             ->orderBy($sortBy, $sortOrder);
 
         return $query->paginate($perPage, ['*'], 'page', $page);
@@ -1278,7 +1331,12 @@ class RentalService
         $page = $filters['page'] ?? 1;
 
         // Build base query
-        $query = RmRental::with(['activeContract', 'property.contents', 'property.building', 'project.contents', 'building', 'tenantCostItems', 'ownerCostItems'])
+        $query = RmRental::with([
+            'activeContract', 
+            'property.contents', 
+            'project.contents',
+            'building'
+        ])
             ->where('user_id', $ownerId);
 
         // Apply filters

@@ -30,10 +30,19 @@ class RentalResource extends JsonResource
             'unit_id' => $this->unit_id,
             'project_id' => $this->project_id,
             'building_id' => $this->building_id,
-            'property_id' => $this->property_id,
-            'property_name' => $this->property_name,
-            'project_name' => $this->project_name,
-            'building_name' => $this->building_name,
+            'property_id' => $this->unit_id, // Use unit_id as property_id
+            'property_name' => $this->when(
+                $this->relationLoaded('property') && $this->property,
+                fn() => optional($this->property->contents->first())->title ?? null
+            ),
+            'project_name' => $this->when(
+                $this->relationLoaded('project') && $this->project,
+                fn() => optional($this->project->contents->first())->title ?? null
+            ),
+            'building_name' => $this->when(
+                $this->relationLoaded('building') && $this->building,
+                fn() => $this->building->name ?? null
+            ),
 
             // Rental Details
             'move_in_date' => $this->move_in_date,

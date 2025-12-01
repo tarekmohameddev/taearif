@@ -38,6 +38,10 @@ class ListRentalsRequest extends FormRequest
             'filter_by_day' => 'nullable|date',
             'from_date' => 'nullable|date',
             'to_date' => 'nullable|date|after_or_equal:from_date',
+            'contract_status' => ['nullable', 'string', RmsConstants::validationRule(RmsConstants::CONTRACT_STATUSES)],
+            'payment_status' => 'nullable|string|in:paid,partial,overdue,pending,unpaid',
+            'contract_created_from_date' => 'nullable|date',
+            'contract_created_to_date' => 'nullable|date|after_or_equal:contract_created_from_date',
         ];
     }
 
