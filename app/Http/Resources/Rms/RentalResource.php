@@ -28,6 +28,10 @@ class RentalResource extends JsonResource
 
             // Property Information
             'unit_id' => $this->unit_id,
+            'unit_name' => $this->when(
+                $this->relationLoaded('property') && $this->property,
+                fn() => optional($this->property->contents->first())->title ?? null
+            ),
             'project_id' => $this->project_id,
             'building_id' => $this->building_id,
             'property_id' => $this->unit_id, // Use unit_id as property_id
