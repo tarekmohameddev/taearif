@@ -139,6 +139,7 @@ class RentalService
             'activeContract',
             'activeContract.rental.property.contents',
             'activeContract.rental.project.contents',
+            'activeContract.rental.building',
             'property.contents', 
             'project.contents',
             'building'
