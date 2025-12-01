@@ -48,6 +48,24 @@ class RentalResource extends JsonResource
                 fn() => $this->building->name ?? null
             ),
 
+            // Unit/Property Details
+            'bedrooms' => $this->when(
+                $this->relationLoaded('property') && $this->property,
+                fn() => $this->property->beds ?? null
+            ),
+            'bathrooms' => $this->when(
+                $this->relationLoaded('property') && $this->property,
+                fn() => $this->property->bath ?? null
+            ),
+            'rooms' => $this->when(
+                $this->relationLoaded('property') && $this->property && $this->property->relationLoaded('UserPropertyCharacteristics'),
+                fn() => optional($this->property->UserPropertyCharacteristics)->rooms ?? null
+            ),
+            'floor_number' => $this->when(
+                $this->relationLoaded('property') && $this->property && $this->property->relationLoaded('UserPropertyCharacteristics'),
+                fn() => optional($this->property->UserPropertyCharacteristics)->floor_number ?? null
+            ),
+
             // Rental Details
             'move_in_date' => $this->move_in_date,
             'rental_type' => $this->rental_type,
@@ -85,6 +103,10 @@ class RentalResource extends JsonResource
                     'id' => $this->property->id,
                     'property_name' => optional($this->property->contents->first())->title ?? null,
                     'property_type' => $this->property->type ?? null,
+                    'bedrooms' => $this->property->beds ?? null,
+                    'bathrooms' => $this->property->bath ?? null,
+                    'rooms' => optional($this->property->UserPropertyCharacteristics)->rooms ?? null,
+                    'floor_number' => optional($this->property->UserPropertyCharacteristics)->floor_number ?? null,
                 ];
             }),
         ];

@@ -140,7 +140,8 @@ class RentalService
             'activeContract.rental.property.contents',
             'activeContract.rental.project.contents',
             'activeContract.rental.building',
-            'property.contents', 
+            'property.contents',
+            'property.UserPropertyCharacteristics',
             'project.contents',
             'building'
         ])
