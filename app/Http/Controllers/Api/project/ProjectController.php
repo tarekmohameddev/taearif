@@ -140,6 +140,10 @@ class ProjectController extends Controller
                 "visits"          => (int)($visitsByProject[$project->id] ?? 0),   // << here
                 "featured_image"  => $project->featured_image ? asset($project->featured_image) : null,
                 "video_url"       => $project->video_url ? asset($project->video_url) : null,
+                "min_price"       => $project->min_price,
+                "max_price"       => $project->max_price,
+                "min_price_formatted" => $project->min_price !== null ? formatNumberWithoutTrailingZeros($project->min_price) : null,
+                "max_price_formatted" => $project->max_price !== null ? formatNumberWithoutTrailingZeros($project->max_price) : null,
                 "price_range"     => formatNumberWithoutTrailingZeros($project->min_price ?? 0),
                 "latitude"        => $project->latitude,
                 "longitude"       => $project->longitude,
@@ -261,6 +265,10 @@ class ProjectController extends Controller
             "visits" => $visits,
             "featured_image" => asset($project->featured_image),
             "video_url" => $project->video_url ? asset($project->video_url) : null,
+            "min_price" => $project->min_price,
+            "max_price" => $project->max_price,
+            "min_price_formatted" => $project->min_price !== null ? formatNumberWithoutTrailingZeros($project->min_price) : null,
+            "max_price_formatted" => $project->max_price !== null ? formatNumberWithoutTrailingZeros($project->max_price) : null,
             "price_range" => "From $" . formatNumberWithoutTrailingZeros($project->min_price ?? 0) . " to $" . formatNumberWithoutTrailingZeros($project->max_price ?? 0),
             "latitude" => $project->latitude,
             "longitude" => $project->longitude,
@@ -496,6 +504,14 @@ class ProjectController extends Controller
 
         $responseProject->featured = (bool) $responseProject->featured;
 
+        // Add formatted price fields
+        $responseProject->min_price_formatted = $responseProject->min_price !== null 
+            ? formatNumberWithoutTrailingZeros($responseProject->min_price) 
+            : null;
+        $responseProject->max_price_formatted = $responseProject->max_price !== null 
+            ? formatNumberWithoutTrailingZeros($responseProject->max_price) 
+            : null;
+
         // Log the activity
         TenantActivity::emit($request, 'project.created', 'user_projects', $responseProject->id, null, [
             'id' => $responseProject->id, 'title' => optional($responseProject->contents->first())->title
@@ -641,7 +657,7 @@ class ProjectController extends Controller
         DB::transaction(function () use ($request, $ownerId, $defaultLang, &$project) {
             $requestData = $request->all();
             $requestData['featured_image'] = $request->featured_image;
-            $requestData['video_url'] = $request->video_url; // Video URL from separate upload
+            $requestData['video_url'] = !empty($request->video_url) ? $request->video_url : null; // Handle empty string
             $requestData['amenities'] = $this->normalizeAmenities($request->input('amenities', $project->amenities));
 
             $project->updateProject($requestData);
@@ -715,6 +731,14 @@ class ProjectController extends Controller
             'specifications',
             'types',
         ])->find($project->id);
+
+        // Add formatted price fields
+        $responseProject->min_price_formatted = $responseProject->min_price !== null 
+            ? formatNumberWithoutTrailingZeros($responseProject->min_price) 
+            : null;
+        $responseProject->max_price_formatted = $responseProject->max_price !== null 
+            ? formatNumberWithoutTrailingZeros($responseProject->max_price) 
+            : null;
 
         TenantActivity::emit($request, 'project.created', 'user_projects', $responseProject->id, null, [
             'id' => $responseProject->id, 'title' => optional($responseProject->contents->first())->title
