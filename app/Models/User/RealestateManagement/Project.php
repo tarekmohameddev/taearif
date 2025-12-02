@@ -34,7 +34,10 @@ class Project extends Model
     ];
 
     protected $casts = [
-        'amenities' => 'array'
+        'amenities' => 'array',
+        'featured' => 'boolean',
+        'published' => 'boolean',
+        'units' => 'integer',
     ];
 
     /**
@@ -124,7 +127,7 @@ class Project extends Model
         return self::create([
             'user_id' => $userId,
             'featured_image' => $request['featured_image'],
-            'video_url' => $request['video_url'] ?? null,
+            'video_url' => !empty($request['video_url']) ? $request['video_url'] : null,
             'min_price' => $request['min_price'] ?? null,
             'max_price' => $request['max_price'] ?? null,
             'featured' => $request['featured'] ?? 0,
@@ -144,17 +147,17 @@ class Project extends Model
 
         return $this->update([
             'featured_image' => $request['featured_image'],
-            'video_url' => $request['video_url'] ?? null,
-            'min_price' => $request['min_price'],
-            'max_price' => $request['max_price'],
-            'featured' => $request['featured'],
+            'video_url' => !empty($request['video_url']) ? $request['video_url'] : null,
+            'min_price' => $request['min_price'] ?? $this->min_price,
+            'max_price' => $request['max_price'] ?? $this->max_price,
+            'featured' => $request['featured'] ?? $this->featured,
             'published' => $request['published'] ?? $this->published,
-            'complete_status' => $request['complete_status'] ?? 'In Progress',
+            'complete_status' => $request['complete_status'] ?? $this->complete_status ?? 'In Progress',
             'developer' => $request['developer'] ?? $this->developer,
             'units' => $request['units'] ?? $this->units,
             'completion_date' => $request['completion_date'] ?? $this->completion_date,
-            'latitude' => $request['latitude'],
-            'longitude' => $request['longitude'],
+            'latitude' => $request['latitude'] ?? $this->latitude,
+            'longitude' => $request['longitude'] ?? $this->longitude,
             'amenities' => $request['amenities'] ?? $this->amenities ?? [],
         ]);
     }

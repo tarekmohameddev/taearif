@@ -405,51 +405,64 @@ class ProjectController extends Controller
         DB::transaction(function () use ($request, $ownerId, $defaultLang, &$project) {
             $requestData = $request->all();
             $requestData['featured_image'] = asset($request->featured_image);
-            $requestData['video_url'] = $request->video_url; // Video URL from separate upload
+            $requestData['video_url'] = !empty($request->video_url) ? $request->video_url : null; // Handle empty string
             $requestData['amenities'] = $this->normalizeAmenities($request->input('amenities'));
 
             $project = Project::storeProject($ownerId, $requestData);
 
+            // Gallery images
             if ($request->has('gallery_images') && is_array($request->gallery_images)) {
                 foreach ($request->gallery_images as $imgPath) {
                     ProjectGalleryImg::storeGalleryImage($ownerId, $project->id, $imgPath);
                 }
             }
 
+            // Floorplan images
             if ($request->has('floorplan_images') && is_array($request->floorplan_images)) {
                 foreach ($request->floorplan_images as $imgPath) {
                     ProjectFloorplanImg::storeFloorplanImage($ownerId, $project->id, $imgPath);
                 }
             }
 
-            $firstContent = $request->input('contents.0');
+            // Process all contents (multi-language support)
+            $contents = (array) $request->input('contents', []);
+            foreach ($contents as $content) {
+                ProjectContent::storeProjectContent($ownerId, [
+                    'project_id' => $project->id,
+                    'language_id' => $content['language_id'],
+                    'title' => $content['title'] ?? '',
+                    'address' => $content['address'] ?? null,
+                    'description' => $content['description'] ?? null,
+                    'meta_keyword' => $content['meta_keyword'] ?? null,
+                    'meta_description' => $content['meta_description'] ?? null,
+                ]);
+            }
 
-            $title = $firstContent['title'] ?? '';
-            $address = $firstContent['address'] ?? '';
-            $description = $firstContent['description'] ?? '';
+            // Process specifications
+            $specifications = (array) $request->input('specifications', []);
+            foreach ($specifications as $spec) {
+                ProjectSpecification::storeSpecification($ownerId, [
+                    'language_id' => $defaultLang->id,
+                    'project_id' => $project->id,
+                    'key' => $spec['key'],
+                    'label' => $spec['label'],
+                    'value' => $spec['value'],
+                ]);
+            }
 
-            $content = [
-                'project_id' => $project->id,
-                'language_id' => $defaultLang->id,
-                'title' => $title,
-                'address' => $address,
-                'description' => $description,
-                'meta_keyword' => $request->meta_keyword,
-                'meta_description' => $request->meta_description,
-            ];
-            ProjectContent::storeProjectContent($ownerId, $content);
-
-            $labels = $request->input('label', []);
-            $values = $request->input('value', []);
-
-            foreach ($labels as $key => $label) {
-                if (!empty($values[$key])) {
-                    ProjectSpecification::storeSpecification($ownerId, [
-                        'language_id' => $defaultLang->id,
+            // Process types
+            if ($request->has('types')) {
+                $types = (array) $request->types;
+                foreach ($types as $type) {
+                    ProjectType::storeProjectType($ownerId, [
                         'project_id' => $project->id,
-                        'key' => $key,
-                        'label' => $label,
-                        'value' => $values[$key],
+                        'language_id' => $type['language_id'] ?? $defaultLang->id,
+                        'title' => $type['title'] ?? null,
+                        'min_area' => $type['min_area'] ?? null,
+                        'max_area' => $type['max_area'] ?? null,
+                        'min_price' => $type['min_price'] ?? null,
+                        'max_price' => $type['max_price'] ?? null,
+                        'unit' => $type['unit'] ?? null,
                     ]);
                 }
             }
@@ -524,6 +537,10 @@ class ProjectController extends Controller
             $decoded = json_decode($value, true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                 return $decoded;
+            }
+            // If it's a comma-separated string, split it
+            if (strpos($value, ',') !== false) {
+                return array_values(array_filter(array_map('trim', explode(',', $value))));
             }
             // If it's a plain string, wrap it in an array
             return [trim($value)];
