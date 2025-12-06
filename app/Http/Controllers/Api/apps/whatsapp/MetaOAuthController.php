@@ -120,11 +120,9 @@ class MetaOAuthController extends Controller
     }
 
     /**
-     * Callback endpoint — receives code, exchanges it for a
-     * short-lived user access token, optionally upgrades to a
-     * long-lived token, and fetches business/phone info.
-     *
-     * If multiple businesses/WABAs/phones exist, returns all for frontend selection.
+     * Callback endpoint — receives code from Meta Embedded Signup,
+     * exchanges it for an access token, fetches the linked WABA/phone,
+     * and saves directly to the database.
      */
     public function callback(Request $request)
     {
@@ -176,7 +174,6 @@ class MetaOAuthController extends Controller
         }
 
         $userId = (int) $decoded['user_id'];
-        $mode = $decoded['mode'] ?? 'new';
 
         try {
             // 1) Exchange code for short-lived token
@@ -188,7 +185,7 @@ class MetaOAuthController extends Controller
                 throw new \RuntimeException('No access_token in Meta response.');
             }
 
-            // 2) Optionally upgrade to long-lived token
+            // 2) Upgrade to long-lived token
             $finalToken = $shortLivedToken;
             $expiresAt = null;
 
@@ -205,136 +202,124 @@ class MetaOAuthController extends Controller
                 Log::warning('MetaOAuthController.callback long-lived token exchange failed', [
                     'error' => $e->getMessage(),
                 ]);
-
                 if ($expiresIn) {
                     $expiresAt = Carbon::now()->addSeconds((int) $expiresIn);
                 }
             }
 
-            // 3) Use token to list ALL businesses
+            // 3) Get the first business
             $businessesResponse = $this->metaGraph->listBusinesses($finalToken);
             $businesses = $businessesResponse['data'] ?? [];
+            $business = $businesses[0] ?? null;
 
-            if (empty($businesses)) {
+            if (!$business) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No businesses found for the user.',
-                    'raw' => $businessesResponse,
+                    'message' => 'No business found for the user.',
                 ], 400);
             }
 
-            // 4) List ALL WABA accounts across all businesses
-            $allWabas = [];
-            foreach ($businesses as $business) {
-                $businessId = $business['id'] ?? null;
-                $businessName = $business['name'] ?? 'Unknown';
+            $businessId = $business['id'];
 
-                if (!$businessId) {
-                    continue;
-                }
+            // 4) Get the first WABA for that business
+            $wabaResponse = $this->metaGraph->listWhatsAppBusinessAccounts($finalToken, $businessId);
+            $wabas = $wabaResponse['data'] ?? [];
+            $waba = $wabas[0] ?? null;
 
-                try {
-                    $wabaResponse = $this->metaGraph->listWhatsAppBusinessAccounts($finalToken, $businessId);
-                    $wabas = $wabaResponse['data'] ?? [];
-
-                    foreach ($wabas as $waba) {
-                        $wabaId = $waba['id'] ?? null;
-                        if (!$wabaId) {
-                            continue;
-                        }
-
-                        // 5) List ALL phone numbers for each WABA
-                        $phonesResponse = $this->metaGraph->listPhoneNumbers($finalToken, $wabaId);
-                        $phones = $phonesResponse['data'] ?? [];
-
-                        $allWabas[] = [
-                            'business_id' => $businessId,
-                            'business_name' => $businessName,
-                            'waba_id' => $wabaId,
-                            'waba_name' => $waba['name'] ?? null,
-                            'phones' => array_map(function ($phone) {
-                                return [
-                                    'phone_number_id' => $phone['id'] ?? null,
-                                    'display_phone_number' => $phone['display_phone_number'] ?? null,
-                                    'verified_name' => $phone['verified_name'] ?? null,
-                                    'quality_rating' => $phone['quality_rating'] ?? null,
-                                ];
-                            }, $phones),
-                        ];
-                    }
-                } catch (\Throwable $e) {
-                    Log::warning('MetaOAuthController.callback failed to fetch WABAs for business', [
-                        'business_id' => $businessId,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            if (empty($allWabas)) {
+            if (!$waba) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No WhatsApp Business Accounts found across any business.',
-                    'businesses' => $businesses,
+                    'message' => 'No WhatsApp Business Account found.',
                 ], 400);
             }
 
-            // If only one WABA with one phone, auto-select and persist
-            $autoSelected = false;
-            $selectedData = null;
+            $wabaId = $waba['id'];
 
-            if (count($allWabas) === 1 && count($allWabas[0]['phones']) === 1) {
-                $autoSelected = true;
-                $waba = $allWabas[0];
-                $phone = $waba['phones'][0];
+            // 5) Get phone numbers for that WABA
+            $phonesResponse = $this->metaGraph->listPhoneNumbers($finalToken, $wabaId);
+            $phones = $phonesResponse['data'] ?? [];
 
-                $whatsappUser = WhatsappUser::updateOrCreate(
-                    ['user_id' => $userId],
-                    [
-                        'number' => $phone['display_phone_number'],
-                        'name' => $phone['verified_name'],
-                        'status' => 'active',
-                        'request_status' => 'active',
-                        'token' => $finalToken,
-                        'access_token' => $finalToken,
-                        'token_expires_at' => $expiresAt,
-                        'business_id' => $waba['business_id'],
-                        'waba_id' => $waba['waba_id'],
-                        'phone_id' => $phone['phone_number_id'],
-                    ]
-                );
-
-                $selectedData = [
-                    'business_id' => $waba['business_id'],
-                    'business_name' => $waba['business_name'],
-                    'waba_id' => $waba['waba_id'],
-                    'waba_name' => $waba['waba_name'],
-                    'phone_number_id' => $phone['phone_number_id'],
-                    'display_phone_number' => $phone['display_phone_number'],
-                    'verified_name' => $phone['verified_name'],
-                    'whatsapp_user_id' => $whatsappUser->id,
-                ];
+            if (empty($phones)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No phone number found for WhatsApp Business Account.',
+                ], 400);
             }
 
-            // Store token temporarily for selection flow (if multiple options)
-            if (!$autoSelected) {
-                // Store token in session or cache for subsequent selection call
-                $tempKey = 'meta_signup_' . $userId;
-                cache()->put($tempKey, [
+            // Get existing phone_ids for this user to find the newly added one
+            $existingPhoneIds = WhatsappUser::where('user_id', $userId)
+                ->whereNotNull('phone_id')
+                ->pluck('phone_id')
+                ->toArray();
+
+            // Find the newly added phone (one that doesn't exist in our database yet)
+            $newPhone = null;
+            foreach ($phones as $phone) {
+                $phoneId = $phone['id'] ?? null;
+                if ($phoneId && !in_array($phoneId, $existingPhoneIds)) {
+                    $newPhone = $phone;
+                    break;
+                }
+            }
+
+            // If no new phone found (all phones already exist), use the last phone in the list
+            // This handles the case where user re-authorizes an existing phone
+            if (!$newPhone) {
+                $newPhone = end($phones);
+            }
+
+            $phoneId = $newPhone['id'] ?? null;
+            $displayPhoneNumber = $newPhone['display_phone_number'] ?? null;
+            $verifiedName = $newPhone['verified_name'] ?? null;
+
+            if (!$phoneId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid phone number data from Meta.',
+                ], 400);
+            }
+
+            // 6) Save to database - use phone_id as unique key so each phone gets its own row
+            // This allows users to link multiple phone numbers
+            $whatsappUser = WhatsappUser::updateOrCreate(
+                [
+                    'user_id' => $userId,
+                    'phone_id' => $phoneId,  // Each phone number is a separate row
+                ],
+                [
+                    'number' => $displayPhoneNumber,
+                    'name' => $verifiedName,
+                    'status' => 'active',
+                    'request_status' => 'active',
                     'token' => $finalToken,
-                    'expires_at' => $expiresAt,
-                ], now()->addMinutes(15));
-            }
+                    'access_token' => $finalToken,
+                    'token_expires_at' => $expiresAt,
+                    'business_id' => $businessId,
+                    'waba_id' => $wabaId,
+                ]
+            );
+
+            Log::info('MetaOAuthController.callback WhatsApp linked successfully', [
+                'user_id' => $userId,
+                'business_id' => $businessId,
+                'waba_id' => $wabaId,
+                'phone_id' => $phoneId,
+                'display_phone_number' => $displayPhoneNumber,
+                'is_new_phone' => !in_array($phoneId, $existingPhoneIds),
+            ]);
 
             return response()->json([
                 'success' => true,
-                'auto_selected' => $autoSelected,
-                'message' => $autoSelected
-                    ? 'WhatsApp Business account linked successfully via Meta Embedded Signup.'
-                    : 'Multiple WhatsApp Business Accounts found. Please select one.',
-                'mode' => $mode,
-                'token_expires_at' => optional($expiresAt)->toIso8601String(),
-                'selected' => $selectedData,
-                'available' => $autoSelected ? null : $allWabas,
+                'message' => 'WhatsApp Business account linked successfully.',
+                'data' => [
+                    'whatsapp_user_id' => $whatsappUser->id,
+                    'business_id' => $businessId,
+                    'waba_id' => $wabaId,
+                    'phone_number_id' => $phoneId,
+                    'display_phone_number' => $displayPhoneNumber,
+                    'verified_name' => $verifiedName,
+                    'token_expires_at' => optional($expiresAt)->toIso8601String(),
+                ],
             ]);
         } catch (\Throwable $e) {
             Log::error('MetaOAuthController.callback failed', [
@@ -344,79 +329,10 @@ class MetaOAuthController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to complete Meta Embedded Signup flow.',
+                'message' => 'Failed to complete Meta Embedded Signup.',
                 'error' => $e->getMessage(),
             ], 500);
         }
-    }
-
-    /**
-     * Select and persist a specific WABA/phone after callback returned multiple options.
-     *
-     * POST /api/whatsapp/meta/select
-     * Body: { "business_id": "...", "waba_id": "...", "phone_number_id": "...", "display_phone_number": "...", "verified_name": "..." }
-     */
-    public function select(Request $request)
-    {
-        $user = Auth::user();
-
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated.',
-            ], 401);
-        }
-
-        $validated = $request->validate([
-            'business_id' => 'required|string',
-            'waba_id' => 'required|string',
-            'phone_number_id' => 'required|string',
-            'display_phone_number' => 'nullable|string',
-            'verified_name' => 'nullable|string',
-        ]);
-
-        // Retrieve cached token from signup flow
-        $tempKey = 'meta_signup_' . $user->id;
-        $cached = cache()->get($tempKey);
-
-        if (!$cached || empty($cached['token'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Signup session expired. Please restart the Meta Embedded Signup flow.',
-            ], 400);
-        }
-
-        $whatsappUser = WhatsappUser::updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'number' => $validated['display_phone_number'] ?? null,
-                'name' => $validated['verified_name'] ?? null,
-                'status' => 'active',
-                'request_status' => 'active',
-                'token' => $cached['token'],
-                'access_token' => $cached['token'],
-                'token_expires_at' => $cached['expires_at'] ?? null,
-                'business_id' => $validated['business_id'],
-                'waba_id' => $validated['waba_id'],
-                'phone_id' => $validated['phone_number_id'],
-            ]
-        );
-
-        // Clear cached token
-        cache()->forget($tempKey);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'WhatsApp Business account selected and linked successfully.',
-            'data' => [
-                'business_id' => $validated['business_id'],
-                'waba_id' => $validated['waba_id'],
-                'phone_number_id' => $validated['phone_number_id'],
-                'display_phone_number' => $validated['display_phone_number'],
-                'verified_name' => $validated['verified_name'],
-                'whatsapp_user_id' => $whatsappUser->id,
-            ],
-        ]);
     }
 }
 

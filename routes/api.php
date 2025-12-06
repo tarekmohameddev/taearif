@@ -495,9 +495,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/embeddings', [EmbeddingController::class, 'store']);
     Route::post('/chat', [ChatController::class, 'chat']);
 
-    // Meta Embedded Signup OAuth - authenticated endpoints
+    // Meta Embedded Signup OAuth - authenticated redirect endpoint
     Route::get('/whatsapp/meta/redirect', [MetaOAuthController::class, 'redirect']);
-    Route::post('/whatsapp/meta/select', [MetaOAuthController::class, 'select']);
 });
 
 // Meta Embedded Signup OAuth callback (called by Facebook, public endpoint)
