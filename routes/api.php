@@ -45,6 +45,7 @@ use App\Http\Controllers\Api\{
     dashboard\DashboardController,
     property\UserFacadeController,
     apps\whatsapp\WhatsappController,
+    apps\whatsapp\MetaOAuthController,
     apps\whatsapp\EmbeddingController,
     User\RealestateManagement\ApiCategoryController,
     ResetPasswordController,
@@ -493,7 +494,15 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/embeddings', [EmbeddingController::class, 'store']);
     Route::post('/chat', [ChatController::class, 'chat']);
+
+    // Meta Embedded Signup OAuth - authenticated endpoints
+    Route::get('/whatsapp/meta/redirect', [MetaOAuthController::class, 'redirect']);
+    Route::post('/whatsapp/meta/select', [MetaOAuthController::class, 'select']);
 });
+
+// Meta Embedded Signup OAuth callback (called by Facebook, public endpoint)
+Route::get('/whatsapp/meta/callback', [MetaOAuthController::class, 'callback']);
+
 Route::post('/whatsapp/evolution-webhook', [ChatController::class, 'handleEvolutionWebhook']);
 Route::post('/whatsapp/webhook', [ChatController::class, 'handleWhatsappWebhook']);
 

@@ -63,10 +63,21 @@ return [
 
     // Meta (Facebook) WhatsApp Cloud API
     'meta' => [
+        // Meta App credentials
+        'app_id' => env('META_APP_ID'),
+        'app_secret' => env('META_APP_SECRET'),
+
         // API version, e.g. v20.0
         'api_version' => env('META_API_VERSION', 'v20.0'),
+
         // Optional default Business Account ID (WABA) if not taken from DB settings
         'business_account_id' => env('META_BUSINESS_ACCOUNT_ID'),
+
+        // Embedded Signup configuration
+        'embedded_signup_config_id' => env('META_EMBEDDED_SIGNUP_CONFIG_ID'),
+
+        // Redirect URI configured in Meta App (must match exactly)
+        'redirect_uri' => env('META_REDIRECT_URI'),
     ],
 
 ];
