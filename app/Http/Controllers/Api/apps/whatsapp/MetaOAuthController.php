@@ -207,35 +207,22 @@ class MetaOAuthController extends Controller
                 }
             }
 
-            // 3) Get the first business
-            $businessesResponse = $this->metaGraph->listBusinesses($finalToken);
-            $businesses = $businessesResponse['data'] ?? [];
-            $business = $businesses[0] ?? null;
+            // 3) Debug token to get WABA ID from granular scopes
+            $debugTokenResponse = $this->metaGraph->debugToken($finalToken);
+            $wabaId = $this->metaGraph->extractWabaIdFromDebugToken($debugTokenResponse);
 
-            if (!$business) {
+            if (!$wabaId) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No business found for the user.',
+                    'message' => 'No WhatsApp Business Account found in token scopes.',
                 ], 400);
             }
 
-            $businessId = $business['id'];
+            Log::info('MetaOAuthController.callback WABA ID extracted', [
+                'waba_id' => $wabaId,
+            ]);
 
-            // 4) Get the first WABA for that business
-            $wabaResponse = $this->metaGraph->listWhatsAppBusinessAccounts($finalToken, $businessId);
-            $wabas = $wabaResponse['data'] ?? [];
-            $waba = $wabas[0] ?? null;
-
-            if (!$waba) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No WhatsApp Business Account found.',
-                ], 400);
-            }
-
-            $wabaId = $waba['id'];
-
-            // 5) Get phone numbers for that WABA
+            // 4) Get phone numbers for that WABA
             $phonesResponse = $this->metaGraph->listPhoneNumbers($finalToken, $wabaId);
             $phones = $phonesResponse['data'] ?? [];
 
@@ -279,6 +266,17 @@ class MetaOAuthController extends Controller
                 ], 400);
             }
 
+            // 5) Subscribe app to WABA for webhooks
+            try {
+                $this->metaGraph->subscribeAppToWaba($finalToken, $wabaId);
+            } catch (\Throwable $e) {
+                Log::warning('MetaOAuthController.callback WABA subscription failed (non-fatal)', [
+                    'waba_id' => $wabaId,
+                    'error' => $e->getMessage(),
+                ]);
+                // Continue even if subscription fails - it's not critical for linking
+            }
+
             // 6) Save to database - use phone_id as unique key so each phone gets its own row
             // This allows users to link multiple phone numbers
             $whatsappUser = WhatsappUser::updateOrCreate(
@@ -294,14 +292,13 @@ class MetaOAuthController extends Controller
                     'token' => $finalToken,
                     'access_token' => $finalToken,
                     'token_expires_at' => $expiresAt,
-                    'business_id' => $businessId,
+                    'business_id' => $wabaId, // WABA ID is the business account ID
                     'waba_id' => $wabaId,
                 ]
             );
 
             Log::info('MetaOAuthController.callback WhatsApp linked successfully', [
                 'user_id' => $userId,
-                'business_id' => $businessId,
                 'waba_id' => $wabaId,
                 'phone_id' => $phoneId,
                 'display_phone_number' => $displayPhoneNumber,
@@ -313,7 +310,6 @@ class MetaOAuthController extends Controller
                 'message' => 'WhatsApp Business account linked successfully.',
                 'data' => [
                     'whatsapp_user_id' => $whatsappUser->id,
-                    'business_id' => $businessId,
                     'waba_id' => $wabaId,
                     'phone_number_id' => $phoneId,
                     'display_phone_number' => $displayPhoneNumber,

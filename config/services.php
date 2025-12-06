@@ -67,6 +67,9 @@ return [
         'app_id' => env('META_APP_ID'),
         'app_secret' => env('META_APP_SECRET'),
 
+        // System User Access Token (App Token) for debug_token and API calls
+        'app_token' => env('META_APP_TOKEN'),
+
         // API version, e.g. v20.0
         'api_version' => env('META_API_VERSION', 'v20.0'),
 

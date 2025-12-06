@@ -20,6 +20,20 @@ class MetaGraphService
     }
 
     /**
+    * Get the app token for API calls.
+    */
+    protected function getAppToken(): string
+    {
+        $appToken = Config::get('services.meta.app_token');
+
+        if (!$appToken) {
+            throw new \RuntimeException('META_APP_TOKEN is not configured in .env');
+        }
+
+        return $appToken;
+    }
+
+    /**
     * Exchange authorization code for a short-lived user access token.
     *
     * @see https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow
@@ -79,60 +93,85 @@ class MetaGraphService
     }
 
     /**
-    * List businesses for the current user.
+    * Debug token to get WABA ID from granular scopes.
     *
-    * GET /me/businesses
+    * GET /debug_token?input_token={access_token}
+    * Authorization: Bearer {APP_TOKEN}
+    *
+    * Returns granular_scopes with whatsapp_business_management/whatsapp_business_messaging
+    * which contain target_ids with the WABA ID.
     */
-    public function listBusinesses(string $accessToken): array
+    public function debugToken(string $accessToken): array
     {
-        $response = Http::get($this->graphUrl('/me/businesses'), [
-            'access_token' => $accessToken,
+        $appToken = $this->getAppToken();
+
+        Log::info('MetaGraphService.debugToken starting', [
+            'access_token_prefix' => substr($accessToken, 0, 20) . '...',
+        ]);
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $appToken,
+        ])->get($this->graphUrl('/debug_token'), [
+            'input_token' => $accessToken,
         ]);
 
         if (!$response->successful()) {
-            Log::error('MetaGraphService.listBusinesses failed', [
+            Log::error('MetaGraphService.debugToken failed', [
                 'status' => $response->status(),
                 'body' => $response->json(),
             ]);
 
-            throw new \RuntimeException('Failed to list Meta businesses.');
+            throw new \RuntimeException('Failed to debug token.');
         }
 
-        return $response->json();
+        $result = $response->json();
+
+        Log::info('MetaGraphService.debugToken response', [
+            'data' => $result['data'] ?? null,
+        ]);
+
+        return $result;
     }
 
     /**
-    * List WhatsApp Business Accounts owned by a Business.
+    * Extract WABA ID from debug_token response.
     *
-    * GET /{business_id}/owned_whatsapp_business_accounts
+    * Looks for whatsapp_business_management or whatsapp_business_messaging scope
+    * and returns the first target_id which is the WABA ID.
     */
-    public function listWhatsAppBusinessAccounts(string $accessToken, string $businessId): array
+    public function extractWabaIdFromDebugToken(array $debugTokenResponse): ?string
     {
-        $response = Http::get($this->graphUrl("/{$businessId}/owned_whatsapp_business_accounts"), [
-            'access_token' => $accessToken,
-        ]);
+        $data = $debugTokenResponse['data'] ?? [];
+        $granularScopes = $data['granular_scopes'] ?? [];
 
-        if (!$response->successful()) {
-            Log::error('MetaGraphService.listWhatsAppBusinessAccounts failed', [
-                'business_id' => $businessId,
-                'status' => $response->status(),
-                'body' => $response->json(),
-            ]);
+        $whatsappScopes = ['whatsapp_business_management', 'whatsapp_business_messaging'];
 
-            throw new \RuntimeException('Failed to list WhatsApp Business Accounts.');
+        foreach ($granularScopes as $scope) {
+            $scopeName = $scope['scope'] ?? '';
+            if (in_array($scopeName, $whatsappScopes, true)) {
+                $targetIds = $scope['target_ids'] ?? [];
+                if (!empty($targetIds)) {
+                    return $targetIds[0];
+                }
+            }
         }
 
-        return $response->json();
+        return null;
     }
 
     /**
     * List phone numbers for a WhatsApp Business Account.
     *
-    * GET /{waba_id}/phone_numbers
+    * GET /{waba_id}/phone_numbers?access_token={access_token}
+    * Authorization: Bearer {APP_TOKEN}
     */
     public function listPhoneNumbers(string $accessToken, string $wabaId): array
     {
-        $response = Http::get($this->graphUrl("/{$wabaId}/phone_numbers"), [
+        $appToken = $this->getAppToken();
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $appToken,
+        ])->get($this->graphUrl("/{$wabaId}/phone_numbers"), [
             'access_token' => $accessToken,
         ]);
 
@@ -148,6 +187,37 @@ class MetaGraphService
 
         return $response->json();
     }
+
+    /**
+    * Subscribe app to WABA for webhooks.
+    *
+    * POST /{waba_id}/subscribed_apps
+    * Authorization: Bearer {access_token}
+    *
+    * This subscribes the app to receive webhooks for the WhatsApp Business Account.
+    * Required for receiving incoming messages and status updates.
+    */
+    public function subscribeAppToWaba(string $accessToken, string $wabaId): array
+    {
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $accessToken,
+        ])->post($this->graphUrl("/{$wabaId}/subscribed_apps"));
+
+        if (!$response->successful()) {
+            Log::error('MetaGraphService.subscribeAppToWaba failed', [
+                'waba_id' => $wabaId,
+                'status' => $response->status(),
+                'body' => $response->json(),
+            ]);
+
+            throw new \RuntimeException('Failed to subscribe app to WhatsApp Business Account.');
+        }
+
+        Log::info('MetaGraphService.subscribeAppToWaba success', [
+            'waba_id' => $wabaId,
+            'response' => $response->json(),
+        ]);
+
+        return $response->json();
+    }
 }
-
-
