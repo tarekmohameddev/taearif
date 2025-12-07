@@ -14,6 +14,7 @@ use App\Models\Api\UserApiCustomerPriority;
 use App\Models\Api\UserApiCustomerReminder;
 use App\Models\Api\UserApiCustomerProcedure;
 use App\Models\Api\UserApiCustomerAppointment;
+use App\Services\CrmCustomerStageService;
 
 class CRMController extends Controller
 {
@@ -226,7 +227,7 @@ class CRMController extends Controller
 
 
     // changeCustomerStage
-    public function changeCustomerStage(Request $request, $id)
+    public function changeCustomerStage(Request $request, $id, CrmCustomerStageService $stageService)
     {
         $user = $request->user();
 
@@ -234,7 +235,7 @@ class CRMController extends Controller
             'stage_id' => 'required|integer|exists:users_api_customers_stages,id',
         ]);
 
-        $customer = \App\Models\ApiCustomer::where('id', $id)
+        $customer = ApiCustomer::where('id', $id)
             ->where('user_id', $user->id)
             ->first();
 
@@ -245,7 +246,7 @@ class CRMController extends Controller
             ], 404);
         }
 
-        $stage = \App\Models\Api\UserApiCustomerStage::where('id', $validated['stage_id'])
+        $stage = UserApiCustomerStage::where('id', $validated['stage_id'])
             ->where('user_id', $user->id)
             ->first();
 
@@ -256,8 +257,7 @@ class CRMController extends Controller
             ], 404);
         }
 
-        $customer->stage_id = $stage->id;
-        $customer->save();
+        $stageService->changeStage($customer, $stage);
 
         return response()->json([
             'status'  => 'success',
