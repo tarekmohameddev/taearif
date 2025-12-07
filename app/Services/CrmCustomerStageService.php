@@ -4,6 +4,9 @@ namespace App\Services;
 
 use App\Models\ApiCustomer;
 use App\Models\Api\UserApiCustomerStage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class CrmCustomerStageService
 {
@@ -15,13 +18,34 @@ class CrmCustomerStageService
      */
     public function changeStage(ApiCustomer $customer, UserApiCustomerStage $stage): ApiCustomer
     {
-        $customer->stage_id = $stage->id;
-        $customer->save();
+        DB::transaction(function () use ($customer, $stage) {
+            $customer->stage_id = $stage->id;
+            $customer->save();
+
+            // Keep linked CRM requests in sync (if table exists)
+            try {
+                if (Schema::hasTable('crm_requests')) {
+                    DB::table('crm_requests')
+                        ->where('customer_id', $customer->id)
+                        ->when($customer->user_id, fn($q) => $q->where('user_id', $customer->user_id))
+                        ->update([
+                            'stage_id'   => $stage->id,
+                            'updated_at' => now(),
+                        ]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Failed to sync CRM request stage with customer', [
+                    'customer_id' => $customer->id,
+                    'stage_id'    => $stage->id,
+                    'error'       => $e->getMessage(),
+                ]);
+            }
+        });
 
         // Future: add any additional syncing logic here
         // (e.g. update related CRM request records)
 
-        return $customer;
+        return $customer->refresh();
     }
 }
 
