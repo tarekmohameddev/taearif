@@ -927,7 +927,7 @@ class RentalController extends BaseApiController
                 'projects' => $projects,
                 'units' => $units,
                 'contract_statuses' => $contractStatuses,
-                'rental_statuses' => $rentalStatuses,
+                'status' => $rentalStatuses,
                 'payment_statuses' => $paymentStatuses,
                 'paying_plans' => $payingPlans,
             ]);
