@@ -17,15 +17,19 @@ return new class extends Migration {
         $table->unique(['user_id','name']);
       });
 
-      Schema::create('api_employee_role', function (Blueprint $table) {
-        $table->unsignedBigInteger('employee_id');
-        $table->unsignedBigInteger('role_id');
-        $table->timestamps();
+      // Legacy table - only create if api_employees table exists
+      // This table is deprecated and will be dropped by later migrations
+      if (Schema::hasTable('api_employees')) {
+        Schema::create('api_employee_role', function (Blueprint $table) {
+          $table->unsignedBigInteger('employee_id');
+          $table->unsignedBigInteger('role_id');
+          $table->timestamps();
 
-        $table->primary(['employee_id','role_id']);
-        $table->foreign('employee_id')->references('id')->on('api_employees')->onDelete('cascade');
-        $table->foreign('role_id')->references('id')->on('api_roles')->onDelete('cascade');
-      });
+          $table->primary(['employee_id','role_id']);
+          $table->foreign('employee_id')->references('id')->on('api_employees')->onDelete('cascade');
+          $table->foreign('role_id')->references('id')->on('api_roles')->onDelete('cascade');
+        });
+      }
     }
     public function down(): void {
       Schema::dropIfExists('api_employee_role');
