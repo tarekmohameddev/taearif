@@ -17,6 +17,7 @@ class WhatsappUser extends Model
   
     protected $fillable = [
         'user_id', 
+        'employee_id',
         'number', 
         'name', 
         'note', 
@@ -38,6 +39,11 @@ class WhatsappUser extends Model
     public function user()
     {
         return $this->belongsTo(User::class); // Assuming there's a User model
+    }
+
+    public function employee()
+    {
+        return $this->belongsTo(User::class, 'employee_id');
     }
 
 

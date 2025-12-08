@@ -516,6 +516,7 @@ Route::prefix('v1/credits')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/whatsapp/link', [WhatsappController::class, 'store']);
     Route::get('/whatsapp', [WhatsappController::class, 'index']);
+    Route::match(['put', 'patch'], '/whatsapp/{id}/employee', [WhatsappController::class, 'updateEmployee']);
 });
 
 
