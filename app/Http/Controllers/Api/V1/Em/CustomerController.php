@@ -6,8 +6,11 @@ use App\Models\ApiCustomer;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Services\ActivityLogger;
+use App\Services\CrmCustomerStageService;
 use App\Http\Controllers\Concerns\ResolvesTenant;
 use App\Http\Controllers\Controller;
+use App\Models\Api\UserApiCustomerStage;
+use Illuminate\Validation\Rule;
 
 class CustomerController extends Controller
 {
@@ -49,7 +52,7 @@ class CustomerController extends Controller
     }
 
     // POST /em/customers
-    public function store(Request $request)
+    public function store(Request $request, CrmCustomerStageService $stageService)
     {
         $tenantId = $this->tenantId();
         $actor = $this->actor(); // employee
@@ -59,7 +62,7 @@ class CustomerController extends Controller
             'email'        => ['nullable','email','max:255'],
             'phone_number' => ['nullable','string','max:50'],
             'note'         => ['nullable','string','max:2000'],
-            'stage_id'     => ['nullable','integer'],
+            'stage_id'     => ['nullable','integer', Rule::exists('users_api_customers_stages','id')->where(fn($q)=>$q->where('user_id',$tenantId))],
             'procedure_id' => ['nullable','integer'],
             'type_id'      => ['nullable','integer'],
             'priority_id'  => ['nullable','integer'],
@@ -67,13 +70,14 @@ class CustomerController extends Controller
             'district_id'  => ['nullable','integer'],
         ]);
 
+        $stageId = $data['stage_id'] ?? null;
+
         $customer = ApiCustomer::create([
             'user_id'        => $tenantId,
             'name'           => $data['name'],
             'email'          => $data['email'] ?? null,
             'phone_number'   => $data['phone_number'] ?? null,
             'note'           => $data['note'] ?? null,
-            'stage_id'       => $data['stage_id'] ?? null,
             'procedure_id'   => $data['procedure_id'] ?? null,
             'type_id'        => $data['type_id'] ?? null,
             'priority_id'    => $data['priority_id'] ?? null,
@@ -83,6 +87,13 @@ class CustomerController extends Controller
             'created_by_id'  => $actor['id'],
             'password'       => bcrypt(\Illuminate\Support\Str::random(16)),
         ]);
+
+        if ($stageId !== null) {
+            $stage = UserApiCustomerStage::where('id', $stageId)->where('user_id', $tenantId)->first();
+            if ($stage) {
+                $stageService->changeStage($customer, $stage);
+            }
+        }
 
         ActivityLogger::log([
             'user_id'     => $tenantId,
@@ -118,7 +129,7 @@ class CustomerController extends Controller
     }
 
     // PUT /em/customers/{id}
-    public function update(Request $request, $id)
+    public function update(Request $request, $id, CrmCustomerStageService $stageService)
     {
         $tenantId = $this->tenantId();
         $actor = $this->actor();
@@ -130,7 +141,7 @@ class CustomerController extends Controller
             'email'        => ['sometimes','nullable','email','max:255'],
             'phone_number' => ['sometimes','nullable','string','max:50'],
             'note'         => ['sometimes','nullable','string','max:2000'],
-            'stage_id'     => ['sometimes','nullable','integer'],
+            'stage_id'     => ['sometimes','nullable','integer', Rule::exists('users_api_customers_stages','id')->where(fn($q)=>$q->where('user_id',$tenantId))],
             'procedure_id' => ['sometimes','nullable','integer'],
             'type_id'      => ['sometimes','nullable','integer'],
             'priority_id'  => ['sometimes','nullable','integer'],
@@ -138,10 +149,20 @@ class CustomerController extends Controller
             'district_id'  => ['sometimes','nullable','integer'],
         ]);
 
+        $stageId = array_key_exists('stage_id', $data) ? $data['stage_id'] : null;
+        unset($data['stage_id']);
+
         $old = $c->toArray();
 
         $c->fill($data);
         $c->save();
+
+        if ($stageId !== null) {
+            $stage = UserApiCustomerStage::where('id', $stageId)->where('user_id', $tenantId)->first();
+            if ($stage) {
+                $stageService->changeStage($c, $stage);
+            }
+        }
 
         ActivityLogger::log([
             'user_id'     => $tenantId,

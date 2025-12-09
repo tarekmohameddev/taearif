@@ -14,9 +14,9 @@ trait ResolvesTenant
             abort(response()->json(['status' => 'error', 'message' => 'Unauthenticated'], 401));
         }
 
-        // If an employee is logged in, it belongs to a tenant via user_id
-        if ($user instanceof \App\Models\Api\Employee) {
-            return (int) $user->user_id;
+        // Use User model's tenantOwnerId method which handles both tenants and employees
+        if ($user instanceof \App\Models\User) {
+            return $user->tenantOwnerId();
         }
 
         // Otherwise it’s a tenant owner (App\Models\User)

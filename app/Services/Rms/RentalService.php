@@ -135,9 +135,32 @@ class RentalService
         $sortBy = in_array($sortBy, $allowedSortFields) ? $sortBy : 'created_at';
         $sortOrder = in_array($sortOrder, ['asc', 'desc']) ? $sortOrder : 'desc';
 
-        $query = RmRental::with(['activeContract', 'property', 'project'])
+        $query = RmRental::with([
+            'activeContract',
+            'activeContract.rental.property.contents',
+            'activeContract.rental.project.contents',
+            'activeContract.rental.building',
+            'property.contents',
+            'property.UserPropertyCharacteristics',
+            'project.contents',
+            'building',
+            'installments' => function($q) {
+                $q->whereIn('status', ['pending', 'active'])
+                  ->whereDate('due_date', '>=', now()->toDateString())
+                  ->orderBy('due_date');
+            }
+        ])
             ->where('user_id', $ownerId)
-            ->when($request->q, fn($q) => $q->where('tenant_full_name', 'like', "%{$request->q}%"))
+            ->when($request->q, function($q) use ($request) {
+                $searchTerm = "%{$request->q}%";
+                $q->where(function($query) use ($searchTerm) {
+                    $query->where('tenant_full_name', 'like', $searchTerm)
+                          ->orWhere('tenant_phone', 'like', $searchTerm)
+                          ->orWhereHas('property.contents', function($propertyQuery) use ($searchTerm) {
+                              $propertyQuery->where('title', 'like', $searchTerm);
+                          });
+                });
+            })
             ->when($request->status, fn($q) => $q->where('status', $request->status))
             ->when($request->building_id, fn($q) => $q->where('building_id', $request->building_id))
             ->when($request->unit_id, fn($q) => $q->where('unit_id', $request->unit_id))
@@ -152,6 +175,54 @@ class RentalService
             })
             ->when($request->from_date, fn($q) => $q->whereDate('move_in_date', '>=', $request->from_date))
             ->when($request->to_date, fn($q) => $q->whereDate('move_in_date', '<=', $request->to_date))
+            ->when($request->contract_status, function($q) use ($request) {
+                $q->whereHas('activeContract', function($contractQuery) use ($request) {
+                    $contractQuery->where('status', $request->contract_status);
+                });
+            })
+            ->when($request->contract_created_from_date, function($q) use ($request) {
+                $q->whereHas('activeContract', function($contractQuery) use ($request) {
+                    $contractQuery->whereDate('created_at', '>=', $request->contract_created_from_date);
+                });
+            })
+            ->when($request->contract_created_to_date, function($q) use ($request) {
+                $q->whereHas('activeContract', function($contractQuery) use ($request) {
+                    $contractQuery->whereDate('created_at', '<=', $request->contract_created_to_date);
+                });
+            })
+            ->when($request->payment_status, function($q) use ($request) {
+                $q->whereHas('installments', function($installmentQuery) use ($request) {
+                    $today = now()->toDateString();
+                    
+                    switch($request->payment_status) {
+                        case 'paid':
+                            // Has at least one fully paid installment
+                            $installmentQuery->whereColumn('paid_amount', '>=', 'amount')
+                                             ->where('amount', '>', 0);
+                            break;
+                        case 'partial':
+                            // Has at least one partially paid installment
+                            $installmentQuery->whereColumn('paid_amount', '<', 'amount')
+                                             ->where('paid_amount', '>', 0);
+                            break;
+                        case 'overdue':
+                            // Has at least one overdue installment (unpaid or partially paid past due date)
+                            $installmentQuery->whereColumn('paid_amount', '<', 'amount')
+                                             ->whereDate('due_date', '<', $today);
+                            break;
+                        case 'pending':
+                            // Has at least one pending installment (unpaid, not yet due)
+                            $installmentQuery->where('paid_amount', 0)
+                                             ->whereDate('due_date', '>=', $today);
+                            break;
+                        case 'unpaid':
+                            // Has at least one unpaid installment (regardless of due date)
+                            $installmentQuery->where('paid_amount', 0)
+                                             ->where('amount', '>', 0);
+                            break;
+                    }
+                });
+            })
             ->orderBy($sortBy, $sortOrder);
 
         return $query->paginate($perPage, ['*'], 'page', $page);
@@ -382,24 +453,39 @@ class RentalService
     {
         $ownerId = auth()->user() ? auth()->user()->tenantOwnerId() : $userId;
 
-        $rental = RmRental::with(['property.contents', 'project', 'contracts', 'installments', 'activeExpenses', 'tenantCostItems', 'ownerCostItems'])
+        $rental = RmRental::with(['property.contents', 'project', 'contracts', 'installments.payments', 'activeExpenses', 'tenantCostItems', 'ownerCostItems'])
             ->where('user_id', $ownerId)
             ->findOrFail($rentalId);
 
         $activeContract = $rental->contracts()->whereIn('status', ['active', 'pending'])->orderByDesc('status')->orderBy('start_date')->first();
 
-        $payments = $rental->installments()->orderBy('due_date')->get()->map(function ($i) {
+        $payments = $rental->installments()->orderBy('due_date')->get()->map(function ($installment) {
+            // Get non-reversed payments for this installment, ordered by most recent first
+            $reversiblePayments = $installment->payments()
+                ->whereNull('deleted_at')
+                ->orderBy('payment_date', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            // Get the most recent payment ID (if any)
+            $paymentId = $reversiblePayments->isNotEmpty() ? $reversiblePayments->first()->id : null;
+            
+            // Can reverse if there are any non-reversed payments
+            $canReverse = $reversiblePayments->isNotEmpty();
+            
             return [
-                'id' => $i->id,
-                'sequence_no' => $i->sequence_no,
-                'due_date' => $i->due_date,
-                'amount' => (float) $i->amount,
-                'paid_amount' => (float) ($i->paid_amount ?? 0),
-                'status' => $i->status,
-                'payment_type' => $i->payment_type,
-                'payment_status' => $i->payment_status,
-                'reference' => $i->reference,
-                'paid_at' => $i->paid_at,
+                'id' => $installment->id,
+                'sequence_no' => $installment->sequence_no,
+                'due_date' => $installment->due_date,
+                'amount' => (float) $installment->amount,
+                'paid_amount' => (float) ($installment->paid_amount ?? 0),
+                'status' => $installment->status,
+                'payment_type' => $installment->payment_type,
+                'payment_status' => $installment->payment_status,
+                'reference' => $installment->reference,
+                'paid_at' => $installment->paid_at,
+                'payment_id' => $paymentId,
+                'can_reverse' => $canReverse,
             ];
         });
 
@@ -451,6 +537,7 @@ class RentalService
                 'currency' => $rental->currency,
                 'move_in_date' => $rental->move_in_date,
                 'paying_plan' => $rental->paying_plan,
+                'rental_duration' => (int) $rental->rental_duration,
                 'rental_period' => (int) $rental->rental_period,
                 'status' => $rental->status,
                 'notes' => $rental->notes,
@@ -525,6 +612,7 @@ class RentalService
                 'next_payment_due_date' => $rental->next_payment_due_date,
                 'next_payment_amount' => $rental->next_payment_amount,
                 'paying_plan' => $rental->paying_plan,
+                'rental_duration' => (int) $rental->rental_duration,
                 'rental_period' => (int) $rental->rental_period,
                 'status' => $rental->status,
                 'notes' => $rental->notes,
@@ -1278,7 +1366,12 @@ class RentalService
         $page = $filters['page'] ?? 1;
 
         // Build base query
-        $query = RmRental::with(['activeContract', 'property.contents', 'property.building', 'project.contents', 'building', 'tenantCostItems', 'ownerCostItems'])
+        $query = RmRental::with([
+            'activeContract', 
+            'property.contents', 
+            'project.contents',
+            'building'
+        ])
             ->where('user_id', $ownerId);
 
         // Apply filters

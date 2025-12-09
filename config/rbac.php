@@ -37,6 +37,10 @@ return [
         'crm.create',
         'crm.update',
         'crm.delete',
+		'rentals.view',
+        'rentals.create',
+        'rentals.update',
+        'rentals.delete',
 	],
 
 	'role_templates' => [
@@ -63,6 +67,10 @@ return [
 			'apps.view',
 			'affiliate.view',
 			'affiliate.update',
+			'rentals.view',
+            'rentals.create',
+            'rentals.update',
+            'rentals.delete',
 		],
 		'manager' => [
 			'customers.view',

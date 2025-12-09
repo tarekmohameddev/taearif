@@ -34,7 +34,9 @@ class Project extends Model
     ];
 
     protected $casts = [
-        'amenities' => 'array'
+        'featured' => 'boolean',
+        'published' => 'boolean',
+        'units' => 'integer',
     ];
 
     /**
@@ -84,11 +86,11 @@ class Project extends Model
                 return [];
             },
             set: function ($value) {
-                // Normalize the input value to always be a clean array
+                // Normalize the input value and return JSON string for database storage
                 
                 // Handle null or empty values
                 if (is_null($value) || $value === '') {
-                    return [];
+                    return json_encode([]);
                 }
                 
                 // If it's already an array, filter and clean it
@@ -97,23 +99,29 @@ class Project extends Model
                     $cleaned = array_values(array_filter($value, function ($item) {
                         return $item !== null && $item !== '';
                     }));
-                    return $cleaned;
+                    return json_encode($cleaned);
                 }
                 
                 // If it's a string, try to decode as JSON first
                 if (is_string($value)) {
                     $decoded = json_decode($value, true);
                     if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                        return array_values(array_filter($decoded, function ($item) {
+                        $cleaned = array_values(array_filter($decoded, function ($item) {
                             return $item !== null && $item !== '';
                         }));
+                        return json_encode($cleaned);
+                    }
+                    // If it's a comma-separated string, split it
+                    if (strpos($value, ',') !== false) {
+                        $cleaned = array_values(array_filter(array_map('trim', explode(',', $value))));
+                        return json_encode($cleaned);
                     }
                     // If it's a plain string, wrap it in an array
-                    return [trim($value)];
+                    return json_encode([trim($value)]);
                 }
                 
-                // Fallback to empty array
-                return [];
+                // Fallback to empty array as JSON
+                return json_encode([]);
             },
         );
     }
@@ -124,17 +132,17 @@ class Project extends Model
         return self::create([
             'user_id' => $userId,
             'featured_image' => $request['featured_image'],
-            'video_url' => $request['video_url'] ?? null,
-            'min_price' => $request['min_price'],
-            'max_price' => $request['max_price'],
-            'featured' => $request['featured'],
-            'published' => $request['published'],
+            'video_url' => !empty($request['video_url']) ? $request['video_url'] : null,
+            'min_price' => $request['min_price'] ?? null,
+            'max_price' => $request['max_price'] ?? null,
+            'featured' => $request['featured'] ?? 0,
+            'published' => $request['published'] ?? 1,
             'developer' => $request['developer'] ?? 'Unknown Developer',
             'units' => $request['units'] ?? 0,
             'completion_date' => $request['completion_date'] ?? now()->addYear()->toDateString(),
             'complete_status' => $request['complete_status'] ?? 'In Progress',
-            'latitude' => $request['latitude'],
-            'longitude' => $request['longitude'],
+            'latitude' => $request['latitude'] ?? null,
+            'longitude' => $request['longitude'] ?? null,
             'amenities' => $request['amenities'] ?? [],
         ]);
     }
@@ -144,17 +152,17 @@ class Project extends Model
 
         return $this->update([
             'featured_image' => $request['featured_image'],
-            'video_url' => $request['video_url'] ?? null,
-            'min_price' => $request['min_price'],
-            'max_price' => $request['max_price'],
-            'featured' => $request['featured'],
+            'video_url' => !empty($request['video_url']) ? $request['video_url'] : null,
+            'min_price' => $request['min_price'] ?? $this->min_price,
+            'max_price' => $request['max_price'] ?? $this->max_price,
+            'featured' => $request['featured'] ?? $this->featured,
             'published' => $request['published'] ?? $this->published,
-            'complete_status' => $request['complete_status'] ?? 'In Progress',
+            'complete_status' => $request['complete_status'] ?? $this->complete_status ?? 'In Progress',
             'developer' => $request['developer'] ?? $this->developer,
             'units' => $request['units'] ?? $this->units,
             'completion_date' => $request['completion_date'] ?? $this->completion_date,
-            'latitude' => $request['latitude'],
-            'longitude' => $request['longitude'],
+            'latitude' => $request['latitude'] ?? $this->latitude,
+            'longitude' => $request['longitude'] ?? $this->longitude,
             'amenities' => $request['amenities'] ?? $this->amenities ?? [],
         ]);
     }

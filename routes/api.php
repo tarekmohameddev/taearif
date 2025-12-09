@@ -525,6 +525,7 @@ Route::prefix('v1/credits')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/whatsapp/link', [WhatsappController::class, 'store']);
     Route::get('/whatsapp', [WhatsappController::class, 'index']);
+    Route::match(['put', 'patch'], '/whatsapp/{id}/employee', [WhatsappController::class, 'updateEmployee']);
 });
 
 
@@ -541,6 +542,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('payments/due', [RmsDashboardController::class, 'paymentsDue']);
 
         // Rentals
+        Route::get('rentals/filter-options', [RentalController::class, 'filterOptions']);
         Route::get('rentals', [RentalController::class, 'index']);
         Route::post('rentals', [RentalController::class, 'store']);
         Route::get('rentals/{id}', [RentalController::class, 'show']);

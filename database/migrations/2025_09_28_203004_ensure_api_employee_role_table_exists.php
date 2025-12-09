@@ -13,9 +13,10 @@ return new class extends Migration
      */
     public function up()
     {
-        // Check if api_employee_role table exists, if not create it
-        // This table is used for the legacy api_employees system
-        if (!Schema::hasTable('api_employee_role')) {
+        // Legacy table - only create if api_employees table exists
+        // This table is deprecated and will be dropped by later migrations
+        // Note: api_employees table is legacy and has been replaced by users table with account_type='employee'
+        if (!Schema::hasTable('api_employee_role') && Schema::hasTable('api_employees')) {
             Schema::create('api_employee_role', function (Blueprint $table) {
                 $table->unsignedBigInteger('employee_id');
                 $table->unsignedBigInteger('role_id');

@@ -35,10 +35,12 @@ class RmRental extends Model
         'total_rental_amount',
         'contract_number',
         'move_in_date',
+        'end_date',
         'paying_plan',
         'rental_period',
         'status',
         'notes',
+        'termination_reason',
         'created_by',
         'updated_by',
     ];
