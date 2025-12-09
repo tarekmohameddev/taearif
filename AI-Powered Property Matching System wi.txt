@@ -1,0 +1,580 @@
+# AI-Powered Property Matching System with OpenAI
+
+## Overview
+This document outlines the requirements for building an AI-powered matching system that uses OpenAI to intelligently connect customer property requests with relevant properties from our inventory. The system leverages OpenAI's language understanding capabilities to parse natural language requests, extract structured data, and perform semantic matching between customer needs and available properties.
+
+---
+
+## Business Requirements
+
+### Core Functionality
+1. **AI-Powered Matching**: Use OpenAI to understand customer intent and match with suitable properties
+2. **Natural Language Processing**: Parse unstructured text from WhatsApp and web forms
+3. **Multi-Source Support**: Handle requests from both web forms and WhatsApp AI agent
+4. **Real-Time Updates**: Trigger matching whenever new requests or properties are added
+5. **Intelligent Scoring**: Use AI to rank matches by relevance and compatibility
+6. **API Endpoints**: Provide RESTful APIs for the frontend matching page
+
+---
+
+## Data Sources
+
+### Customer Request Tables
+
+#### 1. `users_property_requests`
+**Source**: Web form filled by customers on the website
+
+**Key Fields**:
+- Location: `region`, `city_id`, `districts_id`, `neighborhoods`
+- Property Details: `property_type`, `category_id`, `category`
+- Size: `area_from`, `area_to`
+- Budget: `budget_from`, `budget_to`, `purchase_method`
+- Customer Info: `full_name`, `phone`, `contact_on_whatsapp`
+- Metadata: `seriousness`, `purchase_goal`, `wants_similar_offers`, `notes`
+- Status: `is_read`, `is_active`
+
+#### 2. `api_customer_inquiry`
+**Source**: WhatsApp chat conversations processed by AI agent
+
+**Key Fields**:
+- Property Details: `inquiry_type`, `property_type`, `bedrooms`, `bathrooms`
+- Budget: `budget`, `currency`
+- Size: `min_area_sqm`, `max_area_sqm`
+- Location: `location`, `country_code`, `region_code`, `region_name`, `city`, `district`, `latitude`, `longitude`, `location_confidence`
+- Property Features: `furnished`, `urgency`
+- Customer Info: `phone_number`, `customer_id`
+- Metadata: `message`, `detected_entities_json`, `source_channel`, `lang`
+
+### Property Tables
+
+#### 1. `user_properties`
+**Main property information**
+
+**Key Fields**:
+- Location: `region_id`, `latitude`, `longitude`
+- Pricing: `price`, `pricePerMeter`, `payment_method`
+- Property Details: `category_id`, `purpose`, `type`, `beds`, `bath`, `area`, `size`
+- Status: `status`, `property_status`, `featured`
+- Media: `featured_image`, `floor_planning_image`, `video_image`, `video_url`, `virtual_tour`
+- Relationships: `project_id`, `building_id`
+
+#### 2. `user_property_characteristics`
+**Detailed property characteristics**
+
+**Key Fields**:
+- Dimensions: `length`, `width`, `size`
+- Street Access: `street_width_north`, `street_width_south`, `street_width_east`, `street_width_west`
+- Rooms: `rooms`, `bathrooms`, `kitchen`, `driver_room`, `maid_room`, `dining_room`, `living_room`, `majlis`, `storage_room`
+- Features: `basement`, `swimming_pool`, `balcony`, `garden`, `annex`, `elevator`, `private_parking`
+- Building Info: `building_age`, `floors`, `floor_number`, `facade_id`
+
+#### 3. `user_property_contents`
+**Localized property content**
+
+**Key Fields**:
+- Content: `title`, `description`, `address`
+- Location: `country_id`, `state_id`, `city_id`
+- SEO: `meta_keyword`, `meta_description`
+- Localization: `language_id`
+
+---
+
+## OpenAI Integration Strategy
+
+### Use Cases for OpenAI
+
+#### 1. **Natural Language Understanding**
+- Parse unstructured text from `notes` field in web forms
+- Extract intent and requirements from WhatsApp `message` field
+- Understand vague requests like "family home near good schools" or "investment property in growing area"
+
+#### 2. **Semantic Matching**
+- Match customer requirements with property descriptions semantically
+- Understand synonyms and related terms (e.g., "villa" = "standalone house", "spacious" = "large area")
+- Consider context and implicit requirements
+
+#### 3. **Enhanced Scoring**
+- Use AI to evaluate match quality beyond simple criteria matching
+- Consider factors like lifestyle fit, investment potential, and customer preferences
+- Generate explanation for why properties match
+
+#### 4. **Data Enrichment**
+- Extract structured data from unstructured WhatsApp messages
+- Normalize location names and property types across languages
+- Fill in missing criteria based on context
+
+### OpenAI API Implementation
+
+#### Request Processing Flow
+1. **Receive customer request** (from either table)
+2. **Prepare OpenAI prompt** with:
+   - Customer requirements (structured + unstructured text)
+   - Available property criteria to match against
+   - Matching instructions and scoring guidelines
+3. **Call OpenAI API** to:
+   - Extract/clarify requirements
+   - Generate search criteria
+   - Suggest matching strategy
+4. **Execute database query** based on AI-enhanced criteria
+5. **Score and rank results** using AI evaluation
+6. **Return matches** with AI-generated explanations
+
+#### OpenAI Prompt Structure
+The system should construct prompts that include:
+- Customer request details (all relevant fields)
+- Unstructured text (notes, messages)
+- Available property inventory summary
+- Matching criteria and priorities
+- Output format requirements (JSON with scores and explanations)
+
+---
+
+## Matching Logic Requirements
+
+### Hybrid Approach: Database + AI
+
+#### Phase 1: Database Pre-filtering (Fast)
+Use traditional SQL queries to narrow down candidates based on hard criteria:
+1. **Location** - Region, city, district matching
+2. **Budget Range** - Price within min/max budget
+3. **Property Type** - Exact or category match
+4. **Size Range** - Area within specified range
+5. **Basic Features** - Bedrooms, bathrooms count
+
+#### Phase 2: AI Scoring & Ranking (Intelligent)
+Send pre-filtered properties to OpenAI for intelligent scoring:
+1. **Semantic Matching** - Compare descriptions with customer intent
+2. **Contextual Fit** - Evaluate lifestyle and goal alignment
+3. **Priority Weighting** - Adjust scores based on customer urgency and seriousness
+4. **Explanation Generation** - Create human-readable match reasons
+
+### Scoring System
+- **Database Match Score** (0-50 points): Based on hard criteria matches
+- **AI Semantic Score** (0-50 points): Based on OpenAI evaluation
+- **Total Score** (0-100 points): Combined score for final ranking
+- **Minimum Threshold**: 60 points for viable matches
+
+---
+
+## Required API Endpoints for /matching Page
+
+### 1. **GET /api/matching/requests**
+**Purpose**: Get all customer requests with their match counts
+
+**Query Parameters**:
+- `source` (optional): Filter by source (`web`, `whatsapp`, or `all`) - default: `all`
+- `status` (optional): Filter by status (`active`, `read`, `unread`) - default: `active`
+- `page` (optional): Page number for pagination - default: `1`
+- `per_page` (optional): Items per page - default: `20`
+- `sort_by` (optional): Sort field (`created_at`, `match_count`, `urgency`) - default: `created_at`
+- `sort_order` (optional): Sort direction (`asc`, `desc`) - default: `desc`
+
+**Response**:
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "requests": [
+      {
+        "id": "req_123",
+        "source": "web",
+        "customer_name": "Ahmed Ali",
+        "phone": "+966501234567",
+        "property_type": "Villa",
+        "location": "Riyadh, Al Malqa",
+        "budget_range": "1,500,000 - 2,000,000 SAR",
+        "area_range": "300 - 400 sqm",
+        "bedrooms": 4,
+        "urgency": "high",
+        "created_at": "2025-01-15T10:30:00Z",
+        "is_read": false,
+        "match_count": 12,
+        "top_match_score": 87,
+        "notes": "Looking for family home near schools"
+      }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "per_page": 20,
+      "total": 45,
+      "last_page": 3
+    }
+  }
+}
+\`\`\`
+
+### 2. **GET /api/matching/requests/{id}/matches**
+**Purpose**: Get all matching properties for a specific request with AI scores
+
+**Path Parameters**:
+- `id`: Request ID
+
+**Query Parameters**:
+- `min_score` (optional): Minimum match score (0-100) - default: `60`
+- `limit` (optional): Maximum number of matches to return - default: `50`
+- `include_explanation` (optional): Include AI-generated match explanation - default: `true`
+
+**Response**:
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "request": {
+      "id": "req_123",
+      "source": "web",
+      "customer_name": "Ahmed Ali",
+      "phone": "+966501234567",
+      "requirements": {
+        "property_type": "Villa",
+        "location": "Riyadh, Al Malqa",
+        "budget": "1,500,000 - 2,000,000 SAR",
+        "area": "300 - 400 sqm",
+        "bedrooms": 4,
+        "notes": "Looking for family home near schools"
+      }
+    },
+    "matches": [
+      {
+        "property_id": 456,
+        "title": "Luxury Villa in Al Malqa",
+        "price": 1,750,000,
+        "currency": "SAR",
+        "area": 350,
+        "bedrooms": 4,
+        "bathrooms": 3,
+        "location": "Al Malqa, Riyadh",
+        "featured_image": "/images/property-456.jpg",
+        "match_score": 87,
+        "database_score": 45,
+        "ai_score": 42,
+        "match_explanation": "Excellent match: Property is in the exact requested location (Al Malqa), within budget range, and has the desired 4 bedrooms. Located near international schools which aligns with customer's family needs.",
+        "matched_criteria": [
+          "location",
+          "budget",
+          "bedrooms",
+          "area",
+          "near_schools"
+        ],
+        "property_status": "available",
+        "features": ["garden", "private_parking", "maid_room"]
+      }
+    ],
+    "total_matches": 12
+  }
+}
+\`\`\`
+
+### 3. **GET /api/matching/properties/{id}/requests**
+**Purpose**: Get all customer requests that match a specific property
+
+**Path Parameters**:
+- `id`: Property ID
+
+**Query Parameters**:
+- `min_score` (optional): Minimum match score - default: `60`
+- `status` (optional): Filter by request status - default: `active`
+
+**Response**:
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "property": {
+      "id": 456,
+      "title": "Luxury Villa in Al Malqa",
+      "price": 1,750,000,
+      "area": 350,
+      "bedrooms": 4,
+      "location": "Al Malqa, Riyadh"
+    },
+    "matching_requests": [
+      {
+        "request_id": "req_123",
+        "customer_name": "Ahmed Ali",
+        "phone": "+966501234567",
+        "source": "web",
+        "match_score": 87,
+        "urgency": "high",
+        "created_at": "2025-01-15T10:30:00Z",
+        "is_contacted": false
+      }
+    ],
+    "total_matches": 8
+  }
+}
+\`\`\`
+
+### 4. **POST /api/matching/requests/{id}/mark-read**
+**Purpose**: Mark a request as read/reviewed
+
+**Path Parameters**:
+- `id`: Request ID
+
+**Request Body**:
+\`\`\`json
+{
+  "is_read": true
+}
+\`\`\`
+
+**Response**:
+\`\`\`json
+{
+  "success": true,
+  "message": "Request marked as read",
+  "data": {
+    "request_id": "req_123",
+    "is_read": true,
+    "updated_at": "2025-01-15T14:30:00Z"
+  }
+}
+\`\`\`
+
+### 5. **POST /api/matching/bulk-rematch**
+**Purpose**: Trigger re-matching for requests or properties (admin function)
+
+**Request Body**:
+\`\`\`json
+{
+  "entity_type": "requests",
+  "entity_ids": [123, 124, 125],
+  "force_ai_rescore": true
+}
+\`\`\`
+
+**Response**:
+\`\`\`json
+{
+  "success": true,
+  "message": "Bulk matching initiated",
+  "data": {
+    "job_id": "job_789",
+    "entities_queued": 3,
+    "estimated_completion": "2025-01-15T14:35:00Z"
+  }
+}
+\`\`\`
+
+### 6. **GET /api/matching/stats**
+**Purpose**: Get matching system statistics for dashboard
+
+**Response**:
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "total_active_requests": 45,
+    "unread_requests": 23,
+    "total_matches_generated": 567,
+    "average_match_score": 72,
+    "requests_by_source": {
+      "web": 28,
+      "whatsapp": 17
+    },
+    "high_urgency_requests": 8
+  }
+}
+\`\`\`
+
+---
+
+## Automation Requirements
+
+### Event 1: New Customer Request Added
+**Trigger**: New row in `users_property_requests` or `api_customer_inquiry`
+
+**Automated Actions**:
+1. **Extract & Enrich Data** (OpenAI)
+   - Parse unstructured text from notes/message
+   - Extract implicit requirements
+   - Normalize and structure data
+
+2. **Find Matches** (Database + OpenAI)
+   - Pre-filter properties using database queries
+   - Score matches using OpenAI
+   - Store matches with scores and explanations
+
+### Event 2: New Property Added
+**Trigger**: New row in `user_properties`
+
+**Automated Actions**:
+1. **Generate Property Summary** (OpenAI)
+   - Create semantic description from property data
+   - Extract key selling points
+
+2. **Find Matching Requests** (Database + OpenAI)
+   - Query active requests that might match
+   - Score compatibility using OpenAI
+   - Store matches
+
+
+### Event 3: Property Updated
+**Trigger**: Key fields updated in property tables
+
+**Automated Actions**:
+1. **Re-evaluate Matches**
+   - Update existing match scores
+   - Generate new matches if criteria changed
+   - Archive outdated matches
+
+---
+
+## OpenAI API Configuration
+
+### Required Environment Variables
+\`\`\`
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4-turbo-preview
+OPENAI_MAX_TOKENS=2000
+OPENAI_TEMPERATURE=0.3
+\`\`\`
+
+### API Usage Guidelines
+- **Model Selection**: Use GPT-4 Turbo for best matching quality
+- **Temperature**: Keep low (0.3) for consistent, factual responses
+- **Token Management**: Optimize prompts to stay within limits
+- **Error Handling**: Implement fallback to database-only matching if API fails
+- **Rate Limiting**: Implement queuing for bulk operations
+- **Cost Monitoring**: Track API usage and costs per match
+
+### Prompt Engineering Best Practices
+- Use structured JSON output format
+- Include clear scoring criteria in prompts
+- Provide examples of good matches
+- Request explanations for transparency
+- Handle multiple languages (Arabic/English)
+
+---
+
+## Technical Considerations
+
+### Performance Optimization
+- **Caching**: Cache OpenAI responses for similar requests
+- **Batch Processing**: Group multiple properties for single API call when possible
+- **Database Indexing**: Index all matching criteria fields
+- **Queue System**: Use Laravel queues for async matching operations
+- **Fallback Strategy**: Database-only matching if OpenAI API is slow/unavailable
+
+### Data Integrity
+- Validate all data before sending to OpenAI
+- Sanitize user input to prevent prompt injection
+- Handle missing/null values gracefully
+- Normalize units (currency, area measurements)
+- Validate OpenAI responses before storing
+
+### Security
+- Secure OpenAI API key in environment variables
+- Sanitize customer data before API calls
+- Implement rate limiting on matching endpoints
+- Log all API calls for audit trail
+- Protect customer PII in logs
+
+### Monitoring & Logging
+- Track OpenAI API response times
+- Monitor match quality metrics
+- Log failed API calls with fallback triggers
+- Track cost per match
+- Monitor user interactions with matches
+
+---
+
+## Success Criteria
+
+1. **Match Quality**: 80%+ of matches should be relevant (score > 70)
+2. **Performance**: Matching should complete within 5 seconds per request
+3. **API Reliability**: 99%+ uptime for matching endpoints
+4. **Cost Efficiency**: OpenAI costs should stay within budget
+5. **User Satisfaction**: Positive feedback on match relevance
+
+---
+
+## Implementation Notes for AI Agent
+
+### Phase 1: Setup
+- Configure OpenAI API integration in Laravel
+- Create service class for OpenAI interactions
+- Set up prompt templates for different matching scenarios
+- Implement error handling and fallback logic
+
+### Phase 2: Core Matching
+- Build database pre-filtering queries
+- Implement OpenAI scoring service
+- Create matching algorithm combining both approaches
+- Store matches in database (consider creating `property_matches` table)
+
+### Phase 3: API Development
+- Create all 6 required API endpoints
+- Implement proper validation and error responses
+- Add pagination and filtering
+- Test with real data
+
+### Phase 4: Automation
+- Set up Laravel observers/events for automatic matching
+- Implement queue jobs for async processing
+
+### Phase 5: Optimization
+- Implement caching strategy
+- Optimize database queries
+- Add monitoring and logging
+- Performance testing and tuning
+
+---
+
+## Database Schema Suggestion
+
+Consider creating a `property_matches` table to store match results:
+
+\`\`\`
+- id
+- request_id (polymorphic: can reference either request table)
+- request_type (users_property_requests or api_customer_inquiry)
+- property_id
+- match_score (0-100)
+- database_score (0-50)
+- ai_score (0-50)
+- match_explanation (text)
+- matched_criteria (json)
+- is_reviewed (boolean)
+- is_contacted (boolean)
+- created_at
+- updated_at
+\`\`\`
+
+This allows for:
+- Fast retrieval of matches without recalculation
+- Historical tracking of match quality
+- Easy filtering and sorting
+- Performance optimization
+
+---
+
+## Cost Estimation
+
+### OpenAI API Costs (Approximate)
+- **Per Match Request**: ~$0.02 - $0.05 (depending on property count)
+- **100 requests/day**: ~$2 - $5/day = $60 - $150/month
+- **1000 requests/day**: ~$20 - $50/day = $600 - $1500/month
+
+### Optimization Strategies
+- Cache similar requests to reduce API calls
+- Batch process properties in single API call
+- Use database pre-filtering to reduce properties sent to AI
+- Implement smart re-matching (only when needed)
+
+---
+
+## Next Steps
+
+1. Review and approve this specification
+2. Set up OpenAI API account and get API key
+3. Analyze Laravel codebase structure
+4. Implement OpenAI service integration
+5. Build matching algorithm (database + AI)
+6. Create all required API endpoints
+7. Set up automated triggers
+8. Test with real customer data
+9. Monitor costs and performance
+10. Iterate based on match quality feedback
+
+
+## Plaese note that to add api prefix because this project have some old code where we used to use laravel blades to handle tenant website and admin dahbaord, now we made everything to be as api, check this folder "app\Http\Controllers\Api\V1\TenantWebsite" for understanding the structure and how to add the api prefix to the routes.

@@ -87,21 +87,21 @@ class ApiSideMenusController extends Controller
             //     'section' => ['title' => 'المدونة', 'description' => 'ادارة المدونة', 'icon' => 'blog', 'path' => '/blog'],
             // ],
             // Apps container
-            [
-                'perm'    => 'menu.apps',
-                'section' => ['title' => 'التطبيقات', 'description' => 'ادارة تطبيقاتك', 'icon' => 'apps', 'path' => '/apps'],
-            ],
+            // [
+            //     'perm'    => 'menu.apps',
+            //     'section' => ['title' => 'التطبيقات', 'description' => 'ادارة تطبيقاتك', 'icon' => 'apps', 'path' => '/apps'],
+            // ],
             // Feature switches inside Apps (still check a perm)
-            [
-                'perm'    => 'apps.view',
-                'when'    => fn() => (bool) $whatsappMenu,
-                'section' => ['title' => $whatsappMenu?->label ?? 'واتس اب', 'description' => 'مساعد الذكاء الاصطناعي للواتس اب', 'icon' => 'whatsapp', 'path' => $whatsappMenu?->url ?? '/whatsapp-ai'],
-            ],
-            [
-                'perm'    => 'apps.view',
-                'when'    => fn() => (bool) $aiMenu,
-                'section' => ['title' => $aiMenu?->label ?? 'الذكاء الاصطناعي', 'description' => 'مساعد الذكاء الاصطناعي', 'icon' => 'ai', 'path' => $aiMenu?->url ?? '/ai'],
-            ],
+            // [
+            //     'perm'    => 'apps.view',
+            //     'when'    => fn() => (bool) $whatsappMenu,
+            //     'section' => ['title' => $whatsappMenu?->label ?? 'واتس اب', 'description' => 'مساعد الذكاء الاصطناعي للواتس اب', 'icon' => 'whatsapp', 'path' => $whatsappMenu?->url ?? '/whatsapp-ai'],
+            // ],
+            // [
+            //     'perm'    => 'apps.view',
+            //     'when'    => fn() => (bool) $aiMenu,
+            //     'section' => ['title' => $aiMenu?->label ?? 'الذكاء الاصطناعي', 'description' => 'مساعد الذكاء الاصطناعي', 'icon' => 'ai', 'path' => $aiMenu?->url ?? '/ai'],
+            // ],
             // Affiliate program
             [
                 'perm'    => 'affiliate.view',
@@ -110,12 +110,19 @@ class ApiSideMenusController extends Controller
             ],
             [
                 'perm'    => 'content.view',
+                'section' => ['title' => 'مدير الواتساب', 'description' => 'اضف ارقام واتساب', 'icon' => 'message-square-share', 'path' => '/whatsapp-center'],
+            ],
+            [
+                'perm'    => 'content.view',
                 'section' => ['title' => 'تعديل تصميم الموقع', 'description' => 'ادارة محتوى الموقع', 'icon' => 'content-settings', 'path' => 'live-editor'],
             ],
-            // Add this new entry for rental management
             [
-                'perm'    => 'rentals.view',
-                'section' => ['title' => 'إدارة الإيجارات', 'description' => 'إدارة عقارات الإيجار', 'icon' => 'rental', 'path' => '/rental-management'],
+                'perm'    => 'content.view',
+                'section' => ['title' => 'ادارة الموظفين', 'description' => 'ادارة الموظفين', 'icon' => 'message-square-share', 'path' => '/access-control'],
+            ],
+            [
+                'perm'    => 'content.view',
+                'section' => ['title' => 'ادارة الايجارات', 'description' => 'ادارة ايجارتك', 'icon' => 'message-square-share', 'path' => '/rental-management'],
             ],
         ];
 

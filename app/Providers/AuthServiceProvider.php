@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Domain\Admin\Models\Admin;
 use App\Models\MaintenanceMode;
 use App\Policies\MaintenanceModePolicy;
+use App\Policies\ReservationPolicy;
+use App\Models\Reservation;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use App\Models\User;
@@ -18,6 +20,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         MaintenanceMode::class => MaintenanceModePolicy::class,
+        Reservation::class => ReservationPolicy::class,
     ];
 
     /**

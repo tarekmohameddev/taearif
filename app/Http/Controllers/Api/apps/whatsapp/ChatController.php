@@ -18,7 +18,7 @@ use App\Models\User\UserDistrict;
 use App\Models\User\RealestateManagement\ApiUserCategory;
 use App\Models\User\UserCity;
 use App\Models\ApiCustomer;
-use App\Models\ApiCustomerInquiry;
+use App\Models\Api\ApiCustomerInquiry;
 use App\Models\WhatsappUser;
 use Illuminate\Support\Str;
 
@@ -163,6 +163,7 @@ public function handleWhatsappWebhook(Request $request)
             $inquiryType = $payload['inquiry_type'];
             $propertyType = $payload['property_type'] ?? null;
             $sourceChannel = $payload['source_channel'] ?? 'whatsapp';
+            $extra = $payload['extra'] ?? null;
             $lang = $payload['lang'] ?? 'ar';
             
             // Extract detected entities
@@ -197,10 +198,10 @@ public function handleWhatsappWebhook(Request $request)
                 'region_name' => $regionName,
             ]);
 
-            // 🔄 Find customer in ApiCustomer table to get user_id (match with or without leading '+')
-            $normalizedNumber = ltrim($whatsappNumber, '+');
-            $customer = ApiCustomer::whereIn('phone_number', [$whatsappNumber, $normalizedNumber, '+' . $normalizedNumber])->first();
-            $userId = $customer ? $customer->user_id : null;
+			$ownerUserId = !empty($extra) ? $this->resolveUserIdFromWhatsappPhoneId($extra) : null;
+			$phoneVariants = $this->buildPhoneVariants($whatsappNumber);
+			$customer = $this->findCustomerByPhoneVariants($phoneVariants, $ownerUserId);
+			$userId = $ownerUserId ?? ($customer ? $customer->user_id : null);
 
             // Prepare data for saving
             $inquiryData = [
@@ -581,6 +582,36 @@ private function mapCategory(string $name): int
 {
     return ApiUserCategory::where('name', $name)->value('id') ?? 0;
 }
+
+	/**
+	 * Resolve owner user_id from whatsapp_users.phone_id
+	 */
+	private function resolveUserIdFromWhatsappPhoneId($phoneId): ?int
+	{
+		$owner = WhatsappUser::where('phone_id', $phoneId)->first();
+		return $owner ? $owner->user_id : null;
+	}
+
+	/**
+	 * Build common phone variants to match (raw, stripped '+', and with '+')
+	 */
+	private function buildPhoneVariants(string $phone): array
+	{
+		$normalized = ltrim($phone, '+');
+		return [$phone, $normalized, '+' . $normalized];
+	}
+
+	/**
+	 * Find ApiCustomer by phone variants and optional owner user scope
+	 */
+	private function findCustomerByPhoneVariants(array $variants, ?int $userId): ?ApiCustomer
+	{
+		$query = ApiCustomer::whereIn('phone_number', $variants);
+		if (!empty($userId)) {
+			$query->where('user_id', $userId);
+		}
+		return $query->first();
+	}
 
 
 

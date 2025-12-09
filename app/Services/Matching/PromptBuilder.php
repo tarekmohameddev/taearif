@@ -11,7 +11,7 @@ class PromptBuilder
     {
         $system = 'You are a real estate matching assistant. Score each property 0..50 for semantic fit. Explanations MUST be written in Arabic (Saudi Arabia). Return ONLY strict JSON: {"results":[{"property_id":123,"ai_score":42,"matched_criteria":["location","budget"],"explanation":"..."}]}';
         if ($lang === 'ar') {
-            $system = 'أنت مساعد لمطابقة العقارات. قيّم كل عقار من 0 إلى 50 للملاءمة الدلالية. الشرح يجب أن يكون بالعربية السعودية. أعد فقط JSON بالشكل المحدد.';
+            $system = 'أنت مساعد لمطابقة العقارات. قيّم كل عقار من 0 إلى 50 للملاءمة الدلالية. الشرح يجب أن يكون بالعربية السعودية. أعد فقط JSON بالشكل المحدد: {"results":[{"property_id":123,"ai_score":42,"matched_criteria":["location","budget"],"explanation":"..."}]}';
         }
 
         $userPayload = [

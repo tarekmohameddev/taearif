@@ -537,8 +537,6 @@ class CustomerController extends Controller
             'district_id'  => 'nullable|exists:user_districts,id',
             'note'         => 'nullable|string',
 
-            'type_id'      => ['nullable', Rule::exists('users_api_customers_types','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-            'priority_id'  => ['nullable', Rule::exists('users_api_customers_priorities','id')->where(fn($q)=>$q->where('user_id',$user->id))],
             'stage_id'     => ['nullable', Rule::exists('users_api_customers_stages','id')->where(fn($q)=>$q->where('user_id',$user->id))],
             'procedure_id' => ['nullable', Rule::exists('users_api_customers_procedures','id')->where(fn($q)=>$q->where('user_id',$user->id))],
 
@@ -558,8 +556,6 @@ class CustomerController extends Controller
             'district_id'  => $request->input('district_id'),
             // stage_id is handled via CrmCustomerStageService to centralize CRM side effects
             'procedure_id' => $request->input('procedure_id'),
-            'type_id'      => $request->input('type_id'),
-            'priority_id'  => $request->input('priority_id'),
             'phone_number' => $request->input('phone_number'),
         ], fn($v)=>!is_null($v));
 
