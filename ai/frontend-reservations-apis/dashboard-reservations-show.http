@@ -1,0 +1,10 @@
+@baseUrl = https://your-app.test
+@token = YOUR_BEARER_TOKEN
+@reservationId = res-001
+
+### Show Reservation
+GET {{baseUrl}}/api/v1/reservations/{{reservationId}}
+Authorization: Bearer {{token}}
+Accept: application/json
+
+

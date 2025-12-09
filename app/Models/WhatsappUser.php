@@ -16,15 +16,19 @@ class WhatsappUser extends Model
 
   
     protected $fillable = [
-        'user_id', 
-        'employee_id',
-        'number', 
-        'name', 
-        'note', 
-        'status', 
-        'token', 
-        'phone_id', 
+        'user_id',
+       'employee_id',
+        'number',
+        'name',
+        'note',
+        'status',
+        'request_status',
+        'token',
+        'access_token',
+        'token_expires_at',
+        'phone_id',
         'business_id',
+        'waba_id',
     ];
 
 

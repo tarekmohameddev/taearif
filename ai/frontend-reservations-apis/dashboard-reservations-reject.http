@@ -1,0 +1,14 @@
+@baseUrl = https://your-app.test
+@token = YOUR_BEARER_TOKEN
+@reservationId = res-001
+
+### Reject Reservation
+POST {{baseUrl}}/api/v1/reservations/{{reservationId}}/reject
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reason": "السعر أعلى من ميزانية العميل"
+}
+
+

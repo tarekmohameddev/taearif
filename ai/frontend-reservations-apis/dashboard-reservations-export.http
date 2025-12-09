@@ -1,0 +1,9 @@
+@baseUrl = https://your-app.test
+@token = YOUR_BEARER_TOKEN
+
+### Export Reservations CSV (supports same filters as list)
+GET {{baseUrl}}/api/v1/reservations/export/csv?status=pending&type=all
+Authorization: Bearer {{token}}
+Accept: text/csv
+
+

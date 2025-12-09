@@ -19,7 +19,7 @@ class CrmCardController extends ApiController
         $query = CrmCard::query()
             ->forUser($user->id)
             ->when($request->filled('card_procedure'), fn($q) => $q->where('card_procedure', $request->card_procedure))
-            ->when($request->filled('customer_id'), fn($q) => $q->where('card_customer_id', (int) $request->customer_id))
+            ->when($request->filled('card_request_id'), fn($q) => $q->where('card_request_id', (int) $request->card_request_id))
             ->when($request->filled('date_from'), fn($q) => $q->where('card_date', '>=', $request->date_from))
             ->when($request->filled('date_to'), fn($q) => $q->where('card_date', '<=', $request->date_to))
             ->orderByDesc('card_date')
@@ -42,9 +42,9 @@ class CrmCardController extends ApiController
         $user = $request->user();
 
         $validated = $request->validate([
-            'card_customer_id' => [
+            'card_request_id' => [
                 'required','integer',
-                Rule::exists('api_customers', 'id')->where(fn($q) => $q->where('user_id', $user->id)),
+                Rule::exists('crm_requests', 'id')->where(fn($q) => $q->where('user_id', $user->id)),
             ],
             'card_content'     => ['nullable','string'],
             'card_procedure'   => ['required', Rule::in(['reminder','note','interaction','appointment'])],
@@ -94,9 +94,9 @@ class CrmCardController extends ApiController
             $card = CrmCard::forUser($user->id)->findOrFail($id);
 
             $validated = $request->validate([
-                'card_customer_id' => [
+                'card_request_id' => [
                     'sometimes', 'required', 'integer',
-                    Rule::exists('api_customers', 'id')->where(fn($q) => $q->where('user_id', $user->id)),
+                    Rule::exists('crm_requests', 'id')->where(fn($q) => $q->where('user_id', $user->id)),
                 ],
                 'card_content'      => ['nullable', 'string'],
                 'card_procedure'    => ['sometimes', 'required', Rule::in(['reminder','note','interaction','appointment'])],

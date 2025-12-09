@@ -45,6 +45,7 @@ use App\Http\Controllers\Api\{
     dashboard\DashboardController,
     property\UserFacadeController,
     apps\whatsapp\WhatsappController,
+    apps\whatsapp\MetaOAuthController,
     apps\whatsapp\EmbeddingController,
     User\RealestateManagement\ApiCategoryController,
     ResetPasswordController,
@@ -87,6 +88,7 @@ use App\Http\Controllers\Api\V1\{
     EmployeeController,
     CustomerInquiryController,
     Crm\CrmCardController,
+    Crm\CrmRequestController,
     Em\CustomerController as EmployeeCustomerController,
 };
 
@@ -492,7 +494,14 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/embeddings', [EmbeddingController::class, 'store']);
     Route::post('/chat', [ChatController::class, 'chat']);
+
+    // Meta Embedded Signup OAuth - authenticated redirect endpoint
+    Route::get('/whatsapp/meta/redirect', [MetaOAuthController::class, 'redirect']);
 });
+
+// Meta Embedded Signup OAuth callback (called by Facebook, public endpoint)
+Route::get('/whatsapp/meta/callback', [MetaOAuthController::class, 'callback']);
+
 Route::post('/whatsapp/evolution-webhook', [ChatController::class, 'handleEvolutionWebhook']);
 Route::post('/whatsapp/webhook', [ChatController::class, 'handleWhatsappWebhook']);
 
@@ -686,6 +695,15 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('cards/{id}', [CrmCardController::class, 'show']);
         Route::match(['put','patch'], 'cards/{id}', [CrmCardController::class, 'update']);
         Route::delete('cards/{id}', [CrmCardController::class, 'destroy']);
+
+        // Requests
+        Route::apiResource('requests', CrmRequestController::class);
+        Route::post('requests/{id}/change-stage', [CrmRequestController::class, 'changeStage']);
+        Route::post('requests/reorder', [CrmRequestController::class, 'reorder']);
+        Route::get('requests/{id}/details', [CrmRequestController::class, 'details']);
+
+        // User Stages (v1 scoped)
+        Route::get('stages', [CrmRequestController::class, 'stages']);
     });
 
     // Marketing Channels Routes
@@ -761,6 +779,17 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(funct
 
 Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
+		// Reservations (Dashboard - v1)
+		Route::prefix('reservations')->group(function () {
+			Route::get('/', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'index']);
+			Route::get('/stats', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'stats']);
+			Route::get('/export/csv', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'exportCsv']);
+			Route::get('/{id}', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'show']);
+			Route::post('/{id}/accept', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'accept'])->name('reservations.accept');
+			Route::post('/{id}/reject', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'reject'])->name('reservations.reject');
+			Route::post('/bulk-action', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'bulkAction']);
+		});
+
         Route::get('/customers/{id}/logs',  [CustomerLogController::class, 'index'])->middleware('can:projects.view');
         Route::get('/projects/{id}/logs',   [ProjectLogController::class, 'index'])->middleware('can:projects.view');
         Route::get('/properties/{id}/logs', [PropertyLogController::class, 'index'])->middleware('can:properties.view');
@@ -848,6 +877,9 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
     Route::put('{tenantId}/settings', [SettingsController::class, 'update'])->middleware('auth:sanctum');
     Route::post('{tenantId}/publish', [PublishController::class, 'store'])->middleware('auth:sanctum');
     Route::post('{tenantId}/forms/contact', [FormController::class, 'store']);
+
+	// Tenant Website Reservations (public - rate limited)
+	Route::post('{tenantId}/reservations', [\App\Http\Controllers\Api\V1\TenantWebsite\ReservationController::class, 'store'])->middleware('throttle:5,1');
 
     // Tenant Website Properties (public)
     Route::get('{tenantId}/properties', [\App\Http\Controllers\Api\V1\TenantWebsite\PropertyController::class, 'index']);

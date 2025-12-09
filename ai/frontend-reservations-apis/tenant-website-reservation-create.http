@@ -1,0 +1,16 @@
+@baseUrl = https://your-app.test
+@tenantId = your-tenant-id
+
+### Create Reservation (Public - Tenant Website)
+POST {{baseUrl}}/api/v1/tenant-website/{{tenantId}}/reservations
+Content-Type: application/json
+
+{
+  "propertySlug": "astdyo-mothth-hy-alaaard-rkm-19-1",
+  "customerName": "أحمد محمد",
+  "customerPhone": "+966501234567",
+  "desiredDate": "2025-02-01",
+  "message": "أرغب في المعاينة يوم السبت"
+}
+
+
