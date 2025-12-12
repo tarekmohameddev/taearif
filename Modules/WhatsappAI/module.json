@@ -1,0 +1,13 @@
+{
+    "name": "WhatsappAI",
+    "alias": "whatsappai",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WhatsappAI\\Providers\\WhatsappAIServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": []
+}
