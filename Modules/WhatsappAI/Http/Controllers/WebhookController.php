@@ -70,13 +70,19 @@ class WebhookController extends Controller
             $messageType = $message['type'] ?? 'text';
             $content = $this->extractMessageContent($message, $messageType);
 
+            // Extract media URL based on message type
+            $mediaUrl = null;
+            if (in_array($messageType, ['image', 'document', 'audio', 'video']) && isset($message[$messageType]['url'])) {
+                $mediaUrl = $message[$messageType]['url'];
+            }
+
             // Store the message
             WhatsappMessage::create([
                 'conversation_id' => $conversation->id,
                 'whatsapp_message_id' => $message['id'] ?? null,
                 'message_type' => $messageType,
                 'content' => $content,
-                'media_url' => $message[$messageType]['url'] ?? null,
+                'media_url' => $mediaUrl,
                 'raw_payload' => $message,
             ]);
 
@@ -161,6 +167,11 @@ class WebhookController extends Controller
                 $lat = $message['location']['latitude'] ?? '';
                 $lng = $message['location']['longitude'] ?? '';
                 return "[Location: {$lat}, {$lng}]";
+            
+            case 'reaction':
+                $emoji = $message['reaction']['emoji'] ?? '';
+                $messageId = $message['reaction']['message_id'] ?? '';
+                return $emoji ? "[Reaction: {$emoji}]" : '[Reaction]';
             
             default:
                 return "[Unsupported message type: {$type}]";
