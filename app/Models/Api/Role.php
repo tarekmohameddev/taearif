@@ -2,7 +2,6 @@
 
 namespace App\Models\Api;
 
-use App\Models\Api\Employee;
 use Illuminate\Database\Eloquent\Model;
 
 class Role extends Model {
@@ -11,7 +10,6 @@ class Role extends Model {
 
   protected $casts = ['permissions' => 'array'];
 
-  public function employees() {
-    return $this->belongsToMany(Employee::class, 'api_employee_role', 'role_id', 'employee_id');
-  }
+  // Legacy method removed - employees are now managed via Spatie permissions
+  // Employees are User models with account_type='employee' and use Spatie's role system
 }

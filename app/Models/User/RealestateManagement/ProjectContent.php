@@ -47,12 +47,12 @@ class ProjectContent extends Model
             'user_id' => $userId,
             'project_id' => $requestData['project_id'],
             'language_id' => $requestData['language_id'],
-            'title' => $requestData['title'],
-            'slug' => make_slug($requestData['title']),
-            'address' => $requestData['address'],
-            'description' => $requestData['description'],
-            'meta_keyword' => $requestData['meta_keyword'],
-            'meta_description' => $requestData['meta_description'],
+            'title' => $requestData['title'] ?? '',
+            'slug' => make_slug($requestData['title'] ?? ''),
+            'address' => $requestData['address'] ?? null,
+            'description' => $requestData['description'] ?? null,
+            'meta_keyword' => $requestData['meta_keyword'] ?? null,
+            'meta_description' => $requestData['meta_description'] ?? null,
         ]);
     }
 

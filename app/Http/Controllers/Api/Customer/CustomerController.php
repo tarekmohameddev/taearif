@@ -508,7 +508,7 @@ class CustomerController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, $id, \App\Services\CrmCustomerStageService $stageService)
     {
         $user = $request->user();
         $customer = \App\Models\ApiCustomer::where('user_id',$user->id)->findOrFail($id);
@@ -554,7 +554,7 @@ class CustomerController extends Controller
             'note'         => $request->input('note'),
             'city_id'      => $request->input('city_id'),
             'district_id'  => $request->input('district_id'),
-            'stage_id'     => $request->input('stage_id'),
+            // stage_id is handled via CrmCustomerStageService to centralize CRM side effects
             'procedure_id' => $request->input('procedure_id'),
             'phone_number' => $request->input('phone_number'),
         ], fn($v)=>!is_null($v));
@@ -563,8 +563,19 @@ class CustomerController extends Controller
             $data['password'] = bcrypt($request->password);
         }
 
-        \DB::transaction(function () use ($request, $user, $customer, $data) {
+        \DB::transaction(function () use ($request, $user, $customer, $data, $stageService) {
             $customer->update($data);
+
+            // If stage_id is present, use the shared service to change stage
+            if ($request->filled('stage_id')) {
+                $stage = \App\Models\Api\UserApiCustomerStage::where('id', (int) $request->input('stage_id'))
+                    ->where('user_id', $user->id)
+                    ->first();
+
+                if ($stage) {
+                    $stageService->changeStage($customer, $stage);
+                }
+            }
 
             if ($request->has('interested_category_ids')) {
                 \App\Models\ApiCustomerPropertyInterested::where('customer_id',$customer->id)
@@ -867,6 +878,187 @@ class CustomerController extends Controller
                 'exception' => config('app.debug') ? class_basename($e) : null,
             ], 500);
         }
+    }
+
+    /**
+     * Download the customer import template
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function downloadTemplate(Request $request)
+    {
+        $user = $request->user();
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\CustomersTemplateExport($user->id),
+            'customers_import_template.xlsx'
+        );
+    }
+
+    /**
+     * Bulk import customers from Excel/CSV file
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function bulkImport(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,csv',
+        ]);
+
+        $user = $request->user();
+
+        try {
+            // Calculate the exact number of rows with data
+            $filePath = $request->file('file')->getPathname();
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($filePath);
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($filePath);
+            $worksheet = $spreadsheet->getActiveSheet();
+            $highestRow = $worksheet->getHighestDataRow();
+
+            // Count incoming rows
+            $import = new \App\Imports\CustomersImport($user->id, $highestRow);
+            $collection = \Maatwebsite\Excel\Facades\Excel::toCollection($import, $request->file('file'));
+            $firstSheet = $collection->first();
+
+            $incomingRowCount = $firstSheet->filter(function ($row) {
+                $rowArray = $row->toArray();
+
+                if (isset($rowArray['_skip_empty_row']) && $rowArray['_skip_empty_row'] === true) {
+                    return false;
+                }
+
+                $hasData = !empty(array_filter($rowArray, function ($value) {
+                    return !is_null($value) && $value !== '';
+                }));
+
+                return $hasData;
+            })->count();
+
+            Log::info('Customer bulk import started', [
+                'user_id' => $user->id,
+                'incoming_rows' => $incomingRowCount,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to read uploaded file: ' . $e->getMessage(),
+            ], 422);
+        }
+
+        try {
+            // Perform the actual import
+            $import = new \App\Imports\CustomersImport($user->id, $highestRow);
+            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('file'));
+
+            $failures = $import->sheetImport->failures();
+            $errors = $import->sheetImport->errors();
+            $detailedErrors = [];
+
+            // Collect Validation Failures
+            foreach ($failures as $failure) {
+                $detailedErrors[] = [
+                    'row' => $failure->row(),
+                    'message' => 'Validation Error: ' . implode(', ', $failure->errors()),
+                    'values' => $failure->values(),
+                ];
+            }
+
+            // Collect Logic Errors (Exceptions)
+            foreach ($errors as $error) {
+                $message = $error->getMessage();
+                $row = null;
+
+                if (preg_match('/Row (\d+):/', $message, $matches)) {
+                    $row = (int) $matches[1];
+                }
+
+                $detailedErrors[] = [
+                    'row' => $row,
+                    'message' => $message,
+                ];
+            }
+
+            $importedCount = $import->sheetImport->importedCount;
+            $failedCount = count($detailedErrors);
+
+            // Emit activity event
+            TenantActivity::emit($request, 'customers.bulk_imported', 'api_customers', null, null, [
+                'imported_count' => $importedCount,
+                'failed_count' => $failedCount,
+            ]);
+
+            if ($failedCount > 0) {
+                return response()->json([
+                    'status' => 'partial_success',
+                    'message' => "Import completed with issues. Imported: {$importedCount}, Failed: {$failedCount}.",
+                    'imported_count' => $importedCount,
+                    'failed_count' => $failedCount,
+                    'errors' => $detailedErrors,
+                ], 422);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Import successful. {$importedCount} customers created.",
+                'imported_count' => $importedCount,
+                'failed_count' => 0,
+                'errors' => [],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Bulk customer import critical error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'A critical error occurred during import: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Export customers to Excel/CSV
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function export(Request $request)
+    {
+        $user = $request->user();
+
+        $filters = $request->only([
+            'type_id',
+            'priority_id',
+            'stage_id',
+            'procedure_id',
+            'city_id',
+            'district_id',
+            'search',
+        ]);
+
+        $format = $request->input('format', 'xlsx');
+        $filename = 'customers_export_' . now()->format('Y-m-d_His');
+
+        if ($format === 'csv') {
+            return \Maatwebsite\Excel\Facades\Excel::download(
+                new \App\Exports\CustomersExport($user->id, $filters),
+                $filename . '.csv',
+                \Maatwebsite\Excel\Excel::CSV
+            );
+        }
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\CustomersExport($user->id, $filters),
+            $filename . '.xlsx'
+        );
     }
 
 }
