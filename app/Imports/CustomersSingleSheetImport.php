@@ -3,12 +3,15 @@
 namespace App\Imports;
 
 use App\Models\ApiCustomer;
+use App\Models\ApiCustomerPropertyInterested;
 use App\Models\User\UserCity;
 use App\Models\User\UserDistrict;
 use App\Models\Api\UserApiCustomerType;
 use App\Models\Api\UserApiCustomerStage;
 use App\Models\Api\UserApiCustomerPriority;
 use App\Models\Api\UserApiCustomerProcedure;
+use App\Models\User\RealestateManagement\ApiUserCategory;
+use App\Models\User\RealestateManagement\Property;
 use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
@@ -187,7 +190,49 @@ class CustomersSingleSheetImport implements OnEachRow, WithHeadingRow, WithValid
                 $customerData['password'] = bcrypt($row['password']);
             }
 
-            ApiCustomer::create($customerData);
+            $customer = ApiCustomer::create($customerData);
+
+            // Handle interested categories/properties (IDs, comma-separated)
+            $categoryIds = $this->parseIdList($row['interested_category_ids'] ?? null);
+            $propertyIds = $this->parseIdList($row['interested_property_ids'] ?? null);
+
+            if (!empty($categoryIds)) {
+                $validCategoryIds = ApiUserCategory::whereIn('id', $categoryIds)->pluck('id')->all();
+                $inserts = [];
+                foreach ($validCategoryIds as $cid) {
+                    $inserts[] = [
+                        'user_id' => $this->userId,
+                        'customer_id' => $customer->id,
+                        'category_id' => $cid,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+                if (!empty($inserts)) {
+                    ApiCustomerPropertyInterested::insert($inserts);
+                }
+            }
+
+            if (!empty($propertyIds)) {
+                $validPropertyIds = Property::where('user_id', $this->userId)
+                    ->whereIn('id', $propertyIds)
+                    ->pluck('id')
+                    ->all();
+
+                $inserts = [];
+                foreach ($validPropertyIds as $pid) {
+                    $inserts[] = [
+                        'user_id' => $this->userId,
+                        'customer_id' => $customer->id,
+                        'property_id' => $pid,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+                if (!empty($inserts)) {
+                    ApiCustomerPropertyInterested::insert($inserts);
+                }
+            }
 
             $this->importedCount++;
         });
@@ -401,6 +446,8 @@ class CustomersSingleSheetImport implements OnEachRow, WithHeadingRow, WithValid
             'district_name' => 'nullable|string|max:255',
             'district_id' => 'nullable|integer',
             'password' => 'nullable|string|min:6',
+            'interested_category_ids' => 'nullable|string',
+            'interested_property_ids' => 'nullable|string',
         ];
     }
 
@@ -419,6 +466,30 @@ class CustomersSingleSheetImport implements OnEachRow, WithHeadingRow, WithValid
         }
 
         return $data;
+    }
+
+    /**
+     * Parse comma-separated IDs into an integer array.
+     */
+    protected function parseIdList($value): array
+    {
+        if (is_null($value) || $value === '') {
+            return [];
+        }
+
+        if (is_int($value) || (is_string($value) && is_numeric($value))) {
+            return [(int) $value];
+        }
+
+        if (is_string($value)) {
+            return array_values(array_filter(array_map('intval', explode(',', $value))));
+        }
+
+        if (is_array($value)) {
+            return array_values(array_filter(array_map('intval', $value)));
+        }
+
+        return [];
     }
 }
 

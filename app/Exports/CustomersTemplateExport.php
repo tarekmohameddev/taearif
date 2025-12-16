@@ -80,6 +80,8 @@ class CustomersTemplateMainSheetExport implements FromArray, WithHeadings, WithT
                 'الرياض',           // city_name
                 'حي العليا',        // district_name
                 '',                  // password (optional)
+                '',                  // interested_category_ids (comma-separated)
+                '',                  // interested_property_ids (comma-separated)
             ],
         ];
     }
@@ -98,6 +100,8 @@ class CustomersTemplateMainSheetExport implements FromArray, WithHeadings, WithT
             'city_name',
             'district_name',
             'password',
+            'interested_category_ids',
+            'interested_property_ids',
         ];
     }
 
@@ -132,7 +136,7 @@ class CustomersTemplateMainSheetExport implements FromArray, WithHeadings, WithT
                 $sheet->getRowDimension(1)->setRowHeight(25);
 
                 // Auto-size columns
-                foreach (range('A', 'K') as $col) {
+                foreach (range('A', 'M') as $col) {
                     $sheet->getColumnDimension($col)->setAutoSize(true);
                 }
 
