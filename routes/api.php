@@ -133,7 +133,7 @@ use App\Http\Controllers\Api\PixelController; // Added import for PixelControlle
 
 Route::get('public-user/{id}', [PublicUserController::class, 'show']);
 Route::get('/properties/bulk-import/template', [PropertyController::class, 'downloadTemplate']);
-Route::get('/customers/bulk-import/template', [CustomerController::class, 'downloadTemplate'])->middleware('auth:sanctum');
+Route::post('/customers/bulk-import/template', [CustomerController::class, 'downloadTemplate']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/affiliate/register', [AffiliateController::class, 'register']);

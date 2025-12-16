@@ -889,9 +889,33 @@ class CustomerController extends Controller
     public function downloadTemplate(Request $request)
     {
         $user = $request->user();
+        $userId = $user?->id;
+
+        // Resolve tenant context for unauthenticated access
+        if (!$userId) {
+            $tenantId = $request->input('tenant_id');
+
+            if ($tenantId) {
+                $tenantUser = \App\Models\User::find($tenantId);
+
+                if (!$tenantUser) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Invalid tenant_id',
+                    ], 400);
+                }
+
+                $userId = $tenantUser->id;
+            } else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'tenant_id is required when not authenticated',
+                ], 400);
+            }
+        }
 
         return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\CustomersTemplateExport($user->id),
+            new \App\Exports\CustomersTemplateExport($userId),
             'customers_import_template.xlsx'
         );
     }
