@@ -10,12 +10,13 @@ class TenantWebsiteLayout extends Model
     use HasUuids;
 
     protected $fillable = [
-        'id', 'user_id', 'data', 'published_data',
+        'id', 'user_id', 'data', 'published_data', 'themes_backup',
     ];
 
     protected $casts = [
         'data' => 'array',
         'published_data' => 'array',
+        'themes_backup' => 'array',
     ];
 }
 

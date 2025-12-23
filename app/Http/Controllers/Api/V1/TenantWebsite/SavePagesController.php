@@ -19,6 +19,7 @@ class SavePagesController extends Controller
             'componentSettings' => 'sometimes|array',
             'globalComponentsData' => 'nullable|array',
             'WebsiteLayout' => 'nullable|array',
+            'ThemesBackup' => 'nullable|array',
         ]);
 
         $tenant = User::where('username', $data['tenantId'])->firstOrFail();
@@ -34,7 +35,8 @@ class SavePagesController extends Controller
             $tenant,
             $pages,
             $data['globalComponentsData'] ?? null,
-            $data['WebsiteLayout'] ?? null
+            $data['WebsiteLayout'] ?? null,
+            $data['ThemesBackup'] ?? null
         );
         return response()->json([
             'success' => true,

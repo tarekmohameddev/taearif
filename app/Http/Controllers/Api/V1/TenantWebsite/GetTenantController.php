@@ -53,6 +53,7 @@ class GetTenantController extends Controller
             'componentSettings' => $pages,
             'globalComponentsData' => $globals?->data ?? [],
             'WebsiteLayout' => $layout?->data ?? [],
+            'ThemesBackup' => $layout?->themes_backup ?? null,
         ]);
     }
 

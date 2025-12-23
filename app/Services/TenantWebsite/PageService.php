@@ -49,9 +49,9 @@ class PageService
         TenantPage::where('user_id', $tenant->id)->where('page_id', $pageId)->delete();
     }
 
-    public function savePagesPayload(User $tenant, array $pages, ?array $globals, ?array $websiteLayout = null): array
+    public function savePagesPayload(User $tenant, array $pages, ?array $globals, ?array $websiteLayout = null, ?array $themesBackup = null): array
     {
-        return DB::transaction(function () use ($tenant, $pages, $globals, $websiteLayout) {
+        return DB::transaction(function () use ($tenant, $pages, $globals, $websiteLayout, $themesBackup) {
             $pagesSaved = 0;
             $pagesDeleted = 0;
             $componentsSaved = 0;
@@ -89,11 +89,23 @@ class PageService
                 );
             }
 
-            if ($websiteLayout !== null) {
-                TenantWebsiteLayout::updateOrCreate(
-                    ['user_id' => $tenant->id],
-                    ['data' => $websiteLayout]
-                );
+            if ($websiteLayout !== null || $themesBackup !== null) {
+                $layout = TenantWebsiteLayout::firstOrNew(['user_id' => $tenant->id]);
+                
+                if ($websiteLayout !== null) {
+                    $layout->data = $websiteLayout;
+                }
+                
+                if ($themesBackup !== null) {
+                    $layout->themes_backup = $themesBackup;
+                }
+                
+                // Ensure data is not null (required by schema)
+                if (!isset($layout->data)) {
+                    $layout->data = [];
+                }
+                
+                $layout->save();
             }
 
             return [
