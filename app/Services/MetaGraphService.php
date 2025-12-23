@@ -191,7 +191,7 @@ class MetaGraphService
     /**
     * Subscribe app to WABA for webhooks.
     *
-    * POST /{waba_id}/subscribed_apps
+    * POST /{waba_id}/subscribed_apps?subscribed_fields=...
     * Authorization: Bearer {access_token}
     *
     * This subscribes the app to receive webhooks for the WhatsApp Business Account.
@@ -199,9 +199,22 @@ class MetaGraphService
     */
     public function subscribeAppToWaba(string $accessToken, string $wabaId): array
     {
+        // Tell Meta which webhook fields we want delivered for this WABA.
+        // See: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components
+        $subscribedFields = implode(',', [
+            'messages',
+            'message_deliveries',
+            'message_reads',
+            'message_reactions',
+            'message_echo',
+        ]);
+
+        // Meta expects subscribed_fields as a query string on this POST endpoint.
+        $url = $this->graphUrl("/{$wabaId}/subscribed_apps?subscribed_fields=" . urlencode($subscribedFields));
+
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $accessToken,
-        ])->post($this->graphUrl("/{$wabaId}/subscribed_apps"));
+        ])->post($url);
 
         if (!$response->successful()) {
             Log::error('MetaGraphService.subscribeAppToWaba failed', [
