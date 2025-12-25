@@ -72,3 +72,4 @@ debug_district.php
 fetch_amenities.php
 database/seeders/AdminSeeder.php
 database/seeds/DatabaseSeeder.php
+database/seeds/DatabaseSeeder.php
