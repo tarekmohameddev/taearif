@@ -527,6 +527,19 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::delete('/credit-management/pricing/{id}', 'Admin\CreditManagementController@deletePricing')->name('credit-management.pricing.delete');
         Route::get('/credit-management/packages/{id}/estimates', 'Admin\CreditManagementController@getPackageEstimates')->name('credit-management.packages.estimates');
         Route::post('/credit-management/sync-pricing', 'Admin\CreditManagementController@syncPricingFromPackages')->name('credit-management.sync-pricing');
+        
+        // WhatsApp Add-ons Management
+        Route::get('/whatsapp-addons', 'Admin\WhatsappAddonController@index')->name('whatsapp-addons.index');
+        Route::get('/whatsapp-addons/{id}', 'Admin\WhatsappAddonController@show')->name('whatsapp-addons.show');
+        Route::post('/whatsapp-addons/{id}/approve', 'Admin\WhatsappAddonController@approve')->name('whatsapp-addons.approve');
+        Route::post('/whatsapp-addons/{id}/reject', 'Admin\WhatsappAddonController@reject')->name('whatsapp-addons.reject');
+        Route::delete('/whatsapp-addons/{id}', 'Admin\WhatsappAddonController@destroy')->name('whatsapp-addons.destroy');
+        
+        // WhatsApp Numbers Management
+        Route::get('/whatsapp-numbers/{id}/edit', 'Admin\WhatsappNumberController@edit')->name('whatsapp-numbers.edit');
+        Route::put('/whatsapp-numbers/{id}', 'Admin\WhatsappNumberController@update')->name('whatsapp-numbers.update');
+        Route::post('/whatsapp-numbers/{id}/toggle-status', 'Admin\WhatsappNumberController@toggleStatus')->name('whatsapp-numbers.toggle-status');
+        Route::delete('/whatsapp-numbers/{id}', 'Admin\WhatsappNumberController@destroy')->name('whatsapp-numbers.destroy');
     });
 
     //IstharaController

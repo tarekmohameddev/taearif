@@ -591,4 +591,40 @@ class User extends Authenticatable
         return $this->hasMany(ApiDomainSetting::class);
     }
 
+    public function whatsappUsers()
+    {
+        return $this->hasMany(WhatsappUser::class, 'user_id');
+    }
+
+    public function getWhatsAppQuotaAttribute()
+    {
+        // Get base limit from active membership
+        $membership = Membership::where('user_id', $this->id)
+            ->where('status', 1)
+            ->whereDate('expire_date', '>=', now())
+            ->latest()
+            ->first();
+
+        if (!$membership) {
+            return 0;
+        }
+
+        $baseLimit = $membership->package->whatsapp_numbers_limit ?? 0;
+
+        // Get addon limits (approved and not expired)
+        $addonLimit = WhatsappAddon::whereHas('whatsappUser', function($q) {
+            $q->where('user_id', $this->id);
+        })->where('status', WhatsappAddon::STATUS_APPROVED)
+          ->where(function($q) {
+              $q->whereNull('expire_date')
+                ->orWhere('expire_date', '>=', now());
+          })->sum('qty');
+
+        return (int) ($baseLimit + $addonLimit);
+    }
+
+    public function getWhatsAppUsageAttribute()
+    {
+        return (int) $this->whatsappUsers()->where('status', 'active')->count();
+    }
 }

@@ -42,6 +42,14 @@ class WhatsappController extends Controller
             ],
         ]);
 
+        $user = $request->user()->tenantOwner();
+        if ($user->whatsapp_usage >= $user->whatsapp_quota) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لقد وصلت للحد الأقصى لعدد الأرقام المسموح بها. يرجى شراء إضافة لزيادة الحد.'
+            ], 422);
+        }
+
         $fullPhoneNumber = '+966' . $validated['phoneNumber'];
         
         // Check for duplicate phone number
@@ -172,6 +180,8 @@ class WhatsappController extends Controller
                 'total' => $whatsappUsers->count(),
                 'active_count' => $whatsappUsers->where('status', self::STATUS_ACTIVE)->count(),
                 'pending_count' => $whatsappUsers->where('request_status', self::STATUS_PENDING)->count(),
+                'quota' => $request->user()->tenantOwner()->whatsapp_quota,
+                'usage' => $request->user()->tenantOwner()->whatsapp_usage,
             ],
             'message' => $this->getStatusMessage($overallStatus)
         ]);
@@ -224,6 +234,33 @@ class WhatsappController extends Controller
             'message' => $validated['employeeId'] 
                 ? 'تم تعيين الموظف بنجاح' 
                 : 'تم إلغاء تعيين الموظف بنجاح'
+        ]);
+    }
+
+    public function destroy($id)
+    {
+        $tenantId = $this->tenantId();
+        $whatsappUser = WhatsappUser::where('user_id', $tenantId)->findOrFail($id);
+
+        $whatsappUser->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم حذف الرقم بنجاح'
+        ]);
+    }
+
+    public function unlink($id)
+    {
+        $tenantId = $this->tenantId();
+        $whatsappUser = WhatsappUser::where('user_id', $tenantId)->findOrFail($id);
+
+        $whatsappUser->status = self::STATUS_NOT_LINKED;
+        $whatsappUser->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم فك ربط الرقم بنجاح'
         ]);
     }
 

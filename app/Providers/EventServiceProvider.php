@@ -68,5 +68,6 @@ class EventServiceProvider extends ServiceProvider
         Project::observe(ProjectObserver::class);
         Property::observe(PropertyObserver::class);
         CrmCard::observe(CrmCardObserver::class);
+        \App\Models\WhatsappAddon::observe(\App\Observers\WhatsappAddonObserver::class);
     }
 }

@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\{
     isthara\IstharaController,
     content\AboutApiController,
     apps\whatsapp\ChatController,
+    apps\whatsapp\WhatsappAddonController,
     Affiliate\AffiliateController,
     App\ApiInstallationController,
     dashboard\DashboardController,
@@ -522,10 +523,20 @@ Route::prefix('v1/credits')->group(function () {
         ->name('api.credits.payment.cancel');
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::prefix('v1/whatsapp-addons')->group(function () {
+    Route::get('payment/success/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\whatsapp\WhatsappAddonController::class, 'paymentSuccess'])
+        ->name('api.whatsapp.addons.payment.success');
+    Route::get('payment/cancel/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\whatsapp\WhatsappAddonController::class, 'paymentCancel'])
+        ->name('api.whatsapp.addons.payment.cancel');
+});
+
+Route::middleware(['auth:sanctum', \App\Http\Middleware\RequireActiveMembership::class])->group(function () {
     Route::post('/whatsapp/link', [WhatsappController::class, 'store']);
     Route::get('/whatsapp', [WhatsappController::class, 'index']);
     Route::match(['put', 'patch'], '/whatsapp/{id}/employee', [WhatsappController::class, 'updateEmployee']);
+    Route::delete('/whatsapp/{id}', [WhatsappController::class, 'destroy']);
+    Route::post('/whatsapp/{id}/unlink', [WhatsappController::class, 'unlink']);
+    Route::post('/whatsapp/addons', [WhatsappAddonController::class, 'store']);
 });
 
 

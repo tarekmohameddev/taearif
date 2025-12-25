@@ -368,7 +368,7 @@ class ArbController extends Controller
 
     }
 
-    private function decryption($code, $key): false|string
+    public function decryption($code, $key): false|string
     {
         $string = hex2bin(trim($code));
         $code = unpack('C*', $string);

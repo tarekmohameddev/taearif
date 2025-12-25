@@ -653,7 +653,8 @@ class AuthController extends Controller
                             'trial_days' => $package->trial_days,
                             'features' => json_decode($package->features, true),
                             'project_limit_number' => $package->project_limit_number,
-                            'real_estate_limit_number' => $package->real_estate_limit_number
+                            'real_estate_limit_number' => $package->real_estate_limit_number,
+                            'whatsapp_numbers_limit' => $package->whatsapp_numbers_limit,
                         ];
                     }
                 }
@@ -695,6 +696,12 @@ class AuthController extends Controller
                 'domain' => $domain ? $domain->custom_name : "https://{$owner->username}.taearif.com/",
                 'onboarding_completed' => $user->onboarding_completed ?? false,
                 'company_name' => $companyName,
+                'whatsapp' => [
+                    'quota' => $owner->whatsapp_quota,
+                    'usage' => $owner->whatsapp_usage,
+                    'max_whatsapp_numbers' => (isset($membershipDetails['package']) ? $membershipDetails['package']['whatsapp_numbers_limit'] : 0),
+                    'is_over_limit' => $owner->whatsapp_usage >= $owner->whatsapp_quota,
+                ],
                 'permissions' => $permissions,
             ];
 
