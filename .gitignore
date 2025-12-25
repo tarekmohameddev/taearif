@@ -70,3 +70,4 @@ check_cities.php
 check_city_columns.php
 debug_district.php
 fetch_amenities.php
+database/seeds/DatabaseSeeder.php
