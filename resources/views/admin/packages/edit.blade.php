@@ -4,9 +4,17 @@
     use App\Models\Language;
     $selLang = Language::where('code', request()->input('language'))->first();
 @endphp
-@if (!empty($selLang->language) && $selLang->language->rtl == 1)
-    @section('styles')
-        <style>
+@section('styles')
+    <style>
+        /* Hide feature limit boxes when marked with their -none class */
+        .project-limit-box.project-limit-none,
+        .real_estate-limit-box.real_estate-limit-none,
+        .whatsapp-limit-box.whatsapp-limit-none,
+        .v-card-box.vcrd-none {
+            display: none !important;
+        }
+
+        @if (!empty($selLang->language) && $selLang->language->rtl == 1)
             form input,
             form textarea,
             form select {
@@ -17,9 +25,9 @@
                 direction: rtl;
                 text-align: right;
             }
-        </style>
-    @endsection
-@endif
+        @endif
+    </style>
+@endsection
 
 @section('content')
     <div class="page-header">
@@ -249,6 +257,13 @@
                                             @if (is_array($permissions) && in_array('real_estate_Limit', $permissions)) checked @endif>
                                             <span class="selectgroup-button">{{ __('Real Estate Limit') }}</span>
                                         </label>
+
+                                        <!-- NEW: WhatsApp Limit Checkbox -->
+                                        <label class="selectgroup-item">
+                                            <input type="checkbox" name="features[]" value="whatsapp_Limit" class="selectgroup-input"
+                                            @if (is_array($permissions) && in_array('whatsapp_Limit', $permissions)) checked @endif>
+                                            <span class="selectgroup-button">{{ __('WhatsApp Limit') }}</span>
+                                        </label>
                                     </div>
                                 </div>
                                 <div class="form-group" id="max_video_size">
@@ -293,6 +308,14 @@
                                     <label for="real_estate_limit_number">{{ __('Real Estate Number Limit') }} * </label>
                                     <input type="number" id="real_estate_limit_number" class="form-control" name="real_estate_limit_number" value="{{ $package->real_estate_limit_number }}">
                                     <p id="errreal_estate_limit_number" class="mb-0 text-danger em"></p>
+                                    <p class="text-warning">{{ __('Enter 999999, then it will appear as unlimited') }}</p>
+                                </div>
+                                
+                                 <!-- NEW: WhatsApp Limit Field -->
+                                <div class="form-group whatsapp-limit-box @if (is_array($permissions) && in_array('whatsapp_Limit', $permissions)) @else whatsapp-limit-none @endif">
+                                    <label for="whatsapp_numbers_limit">{{ __('WhatsApp Number Limit') }} * </label>
+                                    <input type="number" id="whatsapp_numbers_limit" class="form-control" name="whatsapp_numbers_limit" value="{{ $package->whatsapp_numbers_limit }}">
+                                    <p id="errwhatsapp_numbers_limit" class="mb-0 text-danger em"></p>
                                     <p class="text-warning">{{ __('Enter 999999, then it will appear as unlimited') }}</p>
                                 </div>
 

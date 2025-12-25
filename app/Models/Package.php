@@ -29,7 +29,8 @@ class Package extends Model
         'real_estate_limit_number',
         'video_size_limit',
         'file_size_limit',
-        'serial_number'
+        'serial_number',
+        'whatsapp_numbers_limit'
     ];
 
     public function memberships()

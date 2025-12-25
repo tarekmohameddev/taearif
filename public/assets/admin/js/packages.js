@@ -1,34 +1,28 @@
 "use strict";
 $(document).ready(function () {
-    $(".selectgroup-input").on('change', function () {
-        var val = $(this).val();
-        console.log("Value:", val, "Checked:", this.checked);
+    const featureBoxConfig = {
+        vCard: { box: ".v-card-box", hiddenClass: "vcrd-none" },
+        projectLimit: { box: ".project-limit-box", hiddenClass: "project-limit-none", reset: "#project_limit_number" },
+        real_estate_Limit: { box: ".real_estate-limit-box", hiddenClass: "real_estate-limit-none", reset: "#real_estate_limit_number" },
+        whatsapp_Limit: { box: ".whatsapp-limit-box", hiddenClass: "whatsapp-limit-none", reset: "#whatsapp_numbers_limit" },
+    };
 
-        if (val === 'vCard') {
-            if (this.checked) {
-                $(".v-card-box").removeClass('vcrd-none').show();
-            } else {
-                $(".v-card-box").hide();
-            }
-        }
+    const syncFeatureBox = (val) => {
+        const cfg = featureBoxConfig[val];
+        if (!cfg) return;
 
-        if (val === 'projectLimit') {
-            if (this.checked) {
-                $(".project-limit-box").removeClass('project-limit-none').show();
-            } else {
-                $(".project-limit-box").addClass('project-limit-none').hide();
+        const checked = $(`input[name="features[]"][value="${val}"]`).is(":checked");
+        const $box = $(cfg.box);
 
-            }
-        }
+        $box.toggleClass(cfg.hiddenClass, !checked).toggle(checked);
+        if (!checked && cfg.reset) $(cfg.reset).val(0);
+    };
 
-        if (val === 'real_estate_Limit') {
-            if (this.checked) {
-                $(".real_estate-limit-box").removeClass('real_estate-limit-none').show();
-            } else {
-                $(".real_estate-limit-box").addClass('real_estate-limit-none').hide();
+    // initial render for edit/create
+    Object.keys(featureBoxConfig).forEach(syncFeatureBox);
 
-            }
-        }
+    $(".selectgroup-input").on("change", function () {
+        syncFeatureBox($(this).val());
     });
 
     if ($('#CourseManagement').prop('checked')) {
@@ -50,7 +44,7 @@ $(document).ready(function () {
         }
     });
 
-    // === Frontend Validation: Bind to the Submit Button's Click Event ===
+    // === Frontend Validation: Bind to the Submit Button's Click Event ===       
     $("#submitBtn").on("click", function (e) {
         // Prevent default submission
         e.preventDefault();
@@ -58,12 +52,13 @@ $(document).ready(function () {
         // Clear previous error messages
         $("#errproject_limit_number").text("");
         $("#errreal_estate_limit_number").text("");
+        $("#errwhatsapp_numbers_limit").text("");
 
         let valid = true;
 
         // Validate Project Limit Field if its checkbox is checked
-        if ($("input[name='features[]'][value='projectLimit']").is(":checked")) {
-            const projectLimitVal = $("#project_limit_number").val().trim();
+        if ($("input[name='features[]'][value='projectLimit']").is(":checked")) { 
+            const projectLimitVal = $("#project_limit_number").val().trim();      
             if (projectLimitVal === "") {
                 $("#errproject_limit_number").text("Please enter a Project Number Limit.");
                 valid = false;
@@ -74,7 +69,7 @@ $(document).ready(function () {
 
         // Validate Real Estate Limit Field if its checkbox is checked
         if ($("input[name='features[]'][value='real_estate_Limit']").is(":checked")) {
-            const realEstateVal = $("#real_estate_limit_number").val().trim();
+            const realEstateVal = $("#real_estate_limit_number").val().trim();    
             if (realEstateVal === "") {
                 $("#errreal_estate_limit_number").text("Please enter a Real Estate Number Limit.");
                 valid = false;
@@ -83,14 +78,28 @@ $(document).ready(function () {
             $("#real_estate_limit_number").val(0);
         }
 
+        // Validate WhatsApp Limit Field if its checkbox is checked
+        if ($("input[name='features[]'][value='whatsapp_Limit']").is(":checked")) {
+            const whatsappVal = $("#whatsapp_numbers_limit").val().trim();    
+            if (whatsappVal === "") {
+                $("#errwhatsapp_numbers_limit").text("Please enter a WhatsApp Number Limit.");
+                valid = false;
+            }
+        } else {
+            $("#whatsapp_numbers_limit").val(0);
+        }
+
         // focus on the first empty field If validation fails
         if (!valid) {
             if ($("input[name='features[]'][value='projectLimit']").is(":checked") &&
                 $("#project_limit_number").val().trim() === "") {
                 $("#project_limit_number").focus();
             } else if ($("input[name='features[]'][value='real_estate_Limit']").is(":checked") &&
-                       $("#real_estate_limit_number").val().trim() === "") {
+                       $("#real_estate_limit_number").val().trim() === "") {      
                 $("#real_estate_limit_number").focus();
+            } else if ($("input[name='features[]'][value='whatsapp_Limit']").is(":checked") &&
+                       $("#whatsapp_numbers_limit").val().trim() === "") {      
+                $("#whatsapp_numbers_limit").focus();
             }
             return false;
         } else {
