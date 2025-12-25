@@ -70,3 +70,5 @@ check_cities.php
 check_city_columns.php
 debug_district.php
 fetch_amenities.php
+database/seeders/AdminSeeder.php
+database/seeds/DatabaseSeeder.php
