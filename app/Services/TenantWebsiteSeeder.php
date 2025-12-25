@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\TenantPage;
+use App\Models\TenantStaticPage;
 use App\Models\TenantGlobalComponent;
 use App\Models\TenantWebsiteLayout;
 use Illuminate\Support\Facades\DB;
@@ -120,6 +121,11 @@ class TenantWebsiteSeeder
                 // Seed pages
                 $this->seedPages($tenant, $template['componentSettings']);
 
+                // Seed static pages if provided
+                if (isset($template['StaticPages']) && is_array($template['StaticPages'])) {
+                    $this->seedStaticPages($tenant, $template['StaticPages']);
+                }
+
                 // Seed global components
                 $this->seedGlobalComponents($tenant, $template['globalComponentsData']);
 
@@ -163,6 +169,34 @@ class TenantWebsiteSeeder
                 ->all();
 
             TenantPage::updateOrCreate(
+                [
+                'user_id' => $tenant->id,
+                'page_id' => $pageId,
+                ],
+                [
+                'components' => $sortedComponents,
+                ]
+            );
+        }
+    }
+
+    /**
+     * Seed static pages for the tenant
+     *
+     * @param User $tenant
+     * @param array $staticPages
+     * @return void
+     */
+    protected function seedStaticPages(User $tenant, array $staticPages): void
+    {
+        foreach ($staticPages as $pageId => $components) {
+            // Sort components by position
+            $sortedComponents = collect($components)
+                ->sortBy('position')
+                ->values()
+                ->all();
+
+            TenantStaticPage::updateOrCreate(
                 [
                 'user_id' => $tenant->id,
                 'page_id' => $pageId,
@@ -256,6 +290,11 @@ class TenantWebsiteSeeder
 
                 // Update/recreate pages
                 $this->seedPages($tenant, $template['componentSettings']);
+
+                // Update/recreate static pages if provided
+                if (isset($template['StaticPages']) && is_array($template['StaticPages'])) {
+                    $this->seedStaticPages($tenant, $template['StaticPages']);
+                }
 
                 // Update/recreate global components
                 $this->seedGlobalComponents($tenant, $template['globalComponentsData']);

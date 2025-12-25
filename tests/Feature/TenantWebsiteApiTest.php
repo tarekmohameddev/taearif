@@ -6,6 +6,7 @@ use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\User;
 use App\Models\TenantPage;
+use App\Models\TenantStaticPage;
 use App\Models\TenantGlobalComponent;
 use App\Models\TenantWebsiteLayout;
 use Illuminate\Http\UploadedFile;
@@ -127,6 +128,64 @@ class TenantWebsiteApiTest extends TestCase
         $this->postJson('/api/v1/tenant-website/getTenant', ['websiteName' => 'acme'])
             ->assertOk()
             ->assertJsonPath('ThemesBackup', null);
+    }
+
+    public function test_get_tenant_returns_null_when_static_pages_not_set(): void
+    {
+        $tenant = $this->createTenant();
+        
+        TenantPage::create(['id' => (string) \Illuminate\Support\Str::uuid(), 'user_id' => $tenant->id, 'page_id' => 'homepage', 'components' => []]);
+        TenantGlobalComponent::create(['id' => (string) \Illuminate\Support\Str::uuid(), 'user_id' => $tenant->id, 'data' => []]);
+        TenantWebsiteLayout::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $tenant->id,
+            'data' => [],
+        ]);
+
+        $this->postJson('/api/v1/tenant-website/getTenant', ['websiteName' => 'acme'])
+            ->assertOk()
+            ->assertJsonPath('StaticPages', null);
+    }
+
+    public function test_save_pages_with_static_pages(): void
+    {
+        $tenant = $this->createTenant();
+        $this->actingAs($tenant, 'sanctum');
+        $staticPages = [
+            'terms' => [
+                ['id' => 'sp1', 'type' => 'text', 'name' => 'Text', 'componentName' => 'text1', 'data' => [], 'position' => 0],
+            ],
+            'privacy' => [
+                ['id' => 'sp2', 'type' => 'text', 'name' => 'Text', 'componentName' => 'text1', 'data' => [], 'position' => 0],
+            ],
+        ];
+        
+        $this->postJson('/api/v1/tenant-website/save-pages', [
+            'tenantId' => 'acme',
+            'pages' => ['homepage' => []],
+            'StaticPages' => $staticPages,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('tenant_static_pages', ['user_id' => $tenant->id, 'page_id' => 'terms']);
+        $this->assertDatabaseHas('tenant_static_pages', ['user_id' => $tenant->id, 'page_id' => 'privacy']);
+    }
+
+    public function test_get_tenant_returns_static_pages(): void
+    {
+        $tenant = $this->createTenant();
+        
+        TenantPage::create(['id' => (string) \Illuminate\Support\Str::uuid(), 'user_id' => $tenant->id, 'page_id' => 'homepage', 'components' => []]);
+        TenantStaticPage::create(['id' => (string) \Illuminate\Support\Str::uuid(), 'user_id' => $tenant->id, 'page_id' => 'terms', 'components' => [['id' => 'sp1', 'position' => 0]]]);
+        TenantGlobalComponent::create(['id' => (string) \Illuminate\Support\Str::uuid(), 'user_id' => $tenant->id, 'data' => []]);
+        TenantWebsiteLayout::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'user_id' => $tenant->id,
+            'data' => [],
+        ]);
+
+        $response = $this->postJson('/api/v1/tenant-website/getTenant', ['websiteName' => 'acme'])
+            ->assertOk()
+            ->assertJsonPath('StaticPages.terms.0.id', 'sp1');
     }
 
     public function test_public_get_pages_and_single_page(): void

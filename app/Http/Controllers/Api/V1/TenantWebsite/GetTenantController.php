@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\TenantPage;
+use App\Models\TenantStaticPage;
 use App\Models\TenantGlobalComponent;
 use App\Models\TenantWebsiteLayout;
 use App\Models\Api\ApiDomainSetting;
@@ -45,6 +46,8 @@ class GetTenantController extends Controller
             app(\App\Services\TenantWebsiteSeeder::class)->reseedWebsite($tenant);
         }
         $pages = TenantPage::where('user_id', $tenant->id)->get()->keyBy('page_id')->map->components;
+        $staticPages = TenantStaticPage::where('user_id', $tenant->id)->get();
+        $staticPagesData = $staticPages->isEmpty() ? null : $staticPages->keyBy('page_id')->map->components;
         $globals = TenantGlobalComponent::where('user_id', $tenant->id)->first();
         $layout = TenantWebsiteLayout::where('user_id', $tenant->id)->first();
         return response()->json([
@@ -54,6 +57,7 @@ class GetTenantController extends Controller
             'globalComponentsData' => $globals?->data ?? [],
             'WebsiteLayout' => $layout?->data ?? [],
             'ThemesBackup' => $layout?->themes_backup ?? null,
+            'StaticPages' => $staticPagesData,
         ]);
     }
 
