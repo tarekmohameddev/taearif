@@ -88,6 +88,7 @@ class CRMController extends Controller
             'stage:id,stage_name',
             'priorityRef:id,name',
             'procedure:id,procedure_name',
+            'responsibleEmployee.activeWhatsappUser',
         ];
 
         $buildQuery = function (callable $scope) use ($user, $withRelations) {
@@ -122,6 +123,12 @@ class CRMController extends Controller
                 'priority_id'        => $customer->priority_id,
                 'stage_id'           => $customer->stage_id,
                 'procedure_id'       => $customer->procedure_id,
+                'responsible_employee' => $customer->responsibleEmployee ? [
+                    'id' => $customer->responsibleEmployee->id,
+                    'name' => trim(($customer->responsibleEmployee->first_name ?? '') . ' ' . ($customer->responsibleEmployee->last_name ?? '')),
+                    'email' => $customer->responsibleEmployee->email,
+                    'whatsapp_number' => $customer->responsibleEmployee->activeWhatsappUser ? $customer->responsibleEmployee->activeWhatsappUser->number : null,
+                ] : null,
                 'reminders_count'    => $remindersCount,
                 'appointments_count' => $appointmentsCount,
 
@@ -432,6 +439,7 @@ class CRMController extends Controller
             'stage:id,stage_name',
             'priorityRef:id,name',
             'procedure:id,procedure_name',
+            'responsibleEmployee.activeWhatsappUser',
         ]);
 
         if ($qText !== '') {
@@ -530,7 +538,12 @@ class CRMController extends Controller
                         'id'   => $customer->procedure->id,
                         'name' => $customer->procedure->procedure_name,
                     ] : null,
-
+                    'responsible_employee' => $customer->responsibleEmployee ? [
+                        'id' => $customer->responsibleEmployee->id,
+                        'name' => trim(($customer->responsibleEmployee->first_name ?? '') . ' ' . ($customer->responsibleEmployee->last_name ?? '')),
+                        'email' => $customer->responsibleEmployee->email,
+                        'whatsapp_number' => $customer->responsibleEmployee->activeWhatsappUser ? $customer->responsibleEmployee->activeWhatsappUser->number : null,
+                    ] : null,
                     'city' => $city ? [
                         'id'       => $city->id,
                         'name_ar'  => $city->name_ar,

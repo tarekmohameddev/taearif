@@ -596,6 +596,12 @@ class User extends Authenticatable
         return $this->hasMany(WhatsappUser::class, 'user_id');
     }
 
+    public function activeWhatsappUser()
+    {
+        return $this->hasOne(WhatsappUser::class, 'employee_id')
+            ->where('status', 'active');
+    }
+
     public function getWhatsAppQuotaAttribute()
     {
         // Get base limit from active membership

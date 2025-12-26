@@ -46,6 +46,7 @@ class CustomerController extends Controller
             ->when($request->filled('district_id'), fn($qb)=>$qb->where('district_id',(int)$request->district_id))
             ->when($request->filled('created_by_type'), fn($qb)=>$qb->where('created_by_type',$request->created_by_type))
             ->when($request->filled('created_by_id'), fn($qb)=>$qb->where('created_by_id',(int)$request->created_by_id))
+            ->with(['responsibleEmployee.activeWhatsappUser'])
             ->orderByDesc('id');
 
         return response()->json($q->paginate((int)($request->per_page ?? 20)));
@@ -124,7 +125,7 @@ class CustomerController extends Controller
     public function show($id)
     {
         $tenantId = $this->tenantId();
-        $c = ApiCustomer::where('user_id',$tenantId)->findOrFail($id);
+        $c = ApiCustomer::where('user_id',$tenantId)->with(['responsibleEmployee.activeWhatsappUser'])->findOrFail($id);
         return response()->json($c);
     }
 

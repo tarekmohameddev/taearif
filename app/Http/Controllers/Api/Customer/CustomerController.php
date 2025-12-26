@@ -69,6 +69,19 @@ class CustomerController extends Controller
         }
         $districts = $districtQuery->orderBy('name_ar')->get(['id','city_id','name_ar','name_en']);
 
+        $employees = User::where('tenant_id', $user->tenantOwnerId())
+            ->where('account_type', 'employee')
+            ->where('active', true)
+            ->get(['id', 'first_name', 'last_name', 'email']);
+
+        $employeesList = $employees->map(function ($emp) {
+            return [
+                'id' => $emp->id,
+                'name' => trim(($emp->first_name ?? '') . ' ' . ($emp->last_name ?? '')),
+                'email' => $emp->email,
+            ];
+        });
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -78,6 +91,7 @@ class CustomerController extends Controller
                 'procedures' => $procedures,
                 'cities'     => $cities,
                 'districts'  => $districts,
+                'employees'  => $employeesList,
             ],
         ]);
     }
@@ -97,6 +111,7 @@ class CustomerController extends Controller
                 'stage:id,stage_name',
                 'priorityRef:id,name',
                 'procedure:id,procedure_name',
+                'responsibleEmployee.activeWhatsappUser',
             ])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
@@ -231,6 +246,12 @@ class CustomerController extends Controller
                     'id' => $customer->procedure->id,
                     'name' => $customer->procedure->procedure_name,
                 ] : null,
+                'responsible_employee' => $customer->responsibleEmployee ? [
+                    'id' => $customer->responsibleEmployee->id,
+                    'name' => trim(($customer->responsibleEmployee->first_name ?? '') . ' ' . ($customer->responsibleEmployee->last_name ?? '')),
+                    'email' => $customer->responsibleEmployee->email,
+                    'whatsapp_number' => $customer->responsibleEmployee->activeWhatsappUser ? $customer->responsibleEmployee->activeWhatsappUser->number : null,
+                ] : null,
                 'note' => $customer->note ?? null,
                 'inquiry' => $inquiryPayload,
                 'city_id' => $customer->city_id ?? null,
@@ -302,6 +323,14 @@ class CustomerController extends Controller
                 'note'         => 'nullable|string',
                 'type_id'      => ['required', Rule::exists('users_api_customers_types','id')->where(fn($q)=>$q->where('user_id',$user->id))],
                 'priority_id'  => ['required', Rule::exists('users_api_customers_priorities','id')->where(fn($q)=>$q->where('user_id',$user->id))],
+                'responsible_employee_id' => [
+                    'nullable',
+                    Rule::exists('users', 'id')->where(function ($query) use ($user) {
+                        $query->where('tenant_id', $user->tenantOwnerId())
+                              ->where('account_type', 'employee')
+                              ->where('active', true);
+                    }),
+                ],
                 'stage_id'     => ['nullable', Rule::exists('users_api_customers_stages','id')->where(fn($q)=>$q->where('user_id',$user->id))],
                 'procedure_id' => ['nullable', Rule::exists('users_api_customers_procedures','id')->where(fn($q)=>$q->where('user_id',$user->id))],
                 'password'     => 'required|string|min:6',
@@ -323,6 +352,7 @@ class CustomerController extends Controller
                     'note'         => $request->note,
                     'type_id'      => $request->type_id,
                     'priority_id'  => $request->priority_id,
+                    'responsible_employee_id' => $request->responsible_employee_id,
                     'stage_id'     => $request->stage_id,
                     'procedure_id' => $request->procedure_id,
                     'phone_number' => $request->phone_number,
@@ -364,7 +394,9 @@ class CustomerController extends Controller
     {
         $user = $request->user();
 
-        $customer = ApiCustomer::where('user_id', $user->id)->find($id);
+        $customer = ApiCustomer::where('user_id', $user->id)
+            ->with(['responsibleEmployee.activeWhatsappUser'])
+            ->find($id);
 
         if (!$customer) {
             return response()->json([
@@ -373,9 +405,21 @@ class CustomerController extends Controller
             ], 404);
         }
 
+        $customerData = $customer->toArray();
+        if ($customer->responsibleEmployee) {
+            $customerData['responsible_employee'] = [
+                'id' => $customer->responsibleEmployee->id,
+                'name' => trim(($customer->responsibleEmployee->first_name ?? '') . ' ' . ($customer->responsibleEmployee->last_name ?? '')),
+                'email' => $customer->responsibleEmployee->email,
+                'whatsapp_number' => $customer->responsibleEmployee->activeWhatsappUser ? $customer->responsibleEmployee->activeWhatsappUser->number : null,
+            ];
+        } else {
+            $customerData['responsible_employee'] = null;
+        }
+
         return response()->json([
             'status' => 'success',
-            'data' => $customer
+            'data' => $customerData
         ]);
 
     }
@@ -393,6 +437,7 @@ class CustomerController extends Controller
                 'stage:id,stage_name',
                 'priorityRef:id,name',
                 'procedure:id,procedure_name',
+                'responsibleEmployee.activeWhatsappUser',
             ])
             ->find($id);
 
@@ -492,6 +537,12 @@ class CustomerController extends Controller
                     'stage' => $customer->stage ? [ 'id' => $customer->stage->id, 'name' => $customer->stage->stage_name ] : null,
                     'priority' => $customer->priorityRef ? [ 'id' => $customer->priorityRef->id, 'name' => $customer->priorityRef->name ] : null,
                     'procedure' => $customer->procedure ? [ 'id' => $customer->procedure->id, 'name' => $customer->procedure->procedure_name ] : null,
+                    'responsible_employee' => $customer->responsibleEmployee ? [
+                        'id' => $customer->responsibleEmployee->id,
+                        'name' => trim(($customer->responsibleEmployee->first_name ?? '') . ' ' . ($customer->responsibleEmployee->last_name ?? '')),
+                        'email' => $customer->responsibleEmployee->email,
+                        'whatsapp_number' => $customer->responsibleEmployee->activeWhatsappUser ? $customer->responsibleEmployee->activeWhatsappUser->number : null,
+                    ] : null,
                     'district' => $districtInfo,
                     'created_at' => optional($customer->created_at)->toISOString(),
                     'updated_at' => optional($customer->updated_at)->toISOString(),
@@ -538,6 +589,14 @@ class CustomerController extends Controller
             'note'         => 'nullable|string',
 
             'stage_id'     => ['nullable', Rule::exists('users_api_customers_stages','id')->where(fn($q)=>$q->where('user_id',$user->id))],
+            'responsible_employee_id' => [
+                'nullable',
+                Rule::exists('users', 'id')->where(function ($query) use ($user) {
+                    $query->where('tenant_id', $user->tenantOwnerId())
+                          ->where('account_type', 'employee')
+                          ->where('active', true);
+                }),
+            ],
             'procedure_id' => ['nullable', Rule::exists('users_api_customers_procedures','id')->where(fn($q)=>$q->where('user_id',$user->id))],
 
             'password'     => 'nullable|string|min:6',
@@ -555,6 +614,7 @@ class CustomerController extends Controller
             'city_id'      => $request->input('city_id'),
             'district_id'  => $request->input('district_id'),
             // stage_id is handled via CrmCustomerStageService to centralize CRM side effects
+            'responsible_employee_id' => $request->input('responsible_employee_id'),
             'procedure_id' => $request->input('procedure_id'),
             'phone_number' => $request->input('phone_number'),
         ], fn($v)=>!is_null($v));
@@ -598,7 +658,7 @@ class CustomerController extends Controller
             }
         });
 
-        TenantActivity::emit($request, 'customer.updated', 'api_customers', $customer->id, $old ?? null, $customer->only(['name','email','phone_number']));
+        TenantActivity::emit($request, 'customer.updated', 'api_customers', $customer->id, $old ?? null, $customer->only(['name','email','phone_number', 'responsible_employee_id']));
 
         return response()->json([
             'status'  => 'success',
@@ -693,6 +753,7 @@ class CustomerController extends Controller
             'stage:id,stage_name',
             'priorityRef:id,name',
             'procedure:id,procedure_name',
+            'responsibleEmployee.activeWhatsappUser',
         ]);
 
         if (!empty($qText)) {
@@ -808,6 +869,12 @@ class CustomerController extends Controller
                 'procedure' => $customer->procedure ? [
                     'id' => $customer->procedure->id,
                     'name' => $customer->procedure->procedure_name,
+                ] : null,
+                'responsible_employee' => $customer->responsibleEmployee ? [
+                    'id' => $customer->responsibleEmployee->id,
+                    'name' => trim(($customer->responsibleEmployee->first_name ?? '') . ' ' . ($customer->responsibleEmployee->last_name ?? '')),
+                    'email' => $customer->responsibleEmployee->email,
+                    'whatsapp_number' => $customer->responsibleEmployee->activeWhatsappUser ? $customer->responsibleEmployee->activeWhatsappUser->number : null,
                 ] : null,
                 'city' => $city ? [
                     'id'      => $city->id,
