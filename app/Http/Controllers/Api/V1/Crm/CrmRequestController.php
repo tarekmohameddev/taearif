@@ -100,8 +100,9 @@ class CrmRequestController extends ApiController
 				$customerIds = $requests->pluck('customer_id')->filter()->unique()->values();
 				$customers = collect();
 				if ($customerIds->isNotEmpty()) {
-					$customers = \App\Models\ApiCustomer::whereIn('id', $customerIds)
-						->get(['id','name','phone_number','stage_id','priority_id','type_id'])
+					$customers = \App\Models\ApiCustomer::with('responsibleEmployee.activeWhatsappUser')
+						->whereIn('id', $customerIds)
+						->get(['id','name','phone_number','stage_id','priority_id','type_id', 'responsible_employee_id'])
 						->keyBy('id');
 				}
 
@@ -138,6 +139,12 @@ class CrmRequestController extends ApiController
 							'stage_id' => $c->stage_id,
 							'priority_id' => $c->priority_id,
 							'type_id' => $c->type_id,
+							'responsible_employee' => $c->responsibleEmployee ? [
+								'id' => $c->responsibleEmployee->id,
+								'name' => trim(($c->responsibleEmployee->first_name ?? '') . ' ' . ($c->responsibleEmployee->last_name ?? '')),
+								'email' => $c->responsibleEmployee->email,
+								'whatsapp_number' => $c->responsibleEmployee->activeWhatsappUser ? $c->responsibleEmployee->activeWhatsappUser->number : null,
+							] : null,
 						];
 					}
 
@@ -292,7 +299,7 @@ class CrmRequestController extends ApiController
 
 		$customer = null;
 		if (!empty($model->customer_id)) {
-			$c = \App\Models\ApiCustomer::find($model->customer_id);
+			$c = \App\Models\ApiCustomer::with('responsibleEmployee.activeWhatsappUser')->find($model->customer_id);
 			if ($c) {
 				$customer = [
 					'id' => $c->id,
@@ -301,6 +308,12 @@ class CrmRequestController extends ApiController
 					'stage_id' => $c->stage_id,
 					'priority_id' => $c->priority_id,
 					'type_id' => $c->type_id,
+					'responsible_employee' => $c->responsibleEmployee ? [
+						'id' => $c->responsibleEmployee->id,
+						'name' => trim(($c->responsibleEmployee->first_name ?? '') . ' ' . ($c->responsibleEmployee->last_name ?? '')),
+						'email' => $c->responsibleEmployee->email,
+						'whatsapp_number' => $c->responsibleEmployee->activeWhatsappUser ? $c->responsibleEmployee->activeWhatsappUser->number : null,
+					] : null,
 				];
 			}
 		}
