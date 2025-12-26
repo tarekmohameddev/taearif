@@ -26,7 +26,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('whatsapp_addons', function (Blueprint $table) {
-            //
+            $table->dropColumn('expire_date');
         });
     }
 };
