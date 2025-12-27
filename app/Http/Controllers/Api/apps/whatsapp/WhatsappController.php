@@ -264,6 +264,32 @@ class WhatsappController extends Controller
         ]);
     }
 
+    public function link($id)
+    {
+        $tenantId = $this->tenantId();
+        $whatsappUser = WhatsappUser::where('user_id', $tenantId)->findOrFail($id);
+
+        if ($whatsappUser->status === self::STATUS_ACTIVE) {
+            return response()->json([
+                'success' => false,
+                'message' => 'الرقم مربوط بالفعل'
+            ], 422);
+        }
+
+        $whatsappUser->status = self::STATUS_ACTIVE;
+        $whatsappUser->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم ربط الرقم بنجاح',
+            'data' => [
+                'id' => $whatsappUser->id,
+                'phoneNumber' => $whatsappUser->number,
+                'status' => $whatsappUser->status,
+            ]
+        ]);
+    }
+
     private function getStatusMessage(string $status): string
     {
         return match ($status) {
