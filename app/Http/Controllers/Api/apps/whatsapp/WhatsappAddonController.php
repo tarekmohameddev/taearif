@@ -19,6 +19,69 @@ class WhatsappAddonController extends Controller
 {
     use ResolvesTenant;
 
+    public function plans(Request $request)
+    {
+        $tenantId = $this->tenantId();
+
+        // Fetch active plans
+        $plans = WhatsappAddonPlan::active()
+            ->orderBy('price')
+            ->get()
+            ->map(fn ($plan) => [
+                'id' => $plan->id,
+                'name' => $plan->name,
+                'price' => (float) $plan->price,
+                'duration' => $plan->duration,
+                'duration_unit' => $plan->duration_unit,
+                'is_active' => $plan->is_active,
+            ]);
+
+        // Fetch tenant's WhatsApp numbers
+        $numbers = WhatsappUser::where('user_id', $tenantId)
+            ->with('employee:id,first_name,last_name,email')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($whatsappUser) {
+                $noteData = json_decode($whatsappUser->note, true) ?? [];
+                
+                $numberData = [
+                    'id' => $whatsappUser->id,
+                    'phoneNumber' => $whatsappUser->number,
+                    'name' => $whatsappUser->name,
+                    'status' => $whatsappUser->status,
+                    'request_status' => $whatsappUser->request_status,
+                    'linkingMethod' => $noteData['linkingMethod'] ?? null,
+                    'apiMethod' => $noteData['apiMethod'] ?? null,
+                    'requestId' => $noteData['requestId'] ?? null,
+                    'created_at' => $whatsappUser->created_at?->toIso8601String(),
+                    'updated_at' => $whatsappUser->updated_at?->toIso8601String(),
+                ];
+
+                if ($whatsappUser->employee_id && $whatsappUser->employee) {
+                    $numberData['employee'] = [
+                        'id' => $whatsappUser->employee->id,
+                        'name' => trim(($whatsappUser->employee->first_name ?? '') . ' ' . ($whatsappUser->employee->last_name ?? '')),
+                        'email' => $whatsappUser->employee->email,
+                    ];
+                }
+
+                return $numberData;
+            });
+
+        // Get tenant quota and usage
+        $owner = $request->user()->tenantOwner();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'plans' => $plans,
+                'numbers' => $numbers,
+                'quota' => $owner->whatsapp_quota,
+                'usage' => $owner->whatsapp_usage,
+            ],
+        ]);
+    }
+
     public function store(Request $request)
     {
         $tenantId = $this->tenantId();

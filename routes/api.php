@@ -536,6 +536,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\RequireActiveMembership:
     Route::match(['put', 'patch'], '/whatsapp/{id}/employee', [WhatsappController::class, 'updateEmployee']);
     Route::delete('/whatsapp/{id}', [WhatsappController::class, 'destroy']);
     Route::post('/whatsapp/{id}/unlink', [WhatsappController::class, 'unlink']);
+    Route::get('/whatsapp/addons/plans', [WhatsappAddonController::class, 'plans']);
     Route::post('/whatsapp/addons', [WhatsappAddonController::class, 'store']);
 });
 
