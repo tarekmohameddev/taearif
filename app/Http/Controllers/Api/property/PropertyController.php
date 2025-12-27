@@ -391,7 +391,8 @@ class PropertyController extends Controller
                 $newFeaturedImage,
                 $newFloorPlanningImages,
                 $newVideoImage,
-                $request->has('featured') ? $request->featured : $originalProperty->featured
+                $request->has('featured') ? $request->featured : $originalProperty->featured,
+                auth()->id()
             );
 
             // Duplicate property characteristics
@@ -671,6 +672,7 @@ class PropertyController extends Controller
                 'galleryImages',
                 'proertyAmenities.amenity',
                 'UserPropertyCharacteristics',
+                'creator',
             ])->findOrFail($id);
 
             $content = $property->contents->first();
@@ -749,6 +751,11 @@ class PropertyController extends Controller
                 'water_meter_number' => $property->water_meter_number,
                 'electricity_meter_number' => $property->electricity_meter_number,
                 'deed_number' => $property->deed_number ? asset($property->deed_number) : null,
+                'creator' => $property->creator ? [
+                    'id'   => $property->creator->id,
+                    'name' => trim(($property->creator->first_name ?? '') . ' ' . ($property->creator->last_name ?? '')) ?: ($property->creator->username ?? $property->creator->email),
+                    'type' => $property->creator->account_type,
+                ] : null,
             ], $characteristics);
 
             return response()->json([
@@ -989,7 +996,8 @@ class PropertyController extends Controller
                 $featuredImgName,
                 $floorPlanningImage,
                 $videoImage,
-                $featured
+                $featured,
+                auth()->id()
             );
 
             // Update the property with video URL if provided
@@ -1683,7 +1691,7 @@ class PropertyController extends Controller
         } catch (\Throwable $e) {}
 
         // Build the properties query
-        $propertiesQuery = Property::with(['category', 'user', 'contents', 'proertyAmenities.amenity'])
+        $propertiesQuery = Property::with(['category', 'user', 'contents', 'proertyAmenities.amenity', 'creator'])
             ->whereIn('user_id', $allowedUserIds);
 
         // Apply purpose filter if provided
@@ -1946,6 +1954,11 @@ class PropertyController extends Controller
                 'created_at'       => $property->created_at->toISOString(),
                 'updated_at'       => $property->updated_at->toISOString(),
                 'payment_method'   => $property->payment_method,
+                'creator' => $property->creator ? [
+                    'id'   => $property->creator->id,
+                    'name' => trim(($property->creator->first_name ?? '') . ' ' . ($property->creator->last_name ?? '')) ?: ($property->creator->username ?? $property->creator->email),
+                    'type' => $property->creator->account_type,
+                ] : null,
             ];
         });
 

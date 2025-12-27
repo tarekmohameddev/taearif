@@ -54,7 +54,7 @@ class ProjectController extends Controller
             $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
         } catch (\Throwable $e) {}
 
-        $projects = Project::with(['contents', 'specifications', 'types'])
+        $projects = Project::with(['contents', 'specifications', 'types', 'creator'])
             ->whereIn('user_id', $allowedUserIds)
             ->orderBy('id', 'desc')
             ->paginate(10);
@@ -174,6 +174,11 @@ class ProjectController extends Controller
                     "title" => $t->title, "min_area" => $t->min_area, "max_area" => $t->max_area,
                     "min_price" => $t->min_price, "max_price" => $t->max_price, "unit" => $t->unit,
                 ]),
+                "creator"         => $project->creator ? [
+                    "id"   => $project->creator->id,
+                    "name" => trim(($project->creator->first_name ?? '') . ' ' . ($project->creator->last_name ?? '')) ?: ($project->creator->username ?? $project->creator->email),
+                    "type" => $project->creator->account_type,
+                ] : null,
             ];
         });
 
@@ -206,7 +211,8 @@ class ProjectController extends Controller
             'floorplanImages',
             'specifications',
             'types',
-            'user',  // Add user relationship to get tenant
+            'user',  
+            'creator',
         ])->find($id);
 
         if (!$project) {
@@ -318,6 +324,11 @@ class ProjectController extends Controller
                     "unit" => $type->unit,
                 ];
             }),
+            "creator" => $project->creator ? [
+                "id"   => $project->creator->id,
+                "name" => trim(($project->creator->first_name ?? '') . ' ' . ($project->creator->last_name ?? '')) ?: ($project->creator->username ?? $project->creator->email),
+                "type" => $project->creator->account_type,
+            ] : null,
         ];
 
         return response()->json([
@@ -416,7 +427,7 @@ class ProjectController extends Controller
             $requestData['video_url'] = !empty($request->video_url) ? $request->video_url : null; // Handle empty string
             $requestData['amenities'] = $this->normalizeAmenities($request->input('amenities'));
 
-            $project = Project::storeProject($ownerId, $requestData);
+            $project = Project::storeProject($ownerId, $requestData, auth()->id());
 
             // Gallery images
             if ($request->has('gallery_images') && is_array($request->gallery_images)) {
