@@ -24,6 +24,7 @@ use App\Models\ApiCustomerPropertyInterested;
 use Illuminate\Validation\ValidationException;
 use App\Models\User\RealestateManagement\Property;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Models\User;
 use App\Support\Audit;
 
 
