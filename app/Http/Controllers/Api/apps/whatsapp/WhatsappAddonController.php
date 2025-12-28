@@ -128,7 +128,6 @@ class WhatsappAddonController extends Controller
             return response()->json([
                 'status'        => 'success',
                 'payment_url'   => $paymentResult['redirect_url'] ?? null,
-                'payment_token' => $paymentResult['payment_token'] ?? null,
                 'total_amount'  => $amount,
                 'package_price' => (float) $plan->price,
                 'period'        => (int) $validated['qty'],
