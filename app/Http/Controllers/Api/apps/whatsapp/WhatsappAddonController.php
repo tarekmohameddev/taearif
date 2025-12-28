@@ -360,9 +360,11 @@ class WhatsappAddonController extends Controller
                     $paymentId = $request->input('PaymentID')
                         ?? $request->input('paymentId')
                         ?? $request->input('paymentID')
+                        ?? $request->input('paymentid')
                         ?? $request->query('PaymentID')
                         ?? $request->query('paymentId')
-                        ?? $request->query('paymentID');
+                        ?? $request->query('paymentID')
+                        ?? $request->query('paymentid');
 
                     if ($paymentId) {
                         $verified = true;

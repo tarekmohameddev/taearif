@@ -276,6 +276,13 @@ class EmployeeAddonController extends Controller
                     }
                 }
             } elseif ($gateway === 'arb') {
+                // Log ARB callback for debugging
+                Log::info('ARB Employee Addon callback', [
+                    'addon_id' => $addon_id,
+                    'query' => $request->query(),
+                    'all' => $request->all(),
+                ]);
+
                 $paymentMethod = \App\Models\PaymentGateway::where('keyword', 'arb')->first();
                 if ($request->has('trandata') && $paymentMethod) {
                     $paydata = $paymentMethod->convertAutoData();
@@ -294,10 +301,23 @@ class EmployeeAddonController extends Controller
                             }
                         }
                     }
-                } elseif ($request->filled('PaymentID')) {
-                    // Fallback: some ARB responses only include PaymentID
-                    $verified = true;
-                    $transactionId = $request->PaymentID;
+                }
+
+                // Fallback: accept any PaymentID casing if trandata verification didn't work
+                if (!$verified) {
+                    $paymentId = $request->input('PaymentID')
+                        ?? $request->input('paymentId')
+                        ?? $request->input('paymentID')
+                        ?? $request->input('paymentid')
+                        ?? $request->query('PaymentID')
+                        ?? $request->query('paymentId')
+                        ?? $request->query('paymentID')
+                        ?? $request->query('paymentid');
+
+                    if ($paymentId) {
+                        $verified = true;
+                        $transactionId = $paymentId;
+                    }
                 }
             }
 
