@@ -118,9 +118,13 @@ class AppServiceProvider extends ServiceProvider
 
             View::composer(['user.*'], function ($view) {
                 if (Auth::check()) {
-                    $userBs = BasicSetting::with('timezoneinfo')->where('user_id', Auth::user()->id)->first();
-                    $userRoomSettings = DB::table('user_room_settings')->where('user_id', Auth::guard('web')->user()->id)->first();
-                    $api_general_settingsData = GeneralSetting::where('user_id', Auth::user()->id)->first();
+                    $authenticatedUser = Auth::guard('web')->user();
+                    // Use tenantOwnerId() to get the correct ID for settings (Tenant ID for employees, User ID for tenants)
+                    $settingsUserId = $authenticatedUser->tenantOwnerId();
+
+                    $userBs = BasicSetting::with('timezoneinfo')->where('user_id', $settingsUserId)->first();
+                    $userRoomSettings = DB::table('user_room_settings')->where('user_id', $settingsUserId)->first();
+                    $api_general_settingsData = GeneralSetting::where('user_id', $settingsUserId)->first();
 
 
                     $view->with(
@@ -131,7 +135,14 @@ class AppServiceProvider extends ServiceProvider
                         ]
                     );
                     Config::set('app.timezone', $userBs->timezoneinfo->timezone ?? '');
-                    $userId = Auth::guard('web')->user()->id;
+                    
+                    // Language logic usually depends on the USER'S preference or the TENANT'S defaults.
+                    // For now, let's assume we keep the authenticated user's language preference context, 
+                    // but we might need to look up available languages from the TENANT.
+                    
+                    // However, languages are often tied to the "site" (Tenant).
+                    $userId = $settingsUserId; 
+
                     if (request()->has('language')) {
                         $lang = UserLanguage::where([
                             ['code', request('language')],
@@ -145,7 +156,7 @@ class AppServiceProvider extends ServiceProvider
                         ])->first();
                         session()->put('currentLangCode', $lang->code);
                     }
-                    $keywords = json_decode($lang->keywords, true);
+                    $keywords = json_decode($lang->keywords ?? '{}', true);
                     $view->with('keywords', $keywords);
                 }
             });
@@ -212,16 +223,24 @@ class AppServiceProvider extends ServiceProvider
                     session()->put('user_lang', $userCurrentLang->code);
                 }
 
-                // $social_medias = $user->social_media()->get() ?? collect([]);
                 // $social_media = $user->social_media()->get() ?? collect([]);
-                $userSeo = SEO::where('language_id', $userCurrentLang->id)->where('user_id', $user->id)->first();
-                $userLangs = UserLanguage::where('user_id', $user->id)->get();
-                $userShopSetting = UserShopSetting::where('user_id', $user->id)->first();
+                // For SEO, Languages, etc., we generally want the TENANT's data if we are in a tenant context.
+                // However, 'user-front' usually implies the PUBLIC facing site of a tenant.
+                // In that case, $user (from getUser()) is usually the Tenant.
+                // But let's verify if $user can be an employee here.
+                // getUser() likely retrieves the owner of the domain/username. 
+                // IF it returns an employee, we should map to tenant.
+                
+                $settingsUserId = $user->tenantOwnerId();
+                
+                $userSeo = SEO::where('language_id', $userCurrentLang->id)->where('user_id', $settingsUserId)->first();
+                $userLangs = UserLanguage::where('user_id', $settingsUserId)->get();
+                $userShopSetting = UserShopSetting::where('user_id', $settingsUserId)->first();
 
                 // $packagePermissions = UserPermissionHelper::packagePermission($user->id);
                 // $packagePermissions = json_decode($packagePermissions, true);
                 if ($user && $user->id) {
-                    $packagePermissions = UserPermissionHelper::packagePermission($user->id);
+                    $packagePermissions = UserPermissionHelper::packagePermission($settingsUserId);
                     $packagePermissions = json_decode($packagePermissions, true);
                 } else {
                     $packagePermissions = [];
@@ -229,24 +248,24 @@ class AppServiceProvider extends ServiceProvider
 
 
                 $footerData = FooterText::where('language_id', $userCurrentLang->id)
-                    ->where('user_id', $user->id)
+                    ->where('user_id', $settingsUserId)
                     ->first();
-                $api_footerData = FooterSetting::where('user_id', $user->id)->first();
-                $api_general_settingsData = GeneralSetting::where('user_id', $user->id)->first();
+                $api_footerData = FooterSetting::where('user_id', $settingsUserId)->first();
+                $api_general_settingsData = GeneralSetting::where('user_id', $settingsUserId)->first();
                 // api_pixelsData
-                $userApi_pixelsData = ApiPixel::where('user_id', $user->id)->get();
+                $userApi_pixelsData = ApiPixel::where('user_id', $settingsUserId)->get();
                 $view->with('userApi_pixelsData', $userApi_pixelsData);
 
                 if ($userBs && $userBs->theme == 'home_seven') {
                     $fservices = UserService::where('lang_id', $userCurrentLang->id)
-                        ->where('user_id', $user->id)
+                        ->where('user_id', $settingsUserId)
                         ->get();
                     $view->with('fservices', $fservices);
                 }
 
                 if ($userBs && $userBs->theme == 'home_eight') {
                     $categories = UserItemCategory::query()
-                        ->where('user_id', $user->id)
+                        ->where('user_id', $settingsUserId)
                         ->where('language_id', $userCurrentLang->id)
                         ->with('subcategories')
                         ->where('status', 1)
@@ -256,30 +275,30 @@ class AppServiceProvider extends ServiceProvider
 
 
                 $footerQuickLinks = FooterQuickLink::where('language_id', $userCurrentLang->id)
-                    ->where('user_id', $user->id)
+                    ->where('user_id', $settingsUserId)
                     ->orderBy('serial_number', 'asc')
                     ->get();
-                $cookieAlert = BasicSetting::where('user_id', $user->id)
+                $cookieAlert = BasicSetting::where('user_id', $settingsUserId)
                     // ->where('language_id', $userCurrentLang->id)
                     ->select('cookie_alert_status', 'cookie_alert_text', 'cookie_alert_button_text')
                     ->first();
                 $footerRecentBlogs = User\Blog::query()
-                    ->where('user_id', $user->id)
+                    ->where('user_id', $settingsUserId)
                     ->where('language_id', $userCurrentLang->id)
                     ->orderBy('id', 'DESC')
                     ->limit(3)
                     ->get();
                 $userContact = UserContact::where([
-                    ['user_id', $user->id],
+                    ['user_id', $settingsUserId],
                     ['language_id', $userCurrentLang->id]
                 ])->first();
 
                 $home_text = User\HomePageText::query()
                     ->where([
-                        ['user_id', $user->id],
+                        ['user_id', $settingsUserId],
                         ['language_id', $userCurrentLang->id]
                     ])->first();
-                $home_sections = User\HomeSection::where('user_id', $user->id)->first();
+                $home_sections = User\HomeSection::where('user_id', $settingsUserId)->first();
 
                 // Add membership logic for footer branding
                 $showTaearifBranding = true; // Default to taearif branding
@@ -347,7 +366,10 @@ class AppServiceProvider extends ServiceProvider
             $progressSteps = [];
 
             if ($user) {
-                $steps = UserStep::firstOrCreate(['user_id' => $user->id]);
+                // Use tenantOwnerId() to get the correct User ID (Tenant or Employee's Tenant)
+                $settingsUserId = $user->tenantOwnerId();
+                $steps = UserStep::firstOrCreate(['user_id' => $settingsUserId]);
+                
                 $progressSteps = [
                     ['url' => 'user.basic_settings.general-settings','title' => 'تحديث الشعار الخاص بك', 'completed' => (bool) $steps->logo_uploaded],
                     ['url' => 'user.basic_settings.general-settings','title' => 'تحديث ايقونة الموقع', 'completed' => (bool) $steps->favicon_uploaded],
@@ -371,7 +393,9 @@ class AppServiceProvider extends ServiceProvider
             $user = getUser();
             
             if ($user) {
-                $dropdownSettings = CustomerDropdownSetting::where('user_id', $user->id)->first();
+                // If $user is an employee, use the Tenant ID
+                $settingsUserId = $user->tenantOwnerId();
+                $dropdownSettings = CustomerDropdownSetting::where('user_id', $settingsUserId)->first();
                 
                 $view->with([
                     'customer_dropdown_visible' => $dropdownSettings ? $dropdownSettings->is_visible : true,
