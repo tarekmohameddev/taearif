@@ -540,6 +540,20 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::put('/whatsapp-numbers/{id}', 'Admin\WhatsappNumberController@update')->name('whatsapp-numbers.update');
         Route::post('/whatsapp-numbers/{id}/toggle-status', 'Admin\WhatsappNumberController@toggleStatus')->name('whatsapp-numbers.toggle-status');
         Route::delete('/whatsapp-numbers/{id}', 'Admin\WhatsappNumberController@destroy')->name('whatsapp-numbers.destroy');
+        
+        // WhatsApp Addon Plans Management
+        Route::get('/whatsapp-addon-plans', 'Admin\WhatsappAddonPlanController@index')->name('whatsapp-addon-plans.index');
+        Route::post('/whatsapp-addon-plans', 'Admin\WhatsappAddonPlanController@store')->name('whatsapp-addon-plans.store');
+        Route::put('/whatsapp-addon-plans/{id}', 'Admin\WhatsappAddonPlanController@update')->name('whatsapp-addon-plans.update');
+        Route::delete('/whatsapp-addon-plans/{id}', 'Admin\WhatsappAddonPlanController@destroy')->name('whatsapp-addon-plans.destroy');
+        Route::post('/whatsapp-addon-plans/{id}/toggle-status', 'Admin\WhatsappAddonPlanController@toggleStatus')->name('whatsapp-addon-plans.toggle-status');
+        
+        // Employee Addon Plans Management
+        Route::get('/employee-addon-plans', 'Admin\EmployeeAddonPlanController@index')->name('employee-addon-plans.index');
+        Route::post('/employee-addon-plans', 'Admin\EmployeeAddonPlanController@store')->name('employee-addon-plans.store');
+        Route::put('/employee-addon-plans/{id}', 'Admin\EmployeeAddonPlanController@update')->name('employee-addon-plans.update');
+        Route::delete('/employee-addon-plans/{id}', 'Admin\EmployeeAddonPlanController@destroy')->name('employee-addon-plans.destroy');
+        Route::post('/employee-addon-plans/{id}/toggle-status', 'Admin\EmployeeAddonPlanController@toggleStatus')->name('employee-addon-plans.toggle-status');
     });
 
     //IstharaController
