@@ -71,8 +71,9 @@ class WhatsappController extends Controller
         }
 
         $requestId = 'req_' . Str::random(8);
-        $status = $isNotLinked ? self::STATUS_NOT_LINKED : self::STATUS_ACTIVE;
-        $request_status = $isNotLinked ? 'active' : self::STATUS_PENDING;
+        // All new WhatsApp numbers start as not_linked with pending status
+        $status = self::STATUS_NOT_LINKED;
+        $request_status = self::STATUS_PENDING;
 
         try {
             $whatsappUser = WhatsappUser::create([
