@@ -39,6 +39,8 @@ class WhatsappController extends Controller
                           ->where('account_type', 'employee')
                           ->where('active', true);
                 }),
+                // One-to-one: employee must not be linked to another WhatsApp number
+                Rule::unique('whatsapp_users', 'employee_id')->where(fn ($q) => $q->where('user_id', $tenantId)),
             ],
         ]);
 
@@ -204,6 +206,10 @@ class WhatsappController extends Controller
                           ->where('account_type', 'employee')
                           ->where('active', true);
                 }),
+                // One-to-one: employee must not be linked elsewhere (ignore current record)
+                Rule::unique('whatsapp_users', 'employee_id')
+                    ->where(fn ($q) => $q->where('user_id', $tenantId))
+                    ->ignore($whatsappUser->id),
             ],
         ]);
 
