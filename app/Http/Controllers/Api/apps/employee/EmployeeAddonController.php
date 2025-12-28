@@ -95,7 +95,6 @@ class EmployeeAddonController extends Controller
         $validated = $request->validate([
             'qty' => ['required', 'integer', 'min:1'],
             'plan_id' => ['required', 'exists:employee_addon_plans,id'],
-            'payment_method' => ['required', 'string', 'in:arb,myfatoorah,test'],
         ]);
 
         $plan = EmployeeAddonPlan::findOrFail($validated['plan_id']);
@@ -115,7 +114,7 @@ class EmployeeAddonController extends Controller
             'payment_ref' => $paymentRef,
         ]);
 
-        $paymentResult = $this->initiatePayment($addon, $validated['payment_method'], $request->user());
+        $paymentResult = $this->initiatePayment($addon, 'arb', $request->user());
 
         if ($paymentResult['success']) {
             return response()->json([

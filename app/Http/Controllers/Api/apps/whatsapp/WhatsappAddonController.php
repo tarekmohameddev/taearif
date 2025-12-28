@@ -94,7 +94,6 @@ class WhatsappAddonController extends Controller
             ],
             'qty' => ['required', 'integer', 'min:1'],
             'plan_id' => ['required', 'exists:whatsapp_addon_plans,id'],
-            'payment_method' => ['required', 'string', 'in:arb,myfatoorah,test'],
         ]);
 
         $whatsappUser = WhatsappUser::where('id', $validated['whatsapp_number_id'])
@@ -122,7 +121,7 @@ class WhatsappAddonController extends Controller
         ]);
 
         // Initiate Payment
-        $paymentResult = $this->initiatePayment($addon, $validated['payment_method'], $request->user());
+        $paymentResult = $this->initiatePayment($addon, 'arb', $request->user());
 
         if ($paymentResult['success']) {
             return response()->json([
