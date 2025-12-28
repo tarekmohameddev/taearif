@@ -530,6 +530,13 @@ Route::prefix('v1/whatsapp-addons')->group(function () {
         ->name('api.whatsapp.addons.payment.cancel');
 });
 
+Route::prefix('v1/employee-addons')->group(function () {
+    Route::get('payment/success/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\employee\EmployeeAddonController::class, 'paymentSuccess'])
+        ->name('api.employee.addons.payment.success');
+    Route::get('payment/cancel/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\employee\EmployeeAddonController::class, 'paymentCancel'])
+        ->name('api.employee.addons.payment.cancel');
+});
+
 Route::middleware(['auth:sanctum', \App\Http\Middleware\RequireActiveMembership::class])->group(function () {
     Route::post('/whatsapp/link', [WhatsappController::class, 'store']);
     Route::get('/whatsapp', [WhatsappController::class, 'index']);
@@ -539,6 +546,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\RequireActiveMembership:
     Route::post('/whatsapp/{id}/link', [WhatsappController::class, 'link']);
     Route::get('/whatsapp/addons/plans', [WhatsappAddonController::class, 'plans']);
     Route::post('/whatsapp/addons', [WhatsappAddonController::class, 'store']);
+
+    // Employee Addons
+    Route::get('/employee/addons/plans', [\App\Http\Controllers\Api\apps\employee\EmployeeAddonController::class, 'plans']);
+    Route::get('/employee/addons', [\App\Http\Controllers\Api\apps\employee\EmployeeAddonController::class, 'index']);
+    Route::post('/employee/addons', [\App\Http\Controllers\Api\apps\employee\EmployeeAddonController::class, 'store']);
 });
 
 
