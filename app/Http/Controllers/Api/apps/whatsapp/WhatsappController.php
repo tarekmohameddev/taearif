@@ -26,11 +26,12 @@ class WhatsappController extends Controller
         $tenantId = $this->tenantId();
 
         $validated = $request->validate([
-            'phoneNumber'      => ['required', 'regex:/^[0-9]{9}$/'], // 9 digits for KSA
+            'phoneNumber'      => ['required', 'regex:/^[0-9]{9,20}$/'], // Allowing more digits as per user SQL example
             'linkingMethod'    => ['required', 'in:support,automatic'],
             'apiMethod'        => ['required', 'in:official,unofficial'],
             'customerName'     => ['nullable', 'string'],
             'supportMessage'   => ['nullable', 'string'],
+            'notLinked'        => ['nullable', 'boolean'],
             'employeeId'       => [
                 'nullable',
                 'integer',
@@ -45,14 +46,18 @@ class WhatsappController extends Controller
         ]);
 
         $user = $request->user()->tenantOwner();
-        if ($user->whatsapp_usage >= $user->whatsapp_quota) {
+        $isNotLinked = $validated['notLinked'] ?? false;
+
+        if (!$isNotLinked && $user->whatsapp_usage >= $user->whatsapp_quota) {
             return response()->json([
                 'success' => false,
                 'message' => 'لقد وصلت للحد الأقصى لعدد الأرقام المسموح بها. يرجى شراء إضافة لزيادة الحد.'
             ], 422);
         }
 
-        $fullPhoneNumber = '+966' . $validated['phoneNumber'];
+        $fullPhoneNumber = str_starts_with($validated['phoneNumber'], '966') 
+            ? '+' . $validated['phoneNumber'] 
+            : '+966' . $validated['phoneNumber'];
         
         // Check for duplicate phone number
         $existing = WhatsappUser::where('user_id', $tenantId)
@@ -66,8 +71,8 @@ class WhatsappController extends Controller
         }
 
         $requestId = 'req_' . Str::random(8);
-        $status = self::STATUS_ACTIVE;
-        $request_status = self::STATUS_PENDING;
+        $status = $isNotLinked ? self::STATUS_NOT_LINKED : self::STATUS_ACTIVE;
+        $request_status = $isNotLinked ? 'active' : self::STATUS_PENDING;
 
         try {
             $whatsappUser = WhatsappUser::create([
