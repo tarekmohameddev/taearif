@@ -243,6 +243,14 @@ class AuthController extends Controller
                     ], 422);
                 }
 
+                // Check employee quota
+                if ($tenant->employee_usage >= $tenant->employee_quota) {
+                    return response()->json([
+                        'status'  => 'error',
+                        'message' => 'لقد وصلت للحد الأقصى لعدد الموظفين المسموح بهم. يرجى شراء إضافة لزيادة الحد.',
+                    ], 422);
+                }
+
                 // Create the employee account (NO website materials, NO memberships)
                 $employee = User::create([
                     'first_name'   => $request->input('first_name', 'employee'),
