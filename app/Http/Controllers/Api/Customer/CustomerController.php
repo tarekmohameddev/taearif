@@ -256,7 +256,11 @@ class CustomerController extends Controller
                 'note' => $customer->note ?? null,
                 'inquiry' => $inquiryPayload,
                 'city_id' => $customer->city_id ?? null,
-                'district' => $districtInfo,
+                'district' => $district ? [
+                    'id'      => $district->id,
+                    'name_ar' => $district->name_ar,
+                    'name_en' => $district->name_en,
+                ] : $districtInfo, // fallback to inquiry-derived info when relation absent
                 'created_by' => $customer->user_id,
                 'created_at' => $customer->created_at->toISOString(),
                 'updated_at' => $customer->updated_at->toISOString(),
