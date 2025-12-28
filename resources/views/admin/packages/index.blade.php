@@ -10,6 +10,7 @@
         .project-limit-box.project-limit-none,
         .real_estate-limit-box.real_estate-limit-none,
         .whatsapp-limit-box.whatsapp-limit-none,
+        .employees-limit-box.employees-limit-none,
         .v-card-box.vcrd-none {
             display: none !important;
         }
@@ -333,6 +334,11 @@
                                         class="selectgroup-input">
                                     <span class="selectgroup-button">{{ __('WhatsApp Limit') }}</span>
                                 </label>
+                                <label class="selectgroup-item">
+                                    <input type="checkbox" name="features[]" value="employees_Limit"
+                                        class="selectgroup-input">
+                                    <span class="selectgroup-button">حد الموظفين</span>
+                                </label>
                             </div>
                         </div>
 
@@ -378,6 +384,12 @@
     <input type="number" id="whatsapp_numbers_limit" class="form-control" name="whatsapp_numbers_limit" value="">
     <p id="errwhatsapp_numbers_limit" class="mb-0 text-danger em"></p>
     <p class="text-warning">{{ __('Enter 999999, then it will appear as unlimited') }}</p>
+</div>
+<div class="form-group employees-limit-box" style="display: none;">
+    <label for="employees_limit">حد الموظفين * </label>
+    <input type="number" id="employees_limit" class="form-control" name="employees_limit" value="">
+    <p id="erremployees_limit" class="mb-0 text-danger em"></p>
+    <p class="text-warning">أدخل 999999 ليظهر بلا حدود</p>
 </div>
 
                         <div class="form-group">

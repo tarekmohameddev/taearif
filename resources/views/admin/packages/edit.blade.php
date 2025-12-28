@@ -270,7 +270,7 @@
                                         <label class="selectgroup-item">
                                             <input type="checkbox" name="features[]" value="employees_Limit" class="selectgroup-input"
                                             @if (is_array($permissions) && in_array('employees_Limit', $permissions)) checked @endif>
-                                            <span class="selectgroup-button">{{ __('Employees Limit') }}</span>
+                                            <span class="selectgroup-button">حد الموظفين</span>
                                         </label>
                                     </div>
                                 </div>
