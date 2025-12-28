@@ -108,6 +108,8 @@ class CustomerController extends Controller
 
         $customers = ApiCustomer::where('user_id', $user->id)
             ->with([
+                'city:id,name_ar,name_en',
+                'district:id,name_ar,name_en',
                 'type:id,name',
                 'stage:id,stage_name',
                 'priorityRef:id,name',
@@ -153,6 +155,8 @@ class CustomerController extends Controller
         };
 
         $formattedCustomers = $customers->map(function ($customer) use ($mapInquiryTypeToArabic, $mapPropertyTypeToArabic) {
+            $district = $customer->district;
+            
             $interestedCategories = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
             ->join('api_user_categories', 'api_user_categories.id', '=', 'api_customer_property_interested.category_id')
             ->select('api_user_categories.id', 'api_user_categories.name')
@@ -917,7 +921,11 @@ class CustomerController extends Controller
                     'name_ar' => $city->name_ar,
                     'name_en' => $city->name_en,
                 ] : null,
-                'district' => $districtInfo,
+                'district' => $district ? [
+                    'id'      => $district->id,
+                    'name_ar' => $district->name_ar,
+                    'name_en' => $district->name_en,
+                ] : $districtInfo,
                 'note'                  => $customer->note ?? null,
                 'district_id'           => $customer->district_id ?? null,
                 'city_id'               => $customer->city_id ?? null,
