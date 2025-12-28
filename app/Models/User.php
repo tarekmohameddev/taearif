@@ -48,6 +48,8 @@ use App\Models\User\DonationManagement\DonationCategories;
 use App\Models\User\CourseManagement\Instructor\Instructor;
 use App\Models\User\CourseManagement\LessonContentComplete;
 use App\Models\User\CourseManagement\Coupon as CourseManagementCoupon;
+use App\Models\EmployeeAddon;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
@@ -618,7 +620,7 @@ class User extends Authenticatable
         $baseLimit = $membership->package->whatsapp_numbers_limit ?? 0;
 
         // Get addon limits (approved and not expired)
-        $addonLimit = WhatsappAddon::whereHas('whatsappUser', function($q) {
+        $whatsappAddonLimit = WhatsappAddon::whereHas('whatsappUser', function($q) {
             $q->where('user_id', $this->id);
         })->where('status', WhatsappAddon::STATUS_APPROVED)
           ->where(function($q) {
@@ -626,11 +628,45 @@ class User extends Authenticatable
                 ->orWhere('expire_date', '>=', now());
           })->sum('qty');
 
-        return (int) ($baseLimit + $addonLimit);
+        // Employee addons also grant WhatsApp numbers (bundled)
+        $employeeAddonLimit = EmployeeAddon::activeFor($this->id)->sum('qty');
+
+        return (int) ($baseLimit + $whatsappAddonLimit + $employeeAddonLimit);
     }
 
     public function getWhatsAppUsageAttribute()
     {
         return (int) $this->whatsappUsers()->where('status', 'active')->count();
+    }
+
+    public function getEmployeeQuotaAttribute()
+    {
+        // Get base limit from active membership
+        $membership = Membership::where('user_id', $this->id)
+            ->where('status', 1)
+            ->whereDate('expire_date', '>=', now())
+            ->latest()
+            ->first();
+
+        if (!$membership) {
+            return 0;
+        }
+
+        $baseLimit = $membership->package->employees_limit ?? 0;
+
+        // Get employee addon limits (approved and not expired)
+        $addonLimit = EmployeeAddon::activeFor($this->id)->sum('qty');
+
+        return (int) ($baseLimit + $addonLimit);
+    }
+
+    public function getEmployeeUsageAttribute()
+    {
+        return (int) $this->employees()->where('active', true)->count();
+    }
+
+    public function employeeAddons()
+    {
+        return $this->hasMany(EmployeeAddon::class, 'user_id');
     }
 }
