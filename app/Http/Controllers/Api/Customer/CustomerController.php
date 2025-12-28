@@ -713,6 +713,16 @@ class CustomerController extends Controller
 
     /**
      * Search customers by name, email or phone
+     * 
+     * Filters:
+     * - q: text search on name, email, phone_number
+     * - city_id, district_id, type_id, priority_id, procedure_id: exact match
+     * - phone_number: partial match
+     * - responsible_employee_id: filter by assigned employee
+     * - created_from, created_to: date range on created_at (YYYY-MM-DD, inclusive full days)
+     * - interested_category_ids, interested_property_ids: array of IDs
+     * - sort_by: name|created_at|priority_id (default: created_at)
+     * - sort_dir: asc|desc (default: desc)
     */
     public function search(Request $request)
     {
@@ -736,6 +746,9 @@ class CustomerController extends Controller
             'priority_id'   => 'nullable|integer',
             'procedure_id'  => 'nullable|integer',
             'phone_number'  => 'nullable|string|max:20',
+            'responsible_employee_id' => 'nullable|integer',
+            'created_from'  => 'nullable|date',
+            'created_to'    => 'nullable|date',
             'page'          => 'nullable|integer|min:1',
             'per_page'      => 'nullable|integer|min:1|max:100',
             'sort_by'       => 'nullable|in:name,created_at,priority_id',
@@ -771,6 +784,15 @@ class CustomerController extends Controller
         if ($request->filled('priority_id'))   $query->where('priority_id',   (int)$request->input('priority_id'));
         if ($request->filled('procedure_id'))  $query->where('procedure_id',  (int)$request->input('procedure_id'));
         if ($request->filled('phone_number'))  $query->where('phone_number', 'like', '%'.$request->input('phone_number').'%');
+        if ($request->filled('responsible_employee_id')) $query->where('responsible_employee_id', (int)$request->input('responsible_employee_id'));
+        
+        // Date range filters (inclusive)
+        if ($request->filled('created_from')) {
+            $query->whereDate('created_at', '>=', $request->input('created_from'));
+        }
+        if ($request->filled('created_to')) {
+            $query->whereDate('created_at', '<=', $request->input('created_to'));
+        }
 
         if (!empty($catIds)) {
             $query->whereExists(function ($sub) use ($catIds) {
