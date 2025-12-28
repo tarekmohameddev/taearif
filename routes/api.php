@@ -524,16 +524,18 @@ Route::prefix('v1/credits')->group(function () {
 });
 
 Route::prefix('v1/whatsapp-addons')->group(function () {
-    Route::get('payment/success/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\whatsapp\WhatsappAddonController::class, 'paymentSuccess'])
+    // Accept both GET and POST because some gateways call back with POST
+    Route::match(['get', 'post'], 'payment/success/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\whatsapp\WhatsappAddonController::class, 'paymentSuccess'])
         ->name('api.whatsapp.addons.payment.success');
-    Route::get('payment/cancel/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\whatsapp\WhatsappAddonController::class, 'paymentCancel'])
+    Route::match(['get', 'post'], 'payment/cancel/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\whatsapp\WhatsappAddonController::class, 'paymentCancel'])
         ->name('api.whatsapp.addons.payment.cancel');
 });
 
 Route::prefix('v1/employee-addons')->group(function () {
-    Route::get('payment/success/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\employee\EmployeeAddonController::class, 'paymentSuccess'])
+    // Accept both GET and POST because some gateways call back with POST
+    Route::match(['get', 'post'], 'payment/success/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\employee\EmployeeAddonController::class, 'paymentSuccess'])
         ->name('api.employee.addons.payment.success');
-    Route::get('payment/cancel/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\employee\EmployeeAddonController::class, 'paymentCancel'])
+    Route::match(['get', 'post'], 'payment/cancel/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\employee\EmployeeAddonController::class, 'paymentCancel'])
         ->name('api.employee.addons.payment.cancel');
 });
 
