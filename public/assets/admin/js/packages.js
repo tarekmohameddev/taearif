@@ -5,6 +5,7 @@ $(document).ready(function () {
         projectLimit: { box: ".project-limit-box", hiddenClass: "project-limit-none", reset: "#project_limit_number" },
         real_estate_Limit: { box: ".real_estate-limit-box", hiddenClass: "real_estate-limit-none", reset: "#real_estate_limit_number" },
         whatsapp_Limit: { box: ".whatsapp-limit-box", hiddenClass: "whatsapp-limit-none", reset: "#whatsapp_numbers_limit" },
+        employees_Limit: { box: ".employees-limit-box", hiddenClass: "employees-limit-none", reset: "#employees_limit" },
     };
 
     const syncFeatureBox = (val) => {
@@ -53,6 +54,7 @@ $(document).ready(function () {
         $("#errproject_limit_number").text("");
         $("#errreal_estate_limit_number").text("");
         $("#errwhatsapp_numbers_limit").text("");
+        $("#erremployees_limit").text("");
 
         let valid = true;
 
@@ -89,6 +91,17 @@ $(document).ready(function () {
             $("#whatsapp_numbers_limit").val(0);
         }
 
+        // Validate Employees Limit Field if its checkbox is checked
+        if ($("input[name='features[]'][value='employees_Limit']").is(":checked")) {
+            const employeesVal = $("#employees_limit").val().trim();    
+            if (employeesVal === "") {
+                $("#erremployees_limit").text("Please enter an Employees Limit.");
+                valid = false;
+            }
+        } else {
+            $("#employees_limit").val(0);
+        }
+
         // focus on the first empty field If validation fails
         if (!valid) {
             if ($("input[name='features[]'][value='projectLimit']").is(":checked") &&
@@ -100,6 +113,9 @@ $(document).ready(function () {
             } else if ($("input[name='features[]'][value='whatsapp_Limit']").is(":checked") &&
                        $("#whatsapp_numbers_limit").val().trim() === "") {      
                 $("#whatsapp_numbers_limit").focus();
+            } else if ($("input[name='features[]'][value='employees_Limit']").is(":checked") &&
+                       $("#employees_limit").val().trim() === "") {      
+                $("#employees_limit").focus();
             }
             return false;
         } else {
