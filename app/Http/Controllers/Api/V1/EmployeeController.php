@@ -107,7 +107,32 @@ class EmployeeController extends Controller
             'tenant_id'  => $tenantId,
             'account_type' => 'employee',
             'status'     => 1,
+            'onboarding_completed' => true,
         ]);
+
+        // Copy BasicSetting from Tenant
+        $tenantBasicSetting = \App\Models\User\BasicSetting::where('user_id', $tenantId)->first();
+        if ($tenantBasicSetting) {
+            $newBasicSetting = $tenantBasicSetting->replicate();
+            $newBasicSetting->user_id = $employee->id;
+            $newBasicSetting->save();
+        }
+
+        // Copy UserStep from Tenant
+        $tenantUserStep = \App\Models\UserStep::where('user_id', $tenantId)->first();
+        if ($tenantUserStep) {
+            $newUserStep = $tenantUserStep->replicate();
+            $newUserStep->user_id = $employee->id;
+            $newUserStep->save();
+        }
+
+        // Copy GeneralSetting from Tenant
+        $tenantGeneralSetting = \App\Models\Api\GeneralSetting::where('user_id', $tenantId)->first();
+        if ($tenantGeneralSetting) {
+            $newGeneralSetting = $tenantGeneralSetting->replicate();
+            $newGeneralSetting->user_id = $employee->id;
+            $newGeneralSetting->save();
+        }
 
         // Set tenant context for Spatie
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);
