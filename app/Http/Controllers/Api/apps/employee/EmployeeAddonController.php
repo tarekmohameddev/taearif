@@ -367,9 +367,17 @@ class EmployeeAddonController extends Controller
     private function finalizeRedirect($success, $message)
     {
         if (!$success) {
-            return "<h1>{$message}</h1><script>setTimeout(function(){ window.close(); }, 3000);</script>";
+            return "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Payment Failed</title></head><body><h1>{$message}</h1><script>setTimeout(function(){ window.close(); }, 3000);</script></body></html>";
         }
 
-        return redirect()->route('success.page')->with('success', $message);
+        // Return success page that notifies parent window (React/Next.js frontend)
+        // The view will send postMessage("payment_success") to notify the frontend
+        $currentLang = \App\Models\Language::where('is_default', 1)->first();
+        $bs = $currentLang ? $currentLang->basic_setting : \App\Models\BasicSetting::first();
+        
+        return view('front.success', [
+            'bs' => $bs,
+            'rtl' => $bs->rtl ?? 0
+        ]);
     }
 }
