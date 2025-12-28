@@ -717,8 +717,9 @@ class CustomerController extends Controller
      * Filters:
      * - q: text search on name, email, phone_number
      * - city_id, district_id, type_id, priority_id, procedure_id: exact match
-     * - phone_number: partial match
+     * - phone_number: partial match on customer phone
      * - responsible_employee_id: filter by assigned employee
+     * - employee_whatsapp_number: partial match on assigned employee's active WhatsApp number
      * - created_from, created_to: date range on created_at (YYYY-MM-DD, inclusive full days)
      * - interested_category_ids, interested_property_ids: array of IDs
      * - sort_by: name|created_at|priority_id (default: created_at)
@@ -747,6 +748,7 @@ class CustomerController extends Controller
             'procedure_id'  => 'nullable|integer',
             'phone_number'  => 'nullable|string|max:20',
             'responsible_employee_id' => 'nullable|integer',
+            'employee_whatsapp_number' => 'nullable|string|max:20',
             'created_from'  => 'nullable|date',
             'created_to'    => 'nullable|date',
             'page'          => 'nullable|integer|min:1',
@@ -785,6 +787,13 @@ class CustomerController extends Controller
         if ($request->filled('procedure_id'))  $query->where('procedure_id',  (int)$request->input('procedure_id'));
         if ($request->filled('phone_number'))  $query->where('phone_number', 'like', '%'.$request->input('phone_number').'%');
         if ($request->filled('responsible_employee_id')) $query->where('responsible_employee_id', (int)$request->input('responsible_employee_id'));
+        
+        // Filter by employee's WhatsApp number
+        if ($request->filled('employee_whatsapp_number')) {
+            $query->whereHas('responsibleEmployee.activeWhatsappUser', function ($sub) use ($request) {
+                $sub->where('number', 'like', '%'.$request->input('employee_whatsapp_number').'%');
+            });
+        }
         
         // Date range filters (inclusive)
         if ($request->filled('created_from')) {
