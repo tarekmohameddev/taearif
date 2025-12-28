@@ -276,11 +276,40 @@ class CustomerController extends Controller
 
         $totalCustomers = ApiCustomer::where('user_id', $user->id)->count();
 
+        // Get customer count per stage
+        $stagesCounts = ApiCustomer::where('user_id', $user->id)
+            ->select('stage_id', DB::raw('COUNT(*) as count'))
+            ->groupBy('stage_id')
+            ->get()
+            ->keyBy('stage_id');
+
+        // Get all stages for this user with their counts
+        $stages = UserApiCustomerStage::where('user_id', $user->id)
+            ->orderBy('order')
+            ->get(['id', 'stage_name', 'icon', 'color'])
+            ->map(function ($stage) use ($stagesCounts) {
+                $count = $stagesCounts->get($stage->id)?->count ?? 0;
+                return [
+                    'id' => $stage->id,
+                    'name' => $stage->stage_name,
+                    'icon' => $stage->icon,
+                    'color' => $stage->color,
+                    'count' => $count,
+                ];
+            });
+
+        // Count customers with no stage assigned
+        $noStageCount = ApiCustomer::where('user_id', $user->id)
+            ->whereNull('stage_id')
+            ->count();
+
         return response()->json([
             'status' => 'success',
             'data' => [
                 'summary' => [
                     'total_customers' => $totalCustomers,
+                    'stages' => $stages,
+                    'no_stage_count' => $noStageCount,
                 ],
                 'customers' => $formattedCustomers,
                 'pagination' => [
