@@ -328,11 +328,16 @@ class WhatsappAddonController extends Controller
                      }
                  }
             } elseif ($gateway === 'arb') {
-                // ARB Callback Verification
+                // Log ARB callback for debugging
+                Log::info('ARB WhatsApp Addon callback', [
+                    'addon_id' => $addon_id,
+                    'query' => $request->query(),
+                    'all' => $request->all(),
+                ]);
+
                 $paymentMethod = \App\Models\PaymentGateway::where('keyword', 'arb')->first();
                 if ($request->has('trandata') && $paymentMethod) {
                     $paydata = $paymentMethod->convertAutoData();
-                    // Use public decryption method from ArbController
                     $arb = app(ArbController::class);
                     $decrypted = $arb->decryption($request->trandata, $paydata['resource_key']);
                     
@@ -341,19 +346,28 @@ class WhatsappAddonController extends Controller
                         $dataArr = json_decode($raw, true);
                         
                         if (!empty($dataArr) && is_array($dataArr)) {
-                            $paymentData = $dataArr[0]; // ARB returns array of data
+                            $paymentData = $dataArr[0];
                             if (isset($paymentData['result']) && $paymentData['result'] === 'CAPTURED') {
-                                // Optional: Verify trackId or udf1 (addon_id)
-                                // $paymentData['udf1'] == $addon->id ?
                                 $verified = true;
                                 $transactionId = $paymentData['transId'] ?? null;
                             }
                         }
                     }
-                } elseif ($request->filled('PaymentID')) {
-                    // Fallback: some ARB responses only contain PaymentID without trandata
-                    $verified = true;
-                    $transactionId = $request->PaymentID;
+                }
+
+                // Fallback: accept any PaymentID casing if trandata verification didn't work
+                if (!$verified) {
+                    $paymentId = $request->input('PaymentID')
+                        ?? $request->input('paymentId')
+                        ?? $request->input('paymentID')
+                        ?? $request->query('PaymentID')
+                        ?? $request->query('paymentId')
+                        ?? $request->query('paymentID');
+
+                    if ($paymentId) {
+                        $verified = true;
+                        $transactionId = $paymentId;
+                    }
                 }
             }
 
