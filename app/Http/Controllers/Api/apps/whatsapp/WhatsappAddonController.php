@@ -126,17 +126,25 @@ class WhatsappAddonController extends Controller
 
         if ($paymentResult['success']) {
             return response()->json([
-                'success' => true,
-                'data' => $addon,
-                'payment_url' => $paymentResult['redirect_url'] ?? null,
-                'message' => 'Add-on request created. Please complete payment.',
-            ], 201);
+                'status'        => 'success',
+                'payment_url'   => $paymentResult['redirect_url'] ?? null,
+                'payment_token' => $paymentResult['payment_token'] ?? null,
+                'total_amount'  => $amount,
+                'package_price' => (float) $plan->price,
+                'period'        => (int) $validated['qty'],
+                'package_term'  => match ($plan->duration_unit) {
+                    'month' => 'monthly',
+                    'year'  => 'yearly',
+                    default => $plan->duration_unit
+                },
+            ], 200);
         } else {
             // Payment init failed
             $addon->update(['status' => WhatsappAddon::STATUS_REJECTED]);
             return response()->json([
-                'success' => false,
+                'status' => 'error',
                 'message' => 'Payment initialization failed: ' . ($paymentResult['error'] ?? 'Unknown error'),
+                'payment_url' => null
             ], 422);
         }
     }
@@ -177,7 +185,8 @@ class WhatsappAddonController extends Controller
                 if (isset($result['redirect_url'])) {
                     return [
                         'success' => true,
-                        'redirect_url' => $result['redirect_url']
+                        'redirect_url' => $result['redirect_url'],
+                        'payment_token' => $result['payment_token'] ?? null,
                     ];
                 }
                 
