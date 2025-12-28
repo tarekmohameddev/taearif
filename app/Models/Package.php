@@ -30,7 +30,8 @@ class Package extends Model
         'video_size_limit',
         'file_size_limit',
         'serial_number',
-        'whatsapp_numbers_limit'
+        'whatsapp_numbers_limit',
+        'employees_limit'
     ];
 
     public function memberships()
