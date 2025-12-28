@@ -276,26 +276,28 @@ class EmployeeAddonController extends Controller
                     }
                 }
             } elseif ($gateway === 'arb') {
-                if ($request->has('trandata')) {
-                    $paymentMethod = \App\Models\PaymentGateway::where('keyword', 'arb')->first();
-                    if ($paymentMethod) {
-                        $paydata = $paymentMethod->convertAutoData();
-                        $arb = app(ArbController::class);
-                        $decrypted = $arb->decryption($request->trandata, $paydata['resource_key']);
+                $paymentMethod = \App\Models\PaymentGateway::where('keyword', 'arb')->first();
+                if ($request->has('trandata') && $paymentMethod) {
+                    $paydata = $paymentMethod->convertAutoData();
+                    $arb = app(ArbController::class);
+                    $decrypted = $arb->decryption($request->trandata, $paydata['resource_key']);
 
-                        if ($decrypted) {
-                            $raw = urldecode($decrypted);
-                            $dataArr = json_decode($raw, true);
+                    if ($decrypted) {
+                        $raw = urldecode($decrypted);
+                        $dataArr = json_decode($raw, true);
 
-                            if (!empty($dataArr) && is_array($dataArr)) {
-                                $paymentData = $dataArr[0];
-                                if (isset($paymentData['result']) && $paymentData['result'] === 'CAPTURED') {
-                                    $verified = true;
-                                    $transactionId = $paymentData['transId'] ?? null;
-                                }
+                        if (!empty($dataArr) && is_array($dataArr)) {
+                            $paymentData = $dataArr[0];
+                            if (isset($paymentData['result']) && $paymentData['result'] === 'CAPTURED') {
+                                $verified = true;
+                                $transactionId = $paymentData['transId'] ?? null;
                             }
                         }
                     }
+                } elseif ($request->filled('PaymentID')) {
+                    // Fallback: some ARB responses only include PaymentID
+                    $verified = true;
+                    $transactionId = $request->PaymentID;
                 }
             }
 
