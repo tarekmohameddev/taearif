@@ -178,7 +178,19 @@ Route::prefix(config('admin-api.prefix'))
         });
     });
 
-
+    // -------------------------------------------------------------------------
+    // Employee Add-ons
+    // -------------------------------------------------------------------------
+    Route::prefix('employee-addons')->name('employee-addons.')->group(function () {
+        // Plans Management
+        Route::prefix('plans')->name('plans.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\Admin\EmployeeAddonPlanController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Api\Admin\EmployeeAddonPlanController::class, 'store'])->name('store');
+            Route::put('{id}', [\App\Http\Controllers\Api\Admin\EmployeeAddonPlanController::class, 'update'])->name('update');
+            Route::delete('{id}', [\App\Http\Controllers\Api\Admin\EmployeeAddonPlanController::class, 'destroy'])->name('destroy');
+            Route::post('{id}/toggle-status', [\App\Http\Controllers\Api\Admin\EmployeeAddonPlanController::class, 'toggleStatus'])->name('toggle-status');
+        });
+    });
 
     // -------------------------------------------------------------------------
     // User Management Module — إدارة المستخدمين
