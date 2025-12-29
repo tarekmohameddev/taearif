@@ -97,9 +97,59 @@ class CRMController extends Controller
             return $q;
         };
 
-        $mapCustomer = function ($customer) {
-            $remindersCount    = UserApiCustomerReminder::where('customer_id', $customer->id)->count();
-            $appointmentsCount = UserApiCustomerAppointment::where('customer_id', $customer->id)->count();
+        // ===== OPTIMIZATION: Collect all customer IDs that will be used across all sections =====
+        // This allows us to batch load counts in 2 queries instead of 2N queries
+        $stages = UserApiCustomerStage::where('user_id', $user->id)->orderBy('order')->get();
+        $priorities = UserApiCustomerPriority::where('user_id', $user->id)->orderBy('order')->get();
+        $procedures = UserApiCustomerProcedure::where('user_id', $user->id)->orderBy('order')->get();
+        $types = UserApiCustomerType::where('user_id', $user->id)->orderBy('order')->get();
+
+        // Collect all customer IDs that will be used
+        $allCustomerIds = collect();
+        foreach ($stages as $stage) {
+            $allCustomerIds = $allCustomerIds->merge(
+                $buildQuery(fn($q) => $q->where('stage_id', $stage->id))->pluck('id')
+            );
+        }
+        foreach ($priorities as $priority) {
+            $allCustomerIds = $allCustomerIds->merge(
+                $buildQuery(fn($q) => $q->where('priority_id', $priority->id))->pluck('id')
+            );
+        }
+        foreach ($procedures as $proc) {
+            $allCustomerIds = $allCustomerIds->merge(
+                $buildQuery(fn($q) => $q->where('procedure_id', $proc->id))->pluck('id')
+            );
+        }
+        foreach ($types as $type) {
+            $allCustomerIds = $allCustomerIds->merge(
+                $buildQuery(fn($q) => $q->where('type_id', $type->id))->pluck('id')
+            );
+        }
+
+        // Remove duplicates
+        $allCustomerIds = $allCustomerIds->unique();
+
+        // OPTIMIZATION: Batch load all counts in 2 queries instead of 2N queries
+        $remindersCounts = collect();
+        $appointmentsCounts = collect();
+
+        if ($allCustomerIds->isNotEmpty()) {
+            $remindersCounts = UserApiCustomerReminder::whereIn('customer_id', $allCustomerIds)
+                ->selectRaw('customer_id, COUNT(*) as count')
+                ->groupBy('customer_id')
+                ->pluck('count', 'customer_id');
+
+            $appointmentsCounts = UserApiCustomerAppointment::whereIn('customer_id', $allCustomerIds)
+                ->selectRaw('customer_id, COUNT(*) as count')
+                ->groupBy('customer_id')
+                ->pluck('count', 'customer_id');
+        }
+
+        // Updated mapCustomer to use pre-loaded counts (same result, just faster)
+        $mapCustomer = function ($customer) use ($remindersCounts, $appointmentsCounts) {
+            $remindersCount = $remindersCounts->get($customer->id, 0);
+            $appointmentsCount = $appointmentsCounts->get($customer->id, 0);
 
             return [
                 'customer_id'  => $customer->id,
@@ -138,7 +188,6 @@ class CRMController extends Controller
         };
 
         // ===== Stages =====
-        $stages = UserApiCustomerStage::where('user_id', $user->id)->orderBy('order')->get();
         $stagesSummary = [];
         $stagesWithCustomers = [];
 
@@ -163,7 +212,6 @@ class CRMController extends Controller
         }
 
         // ===== Priorities =====
-        $priorities = UserApiCustomerPriority::where('user_id', $user->id)->orderBy('order')->get();
         $prioritiesWithCustomers = [];
 
         foreach ($priorities as $priority) {
@@ -183,7 +231,6 @@ class CRMController extends Controller
         }
 
         // ===== Procedures =====
-        $procedures = UserApiCustomerProcedure::where('user_id', $user->id)->orderBy('order')->get();
         $proceduresWithCustomers = [];
 
         foreach ($procedures as $proc) {
@@ -202,7 +249,6 @@ class CRMController extends Controller
         }
 
         // ===== Types =====
-        $types = UserApiCustomerType::where('user_id', $user->id)->orderBy('order')->get();
         $typesWithCustomers = [];
 
         foreach ($types as $type) {
