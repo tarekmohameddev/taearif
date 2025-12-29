@@ -439,7 +439,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
 
 
 // Api crm Customer
-Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx', 'can:crm.view'])->prefix('crm')->group(function () {
     // STAGES
     Route::apiResource('stages', UserApiCustomerStageController::class);
     // reorderStages
@@ -468,6 +468,8 @@ Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
 
     // CRM Dashboard
     Route::get('/', [CRMController::class, 'index']);
+    // CRM customer filters (same payload as /api/customers/filters)
+    Route::get('/customers/filters', [CustomerController::class, 'filterOptions']);
     Route::post('/customers/{id}/change-stage', [CRMController::class, 'changeCustomerStage']); // drag and drop customers to change stage
     // drag and drop customers to change priority
     Route::post('/customers/{id}/change-priority', [CRMController::class, 'changeCustomerPriority']);
@@ -676,12 +678,15 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/inquiry', [CustomerInquiryController::class, 'index']);
 
     // ApiPropertyRequestController
-    Route::get('/property-requests', [ApiPropertyRequestController::class, 'index']);
-    Route::post('/property-requests', [ApiPropertyRequestController::class, 'store']);
-    // DELETE
-    Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy']);
-    // update
-    Route::put('/property-requests/{id}', [ApiPropertyRequestController::class, 'update']);
+    Route::middleware([SetTenantForPermissions::class, 'can:properties.view'])->group(function () {
+        Route::get('/property-requests/filters', [ApiPropertyRequestController::class, 'filterOptions']);
+        Route::get('/property-requests', [ApiPropertyRequestController::class, 'index']);
+        Route::post('/property-requests', [ApiPropertyRequestController::class, 'store']);
+        // DELETE
+        Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy']);
+        // update
+        Route::put('/property-requests/{id}', [ApiPropertyRequestController::class, 'update']);
+    });
 
 
     // ApiPropertyRequestSettingsController
