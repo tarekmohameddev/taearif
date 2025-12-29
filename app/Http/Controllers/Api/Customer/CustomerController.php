@@ -73,6 +73,7 @@ class CustomerController extends Controller
         $employees = User::where('tenant_id', $user->tenantOwnerId())
             ->where('account_type', 'employee')
             ->where('active', true)
+            ->with('activeWhatsappUser')
             ->get(['id', 'first_name', 'last_name', 'email']);
 
         $employeesList = $employees->map(function ($emp) {
@@ -80,6 +81,7 @@ class CustomerController extends Controller
                 'id' => $emp->id,
                 'name' => trim(($emp->first_name ?? '') . ' ' . ($emp->last_name ?? '')),
                 'email' => $emp->email,
+                'whatsapp_number' => $emp->activeWhatsappUser ? $emp->activeWhatsappUser->number : null,
             ];
         });
 
