@@ -466,6 +466,8 @@ class CRMController extends Controller
             'priority_id'   => 'nullable|integer',
             'procedure_id'  => 'nullable|integer',
             'stage_id'      => 'nullable|integer',
+            'responsible_employee_id' => 'nullable|integer',
+            'employee_whatsapp_number' => 'nullable|string|max:20',
 
             'page'          => 'nullable|integer|min:1',
             'per_page'      => 'nullable|integer|min:1|max:100',
@@ -507,6 +509,14 @@ class CRMController extends Controller
         if ($request->filled('priority_id'))   $query->where('priority_id',   (int)$request->input('priority_id'));
         if ($request->filled('procedure_id'))  $query->where('procedure_id',  (int)$request->input('procedure_id'));
         if ($request->filled('stage_id'))      $query->where('stage_id',      (int)$request->input('stage_id'));
+        if ($request->filled('responsible_employee_id')) $query->where('responsible_employee_id', (int)$request->input('responsible_employee_id'));
+        
+        // Filter by employee's WhatsApp number
+        if ($request->filled('employee_whatsapp_number')) {
+            $query->whereHas('responsibleEmployee.activeWhatsappUser', function ($sub) use ($request) {
+                $sub->where('number', 'like', '%'.$request->input('employee_whatsapp_number').'%');
+            });
+        }
 
         if (!empty($catIds)) {
             $query->whereExists(function ($sub) use ($catIds) {
