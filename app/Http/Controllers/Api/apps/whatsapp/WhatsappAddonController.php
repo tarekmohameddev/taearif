@@ -267,7 +267,7 @@ class WhatsappAddonController extends Controller
                         [
                             "ItemName" => "WhatsApp Addon",
                             "Quantity" => $addon->qty,
-                            "UnitPrice" => $addon->amount
+                            "UnitPrice" => $addon->amount / $addon->qty // Unit price, not total amount
                         ]
                     ]
                 ]
@@ -287,7 +287,7 @@ class WhatsappAddonController extends Controller
     public function paymentSuccess(Request $request, $addon_id, $gateway)
     {
         try {
-            $addon = WhatsappAddon::findOrFail($addon_id);
+            $addon = WhatsappAddon::with('plan', 'whatsappUser')->findOrFail($addon_id);
             if ($addon->status === WhatsappAddon::STATUS_APPROVED) {
                  return $this->finalizeRedirect(true, 'Already approved');
             }
@@ -354,34 +354,22 @@ class WhatsappAddonController extends Controller
                         }
                     }
                 }
-
-                // Fallback: accept any PaymentID casing if trandata verification didn't work
-                if (!$verified) {
-                    $paymentId = $request->input('PaymentID')
-                        ?? $request->input('paymentId')
-                        ?? $request->input('paymentID')
-                        ?? $request->input('paymentid')
-                        ?? $request->query('PaymentID')
-                        ?? $request->query('paymentId')
-                        ?? $request->query('paymentID')
-                        ?? $request->query('paymentid');
-
-                    if ($paymentId) {
-                        $verified = true;
-                        $transactionId = $paymentId;
-                    }
-                }
+                
+                // Only trust verified trandata - do NOT accept PaymentID without proper verification
+                // This prevents cancel redirects from being treated as successful payments
             }
 
             if ($verified) {
                 // Calculate expire date if plan exists
+                // Multiply duration by qty (e.g., if plan is 1 month and qty is 3, expire in 3 months)
                 $expireDate = null;
                 if ($addon->plan_id && $addon->plan) {
-                    $duration = $addon->plan->duration;
-                    $unit = $addon->plan->duration_unit; // month, year
+                    $duration = $addon->plan->duration * $addon->qty; // Multiply by qty
+                    $unit = $addon->plan->duration_unit; // day, month, year
                     
                     $expireDate = now();
-                    if ($unit === 'month') $expireDate->addMonths($duration);
+                    if ($unit === 'day') $expireDate->addDays($duration);
+                    elseif ($unit === 'month') $expireDate->addMonths($duration);
                     elseif ($unit === 'year') $expireDate->addYears($duration);
                 }
 
