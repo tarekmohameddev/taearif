@@ -14,12 +14,18 @@ class ApiSideMenusController extends Controller
     {
         $user = Auth::user();
 
+        // Eager load relationships to avoid N+1 queries
+        $user->loadMissing('affiliateUser');
+
         // resolve owner (tenant for tenant; tenant for employee)
         $ownerId = $this->isTenant($user) ? (int) $user->id : (int) ($user->tenant_id ?? 0);
 
         // owners bypass permission checks
         $isOwner = $this->isTenant($user);
-        $can = fn(string $perm) => $isOwner || $user->can($perm);
+        
+        // Pre-load all permissions once instead of checking in loop
+        $permissions = $isOwner ? [] : $user->getAllPermissions()->pluck('name')->toArray();
+        $can = fn(string $perm) => $isOwner || in_array($perm, $permissions);
 
         // feature flags / package (use OWNER package for both tenant & employees)
         $isAffiliateApproved = $user->isAffiliateApproved();
@@ -30,16 +36,15 @@ class ApiSideMenusController extends Controller
             ->first();
         $package = $membership?->package;
 
-        // (optional feature toggles stored in DB) — resolve by OWNER id
-        $whatsappMenu = ApiMenuItem::where('user_id', $ownerId)
-            ->where('url', '/whatsapp-ai')
+        // Combine the two ApiMenuItem queries into one to reduce database calls
+        $menuItems = ApiMenuItem::where('user_id', $ownerId)
+            ->whereIn('url', ['/whatsapp-ai', '/ai'])
             ->where('is_active', true)
-            ->first();
-
-        $aiMenu = ApiMenuItem::where('user_id', $ownerId)
-            ->where('url', '/ai')
-            ->where('is_active', true)
-            ->first();
+            ->get()
+            ->keyBy('url');
+        
+        $whatsappMenu = $menuItems->get('/whatsapp-ai');
+        $aiMenu = $menuItems->get('/ai');
 
         // ---- declarative menu map (DRY) ----
         $c = [
