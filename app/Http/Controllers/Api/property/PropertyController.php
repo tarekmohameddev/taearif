@@ -1855,53 +1855,68 @@ class PropertyController extends Controller
             ->values()
             ->toArray();
 
-        // ===== Get specifics filters from properties =====
-        $propertiesForFilters = Property::whereIn('user_id', $allowedUserIds)->get();
+        // ===== Get specifics filters from properties (OPTIMIZED - using aggregate queries) =====
+        // Use aggregate queries instead of loading all properties into memory
 
         // Price range (min/max from actual data)
         $priceRange = [
-            'min' => $propertiesForFilters->whereNotNull('price')->min('price') ?: 0,
-            'max' => $propertiesForFilters->whereNotNull('price')->max('price') ?: 0,
+            'min' => Property::whereIn('user_id', $allowedUserIds)
+                ->whereNotNull('price')
+                ->min('price') ?: 0,
+            'max' => Property::whereIn('user_id', $allowedUserIds)
+                ->whereNotNull('price')
+                ->max('price') ?: 0,
         ];
 
         // Area range (min only from actual data)
         $areaRange = [
-            'min' => $propertiesForFilters->whereNotNull('area')->min('area') ?: 0,
+            'min' => Property::whereIn('user_id', $allowedUserIds)
+                ->whereNotNull('area')
+                ->min('area') ?: 0,
         ];
 
         // Get distinct values for filters
-        $availableTypes = $propertiesForFilters->whereNotNull('type')
+        $availableTypes = Property::whereIn('user_id', $allowedUserIds)
+            ->whereNotNull('type')
             ->where('type', '!=', '')
+            ->distinct()
             ->pluck('type')
-            ->unique()
             ->values()
             ->toArray();
 
-        $availableBeds = $propertiesForFilters->whereNotNull('beds')
+        $availableBeds = Property::whereIn('user_id', $allowedUserIds)
+            ->whereNotNull('beds')
+            ->distinct()
+            ->orderBy('beds')
             ->pluck('beds')
-            ->unique()
-            ->sort()
             ->values()
             ->toArray();
 
-        $availableBath = $propertiesForFilters->whereNotNull('bath')
+        $availableBath = Property::whereIn('user_id', $allowedUserIds)
+            ->whereNotNull('bath')
+            ->distinct()
+            ->orderBy('bath')
             ->pluck('bath')
-            ->unique()
-            ->sort()
             ->values()
             ->toArray();
 
-        // Extract unique features from JSON arrays
-        $allFeatures = [];
-        foreach ($propertiesForFilters as $property) {
-            if (!empty($property->features) && is_array($property->features)) {
-                $allFeatures = array_merge($allFeatures, $property->features);
-            }
-        }
-        $availableFeatures = array_unique($allFeatures);
+        // Extract unique features from JSON arrays (optimized - only load features column)
+        $allFeatures = Property::whereIn('user_id', $allowedUserIds)
+            ->whereNotNull('features')
+            ->pluck('features')
+            ->flatten()
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
+        $availableFeatures = array_values($allFeatures);
         sort($availableFeatures);
 
         // Get UserPropertyCharacteristic filter options
+        // Get property IDs first (lightweight query - only IDs, not full models)
+        $propertyIds = Property::whereIn('user_id', $allowedUserIds)
+            ->pluck('id');
+
         $characteristicFilterOptions = [];
         $characteristicFields = [
             'private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement',
@@ -1911,7 +1926,7 @@ class PropertyController extends Controller
         ];
 
         foreach ($characteristicFields as $field) {
-            $values = UserPropertyCharacteristic::whereIn('property_id', $propertiesForFilters->pluck('id'))
+            $values = UserPropertyCharacteristic::whereIn('property_id', $propertyIds)
                 ->whereNotNull($field)
                 ->distinct()
                 ->pluck($field)

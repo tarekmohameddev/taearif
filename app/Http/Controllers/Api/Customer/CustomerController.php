@@ -106,13 +106,27 @@ class CustomerController extends Controller
     {
         $user = $request->user();
 
-        // Get all customer IDs for this user before pagination (for batch loading)
-        $allCustomerIds = ApiCustomer::where('user_id', $user->id)->pluck('id');
+        // OPTIMIZED: Paginate first, then load related data only for paginated customers
+        $customers = ApiCustomer::where('user_id', $user->id)
+            ->with([
+                'city:id,name_ar,name_en',
+                'district:id,name_ar,name_en',
+                'type:id,name',
+                'stage:id,stage_name',
+                'priorityRef:id,name',
+                'procedure:id,procedure_name',
+                'responsibleEmployee.activeWhatsappUser',
+            ])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
 
-        // Batch load all interested categories for all customers
+        // Get paginated customer IDs (only 10 per page instead of all customers)
+        $customerIds = $customers->pluck('id');
+
+        // Batch load all interested categories for paginated customers only
         $allInterestedCategories = collect();
-        if ($allCustomerIds->isNotEmpty()) {
-            $allInterestedCategories = ApiCustomerPropertyInterested::whereIn('customer_id', $allCustomerIds)
+        if ($customerIds->isNotEmpty()) {
+            $allInterestedCategories = ApiCustomerPropertyInterested::whereIn('customer_id', $customerIds)
                 ->join('api_user_categories', 'api_user_categories.id', '=', 'api_customer_property_interested.category_id')
                 ->select('api_customer_property_interested.customer_id', 'api_user_categories.id', 'api_user_categories.name')
                 ->distinct()
@@ -128,10 +142,10 @@ class CustomerController extends Controller
                 });
         }
 
-        // Batch load all interested properties for all customers
+        // Batch load all interested properties for paginated customers only
         $allInterestedProperties = collect();
-        if ($allCustomerIds->isNotEmpty()) {
-            $allInterestedProperties = ApiCustomerPropertyInterested::whereIn('customer_id', $allCustomerIds)
+        if ($customerIds->isNotEmpty()) {
+            $allInterestedProperties = ApiCustomerPropertyInterested::whereIn('customer_id', $customerIds)
                 ->join('user_properties as up', 'up.id', '=', 'api_customer_property_interested.property_id')
                 ->leftJoin('user_property_contents as upc', 'upc.property_id', '=', 'up.id')
                 ->select('api_customer_property_interested.customer_id', 'up.id', DB::raw('MAX(upc.title) as name'))
@@ -148,28 +162,15 @@ class CustomerController extends Controller
                 });
         }
 
-        // Batch load all inquiries for all customers
+        // Batch load all inquiries for paginated customers only
         $allInquiries = collect();
-        if ($allCustomerIds->isNotEmpty()) {
+        if ($customerIds->isNotEmpty()) {
             $allInquiries = DB::table('api_customer_inquiry')
-                ->whereIn('customer_id', $allCustomerIds)
+                ->whereIn('customer_id', $customerIds)
                 ->orderByDesc('created_at')
                 ->get(['customer_id', 'message', 'inquiry_type', 'property_type', 'location', 'city', 'district'])
                 ->groupBy('customer_id');
         }
-
-        $customers = ApiCustomer::where('user_id', $user->id)
-            ->with([
-                'city:id,name_ar,name_en',
-                'district:id,name_ar,name_en',
-                'type:id,name',
-                'stage:id,stage_name',
-                'priorityRef:id,name',
-                'procedure:id,procedure_name',
-                'responsibleEmployee.activeWhatsappUser',
-            ])
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
 
         // Helpers to map values to Arabic
         $mapInquiryTypeToArabic = function ($type) {
@@ -923,7 +924,23 @@ class CustomerController extends Controller
             ->get()
             ->groupBy('customer_id');
 
-        $customers = $paginator->getCollection()->map(function ($customer) use ($catRows, $propRows) {
+        // OPTIMIZED: Batch load all inquiries for paginated customers (fixes N+1 query)
+        $allCustomerInquiries = collect();
+        if (!empty($customerIds)) {
+            $allCustomerInquiries = DB::table('api_customer_inquiry')
+                ->whereIn('customer_id', $customerIds)
+                ->whereNotNull('district')
+                ->whereNotNull('city')
+                ->select('customer_id', 'district', 'city')
+                ->distinct()
+                ->get()
+                ->groupBy('customer_id')
+                ->map(function ($inquiries) {
+                    return $inquiries->take(3);
+                });
+        }
+
+        $customers = $paginator->getCollection()->map(function ($customer) use ($catRows, $propRows, $allCustomerInquiries) {
             $city = $customer->city;
             $district = $customer->district;
 
@@ -935,15 +952,8 @@ class CustomerController extends Controller
                 ->map(fn($r) => ['id' => (int)$r->id, 'name' => $r->name])
                 ->values();
 
-            // Get customer inquiries for district information
-            $customerInquiries = DB::table('api_customer_inquiry')
-                ->where('customer_id', $customer->id)
-                ->whereNotNull('district')
-                ->whereNotNull('city')
-                ->select('district', 'city')
-                ->distinct()
-                ->limit(3)
-                ->get();
+            // Get customer inquiries from pre-loaded collection (no N+1 query)
+            $customerInquiries = $allCustomerInquiries->get($customer->id, collect());
 
             // Format district information
             $districtInfo = null;
