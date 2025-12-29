@@ -12,6 +12,7 @@ use App\Models\User\BasicSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Models\PropertyCharacteristic;
@@ -1686,7 +1687,13 @@ class PropertyController extends Controller
 
         $allowedUserIds = [$ownerId];
         try {
-            $employeeIds = \App\Models\User::where('tenant_id', $ownerId)->pluck('id')->toArray();
+            $cacheKey = "tenant_employees_{$ownerId}";
+            $employeeIds = Cache::remember($cacheKey, 300, function () use ($ownerId) {
+                return \App\Models\User::where('tenant_id', $ownerId)
+                    ->where('account_type', 'employee')
+                    ->pluck('id')
+                    ->toArray();
+            });
             $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
         } catch (\Throwable $e) {}
 

@@ -106,6 +106,58 @@ class CustomerController extends Controller
     {
         $user = $request->user();
 
+        // Get all customer IDs for this user before pagination (for batch loading)
+        $allCustomerIds = ApiCustomer::where('user_id', $user->id)->pluck('id');
+
+        // Batch load all interested categories for all customers
+        $allInterestedCategories = collect();
+        if ($allCustomerIds->isNotEmpty()) {
+            $allInterestedCategories = ApiCustomerPropertyInterested::whereIn('customer_id', $allCustomerIds)
+                ->join('api_user_categories', 'api_user_categories.id', '=', 'api_customer_property_interested.category_id')
+                ->select('api_customer_property_interested.customer_id', 'api_user_categories.id', 'api_user_categories.name')
+                ->distinct()
+                ->get()
+                ->groupBy('customer_id')
+                ->map(function ($items) {
+                    return $items->map(function ($item) {
+                        return (object) [
+                            'id' => $item->id,
+                            'name' => $item->name,
+                        ];
+                    });
+                });
+        }
+
+        // Batch load all interested properties for all customers
+        $allInterestedProperties = collect();
+        if ($allCustomerIds->isNotEmpty()) {
+            $allInterestedProperties = ApiCustomerPropertyInterested::whereIn('customer_id', $allCustomerIds)
+                ->join('user_properties as up', 'up.id', '=', 'api_customer_property_interested.property_id')
+                ->leftJoin('user_property_contents as upc', 'upc.property_id', '=', 'up.id')
+                ->select('api_customer_property_interested.customer_id', 'up.id', DB::raw('MAX(upc.title) as name'))
+                ->groupBy('api_customer_property_interested.customer_id', 'up.id')
+                ->get()
+                ->groupBy('customer_id')
+                ->map(function ($items) {
+                    return $items->map(function ($item) {
+                        return (object) [
+                            'id' => $item->id,
+                            'name' => $item->name,
+                        ];
+                    });
+                });
+        }
+
+        // Batch load all inquiries for all customers
+        $allInquiries = collect();
+        if ($allCustomerIds->isNotEmpty()) {
+            $allInquiries = DB::table('api_customer_inquiry')
+                ->whereIn('customer_id', $allCustomerIds)
+                ->orderByDesc('created_at')
+                ->get(['customer_id', 'message', 'inquiry_type', 'property_type', 'location', 'city', 'district'])
+                ->groupBy('customer_id');
+        }
+
         $customers = ApiCustomer::where('user_id', $user->id)
             ->with([
                 'city:id,name_ar,name_en',
@@ -154,27 +206,13 @@ class CustomerController extends Controller
             return $map[$t] ?? $val;
         };
 
-        $formattedCustomers = $customers->map(function ($customer) use ($mapInquiryTypeToArabic, $mapPropertyTypeToArabic) {
+        $formattedCustomers = $customers->map(function ($customer) use ($mapInquiryTypeToArabic, $mapPropertyTypeToArabic, $allInterestedCategories, $allInterestedProperties, $allInquiries) {
             $district = $customer->district;
             
-            $interestedCategories = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
-            ->join('api_user_categories', 'api_user_categories.id', '=', 'api_customer_property_interested.category_id')
-            ->select('api_user_categories.id', 'api_user_categories.name')
-            ->distinct()
-            ->get();
-
-        $interestedProperties = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
-            ->join('user_properties as up', 'up.id', '=', 'api_customer_property_interested.property_id')
-            ->leftJoin('user_property_contents as upc', 'upc.property_id', '=', 'up.id')
-            ->select('up.id', DB::raw('MAX(upc.title) as name'))
-            ->groupBy('up.id')
-            ->get();
-
-            // Collect and merge customer inquiries
-            $inquiries = DB::table('api_customer_inquiry')
-                ->where('customer_id', $customer->id)
-                ->orderByDesc('created_at')
-                ->get(['message', 'inquiry_type', 'property_type', 'location', 'city', 'district']);
+            // Get pre-loaded data (same format as before)
+            $interestedCategories = $allInterestedCategories->get($customer->id, collect());
+            $interestedProperties = $allInterestedProperties->get($customer->id, collect());
+            $inquiries = $allInquiries->get($customer->id, collect());
 
             $agg = [
                 'message'       => null,
