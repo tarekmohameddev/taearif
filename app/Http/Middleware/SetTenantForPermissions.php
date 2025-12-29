@@ -16,6 +16,11 @@ class SetTenantForPermissions
 
     public function handle(Request $request, Closure $next)
     {
+        // Short-circuit CORS preflight to avoid extra DB / RBAC work
+        if ($request->isMethod('OPTIONS')) {
+            return $next($request);
+        }
+
         /** @var mixed $user */
         $user = $request->user();
         if (!$user || !$user instanceof User) {

@@ -35,7 +35,7 @@ class ApiSideMenusController extends Controller
             'message' => 'Side menus retrieved successfully.',
             'code'    => 200,
             'data'    => ['sections' => $sections],
-        ]);
+        ])->header('Cache-Control', 'private, max-age=300');
     }
 
     /**
