@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\JsonResponse;
 use App\Models\Api\UserPropertyRequest;
 use Illuminate\Validation\Rule;
@@ -232,53 +233,60 @@ class ApiPropertyRequestController extends Controller
         $usedOnly = (bool) $request->boolean('used_only', true);
         $cityId   = $request->input('city_id');
 
-        // Cities
-        if ($usedOnly) {
-            $cityIds = UserPropertyRequest::where('user_id', $ownerId)
-                ->whereNotNull('city_id')
+        // Cache filter options (1 hour TTL)
+        $cacheKey = "property_request_filter_options_{$ownerId}_{$usedOnly}_" . ($cityId ?? 'all');
+        $filterData = Cache::remember($cacheKey, 3600, function () use ($ownerId, $usedOnly, $cityId) {
+            // Cities
+            if ($usedOnly) {
+                $cityIds = UserPropertyRequest::where('user_id', $ownerId)
+                    ->whereNotNull('city_id')
+                    ->distinct()
+                    ->pluck('city_id');
+                $cities = UserCity::whereIn('id', $cityIds)->orderBy('name_ar')->get(['id', 'name_ar', 'name_en']);
+            } else {
+                $cities = UserCity::orderBy('name_ar')->get(['id', 'name_ar', 'name_en']);
+            }
+
+            // Districts
+            $districtQuery = UserDistrict::query();
+            if ($usedOnly) {
+                $districtIds = UserPropertyRequest::where('user_id', $ownerId)
+                    ->whereNotNull('districts_id')
+                    ->distinct()
+                    ->pluck('districts_id');
+                $districtQuery->whereIn('id', $districtIds);
+            }
+            if ($cityId) {
+                $districtQuery->where('city_id', (int) $cityId);
+            }
+            $districts = $districtQuery->orderBy('name_ar')->get(['id', 'city_id', 'name_ar', 'name_en']);
+
+            // Categories (tenant-visible)
+            $categories = ApiUserCategory::query()
+                ->visibleForUser($ownerId)
+                ->orderBy('name')
+                ->get(['id', 'name', 'slug', 'icon']);
+
+            // Property types used by this tenant (e.g., Residential/Commercial/etc.)
+            $propertyTypes = UserPropertyRequest::where('user_id', $ownerId)
+                ->whereNotNull('property_type')
                 ->distinct()
-                ->pluck('city_id');
-            $cities = UserCity::whereIn('id', $cityIds)->orderBy('name_ar')->get(['id', 'name_ar', 'name_en']);
-        } else {
-            $cities = UserCity::orderBy('name_ar')->get(['id', 'name_ar', 'name_en']);
-        }
+                ->orderBy('property_type')
+                ->pluck('property_type')
+                ->filter()
+                ->values();
 
-        // Districts
-        $districtQuery = UserDistrict::query();
-        if ($usedOnly) {
-            $districtIds = UserPropertyRequest::where('user_id', $ownerId)
-                ->whereNotNull('districts_id')
-                ->distinct()
-                ->pluck('districts_id');
-            $districtQuery->whereIn('id', $districtIds);
-        }
-        if ($cityId) {
-            $districtQuery->where('city_id', (int) $cityId);
-        }
-        $districts = $districtQuery->orderBy('name_ar')->get(['id', 'city_id', 'name_ar', 'name_en']);
-
-        // Categories (tenant-visible)
-        $categories = ApiUserCategory::query()
-            ->visibleForUser($ownerId)
-            ->orderBy('name')
-            ->get(['id', 'name', 'slug', 'icon']);
-
-        // Property types used by this tenant (e.g., Residential/Commercial/etc.)
-        $propertyTypes = UserPropertyRequest::where('user_id', $ownerId)
-            ->whereNotNull('property_type')
-            ->distinct()
-            ->orderBy('property_type')
-            ->pluck('property_type')
-            ->filter()
-            ->values();
-
-        return response()->json([
-            'status' => 'success',
-            'data' => [
+            return [
                 'cities' => $cities,
                 'districts' => $districts,
                 'categories' => $categories,
                 'property_types' => $propertyTypes,
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => array_merge($filterData, [
                 // Enumerations (for UI dropdowns)
                 'purchase_goals' => [
                     'سكن خاص',
@@ -292,7 +300,7 @@ class ApiPropertyRequestController extends Controller
                     'خلال 3 أشهر',
                     'لاحقًا / استكشاف فقط',
                 ],
-            ],
+            ]),
         ]);
     }
     public function destroy($id)

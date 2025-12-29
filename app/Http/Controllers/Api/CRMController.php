@@ -7,6 +7,7 @@ use App\Models\ApiCustomer;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Controller;
 use App\Models\Api\UserApiCustomerType;
 use App\Models\Api\UserApiCustomerStage;
