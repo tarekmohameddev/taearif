@@ -391,9 +391,12 @@ class WhatsappAddonController extends Controller
                     'expire_date' => $expireDate,
                 ]);
                 
-                // Update the WhatsApp number's request_status to active after successful payment
+                // Update the WhatsApp number's status and request_status to active after successful payment
                 if ($addon->whatsappUser) {
-                    $addon->whatsappUser->update(['request_status' => 'active']);
+                    $addon->whatsappUser->update([
+                        'status' => 'active',
+                        'request_status' => 'active'
+                    ]);
                 }
                 
                 return $this->finalizeRedirect(true, 'Payment Successful');
