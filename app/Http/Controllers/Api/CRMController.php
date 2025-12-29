@@ -495,7 +495,14 @@ class CRMController extends Controller
             $query->where(function ($sub) use ($qText) {
                 $sub->where('name', 'like', "%{$qText}%")
                     ->orWhere('email', 'like', "%{$qText}%")
-                    ->orWhere('phone_number', 'like', "%{$qText}%");
+                    ->orWhere('phone_number', 'like', "%{$qText}%")
+                    ->orWhereHas('responsibleEmployee', function ($empQuery) use ($qText) {
+                        $empQuery->where('first_name', 'like', "%{$qText}%")
+                                 ->orWhere('last_name', 'like', "%{$qText}%");
+                    })
+                    ->orWhereHas('responsibleEmployee.activeWhatsappUser', function ($whatsappQuery) use ($qText) {
+                        $whatsappQuery->where('number', 'like', "%{$qText}%");
+                    });
             });
         }
 
