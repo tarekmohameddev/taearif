@@ -22,10 +22,7 @@ class ApiSideMenusController extends Controller
 
         // owners bypass permission checks
         $isOwner = $this->isTenant($user);
-        
-        // Pre-load all permissions once instead of checking in loop
-        $permissions = $isOwner ? [] : $user->getAllPermissions()->pluck('name')->toArray();
-        $can = fn(string $perm) => $isOwner || in_array($perm, $permissions);
+        $can = fn(string $perm) => $isOwner || $user->can($perm);
 
         // feature flags / package (use OWNER package for both tenant & employees)
         $isAffiliateApproved = $user->isAffiliateApproved();
