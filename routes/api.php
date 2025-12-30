@@ -160,7 +160,7 @@ Route::middleware('web')->group(function () {
 
 
 // Auth routes
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', [AuthController::class, 'getUserProfile']);
     Route::get('/user/getUserInfo', [AuthController::class, 'getUserProfile']); // Alias for frontend compatibility
     Route::post('/user-read-message', [AuthController::class, 'read_message']);
@@ -189,7 +189,7 @@ Route::get('/referrals/{code}', [ReferralController::class, 'show']);  // /api/r
 
 
 // Dashboard routes
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'require.active.package'])->group(function () {
+Route::middleware(['auth:sanctum', 'require.active.package'])->group(function () {
     Route::get('/dashboard', [AnalyticsDashboardController::class, 'dashboard']);
     Route::get('/dashboard/summary', [AnalyticsDashboardController::class, 'summary']);
     Route::post('/dashboard/visitors', [AnalyticsDashboardController::class, 'visitors']);
@@ -372,7 +372,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/settings/theme/set-active', [ThemeSettingsController::class, 'setActiveTheme']);
 });
 
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/settings/payment', [PaymentController::class, 'index']); //PaymentController
     // (small note: remove the stray spaces in your paths like '/settings/domain ')
@@ -389,7 +389,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(funct
 
 
 //ApiSideMenusController
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/settings/side-menus', [ApiSideMenusController::class, 'index']);
 });
 
@@ -781,7 +781,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
 
 
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/v1/me/abilities', [MeAbilitiesController::class, 'index']);
 
     Route::get('/v1/rbac/perms/me', [PermissionController::class, 'me']);
