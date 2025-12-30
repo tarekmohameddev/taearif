@@ -634,7 +634,7 @@ class AuthController extends Controller
                                 'id', 'title', 'video_size_limit', 'file_size_limit',
                                 'number_of_vcards', 'trial_days', 'features',
                                 'project_limit_number', 'real_estate_limit_number',
-                                'whatsapp_numbers_limit'
+                                'whatsapp_numbers_limit', 'employees_limit'
                             ]);
                         }]);
                     },
@@ -728,6 +728,7 @@ class AuthController extends Controller
                             'project_limit_number' => $package->project_limit_number,
                             'real_estate_limit_number' => $package->real_estate_limit_number,
                             'whatsapp_numbers_limit' => $package->whatsapp_numbers_limit,
+                            'employees_limit' => $package->employees_limit,
                         ];
                     }
                 }
@@ -779,6 +780,14 @@ class AuthController extends Controller
                     'usage' => $owner->whatsapp_usage,
                     'max_whatsapp_numbers' => (isset($membershipDetails['package']) ? $membershipDetails['package']['whatsapp_numbers_limit'] : 0),
                     'is_over_limit' => $owner->whatsapp_usage >= $owner->whatsapp_quota,
+                ],
+                'employees' => [
+                    'quota' => $owner->employee_quota,
+                    'usage' => $owner->employee_usage,
+                    'max_employees' => (isset($membershipDetails['package']) ? $membershipDetails['package']['employees_limit'] : 0),
+                    'is_over_limit' => $owner->employee_usage >= $owner->employee_quota,
+                    'active_count' => $owner->employees()->where('active', true)->count(),
+                    'total_count' => $owner->employees()->count(),
                 ],
                 'permissions' => $permissions,
             ];
