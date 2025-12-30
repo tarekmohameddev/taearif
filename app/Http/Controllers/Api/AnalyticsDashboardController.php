@@ -307,12 +307,46 @@ class AnalyticsDashboardController extends Controller
                 // Only fetch missing periods from GA API (not both if one exists)
                 if ($currentOverview === null) {
                     $overview = $analytics->getOverviewMetricsOnly($tenantId, $startDate, $endDate);
+                    
+                    // OPTIMIZATION: Store fetched GA API data in database for future requests
+                    try {
+                        AnalyticsDailySummary::storeData(
+                            $tenantId,
+                            $endDate,
+                            'summary',
+                            ['overview' => $overview]
+                        );
+                    } catch (\Exception $storageError) {
+                        // Log but don't fail the request if storage fails
+                        Log::warning('Failed to store GA API data in database', [
+                            'tenant_id' => $tenantId,
+                            'date' => $endDate->format('Y-m-d'),
+                            'error' => $storageError->getMessage()
+                        ]);
+                    }
                 } else {
                     $overview = $currentOverview;
                 }
                 
                 if ($previousOverviewData === null) {
                     $previousOverview = $analytics->getOverviewMetricsOnly($tenantId, $previousStartDate, $previousEndDate);
+                    
+                    // OPTIMIZATION: Store fetched GA API data in database for future requests
+                    try {
+                        AnalyticsDailySummary::storeData(
+                            $tenantId,
+                            $previousEndDate,
+                            'summary',
+                            ['overview' => $previousOverview]
+                        );
+                    } catch (\Exception $storageError) {
+                        // Log but don't fail the request if storage fails
+                        Log::warning('Failed to store GA API data in database', [
+                            'tenant_id' => $tenantId,
+                            'date' => $previousEndDate->format('Y-m-d'),
+                            'error' => $storageError->getMessage()
+                        ]);
+                    }
                 } else {
                     $previousOverview = $previousOverviewData;
                 }
