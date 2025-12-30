@@ -410,6 +410,7 @@ class AnalyticsDashboardController extends Controller
     {
         $startTime = microtime(true);
         $cacheHit = false;
+        $dataSource = 'database';
         
         $tenantId = $this->tenantId($request);
 
@@ -428,21 +429,34 @@ class AnalyticsDashboardController extends Controller
                 'tenant_id' => $tenantId,
                 'duration_ms' => round($duration, 2),
                 'cache_hit' => true,
+                'data_source' => $dataSource,
             ]);
             
             return response()->json($cachedData);
         }
 
         // Fallback to GA API
+        $dataSource = 'ga_api';
         $tenantFilter = $this->buildTenantFilter($tenantId, false);
         
         try {
             $devices = $analytics->getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter);
+            
+            // Validate and store fetched data
+            if (is_array($devices) && !empty($devices)) {
+                $this->storeDevicesDataSafely($tenantId, $endDate, $devices);
+            } else {
+                Log::warning('GA devices API returned empty array', [
+                    'tenant_id' => $tenantId,
+                    'date_range' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d')
+                ]);
+            }
         } catch (\Exception $e) {
             // Graceful fallback for slow GA requests
-            Log::warning('GA devices request failed, returning empty array', [
+            Log::warning('GA devices request failed', [
                 'tenant_id' => $tenantId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             $devices = [];
         }
@@ -453,16 +467,18 @@ class AnalyticsDashboardController extends Controller
             'endpoint' => 'devices',
             'tenant_id' => $tenantId,
             'duration_ms' => round($duration, 2),
-            'cache_hit' => false,
+            'cache_hit' => $cacheHit,
+            'data_source' => $dataSource,
         ]);
 
-        return response()->json(['devices' => $devices]);
+        return response()->json(['devices' => $devices ?? []]);
     }
 
     public function trafficSources(Request $request, GoogleAnalyticsService $analytics)
     {
         $startTime = microtime(true);
         $cacheHit = false;
+        $dataSource = 'database';
         
         $tenantId = $this->tenantId($request);
 
@@ -481,20 +497,34 @@ class AnalyticsDashboardController extends Controller
                 'tenant_id' => $tenantId,
                 'duration_ms' => round($duration, 2),
                 'cache_hit' => true,
+                'data_source' => $dataSource,
             ]);
             
             return response()->json($cachedData);
         }
 
         // Fallback to GA API
+        $dataSource = 'ga_api';
         $tenantFilter = $this->buildTenantFilter($tenantId, true);
         
         try {
             $sources = $analytics->getTrafficSources($startDate, $endDate, $tenantFilter);
+            
+            // Validate and store fetched data
+            if (is_array($sources) && !empty($sources)) {
+                $this->storeTrafficSourcesDataSafely($tenantId, $endDate, $sources);
+            } else {
+                Log::warning('GA traffic sources API returned empty array', [
+                    'tenant_id' => $tenantId,
+                    'date_range' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d')
+                ]);
+            }
         } catch (\Exception $e) {
             // Graceful fallback for slow GA requests
-            Log::warning('GA traffic sources request failed, returning empty array', [
-                'error' => $e->getMessage()
+            Log::warning('GA traffic sources request failed', [
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             $sources = [];
         }
@@ -505,16 +535,18 @@ class AnalyticsDashboardController extends Controller
             'endpoint' => 'traffic-sources',
             'tenant_id' => $tenantId,
             'duration_ms' => round($duration, 2),
-            'cache_hit' => false,
+            'cache_hit' => $cacheHit,
+            'data_source' => $dataSource,
         ]);
 
-        return response()->json(['sources' => $sources]);
+        return response()->json(['sources' => $sources ?? []]);
     }
 
     public function mostVisitedPages(Request $request, GoogleAnalyticsService $analytics)
     {
         $startTime = microtime(true);
         $cacheHit = false;
+        $dataSource = 'database';
         
         $tenantId = $this->tenantId($request);
 
@@ -534,49 +566,65 @@ class AnalyticsDashboardController extends Controller
                 'tenant_id' => $tenantId,
                 'duration_ms' => round($duration, 2),
                 'cache_hit' => true,
+                'data_source' => $dataSource,
             ]);
             
             return response()->json($cachedData);
         }
 
         // Fallback to GA API
+        $dataSource = 'ga_api';
+        
         try {
-            $pages = $analytics->getDashboardData($tenantId, $startDate, $endDate)['topPages'];
+            $dashboardData = $analytics->getDashboardData($tenantId, $startDate, $endDate);
+            $pages = $dashboardData['topPages'] ?? [];
+            
+            if (!empty($pages)) {
+                $totalViews = collect($pages)->sum('pageViews');
 
-            $totalViews = collect($pages)->sum('pageViews');
+                $formattedPages = collect($pages)->map(function ($page) use ($totalViews) {
+                    $percentage = $totalViews > 0 ? round(($page['pageViews'] / $totalViews) * 100, 2) : 0;
 
-            $formattedPages = collect($pages)->map(function ($page) use ($totalViews) {
-                $percentage = $totalViews > 0 ? round(($page['pageViews'] / $totalViews) * 100, 2) : 0;
+                    $avgTime = isset($page['averageSessionDuration']) ? $this->formatDuration($page['averageSessionDuration']) : 'N/A';
 
-                $avgTime = isset($page['averageSessionDuration']) ? $this->formatDuration($page['averageSessionDuration']) : 'N/A';
+                    $uniqueVisitors = isset($page['users']) ? $page['users'] : 0;
 
-                $uniqueVisitors = isset($page['users']) ? $page['users'] : 0;
+                    $bounceRate = isset($page['bounceRate']) ? $page['bounceRate'] : 0.0;
 
-                $bounceRate = isset($page['bounceRate']) ? $page['bounceRate'] : 0.0;
+                    if (is_numeric($bounceRate)) {
+                        $bounceRate = (float)$bounceRate;
+                        $bounceRateFormatted = $bounceRate <= 1.0
+                            ? round($bounceRate * 100, 1)
+                            : round($bounceRate, 1);
+                    } else {
+                        $bounceRateFormatted = 0.0;
+                    }
 
-                if (is_numeric($bounceRate)) {
-                    $bounceRate = (float)$bounceRate;
-                    $bounceRateFormatted = $bounceRate <= 1.0
-                        ? round($bounceRate * 100, 1)
-                        : round($bounceRate, 1);
-                } else {
-                    $bounceRateFormatted = 0.0;
-                }
-
-                return [
-                    'path' => $page['path'],
-                    'views' => $page['pageViews'],
-                    'unique_visitors' => $uniqueVisitors,
-                    'bounce_rate' => (float) $bounceRateFormatted,
-                    'avg_time' => $avgTime,
-                    'percentage' => $percentage,
-                ];
-            })->toArray();
+                    return [
+                        'path' => $page['path'],
+                        'views' => $page['pageViews'],
+                        'unique_visitors' => $uniqueVisitors,
+                        'bounce_rate' => (float) $bounceRateFormatted,
+                        'avg_time' => $avgTime,
+                        'percentage' => $percentage,
+                    ];
+                })->toArray();
+                
+                // Store fetched data
+                $this->storeTopPagesDataSafely($tenantId, $endDate, $formattedPages);
+            } else {
+                Log::warning('GA most visited pages API returned empty array', [
+                    'tenant_id' => $tenantId,
+                    'date_range' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d')
+                ]);
+                $formattedPages = [];
+            }
         } catch (\Exception $e) {
             // Graceful fallback for slow/failed GA requests
-            Log::warning('GA most visited pages request failed, returning empty array', [
+            Log::warning('GA most visited pages request failed', [
                 'tenant_id' => $tenantId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             $formattedPages = [];
         }
@@ -587,10 +635,11 @@ class AnalyticsDashboardController extends Controller
             'endpoint' => 'most-visited-pages',
             'tenant_id' => $tenantId,
             'duration_ms' => round($duration, 2),
-            'cache_hit' => false,
+            'cache_hit' => $cacheHit,
+            'data_source' => $dataSource,
         ]);
 
-        return response()->json(['pages' => $formattedPages]);
+        return response()->json(['pages' => $formattedPages ?? []]);
     }
 
     protected function translateDeviceName($deviceName)
@@ -676,54 +725,93 @@ class AnalyticsDashboardController extends Controller
     }
 
     /**
-     * Get materialized traffic sources data
+     * Get materialized traffic sources data - improved to check date range
      */
     protected function getMaterializedTrafficSourcesData(string $tenantId, Carbon $start, Carbon $end): ?array
     {
-        // For traffic sources, we use the most recent day's data (last 7 days is typically from one day)
-        $record = AnalyticsDailySummary::forTenant($tenantId)
-            ->forDate($end->copy()->subDay()) // Yesterday's data
-            ->forMetricType('traffic_sources')
-            ->first();
-            
-        if ($record && isset($record->data['sources'])) {
-            return ['sources' => $record->data['sources']];
+        // Try to get most recent data within the date range
+        // Check yesterday first, then today, then any date in range
+        $datesToCheck = [
+            $end->copy()->subDay(), // Yesterday
+            $end->copy(), // Today
+        ];
+        
+        // Also check a few days back in the range
+        for ($i = 2; $i <= 7 && $i <= $start->diffInDays($end); $i++) {
+            $datesToCheck[] = $end->copy()->subDays($i);
+        }
+        
+        foreach ($datesToCheck as $checkDate) {
+            $record = AnalyticsDailySummary::forTenant($tenantId)
+                ->forDate($checkDate)
+                ->forMetricType('traffic_sources')
+                ->first();
+                
+            if ($record && isset($record->data['sources']) && !empty($record->data['sources'])) {
+                return ['sources' => $record->data['sources']];
+            }
         }
         
         return null;
     }
 
     /**
-     * Get materialized devices data
+     * Get materialized devices data - improved to check date range
      */
     protected function getMaterializedDevicesData(string $tenantId, Carbon $start, Carbon $end): ?array
     {
-        // For devices, we use the most recent day's data
-        $record = AnalyticsDailySummary::forTenant($tenantId)
-            ->forDate($end->copy()->subDay()) // Yesterday's data
-            ->forMetricType('devices')
-            ->first();
-            
-        if ($record && isset($record->data['devices'])) {
-            return ['devices' => $record->data['devices']];
+        // Try to get most recent data within the date range
+        // Check yesterday first, then today, then any date in range
+        $datesToCheck = [
+            $end->copy()->subDay(), // Yesterday
+            $end->copy(), // Today
+        ];
+        
+        // Also check a few days back in the range
+        for ($i = 2; $i <= 7 && $i <= $start->diffInDays($end); $i++) {
+            $datesToCheck[] = $end->copy()->subDays($i);
+        }
+        
+        foreach ($datesToCheck as $checkDate) {
+            $record = AnalyticsDailySummary::forTenant($tenantId)
+                ->forDate($checkDate)
+                ->forMetricType('devices')
+                ->first();
+                
+            if ($record && isset($record->data['devices']) && !empty($record->data['devices'])) {
+                return ['devices' => $record->data['devices']];
+            }
         }
         
         return null;
     }
 
     /**
-     * Get materialized top pages data
+     * Get materialized top pages data - improved to check date range
      */
     protected function getMaterializedTopPagesData(string $tenantId, Carbon $start, Carbon $end): ?array
     {
-        // For top pages, we use the most recent day's data
-        $record = AnalyticsDailySummary::forTenant($tenantId)
-            ->forDate($end->copy()->subDay()) // Yesterday's data
-            ->forMetricType('top_pages')
-            ->first();
-            
-        if ($record && isset($record->data['pages'])) {
-            return ['pages' => $record->data['pages']];
+        // Try to get most recent data within the date range
+        // Check yesterday first, then today, then any date in range
+        $datesToCheck = [
+            $end->copy()->subDay(), // Yesterday
+            $end->copy(), // Today
+        ];
+        
+        // Also check a few days back in the range
+        for ($i = 2; $i <= 7 && $i <= $start->diffInDays($end); $i++) {
+            $datesToCheck[] = $end->copy()->subDays($i);
+        }
+        
+        foreach ($datesToCheck as $checkDate) {
+            $record = AnalyticsDailySummary::forTenant($tenantId)
+                ->forDate($checkDate)
+                ->forMetricType('top_pages')
+                ->first();
+                
+            if ($record && isset($record->data['pages']) && !empty($record->data['pages'])) {
+                return ['pages' => $record->data['pages']];
+            }
         }
         
         return null;
@@ -825,6 +913,174 @@ class AnalyticsDashboardController extends Controller
         }
         
         return true;
+    }
+
+    /**
+     * Store devices data safely with cache lock to prevent race conditions
+     * 
+     * @param string $tenantId
+     * @param Carbon $date The date to store the data under
+     * @param array $devices The devices data from GA API
+     * @return bool True if stored successfully, false otherwise
+     */
+    protected function storeDevicesDataSafely(string $tenantId, Carbon $date, array $devices): bool
+    {
+        if (empty($devices)) {
+            return false;
+        }
+        
+        $lockKey = "ga:store:devices:{$tenantId}:{$date->format('Y-m-d')}";
+        $lock = Cache::lock($lockKey, 10);
+        
+        try {
+            if ($lock->get()) {
+                try {
+                    AnalyticsDailySummary::storeData(
+                        $tenantId,
+                        $date,
+                        'devices',
+                        ['devices' => $devices]
+                    );
+                    return true;
+                } catch (\Exception $e) {
+                    Log::warning('Failed to store devices data in database', [
+                        'tenant_id' => $tenantId,
+                        'date' => $date->format('Y-m-d'),
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    return false;
+                } finally {
+                    $lock->release();
+                }
+            } else {
+                Log::debug('Could not acquire lock for storing devices data', [
+                    'tenant_id' => $tenantId,
+                    'date' => $date->format('Y-m-d')
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::warning('Lock acquisition failed for storing devices data', [
+                'tenant_id' => $tenantId,
+                'date' => $date->format('Y-m-d'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Store traffic sources data safely with cache lock to prevent race conditions
+     * 
+     * @param string $tenantId
+     * @param Carbon $date The date to store the data under
+     * @param array $sources The traffic sources data from GA API
+     * @return bool True if stored successfully, false otherwise
+     */
+    protected function storeTrafficSourcesDataSafely(string $tenantId, Carbon $date, array $sources): bool
+    {
+        if (empty($sources)) {
+            return false;
+        }
+        
+        $lockKey = "ga:store:traffic-sources:{$tenantId}:{$date->format('Y-m-d')}";
+        $lock = Cache::lock($lockKey, 10);
+        
+        try {
+            if ($lock->get()) {
+                try {
+                    AnalyticsDailySummary::storeData(
+                        $tenantId,
+                        $date,
+                        'traffic_sources',
+                        ['sources' => $sources]
+                    );
+                    return true;
+                } catch (\Exception $e) {
+                    Log::warning('Failed to store traffic sources data in database', [
+                        'tenant_id' => $tenantId,
+                        'date' => $date->format('Y-m-d'),
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    return false;
+                } finally {
+                    $lock->release();
+                }
+            } else {
+                Log::debug('Could not acquire lock for storing traffic sources data', [
+                    'tenant_id' => $tenantId,
+                    'date' => $date->format('Y-m-d')
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::warning('Lock acquisition failed for storing traffic sources data', [
+                'tenant_id' => $tenantId,
+                'date' => $date->format('Y-m-d'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Store top pages data safely with cache lock to prevent race conditions
+     * 
+     * @param string $tenantId
+     * @param Carbon $date The date to store the data under
+     * @param array $pages The top pages data from GA API
+     * @return bool True if stored successfully, false otherwise
+     */
+    protected function storeTopPagesDataSafely(string $tenantId, Carbon $date, array $pages): bool
+    {
+        if (empty($pages)) {
+            return false;
+        }
+        
+        $lockKey = "ga:store:top-pages:{$tenantId}:{$date->format('Y-m-d')}";
+        $lock = Cache::lock($lockKey, 10);
+        
+        try {
+            if ($lock->get()) {
+                try {
+                    AnalyticsDailySummary::storeData(
+                        $tenantId,
+                        $date,
+                        'top_pages',
+                        ['pages' => $pages]
+                    );
+                    return true;
+                } catch (\Exception $e) {
+                    Log::warning('Failed to store top pages data in database', [
+                        'tenant_id' => $tenantId,
+                        'date' => $date->format('Y-m-d'),
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    return false;
+                } finally {
+                    $lock->release();
+                }
+            } else {
+                Log::debug('Could not acquire lock for storing top pages data', [
+                    'tenant_id' => $tenantId,
+                    'date' => $date->format('Y-m-d')
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::warning('Lock acquisition failed for storing top pages data', [
+                'tenant_id' => $tenantId,
+                'date' => $date->format('Y-m-d'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
     }
 
     /**
