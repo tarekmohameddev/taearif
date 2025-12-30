@@ -46,9 +46,10 @@ class SyncAnalyticsData extends Command
             // Sync last 7 days
             for ($i = 0; $i < 7; $i++) {
                 $syncDate = $date->copy()->subDays($i);
+                $this->info("\nSyncing date: {$syncDate->format('Y-m-d')} (" . ($i + 1) . "/7)");
                 $this->syncDateForTenants($service, $tenants, $syncDate);
             }
-            $this->info('Backfill sync completed!');
+            $this->info("\nBackfill sync completed!");
         } else {
             $this->info("Syncing data for date: {$date->format('Y-m-d')}");
             $this->syncDateForTenants($service, $tenants, $date);
@@ -72,7 +73,7 @@ class SyncAnalyticsData extends Command
     private function syncDateForTenants(AnalyticsMaterializationService $service, array $tenants, Carbon $date): void
     {
         $total = count($tenants);
-        $this->info("Processing {$total} tenant(s)...");
+        $this->info("Processing {$total} tenant(s) for date: {$date->format('Y-m-d')}...");
         
         $bar = $this->output->createProgressBar($total);
         $bar->start();
