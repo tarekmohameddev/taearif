@@ -96,6 +96,19 @@ class EmployeeController extends Controller
             'permissions.*' => ['string'],
         ]);
 
+        // Check employee quota before creating
+        $tenant = User::findOrFail($tenantId);
+        
+        if ($tenant->employee_usage >= $tenant->employee_quota) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'لقد وصلت للحد الأقصى لعدد الموظفين المسموح بهم. يرجى شراء إضافة لزيادة الحد.',
+                'quota' => $tenant->employee_quota,
+                'usage' => $tenant->employee_usage,
+                'is_over_limit' => true,
+            ], 422);
+        }
+
         // Create employee as a User with account_type = 'employee'
         $employee = User::create([
             'first_name' => $data['first_name'] ?? null,
