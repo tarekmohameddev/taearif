@@ -204,15 +204,6 @@ class AnalyticsDashboardController extends Controller
         
         if ($cachedData !== null) {
             $cacheHit = true;
-            $duration = (microtime(true) - $startTime) * 1000;
-            
-            Log::info('Analytics endpoint performance', [
-                'endpoint' => 'visitors',
-                'tenant_id' => $tenantId,
-                'duration_ms' => round($duration, 2),
-                'cache_hit' => true,
-                'time_range' => $timeRange,
-            ]);
             
             // Return cached data (already formatted)
             return response()->json($cachedData);
@@ -244,16 +235,6 @@ class AnalyticsDashboardController extends Controller
         if (!$endDate->isToday()) {
             $this->storeMaterializedVisitorsData($tenantId, $startDate, $endDate, $responseData);
         }
-
-        $duration = (microtime(true) - $startTime) * 1000;
-        
-        Log::info('Analytics endpoint performance', [
-            'endpoint' => 'visitors',
-            'tenant_id' => $tenantId,
-            'duration_ms' => round($duration, 2),
-            'cache_hit' => false,
-            'time_range' => $timeRange,
-        ]);
 
         // Return the response with the dynamic time range
         return response()->json($responseData);
@@ -376,16 +357,6 @@ class AnalyticsDashboardController extends Controller
         $purposeCounts = $dbData['purposeCounts'];
         $propertiesTotal = $purposeCounts->sum('total');
 
-        $duration = (microtime(true) - $startTime) * 1000;
-        
-        Log::info('Analytics endpoint performance', [
-            'endpoint' => 'summary',
-            'tenant_id' => $tenantId,
-            'duration_ms' => round($duration, 2),
-            'cache_hit' => $cacheHit,
-            'data_source' => $dataSource,
-        ]);
-
         return response()->json([
             'status' => 'success',
             'visits' => $overview['sessions'],
@@ -422,15 +393,6 @@ class AnalyticsDashboardController extends Controller
         
         if ($cachedData !== null) {
             $cacheHit = true;
-            $duration = (microtime(true) - $startTime) * 1000;
-            
-            Log::info('Analytics endpoint performance', [
-                'endpoint' => 'devices',
-                'tenant_id' => $tenantId,
-                'duration_ms' => round($duration, 2),
-                'cache_hit' => true,
-                'data_source' => $dataSource,
-            ]);
             
             return response()->json($cachedData);
         }
@@ -461,16 +423,6 @@ class AnalyticsDashboardController extends Controller
             $devices = [];
         }
 
-        $duration = (microtime(true) - $startTime) * 1000;
-        
-        Log::info('Analytics endpoint performance', [
-            'endpoint' => 'devices',
-            'tenant_id' => $tenantId,
-            'duration_ms' => round($duration, 2),
-            'cache_hit' => $cacheHit,
-            'data_source' => $dataSource,
-        ]);
-
         return response()->json(['devices' => $devices ?? []]);
     }
 
@@ -490,15 +442,6 @@ class AnalyticsDashboardController extends Controller
         
         if ($cachedData !== null) {
             $cacheHit = true;
-            $duration = (microtime(true) - $startTime) * 1000;
-            
-            Log::info('Analytics endpoint performance', [
-                'endpoint' => 'traffic-sources',
-                'tenant_id' => $tenantId,
-                'duration_ms' => round($duration, 2),
-                'cache_hit' => true,
-                'data_source' => $dataSource,
-            ]);
             
             return response()->json($cachedData);
         }
@@ -529,16 +472,6 @@ class AnalyticsDashboardController extends Controller
             $sources = [];
         }
 
-        $duration = (microtime(true) - $startTime) * 1000;
-        
-        Log::info('Analytics endpoint performance', [
-            'endpoint' => 'traffic-sources',
-            'tenant_id' => $tenantId,
-            'duration_ms' => round($duration, 2),
-            'cache_hit' => $cacheHit,
-            'data_source' => $dataSource,
-        ]);
-
         return response()->json(['sources' => $sources ?? []]);
     }
 
@@ -559,15 +492,6 @@ class AnalyticsDashboardController extends Controller
         
         if ($cachedData !== null) {
             $cacheHit = true;
-            $duration = (microtime(true) - $startTime) * 1000;
-            
-            Log::info('Analytics endpoint performance', [
-                'endpoint' => 'most-visited-pages',
-                'tenant_id' => $tenantId,
-                'duration_ms' => round($duration, 2),
-                'cache_hit' => true,
-                'data_source' => $dataSource,
-            ]);
             
             return response()->json($cachedData);
         }
@@ -628,16 +552,6 @@ class AnalyticsDashboardController extends Controller
             ]);
             $formattedPages = [];
         }
-
-        $duration = (microtime(true) - $startTime) * 1000;
-        
-        Log::info('Analytics endpoint performance', [
-            'endpoint' => 'most-visited-pages',
-            'tenant_id' => $tenantId,
-            'duration_ms' => round($duration, 2),
-            'cache_hit' => $cacheHit,
-            'data_source' => $dataSource,
-        ]);
 
         return response()->json(['pages' => $formattedPages ?? []]);
     }
