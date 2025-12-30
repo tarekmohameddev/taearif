@@ -141,8 +141,8 @@ class AnalyticsMaterializationService
     public function materializeSummaryData(string $tenantId, Carbon $startDate, Carbon $endDate, Carbon $targetDate): void
     {
         try {
-            $tenantFilter = $this->buildTenantFilter($tenantId);
-            $overview = $this->gaService->getOverviewMetrics($startDate, $endDate, $tenantFilter);
+            // Use the public method that handles tenant filtering internally
+            $overview = $this->gaService->getOverviewMetricsOnly($tenantId, $startDate, $endDate);
 
             // Store summary data matching API response structure
             AnalyticsDailySummary::storeData(
