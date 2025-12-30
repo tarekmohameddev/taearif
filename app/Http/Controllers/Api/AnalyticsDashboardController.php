@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\ApiCustomer;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class AnalyticsDashboardController extends Controller
 {
@@ -41,6 +42,86 @@ class AnalyticsDashboardController extends Controller
         return [ Carbon::now()->subDays($days), Carbon::now() ];
     }
 
+    /**
+     * Build tenant filter for Google Analytics queries
+     *
+     * @param string $tenantId
+     * @param bool $useContains Whether to use CONTAINS match type (default: false for EXACT)
+     * @return FilterExpression
+     */
+    protected function buildTenantFilter(string $tenantId, bool $useContains = false): FilterExpression
+    {
+        $stringFilterOptions = [
+            'value' => $tenantId,
+        ];
+
+        if ($useContains) {
+            $stringFilterOptions['match_type'] = StringFilter\MatchType::CONTAINS;
+        }
+
+        return new FilterExpression([
+            'filter' => new Filter([
+                'field_name' => 'customEvent:tenant_id',
+                'string_filter' => new StringFilter($stringFilterOptions),
+            ]),
+        ]);
+    }
+
+    /**
+     * Validate time_range against allowed values
+     *
+     * @param mixed $timeRange
+     * @param int $default
+     * @return int
+     */
+    protected function validateTimeRange($timeRange, int $default = 30): int
+    {
+        $allowedRanges = [7, 30, 90, 365];
+        $timeRange = (int) $timeRange;
+        
+        return in_array($timeRange, $allowedRanges) ? $timeRange : $default;
+    }
+
+    /**
+     * Generate cache key for GA visitors endpoint
+     *
+     * @param string $tenantId
+     * @param int $timeRange
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @return string
+     */
+    protected function getVisitorsCacheKey(string $tenantId, int $timeRange, Carbon $startDate, Carbon $endDate): string
+    {
+        return "ga:visitors:{$tenantId}:{$timeRange}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
+    }
+
+    /**
+     * Generate cache key for GA devices endpoint
+     *
+     * @param string $tenantId
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @return string
+     */
+    protected function getDevicesCacheKey(string $tenantId, Carbon $startDate, Carbon $endDate): string
+    {
+        return "ga:devices:{$tenantId}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
+    }
+
+    /**
+     * Generate cache key for GA traffic sources endpoint
+     *
+     * @param string $tenantId
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @return string
+     */
+    protected function getTrafficSourcesCacheKey(string $tenantId, Carbon $startDate, Carbon $endDate): string
+    {
+        return "ga:traffic-sources:{$tenantId}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
+    }
+
     public function dashboard(Request $request)
     {
         $tenant = $this->tenantId($request);
@@ -61,14 +142,13 @@ class AnalyticsDashboardController extends Controller
         // Get the user and tenant ID
         $tenantId = $this->tenantId($request);
 
+        // Retrieve and validate time range from the request (default to 30 days if not provided)
+        $timeRange = $this->validateTimeRange($request->input('time_range', 30), 30);
 
-        // Retrieve the time range from the request (default to 30 days if not provided)
-        $timeRange = $request->input('time_range', 30);
-
-        // Calculate the start and end dates based on the time_range
+        // Normalize Carbon::now() to compute once per request
         $endDate = Carbon::now();
 
-        // Calculate the start date based on the time_range
+        // Calculate the start date based on the validated time_range
         switch ($timeRange) {
             case 7:
                 $startDate = $endDate->copy()->subDays(7); // Last 7 days
@@ -87,8 +167,23 @@ class AnalyticsDashboardController extends Controller
                 break;
         }
 
-        // Fetch the visitor data using the dynamic date range
-        $visitorData = $analytics->getVisitorData($tenantId, $startDate, $endDate); // Custom method for time series data
+        // Check if performance optimizations are enabled
+        $useCache = config('performance.enable_api_performance_optimizations');
+
+        if ($useCache) {
+            $cacheKey = $this->getVisitorsCacheKey($tenantId, $timeRange, $startDate, $endDate);
+            $cacheTtl = 600; // 10 minutes
+
+            $result = Cache::remember($cacheKey, $cacheTtl, function () use ($analytics, $tenantId, $startDate, $endDate) {
+                // Fetch the visitor data using the dynamic date range
+                return $analytics->getVisitorData($tenantId, $startDate, $endDate);
+            });
+
+            $visitorData = $result;
+        } else {
+            // Fetch the visitor data using the dynamic date range
+            $visitorData = $analytics->getVisitorData($tenantId, $startDate, $endDate);
+        }
 
         // Format the visitor data
         $visitorDataFormatted = collect($visitorData)->map(function ($item) {
@@ -180,21 +275,43 @@ class AnalyticsDashboardController extends Controller
     {
         $tenantId = $this->tenantId($request);
 
-        $startDate = Carbon::now()->subDays(7);
         $endDate = Carbon::now();
+        $startDate = $endDate->copy()->subDays(7);
 
-        // Build the tenant filter
-        $tenantFilter = new FilterExpression([
-            'filter' => new Filter([
-                'field_name' => 'customEvent:tenant_id',
-                'string_filter' => new StringFilter([
-                    'value' => $tenantId,
-                ]),
-            ]),
-        ]);
+        // Build the tenant filter using helper method
+        $tenantFilter = $this->buildTenantFilter($tenantId, false);
 
-        // Now pass the tenantFilter as the 4th argument
-        $devices = $analytics->getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter);
+        // Check if performance optimizations are enabled
+        $useCache = config('performance.enable_api_performance_optimizations');
+
+        if ($useCache) {
+            $cacheKey = $this->getDevicesCacheKey($tenantId, $startDate, $endDate);
+            $cacheTtl = 900; // 15 minutes
+
+            $devices = Cache::remember($cacheKey, $cacheTtl, function () use ($analytics, $tenantId, $startDate, $endDate, $tenantFilter) {
+                try {
+                    return $analytics->getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter);
+                } catch (\Exception $e) {
+                    // Graceful fallback for slow GA requests
+                    Log::warning('GA devices request failed, returning empty array', [
+                        'tenant_id' => $tenantId,
+                        'error' => $e->getMessage()
+                    ]);
+                    return [];
+                }
+            });
+        } else {
+            try {
+                $devices = $analytics->getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter);
+            } catch (\Exception $e) {
+                // Graceful fallback for slow GA requests
+                Log::warning('GA devices request failed, returning empty array', [
+                    'tenant_id' => $tenantId,
+                    'error' => $e->getMessage()
+                ]);
+                $devices = [];
+            }
+        }
 
         return response()->json(['devices' => $devices]);
     }
@@ -202,22 +319,42 @@ class AnalyticsDashboardController extends Controller
     public function trafficSources(Request $request, GoogleAnalyticsService $analytics)
     {
         $tenantId = $this->tenantId($request);
-        // $tenantId = 'ress';
 
-        $startDate = Carbon::now()->subDays(7);
         $endDate = Carbon::now();
+        $startDate = $endDate->copy()->subDays(7);
 
-        $tenantFilter = new FilterExpression([
-            'filter' => new Filter([
-                'field_name' => 'customEvent:tenant_id',
-                'string_filter' => new StringFilter([
-                    'value' => $tenantId,
-                    'match_type' => StringFilter\MatchType::CONTAINS,
-                ]),
-            ]),
-        ]);
+        // Build the tenant filter using helper method (with CONTAINS match type)
+        $tenantFilter = $this->buildTenantFilter($tenantId, true);
 
-        $sources = $analytics->getTrafficSources($startDate, $endDate, $tenantFilter);
+        // Check if performance optimizations are enabled
+        $useCache = config('performance.enable_api_performance_optimizations');
+
+        if ($useCache) {
+            $cacheKey = $this->getTrafficSourcesCacheKey($tenantId, $startDate, $endDate);
+            $cacheTtl = 900; // 15 minutes
+
+            $sources = Cache::remember($cacheKey, $cacheTtl, function () use ($analytics, $startDate, $endDate, $tenantFilter) {
+                try {
+                    return $analytics->getTrafficSources($startDate, $endDate, $tenantFilter);
+                } catch (\Exception $e) {
+                    // Graceful fallback for slow GA requests
+                    Log::warning('GA traffic sources request failed, returning empty array', [
+                        'error' => $e->getMessage()
+                    ]);
+                    return [];
+                }
+            });
+        } else {
+            try {
+                $sources = $analytics->getTrafficSources($startDate, $endDate, $tenantFilter);
+            } catch (\Exception $e) {
+                // Graceful fallback for slow GA requests
+                Log::warning('GA traffic sources request failed, returning empty array', [
+                    'error' => $e->getMessage()
+                ]);
+                $sources = [];
+            }
+        }
 
         return response()->json(['sources' => $sources]);
     }

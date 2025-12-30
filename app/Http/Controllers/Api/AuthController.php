@@ -48,6 +48,7 @@ use App\Models\User\PortfolioCategory;
 use App\Models\User\UserEmailTemplate;
 use App\Models\User\UserPaymentGeteway;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Validator;
@@ -597,24 +598,81 @@ class AuthController extends Controller
             // Resolve tenant owner (tenant for tenant; tenant for employee)
             $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
 
+            // Check if performance optimizations are enabled
+            $useOptimizations = config('performance.enable_api_performance_optimizations');
+            $cacheKey = "user:profile:{$user->id}:{$owner->id}";
+            $cacheTtl = 300; // 5 minutes
+
+            if ($useOptimizations) {
+                // Try to get from cache first
+                $cachedData = Cache::get($cacheKey);
+                if ($cachedData !== null) {
+                    return response()->json([
+                        'status' => 'success',
+                        'data' => $cachedData,
+                    ], 200);
+                }
+            }
+
             // Get current date for comparing with membership expiration
             $currentDate = now();
 
-            // Get owner's latest membership from the membership table
-            $membership = Membership::where('user_id', $owner->id)
-                ->orderBy('id', 'desc')
-                ->first();
+            if ($useOptimizations) {
+                // Eager load relationships with column whitelists to reduce data transfer
+                // Load owner with memberships (latest), domains (active), and basic_setting in one go
+                $owner->load([
+                    'memberships' => function ($query) {
+                        $query->select([
+                            'id', 'user_id', 'package_id', 'package_price', 'discount', 
+                            'coupon_code', 'price', 'currency', 'currency_symbol', 
+                            'payment_method', 'transaction_id', 'status', 'is_trial', 
+                            'trial_days', 'start_date', 'expire_date'
+                        ])
+                        ->orderBy('id', 'desc')
+                        ->with(['package' => function ($pkgQuery) {
+                            $pkgQuery->select([
+                                'id', 'title', 'video_size_limit', 'file_size_limit',
+                                'number_of_vcards', 'trial_days', 'features',
+                                'project_limit_number', 'real_estate_limit_number',
+                                'whatsapp_numbers_limit'
+                            ]);
+                        }]);
+                    },
+                    'domains' => function ($query) {
+                        $query->select(['id', 'user_id', 'custom_name', 'status', 'primary', 'ssl'])
+                            ->where('status', 'active');
+                    },
+                    'basic_setting' => function ($query) {
+                        $query->select(['id', 'user_id', 'company_name']);
+                    }
+                ]);
 
-            $domain = ApiDomainSetting::where('user_id', $owner->id)->where('status', 'active')->first([
-                "custom_name",
-                "status",
-                "primary",
-                "ssl",
-            ]);
+                // Get latest membership from eager loaded relationship (first after ordering by id desc)
+                $membership = $owner->memberships->first();
+                
+                // Get active domain from eager loaded relationship (first active domain)
+                $domain = $owner->domains->first();
+                
+                // Get company name from eager loaded relationship
+                $companyName = $owner->basic_setting?->company_name;
+            } else {
+                // Original code path without optimizations
+                // Get owner's latest membership from the membership table
+                $membership = Membership::where('user_id', $owner->id)
+                    ->orderBy('id', 'desc')
+                    ->first();
 
-            // Get company_name from BasicSetting (owner)
-            $basicSetting = BasicSetting::where('user_id', $owner->id)->first(['company_name']);
-            $companyName = $basicSetting ? $basicSetting->company_name : null;
+                $domain = ApiDomainSetting::where('user_id', $owner->id)->where('status', 'active')->first([
+                    "custom_name",
+                    "status",
+                    "primary",
+                    "ssl",
+                ]);
+
+                // Get company_name from BasicSetting (owner)
+                $basicSetting = BasicSetting::where('user_id', $owner->id)->first(['company_name']);
+                $companyName = $basicSetting ? $basicSetting->company_name : null;
+            }
 
             $membershipDetails = null;
             $isFreePlan = true;
@@ -649,9 +707,16 @@ class AuthController extends Controller
                     'is_free_plan' => $isFreePlan
                 ];
 
-                // Get package details if needed
+                // Get package details if needed (already loaded via eager loading if optimizations enabled)
                 if ($membership->package_id) {
-                    $package = Package::find($membership->package_id);
+                    if ($useOptimizations && $membership->relationLoaded('package') && $membership->package) {
+                        // Package already loaded via eager loading
+                        $package = $membership->package;
+                    } else {
+                        // Fallback: load package if not eager loaded
+                        $package = Package::find($membership->package_id);
+                    }
+                    
                     if ($package) {
                         $membershipDetails['package'] = [
                             'title' => $package->title,
@@ -669,6 +734,11 @@ class AuthController extends Controller
             }
 
             // Get all permissions (direct + from roles) for the user
+            // Preload permissions via eager loading to cut N+1s from Spatie
+            if ($useOptimizations) {
+                $user->load(['roles.permissions', 'permissions']);
+            }
+            
             $permissions = $user->getAllPermissions()->map(function ($permission) {
                 return [
                     'id' => $permission->id,
@@ -712,6 +782,11 @@ class AuthController extends Controller
                 ],
                 'permissions' => $permissions,
             ];
+
+            // Cache the result if optimizations are enabled
+            if ($useOptimizations) {
+                Cache::put($cacheKey, $userData, $cacheTtl);
+            }
 
             return response()->json([
                 'status' => 'success',
