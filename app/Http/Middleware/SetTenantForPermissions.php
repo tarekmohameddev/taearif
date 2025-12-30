@@ -50,13 +50,23 @@ class SetTenantForPermissions
         }
 
         if ($acct === 'employee') {
+            // Check if relation is already loaded (most efficient)
             if (method_exists($user, 'tenant') && $user->relationLoaded('tenant') && $user->tenant) {
                 return $user->tenant;
             }
+            
+            // Try to access relation if it exists (may trigger lazy load)
             if (method_exists($user, 'tenant') && $user->tenant) {
                 return $user->tenant;
             }
-            return $user->tenant_id ? User::find($user->tenant_id) : null;
+            
+            // Cache tenant lookup to avoid repeated database queries
+            if ($user->tenant_id) {
+                $cacheKey = "tenant_user_{$user->tenant_id}";
+                return Cache::remember($cacheKey, 300, function () use ($user) {
+                    return User::find($user->tenant_id);
+                });
+            }
         }
 
         return null;

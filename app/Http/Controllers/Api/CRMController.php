@@ -105,31 +105,17 @@ class CRMController extends Controller
         $procedures = UserApiCustomerProcedure::where('user_id', $user->id)->orderBy('order')->get();
         $types = UserApiCustomerType::where('user_id', $user->id)->orderBy('order')->get();
 
-        // Collect all customer IDs that will be used
-        $allCustomerIds = collect();
-        foreach ($stages as $stage) {
-            $allCustomerIds = $allCustomerIds->merge(
-                $buildQuery(fn($q) => $q->where('stage_id', $stage->id))->pluck('id')
-            );
-        }
-        foreach ($priorities as $priority) {
-            $allCustomerIds = $allCustomerIds->merge(
-                $buildQuery(fn($q) => $q->where('priority_id', $priority->id))->pluck('id')
-            );
-        }
-        foreach ($procedures as $proc) {
-            $allCustomerIds = $allCustomerIds->merge(
-                $buildQuery(fn($q) => $q->where('procedure_id', $proc->id))->pluck('id')
-            );
-        }
-        foreach ($types as $type) {
-            $allCustomerIds = $allCustomerIds->merge(
-                $buildQuery(fn($q) => $q->where('type_id', $type->id))->pluck('id')
-            );
-        }
-
-        // Remove duplicates
-        $allCustomerIds = $allCustomerIds->unique();
+        // OPTIMIZED: Collect all customer IDs in a single query instead of N queries
+        // This reduces from N+4 queries to 1 query for customer ID collection
+        $allCustomerIds = ApiCustomer::where('user_id', $user->id)
+            ->where(function($q) use ($stages, $priorities, $procedures, $types) {
+                $q->whereIn('stage_id', $stages->pluck('id'))
+                  ->orWhereIn('priority_id', $priorities->pluck('id'))
+                  ->orWhereIn('procedure_id', $procedures->pluck('id'))
+                  ->orWhereIn('type_id', $types->pluck('id'));
+            })
+            ->pluck('id')
+            ->unique();
 
         // OPTIMIZATION: Batch load all counts in 2 queries instead of 2N queries
         $remindersCounts = collect();

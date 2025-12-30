@@ -1743,6 +1743,7 @@ class PropertyController extends Controller
         }
 
         // Apply UserPropertyCharacteristic filters
+        // OPTIMIZED: Combine all filters into a single whereHas query instead of N separate queries
         $characteristicFilters = [
             'private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement',
             'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room',
@@ -1750,12 +1751,23 @@ class PropertyController extends Controller
             'bathrooms', 'rooms', 'building_age'
         ];
 
+        // Check if any characteristic filters are present
+        $hasCharacteristicFilter = false;
+        $activeFilters = [];
         foreach ($characteristicFilters as $filter) {
             if ($request->has($filter) && !empty($request->$filter)) {
-                $propertiesQuery->whereHas('UserPropertyCharacteristics', function ($query) use ($filter, $request) {
-                    $query->where($filter, $request->$filter);
-                });
+                $hasCharacteristicFilter = true;
+                $activeFilters[$filter] = $request->$filter;
             }
+        }
+
+        // Apply all filters in a single whereHas query
+        if ($hasCharacteristicFilter) {
+            $propertiesQuery->whereHas('UserPropertyCharacteristics', function ($query) use ($activeFilters) {
+                foreach ($activeFilters as $filter => $value) {
+                    $query->where($filter, $value);
+                }
+            });
         }
 
         // Apply sorting
