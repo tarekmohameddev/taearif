@@ -87,6 +87,8 @@ class AnalyticsDailySummary extends Model
     public static function storeMetric(string $tenantId, Carbon $date, string $metricType, array $metricData): void
     {
         $dateStr = $date->format('Y-m-d');
+        $jsonPath = '$.' . $metricType;
+        $jsonValue = json_encode($metricData);
         
         // Ensure row exists first (with empty JSON if new)
         DB::statement("
@@ -97,11 +99,12 @@ class AnalyticsDailySummary extends Model
         
         // Atomic partial update using JSON_SET - only updates the specified metric key
         // This prevents concurrent updates from overwriting each other
+        // Use JSON_EXTRACT on a JSON string parameter to provide a proper JSON value
         DB::statement("
             UPDATE analytics_daily_summary 
-            SET data = JSON_SET(COALESCE(data, '{}'), ?, CAST(? AS JSON)), updated_at = NOW()
+            SET data = JSON_SET(COALESCE(data, '{}'), ?, JSON_EXTRACT(?, '$')), updated_at = NOW()
             WHERE tenant_id = ? AND date = ?
-        ", ['$.' . $metricType, json_encode($metricData), $tenantId, $dateStr]);
+        ", [$jsonPath, $jsonValue, $tenantId, $dateStr]);
     }
     
     /**
