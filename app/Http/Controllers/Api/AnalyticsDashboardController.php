@@ -284,29 +284,47 @@ class AnalyticsDashboardController extends Controller
         $previousStartDate = $endDate->copy()->subDays(14);
         $previousEndDate = $endDate->copy()->subDays(7);
 
-        // Try to get from materialized data first
+        // OPTIMIZATION: Always query database first (materialized data)
         $currentOverview = $this->getMaterializedSummaryData($tenantId, $startDate, $endDate);
         $previousOverviewData = $this->getMaterializedSummaryData($tenantId, $previousStartDate, $previousEndDate);
         
-        // If we have both periods cached, use them
+        // Track data source for logging
+        $dataSource = 'database';
+        
+        // If we have both periods from database, use them
         if ($currentOverview !== null && $previousOverviewData !== null) {
             $cacheHit = true;
             $overview = $currentOverview;
             $previousOverview = $previousOverviewData;
         } else {
-            // Fallback to GA API - use getOverviewMetricsOnly to avoid fetching unused data
+            // Fallback to GA API only if database has no data
+            $dataSource = 'mixed';
+            if ($currentOverview === null && $previousOverviewData === null) {
+                $dataSource = 'ga_api';
+            }
+            
             try {
-                $overview = $analytics->getOverviewMetricsOnly($tenantId, $startDate, $endDate);
-                $previousOverview = $analytics->getOverviewMetricsOnly($tenantId, $previousStartDate, $previousEndDate);
+                // Only fetch missing periods from GA API (not both if one exists)
+                if ($currentOverview === null) {
+                    $overview = $analytics->getOverviewMetricsOnly($tenantId, $startDate, $endDate);
+                } else {
+                    $overview = $currentOverview;
+                }
+                
+                if ($previousOverviewData === null) {
+                    $previousOverview = $analytics->getOverviewMetricsOnly($tenantId, $previousStartDate, $previousEndDate);
+                } else {
+                    $previousOverview = $previousOverviewData;
+                }
             } catch (\Exception $e) {
                 // Graceful fallback for slow/failed GA requests
                 Log::warning('GA summary request failed', [
                     'tenant_id' => $tenantId,
                     'error' => $e->getMessage()
                 ]);
-                // Return empty/default values on error
-                $overview = ['sessions' => 0, 'pageViews' => 0, 'bounceRate' => 0, 'averageSessionDuration' => 0, 'users' => 0];
-                $previousOverview = ['sessions' => 0, 'pageViews' => 0, 'bounceRate' => 0, 'averageSessionDuration' => 0, 'users' => 0];
+                // Use database data if available, otherwise return defaults
+                $overview = $currentOverview ?? ['sessions' => 0, 'pageViews' => 0, 'bounceRate' => 0, 'averageSessionDuration' => 0, 'users' => 0];
+                $previousOverview = $previousOverviewData ?? ['sessions' => 0, 'pageViews' => 0, 'bounceRate' => 0, 'averageSessionDuration' => 0, 'users' => 0];
             }
         }
 
@@ -318,16 +336,22 @@ class AnalyticsDashboardController extends Controller
         // Format average session time
         $formattedAverageTime = $this->formatDuration($overview['averageSessionDuration']);
 
-        // Database queries (not cached in materialized data)
-        $totalcustomers = ApiCustomer::where('user_id', $user->id)->count();
+        // OPTIMIZATION: Cache database queries (5 minutes cache)
+        $dbCacheKey = "summary:db:{$user->id}";
+        $dbData = Cache::remember($dbCacheKey, 300, function() use ($user) {
+            return [
+                'totalcustomers' => ApiCustomer::where('user_id', $user->id)->count(),
+                'purposeCounts' => DB::table('user_properties')
+                    ->where('user_id', $user->id)
+                    ->select('purpose', DB::raw('COUNT(*) as total'))
+                    ->groupBy('purpose')
+                    ->orderByDesc('total')
+                    ->get(),
+            ];
+        });
 
-        $purposeCounts = DB::table('user_properties')
-            ->where('user_id', $user->id)
-            ->select('purpose', DB::raw('COUNT(*) as total'))
-            ->groupBy('purpose')
-            ->orderByDesc('total')
-            ->get();
-
+        $totalcustomers = $dbData['totalcustomers'];
+        $purposeCounts = $dbData['purposeCounts'];
         $propertiesTotal = $purposeCounts->sum('total');
 
         $duration = (microtime(true) - $startTime) * 1000;
@@ -337,6 +361,7 @@ class AnalyticsDashboardController extends Controller
             'tenant_id' => $tenantId,
             'duration_ms' => round($duration, 2),
             'cache_hit' => $cacheHit,
+            'data_source' => $dataSource,
         ]);
 
         return response()->json([
@@ -684,52 +709,96 @@ class AnalyticsDashboardController extends Controller
 
     /**
      * Get materialized summary data for date range (aggregates across days)
+     * OPTIMIZED: Uses SQL aggregation instead of PHP loops for better performance
      */
     protected function getMaterializedSummaryData(string $tenantId, Carbon $start, Carbon $end): ?array
     {
-        // Query analytics_daily_summary for date range
-        $records = AnalyticsDailySummary::forTenant($tenantId)
-            ->forDateRange($start, $end)
-            ->forMetricType('summary')
-            ->get();
+        try {
+            // OPTIMIZATION: Use SQL aggregation - much faster than PHP loops
+            // This aggregates all days in the date range in a single query
+            $result = DB::table('analytics_daily_summary')
+                ->where('tenant_id', $tenantId)
+                ->where('metric_type', 'summary')
+                ->whereBetween('date', [
+                    $start->format('Y-m-d'),
+                    $end->format('Y-m-d')
+                ])
+                ->selectRaw('
+                    COALESCE(SUM(CAST(JSON_EXTRACT(data, "$.overview.pageViews") AS UNSIGNED)), 0) as pageViews,
+                    COALESCE(SUM(CAST(JSON_EXTRACT(data, "$.overview.sessions") AS UNSIGNED)), 0) as sessions,
+                    COALESCE(SUM(CAST(JSON_EXTRACT(data, "$.overview.users") AS UNSIGNED)), 0) as users,
+                    COALESCE(AVG(CAST(JSON_EXTRACT(data, "$.overview.bounceRate") AS DECIMAL(10,4))), 0) as bounceRate,
+                    COALESCE(AVG(CAST(JSON_EXTRACT(data, "$.overview.averageSessionDuration") AS DECIMAL(10,2))), 0) as averageSessionDuration,
+                    COUNT(*) as rowCount
+                ')
+                ->first();
             
-        if ($records->isEmpty()) {
-            return null;
-        }
-        
-        // Aggregate overview metrics across all days
-        $totals = [
-            'pageViews' => 0,
-            'sessions' => 0,
-            'users' => 0,
-            'bounceRateSum' => 0,
-            'durationSum' => 0,
-            'rowCount' => 0,
-        ];
-        
-        foreach ($records as $record) {
-            if (isset($record->data['overview'])) {
-                $overview = $record->data['overview'];
-                $totals['pageViews'] += $overview['pageViews'] ?? 0;
-                $totals['sessions'] += $overview['sessions'] ?? 0;
-                $totals['users'] += $overview['users'] ?? 0;
-                $totals['bounceRateSum'] += $overview['bounceRate'] ?? 0;
-                $totals['durationSum'] += $overview['averageSessionDuration'] ?? 0;
-                $totals['rowCount']++;
+            // Check if we have any data
+            if (!$result || $result->rowCount == 0) {
+                return null;
             }
+            
+            return [
+                'pageViews' => (int) $result->pageViews,
+                'sessions' => (int) $result->sessions,
+                'users' => (int) $result->users,
+                'bounceRate' => (float) $result->bounceRate,
+                'averageSessionDuration' => (float) $result->averageSessionDuration,
+            ];
+        } catch (\Exception $e) {
+            // Fallback to Eloquent with PHP aggregation if SQL JSON extraction fails
+            // This handles edge cases or database compatibility issues
+            Log::warning('SQL aggregation failed, falling back to Eloquent', [
+                'tenant_id' => $tenantId,
+                'start_date' => $start->format('Y-m-d'),
+                'end_date' => $end->format('Y-m-d'),
+                'error' => $e->getMessage()
+            ]);
+            
+            // Fallback: Use Eloquent model with PHP aggregation (original method)
+            $records = AnalyticsDailySummary::forTenant($tenantId)
+                ->forDateRange($start, $end)
+                ->forMetricType('summary')
+                ->get();
+                
+            if ($records->isEmpty()) {
+                return null;
+            }
+            
+            // Aggregate overview metrics across all days
+            $totals = [
+                'pageViews' => 0,
+                'sessions' => 0,
+                'users' => 0,
+                'bounceRateSum' => 0,
+                'durationSum' => 0,
+                'rowCount' => 0,
+            ];
+            
+            foreach ($records as $record) {
+                if (isset($record->data['overview'])) {
+                    $overview = $record->data['overview'];
+                    $totals['pageViews'] += $overview['pageViews'] ?? 0;
+                    $totals['sessions'] += $overview['sessions'] ?? 0;
+                    $totals['users'] += $overview['users'] ?? 0;
+                    $totals['bounceRateSum'] += $overview['bounceRate'] ?? 0;
+                    $totals['durationSum'] += $overview['averageSessionDuration'] ?? 0;
+                    $totals['rowCount']++;
+                }
+            }
+            
+            if ($totals['rowCount'] === 0) {
+                return null;
+            }
+            
+            return [
+                'pageViews' => $totals['pageViews'],
+                'sessions' => $totals['sessions'],
+                'users' => $totals['users'],
+                'bounceRate' => $totals['bounceRateSum'] / $totals['rowCount'],
+                'averageSessionDuration' => $totals['durationSum'] / $totals['rowCount'],
+            ];
         }
-        
-        if ($totals['rowCount'] === 0) {
-            return null;
-        }
-        
-        return [
-            'pageViews' => $totals['pageViews'],
-            'sessions' => $totals['sessions'],
-            'users' => $totals['users'],
-            'bounceRate' => $totals['bounceRateSum'] / $totals['rowCount'],
-            'averageSessionDuration' => $totals['durationSum'] / $totals['rowCount'],
-        ];
     }
 
 
