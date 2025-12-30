@@ -114,7 +114,9 @@ class EmployeeAddonController extends Controller
             'payment_ref' => $paymentRef,
         ]);
 
-        $paymentResult = $this->initiatePayment($addon, 'arb', $request->user());
+        // Use test mode in local environment, otherwise use ARB
+        $paymentGateway = config('app.env') === 'local' ? 'test' : 'arb';
+        $paymentResult = $this->initiatePayment($addon, $paymentGateway, $request->user());
 
         if ($paymentResult['success']) {
             return response()->json([
@@ -366,15 +368,19 @@ class EmployeeAddonController extends Controller
 
     private function finalizeRedirect($success, $message)
     {
+        // Get language and basic settings for the views
+        $currentLang = \App\Models\Language::where('is_default', 1)->first();
+        $bs = $currentLang ? $currentLang->basic_setting : \App\Models\BasicSetting::first();
+        
         if (!$success) {
-            return "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Payment Failed</title></head><body><h1>{$message}</h1><script>setTimeout(function(){ window.close(); }, 3000);</script></body></html>";
+            return view('front.failed', [
+                'bs' => $bs,
+                'rtl' => $bs->rtl ?? 0
+            ]);
         }
 
         // Return success page that notifies parent window (React/Next.js frontend)
         // The view will send postMessage("payment_success") to notify the frontend
-        $currentLang = \App\Models\Language::where('is_default', 1)->first();
-        $bs = $currentLang ? $currentLang->basic_setting : \App\Models\BasicSetting::first();
-        
         return view('front.success', [
             'bs' => $bs,
             'rtl' => $bs->rtl ?? 0

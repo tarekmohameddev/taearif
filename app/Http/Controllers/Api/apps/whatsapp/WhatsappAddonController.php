@@ -120,8 +120,9 @@ class WhatsappAddonController extends Controller
             'payment_ref' => $paymentRef,
         ]);
 
-        // Initiate Payment
-        $paymentResult = $this->initiatePayment($addon, 'arb', $request->user());
+        // Use test mode in local environment, otherwise use ARB
+        $paymentGateway = config('app.env') === 'local' ? 'test' : 'arb';
+        $paymentResult = $this->initiatePayment($addon, $paymentGateway, $request->user());
 
         if ($paymentResult['success']) {
             return response()->json([
