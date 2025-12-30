@@ -25,7 +25,6 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\RunAllScheduledTasks::class,
         \App\Console\Commands\SendCrmAppointmentReminders::class,
         \App\Console\Commands\BackfillInvoiceUuids::class,
-        \App\Console\Commands\SyncAnalyticsData::class,
     ];
 
     /**
@@ -56,9 +55,9 @@ class Kernel extends ConsoleKernel
             ->hourly()
             ->timezone('Asia/Riyadh');
 
-        // Sync analytics data daily at 2 AM (after GA4 data is available)
+        // Sync analytics data every 2 hours 
         $schedule->command('analytics:sync')
-            ->dailyAt('02:00')
+            ->everyTwoHours()
             ->timezone('Asia/Riyadh')
             ->withoutOverlapping()
             ->runInBackground();
