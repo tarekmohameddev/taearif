@@ -401,7 +401,7 @@ class CustomerController extends Controller
                 'district_id'  => 'nullable|exists:user_districts,id',
                 'note'         => 'nullable|string',
                 'type_id'      => ['required', Rule::exists('users_api_customers_types','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-                'priority_id'  => ['required', Rule::exists('users_api_customers_priorities','id')->where(fn($q)=>$q->where('user_id',$user->id))],
+                'priority_id'  => ['nullable', Rule::exists('users_api_customers_priorities','id')->where(fn($q)=>$q->where('user_id',$user->id))],
                 'responsible_employee_id' => [
                     'nullable',
                     Rule::exists('users', 'id')->where(function ($query) use ($user) {
