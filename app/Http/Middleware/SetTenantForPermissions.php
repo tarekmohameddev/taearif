@@ -61,10 +61,12 @@ class SetTenantForPermissions
             }
             
             // Cache tenant lookup to avoid repeated database queries
+            // OPTIMIZATION: Select only needed columns to reduce data transfer
             if ($user->tenant_id) {
                 $cacheKey = "tenant_user_{$user->tenant_id}";
-                return Cache::remember($cacheKey, 300, function () use ($user) {
-                    return User::find($user->tenant_id);
+                return Cache::remember($cacheKey, 60, function () use ($user) {
+                    return User::select('id', 'username', 'account_type', 'rbac_version', 'rbac_seeded_at')
+                        ->find($user->tenant_id);
                 });
             }
         }

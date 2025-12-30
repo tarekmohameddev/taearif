@@ -30,6 +30,7 @@ use App\Models\User\RealestateManagement\ProjectFloorplanImg;
 use App\Models\User\RealestateManagement\ProjectSpecification;
 use Carbon\Carbon;
 use App\Services\GoogleAnalyticsService;
+use App\Services\MembershipCacheService;
 
 class ProjectController extends Controller
 {
@@ -378,11 +379,8 @@ class ProjectController extends Controller
         $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
         $ownerId = $owner->id;
 
-        $membership = Membership::where('user_id', $ownerId)
-            ->where('status', 1)
-            ->orderBy('id', 'desc')
-            ->with('package')
-            ->first();
+        // Check if user has active membership (cached)
+        $membership = MembershipCacheService::getActiveMembership($ownerId);
 
         if (!$membership || !$membership->package) {
             return response()->json([

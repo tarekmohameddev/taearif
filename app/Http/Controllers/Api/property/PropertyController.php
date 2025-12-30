@@ -33,6 +33,7 @@ use App\Support\Audit;
 use App\Services\GoogleAnalyticsService;
 use Carbon\Carbon;
 use App\Services\AlibabaOssService;
+use App\Services\MembershipCacheService;
 
 
 use Maatwebsite\Excel\Facades\Excel;
@@ -48,12 +49,8 @@ class PropertyController extends Controller
 
         $user = auth()->user();
 
-        // Check if user has active membership
-        $membership = Membership::where('user_id', $user->id)
-            ->where('status', 1)
-            ->orderBy('id', 'desc')
-            ->with('package')
-            ->first();
+        // Check if user has active membership (cached)
+        $membership = MembershipCacheService::getActiveMembership($user->id);
 
         if (!$membership || !$membership->package) {
             return response()->json([
@@ -212,12 +209,8 @@ class PropertyController extends Controller
     {
         $user = auth()->user();
 
-        // Check if user has active membership
-        $membership = Membership::where('user_id', $user->id)
-            ->where('status', 1)
-            ->orderBy('id', 'desc')
-            ->with('package')
-            ->first();
+        // Check if user has active membership (cached)
+        $membership = MembershipCacheService::getActiveMembership($user->id);
 
         if (!$membership || !$membership->package) {
             return response()->json([
@@ -802,11 +795,8 @@ class PropertyController extends Controller
         // Resolve tenant owner (tenant for tenant; tenant for employee)
         $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
 
-        $membership = Membership::where('user_id', $owner->id)
-            ->where('status', 1)
-            ->orderBy('id', 'desc')
-            ->with('package')
-            ->first();
+        // Check if user has active membership (cached)
+        $membership = MembershipCacheService::getActiveMembership($owner->id);
 
         if (!$membership || !$membership->package) {
             return response()->json([

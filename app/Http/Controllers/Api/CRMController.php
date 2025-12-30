@@ -174,27 +174,39 @@ class CRMController extends Controller
             ];
         };
 
+        // ===== OPTIMIZATION: Load all customers once, then group =====
+        // This reduces from N queries (one per stage/priority/procedure/type) to 1 query
+        $allCustomers = ApiCustomer::where('user_id', $user->id)
+            ->with($withRelations)
+            ->get();
+
+        // Group customers by their IDs for quick lookup
+        $customersByStageId = $allCustomers->groupBy('stage_id');
+        $customersByPriorityId = $allCustomers->groupBy('priority_id');
+        $customersByProcedureId = $allCustomers->groupBy('procedure_id');
+        $customersByTypeId = $allCustomers->groupBy('type_id');
+
         // ===== Stages =====
         $stagesSummary = [];
         $stagesWithCustomers = [];
 
         foreach ($stages as $stage) {
-            $customerQuery = $buildQuery(fn($q) => $q->where('stage_id', $stage->id));
-            $customerCount = (clone $customerQuery)->count();
-            $customers     = $customerQuery->get()->map($mapCustomer);
+            // Get customers from pre-grouped collection (no query)
+            $stageCustomers = $customersByStageId->get($stage->id, collect());
+            $customers = $stageCustomers->map($mapCustomer);
 
             $stagesSummary[] = [
                 'stage_id'       => $stage->id,
                 'stage_name'     => $stage->stage_name,
                 'color'          => $stage->color,
                 'icon'           => $stage->icon,
-                'customer_count' => $customerCount,
+                'customer_count' => $stageCustomers->count(), // Same as before
             ];
 
             $stagesWithCustomers[] = [
                 'stage_id'   => $stage->id,
                 'stage_name' => $stage->stage_name,
-                'customers'  => $customers,
+                'customers'  => $customers, // Same structure
             ];
         }
 
@@ -202,9 +214,8 @@ class CRMController extends Controller
         $prioritiesWithCustomers = [];
 
         foreach ($priorities as $priority) {
-            $customerQuery = $buildQuery(fn($q) => $q->where('priority_id', $priority->id));
-            $customerCount = (clone $customerQuery)->count();
-            $customers     = $customerQuery->get()->map($mapCustomer);
+            $priorityCustomers = $customersByPriorityId->get($priority->id, collect());
+            $customers = $priorityCustomers->map($mapCustomer);
 
             $prioritiesWithCustomers[] = [
                 'priority_id'    => $priority->id,
@@ -212,8 +223,8 @@ class CRMController extends Controller
                 'priority_name'  => $priority->name,
                 'color'          => $priority->color,
                 'icon'           => $priority->icon,
-                'customer_count' => $customerCount,
-                'customers'      => $customers,
+                'customer_count' => $priorityCustomers->count(),
+                'customers'      => $customers, // Same structure
             ];
         }
 
@@ -221,17 +232,16 @@ class CRMController extends Controller
         $proceduresWithCustomers = [];
 
         foreach ($procedures as $proc) {
-            $customerQuery = $buildQuery(fn($q) => $q->where('procedure_id', $proc->id));
-            $customerCount = (clone $customerQuery)->count();
-            $customers     = $customerQuery->get()->map($mapCustomer);
+            $procCustomers = $customersByProcedureId->get($proc->id, collect());
+            $customers = $procCustomers->map($mapCustomer);
 
             $proceduresWithCustomers[] = [
                 'procedure_id'   => $proc->id,
                 'procedure_name' => $proc->procedure_name,
                 'color'          => $proc->color,
                 'icon'           => $proc->icon,
-                'customer_count' => $customerCount,
-                'customers'      => $customers,
+                'customer_count' => $procCustomers->count(),
+                'customers'      => $customers, // Same structure
             ];
         }
 
@@ -239,9 +249,8 @@ class CRMController extends Controller
         $typesWithCustomers = [];
 
         foreach ($types as $type) {
-            $customerQuery = $buildQuery(fn($q) => $q->where('type_id', $type->id));
-            $customerCount = (clone $customerQuery)->count();
-            $customers     = $customerQuery->get()->map($mapCustomer);
+            $typeCustomers = $customersByTypeId->get($type->id, collect());
+            $customers = $typeCustomers->map($mapCustomer);
 
             $typesWithCustomers[] = [
                 'type_id'        => $type->id,
@@ -249,8 +258,8 @@ class CRMController extends Controller
                 'type_name'      => $type->name,
                 'color'          => $type->color,
                 'icon'           => $type->icon,
-                'customer_count' => $customerCount,
-                'customers'      => $customers,
+                'customer_count' => $typeCustomers->count(),
+                'customers'      => $customers, // Same structure
             ];
         }
 
