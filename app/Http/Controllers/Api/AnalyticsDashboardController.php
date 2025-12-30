@@ -308,22 +308,17 @@ class AnalyticsDashboardController extends Controller
                 if ($currentOverview === null) {
                     $overview = $analytics->getOverviewMetricsOnly($tenantId, $startDate, $endDate);
                     
-                    // OPTIMIZATION: Store fetched GA API data in database for future requests
-                    try {
-                        AnalyticsDailySummary::storeData(
-                            $tenantId,
-                            $endDate,
-                            'summary',
-                            ['overview' => $overview]
-                        );
-                    } catch (\Exception $storageError) {
-                        // Log but don't fail the request if storage fails
-                        Log::warning('Failed to store GA API data in database', [
-                            'tenant_id' => $tenantId,
-                            'date' => $endDate->format('Y-m-d'),
-                            'error' => $storageError->getMessage()
-                        ]);
+                    // Validate GA API response structure before processing
+                    if (!$this->validateOverviewResponse($overview, "current period ({$startDate->format('Y-m-d')} to {$endDate->format('Y-m-d')})")) {
+                        throw new \RuntimeException('Invalid GA API response structure - missing required keys');
                     }
+                    
+                    // OPTIMIZATION: Store fetched GA API data in database for future requests
+                    // Note: We store aggregated data for the date range under the end date
+                    // This matches the materialization service pattern and allows getMaterializedSummaryData
+                    // to find it when querying the same date range. The data represents aggregated metrics
+                    // for the entire date range, not individual daily breakdowns.
+                    $this->storeSummaryDataSafely($tenantId, $endDate, $overview);
                 } else {
                     $overview = $currentOverview;
                 }
@@ -331,22 +326,14 @@ class AnalyticsDashboardController extends Controller
                 if ($previousOverviewData === null) {
                     $previousOverview = $analytics->getOverviewMetricsOnly($tenantId, $previousStartDate, $previousEndDate);
                     
-                    // OPTIMIZATION: Store fetched GA API data in database for future requests
-                    try {
-                        AnalyticsDailySummary::storeData(
-                            $tenantId,
-                            $previousEndDate,
-                            'summary',
-                            ['overview' => $previousOverview]
-                        );
-                    } catch (\Exception $storageError) {
-                        // Log but don't fail the request if storage fails
-                        Log::warning('Failed to store GA API data in database', [
-                            'tenant_id' => $tenantId,
-                            'date' => $previousEndDate->format('Y-m-d'),
-                            'error' => $storageError->getMessage()
-                        ]);
+                    // Validate GA API response structure before processing
+                    if (!$this->validateOverviewResponse($previousOverview, "previous period ({$previousStartDate->format('Y-m-d')} to {$previousEndDate->format('Y-m-d')})")) {
+                        throw new \RuntimeException('Invalid GA API response structure - missing required keys');
                     }
+                    
+                    // OPTIMIZATION: Store fetched GA API data in database for future requests
+                    // Note: We store aggregated data for the date range under the end date
+                    $this->storeSummaryDataSafely($tenantId, $previousEndDate, $previousOverview);
                 } else {
                     $previousOverview = $previousOverviewData;
                 }
@@ -354,7 +341,8 @@ class AnalyticsDashboardController extends Controller
                 // Graceful fallback for slow/failed GA requests
                 Log::warning('GA summary request failed', [
                     'tenant_id' => $tenantId,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
                 ]);
                 // Use database data if available, otherwise return defaults
                 $overview = $currentOverview ?? ['sessions' => 0, 'pageViews' => 0, 'bounceRate' => 0, 'averageSessionDuration' => 0, 'users' => 0];
@@ -739,6 +727,104 @@ class AnalyticsDashboardController extends Controller
         }
         
         return null;
+    }
+
+    /**
+     * Store summary data safely with cache lock to prevent race conditions
+     * 
+     * @param string $tenantId
+     * @param Carbon $date The date to store the data under
+     * @param array $overview The overview data from GA API
+     * @return bool True if stored successfully, false otherwise
+     */
+    protected function storeSummaryDataSafely(string $tenantId, Carbon $date, array $overview): bool
+    {
+        // Validate response structure before storage
+        $requiredKeys = ['sessions', 'pageViews', 'bounceRate', 'averageSessionDuration', 'users'];
+        foreach ($requiredKeys as $key) {
+            if (!isset($overview[$key])) {
+                Log::warning('Invalid GA API response structure - missing key', [
+                    'tenant_id' => $tenantId,
+                    'date' => $date->format('Y-m-d'),
+                    'missing_key' => $key,
+                    'available_keys' => array_keys($overview)
+                ]);
+                return false;
+            }
+        }
+
+        // Use cache lock to prevent race conditions from concurrent requests
+        $lockKey = "ga:store:summary:{$tenantId}:{$date->format('Y-m-d')}";
+        $lock = Cache::lock($lockKey, 10); // 10 second lock timeout
+
+        try {
+            if ($lock->get()) {
+                try {
+                    AnalyticsDailySummary::storeData(
+                        $tenantId,
+                        $date,
+                        'summary',
+                        ['overview' => $overview]
+                    );
+                    return true;
+                } catch (\Exception $e) {
+                    Log::warning('Failed to store GA API data in database', [
+                        'tenant_id' => $tenantId,
+                        'date' => $date->format('Y-m-d'),
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    return false;
+                } finally {
+                    $lock->release();
+                }
+            } else {
+                // Lock acquisition failed - another process is storing
+                Log::debug('Could not acquire lock for storing summary data', [
+                    'tenant_id' => $tenantId,
+                    'date' => $date->format('Y-m-d')
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::warning('Lock acquisition failed for storing summary data', [
+                'tenant_id' => $tenantId,
+                'date' => $date->format('Y-m-d'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Validate GA API overview response structure
+     * 
+     * @param array $overview The overview data from GA API
+     * @param string $context Context for error messages (e.g., 'current period', 'previous period')
+     * @return bool True if valid, false otherwise
+     */
+    protected function validateOverviewResponse(array $overview, string $context = ''): bool
+    {
+        $requiredKeys = ['sessions', 'pageViews', 'bounceRate', 'averageSessionDuration', 'users'];
+        $missingKeys = [];
+        
+        foreach ($requiredKeys as $key) {
+            if (!isset($overview[$key])) {
+                $missingKeys[] = $key;
+            }
+        }
+        
+        if (!empty($missingKeys)) {
+            Log::error('Invalid GA API response structure', [
+                'context' => $context,
+                'missing_keys' => $missingKeys,
+                'available_keys' => array_keys($overview)
+            ]);
+            return false;
+        }
+        
+        return true;
     }
 
     /**
