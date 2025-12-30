@@ -852,7 +852,8 @@ class CustomerController extends Controller
             'priorityRef:id,name',
             'procedure:id,procedure_name',
             'responsibleEmployee.activeWhatsappUser',
-        ]);
+        ])
+        ->whereNotNull('stage_id'); // exclude customers without a stage
 
         if (!empty($qText)) {
             $query->where(function ($sub) use ($qText) {
