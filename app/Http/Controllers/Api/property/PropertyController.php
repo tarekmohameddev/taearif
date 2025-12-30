@@ -2113,12 +2113,8 @@ class PropertyController extends Controller
                 $content = optional($property->contents)->first();
                 $projectContent = optional(optional($property->project)->contents)->first();
 
-                // Get building name directly from database to avoid relationship issues
-                $buildingName = 'N/A';
-                if ($property->building_id) {
-                    $building = \App\Models\Building::find($property->building_id);
-                    $buildingName = $building ? $building->name : 'Unknown Building';
-                }
+                // Use the already-loaded building relationship (loaded via ->with(['building:id,name']))
+                $buildingName = $property->building ? $property->building->name : 'N/A';
 
                 return [
                     'id' => $property->id,
