@@ -426,7 +426,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Query performance logging (development only)
         // Logs queries taking more than 100ms to help identify performance bottlenecks
-        // if (config('app.debug') && !app()->environment('production')) {
+        if (config('app.debug') && !app()->environment('production')) {
             DB::listen(function ($query) {
                 if ($query->time > 100) { // Log queries taking more than 100ms
                     \Log::warning('Slow Query Detected', [
