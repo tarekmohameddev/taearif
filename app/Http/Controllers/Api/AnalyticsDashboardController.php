@@ -209,35 +209,89 @@ class AnalyticsDashboardController extends Controller
             return response()->json($cachedData);
         }
 
-        // Fallback to GA API
-        $visitorData = $analytics->getVisitorData($tenantId, $startDate, $endDate);
+        // Fallback to GA API - use cache lock to prevent concurrent requests
+        $lockKey = "ga:visitors:{$tenantId}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
+        $lock = Cache::lock($lockKey, 30); // 30 second lock timeout
 
-        // Format the visitor data
-        $visitorDataFormatted = collect($visitorData)->map(function ($item) {
-            return [
-                'date' => $item['date']->locale('ar')->isoFormat('D MMMM'), // Convert to Arabic date (e.g., '1 يناير')
-                'visits' => $item['sessions'],
-                'uniqueVisitors' => $item['users']
-            ];
-        });
+        try {
+            if ($lock->get()) {
+                try {
+                    // Double-check after acquiring lock (another request might have stored it)
+                    $cachedData = $this->getMaterializedVisitorsData($tenantId, $startDate, $endDate);
+                    if ($cachedData !== null) {
+                        $lock->release();
+                        return response()->json($cachedData);
+                    }
 
-        // Calculate total visits and total unique visitors
-        $totalVisits = collect($visitorData)->sum('sessions');
-        $totalUniqueVisitors = collect($visitorData)->sum('users');
+                    // Fetch from GA API
+                    $visitorData = $analytics->getVisitorData($tenantId, $startDate, $endDate);
+                    
+                    // Ensure visitorData is an array
+                    $visitorDataArray = is_array($visitorData) ? $visitorData : collect($visitorData)->toArray();
 
-        $responseData = [
-            'visitor_data' => $visitorDataFormatted,
-            'total_visits' => $totalVisits,
-            'total_unique_visitors' => $totalUniqueVisitors,
-        ];
+                    // Format the visitor data
+                    $visitorDataFormatted = collect($visitorDataArray)->map(function ($item) {
+                        return [
+                            'date' => $item['date']->locale('ar')->isoFormat('D MMMM'), // Convert to Arabic date (e.g., '1 يناير')
+                            'visits' => $item['sessions'],
+                            'uniqueVisitors' => $item['users']
+                        ];
+                    })->toArray();
 
-        // Store in cache for future requests (if not current day)
-        if (!$endDate->isToday()) {
-            $this->storeMaterializedVisitorsData($tenantId, $startDate, $endDate, $responseData);
+                    // Calculate total visits and total unique visitors
+                    $totalVisits = collect($visitorDataArray)->sum('sessions');
+                    $totalUniqueVisitors = collect($visitorDataArray)->sum('users');
+
+                    $responseData = [
+                        'visitor_data' => $visitorDataFormatted,
+                        'total_visits' => $totalVisits,
+                        'total_unique_visitors' => $totalUniqueVisitors,
+                    ];
+
+                    // Store materialized data in database for each day
+                    $this->storeMaterializedVisitorsData($tenantId, $startDate, $endDate, $visitorDataArray);
+
+                    $lock->release();
+                    return response()->json($responseData);
+                } catch (\Exception $e) {
+                    $lock->release();
+                    Log::error('Failed to fetch/store visitors data', [
+                        'tenant_id' => $tenantId,
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date' => $endDate->format('Y-m-d'),
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    throw $e;
+                }
+            } else {
+                // Lock acquisition failed - wait a bit and retry with DB
+                sleep(1);
+                $cachedData = $this->getMaterializedVisitorsData($tenantId, $startDate, $endDate);
+                if ($cachedData !== null) {
+                    return response()->json($cachedData);
+                }
+                // If still no data, return empty response
+                return response()->json([
+                    'visitor_data' => [],
+                    'total_visits' => 0,
+                    'total_unique_visitors' => 0,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Lock acquisition failed for visitors data', [
+                'tenant_id' => $tenantId,
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date' => $endDate->format('Y-m-d'),
+                'error' => $e->getMessage(),
+            ]);
+            // Return empty response on error
+            return response()->json([
+                'visitor_data' => [],
+                'total_visits' => 0,
+                'total_unique_visitors' => 0,
+            ]);
         }
-
-        // Return the response with the dynamic time range
-        return response()->json($responseData);
     }
 
     protected function formatDuration($seconds)
@@ -626,16 +680,76 @@ class AnalyticsDashboardController extends Controller
     }
 
     /**
-     * Store materialized visitors data (for current day fallback caching)
+     * Store materialized visitors data in database
+     * Stores each day's data separately using storeMetric
+     * 
+     * @param string $tenantId
+     * @param Carbon $start Start date of the range
+     * @param Carbon $end End date of the range
+     * @param array $visitorData Raw visitor data from GA API (array of daily data points)
+     * @return void
      */
-    protected function storeMaterializedVisitorsData(string $tenantId, Carbon $start, Carbon $end, array $data): void
+    protected function storeMaterializedVisitorsData(string $tenantId, Carbon $start, Carbon $end, array $visitorData): void
     {
-        // Only store if materialization is enabled and not current day
-        // Current day data will be synced by the scheduled job
-        if (config('analytics.materialization.enabled', true) && !$end->isToday()) {
-            // Use old cache system for temporary storage
-            $cacheKey = $this->getVisitorsCacheKey($tenantId, $start->diffInDays($end), $start, $end);
-            Cache::put($cacheKey, $data, 600); // 10 minutes
+        // Only store if materialization is enabled
+        if (!config('analytics.materialization.enabled', true)) {
+            return;
+        }
+
+        try {
+            // Group visitor data by date
+            $dataByDate = [];
+            foreach ($visitorData as $item) {
+                $date = $item['date']->format('Y-m-d');
+                if (!isset($dataByDate[$date])) {
+                    $dataByDate[$date] = [];
+                }
+                $dataByDate[$date][] = $item;
+            }
+
+            // Store each day's data separately
+            foreach ($dataByDate as $dateStr => $dayData) {
+                $targetDate = Carbon::parse($dateStr);
+                
+                // Skip today's data (will be synced by scheduled job)
+                if ($targetDate->isToday()) {
+                    continue;
+                }
+
+                // Format data to match API response structure
+                $formattedData = collect($dayData)->map(function ($item) {
+                    return [
+                        'date' => $item['date']->locale('ar')->isoFormat('D MMMM'), // Arabic date format
+                        'visits' => $item['sessions'],
+                        'uniqueVisitors' => $item['users']
+                    ];
+                })->toArray();
+
+                // Calculate totals for this day
+                $totalVisits = collect($dayData)->sum('sessions');
+                $totalUniqueVisitors = collect($dayData)->sum('users');
+
+                // Store using atomic JSON_SET (won't overwrite other metrics)
+                AnalyticsDailySummary::storeMetric(
+                    $tenantId,
+                    $targetDate,
+                    'visitors',
+                    [
+                        'visitor_data' => $formattedData,
+                        'total_visits' => $totalVisits,
+                        'total_unique_visitors' => $totalUniqueVisitors,
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to store materialized visitors data', [
+                'tenant_id' => $tenantId,
+                'start_date' => $start->format('Y-m-d'),
+                'end_date' => $end->format('Y-m-d'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Don't throw - allow request to complete even if storage fails
         }
     }
 
