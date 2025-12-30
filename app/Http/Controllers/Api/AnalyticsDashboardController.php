@@ -590,25 +590,26 @@ class AnalyticsDashboardController extends Controller
         // Query analytics_daily_summary for date range
         $records = AnalyticsDailySummary::forTenant($tenantId)
             ->forDateRange($start, $end)
-            ->forMetricType('visitors')
             ->get();
             
         if ($records->isEmpty()) {
             return null;
         }
         
-        // Merge data from multiple days - each record contains full response for that day
-        // We need to aggregate across days
+        // Merge data from multiple days - extract visitors metric from each day's data
         $allVisitorData = [];
         $totalVisits = 0;
         $totalUniqueVisitors = 0;
         
         foreach ($records as $record) {
             $dayData = $record->data;
-            if (isset($dayData['visitor_data']) && is_array($dayData['visitor_data'])) {
-                $allVisitorData = array_merge($allVisitorData, $dayData['visitor_data']);
-                $totalVisits += $dayData['total_visits'] ?? 0;
-                $totalUniqueVisitors += $dayData['total_unique_visitors'] ?? 0;
+            if (isset($dayData['visitors']) && is_array($dayData['visitors'])) {
+                $visitorsData = $dayData['visitors'];
+                if (isset($visitorsData['visitor_data']) && is_array($visitorsData['visitor_data'])) {
+                    $allVisitorData = array_merge($allVisitorData, $visitorsData['visitor_data']);
+                    $totalVisits += $visitorsData['total_visits'] ?? 0;
+                    $totalUniqueVisitors += $visitorsData['total_unique_visitors'] ?? 0;
+                }
             }
         }
         
@@ -658,11 +659,10 @@ class AnalyticsDashboardController extends Controller
         foreach ($datesToCheck as $checkDate) {
             $record = AnalyticsDailySummary::forTenant($tenantId)
                 ->forDate($checkDate)
-                ->forMetricType('traffic_sources')
                 ->first();
                 
-            if ($record && isset($record->data['sources']) && !empty($record->data['sources'])) {
-                return ['sources' => $record->data['sources']];
+            if ($record && isset($record->data['traffic_sources']['sources']) && !empty($record->data['traffic_sources']['sources'])) {
+                return ['sources' => $record->data['traffic_sources']['sources']];
             }
         }
         
@@ -689,11 +689,10 @@ class AnalyticsDashboardController extends Controller
         foreach ($datesToCheck as $checkDate) {
             $record = AnalyticsDailySummary::forTenant($tenantId)
                 ->forDate($checkDate)
-                ->forMetricType('devices')
                 ->first();
                 
-            if ($record && isset($record->data['devices']) && !empty($record->data['devices'])) {
-                return ['devices' => $record->data['devices']];
+            if ($record && isset($record->data['devices']['devices']) && !empty($record->data['devices']['devices'])) {
+                return ['devices' => $record->data['devices']['devices']];
             }
         }
         
@@ -720,11 +719,10 @@ class AnalyticsDashboardController extends Controller
         foreach ($datesToCheck as $checkDate) {
             $record = AnalyticsDailySummary::forTenant($tenantId)
                 ->forDate($checkDate)
-                ->forMetricType('top_pages')
                 ->first();
                 
-            if ($record && isset($record->data['pages']) && !empty($record->data['pages'])) {
-                return ['pages' => $record->data['pages']];
+            if ($record && isset($record->data['top_pages']['pages']) && !empty($record->data['top_pages']['pages'])) {
+                return ['pages' => $record->data['top_pages']['pages']];
             }
         }
         
@@ -732,7 +730,7 @@ class AnalyticsDashboardController extends Controller
     }
 
     /**
-     * Store summary data safely with cache lock to prevent race conditions
+     * Store summary data safely - uses atomic JSON_SET to prevent race conditions
      * 
      * @param string $tenantId
      * @param Carbon $date The date to store the data under
@@ -755,41 +753,17 @@ class AnalyticsDashboardController extends Controller
             }
         }
 
-        // Use cache lock to prevent race conditions from concurrent requests
-        $lockKey = "ga:store:summary:{$tenantId}:{$date->format('Y-m-d')}";
-        $lock = Cache::lock($lockKey, 10); // 10 second lock timeout
-
         try {
-            if ($lock->get()) {
-                try {
-                    AnalyticsDailySummary::storeData(
-                        $tenantId,
-                        $date,
-                        'summary',
-                        ['overview' => $overview]
-                    );
-                    return true;
-                } catch (\Exception $e) {
-                    Log::warning('Failed to store GA API data in database', [
-                        'tenant_id' => $tenantId,
-                        'date' => $date->format('Y-m-d'),
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
-                    return false;
-                } finally {
-                    $lock->release();
-                }
-            } else {
-                // Lock acquisition failed - another process is storing
-                Log::debug('Could not acquire lock for storing summary data', [
-                    'tenant_id' => $tenantId,
-                    'date' => $date->format('Y-m-d')
-                ]);
-                return false;
-            }
+            // JSON_SET is atomic, so no cache lock needed
+            AnalyticsDailySummary::storeMetric(
+                $tenantId,
+                $date,
+                'summary',
+                ['overview' => $overview]
+            );
+            return true;
         } catch (\Exception $e) {
-            Log::warning('Lock acquisition failed for storing summary data', [
+            Log::warning('Failed to store GA API data in database', [
                 'tenant_id' => $tenantId,
                 'date' => $date->format('Y-m-d'),
                 'error' => $e->getMessage(),
@@ -830,7 +804,7 @@ class AnalyticsDashboardController extends Controller
     }
 
     /**
-     * Store devices data safely with cache lock to prevent race conditions
+     * Store devices data safely - uses atomic JSON_SET to prevent race conditions
      * 
      * @param string $tenantId
      * @param Carbon $date The date to store the data under
@@ -843,39 +817,17 @@ class AnalyticsDashboardController extends Controller
             return false;
         }
         
-        $lockKey = "ga:store:devices:{$tenantId}:{$date->format('Y-m-d')}";
-        $lock = Cache::lock($lockKey, 10);
-        
         try {
-            if ($lock->get()) {
-                try {
-                    AnalyticsDailySummary::storeData(
-                        $tenantId,
-                        $date,
-                        'devices',
-                        ['devices' => $devices]
-                    );
-                    return true;
-                } catch (\Exception $e) {
-                    Log::warning('Failed to store devices data in database', [
-                        'tenant_id' => $tenantId,
-                        'date' => $date->format('Y-m-d'),
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
-                    return false;
-                } finally {
-                    $lock->release();
-                }
-            } else {
-                Log::debug('Could not acquire lock for storing devices data', [
-                    'tenant_id' => $tenantId,
-                    'date' => $date->format('Y-m-d')
-                ]);
-                return false;
-            }
+            // JSON_SET is atomic, so no cache lock needed
+            AnalyticsDailySummary::storeMetric(
+                $tenantId,
+                $date,
+                'devices',
+                ['devices' => $devices]
+            );
+            return true;
         } catch (\Exception $e) {
-            Log::warning('Lock acquisition failed for storing devices data', [
+            Log::warning('Failed to store devices data in database', [
                 'tenant_id' => $tenantId,
                 'date' => $date->format('Y-m-d'),
                 'error' => $e->getMessage(),
@@ -886,7 +838,7 @@ class AnalyticsDashboardController extends Controller
     }
 
     /**
-     * Store traffic sources data safely with cache lock to prevent race conditions
+     * Store traffic sources data safely - uses atomic JSON_SET to prevent race conditions
      * 
      * @param string $tenantId
      * @param Carbon $date The date to store the data under
@@ -899,39 +851,17 @@ class AnalyticsDashboardController extends Controller
             return false;
         }
         
-        $lockKey = "ga:store:traffic-sources:{$tenantId}:{$date->format('Y-m-d')}";
-        $lock = Cache::lock($lockKey, 10);
-        
         try {
-            if ($lock->get()) {
-                try {
-                    AnalyticsDailySummary::storeData(
-                        $tenantId,
-                        $date,
-                        'traffic_sources',
-                        ['sources' => $sources]
-                    );
-                    return true;
-                } catch (\Exception $e) {
-                    Log::warning('Failed to store traffic sources data in database', [
-                        'tenant_id' => $tenantId,
-                        'date' => $date->format('Y-m-d'),
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
-                    return false;
-                } finally {
-                    $lock->release();
-                }
-            } else {
-                Log::debug('Could not acquire lock for storing traffic sources data', [
-                    'tenant_id' => $tenantId,
-                    'date' => $date->format('Y-m-d')
-                ]);
-                return false;
-            }
+            // JSON_SET is atomic, so no cache lock needed
+            AnalyticsDailySummary::storeMetric(
+                $tenantId,
+                $date,
+                'traffic_sources',
+                ['sources' => $sources]
+            );
+            return true;
         } catch (\Exception $e) {
-            Log::warning('Lock acquisition failed for storing traffic sources data', [
+            Log::warning('Failed to store traffic sources data in database', [
                 'tenant_id' => $tenantId,
                 'date' => $date->format('Y-m-d'),
                 'error' => $e->getMessage(),
@@ -942,7 +872,7 @@ class AnalyticsDashboardController extends Controller
     }
 
     /**
-     * Store top pages data safely with cache lock to prevent race conditions
+     * Store top pages data safely - uses atomic JSON_SET to prevent race conditions
      * 
      * @param string $tenantId
      * @param Carbon $date The date to store the data under
@@ -955,39 +885,17 @@ class AnalyticsDashboardController extends Controller
             return false;
         }
         
-        $lockKey = "ga:store:top-pages:{$tenantId}:{$date->format('Y-m-d')}";
-        $lock = Cache::lock($lockKey, 10);
-        
         try {
-            if ($lock->get()) {
-                try {
-                    AnalyticsDailySummary::storeData(
-                        $tenantId,
-                        $date,
-                        'top_pages',
-                        ['pages' => $pages]
-                    );
-                    return true;
-                } catch (\Exception $e) {
-                    Log::warning('Failed to store top pages data in database', [
-                        'tenant_id' => $tenantId,
-                        'date' => $date->format('Y-m-d'),
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
-                    return false;
-                } finally {
-                    $lock->release();
-                }
-            } else {
-                Log::debug('Could not acquire lock for storing top pages data', [
-                    'tenant_id' => $tenantId,
-                    'date' => $date->format('Y-m-d')
-                ]);
-                return false;
-            }
+            // JSON_SET is atomic, so no cache lock needed
+            AnalyticsDailySummary::storeMetric(
+                $tenantId,
+                $date,
+                'top_pages',
+                ['pages' => $pages]
+            );
+            return true;
         } catch (\Exception $e) {
-            Log::warning('Lock acquisition failed for storing top pages data', [
+            Log::warning('Failed to store top pages data in database', [
                 'tenant_id' => $tenantId,
                 'date' => $date->format('Y-m-d'),
                 'error' => $e->getMessage(),
@@ -1006,19 +914,19 @@ class AnalyticsDashboardController extends Controller
         try {
             // OPTIMIZATION: Use SQL aggregation - much faster than PHP loops
             // This aggregates all days in the date range in a single query
+            // Note: data structure changed - summary is now at $.summary.overview
             $result = DB::table('analytics_daily_summary')
                 ->where('tenant_id', $tenantId)
-                ->where('metric_type', 'summary')
                 ->whereBetween('date', [
                     $start->format('Y-m-d'),
                     $end->format('Y-m-d')
                 ])
                 ->selectRaw('
-                    COALESCE(SUM(CAST(JSON_EXTRACT(data, "$.overview.pageViews") AS UNSIGNED)), 0) as pageViews,
-                    COALESCE(SUM(CAST(JSON_EXTRACT(data, "$.overview.sessions") AS UNSIGNED)), 0) as sessions,
-                    COALESCE(SUM(CAST(JSON_EXTRACT(data, "$.overview.users") AS UNSIGNED)), 0) as users,
-                    COALESCE(AVG(CAST(JSON_EXTRACT(data, "$.overview.bounceRate") AS DECIMAL(10,4))), 0) as bounceRate,
-                    COALESCE(AVG(CAST(JSON_EXTRACT(data, "$.overview.averageSessionDuration") AS DECIMAL(10,2))), 0) as averageSessionDuration,
+                    COALESCE(SUM(CAST(JSON_EXTRACT(data, "$.summary.overview.pageViews") AS UNSIGNED)), 0) as pageViews,
+                    COALESCE(SUM(CAST(JSON_EXTRACT(data, "$.summary.overview.sessions") AS UNSIGNED)), 0) as sessions,
+                    COALESCE(SUM(CAST(JSON_EXTRACT(data, "$.summary.overview.users") AS UNSIGNED)), 0) as users,
+                    COALESCE(AVG(CAST(JSON_EXTRACT(data, "$.summary.overview.bounceRate") AS DECIMAL(10,4))), 0) as bounceRate,
+                    COALESCE(AVG(CAST(JSON_EXTRACT(data, "$.summary.overview.averageSessionDuration") AS DECIMAL(10,2))), 0) as averageSessionDuration,
                     COUNT(*) as rowCount
                 ')
                 ->first();
@@ -1048,7 +956,6 @@ class AnalyticsDashboardController extends Controller
             // Fallback: Use Eloquent model with PHP aggregation (original method)
             $records = AnalyticsDailySummary::forTenant($tenantId)
                 ->forDateRange($start, $end)
-                ->forMetricType('summary')
                 ->get();
                 
             if ($records->isEmpty()) {
@@ -1066,8 +973,9 @@ class AnalyticsDashboardController extends Controller
             ];
             
             foreach ($records as $record) {
-                if (isset($record->data['overview'])) {
-                    $overview = $record->data['overview'];
+                // Extract summary data from consolidated JSON structure
+                if (isset($record->data['summary']['overview'])) {
+                    $overview = $record->data['summary']['overview'];
                     $totals['pageViews'] += $overview['pageViews'] ?? 0;
                     $totals['sessions'] += $overview['sessions'] ?? 0;
                     $totals['users'] += $overview['users'] ?? 0;

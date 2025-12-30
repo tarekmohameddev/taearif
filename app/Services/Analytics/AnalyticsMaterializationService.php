@@ -63,7 +63,7 @@ class AnalyticsMaterializationService
             $totalUniqueVisitors = collect($data)->sum('users');
 
             // Store formatted data matching API response (for single day)
-            AnalyticsDailySummary::storeData(
+            AnalyticsDailySummary::storeMetric(
                 $tenantId,
                 $targetDate,
                 'visitors',
@@ -93,7 +93,7 @@ class AnalyticsMaterializationService
             $devices = $this->gaService->getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter);
 
             // Store devices data matching API response
-            AnalyticsDailySummary::storeData(
+            AnalyticsDailySummary::storeMetric(
                 $tenantId,
                 $targetDate,
                 'devices',
@@ -119,7 +119,7 @@ class AnalyticsMaterializationService
             $sources = $this->gaService->getTrafficSources($startDate, $endDate, $tenantFilter);
 
             // Store traffic sources data matching API response
-            AnalyticsDailySummary::storeData(
+            AnalyticsDailySummary::storeMetric(
                 $tenantId,
                 $targetDate,
                 'traffic_sources',
@@ -145,7 +145,7 @@ class AnalyticsMaterializationService
             $overview = $this->gaService->getOverviewMetricsOnly($tenantId, $startDate, $endDate);
 
             // Store summary data matching API response structure
-            AnalyticsDailySummary::storeData(
+            AnalyticsDailySummary::storeMetric(
                 $tenantId,
                 $targetDate,
                 'summary',
@@ -203,7 +203,7 @@ class AnalyticsMaterializationService
             })->toArray();
 
             // Store top pages data matching API response
-            AnalyticsDailySummary::storeData(
+            AnalyticsDailySummary::storeMetric(
                 $tenantId,
                 $targetDate,
                 'top_pages',

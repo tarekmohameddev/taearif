@@ -43,18 +43,19 @@ class CheckAnalyticsDataSource extends Command
                     // These endpoints check date range
                     $records = AnalyticsDailySummary::forTenant($tenant)
                         ->forDateRange($sevenDaysAgo, $yesterday)
-                        ->forMetricType($metricType)
-                        ->count();
+                        ->get();
                     
-                    $hasData = $records > 0;
+                    // Check if any record has the required metric type
+                    $hasData = $records->contains(function ($record) use ($metricType) {
+                        return isset($record->data[$metricType]);
+                    });
                 } else {
                     // These endpoints check yesterday's data
                     $record = AnalyticsDailySummary::forTenant($tenant)
                         ->forDate($yesterday)
-                        ->forMetricType($metricType)
-                        ->exists();
+                        ->first();
                     
-                    $hasData = $record;
+                    $hasData = $record && isset($record->data[$metricType]);
                 }
 
                 if ($hasData) {
