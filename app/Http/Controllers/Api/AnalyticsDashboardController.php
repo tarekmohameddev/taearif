@@ -1168,8 +1168,8 @@ class AnalyticsDashboardController extends Controller
                 'section' => $this->getSectionFromTargetType($log->target_type),
                 'time' => $log->created_at ? $log->created_at->diffForHumans() : 'just now',
                 'icon' => $this->getIconForTargetType($log->target_type, $log->action),
-                'user_id' => $log->actor_id ?? $log->user_id,
-                'user_name' => $userName,
+                'actor_id' => $log->actor_id,
+                'actor_name' => $userName,
                 'created_at' => $log->created_at ? $log->created_at->toISOString() : Carbon::now()->toISOString(),
             ];
         });
