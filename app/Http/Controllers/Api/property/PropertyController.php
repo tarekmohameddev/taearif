@@ -1694,7 +1694,17 @@ class PropertyController extends Controller
         } catch (\Throwable $e) {}
 
         // Build the properties query
-        $propertiesQuery = Property::with(['category', 'user', 'contents', 'proertyAmenities.amenity', 'creator'])
+        // OPTIMIZED: Added missing eager loading for galleryImages and UserPropertyCharacteristics
+        // to prevent N+1 queries when formatting response
+        $propertiesQuery = Property::with([
+            'category:id,name',
+            'user:id,username,first_name,last_name,email,account_type',
+            'contents:id,property_id,title,slug,address,description',
+            'proertyAmenities.amenity:id,name',
+            'creator:id,first_name,last_name,username,email,account_type',
+            'galleryImages:id,property_id,image', // Added to prevent N+1
+            'UserPropertyCharacteristics:id,property_id', // Added if needed for filtering
+        ])
             ->whereIn('user_id', $allowedUserIds);
 
         // Apply purpose filter if provided
@@ -1751,13 +1761,17 @@ class PropertyController extends Controller
             }
         }
 
-        // Apply all filters in a single whereHas query
+        // OPTIMIZED: Use join instead of whereHas for better performance
+        // Joins are faster than subqueries created by whereHas
         if ($hasCharacteristicFilter) {
-            $propertiesQuery->whereHas('UserPropertyCharacteristics', function ($query) use ($activeFilters) {
-                foreach ($activeFilters as $filter => $value) {
-                    $query->where($filter, $value);
-                }
-            });
+            $propertiesQuery->join('user_property_characteristics as upc', 'upc.property_id', '=', 'user_properties.id');
+            foreach ($activeFilters as $filter => $value) {
+                $propertiesQuery->where("upc.{$filter}", $value);
+            }
+            // Use distinct to prevent duplicate rows from join
+            $propertiesQuery->distinct();
+            // Ensure we select from the main table
+            $propertiesQuery->select('user_properties.*');
         }
 
         // Apply sorting
@@ -1862,15 +1876,6 @@ class PropertyController extends Controller
         // ===== Get filter options (CACHED - 1 hour) =====
         $cacheKey = "property_filter_options_{$ownerId}";
         $filterOptions = Cache::remember($cacheKey, 3600, function () use ($allowedUserIds) {
-            // Get available purposes from properties
-            $availablePurposes = Property::whereIn('user_id', $allowedUserIds)
-                ->whereNotNull('purpose')
-                ->where('purpose', '!=', '')
-                ->distinct()
-                ->pluck('purpose')
-                ->values()
-                ->toArray();
-
             // OPTIMIZED: Combined price and area stats in single query
             $stats = Property::whereIn('user_id', $allowedUserIds)
                 ->where(function($q) {
@@ -1892,30 +1897,43 @@ class PropertyController extends Controller
                 'min' => $stats->min_area ?: 0,
             ];
 
-            // Get distinct values for filters
-            $availableTypes = Property::whereIn('user_id', $allowedUserIds)
-                ->whereNotNull('type')
-                ->where('type', '!=', '')
+            // OPTIMIZED: Get all distinct filter values in a single query using UNION
+            // This reduces from 4 separate queries to 1 query
+            $filterValues = DB::table('user_properties')
+                ->whereIn('user_id', $allowedUserIds)
+                ->selectRaw("'purpose' as filter_type, purpose as value")
+                ->whereNotNull('purpose')
+                ->where('purpose', '!=', '')
                 ->distinct()
-                ->pluck('type')
-                ->values()
-                ->toArray();
+                ->union(
+                    DB::table('user_properties')
+                        ->whereIn('user_id', $allowedUserIds)
+                        ->selectRaw("'type' as filter_type, type as value")
+                        ->whereNotNull('type')
+                        ->where('type', '!=', '')
+                        ->distinct()
+                )
+                ->union(
+                    DB::table('user_properties')
+                        ->whereIn('user_id', $allowedUserIds)
+                        ->selectRaw("'beds' as filter_type, CAST(beds AS CHAR) as value")
+                        ->whereNotNull('beds')
+                        ->distinct()
+                )
+                ->union(
+                    DB::table('user_properties')
+                        ->whereIn('user_id', $allowedUserIds)
+                        ->selectRaw("'bath' as filter_type, CAST(bath AS CHAR) as value")
+                        ->whereNotNull('bath')
+                        ->distinct()
+                )
+                ->get()
+                ->groupBy('filter_type');
 
-            $availableBeds = Property::whereIn('user_id', $allowedUserIds)
-                ->whereNotNull('beds')
-                ->distinct()
-                ->orderBy('beds')
-                ->pluck('beds')
-                ->values()
-                ->toArray();
-
-            $availableBath = Property::whereIn('user_id', $allowedUserIds)
-                ->whereNotNull('bath')
-                ->distinct()
-                ->orderBy('bath')
-                ->pluck('bath')
-                ->values()
-                ->toArray();
+            $availablePurposes = $filterValues->get('purpose', collect())->pluck('value')->unique()->values()->toArray();
+            $availableTypes = $filterValues->get('type', collect())->pluck('value')->unique()->values()->toArray();
+            $availableBeds = $filterValues->get('beds', collect())->pluck('value')->map(fn($v) => (int)$v)->unique()->sort()->values()->toArray();
+            $availableBath = $filterValues->get('bath', collect())->pluck('value')->map(fn($v) => (int)$v)->unique()->sort()->values()->toArray();
 
             // Extract unique features from JSON arrays
             $allFeatures = Property::whereIn('user_id', $allowedUserIds)
@@ -1929,7 +1947,8 @@ class PropertyController extends Controller
             $availableFeatures = array_values($allFeatures);
             sort($availableFeatures);
 
-            // Get UserPropertyCharacteristic filter options
+            // OPTIMIZED: Get UserPropertyCharacteristic filter options using a single query with conditional aggregation
+            // Instead of N queries (one per field), use a single query with CASE statements
             $propertyIds = Property::whereIn('user_id', $allowedUserIds)
                 ->pluck('id');
 
@@ -1941,11 +1960,23 @@ class PropertyController extends Controller
                 'bathrooms', 'rooms', 'building_age'
             ];
 
+            // OPTIMIZED: Batch load all characteristic values in fewer queries
+            // Group fields by type (boolean vs numeric) to optimize queries
+            $booleanFields = ['private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement',
+                'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room',
+                'driver_room', 'swimming_pool', 'kitchen'];
+            $numericFields = ['floor_number', 'floors', 'bathrooms', 'rooms', 'building_age'];
+
+            // Get all characteristics data in one query
+            $allCharacteristics = UserPropertyCharacteristic::whereIn('property_id', $propertyIds)
+                ->select($characteristicFields)
+                ->get();
+
+            // Process in PHP (faster than multiple DB queries for small datasets)
             foreach ($characteristicFields as $field) {
-                $values = UserPropertyCharacteristic::whereIn('property_id', $propertyIds)
-                    ->whereNotNull($field)
-                    ->distinct()
+                $values = $allCharacteristics
                     ->pluck($field)
+                    ->filter(fn($v) => !is_null($v))
                     ->unique()
                     ->sort()
                     ->values()

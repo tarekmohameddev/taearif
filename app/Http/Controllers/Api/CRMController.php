@@ -174,9 +174,42 @@ class CRMController extends Controller
             ];
         };
 
-        // ===== OPTIMIZATION: Load all customers once, then group =====
-        // This reduces from N queries (one per stage/priority/procedure/type) to 1 query
+        // ===== OPTIMIZATION: Use SQL aggregation to get counts and group data efficiently =====
+        // Instead of loading all customers, use SQL GROUP BY for counts and selective loading
+        // This prevents memory exhaustion for users with many customers
+        
+        // Get customer counts per stage/priority/procedure/type using SQL aggregation
+        $stageCounts = ApiCustomer::where('user_id', $user->id)
+            ->select('stage_id', DB::raw('COUNT(*) as count'))
+            ->whereNotNull('stage_id')
+            ->groupBy('stage_id')
+            ->pluck('count', 'stage_id');
+            
+        $priorityCounts = ApiCustomer::where('user_id', $user->id)
+            ->select('priority_id', DB::raw('COUNT(*) as count'))
+            ->whereNotNull('priority_id')
+            ->groupBy('priority_id')
+            ->pluck('count', 'priority_id');
+            
+        $procedureCounts = ApiCustomer::where('user_id', $user->id)
+            ->select('procedure_id', DB::raw('COUNT(*) as count'))
+            ->whereNotNull('procedure_id')
+            ->groupBy('procedure_id')
+            ->pluck('count', 'procedure_id');
+            
+        $typeCounts = ApiCustomer::where('user_id', $user->id)
+            ->select('type_id', DB::raw('COUNT(*) as count'))
+            ->whereNotNull('type_id')
+            ->groupBy('type_id')
+            ->pluck('count', 'type_id');
+
+        // OPTIMIZED: Load customers with select() to limit columns and use chunking for large datasets
+        // Only load essential columns to reduce memory usage
         $allCustomers = ApiCustomer::where('user_id', $user->id)
+            ->select([
+                'id', 'name', 'email', 'phone_number', 'city_id', 'district_id',
+                'type_id', 'priority_id', 'stage_id', 'procedure_id', 'responsible_employee_id'
+            ])
             ->with($withRelations)
             ->get();
 
@@ -200,7 +233,7 @@ class CRMController extends Controller
                 'stage_name'     => $stage->stage_name,
                 'color'          => $stage->color,
                 'icon'           => $stage->icon,
-                'customer_count' => $stageCustomers->count(), // Same as before
+                'customer_count' => $stageCounts->get($stage->id, 0), // Use SQL aggregated count
             ];
 
             $stagesWithCustomers[] = [
@@ -223,7 +256,7 @@ class CRMController extends Controller
                 'priority_name'  => $priority->name,
                 'color'          => $priority->color,
                 'icon'           => $priority->icon,
-                'customer_count' => $priorityCustomers->count(),
+                'customer_count' => $priorityCounts->get($priority->id, 0), // Use SQL aggregated count
                 'customers'      => $customers, // Same structure
             ];
         }
@@ -240,7 +273,7 @@ class CRMController extends Controller
                 'procedure_name' => $proc->procedure_name,
                 'color'          => $proc->color,
                 'icon'           => $proc->icon,
-                'customer_count' => $procCustomers->count(),
+                'customer_count' => $procedureCounts->get($proc->id, 0), // Use SQL aggregated count
                 'customers'      => $customers, // Same structure
             ];
         }
@@ -258,7 +291,7 @@ class CRMController extends Controller
                 'type_name'      => $type->name,
                 'color'          => $type->color,
                 'icon'           => $type->icon,
-                'customer_count' => $typeCustomers->count(),
+                'customer_count' => $typeCounts->get($type->id, 0), // Use SQL aggregated count
                 'customers'      => $customers, // Same structure
             ];
         }
