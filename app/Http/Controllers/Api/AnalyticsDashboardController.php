@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Log;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\ApiCustomer;
 use App\Models\Analytics\AnalyticsDailySummary;
+use App\Models\Api\EmployeeActivityLog;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 
@@ -1130,41 +1132,144 @@ class AnalyticsDashboardController extends Controller
         ]);
     }
 
-    public function getRecentActivity(Request $request, GoogleAnalyticsService $analytics)
+    public function getRecentActivity(Request $request)
     {
         $user = $request->user();
-        $tenantId = $user->username;
+        $tenantOwnerId = $user->tenantOwnerId();
 
-        $startDate = Carbon::now()->subDays(7);
-        $endDate = Carbon::now();
+        // Get optional filters
+        $limit = max(1, min(100, (int) $request->input('limit', 50)));
+        $actorId = $request->input('actor_id');
+        $action = $request->input('action');
 
-        // Get the recent events data from Google Analytics
-        $events = $analytics->getRecentEvents($startDate, $endDate, $tenantId);
+        // Build query for tenant-wide activity logs with eager loading to avoid N+1
+        // Only eager load actor when actor_id is not null to avoid unnecessary queries
+        $query = EmployeeActivityLog::with([
+                'actor' => function ($query) {
+                    $query->select('id', 'first_name', 'last_name', 'username', 'email');
+                }
+            ])
+            ->where('user_id', $tenantOwnerId)
+            ->when($actorId, fn($q) => $q->where('actor_id', (int) $actorId))
+            ->when($action, fn($q) => $q->where('action', $action))
+            ->orderByDesc('created_at')
+            ->limit($limit);
 
-        // Map over the events to match your desired format
-        $activities = collect($events)->map(function ($event, $key) {
-            // Simulate the time calculation (this needs to be replaced with your actual logic)
-            // You can use event['created_at'] for actual date difference calculations
-            $created_at = Carbon::parse($event['created_at'] ?? now());
-            $time = $created_at->diffForHumans();
+        $logs = $query->get();
 
-            // Ensure the 'users' key exists, otherwise, use a default value of 0
-            $uniqueVisitors = $event['users'] ?? 0;
+        // Map logs to frontend format
+        $activities = $logs->map(function ($log) {
+            $actor = $log->actor;
+            $userName = $this->getUserName($actor);
 
             return [
-                'id' => $event['id'] ?? $key + 1, // Default ID if not present
-                'action' => $event['action'] ?? 'No Action', // Default action if not present
-                'section' => $event['section'] ?? 'No Section', // Default section if not present
-                'time' => $time,
-                'icon' => $event['icon'] ?? 'file-text', // Default icon if not present
-                'user_id' => $event['user_id'] ?? 1, // Default user_id if not present
-                'created_at' => $event['created_at'] ?? Carbon::now()->toISOString(), // Default created_at if not present
+                'id' => $log->id,
+                'action' => $log->action ?? 'Unknown Action',
+                'section' => $this->getSectionFromTargetType($log->target_type),
+                'time' => $log->created_at ? $log->created_at->diffForHumans() : 'just now',
+                'icon' => $this->getIconForTargetType($log->target_type, $log->action),
+                'user_id' => $log->actor_id ?? $log->user_id,
+                'user_name' => $userName,
+                'created_at' => $log->created_at ? $log->created_at->toISOString() : Carbon::now()->toISOString(),
             ];
         });
 
         return response()->json([
             'activities' => $activities
         ]);
+    }
+
+    /**
+     * Get user name from actor model
+     */
+    protected function getUserName(?User $actor): string
+    {
+        if (!$actor) {
+            return 'Unknown User';
+        }
+
+        // Try to get full name first
+        $fullName = trim(($actor->first_name ?? '') . ' ' . ($actor->last_name ?? ''));
+        if ($fullName) {
+            return $fullName;
+        }
+
+        // Fallback to username or email
+        return $actor->username ?? $actor->email ?? 'Unknown User';
+    }
+
+    /**
+     * Get section name from target_type (model class name)
+     */
+    protected function getSectionFromTargetType(?string $targetType): string
+    {
+        if (!$targetType) {
+            return 'General';
+        }
+
+        // Extract class basename if it's a full class name
+        $basename = class_basename($targetType);
+        
+        // Map common model names to readable section names
+        $sectionMap = [
+            'Property' => 'Properties',
+            'ApiCustomer' => 'Customers',
+            'CrmCard' => 'CRM',
+            'CrmRequest' => 'CRM',
+            'RmRental' => 'Rentals',
+            'RmContract' => 'Contracts',
+            'RmPayment' => 'Payments',
+            'RmMaintenanceTicket' => 'Maintenance',
+            'UserPropertyRequest' => 'Property Requests',
+            'ApiCustomerInquiry' => 'Inquiries',
+        ];
+
+        return $sectionMap[$basename] ?? $basename;
+    }
+
+    /**
+     * Get icon name for target type and action
+     */
+    protected function getIconForTargetType(?string $targetType, ?string $action): string
+    {
+        if (!$targetType) {
+            return 'activity';
+        }
+
+        $basename = class_basename($targetType);
+
+        // Icon mapping based on target type
+        $iconMap = [
+            'Property' => 'home',
+            'ApiCustomer' => 'user',
+            'CrmCard' => 'briefcase',
+            'CrmRequest' => 'file-text',
+            'RmRental' => 'file-text',
+            'RmContract' => 'file-text',
+            'RmPayment' => 'dollar-sign',
+            'RmMaintenanceTicket' => 'tool',
+            'UserPropertyRequest' => 'search',
+            'ApiCustomerInquiry' => 'message-circle',
+        ];
+
+        // Action-based icon overrides
+        if ($action) {
+            $actionLower = strtolower($action);
+            if (str_contains($actionLower, 'create') || str_contains($actionLower, 'add')) {
+                return 'plus-circle';
+            }
+            if (str_contains($actionLower, 'update') || str_contains($actionLower, 'edit')) {
+                return 'edit';
+            }
+            if (str_contains($actionLower, 'delete') || str_contains($actionLower, 'remove')) {
+                return 'trash';
+            }
+            if (str_contains($actionLower, 'view') || str_contains($actionLower, 'show')) {
+                return 'eye';
+            }
+        }
+
+        return $iconMap[$basename] ?? 'file-text';
     }
 
     //  user customers

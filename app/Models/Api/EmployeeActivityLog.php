@@ -3,7 +3,7 @@
 namespace App\Models\Api;
 
 use Illuminate\Database\Eloquent\Model;
-
+use App\Models\User;
 
 class EmployeeActivityLog extends Model {
   protected $table = 'api_employee_activity_logs';
@@ -12,4 +12,20 @@ class EmployeeActivityLog extends Model {
     'old_values','new_values','ip','user_agent'
   ];
   protected $casts = ['old_values'=>'array','new_values'=>'array'];
+
+  /**
+   * Get the actor (user) who performed this action
+   */
+  public function actor()
+  {
+    return $this->belongsTo(User::class, 'actor_id');
+  }
+
+  /**
+   * Get the tenant owner (user_id references tenant owner)
+   */
+  public function tenantOwner()
+  {
+    return $this->belongsTo(User::class, 'user_id');
+  }
 }
