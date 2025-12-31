@@ -129,13 +129,9 @@ return new class extends Migration
         }
 
         // ===== analytics_daily_summary table - Optimize date range queries =====
-        // Note: tenant_id + date index already exists, but we can add composite for metric_type filtering
-        
-        if (!$hasIndex('analytics_daily_summary', 'analytics_tenant_date_metric_index')) {
-            Schema::table('analytics_daily_summary', function (Blueprint $table) {
-                $table->index(['tenant_id', 'date', 'metric_type'], 'analytics_tenant_date_metric_index');
-            });
-        }
+        // Note: The table was refactored to remove metric_type column (single row per tenant/day)
+        // The index on ['tenant_id', 'date'] already exists from the refactoring migration
+        // No additional index needed here
 
         // ===== api_customer_inquiry table - Additional indexes =====
         
@@ -173,7 +169,6 @@ return new class extends Migration
         // Drop indexes in reverse order
         $indexes = [
             ['api_customer_inquiry', 'api_customer_inquiry_customer_id_index'],
-            ['analytics_daily_summary', 'analytics_tenant_date_metric_index'],
             ['user_project_contents', 'user_project_contents_project_language_index'],
             ['user_project_contents', 'user_project_contents_slug_index'],
             ['user_property_contents', 'user_property_contents_property_language_index'],
