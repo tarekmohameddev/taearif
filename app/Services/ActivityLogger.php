@@ -7,6 +7,11 @@ use App\Models\Api\EmployeeActivityLog;
 
 class ActivityLogger {
   public static function log(array $data): void {
+    // Skip logging for employees - the LogEmployeeRequestActivity middleware handles this
+    if (isset($data['actor_type']) && $data['actor_type'] === 'employee') {
+      return;
+    }
+
     $ctx = request();
     $defaults = [
       'ip' => $ctx->ip(),

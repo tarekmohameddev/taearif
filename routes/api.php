@@ -439,7 +439,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
 
 
 // Api crm Customer
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx', 'can:crm.view'])->prefix('crm')->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx', 'log.employee.activity', 'can:crm.view'])->prefix('crm')->group(function () {
     // STAGES
     Route::apiResource('stages', UserApiCustomerStageController::class);
     // reorderStages
@@ -705,7 +705,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     //     Route::post('register', [EmployeeAuthController::class, 'register']);
     // });
     // Employee API
-    Route::middleware(['auth:sanctum','employee.only'])->group(function () {
+    Route::middleware(['auth:sanctum','employee.only','log.employee.activity'])->group(function () {
         // Protected
         Route::get('auth/me',     [EmployeeAuthController::class, 'me']);
         Route::post('auth/logout',[EmployeeAuthController::class, 'logout']);
@@ -721,7 +721,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
             ->middleware('can:logs.read'); // owners pass via Gate::before
     });
 
-    Route::prefix('crm')->group(function () {
+    Route::middleware(['log.employee.activity'])->prefix('crm')->group(function () {
         Route::get('cards', [CrmCardController::class, 'index']);
         Route::post('cards', [CrmCardController::class, 'store']);
         Route::get('cards/{id}', [CrmCardController::class, 'show']);

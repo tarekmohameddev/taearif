@@ -23,9 +23,10 @@ class CRMController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        $tenantId = $request->user()->tenantOwnerId();
 
         // ===== Bootstrap defaults (unchanged) =====
-        $hasStages = UserApiCustomerStage::where('user_id', $user->id)->exists();
+        $hasStages = UserApiCustomerStage::where('user_id', $tenantId)->exists();
         if (!$hasStages) {
             $defaultStages = [
                 ['stage_name' => 'طلب معاينه',        'order' => 1],
@@ -34,7 +35,7 @@ class CRMController extends Controller
             ];
             foreach ($defaultStages as $stage) {
                 UserApiCustomerStage::create([
-                    'user_id'   => $user->id,
+                    'user_id'   => $tenantId,
                     'stage_name'=> $stage['stage_name'],
                     'order'     => $stage['order'],
                     'is_active' => true,
@@ -48,7 +49,7 @@ class CRMController extends Controller
         ];
         foreach ($defaultProcedures as $p) {
             UserApiCustomerProcedure::firstOrCreate(
-                ['user_id' => $user->id, 'procedure_name' => $p['procedure_name']],
+                ['user_id' => $tenantId, 'procedure_name' => $p['procedure_name']],
                 ['order' => $p['order'], 'icon' => $p['icon'], 'color' => $p['color'], 'is_active' => true]
             );
         }
@@ -60,7 +61,7 @@ class CRMController extends Controller
         ];
         foreach ($priorityDefaults as $p) {
             UserApiCustomerPriority::firstOrCreate(
-                ['user_id'=>$user->id, 'value'=>$p['value']],
+                ['user_id'=>$tenantId, 'value'=>$p['value']],
                 ['name'=>$p['name'], 'order'=>$p['order'], 'color'=>$p['color'], 'icon'=>$p['icon'], 'is_active'=>true]
             );
         }
@@ -74,12 +75,12 @@ class CRMController extends Controller
         ];
         foreach ($defaultTypes as $t) {
             UserApiCustomerType::firstOrCreate(
-                ['user_id' => $user->id, 'value' => $t['value']],
+                ['user_id' => $tenantId, 'value' => $t['value']],
                 ['name' => $t['name'], 'order' => $t['order'], 'icon' => $t['icon'], 'color' => $t['color'], 'is_active' => true]
             );
         }
 
-        $totalCustomers = ApiCustomer::where('user_id', $user->id)->count();
+        $totalCustomers = ApiCustomer::where('user_id', $tenantId)->count();
 
         // ===== DRY helpers =====
         $withRelations = [
@@ -92,22 +93,22 @@ class CRMController extends Controller
             'responsibleEmployee.activeWhatsappUser',
         ];
 
-        $buildQuery = function (callable $scope) use ($user, $withRelations) {
-            $q = ApiCustomer::where('user_id', $user->id)->with($withRelations);
+        $buildQuery = function (callable $scope) use ($tenantId, $withRelations) {
+            $q = ApiCustomer::where('user_id', $tenantId)->with($withRelations);
             $scope($q);
             return $q;
         };
 
         // ===== OPTIMIZATION: Collect all customer IDs that will be used across all sections =====
         // This allows us to batch load counts in 2 queries instead of 2N queries
-        $stages = UserApiCustomerStage::where('user_id', $user->id)->orderBy('order')->get();
-        $priorities = UserApiCustomerPriority::where('user_id', $user->id)->orderBy('order')->get();
-        $procedures = UserApiCustomerProcedure::where('user_id', $user->id)->orderBy('order')->get();
-        $types = UserApiCustomerType::where('user_id', $user->id)->orderBy('order')->get();
+        $stages = UserApiCustomerStage::where('user_id', $tenantId)->orderBy('order')->get();
+        $priorities = UserApiCustomerPriority::where('user_id', $tenantId)->orderBy('order')->get();
+        $procedures = UserApiCustomerProcedure::where('user_id', $tenantId)->orderBy('order')->get();
+        $types = UserApiCustomerType::where('user_id', $tenantId)->orderBy('order')->get();
 
         // OPTIMIZED: Collect all customer IDs in a single query instead of N queries
         // This reduces from N+4 queries to 1 query for customer ID collection
-        $allCustomerIds = ApiCustomer::where('user_id', $user->id)
+        $allCustomerIds = ApiCustomer::where('user_id', $tenantId)
             ->where(function($q) use ($stages, $priorities, $procedures, $types) {
                 $q->whereIn('stage_id', $stages->pluck('id'))
                   ->orWhereIn('priority_id', $priorities->pluck('id'))
@@ -179,25 +180,25 @@ class CRMController extends Controller
         // This prevents memory exhaustion for users with many customers
         
         // Get customer counts per stage/priority/procedure/type using SQL aggregation
-        $stageCounts = ApiCustomer::where('user_id', $user->id)
+        $stageCounts = ApiCustomer::where('user_id', $tenantId)
             ->select('stage_id', DB::raw('COUNT(*) as count'))
             ->whereNotNull('stage_id')
             ->groupBy('stage_id')
             ->pluck('count', 'stage_id');
-            
-        $priorityCounts = ApiCustomer::where('user_id', $user->id)
+
+        $priorityCounts = ApiCustomer::where('user_id', $tenantId)
             ->select('priority_id', DB::raw('COUNT(*) as count'))
             ->whereNotNull('priority_id')
             ->groupBy('priority_id')
             ->pluck('count', 'priority_id');
-            
-        $procedureCounts = ApiCustomer::where('user_id', $user->id)
+
+        $procedureCounts = ApiCustomer::where('user_id', $tenantId)
             ->select('procedure_id', DB::raw('COUNT(*) as count'))
             ->whereNotNull('procedure_id')
             ->groupBy('procedure_id')
             ->pluck('count', 'procedure_id');
-            
-        $typeCounts = ApiCustomer::where('user_id', $user->id)
+
+        $typeCounts = ApiCustomer::where('user_id', $tenantId)
             ->select('type_id', DB::raw('COUNT(*) as count'))
             ->whereNotNull('type_id')
             ->groupBy('type_id')
@@ -205,7 +206,7 @@ class CRMController extends Controller
 
         // OPTIMIZED: Load customers with select() to limit columns and use chunking for large datasets
         // Only load essential columns to reduce memory usage
-        $allCustomers = ApiCustomer::where('user_id', $user->id)
+        $allCustomers = ApiCustomer::where('user_id', $tenantId)
             ->select([
                 'id', 'name', 'email', 'phone_number', 'city_id', 'district_id',
                 'type_id', 'priority_id', 'stage_id', 'procedure_id', 'responsible_employee_id'
@@ -312,13 +313,14 @@ class CRMController extends Controller
     public function changeCustomerStage(Request $request, $id, CrmCustomerStageService $stageService)
     {
         $user = $request->user();
+        $tenantId = $request->user()->tenantOwnerId();
 
         $validated = $request->validate([
             'stage_id' => 'required|integer|exists:users_api_customers_stages,id',
         ]);
 
         $customer = ApiCustomer::where('id', $id)
-            ->where('user_id', $user->id)
+            ->where('user_id', $tenantId)
             ->first();
 
         if (!$customer) {
@@ -329,7 +331,7 @@ class CRMController extends Controller
         }
 
         $stage = UserApiCustomerStage::where('id', $validated['stage_id'])
-            ->where('user_id', $user->id)
+            ->where('user_id', $tenantId)
             ->first();
 
         if (!$stage) {
@@ -357,13 +359,14 @@ class CRMController extends Controller
     public function changeCustomerPriority(Request $request, $id)
     {
         $user = $request->user();
+        $tenantId = $request->user()->tenantOwnerId();
 
         $validated = $request->validate([
             'priority_id' => 'required|integer', // 1=Low, 2=Medium, 3=High
         ]);
 
         $customer = ApiCustomer::where('id', $id)
-            ->where('user_id', $user->id)
+            ->where('user_id', $tenantId)
             ->first();
 
         if (!$customer) {
@@ -392,13 +395,14 @@ class CRMController extends Controller
     public function changeCustomerType(Request $request, $id)
     {
         $user = $request->user();
+        $tenantId = $request->user()->tenantOwnerId();
 
         $validated = $request->validate([
             'type_id' => 'required|integer',
         ]);
 
         $customer = ApiCustomer::where('id', $id)
-            ->where('user_id', $user->id)
+            ->where('user_id', $tenantId)
             ->first();
 
         if (!$customer) {
@@ -426,13 +430,14 @@ class CRMController extends Controller
     public function changeCustomerProcedure(Request $request, $id)
     {
         $user = $request->user();
+        $tenantId = $request->user()->tenantOwnerId();
 
         $validated = $request->validate([
             'procedure_id' => 'required|integer|exists:users_api_customers_procedures,id',
         ]);
 
         $customer = ApiCustomer::where('id', $id)
-            ->where('user_id', $user->id)
+            ->where('user_id', $tenantId)
             ->first();
 
         if (!$customer) {
@@ -443,7 +448,7 @@ class CRMController extends Controller
         }
 
         $procedure = UserApiCustomerProcedure::where('id', $validated['procedure_id'])
-            ->where('user_id', $user->id)
+            ->where('user_id', $tenantId)
             ->first();
 
         if (!$procedure) {
@@ -507,7 +512,7 @@ class CRMController extends Controller
         $sortBy  = $request->input('sort_by', 'created_at');
         $sortDir = $request->input('sort_dir', 'desc');
 
-        $query = \App\Models\ApiCustomer::where('user_id', $user->id)
+        $query = \App\Models\ApiCustomer::where('user_id', $request->user()->tenantOwnerId())
         ->with([
             'city:id,name_ar,name_en',
             'district:id,name_ar,name_en',
@@ -659,7 +664,7 @@ class CRMController extends Controller
                 ];
             })->values();
 
-        $totalAll = \App\Models\ApiCustomer::where('user_id', $user->id)->count();
+        $totalAll = \App\Models\ApiCustomer::where('user_id', $request->user()->tenantOwnerId())->count();
 
         return response()->json([
             'status' => 'success',

@@ -21,7 +21,7 @@ class CrmRequestController extends ApiController
 	public function index(Request $request)
 	{
 		$user = $request->user();
-		$userId = $user->id;
+		$userId = $request->user()->tenantOwnerId();
 
 		// Helper function to convert to int array
 		$toIntArray = function ($v): array {

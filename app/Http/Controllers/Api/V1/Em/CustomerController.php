@@ -16,6 +16,19 @@ class CustomerController extends Controller
 {
     use ResolvesTenant;
 
+    /**
+     * Get the current actor information for logging.
+     * Since this is an employee controller, actor is always an employee.
+     */
+    protected function actor(): array
+    {
+        $user = auth('sanctum')->user();
+        return [
+            'type' => 'employee',
+            'id' => $user->id,
+        ];
+    }
+
     public function __construct()
     {
         $this->middleware(['auth:sanctum']);
