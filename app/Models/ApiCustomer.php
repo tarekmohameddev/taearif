@@ -42,6 +42,9 @@ class ApiCustomer extends Authenticatable
         'phone_number',
         'password',
         'remember_token',
+        'property_request_id',
+        'source',
+        'source_id',
     ];
 
     /**

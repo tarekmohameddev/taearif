@@ -34,6 +34,7 @@ class UserPropertyRequest extends Model
         'is_read',
         'is_active',
         'status',
+        'status_id',
     ];
 
     protected $casts = [
@@ -43,11 +44,39 @@ class UserPropertyRequest extends Model
         'budget_to'            => 'float',
         'area_from'            => 'integer',
         'area_to'              => 'integer',
+        'status_id'            => 'integer',
+    ];
+
+    protected $hidden = [
+        'statusOption',
+        'status',
+        'status_id',
+        'is_active',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function statusOption()
+    {
+        return $this->belongsTo(\App\Models\PropertyRequestStatus::class, 'status_id');
+    }
+
+    public function toArray(): array
+    {
+        $array = parent::toArray();
+
+        $array['status'] = $this->statusOption
+            ? [
+                'id' => $this->statusOption->id,
+                'name_ar' => $this->statusOption->name_ar,
+                'name_en' => $this->statusOption->name_en,
+            ]
+            : null;
+
+        return $array;
     }
 
     /**
@@ -56,5 +85,18 @@ class UserPropertyRequest extends Model
     public function scopeByStatus($query, $status)
     {
         return $query->where('status', $status);
+    }
+
+    public function getStatusNameAttribute(): ?string
+    {
+        if ($this->relationLoaded('statusOption') && $this->statusOption) {
+            return $this->statusOption->name_ar ?? $this->statusOption->name_en;
+        }
+
+        if ($this->statusOption) {
+            return $this->statusOption->name_ar ?? $this->statusOption->name_en;
+        }
+
+        return $this->attributes['status'] ?? null;
     }
 }
