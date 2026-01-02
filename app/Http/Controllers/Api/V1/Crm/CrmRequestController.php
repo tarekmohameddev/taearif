@@ -21,9 +21,41 @@ class CrmRequestController extends ApiController
 	public function index(Request $request)
 	{
 		$user = $request->user();
-		$userId = $user->id;
+		$userId = $request->user()->tenantOwnerId();
 
-		// Statistics (4 cards)
+		// Helper function to convert to int array
+		$toIntArray = function ($v): array {
+			if (is_null($v) || $v === '') return [];
+			if (is_int($v) || (is_string($v) && is_numeric($v))) return [(int)$v];
+			if (is_string($v)) return array_values(array_filter(array_map('intval', explode(',', $v))));
+			if (is_array($v))  return array_values(array_filter(array_map('intval', $v)));
+			return [];
+		};
+		$catIds  = $toIntArray($request->input('interested_category_ids'));
+		$propIds = $toIntArray($request->input('interested_property_ids'));
+
+		// Validate all filters
+		$request->validate([
+			'q' => 'nullable|string|max:255',
+			'name' => 'nullable|string|max:255',
+			'email' => 'nullable|string|max:255',
+			'phone_number' => 'nullable|string|max:20',
+			'city_id' => 'nullable|integer',
+			'district_id' => 'nullable|integer',
+			'type_id' => 'nullable|integer',
+			'priority_id' => 'nullable|integer',
+			'procedure_id' => 'nullable|integer',
+			'stage_id' => 'nullable|integer',
+			'responsible_employee_id' => 'nullable|integer',
+			'employee_whatsapp_number' => 'nullable|string|max:20',
+			'interested_category_ids' => 'nullable',
+			'interested_property_ids' => 'nullable',
+			'has_property' => 'nullable|in:0,1',
+			'sort_by' => 'nullable|in:position,created_at,id',
+			'sort_dir' => 'nullable|in:asc,desc',
+		]);
+
+		// Statistics (4 cards) - calculate before filtering
 		$totalRequests     = CrmRequest::query()->forUser($userId)->count();
 		$withProperty      = CrmRequest::query()->forUser($userId)->whereNotNull('property_id')->count();
 		$withoutProperty   = CrmRequest::query()->forUser($userId)->whereNull('property_id')->count();
@@ -36,35 +68,113 @@ class CrmRequestController extends ApiController
 			'total_cards'      => $totalCards,
 		];
 
-		// Filters reused for per-stage queries
-		$filterHasProperty = $request->filled('has_property') ? (string) $request->has_property : null;
-		$filterTerm = $request->filled('q') ? trim((string) $request->q) : null;
+		// Build base query with customer filters
+		$baseQuery = CrmRequest::query()
+			->forUser($userId);
 
-		// Stages with requests inside each
+		// Apply customer filters via whereHas
+		$baseQuery->whereHas('customer', function ($customerQuery) use ($request, $catIds, $propIds) {
+			// General search (q)
+			if ($request->filled('q')) {
+				$qText = trim($request->input('q'));
+				$customerQuery->where(function ($sub) use ($qText) {
+					$sub->where('name', 'like', "%{$qText}%")
+						->orWhere('email', 'like', "%{$qText}%")
+						->orWhere('phone_number', 'like', "%{$qText}%");
+				});
+			}
+
+			// Specific customer filters
+			if ($request->filled('name')) {
+				$customerQuery->where('name', 'like', '%' . trim($request->input('name')) . '%');
+			}
+			if ($request->filled('email')) {
+				$customerQuery->where('email', 'like', '%' . trim($request->input('email')) . '%');
+			}
+			if ($request->filled('phone_number')) {
+				$customerQuery->where('phone_number', 'like', '%' . trim($request->input('phone_number')) . '%');
+			}
+			if ($request->filled('city_id')) {
+				$customerQuery->where('city_id', (int)$request->input('city_id'));
+			}
+			if ($request->filled('district_id')) {
+				$customerQuery->where('district_id', (int)$request->input('district_id'));
+			}
+			if ($request->filled('type_id')) {
+				$customerQuery->where('type_id', (int)$request->input('type_id'));
+			}
+			if ($request->filled('priority_id')) {
+				$customerQuery->where('priority_id', (int)$request->input('priority_id'));
+			}
+			if ($request->filled('procedure_id')) {
+				$customerQuery->where('procedure_id', (int)$request->input('procedure_id'));
+			}
+			if ($request->filled('responsible_employee_id')) {
+				$customerQuery->where('responsible_employee_id', (int)$request->input('responsible_employee_id'));
+			}
+			if ($request->filled('employee_whatsapp_number')) {
+				$customerQuery->whereHas('responsibleEmployee.activeWhatsappUser', function ($sub) use ($request) {
+					$sub->where('number', 'like', '%' . $request->input('employee_whatsapp_number') . '%');
+				});
+			}
+
+			// Interested categories filter
+			if (!empty($catIds)) {
+				$customerQuery->whereExists(function ($sub) use ($catIds) {
+					$sub->select(DB::raw(1))
+						->from('api_customer_property_interested as ac1')
+						->whereColumn('ac1.customer_id', 'api_customers.id')
+						->whereIn('ac1.category_id', $catIds);
+				});
+			}
+
+			// Interested properties filter
+			if (!empty($propIds)) {
+				$customerQuery->whereExists(function ($sub) use ($propIds) {
+					$sub->select(DB::raw(1))
+						->from('api_customer_property_interested as ac2')
+						->whereColumn('ac2.customer_id', 'api_customers.id')
+						->whereIn('ac2.property_id', $propIds);
+				});
+			}
+		});
+
+		// Apply request-level filters
+		if ($request->filled('stage_id')) {
+			$baseQuery->where('stage_id', (int)$request->input('stage_id'));
+		}
+		if ($request->filled('has_property')) {
+			if ($request->input('has_property') === '1') {
+				$baseQuery->whereNotNull('property_id');
+			} elseif ($request->input('has_property') === '0') {
+				$baseQuery->whereNull('property_id');
+			}
+		}
+
+		// Get all filtered request IDs first (for grouping by stage)
+		$filteredRequestIds = $baseQuery->pluck('id');
+
+		// Get stages with filtered requests
 		$stages = UserApiCustomerStage::query()
 			->where('user_id', $userId)
 			->where('is_active', true)
 			->orderBy('order', 'asc')
 			->get(['id', 'stage_name', 'color', 'icon', 'order'])
-			->map(function ($stage) use ($userId, $filterHasProperty, $filterTerm) {
+			->map(function ($stage) use ($userId, $filteredRequestIds, $request) {
 				$reqQuery = CrmRequest::query()
 					->forUser($userId)
 					->where('stage_id', $stage->id)
-					->when($filterHasProperty !== null, function ($q) use ($filterHasProperty) {
-						if ($filterHasProperty === '1') {
-							$q->whereNotNull('property_id');
-						} elseif ($filterHasProperty === '0') {
-							$q->whereNull('property_id');
-						}
-					})
-					->when(!empty($filterTerm), function ($q) use ($filterTerm) {
-						$q->where(function ($qq) use ($filterTerm) {
-							$qq->where('customer_name', 'like', "%{$filterTerm}%")
-								->orWhere('customer_phone', 'like', "%{$filterTerm}%");
-						});
-					})
-					->orderBy('position', 'asc')
-					->orderByDesc('id');
+					->whereIn('id', $filteredRequestIds);
+
+				// Apply sorting
+				$sortBy = $request->input('sort_by', 'position');
+				$sortDir = $request->input('sort_dir', 'asc');
+				
+				if ($sortBy === 'position') {
+					$reqQuery->orderBy('position', $sortDir)->orderByDesc('id');
+				} else {
+					$reqQuery->orderBy($sortBy, $sortDir);
+				}
 
 				$requests = $reqQuery->get();
 
@@ -100,8 +210,9 @@ class CrmRequestController extends ApiController
 				$customerIds = $requests->pluck('customer_id')->filter()->unique()->values();
 				$customers = collect();
 				if ($customerIds->isNotEmpty()) {
-					$customers = \App\Models\ApiCustomer::whereIn('id', $customerIds)
-						->get(['id','name','phone_number','stage_id','priority_id','type_id'])
+					$customers = \App\Models\ApiCustomer::with('responsibleEmployee.activeWhatsappUser')
+						->whereIn('id', $customerIds)
+						->get(['id','name','phone_number','email','stage_id','priority_id','type_id', 'responsible_employee_id', 'city_id', 'district_id'])
 						->keyBy('id');
 				}
 
@@ -135,9 +246,16 @@ class CrmRequestController extends ApiController
 							'id' => $c->id,
 							'name' => $c->name,
 							'phone_number' => $c->phone_number,
+							'email' => $c->email,
 							'stage_id' => $c->stage_id,
 							'priority_id' => $c->priority_id,
 							'type_id' => $c->type_id,
+							'responsible_employee' => $c->responsibleEmployee ? [
+								'id' => $c->responsibleEmployee->id,
+								'name' => trim(($c->responsibleEmployee->first_name ?? '') . ' ' . ($c->responsibleEmployee->last_name ?? '')),
+								'email' => $c->responsibleEmployee->email,
+								'whatsapp_number' => $c->responsibleEmployee->activeWhatsappUser ? $c->responsibleEmployee->activeWhatsappUser->number : null,
+							] : null,
 						];
 					}
 
@@ -292,7 +410,7 @@ class CrmRequestController extends ApiController
 
 		$customer = null;
 		if (!empty($model->customer_id)) {
-			$c = \App\Models\ApiCustomer::find($model->customer_id);
+			$c = \App\Models\ApiCustomer::with('responsibleEmployee.activeWhatsappUser')->find($model->customer_id);
 			if ($c) {
 				$customer = [
 					'id' => $c->id,
@@ -301,6 +419,12 @@ class CrmRequestController extends ApiController
 					'stage_id' => $c->stage_id,
 					'priority_id' => $c->priority_id,
 					'type_id' => $c->type_id,
+					'responsible_employee' => $c->responsibleEmployee ? [
+						'id' => $c->responsibleEmployee->id,
+						'name' => trim(($c->responsibleEmployee->first_name ?? '') . ' ' . ($c->responsibleEmployee->last_name ?? '')),
+						'email' => $c->responsibleEmployee->email,
+						'whatsapp_number' => $c->responsibleEmployee->activeWhatsappUser ? $c->responsibleEmployee->activeWhatsappUser->number : null,
+					] : null,
 				];
 			}
 		}

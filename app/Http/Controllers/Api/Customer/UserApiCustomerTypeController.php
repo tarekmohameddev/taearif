@@ -18,12 +18,12 @@ class UserApiCustomerTypeController extends Controller
             'direction' => 'required|in:up,down',
         ]);
 
-        $row = UserApiCustomerType::where('user_id', $user->id)->findOrFail($id);
+        $row = UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())->findOrFail($id);
         $currentOrder = $row->order;
 
         $adjacent = $validated['direction'] === 'up'
-            ? UserApiCustomerType::where('user_id', $user->id)->where('order', '<', $currentOrder)->orderBy('order', 'desc')->first()
-            : UserApiCustomerType::where('user_id', $user->id)->where('order', '>', $currentOrder)->orderBy('order', 'asc')->first();
+            ? UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())->where('order', '<', $currentOrder)->orderBy('order', 'desc')->first()
+            : UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())->where('order', '>', $currentOrder)->orderBy('order', 'asc')->first();
 
         if (!$adjacent) {
             return response()->json([
@@ -55,9 +55,9 @@ class UserApiCustomerTypeController extends Controller
             'order.*' => 'integer|exists:users_api_customers_types,id',
         ]);
 
-        DB::transaction(function () use ($validated, $user) {
+        DB::transaction(function () use ($validated, $request) {
             foreach ($validated['order'] as $idx => $id) {
-                UserApiCustomerType::where('user_id', $user->id)
+                UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())
                     ->where('id', $id)
                     ->update(['order' => $idx + 1]);
             }
@@ -73,7 +73,7 @@ class UserApiCustomerTypeController extends Controller
     {
         $user = $request->user();
 
-        $rows = UserApiCustomerType::where('user_id', $user->id)
+        $rows = UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())
             ->orderBy('order')
             ->get();
 
@@ -100,7 +100,7 @@ class UserApiCustomerTypeController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $validated['user_id'] = $user->id;
+        $validated['user_id'] = $request->user()->tenantOwnerId();
 
         $row = UserApiCustomerType::create($validated);
 
@@ -115,7 +115,7 @@ class UserApiCustomerTypeController extends Controller
     {
         $user = $request->user();
 
-        $row = UserApiCustomerType::where('user_id', $user->id)->findOrFail($id);
+        $row = UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())->findOrFail($id);
 
         return response()->json([
             'status' => 'success',
@@ -127,7 +127,7 @@ class UserApiCustomerTypeController extends Controller
     {
         $user = $request->user();
 
-        $row = UserApiCustomerType::where('user_id', $user->id)->findOrFail($id);
+        $row = UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())->findOrFail($id);
 
         $validated = $request->validate([
             'name'  => 'sometimes|string|max:255',
@@ -156,7 +156,7 @@ class UserApiCustomerTypeController extends Controller
     {
         $user = $request->user();
 
-        $row = UserApiCustomerType::where('user_id', $user->id)->findOrFail($id);
+        $row = UserApiCustomerType::where('user_id', $request->user()->tenantOwnerId())->findOrFail($id);
         $row->delete();
 
         return response()->json([

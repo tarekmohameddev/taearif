@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use App\Models\Membership;
 use App\Models\Api\ApiMenuItem;
 
@@ -14,35 +15,68 @@ class ApiSideMenusController extends Controller
     {
         $user = Auth::user();
 
+        // Eager load relationships to avoid N+1 queries (including roles.permissions for faster permission checks)
+        $user->loadMissing(['affiliateUser', 'roles.permissions']);
+
         // resolve owner (tenant for tenant; tenant for employee)
         $ownerId = $this->isTenant($user) ? (int) $user->id : (int) ($user->tenant_id ?? 0);
-
-        // owners bypass permission checks
         $isOwner = $this->isTenant($user);
-        $can = fn(string $perm) => $isOwner || $user->can($perm);
-
-        // feature flags / package (use OWNER package for both tenant & employees)
         $isAffiliateApproved = $user->isAffiliateApproved();
-        $membership = Membership::where('user_id', $ownerId)
-            ->where('status', 1)
-            ->orderByDesc('id')
-            ->with('package')
-            ->first();
-        $package = $membership?->package;
 
-        // (optional feature toggles stored in DB) — resolve by OWNER id
-        $whatsappMenu = ApiMenuItem::where('user_id', $ownerId)
-            ->where('url', '/whatsapp-ai')
-            ->where('is_active', true)
-            ->first();
+        // Cache key includes user ID and factors that affect the menu
+        $cacheKey = "side_menus:v1:{$user->id}:{$ownerId}:" . ($isOwner ? '1' : '0') . ':' . ($isAffiliateApproved ? '1' : '0');
 
-        $aiMenu = ApiMenuItem::where('user_id', $ownerId)
-            ->where('url', '/ai')
-            ->where('is_active', true)
-            ->first();
+        $sections = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($user, $ownerId, $isOwner, $isAffiliateApproved) {
+            return $this->buildMenuSections($user, $ownerId, $isOwner, $isAffiliateApproved);
+        });
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Side menus retrieved successfully.',
+            'code'    => 200,
+            'data'    => ['sections' => $sections],
+        ])->header('Cache-Control', 'private, max-age=300');
+    }
+
+    /**
+     * Build the menu sections based on user permissions and package features.
+     */
+    private function buildMenuSections($user, int $ownerId, bool $isOwner, bool $isAffiliateApproved): array
+    {
+        // Cache membership and package data separately (shared across users of same tenant)
+        $package = Cache::remember("membership_package:{$ownerId}", 300, function () use ($ownerId) {
+            $membership = Membership::where('user_id', $ownerId)
+                ->where('status', 1)
+                ->orderByDesc('id')
+                ->with('package')
+                ->first();
+            return $membership?->package;
+        });
+
+        // Pre-compute all permission checks at once to avoid repeated lookups
+        $allPermissions = ['settings.view', 'customers.view', 'crm.view', 'projects.view', 'properties.view', 'affiliate.view', 'content.view'];
+        $userPermissions = [];
+        
+        if ($isOwner) {
+            // Owners have all permissions
+            foreach ($allPermissions as $perm) {
+                $userPermissions[$perm] = true;
+            }
+        } else {
+            // Check permissions once for employees
+            foreach ($allPermissions as $perm) {
+                $userPermissions[$perm] = $user->can($perm);
+            }
+        }
+
+        $can = fn(string $perm) => $userPermissions[$perm] ?? false;
+
+        // Package feature checks
+        $hasProjects = $package && ($package->project_limit_number > 0);
+        $hasProperties = $package && ($package->real_estate_limit_number > 0);
 
         // ---- declarative menu map (DRY) ----
-        $c = [
+        $menuConfig = [
             // Always show dashboard for all authenticated users
             [
                 'perm'    => null, // no permission check needed
@@ -63,49 +97,28 @@ class ApiSideMenusController extends Controller
             // package + permission (package from OWNER)
             [
                 'perm'    => 'projects.view',
-                'when'    => fn() => $package && ($package->project_limit_number > 0),
+                'when'    => $hasProjects,
                 'section' => ['title' => 'المشاريع', 'description' => ' ادارة المشاريع', 'icon' => 'building', 'path' => '/projects'],
             ],
             [
                 'perm'    => 'properties.view',
-                'when'    => fn() => $package && ($package->real_estate_limit_number > 0),
+                'when'    => $hasProperties,
                 'section' => ['title' => 'العقارات', 'description' => 'ادارة العقارات', 'icon' => 'home', 'path' => '/properties'],
             ],
             [
                 'perm'    => 'properties.view',
-                'when'    => fn() => $package && ($package->real_estate_limit_number > 0),
+                'when'    => $hasProperties,
                 'section' => ['title' => 'طلبات العملاء', 'description' => 'ادارة طلبات العملاء العقارية', 'icon' => 'home', 'path' => '/property-requests'],
             ],
             [
                 'perm'    => 'properties.view',
-                'when'    => fn() => $package && ($package->real_estate_limit_number > 0),
+                'when'    => $hasProperties,
                 'section' => ['title' => 'مركز توافق الطلبات الذكائي', 'description' => 'احصل على توافق ذكي مع الطلبات', 'icon' => 'sparkles', 'path' => '/matching'],
             ],
-            // [
-            //     'perm'    => 'menu.blog',
-            //     'when'    => fn() => $package && !empty($package->features) && str_contains($package->features, 'Blog'),
-            //     'section' => ['title' => 'المدونة', 'description' => 'ادارة المدونة', 'icon' => 'blog', 'path' => '/blog'],
-            // ],
-            // Apps container
-            // [
-            //     'perm'    => 'menu.apps',
-            //     'section' => ['title' => 'التطبيقات', 'description' => 'ادارة تطبيقاتك', 'icon' => 'apps', 'path' => '/apps'],
-            // ],
-            // Feature switches inside Apps (still check a perm)
-            // [
-            //     'perm'    => 'apps.view',
-            //     'when'    => fn() => (bool) $whatsappMenu,
-            //     'section' => ['title' => $whatsappMenu?->label ?? 'واتس اب', 'description' => 'مساعد الذكاء الاصطناعي للواتس اب', 'icon' => 'whatsapp', 'path' => $whatsappMenu?->url ?? '/whatsapp-ai'],
-            // ],
-            // [
-            //     'perm'    => 'apps.view',
-            //     'when'    => fn() => (bool) $aiMenu,
-            //     'section' => ['title' => $aiMenu?->label ?? 'الذكاء الاصطناعي', 'description' => 'مساعد الذكاء الاصطناعي', 'icon' => 'ai', 'path' => $aiMenu?->url ?? '/ai'],
-            // ],
             // Affiliate program
             [
                 'perm'    => 'affiliate.view',
-                'when'    => fn() => (bool) $isAffiliateApproved,
+                'when'    => $isAffiliateApproved,
                 'section' => ['title' => 'برنامج الشراكة', 'description' => 'إدارة برنامج العمولة', 'icon' => 'lucide lucide-user-check h-5 w-5 text-primary', 'path' => '/affiliate'],
             ],
             [
@@ -127,25 +140,27 @@ class ApiSideMenusController extends Controller
         ];
 
         $sections = [];
-        foreach ($c as $item) {
+        foreach ($menuConfig as $item) {
             // Dashboard shows for all users (no permission check)
             if ($item['perm'] === null) {
                 $sections[] = $item['section'];
                 continue;
             }
 
-            // Other items check permission + optional conditions
-            if ($can($item['perm']) && (!isset($item['when']) || $item['when']() === true)) {
-                $sections[] = $item['section'];
+            // Check permission
+            if (!$can($item['perm'])) {
+                continue;
             }
+
+            // Check optional condition (now a boolean, not a closure)
+            if (isset($item['when']) && $item['when'] !== true) {
+                continue;
+            }
+
+            $sections[] = $item['section'];
         }
 
-        return response()->json([
-            'status'  => true,
-            'message' => 'Side menus retrieved successfully.',
-            'code'    => 200,
-            'data'    => ['sections' => $sections],
-        ]);
+        return $sections;
     }
 
     // ---- helpers ----

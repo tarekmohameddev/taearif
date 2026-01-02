@@ -30,4 +30,32 @@ return [
     'cache' => [
         'store' => 'file',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Analytics Materialization
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for materializing GA data to local database
+    |
+    */
+    'materialization' => [
+        'enabled' => env('ANALYTICS_MATERIALIZATION_ENABLED', true),
+        'sync_hour' => env('ANALYTICS_SYNC_HOUR', 2), // 2 AM
+        'fallback_to_api' => env('ANALYTICS_FALLBACK_TO_API', true),
+        'cache_ttl_days' => env('ANALYTICS_CACHE_TTL_DAYS', 90),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Slug-to-Tenant Cache
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for caching slug-to-tenant mappings
+    |
+    */
+    'slug_cache' => [
+        'enabled' => env('ANALYTICS_SLUG_CACHE_ENABLED', true),
+        'ttl_days' => env('ANALYTICS_SLUG_CACHE_TTL_DAYS', 30),
+    ],
 ];

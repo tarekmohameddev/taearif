@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\{
     isthara\IstharaController,
     content\AboutApiController,
     apps\whatsapp\ChatController,
+    apps\whatsapp\WhatsappAddonController,
     Affiliate\AffiliateController,
     App\ApiInstallationController,
     dashboard\DashboardController,
@@ -133,7 +134,7 @@ use App\Http\Controllers\Api\PixelController; // Added import for PixelControlle
 
 Route::get('public-user/{id}', [PublicUserController::class, 'show']);
 Route::get('/properties/bulk-import/template', [PropertyController::class, 'downloadTemplate']);
-Route::get('/customers/bulk-import/template', [CustomerController::class, 'downloadTemplate'])->middleware('auth:sanctum');
+Route::post('/customers/bulk-import/template', [CustomerController::class, 'downloadTemplate']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/affiliate/register', [AffiliateController::class, 'register']);
@@ -159,7 +160,7 @@ Route::middleware('web')->group(function () {
 
 
 // Auth routes
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', [AuthController::class, 'getUserProfile']);
     Route::get('/user/getUserInfo', [AuthController::class, 'getUserProfile']); // Alias for frontend compatibility
     Route::post('/user-read-message', [AuthController::class, 'read_message']);
@@ -188,7 +189,7 @@ Route::get('/referrals/{code}', [ReferralController::class, 'show']);  // /api/r
 
 
 // Dashboard routes
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'require.active.package'])->group(function () {
+Route::middleware(['auth:sanctum', 'require.active.package'])->group(function () {
     Route::get('/dashboard', [AnalyticsDashboardController::class, 'dashboard']);
     Route::get('/dashboard/summary', [AnalyticsDashboardController::class, 'summary']);
     Route::post('/dashboard/visitors', [AnalyticsDashboardController::class, 'visitors']);
@@ -371,7 +372,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/settings/theme/set-active', [ThemeSettingsController::class, 'setActiveTheme']);
 });
 
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/settings/payment', [PaymentController::class, 'index']); //PaymentController
     // (small note: remove the stray spaces in your paths like '/settings/domain ')
@@ -388,7 +389,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(funct
 
 
 //ApiSideMenusController
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/settings/side-menus', [ApiSideMenusController::class, 'index']);
 });
 
@@ -438,7 +439,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
 
 
 // Api crm Customer
-Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx', 'log.employee.activity', 'can:crm.view'])->prefix('crm')->group(function () {
     // STAGES
     Route::apiResource('stages', UserApiCustomerStageController::class);
     // reorderStages
@@ -467,6 +468,8 @@ Route::middleware('auth:sanctum')->prefix('crm')->group(function () {
 
     // CRM Dashboard
     Route::get('/', [CRMController::class, 'index']);
+    // CRM customer filters (same payload as /api/customers/filters)
+    Route::get('/customers/filters', [CustomerController::class, 'filterOptions']);
     Route::post('/customers/{id}/change-stage', [CRMController::class, 'changeCustomerStage']); // drag and drop customers to change stage
     // drag and drop customers to change priority
     Route::post('/customers/{id}/change-priority', [CRMController::class, 'changeCustomerPriority']);
@@ -522,10 +525,36 @@ Route::prefix('v1/credits')->group(function () {
         ->name('api.credits.payment.cancel');
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::prefix('v1/whatsapp-addons')->group(function () {
+    // Accept both GET and POST because some gateways call back with POST
+    Route::match(['get', 'post'], 'payment/success/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\whatsapp\WhatsappAddonController::class, 'paymentSuccess'])
+        ->name('api.whatsapp.addons.payment.success');
+    Route::match(['get', 'post'], 'payment/cancel/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\whatsapp\WhatsappAddonController::class, 'paymentCancel'])
+        ->name('api.whatsapp.addons.payment.cancel');
+});
+
+Route::prefix('v1/employee-addons')->group(function () {
+    // Accept both GET and POST because some gateways call back with POST
+    Route::match(['get', 'post'], 'payment/success/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\employee\EmployeeAddonController::class, 'paymentSuccess'])
+        ->name('api.employee.addons.payment.success');
+    Route::match(['get', 'post'], 'payment/cancel/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\employee\EmployeeAddonController::class, 'paymentCancel'])
+        ->name('api.employee.addons.payment.cancel');
+});
+
+Route::middleware(['auth:sanctum', \App\Http\Middleware\RequireActiveMembership::class])->group(function () {
     Route::post('/whatsapp/link', [WhatsappController::class, 'store']);
     Route::get('/whatsapp', [WhatsappController::class, 'index']);
     Route::match(['put', 'patch'], '/whatsapp/{id}/employee', [WhatsappController::class, 'updateEmployee']);
+    Route::delete('/whatsapp/{id}', [WhatsappController::class, 'destroy']);
+    Route::post('/whatsapp/{id}/unlink', [WhatsappController::class, 'unlink']);
+    Route::post('/whatsapp/{id}/link', [WhatsappController::class, 'link']);
+    Route::get('/whatsapp/addons/plans', [WhatsappAddonController::class, 'plans']);
+    Route::post('/whatsapp/addons', [WhatsappAddonController::class, 'store']);
+
+    // Employee Addons
+    Route::get('/employee/addons/plans', [\App\Http\Controllers\Api\apps\employee\EmployeeAddonController::class, 'plans']);
+    Route::get('/employee/addons', [\App\Http\Controllers\Api\apps\employee\EmployeeAddonController::class, 'index']);
+    Route::post('/employee/addons', [\App\Http\Controllers\Api\apps\employee\EmployeeAddonController::class, 'store']);
 });
 
 
@@ -649,12 +678,15 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/inquiry', [CustomerInquiryController::class, 'index']);
 
     // ApiPropertyRequestController
-    Route::get('/property-requests', [ApiPropertyRequestController::class, 'index']);
-    Route::post('/property-requests', [ApiPropertyRequestController::class, 'store']);
-    // DELETE
-    Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy']);
-    // update
-    Route::put('/property-requests/{id}', [ApiPropertyRequestController::class, 'update']);
+    Route::middleware([SetTenantForPermissions::class, 'can:properties.view'])->group(function () {
+        Route::get('/property-requests/filters', [ApiPropertyRequestController::class, 'filterOptions']);
+        Route::get('/property-requests', [ApiPropertyRequestController::class, 'index']);
+        Route::post('/property-requests', [ApiPropertyRequestController::class, 'store']);
+        // DELETE
+        Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy']);
+        // update
+        Route::put('/property-requests/{id}', [ApiPropertyRequestController::class, 'update']);
+    });
 
 
     // ApiPropertyRequestSettingsController
@@ -673,7 +705,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     //     Route::post('register', [EmployeeAuthController::class, 'register']);
     // });
     // Employee API
-    Route::middleware(['auth:sanctum','employee.only'])->group(function () {
+    Route::middleware(['auth:sanctum','employee.only','log.employee.activity'])->group(function () {
         // Protected
         Route::get('auth/me',     [EmployeeAuthController::class, 'me']);
         Route::post('auth/logout',[EmployeeAuthController::class, 'logout']);
@@ -689,7 +721,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
             ->middleware('can:logs.read'); // owners pass via Gate::before
     });
 
-    Route::prefix('crm')->group(function () {
+    Route::middleware(['log.employee.activity'])->prefix('crm')->group(function () {
         Route::get('cards', [CrmCardController::class, 'index']);
         Route::post('cards', [CrmCardController::class, 'store']);
         Route::get('cards/{id}', [CrmCardController::class, 'show']);
@@ -749,7 +781,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 
 
 
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/v1/me/abilities', [MeAbilitiesController::class, 'index']);
 
     Route::get('/v1/rbac/perms/me', [PermissionController::class, 'me']);

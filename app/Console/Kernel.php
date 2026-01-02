@@ -55,6 +55,13 @@ class Kernel extends ConsoleKernel
             ->hourly()
             ->timezone('Asia/Riyadh');
 
+        // Sync analytics data every 2 hours 
+        $schedule->command('analytics:sync')
+            ->everyTwoHours()
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->runInBackground();
+
     }
 
     /**

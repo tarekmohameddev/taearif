@@ -27,9 +27,9 @@
                     </div>
                     <div class="content">
 
-                        <h1>{{ __('payment_success') }}</h1>
+                        <h1>{{ __('payment_failed') }}</h1>
                         <p class="paragraph-text">
-                            {{ __('payment_success_msg') }}
+                            {{ __('payment_failed_msg') }}
                         </p>
                        
                     </div>
@@ -47,7 +47,7 @@
         }, 'https://agents-internal.taearif.com/html.html');
       };
       
-      window.parent.postMessage("payment_failed", "https://taearif.vercel.app");
+      window.parent.postMessage("payment_failed", "*");
     </script>
 
 <script>

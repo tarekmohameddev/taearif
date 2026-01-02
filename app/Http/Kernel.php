@@ -40,6 +40,7 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
+            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             'throttle:60,1',
             'bindings',
             \App\Http\Middleware\SetTenantSessionDomain::class,
@@ -92,6 +93,7 @@ class Kernel extends HttpKernel
         // EnsureUserIsActive
         'ensureUserIsActive' => \App\Http\Middleware\EnsureUserIsActive::class,
         'audit.ctx' => \App\Http\Middleware\PopulateAuditContext::class,
+        'log.employee.activity' => \App\Http\Middleware\LogEmployeeRequestActivity::class,
         'owner-or-can' => \App\Http\Middleware\OwnerOrCan::class,
         'require.active.package' => \App\Http\Middleware\RequireActiveMembership::class,
         'check.maintenance' => \App\Http\Middleware\CheckMaintenanceMode::class,

@@ -25,7 +25,8 @@ class MegaMailer
                 $subject = 'تأكيد التسجيل';
                 $body = '<p>شكرًا لتسجيلك في منصة تعاريف.</p><p>تم إنشاء حسابك بنجاح، ويمكنك الآن الوصول إلى موقعك ولوحة التحكم.</p><p><br /></p><p>يرجى الضغط على الرابط التالي لتفعيل حسابك:</p><p>{verification_link}</p><p><br /></p><p>مع أطيب التحيات،</p><p>{website_title}</p>';
             } else {
-                throw new \Exception("Email template not found for type: " . $data['templateType']);
+                // If template missing for non-critical flows (e.g., admin delete package), skip sending to avoid breaking the request
+                return;
             }
         } else {
             $subject = $temp->subject;

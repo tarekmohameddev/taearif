@@ -8,6 +8,7 @@ use App\Models\Api\Crm\CrmCard;
 use App\Models\Logs\CustomerLog;
 use App\Models\Logs\ProjectLog;
 use App\Models\Logs\PropertyLog;
+use App\Models\Membership;
 
 use App\Observers\ProjectObserver;
 use App\Observers\PropertyObserver;
@@ -16,6 +17,7 @@ use App\Events\TenantActivityOccurred;
 use App\Events\UserDowngradedToFree;
 use App\Events\UserUpgradedFromFree;
 use App\Observers\ApiCustomerObserver;
+use App\Observers\MembershipObserver;
 use Illuminate\Auth\Events\Registered;
 
 use App\Listeners\PersistTenantActivity;
@@ -68,5 +70,7 @@ class EventServiceProvider extends ServiceProvider
         Project::observe(ProjectObserver::class);
         Property::observe(PropertyObserver::class);
         CrmCard::observe(CrmCardObserver::class);
+        \App\Models\WhatsappAddon::observe(\App\Observers\WhatsappAddonObserver::class);
+        \App\Models\Membership::observe(MembershipObserver::class);
     }
 }

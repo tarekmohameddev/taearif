@@ -24,6 +24,8 @@ class GoogleAnalyticsService
     protected $propertyId;
     protected $maxRetries = 3;
     protected $baseDelay = 1; // seconds
+    protected $slugTenantMap = []; // Request-level cache for slug-to-tenant mappings
+    protected $slugLookupService = null; // Lazy-loaded SlugLookupService
 
     public function __construct()
     {
@@ -32,6 +34,17 @@ class GoogleAnalyticsService
         ]);
 
         $this->propertyId = 'properties/' . config('services.google.analytics_property_id');
+    }
+    
+    /**
+     * Get SlugLookupService instance (lazy load)
+     */
+    protected function getSlugLookupService()
+    {
+        if ($this->slugLookupService === null) {
+            $this->slugLookupService = app(\App\Services\Analytics\SlugLookupService::class);
+        }
+        return $this->slugLookupService;
     }
 
     protected function translateSourceName($sourceName)
@@ -215,23 +228,62 @@ class GoogleAnalyticsService
             ]);
         }, 'getDeviceBreakdown');
 
+        // Collect all paths that need slug lookup (batch optimization)
+        $pathsToLookup = [];
+        $rowsData = [];
+        
+        foreach ($response->getRows() as $row) {
+            $pagePath = $this->getSafeValue($row->getDimensionValues(), 1, '');
+            $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 2, '');
+            
+            // If tenant is empty, we'll need to look it up
+            if ((empty($recordedTenant) || $recordedTenant === '(not set)') && !empty($pagePath)) {
+                $pathsToLookup[] = $pagePath;
+            }
+            
+            $rowsData[] = [
+                'deviceCategory' => $this->getSafeValue($row->getDimensionValues(), 0, 'Unknown Device'),
+                'pagePath' => $pagePath,
+                'recordedTenant' => $recordedTenant,
+                'sessions' => (int) $this->getSafeValue($row->getMetricValues(), 0, 0),
+            ];
+        }
+        
+        // Batch lookup slugs for all paths at once
+        $slugTenantMap = [];
+        if (!empty($pathsToLookup)) {
+            $propertyPaths = array_filter($pathsToLookup, fn($p) => strpos($p, '/property/') !== false || strpos($p, '/ar/property/') !== false || strpos($p, '/en/property/') !== false);
+            $projectPaths = array_filter($pathsToLookup, fn($p) => strpos($p, '/project/') !== false || strpos($p, '/ar/project/') !== false || strpos($p, '/en/project/') !== false);
+            
+            if (!empty($propertyPaths)) {
+                $slugTenantMap = array_merge($slugTenantMap, $this->getSlugLookupService()->getTenantsForSlugs($propertyPaths, 'property'));
+            }
+            if (!empty($projectPaths)) {
+                $slugTenantMap = array_merge($slugTenantMap, $this->getSlugLookupService()->getTenantsForSlugs($projectPaths, 'project'));
+            }
+        }
+
         // Aggregate by device with smart tenant filtering
         $deviceMap = [];
 
-        foreach ($response->getRows() as $row) {
-            $deviceCategory = $this->getSafeValue($row->getDimensionValues(), 0, 'Unknown Device');
-            $pagePath = $this->getSafeValue($row->getDimensionValues(), 1, '');
-            $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 2, '');
-            $sessions = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+        foreach ($rowsData as $rowData) {
+            $deviceCategory = $rowData['deviceCategory'];
+            $pagePath = $rowData['pagePath'];
+            $recordedTenant = $rowData['recordedTenant'];
+            $sessions = $rowData['sessions'];
 
             // Smart tenant matching
             $belongsToTenant = false;
             if (!empty($recordedTenant) && $recordedTenant === $tenantId) {
                 $belongsToTenant = true;
             } elseif (empty($recordedTenant) || $recordedTenant === '(not set)') {
-                $derivedTenant = $this->deriveTenantFromPathSlug($pagePath);
-                if ($derivedTenant === $tenantId) {
-                    $belongsToTenant = true;
+                // Use batch lookup result
+                $slug = $this->extractSlugFromPath($pagePath);
+                if ($slug && isset($slugTenantMap[strtolower($slug)])) {
+                    $derivedTenant = $slugTenantMap[strtolower($slug)];
+                    if ($derivedTenant === $tenantId) {
+                        $belongsToTenant = true;
+                    }
                 }
             }
 
@@ -284,6 +336,25 @@ class GoogleAnalyticsService
         ];
     }
 
+    /**
+     * Get overview metrics only (without devices, traffic sources, top pages)
+     * Used by summary endpoint to avoid fetching unused data
+     */
+    public function getOverviewMetricsOnly(string $tenantId, Carbon $startDate, Carbon $endDate): array
+    {
+        $tenantFilter = new FilterExpression([
+            'filter' => new Filter([
+                'field_name' => 'customEvent:tenant_id',
+                'string_filter' => new StringFilter([
+                    'value' => $tenantId,
+                    'match_type' => MatchType::EXACT,
+                ]),
+            ]),
+        ]);
+
+        return $this->getOverviewMetrics($startDate, $endDate, $tenantFilter);
+    }
+
     protected function getOverviewMetrics($startDate, $endDate, FilterExpression $tenantFilter)
     {
         // Extract tenant ID from filter
@@ -314,6 +385,44 @@ class GoogleAnalyticsService
             ]);
         }, 'getOverviewMetrics');
 
+        // Collect all paths that need slug lookup (batch optimization)
+        $pathsToLookup = [];
+        $rowsData = [];
+        
+        foreach ($response->getRows() as $row) {
+            $pagePath = $this->getSafeValue($row->getDimensionValues(), 0, '');
+            $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 1, '');
+            
+            // If tenant is empty, we'll need to look it up
+            if ($tenantId && (empty($recordedTenant) || $recordedTenant === '(not set)') && !empty($pagePath)) {
+                $pathsToLookup[] = $pagePath;
+            }
+            
+            $rowsData[] = [
+                'pagePath' => $pagePath,
+                'recordedTenant' => $recordedTenant,
+                'pageViews' => (int) $this->getSafeValue($row->getMetricValues(), 0, 0),
+                'sessions' => (int) $this->getSafeValue($row->getMetricValues(), 1, 0),
+                'users' => (int) $this->getSafeValue($row->getMetricValues(), 2, 0),
+                'bounceRate' => (float) $this->getSafeValue($row->getMetricValues(), 3, 0),
+                'duration' => (float) $this->getSafeValue($row->getMetricValues(), 4, 0),
+            ];
+        }
+        
+        // Batch lookup slugs for all paths at once
+        $slugTenantMap = [];
+        if (!empty($pathsToLookup)) {
+            $propertyPaths = array_filter($pathsToLookup, fn($p) => strpos($p, '/property/') !== false || strpos($p, '/ar/property/') !== false || strpos($p, '/en/property/') !== false);
+            $projectPaths = array_filter($pathsToLookup, fn($p) => strpos($p, '/project/') !== false || strpos($p, '/ar/project/') !== false || strpos($p, '/en/project/') !== false);
+            
+            if (!empty($propertyPaths)) {
+                $slugTenantMap = array_merge($slugTenantMap, $this->getSlugLookupService()->getTenantsForSlugs($propertyPaths, 'property'));
+            }
+            if (!empty($projectPaths)) {
+                $slugTenantMap = array_merge($slugTenantMap, $this->getSlugLookupService()->getTenantsForSlugs($projectPaths, 'project'));
+            }
+        }
+
         // Aggregate metrics with smart tenant filtering
         $totals = [
             'pageViews' => 0,
@@ -324,9 +433,9 @@ class GoogleAnalyticsService
             'rowCount' => 0,
         ];
 
-        foreach ($response->getRows() as $row) {
-            $pagePath = $this->getSafeValue($row->getDimensionValues(), 0, '');
-            $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 1, '');
+        foreach ($rowsData as $rowData) {
+            $pagePath = $rowData['pagePath'];
+            $recordedTenant = $rowData['recordedTenant'];
 
             // Smart tenant matching
             $belongsToTenant = false;
@@ -334,9 +443,13 @@ class GoogleAnalyticsService
                 if (!empty($recordedTenant) && $recordedTenant === $tenantId) {
                     $belongsToTenant = true;
                 } elseif (empty($recordedTenant) || $recordedTenant === '(not set)') {
-                    $derivedTenant = $this->deriveTenantFromPathSlug($pagePath);
-                    if ($derivedTenant === $tenantId) {
-                        $belongsToTenant = true;
+                    // Use batch lookup result
+                    $slug = $this->extractSlugFromPath($pagePath);
+                    if ($slug && isset($slugTenantMap[strtolower($slug)])) {
+                        $derivedTenant = $slugTenantMap[strtolower($slug)];
+                        if ($derivedTenant === $tenantId) {
+                            $belongsToTenant = true;
+                        }
                     }
                 }
             } else {
@@ -348,11 +461,11 @@ class GoogleAnalyticsService
             }
 
             // Aggregate metrics
-            $totals['pageViews'] += (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
-            $totals['sessions'] += (int) $this->getSafeValue($row->getMetricValues(), 1, 0);
-            $totals['users'] += (int) $this->getSafeValue($row->getMetricValues(), 2, 0);
-            $totals['bounceRateSum'] += (float) $this->getSafeValue($row->getMetricValues(), 3, 0);
-            $totals['durationSum'] += (float) $this->getSafeValue($row->getMetricValues(), 4, 0);
+            $totals['pageViews'] += $rowData['pageViews'];
+            $totals['sessions'] += $rowData['sessions'];
+            $totals['users'] += $rowData['users'];
+            $totals['bounceRateSum'] += $rowData['bounceRate'];
+            $totals['durationSum'] += $rowData['duration'];
             $totals['rowCount']++;
         }
 
@@ -403,15 +516,50 @@ class GoogleAnalyticsService
             ]);
         }, 'getTrafficSources');
 
+        // Collect all paths that need slug lookup (batch optimization)
+        $pathsToLookup = [];
+        $rowsData = [];
+        
+        foreach ($response->getRows() as $row) {
+            $pagePath = $this->getSafeValue($row->getDimensionValues(), 2, '');
+            $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 3, '');
+            
+            // If tenant is empty, we'll need to look it up
+            if ($tenantId && (empty($recordedTenant) || $recordedTenant === '(not set)') && !empty($pagePath)) {
+                $pathsToLookup[] = $pagePath;
+            }
+            
+            $rowsData[] = [
+                'source' => $this->getSafeValue($row->getDimensionValues(), 0, 'unknown'),
+                'medium' => $this->getSafeValue($row->getDimensionValues(), 1, ''),
+                'pagePath' => $pagePath,
+                'recordedTenant' => $recordedTenant,
+                'sessions' => (int) $this->getSafeValue($row->getMetricValues(), 0, 0),
+            ];
+        }
+        
+        // Batch lookup slugs for all paths at once
+        $slugTenantMap = [];
+        if (!empty($pathsToLookup)) {
+            $propertyPaths = array_filter($pathsToLookup, fn($p) => strpos($p, '/property/') !== false || strpos($p, '/ar/property/') !== false || strpos($p, '/en/property/') !== false);
+            $projectPaths = array_filter($pathsToLookup, fn($p) => strpos($p, '/project/') !== false || strpos($p, '/ar/project/') !== false || strpos($p, '/en/project/') !== false);
+            
+            if (!empty($propertyPaths)) {
+                $slugTenantMap = array_merge($slugTenantMap, $this->getSlugLookupService()->getTenantsForSlugs($propertyPaths, 'property'));
+            }
+            if (!empty($projectPaths)) {
+                $slugTenantMap = array_merge($slugTenantMap, $this->getSlugLookupService()->getTenantsForSlugs($projectPaths, 'project'));
+            }
+        }
+
         // Aggregate by source with smart tenant filtering
         $sourceMap = [];
 
-        foreach ($response->getRows() as $row) {
-            $source = $this->getSafeValue($row->getDimensionValues(), 0, 'unknown');
-            $medium = $this->getSafeValue($row->getDimensionValues(), 1, '');
-            $pagePath = $this->getSafeValue($row->getDimensionValues(), 2, '');
-            $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 3, '');
-            $sessions = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+        foreach ($rowsData as $rowData) {
+            $source = $rowData['source'];
+            $pagePath = $rowData['pagePath'];
+            $recordedTenant = $rowData['recordedTenant'];
+            $sessions = $rowData['sessions'];
 
             // Smart tenant matching
             $belongsToTenant = false;
@@ -419,9 +567,13 @@ class GoogleAnalyticsService
                 if (!empty($recordedTenant) && $recordedTenant === $tenantId) {
                     $belongsToTenant = true;
                 } elseif (empty($recordedTenant) || $recordedTenant === '(not set)') {
-                    $derivedTenant = $this->deriveTenantFromPathSlug($pagePath);
-                    if ($derivedTenant === $tenantId) {
-                        $belongsToTenant = true;
+                    // Use batch lookup result
+                    $slug = $this->extractSlugFromPath($pagePath);
+                    if ($slug && isset($slugTenantMap[strtolower($slug)])) {
+                        $derivedTenant = $slugTenantMap[strtolower($slug)];
+                        if ($derivedTenant === $tenantId) {
+                            $belongsToTenant = true;
+                        }
                     }
                 }
             } else {
@@ -459,7 +611,7 @@ class GoogleAnalyticsService
         })->values();
     }
 
-    protected function getTopPages($startDate, $endDate, FilterExpression $tenantFilter)
+    public function getTopPages($startDate, $endDate, FilterExpression $tenantFilter)
     {
         // Extract tenant ID from the filter for backend filtering
         $tenantId = null;
@@ -498,20 +650,58 @@ class GoogleAnalyticsService
             ]);
         }, 'getTopPages_allData');
 
-        // Build map with smart tenant matching (backend filtering)
-        $pageMap = [];
+        // Collect all paths that need slug lookup (batch optimization)
+        $pathsToLookup = [];
+        $rowsData = [];
+        
         foreach ($response->getRows() as $row) {
             $pagePath = $this->getSafeValue($row->getDimensionValues(), 0, '');
-            $pageTitle = $this->getSafeValue($row->getDimensionValues(), 1, '');
             $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 2, '');
-            $pageViews = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
-            $avgDuration = (float) $this->getSafeValue($row->getMetricValues(), 1, 0);
-            $bounceRateRaw = $this->getSafeValue($row->getMetricValues(), 2, 0);
-            $users = (int) $this->getSafeValue($row->getMetricValues(), 3, 0);
-
+            
             if ($pagePath === '') {
                 continue;
             }
+            
+            // If tenant is empty, we'll need to look it up
+            if ($tenantId && (empty($recordedTenant) || $recordedTenant === '(not set)')) {
+                $pathsToLookup[] = $pagePath;
+            }
+            
+            $rowsData[] = [
+                'pagePath' => $pagePath,
+                'pageTitle' => $this->getSafeValue($row->getDimensionValues(), 1, ''),
+                'recordedTenant' => $recordedTenant,
+                'pageViews' => (int) $this->getSafeValue($row->getMetricValues(), 0, 0),
+                'avgDuration' => (float) $this->getSafeValue($row->getMetricValues(), 1, 0),
+                'bounceRateRaw' => $this->getSafeValue($row->getMetricValues(), 2, 0),
+                'users' => (int) $this->getSafeValue($row->getMetricValues(), 3, 0),
+            ];
+        }
+        
+        // Batch lookup slugs for all paths at once
+        $slugTenantMap = [];
+        if (!empty($pathsToLookup)) {
+            $propertyPaths = array_filter($pathsToLookup, fn($p) => strpos($p, '/property/') !== false || strpos($p, '/ar/property/') !== false || strpos($p, '/en/property/') !== false);
+            $projectPaths = array_filter($pathsToLookup, fn($p) => strpos($p, '/project/') !== false || strpos($p, '/ar/project/') !== false || strpos($p, '/en/project/') !== false);
+            
+            if (!empty($propertyPaths)) {
+                $slugTenantMap = array_merge($slugTenantMap, $this->getSlugLookupService()->getTenantsForSlugs($propertyPaths, 'property'));
+            }
+            if (!empty($projectPaths)) {
+                $slugTenantMap = array_merge($slugTenantMap, $this->getSlugLookupService()->getTenantsForSlugs($projectPaths, 'project'));
+            }
+        }
+
+        // Build map with smart tenant matching (backend filtering)
+        $pageMap = [];
+        foreach ($rowsData as $rowData) {
+            $pagePath = $rowData['pagePath'];
+            $pageTitle = $rowData['pageTitle'];
+            $recordedTenant = $rowData['recordedTenant'];
+            $pageViews = $rowData['pageViews'];
+            $avgDuration = $rowData['avgDuration'];
+            $bounceRateRaw = $rowData['bounceRateRaw'];
+            $users = $rowData['users'];
 
             // Smart tenant matching: Check if this row belongs to requested tenant
             $belongsToTenant = false;
@@ -521,11 +711,14 @@ class GoogleAnalyticsService
                 if (!empty($recordedTenant) && $recordedTenant === $tenantId) {
                     $belongsToTenant = true;
                 }
-                // If tenant_id is empty, derive from slug
+                // If tenant_id is empty, use batch lookup result
                 elseif (empty($recordedTenant) || $recordedTenant === '(not set)') {
-                    $derivedTenant = $this->deriveTenantFromPathSlug($pagePath);
-                    if ($derivedTenant === $tenantId) {
-                        $belongsToTenant = true;
+                    $slug = $this->extractSlugFromPath($pagePath);
+                    if ($slug && isset($slugTenantMap[strtolower($slug)])) {
+                        $derivedTenant = $slugTenantMap[strtolower($slug)];
+                        if ($derivedTenant === $tenantId) {
+                            $belongsToTenant = true;
+                        }
                     }
                 }
             } else {
@@ -603,19 +796,56 @@ class GoogleAnalyticsService
             ]);
         }, 'getVisitorData');
 
-        // Build a map: date => [sessions, users] with smart tenant filtering
-        $dateMap = [];
-
+        // Collect all paths that need slug lookup (batch optimization)
+        $pathsToLookup = [];
+        $rowsData = [];
+        
         foreach ($response->getRows() as $row) {
             $date = $this->getSafeValue($row->getDimensionValues(), 0, '');
             $pagePath = $this->getSafeValue($row->getDimensionValues(), 1, '');
             $recordedTenant = $this->getSafeValue($row->getDimensionValues(), 2, '');
-            $sessions = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
-            $users = (int) $this->getSafeValue($row->getMetricValues(), 1, 0);
-
+            
             if ($date === '') {
                 continue;
             }
+            
+            // If tenant is empty, we'll need to look it up
+            if ((empty($recordedTenant) || $recordedTenant === '(not set)') && !empty($pagePath)) {
+                $pathsToLookup[] = $pagePath;
+            }
+            
+            $rowsData[] = [
+                'date' => $date,
+                'pagePath' => $pagePath,
+                'recordedTenant' => $recordedTenant,
+                'sessions' => (int) $this->getSafeValue($row->getMetricValues(), 0, 0),
+                'users' => (int) $this->getSafeValue($row->getMetricValues(), 1, 0),
+            ];
+        }
+        
+        // Batch lookup slugs for all paths at once
+        $slugTenantMap = [];
+        if (!empty($pathsToLookup)) {
+            $propertyPaths = array_filter($pathsToLookup, fn($p) => strpos($p, '/property/') !== false || strpos($p, '/ar/property/') !== false || strpos($p, '/en/property/') !== false);
+            $projectPaths = array_filter($pathsToLookup, fn($p) => strpos($p, '/project/') !== false || strpos($p, '/ar/project/') !== false || strpos($p, '/en/project/') !== false);
+            
+            if (!empty($propertyPaths)) {
+                $slugTenantMap = array_merge($slugTenantMap, $this->getSlugLookupService()->getTenantsForSlugs($propertyPaths, 'property'));
+            }
+            if (!empty($projectPaths)) {
+                $slugTenantMap = array_merge($slugTenantMap, $this->getSlugLookupService()->getTenantsForSlugs($projectPaths, 'project'));
+            }
+        }
+
+        // Build a map: date => [sessions, users] with smart tenant filtering
+        $dateMap = [];
+
+        foreach ($rowsData as $rowData) {
+            $date = $rowData['date'];
+            $pagePath = $rowData['pagePath'];
+            $recordedTenant = $rowData['recordedTenant'];
+            $sessions = $rowData['sessions'];
+            $users = $rowData['users'];
 
             // Smart tenant matching: Check if this row belongs to requested tenant
             $belongsToTenant = false;
@@ -624,11 +854,14 @@ class GoogleAnalyticsService
             if (!empty($recordedTenant) && $recordedTenant === $tenantId) {
                 $belongsToTenant = true;
             }
-            // If tenant_id is empty, derive from path slug
+            // If tenant_id is empty, use batch lookup result
             elseif (empty($recordedTenant) || $recordedTenant === '(not set)') {
-                $derivedTenant = $this->deriveTenantFromPathSlug($pagePath);
-                if ($derivedTenant === $tenantId) {
-                    $belongsToTenant = true;
+                $slug = $this->extractSlugFromPath($pagePath);
+                if ($slug && isset($slugTenantMap[strtolower($slug)])) {
+                    $derivedTenant = $slugTenantMap[strtolower($slug)];
+                    if ($derivedTenant === $tenantId) {
+                        $belongsToTenant = true;
+                    }
                 }
             }
 
@@ -1470,9 +1703,30 @@ class GoogleAnalyticsService
     }
 
     /**
+     * Extract slug from path
+     */
+    protected function extractSlugFromPath(string $path): ?string
+    {
+        $parts = array_filter(explode('/', trim($path, '/')));
+        
+        if (count($parts) < 2) {
+            return null;
+        }
+        
+        if (in_array($parts[0], ['property', 'project'])) {
+            return $parts[1] ?? null;
+        } elseif (count($parts) >= 3 && in_array($parts[1], ['property', 'project'])) {
+            return $parts[2] ?? null;
+        }
+        
+        return null;
+    }
+    
+    /**
      * Derive tenant from path slug by querying the database
      * Paths like /ar/property/{slug} or /ar/project/{slug} are parsed
      * The slug is looked up in the DB to find the owning tenant (user)
+     * Uses cache first, then database lookup
      *
      * @param string $path - GA4 pagePath (e.g., /ar/property/shk-llaygar-fy-sharaa-rkm-399)
      * @return string|null - tenant username or null if not found
@@ -1480,6 +1734,11 @@ class GoogleAnalyticsService
     protected function deriveTenantFromPathSlug(string $path): ?string
     {
         try {
+            // Check request-level cache first
+            if (isset($this->slugTenantMap[$path])) {
+                return $this->slugTenantMap[$path];
+            }
+
             // Parse path: /ar/property/{slug} or /en/project/{slug} etc.
             // Remove leading slash and split
             $parts = array_filter(explode('/', trim($path, '/')));
@@ -1507,7 +1766,15 @@ class GoogleAnalyticsService
                 return null;
             }
 
+            // Check cache table first
+            $cachedTenant = \App\Models\Analytics\SlugTenantCache::getTenantForSlug($slug, $type);
+            if ($cachedTenant !== null) {
+                $this->slugTenantMap[$path] = $cachedTenant;
+                return $cachedTenant;
+            }
+
             // Query database based on type
+            $tenantId = null;
             if ($type === 'property') {
                 // Look up property by slug in user_property_contents
                 // Use LOWER() for case-insensitive matching to handle Arabic slugs
@@ -1519,7 +1786,7 @@ class GoogleAnalyticsService
                     ->first();
 
                 if ($property) {
-                    return $property->username;
+                    $tenantId = $property->username;
                 }
             } elseif ($type === 'project') {
                 // Look up project by slug in user_project_contents (NOT project_contents)
@@ -1532,9 +1799,17 @@ class GoogleAnalyticsService
                     ->first();
 
                 if ($project) {
-                    return $project->username;
+                    $tenantId = $project->username;
                 }
             }
+
+            // Cache the result
+            if ($tenantId) {
+                \App\Models\Analytics\SlugTenantCache::cacheSlugTenant($slug, $type, $tenantId);
+                $this->slugTenantMap[$path] = $tenantId;
+            }
+
+            return $tenantId;
         } catch (\Exception $e) {
             Log::warning('Failed to derive tenant from path slug', [
                 'path' => $path,
@@ -1741,3 +2016,4 @@ class GoogleAnalyticsService
     }
 
 }
+

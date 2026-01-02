@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use App\Models\Membership;
 
 class RequireActiveMembership
@@ -17,9 +18,17 @@ class RequireActiveMembership
 		}
 
 		$owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
-		$membership = Membership::where('user_id', $owner->id)->orderByDesc('expire_date')->first();
-
-		$active = $membership && now()->lte($membership->expire_date) && (int) $membership->status === 1;
+		
+		// Cache membership check for 5 minutes to avoid repeated database queries
+		$cacheKey = "active_membership_{$owner->id}";
+		$active = Cache::remember($cacheKey, 300, function () use ($owner) {
+			$membership = Membership::where('user_id', $owner->id)
+				->orderByDesc('expire_date')
+				->first();
+			
+			return $membership && now()->lte($membership->expire_date) && (int) $membership->status === 1;
+		});
+		
 		if (!$active) {
 			return response()->json(['message' => 'No active package.'], 402);
 		}

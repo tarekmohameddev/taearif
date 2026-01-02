@@ -96,6 +96,19 @@ class EmployeeController extends Controller
             'permissions.*' => ['string'],
         ]);
 
+        // Check employee quota before creating
+        $tenant = User::findOrFail($tenantId);
+        
+        if ($tenant->employee_usage >= $tenant->employee_quota) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'لقد وصلت للحد الأقصى لعدد الموظفين المسموح بهم. يرجى شراء إضافة لزيادة الحد.',
+                'quota' => $tenant->employee_quota,
+                'usage' => $tenant->employee_usage,
+                'is_over_limit' => true,
+            ], 422);
+        }
+
         // Create employee as a User with account_type = 'employee'
         $employee = User::create([
             'first_name' => $data['first_name'] ?? null,
@@ -107,7 +120,32 @@ class EmployeeController extends Controller
             'tenant_id'  => $tenantId,
             'account_type' => 'employee',
             'status'     => 1,
+            'onboarding_completed' => true,
         ]);
+
+        // Copy BasicSetting from Tenant
+        $tenantBasicSetting = \App\Models\User\BasicSetting::where('user_id', $tenantId)->first();
+        if ($tenantBasicSetting) {
+            $newBasicSetting = $tenantBasicSetting->replicate();
+            $newBasicSetting->user_id = $employee->id;
+            $newBasicSetting->save();
+        }
+
+        // Copy UserStep from Tenant
+        $tenantUserStep = \App\Models\UserStep::where('user_id', $tenantId)->first();
+        if ($tenantUserStep) {
+            $newUserStep = $tenantUserStep->replicate();
+            $newUserStep->user_id = $employee->id;
+            $newUserStep->save();
+        }
+
+        // Copy GeneralSetting from Tenant
+        $tenantGeneralSetting = \App\Models\Api\GeneralSetting::where('user_id', $tenantId)->first();
+        if ($tenantGeneralSetting) {
+            $newGeneralSetting = $tenantGeneralSetting->replicate();
+            $newGeneralSetting->user_id = $employee->id;
+            $newGeneralSetting->save();
+        }
 
         // Set tenant context for Spatie
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenantId);

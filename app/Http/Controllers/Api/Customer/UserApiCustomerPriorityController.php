@@ -18,12 +18,12 @@ class UserApiCustomerPriorityController extends Controller
             'direction' => 'required|in:up,down',
         ]);
 
-        $row = UserApiCustomerPriority::where('user_id',$user->id)->findOrFail($id);
+        $row = UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->findOrFail($id);
         $currentOrder = $row->order;
 
         $adjacent = $validated['direction']==='up'
-            ? UserApiCustomerPriority::where('user_id',$user->id)->where('order','<',$currentOrder)->orderBy('order','desc')->first()
-            : UserApiCustomerPriority::where('user_id',$user->id)->where('order','>',$currentOrder)->orderBy('order','asc')->first();
+            ? UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->where('order','<',$currentOrder)->orderBy('order','desc')->first()
+            : UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->where('order','>',$currentOrder)->orderBy('order','asc')->first();
 
         if (!$adjacent) {
             return response()->json(['status'=>'error','message'=>'Cannot move further '.$validated['direction']], 400);
@@ -49,9 +49,9 @@ class UserApiCustomerPriorityController extends Controller
             'order.*' => 'integer|exists:users_api_customers_priorities,id',
         ]);
 
-        DB::transaction(function () use ($validated, $user) {
+        DB::transaction(function () use ($validated, $request) {
             foreach ($validated['order'] as $idx => $id) {
-                UserApiCustomerPriority::where('user_id',$user->id)->where('id',$id)->update(['order'=>$idx+1]);
+                UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->where('id',$id)->update(['order'=>$idx+1]);
             }
         });
 
@@ -62,7 +62,7 @@ class UserApiCustomerPriorityController extends Controller
     {
         $user = $request->user();
 
-        $rows = UserApiCustomerPriority::where('user_id',$user->id)->orderBy('order')->get();
+        $rows = UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->orderBy('order')->get();
 
         return response()->json(['status'=>'success','data'=>$rows]);
     }
@@ -83,7 +83,7 @@ class UserApiCustomerPriorityController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $validated['user_id'] = $user->id;
+        $validated['user_id'] = $request->user()->tenantOwnerId();
 
         $row = UserApiCustomerPriority::create($validated);
 
@@ -94,7 +94,7 @@ class UserApiCustomerPriorityController extends Controller
     {
         $user = $request->user();
 
-        $row = UserApiCustomerPriority::where('user_id',$user->id)->findOrFail($id);
+        $row = UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->findOrFail($id);
 
         return response()->json(['status'=>'success','data'=>$row]);
     }
@@ -103,7 +103,7 @@ class UserApiCustomerPriorityController extends Controller
     {
         $user = $request->user();
 
-        $row = UserApiCustomerPriority::where('user_id',$user->id)->findOrFail($id);
+        $row = UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->findOrFail($id);
 
         $validated = $request->validate([
             'name'  => 'sometimes|string|max:255',
@@ -128,7 +128,7 @@ class UserApiCustomerPriorityController extends Controller
     {
         $user = $request->user();
 
-        $row = UserApiCustomerPriority::where('user_id',$user->id)->findOrFail($id);
+        $row = UserApiCustomerPriority::where('user_id',$request->user()->tenantOwnerId())->findOrFail($id);
         $row->delete();
 
         return response()->json(['status'=>'success','message'=>'Priority deleted successfully']);

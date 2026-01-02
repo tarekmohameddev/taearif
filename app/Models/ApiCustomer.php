@@ -34,6 +34,7 @@ class ApiCustomer extends Authenticatable
         'note',
         'type_id',  // 1, 2,
         'priority_id', // 1, 2, 3
+        'responsible_employee_id',
         'stage_id', // 1, 2, 3, 4, 5
         'procedure_id', // 1 meeting 2 visit
         'city_id',
@@ -80,6 +81,11 @@ class ApiCustomer extends Authenticatable
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function responsibleEmployee()
+    {
+        return $this->belongsTo(User::class, 'responsible_employee_id');
     }
 
     public function city()
