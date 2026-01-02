@@ -13,6 +13,11 @@ use Illuminate\Validation\Rule;
 use App\Models\User\UserCity;
 use App\Models\User\UserDistrict;
 use App\Models\User\RealestateManagement\ApiUserCategory;
+use App\Models\Api\UserApiCustomerStage;
+use App\Models\Api\UserApiCustomerProcedure;
+use App\Models\Api\UserApiCustomerType;
+use App\Models\Api\UserApiCustomerPriority;
+use App\Models\User;
 
 class ApiPropertyRequestController extends Controller
 {
@@ -132,6 +137,7 @@ class ApiPropertyRequestController extends Controller
             'contact_on_whatsapp'  => 'nullable|boolean',
             'is_read'              => 'nullable|boolean',
             'is_active'            => 'nullable|boolean',
+            'status'               => 'nullable|string|max:100',
 
             'created_from' => 'nullable|date',
             'created_to'   => 'nullable|date',
@@ -146,6 +152,10 @@ class ApiPropertyRequestController extends Controller
 
         $query = UserPropertyRequest::query()
             ->where('user_id', $ownerId);
+
+        // Calculate statistics before applying filters
+        $totalRequests = $query->count();
+        $totalCustomers = $query->distinct('phone')->count('phone');
 
         if (!empty($validated['q'])) {
             $term = trim((string) $validated['q']);
@@ -203,6 +213,10 @@ class ApiPropertyRequestController extends Controller
             $query->whereDate('created_at', '<=', $validated['created_to']);
         }
 
+        if (!empty($validated['status'])) {
+            $query->where('status', $validated['status']);
+        }
+
         $propertyRequests = $query->orderByDesc('id')->paginate($perPage);
 
         return response()->json([
@@ -214,6 +228,10 @@ class ApiPropertyRequestController extends Controller
                     'per_page' => $propertyRequests->perPage(),
                     'current_page' => $propertyRequests->currentPage(),
                     'last_page' => $propertyRequests->lastPage(),
+                ],
+                'statistics' => [
+                    'total_requests' => $totalRequests,
+                    'total_customers' => $totalCustomers,
                 ],
             ],
         ]);
@@ -284,25 +302,82 @@ class ApiPropertyRequestController extends Controller
             ];
         });
 
+        // Dynamic options derived from existing property requests
+        $customerStatuses = UserPropertyRequest::where('user_id', $ownerId)
+            ->whereNotNull('status')
+            ->distinct()
+            ->orderBy('status')
+            ->pluck('status')
+            ->filter()
+            ->values();
+
+        $purchaseGoals = UserPropertyRequest::where('user_id', $ownerId)
+            ->whereNotNull('purchase_goal')
+            ->distinct()
+            ->orderBy('purchase_goal')
+            ->pluck('purchase_goal')
+            ->filter()
+            ->values();
+
+        $seriousnessOptions = UserPropertyRequest::where('user_id', $ownerId)
+            ->whereNotNull('seriousness')
+            ->distinct()
+            ->orderBy('seriousness')
+            ->pluck('seriousness')
+            ->filter()
+            ->values();
+
+        // Get customer stages (same as customers use)
+        $stages = UserApiCustomerStage::where('user_id', $ownerId)
+            ->orderBy('order')
+            ->get(['id', 'stage_name as name', 'icon', 'color']);
+
+        // Get customer procedures (same as customers use)
+        $procedures = UserApiCustomerProcedure::where('user_id', $ownerId)
+            ->orderBy('order')
+            ->get(['id', 'procedure_name as name', 'icon', 'color']);
+
+        // Get customer types (same as customers use)
+        $types = UserApiCustomerType::where('user_id', $ownerId)
+            ->orderBy('order')
+            ->get(['id', 'name', 'value', 'icon', 'color']);
+
+        // Get customer priorities (same as customers use)
+        $priorities = UserApiCustomerPriority::where('user_id', $ownerId)
+            ->orderBy('order')
+            ->get(['id', 'name', 'value', 'icon', 'color']);
+
+        // Get employees (same as customers use)
+        $employees = User::where('tenant_id', $ownerId)
+            ->where('account_type', 'employee')
+            ->where('active', true)
+            ->with('activeWhatsappUser')
+            ->get(['id', 'first_name', 'last_name', 'email']);
+
+        $employeesList = $employees->map(function ($emp) {
+            return [
+                'id' => $emp->id,
+                'name' => trim(($emp->first_name ?? '') . ' ' . ($emp->last_name ?? '')),
+                'email' => $emp->email,
+                'whatsapp_number' => $emp->activeWhatsappUser ? $emp->activeWhatsappUser->number : null,
+            ];
+        });
+
         return response()->json([
             'status' => 'success',
             'data' => array_merge($filterData, [
-                // Enumerations (for UI dropdowns)
-                'purchase_goals' => [
-                    'سكن خاص',
-                    'استثمار وتأجير',
-                    'بناء وبيع',
-                    'مشروع تجاري',
-                ],
-                'seriousness_options' => [
-                    'مستعد فورًا',
-                    'خلال شهر',
-                    'خلال 3 أشهر',
-                    'لاحقًا / استكشاف فقط',
-                ],
+                'customer_statuses' => $customerStatuses,
+                'purchase_goals' => $purchaseGoals,
+                'seriousness_options' => $seriousnessOptions,
+                'stages' => $stages,
+                'procedures' => $procedures,
+                'types' => $types,
+                'priorities' => $priorities,
+                'employees' => $employeesList,
             ]),
         ]);
     }
+    
     public function destroy($id)
     {
         $user = Auth::user();
@@ -313,6 +388,7 @@ class ApiPropertyRequestController extends Controller
         $propertyRequest->delete();
         return response()->json(['message' => 'Property request deleted successfully']);
     }
+
     public function update(Request $request, $id)
     {
         $user = Auth::user();
@@ -321,5 +397,27 @@ class ApiPropertyRequestController extends Controller
             ->firstOrFail();
         $propertyRequest->update($request->all());
         return response()->json(['message' => 'Property request updated successfully']);
+    }
+
+    public function updateStatus(Request $request, $id): JsonResponse
+    {
+        $request->validate([
+            'status' => 'required|string|max:100',
+        ]);
+
+        $user = $request->user();
+        $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+
+        $propertyRequest = UserPropertyRequest::where('id', $id)
+            ->where('user_id', $ownerId)
+            ->firstOrFail();
+
+        $propertyRequest->update(['status' => $request->status]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم تحديث حالة العميل بنجاح',
+            'data' => $propertyRequest
+        ]);
     }
 }

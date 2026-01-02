@@ -33,6 +33,7 @@ class UserPropertyRequest extends Model
         'notes',
         'is_read',
         'is_active',
+        'status',
     ];
 
     protected $casts = [
@@ -47,5 +48,13 @@ class UserPropertyRequest extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Scope a query to filter by status.
+     */
+    public function scopeByStatus($query, $status)
+    {
+        return $query->where('status', $status);
     }
 }

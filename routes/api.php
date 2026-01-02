@@ -686,6 +686,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy']);
         // update
         Route::put('/property-requests/{id}', [ApiPropertyRequestController::class, 'update']);
+        // update status
+        Route::put('/property-requests/{id}/status', [ApiPropertyRequestController::class, 'updateStatus']);
     });
 
 
