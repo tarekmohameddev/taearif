@@ -5,20 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
-class TenantWebsiteLayout extends Model
+class TenantStaticPage extends Model
 {
     use HasUuids;
 
     protected $fillable = [
-        'id', 'user_id', 'data', 'published_data', 'themes_backup',
+        'id', 'user_id', 'page_id', 'components', 'published_data',
     ];
 
     protected $casts = [
-        'data' => 'array',
+        'components' => 'array',
         'published_data' => 'array',
-        'themes_backup' => 'array',
     ];
 }
-
-
 
