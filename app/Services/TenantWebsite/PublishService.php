@@ -3,6 +3,7 @@
 namespace App\Services\TenantWebsite;
 
 use App\Models\TenantPage;
+use App\Models\TenantStaticPage;
 use App\Models\TenantGlobalComponent;
 use App\Models\TenantSetting;
 use App\Models\User;
@@ -15,6 +16,12 @@ class PublishService
         return DB::transaction(function () use ($tenant) {
             $pages = TenantPage::where('user_id', $tenant->id)->get();
             foreach ($pages as $page) {
+                $page->published_data = $page->components;
+                $page->save();
+            }
+
+            $staticPages = TenantStaticPage::where('user_id', $tenant->id)->get();
+            foreach ($staticPages as $page) {
                 $page->published_data = $page->components;
                 $page->save();
             }

@@ -3,6 +3,7 @@
 namespace App\Services\TenantWebsite;
 
 use App\Models\TenantPage;
+use App\Models\TenantStaticPage;
 use App\Models\TenantGlobalComponent;
 use App\Models\TenantWebsiteLayout;
 use App\Models\User;
@@ -49,9 +50,9 @@ class PageService
         TenantPage::where('user_id', $tenant->id)->where('page_id', $pageId)->delete();
     }
 
-    public function savePagesPayload(User $tenant, array $pages, ?array $globals, ?array $websiteLayout = null): array
+    public function savePagesPayload(User $tenant, array $pages, ?array $globals, ?array $websiteLayout = null, ?array $themesBackup = null, ?array $staticPages = null): array
     {
-        return DB::transaction(function () use ($tenant, $pages, $globals, $websiteLayout) {
+        return DB::transaction(function () use ($tenant, $pages, $globals, $websiteLayout, $themesBackup, $staticPages) {
             $pagesSaved = 0;
             $pagesDeleted = 0;
             $componentsSaved = 0;
@@ -82,6 +83,31 @@ class PageService
                 $pagesDeleted++;
             }
 
+            // Handle StaticPages if provided
+            if ($staticPages !== null) {
+                $sentStaticPageIds = array_keys($staticPages);
+
+                foreach ($staticPages as $pageId => $components) {
+                    $components = collect($components)
+                        ->sortBy('position')
+                        ->values()
+                        ->all();
+                    TenantStaticPage::updateOrCreate(
+                        ['user_id' => $tenant->id, 'page_id' => $pageId],
+                        ['components' => $components]
+                    );
+                }
+
+                // Remove empty static pages (no components) and not sent static pages that are empty
+                $toDeleteStatic = TenantStaticPage::where('user_id', $tenant->id)
+                    ->where(function ($q) use ($sentStaticPageIds) {
+                        $q->whereNotIn('page_id', $sentStaticPageIds)->orWhereJsonLength('components', 0);
+                    })->get();
+                foreach ($toDeleteStatic as $p) {
+                    $p->delete();
+                }
+            }
+
             if ($globals !== null) {
                 TenantGlobalComponent::updateOrCreate(
                     ['user_id' => $tenant->id],
@@ -89,11 +115,23 @@ class PageService
                 );
             }
 
-            if ($websiteLayout !== null) {
-                TenantWebsiteLayout::updateOrCreate(
-                    ['user_id' => $tenant->id],
-                    ['data' => $websiteLayout]
-                );
+            if ($websiteLayout !== null || $themesBackup !== null) {
+                $layout = TenantWebsiteLayout::firstOrNew(['user_id' => $tenant->id]);
+                
+                if ($websiteLayout !== null) {
+                    $layout->data = $websiteLayout;
+                }
+                
+                if ($themesBackup !== null) {
+                    $layout->themes_backup = $themesBackup;
+                }
+                
+                // Ensure data is not null (required by schema)
+                if (!isset($layout->data)) {
+                    $layout->data = [];
+                }
+                
+                $layout->save();
             }
 
             return [
