@@ -46,7 +46,6 @@ class ApiPropertyRequestController extends Controller
             'wants_similar_offers' => 'nullable|boolean',
             'contact_on_whatsapp' => 'nullable|boolean',
             'notes' => 'nullable|string|max:5000',
-            'status' => 'nullable|string|max:100',
             'status_id' => 'nullable|integer|exists:property_request_statuses,id',
         ]);
 
@@ -97,10 +96,8 @@ class ApiPropertyRequestController extends Controller
         $data['is_read'] = false;
         $data['is_active'] = true;
 
-        $statusRecord = $this->findStatusRecord($request->input('status_id'), $request->input('status'));
-        if ($statusRecord) {
-            $data['status_id'] = $statusRecord->id;
-            $data['status'] = $this->deriveStatusLabel($statusRecord);
+        if ($request->filled('status_id')) {
+            $data['status_id'] = (int) $request->input('status_id');
         }
 
         $propertyRequest = UserPropertyRequest::create($data);
@@ -147,7 +144,6 @@ class ApiPropertyRequestController extends Controller
             'contact_on_whatsapp'  => 'nullable|boolean',
             'is_read'              => 'nullable|boolean',
             'is_active'            => 'nullable|boolean',
-            'status'               => 'nullable|string|max:100',
             'status_id'            => 'nullable|integer|exists:property_request_statuses,id',
             'responsible_employee_id' => [
                 'nullable',
@@ -235,13 +231,6 @@ class ApiPropertyRequestController extends Controller
 
         if (!empty($validated['status_id'])) {
             $query->where('status_id', (int) $validated['status_id']);
-        } elseif (!empty($validated['status'])) {
-            $statusRecord = $this->findStatusRecord(null, $validated['status']);
-            if ($statusRecord) {
-                $query->where('status_id', $statusRecord->id);
-            } else {
-                $query->where('status', $validated['status']);
-            }
         }
 
         if (!empty($validated['responsible_employee_id'])) {
@@ -437,22 +426,19 @@ class ApiPropertyRequestController extends Controller
             ->firstOrFail();
 
         $data = $request->all();
-        $statusInputProvided = $request->filled('status_id') || $request->filled('status');
-        $statusRecord = $this->findStatusRecord($request->input('status_id'), $request->input('status'));
-
-        if ($statusInputProvided && !$statusRecord) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Invalid property request status provided.',
-                'errors' => [
-                    'status_id' => ['The selected property request status is invalid.'],
-                ],
-            ], 422);
-        }
-
-        if ($statusRecord) {
+        
+        if ($request->filled('status_id')) {
+            $statusRecord = PropertyRequestStatus::find($request->input('status_id'));
+            if (!$statusRecord) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid property request status provided.',
+                    'errors' => [
+                        'status_id' => ['The selected property request status is invalid.'],
+                    ],
+                ], 422);
+            }
             $data['status_id'] = $statusRecord->id;
-            $data['status'] = $this->deriveStatusLabel($statusRecord);
         }
 
         $propertyRequest->update($data);
@@ -462,19 +448,8 @@ class ApiPropertyRequestController extends Controller
     public function updateStatus(Request $request, $id): JsonResponse
     {
         $validated = $request->validate([
-            'status_id' => 'nullable|integer|exists:property_request_statuses,id',
-            'status' => 'nullable|string|max:100',
+            'status_id' => 'required|integer|exists:property_request_statuses,id',
         ]);
-
-        if (empty($validated['status_id']) && empty($validated['status'])) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'يجب اختيار حالة واحدة على الأقل.',
-                'errors' => [
-                    'status_id' => ['Please provide a valid status_id or status name.'],
-                ],
-            ], 422);
-        }
 
         $user = $request->user();
         $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
@@ -483,21 +458,8 @@ class ApiPropertyRequestController extends Controller
             ->where('user_id', $ownerId)
             ->firstOrFail();
 
-        $statusRecord = $this->findStatusRecord($validated['status_id'] ?? null, $validated['status'] ?? null);
-
-        if (!$statusRecord) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Invalid property request status provided.',
-                'errors' => [
-                    'status_id' => ['The selected property request status is invalid.'],
-                ],
-            ], 422);
-        }
-
         $propertyRequest->update([
-            'status_id' => $statusRecord->id,
-            'status' => $this->deriveStatusLabel($statusRecord),
+            'status_id' => (int) $validated['status_id'],
         ]);
 
         $propertyRequest->load('statusOption');
@@ -509,31 +471,4 @@ class ApiPropertyRequestController extends Controller
         ]);
     }
 
-    private function findStatusRecord(?int $statusId, ?string $statusInput): ?PropertyRequestStatus
-    {
-        if ($statusId) {
-            return PropertyRequestStatus::find($statusId);
-        }
-
-        if ($statusInput) {
-            $statusInput = trim($statusInput);
-
-            if ($statusInput === '') {
-                return null;
-            }
-
-            return PropertyRequestStatus::where(function ($query) use ($statusInput) {
-                $query->where('name_ar', $statusInput)
-                    ->orWhere('name_en', $statusInput)
-                    ->orWhere('slug', $statusInput);
-            })->first();
-        }
-
-        return null;
-    }
-
-    private function deriveStatusLabel(PropertyRequestStatus $status): string
-    {
-        return $status->name_ar ?? $status->name_en ?? $status->slug;
-    }
 }

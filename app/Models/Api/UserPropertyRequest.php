@@ -33,7 +33,6 @@ class UserPropertyRequest extends Model
         'notes',
         'is_read',
         'is_active',
-        'status',
         'status_id',
     ];
 
@@ -49,7 +48,6 @@ class UserPropertyRequest extends Model
 
     protected $hidden = [
         'statusOption',
-        'status',
         'status_id',
         'is_active',
     ];
@@ -80,11 +78,11 @@ class UserPropertyRequest extends Model
     }
 
     /**
-     * Scope a query to filter by status.
+     * Scope a query to filter by status_id.
      */
-    public function scopeByStatus($query, $status)
+    public function scopeByStatus($query, $statusId)
     {
-        return $query->where('status', $status);
+        return $query->where('status_id', $statusId);
     }
 
     public function getStatusNameAttribute(): ?string
@@ -97,6 +95,6 @@ class UserPropertyRequest extends Model
             return $this->statusOption->name_ar ?? $this->statusOption->name_en;
         }
 
-        return $this->attributes['status'] ?? null;
+        return null;
     }
 }
