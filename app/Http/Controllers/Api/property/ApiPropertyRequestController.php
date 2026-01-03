@@ -166,7 +166,10 @@ class ApiPropertyRequestController extends Controller
         $districtId = $validated['districts_id'] ?? ($validated['district_id'] ?? null);
 
         $query = UserPropertyRequest::query()
-            ->with(['statusOption:id,name_ar,name_en'])
+            ->with([
+                'statusOption:id,name_ar,name_en',
+                'customer.responsibleEmployee:id,first_name,last_name,email',
+            ])
             ->where('user_id', $ownerId);
 
         // Calculate statistics before applying filters
@@ -249,8 +252,9 @@ class ApiPropertyRequestController extends Controller
         $propertyRequests = $query->orderByDesc('id')->paginate($perPage);
 
         /*
-         * Example of the trimmed status payload per record:
-         * "status": {"id":1,"name_ar":"جديد","name_en":"New"}
+         * Example payload per record:
+         * "status": {"id":1,"name_ar":"جديد","name_en":"New"},
+         * "employee": {"id":12,"name":"Ahmad Saleh"}
          */
 
         return response()->json([

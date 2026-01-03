@@ -2,6 +2,7 @@
 
 namespace App\Models\Api;
 
+use App\Models\ApiCustomer;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -48,6 +49,8 @@ class UserPropertyRequest extends Model
 
     protected $hidden = [
         'statusOption',
+        'customer',
+        'responsibleEmployee',
         'status_id',
         'is_active',
     ];
@@ -62,6 +65,11 @@ class UserPropertyRequest extends Model
         return $this->belongsTo(\App\Models\PropertyRequestStatus::class, 'status_id');
     }
 
+    public function customer()
+    {
+        return $this->hasOne(ApiCustomer::class, 'property_request_id');
+    }
+
     public function toArray(): array
     {
         $array = parent::toArray();
@@ -74,7 +82,29 @@ class UserPropertyRequest extends Model
             ]
             : null;
 
+        $array['employee'] = $this->formatEmployeePayload();
+
         return $array;
+    }
+
+    protected function formatEmployeePayload(): ?array
+    {
+        $customer = $this->relationLoaded('customer') ? $this->customer : $this->customer;
+
+        if (!$customer || !$customer->responsibleEmployee) {
+            return null;
+        }
+
+        $employee = $customer->responsibleEmployee;
+        $name = trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? ''));
+        if ($name === '') {
+            $name = $employee->email;
+        }
+
+        return [
+            'id' => $employee->id,
+            'name' => $name ?: null,
+        ];
     }
 
     /**
