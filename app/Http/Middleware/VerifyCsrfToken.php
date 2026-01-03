@@ -64,6 +64,10 @@ class VerifyCsrfToken extends Middleware
         '*/cause-donation/phonepe/notify',
         '*/membership/arb/success',
 
+        // Google OAuth routes
+        '/api/auth/google/redirect',
+        '/api/auth/google/callback',
+
         // '*/property-requests/*',
     ];
 }

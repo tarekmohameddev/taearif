@@ -115,6 +115,16 @@ class AuthController extends Controller
     }
 
 
+    /**
+     * Check if the request expects a JSON response
+     */
+    private function shouldReturnJson(Request $request): bool
+    {
+        return $request->expectsJson() 
+            || $request->wantsJson()
+            || $request->header('Accept') === 'application/json';
+    }
+
     public function redirect()
     {
         try {
@@ -128,8 +138,13 @@ class AuthController extends Controller
                 'url' => $url,
             ], 200);
         } catch (\Exception $e) {
+            Log::error('Google Redirect Error: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'status' => 'error',
+                'code' => 'GOOGLE_REDIRECT_FAILED',
                 'message' => __('Unable to generate Google auth URL.'),
             ], 500);
         }
@@ -137,15 +152,35 @@ class AuthController extends Controller
 
     public function callback(Request $request)
     {
-        // Log::info('Google Callback: ');
+        $wantsJson = $this->shouldReturnJson($request);
+        
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
+
+            // Validate Google user data
+            if (!$googleUser || !$googleUser->email) {
+                $error = 'Invalid Google user data received';
+                Log::error('Google Callback Error: ' . $error, [
+                    'google_user' => $googleUser ? ['id' => $googleUser->id] : null,
+                ]);
+                
+                if ($wantsJson) {
+                    return response()->json([
+                        'status' => 'error',
+                        'code' => 'INVALID_GOOGLE_DATA',
+                        'message' => 'Invalid Google authentication data',
+                    ], 400);
+                }
+                
+                return redirect()->away("https://api.taearif.com/oauth/login?error=invalid_google_data");
+            }
 
             // Find user by email or google_id
             $user = User::where('google_id', $googleUser->id)
                         ->orWhere('email', $googleUser->email)
                         ->first();
-            // log::info($googleUser->id);
+
+            // New user - redirect to extra info page
             if (!$user) {
                 $payload = [
                     'email' => $googleUser->email,
@@ -155,29 +190,82 @@ class AuthController extends Controller
 
                 $tempToken = TempTokenService::generate($payload);
 
-                return redirect()->away("https://app.taearif.com/oauth/social/extra-info?temp_token={$tempToken}");
+                if ($wantsJson) {
+                    return response()->json([
+                        'status' => 'success',
+                        'code' => 'REGISTRATION_REQUIRED',
+                        'message' => 'Additional information required for registration',
+                        'data' => [
+                            'temp_token' => $tempToken,
+                            'redirect_url' => "https://api.taearif.com/oauth/social/extra-info?temp_token={$tempToken}",
+                        ],
+                    ], 200);
+                }
+
+                return redirect()->away("https://api.taearif.com/oauth/social/extra-info?temp_token={$tempToken}");
             }
 
+            // Link Google account to existing user
             if ($user->email === $googleUser->email && !$user->google_id) {
-                // (!$user->google_id || $user->google_id !== $googleUser->id)
-
                 $user->update(['google_id' => $googleUser->id]);
                 $user->save();
-                // return redirect()->away('https://app.taearif.com/oauth/login?error=not_registered_with_google');
             }
 
+            // Check if account is banned
             if ($user->status == 0) {
-                return redirect()->away('https://app.taearif.com/oauth/login?error=account_banned');
+                if ($wantsJson) {
+                    return response()->json([
+                        'status' => 'error',
+                        'code' => 'ACCOUNT_BANNED',
+                        'message' => 'Your account has been banned',
+                    ], 403);
+                }
+                
+                return redirect()->away('https://api.taearif.com/oauth/login?error=account_banned');
             }
 
+            // Authenticate user
             Auth::login($user);
             $token = $user->createToken('auth_token')->plainTextToken;
 
-            return redirect()->away("https://app.taearif.com/oauth/token/success?token={$token}");
+            if ($wantsJson) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Authentication successful',
+                    'data' => [
+                        'token' => $token,
+                        'user' => [
+                            'id' => $user->id,
+                            'email' => $user->email,
+                            'name' => $user->name,
+                        ],
+                    ],
+                ], 200);
+            }
+
+            return redirect()->away("https://api.taearif.com/oauth/token/success?token={$token}");
 
         } catch (\Exception $e) {
-            Log::error('Google Callback Error: ' . $e->getMessage());
-            return redirect()->away("https://app.taearif.com/oauth/login?error=google_auth_failed");
+            Log::error('Google Callback Error: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString(),
+                'request_url' => $request->fullUrl(),
+            ]);
+            
+            if ($wantsJson) {
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'GOOGLE_AUTH_FAILED',
+                    'message' => 'Google authentication failed',
+                    'errors' => config('app.debug') ? [
+                        'message' => $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                    ] : null,
+                ], 500);
+            }
+            
+            return redirect()->away("https://api.taearif.com/oauth/login?error=google_auth_failed");
         }
     }
 
