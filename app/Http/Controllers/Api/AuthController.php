@@ -264,6 +264,7 @@ class AuthController extends Controller
                     'active'       => true,
                     'tenant_id'    => $tenant->id,
                     'account_type' => 'employee',
+                    'onboarding_completed' => true, // Employees skip onboarding
                     // Do NOT set website-related fields; do NOT create languages/menus/etc.
                 ]);
 

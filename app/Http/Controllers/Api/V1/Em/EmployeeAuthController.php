@@ -49,6 +49,7 @@ class EmployeeAuthController extends Controller
         $employee->tenant_id    = $tenant->id;
         $employee->account_type = 'employee';
         $employee->active       = (bool)($validated['active'] ?? true);
+        $employee->onboarding_completed = true; // Employees skip onboarding
 
         $employee->save();
 
