@@ -494,8 +494,29 @@ class CrmRequestController extends ApiController
 			}
 		}
 
+		// Get stage information if stage_id exists
+		$stage = null;
+		if (!empty($model->stage_id)) {
+			$stageModel = UserApiCustomerStage::where('id', $model->stage_id)
+				->where('user_id', $userId)
+				->first(['id', 'stage_name', 'color']);
+			
+			if ($stageModel) {
+				$stage = [
+					'id' => $stageModel->id,
+					'name' => $stageModel->stage_name,
+					'color' => $stageModel->color,
+				];
+			}
+		}
+
+		// Convert model to array and replace stage_id with stage object
+		$requestData = $model->toArray();
+		unset($requestData['stage_id']);
+		$requestData['stage'] = $stage;
+
 		$payload = [
-			'request' => $model,
+			'request' => $requestData,
 			'customer' => $customer,
 			'cards'   => $cards,
 			'property_source' => $model->property_id ? 'existing_property' : 'specifications',
