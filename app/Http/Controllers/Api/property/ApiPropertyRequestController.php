@@ -170,6 +170,7 @@ class ApiPropertyRequestController extends Controller
             ->with([
                 'statusOption:id,name_ar,name_en',
                 'customer.responsibleEmployee:id,first_name,last_name,email',
+                'district:id,name_ar',
             ])
             ->where('user_id', $ownerId);
 

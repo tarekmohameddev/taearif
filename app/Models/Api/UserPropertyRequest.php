@@ -70,11 +70,33 @@ class UserPropertyRequest extends Model
         return $this->hasOne(ApiCustomer::class, 'property_request_id');
     }
 
+    public function district()
+    {
+        return $this->belongsTo(\App\Models\User\UserDistrict::class, 'districts_id');
+    }
+
     public function toArray(): array
     {
         $array = parent::toArray();
+        
+        // Get district name
+        $districtName = $this->district ? $this->district->name_ar : null;
+        
+        // Insert districtName right after districts_id
+        $result = [];
+        foreach ($array as $key => $value) {
+            $result[$key] = $value;
+            if ($key === 'districts_id') {
+                $result['districtName'] = $districtName;
+            }
+        }
+        
+        // Fallback: if districts_id wasn't in the array, add districtName anyway
+        if (!isset($result['districtName'])) {
+            $result['districtName'] = $districtName;
+        }
 
-        $array['status'] = $this->statusOption
+        $result['status'] = $this->statusOption
             ? [
                 'id' => $this->statusOption->id,
                 'name_ar' => $this->statusOption->name_ar,
@@ -82,9 +104,9 @@ class UserPropertyRequest extends Model
             ]
             : null;
 
-        $array['employee'] = $this->formatEmployeePayload();
+        $result['employee'] = $this->formatEmployeePayload();
 
-        return $array;
+        return $result;
     }
 
     protected function formatEmployeePayload(): ?array
