@@ -12,30 +12,33 @@ return new class extends Migration
         Schema::table('users_property_requests', function (Blueprint $table) {
             $table->foreignId('status_id')
                 ->nullable()
-                ->after('status')
+                ->after('notes')
                 ->constrained('property_request_statuses')
                 ->nullOnDelete();
         });
 
-        $statusLookup = DB::table('property_request_statuses')
-            ->pluck('id', 'name_ar')
-            ->mapWithKeys(fn ($id, $name) => [trim($name) => $id]);
+        // Only migrate data if status column exists
+        if (Schema::hasColumn('users_property_requests', 'status')) {
+            $statusLookup = DB::table('property_request_statuses')
+                ->pluck('id', 'name_ar')
+                ->mapWithKeys(fn ($id, $name) => [trim($name) => $id]);
 
-        DB::table('users_property_requests')
-            ->select('id', 'status')
-            ->orderBy('id')
-            ->chunkById(500, function ($requests) use ($statusLookup) {
-                foreach ($requests as $request) {
-                    $statusName = trim((string) $request->status);
-                    $statusId = $statusLookup[$statusName] ?? null;
+            DB::table('users_property_requests')
+                ->select('id', 'status')
+                ->orderBy('id')
+                ->chunkById(500, function ($requests) use ($statusLookup) {
+                    foreach ($requests as $request) {
+                        $statusName = trim((string) $request->status);
+                        $statusId = $statusLookup[$statusName] ?? null;
 
-                    if ($statusId) {
-                        DB::table('users_property_requests')
-                            ->where('id', $request->id)
-                            ->update(['status_id' => $statusId]);
+                        if ($statusId) {
+                            DB::table('users_property_requests')
+                                ->where('id', $request->id)
+                                ->update(['status_id' => $statusId]);
+                        }
                     }
-                }
-            });
+                });
+        }
     }
 
     public function down(): void
