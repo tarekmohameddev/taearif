@@ -689,6 +689,8 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::put('/property-requests/{id}', [ApiPropertyRequestController::class, 'update']);
         // update status
         Route::put('/property-requests/{id}/status', [ApiPropertyRequestController::class, 'updateStatus']);
+        // update employee
+        Route::put('/property-requests/{id}/employee', [ApiPropertyRequestController::class, 'updateEmployee']);
     });
 
 

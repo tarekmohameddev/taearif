@@ -20,6 +20,7 @@ use App\Models\Api\UserApiCustomerType;
 use App\Models\Api\UserApiCustomerPriority;
 use App\Models\PropertyRequestStatus;
 use App\Models\User;
+use App\Models\ApiCustomer;
 
 class ApiPropertyRequestController extends Controller
 {
@@ -518,6 +519,56 @@ class ApiPropertyRequestController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'تم تحديث حالة العميل بنجاح',
+            'data' => $propertyRequest
+        ]);
+    }
+
+    public function updateEmployee(Request $request, $id): JsonResponse
+    {
+        $user = $request->user();
+        $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+
+        $validated = $request->validate([
+            'responsible_employee_id' => [
+                'required',
+                'integer',
+                Rule::exists('users', 'id')->where(function ($query) use ($ownerId) {
+                    $query->where('tenant_id', $ownerId)
+                        ->where('account_type', 'employee')
+                        ->where('active', true);
+                }),
+            ],
+        ]);
+
+        $propertyRequest = UserPropertyRequest::where('id', $id)
+            ->where('user_id', $ownerId)
+            ->firstOrFail();
+
+        // Get or check for associated customer
+        $customer = ApiCustomer::where('property_request_id', $propertyRequest->id)
+            ->where('user_id', $ownerId)
+            ->first();
+
+        if (!$customer) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No associated customer found for this property request. Please create a customer first.',
+                'errors' => [
+                    'customer' => ['This property request does not have an associated customer.'],
+                ],
+            ], 404);
+        }
+
+        $customer->update([
+            'responsible_employee_id' => (int) $validated['responsible_employee_id'],
+        ]);
+
+        // Reload property request with customer and employee relationships
+        $propertyRequest->load(['customer.responsibleEmployee']);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم تعيين الموظف المسؤول بنجاح',
             'data' => $propertyRequest
         ]);
     }
