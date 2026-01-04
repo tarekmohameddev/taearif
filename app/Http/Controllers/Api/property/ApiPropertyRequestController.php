@@ -176,6 +176,37 @@ class ApiPropertyRequestController extends Controller
         $totalRequests = $query->count();
         $totalCustomers = $query->distinct('phone')->count('phone');
 
+        // Calculate status counts (all requests for this owner, regardless of filters)
+        $statusCountsQuery = UserPropertyRequest::query()
+            ->select('property_request_statuses.name_ar', DB::raw('COUNT(*) as count'))
+            ->leftJoin('property_request_statuses', 'users_property_requests.status_id', '=', 'property_request_statuses.id')
+            ->where('users_property_requests.user_id', $ownerId)
+            ->whereNotNull('property_request_statuses.name_ar')
+            ->groupBy('property_request_statuses.id', 'property_request_statuses.name_ar');
+
+        $statusCounts = $statusCountsQuery->pluck('count', 'name_ar')->filter(function ($value, $key) {
+            return !is_null($key) && $key !== '';
+        })->toArray();
+
+        // Get all active statuses to ensure all are included (with 0 if not found)
+        $allStatuses = PropertyRequestStatus::active()
+            ->ordered()
+            ->pluck('name_ar')
+            ->toArray();
+
+        // Build by_status object with all statuses (including those with 0 count)
+        $byStatus = [];
+        foreach ($allStatuses as $statusName) {
+            $byStatus[$statusName] = $statusCounts[$statusName] ?? 0;
+        }
+
+        // Also include statuses that have counts but might not be in the active list (for backward compatibility)
+        foreach ($statusCounts as $statusName => $count) {
+            if (!isset($byStatus[$statusName])) {
+                $byStatus[$statusName] = $count;
+            }
+        }
+
         if (!empty($validated['q'])) {
             $term = trim((string) $validated['q']);
             $query->where(function ($sub) use ($term) {
@@ -270,6 +301,7 @@ class ApiPropertyRequestController extends Controller
                 'statistics' => [
                     'total_requests' => $totalRequests,
                     'total_customers' => $totalCustomers,
+                    'by_status' => $byStatus,
                 ],
             ],
         ]);
