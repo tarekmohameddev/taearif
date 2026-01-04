@@ -4,14 +4,16 @@ namespace App\Http\Controllers\Api\V1\TenantWebsite;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\User;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\UserDistrict;
 use App\Services\GoogleAnalyticsService;
 use App\Services\PropertyTranslationService;
+use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 
 class PropertyController extends Controller
 {
+    use ResolvesTenant;
+
 	protected PropertyTranslationService $translator;
 
 	public function __construct(PropertyTranslationService $translator)
@@ -19,14 +21,9 @@ class PropertyController extends Controller
 		$this->translator = $translator;
 	}
 
-	protected function resolveTenant(string $tenantId): User
-	{
-		return User::where('username', $tenantId)->firstOrFail();
-	}
-
     public function index(Request $request, string $tenantId, GoogleAnalyticsService $analytics)
 	{
-		$tenant = $this->resolveTenant($tenantId);
+		$tenant = $this->resolveTenant($request, $tenantId);
 
 		$query = Property::query()
 			->with(['contents', 'galleryImages'])
@@ -285,7 +282,7 @@ class PropertyController extends Controller
 
 	public function show(Request $request, string $tenantId, string $slug)
 	{
-		$tenant = $this->resolveTenant($tenantId);
+		$tenant = $this->resolveTenant($request, $tenantId);
 
 		$property = Property::with([
 			'category',

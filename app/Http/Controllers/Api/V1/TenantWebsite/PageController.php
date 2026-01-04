@@ -7,32 +7,29 @@ use App\Http\Requests\TenantWebsite\SaveSinglePageRequest;
 use App\Http\Requests\TenantWebsite\CreatePageRequest;
 use Illuminate\Http\Request;
 use App\Services\TenantWebsite\PageService;
-use App\Models\User;
+use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 
 class PageController extends Controller
 {
-    public function __construct(private PageService $pages) {}
+    use ResolvesTenant;
 
-    protected function resolveTenant(string $tenantId): User
-    {
-        return User::where('username', $tenantId)->firstOrFail();
-    }
+    public function __construct(private PageService $pages) {}
 
     public function index(Request $request, string $tenantId)
     {
-        $tenant = $this->resolveTenant($tenantId);
+        $tenant = $this->resolveTenant($request, $tenantId);
         return response()->json($this->pages->listPages($tenant));
     }
 
     public function show(Request $request, string $tenantId, string $pageId)
     {
-        $tenant = $this->resolveTenant($tenantId);
+        $tenant = $this->resolveTenant($request, $tenantId);
         return response()->json($this->pages->getPage($tenant, $pageId));
     }
 
     public function store(CreatePageRequest $request, string $tenantId)
     {
-        $tenant = $this->resolveTenant($tenantId);
+        $tenant = $this->resolveTenant($request, $tenantId);
         if ($request->user()?->id !== $tenant->id) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
@@ -42,7 +39,7 @@ class PageController extends Controller
 
     public function update(SaveSinglePageRequest $request, string $tenantId, string $pageId)
     {
-        $tenant = $this->resolveTenant($tenantId);
+        $tenant = $this->resolveTenant($request, $tenantId);
         if ($request->user()?->id !== $tenant->id) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
@@ -57,7 +54,7 @@ class PageController extends Controller
 
     public function destroy(Request $request, string $tenantId, string $pageId)
     {
-        $tenant = $this->resolveTenant($tenantId);
+        $tenant = $this->resolveTenant($request, $tenantId);
         if ($request->user()?->id !== $tenant->id) {
             return response()->json(['message' => 'Forbidden'], 403);
         }

@@ -4,16 +4,13 @@ namespace App\Http\Controllers\Api\V1\TenantWebsite;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\User;
 use App\Models\User\RealestateManagement\Project;
 use App\Services\GoogleAnalyticsService;
+use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 
 class ProjectController extends Controller
 {
-	protected function resolveTenant(string $tenantId): User
-	{
-		return User::where('username', $tenantId)->firstOrFail();
-	}
+    use ResolvesTenant;
 
 	/**
 	 * Get amenities array from project, ensuring it's always an array.
@@ -26,7 +23,7 @@ class ProjectController extends Controller
 
     public function index(Request $request, string $tenantId, GoogleAnalyticsService $analytics)
 	{
-		$tenant = $this->resolveTenant($tenantId);
+		$tenant = $this->resolveTenant($request, $tenantId);
 
 		$query = Project::query()
 			->with(['contents', 'galleryImages', 'user'])
@@ -144,7 +141,7 @@ class ProjectController extends Controller
 
 	public function show(Request $request, string $tenantId, string $slug, GoogleAnalyticsService $analytics)
 	{
-		$tenant = $this->resolveTenant($tenantId);
+		$tenant = $this->resolveTenant($request, $tenantId);
 
 		// Validate slug format (allow Unicode/Arabic characters)
 		// Block only dangerous characters: null bytes, control chars
