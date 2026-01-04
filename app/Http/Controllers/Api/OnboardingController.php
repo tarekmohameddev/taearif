@@ -22,6 +22,7 @@ use App\Models\User\RealestateManagement\Amenity;
 use App\Models\User\CounterInformation;
 use App\Models\Api\GeneralSetting;
 use App\Models\Api\FooterSetting;
+use Illuminate\Support\Facades\DB;
 
 
 class OnboardingController extends Controller
@@ -55,42 +56,59 @@ class OnboardingController extends Controller
             'favicon' => 'nullable|string',
             'valLicense' => 'nullable|string',
             'workingHours' => 'nullable|string',
+            'allow_update' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'success' => false,
+                'status' => 'error',
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         try {
             $user = $request->user();
-            $lang = Language::where([['user_id', $user->id], ['is_default', 1]])->first();
-            $bss = BasicSetting::firstOrNew(['user_id' => $user->id]);
-
-            $bss->base_color = $request->colors['primary'];
-            $bss->secondary_color = $request->colors['secondary'];
-            $bss->accent_color = $request->colors['accent'];
-            $bss->logo = $request->logo;
-            $bss->favicon = $request->favicon;
-            $bss->company_name = $request->title;
-            $bss->industry_type = $request->category;
-            // $bss->valLicense = $request->valLicense;
-            // $bss->workingHours = $request->workingHours;
-
-            $templateMapping = [
-                'realestate' => 'home13',
-                'lawyer' => 'home_seven',
-                'personal' => 'home_two'
-            ];
-            if (array_key_exists($request->category, $templateMapping)) {
-                $bss->theme = $templateMapping[$request->category];
+            
+            // Employees should not have onboarding
+            if ($user->isEmployee()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Onboarding is not available for employees',
+                ], 403);
             }
-            $logoFilename = null;
-            $faviconFilename = null;
-            $bss->save();
+            
+            $lang = Language::where([['user_id', $user->id], ['is_default', 1]])->first();
+            $wasCompleted = (bool) $user->onboarding_completed;
+            // Optional flag (accepted for backward compatibility; not required)
+            $allowUpdate = $request->boolean('allow_update');
+
+            /** @var \App\Models\User\BasicSetting|null $bss */
+            $bss = null;
+
+            DB::transaction(function () use ($request, $user, $lang, &$bss) {
+                $bss = BasicSetting::firstOrNew(['user_id' => $user->id]);
+
+                $bss->base_color = $request->colors['primary'];
+                $bss->secondary_color = $request->colors['secondary'];
+                $bss->accent_color = $request->colors['accent'];
+                $bss->logo = $request->logo;
+                $bss->favicon = $request->favicon;
+                $bss->company_name = $request->title;
+                $bss->industry_type = $request->category;
+                // $bss->valLicense = $request->valLicense;
+                // $bss->workingHours = $request->workingHours;
+
+                $templateMapping = [
+                    'realestate' => 'home13',
+                    'lawyer' => 'home_seven',
+                    'personal' => 'home_two'
+                ];
+                if (array_key_exists($request->category, $templateMapping)) {
+                    $bss->theme = $templateMapping[$request->category];
+                }
+
+                $bss->save();
 
             //
             FooterSetting::updateOrCreate(
@@ -157,9 +175,6 @@ class OnboardingController extends Controller
                 // $this->updateUserAmenities($user->id, $lang->id);
             }
 
-            $user->onboarding_completed = true;
-            $user->save();
-
             GeneralSetting::updateOrCreate(
                 ['user_id' => $user->id],
                 [
@@ -170,24 +185,41 @@ class OnboardingController extends Controller
             );
 
             $this->updateUserFooterText($user->id, $lang->id, basename($request->logo));
-            app(\App\Services\TenantWebsiteSeeder::class)->reseedWebsite($user);
+
+            // Always mark onboarding as completed after successful submission
+            $user->onboarding_completed = true;
+            $user->save();
+
+                DB::afterCommit(function () use ($user) {
+                    app(\App\Services\TenantWebsiteSeeder::class)->reseedWebsite($user);
+                });
+            });
+
+            // Refresh user model to ensure we have the latest state
+            $user->refresh();
+            
             return response()->json([
                 'status' => 'success',
+                'message' => 'Onboarding saved successfully',
                 'data' => [
                     'user_id' => $user->id,
-                    'theme' => $bss->theme,
+                    'theme' => $bss ? $bss->theme : null,
                     'company_name' => $request->title,
-                    'category' => $request->category
+                    'category' => $request->category,
+                    'onboarding_completed' => $user->onboarding_completed,
+                    'was_completed' => $wasCompleted,
+                    'allow_update' => $allowUpdate,
                 ]
             ], 200);
 
         } catch (\Exception $e) {
-            \Log::error("API Onboarding settings update failed: " . $e->getMessage());
+            \Log::error("API Onboarding settings update failed: " . $e->getMessage(), [
+                'user_id' => optional($request->user())->id,
+            ]);
 
             return response()->json([
                 'status' => 'error',
-                'error' => $e->getMessage(),
-                'line' => $e->getLine()
+                'message' => 'Onboarding failed',
             ], 500);
         }
     }

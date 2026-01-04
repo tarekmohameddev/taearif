@@ -12,6 +12,10 @@ use App\Models\Api\Crm\CrmRequest;
 use App\Models\Api\Crm\CrmCard;
 use App\Models\Api\UserApiCustomerStage;
 use App\Models\User\RealestateManagement\Property as UserProperty;
+use App\Models\User\Language;
+use App\Models\User\RealestateManagement\PropertyContent;
+use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
+use App\Models\User\RealestateManagement\ApiUserCategory;
 
 class CrmRequestController extends ApiController
 {
@@ -494,8 +498,29 @@ class CrmRequestController extends ApiController
 			}
 		}
 
+		// Get stage information if stage_id exists
+		$stage = null;
+		if (!empty($model->stage_id)) {
+			$stageModel = UserApiCustomerStage::where('id', $model->stage_id)
+				->where('user_id', $userId)
+				->first(['id', 'stage_name', 'color']);
+			
+			if ($stageModel) {
+				$stage = [
+					'id' => $stageModel->id,
+					'name' => $stageModel->stage_name,
+					'color' => $stageModel->color,
+				];
+			}
+		}
+
+		// Convert model to array and replace stage_id with stage object
+		$requestData = $model->toArray();
+		unset($requestData['stage_id']);
+		$requestData['stage'] = $stage;
+
 		$payload = [
-			'request' => $model,
+			'request' => $requestData,
 			'customer' => $customer,
 			'cards'   => $cards,
 			'property_source' => $model->property_id ? 'existing_property' : 'specifications',
@@ -515,9 +540,11 @@ class CrmRequestController extends ApiController
 	public function update(Request $request, int $id)
 	{
 		$user = $request->user();
-		$model = CrmRequest::forUser($user->id)->findOrFail($id);
+		$userId = method_exists($user, 'tenantOwnerId') ? $user->tenantOwnerId() : $user->id;
+		$model = CrmRequest::forUser($userId)->findOrFail($id);
 
-		$validator = Validator::make($request->all(), [
+		// Base request + property specification validation
+		$rules = [
 			'stage_id'                  => ['sometimes', 'nullable', 'integer', 'exists:users_api_customers_stages,id'],
 			'customer_name'             => ['sometimes', 'required', 'string', 'max:255'],
 			'customer_phone'            => ['sometimes', 'required', 'string', 'max:32'],
@@ -568,7 +595,87 @@ class CrmRequestController extends ApiController
 			'property_specifications.facilities.parking_space' => ['nullable', 'integer'],
 
 			'position'                  => ['nullable', 'integer', 'min:0'],
-		]);
+		];
+
+		// If property data is present or request already has a property, allow updating property fields.
+		$propertyDataKeys = [
+			'payment_method', 'price', 'pricePerMeter', 'purpose', 'type', 'beds', 'bath', 'area', 'status',
+			'latitude', 'longitude', 'project_id', 'region_id', 'category_id', 'features', 'building_id',
+			'water_meter_number', 'electricity_meter_number', 'deed_number', 'video_url', 'virtual_tour', 'size',
+			'address', 'title', 'description', 'city_id', 'state_id',
+			'facade_id', 'length', 'width', 'street_width_north', 'street_width_south', 'street_width_east', 'street_width_west',
+			'building_age', 'rooms', 'bathrooms', 'floors', 'floor_number', 'driver_room', 'maid_room', 'dining_room',
+			'living_room', 'majlis', 'storage_room', 'basement', 'swimming_pool', 'kitchen', 'balcony', 'garden',
+			'annex', 'elevator', 'private_parking',
+		];
+
+		$propertyInputPresent = $request->filled('property_id') || $model->property_id || collect($propertyDataKeys)->some(function ($k) use ($request) {
+			return $request->has($k);
+		});
+
+		if ($propertyInputPresent) {
+			$rules = array_merge($rules, [
+				'payment_method' => ['nullable'],
+				'price' => ['nullable', 'numeric'],
+				'pricePerMeter' => ['nullable', 'numeric'],
+				'purpose' => ['nullable'],
+				'type' => ['nullable'],
+				'beds' => ['nullable', 'integer'],
+				'bath' => ['nullable', 'integer'],
+				'area' => ['nullable', 'numeric'],
+				'status' => ['nullable', 'integer'],
+				'latitude' => ['nullable', 'numeric', 'regex:/^[-]?((([0-8]?[0-9])\.(\d+))|(90(\.0+)?))$/'],
+				'longitude' => ['nullable', 'numeric', 'regex:/^[-]?((([1]?[0-7]?[0-9])\.(\d+))|([0-9]?[0-9])\.(\d+)|(180(\.0+)?))$/'],
+				'project_id' => ['nullable', 'integer'],
+				'region_id' => ['nullable', 'integer'],
+				'category_id' => ['nullable', 'integer'],
+				'features' => ['nullable', 'array'],
+				'building_id' => ['nullable', 'integer', 'exists:buildings,id'],
+				'water_meter_number' => ['nullable', 'string'],
+				'electricity_meter_number' => ['nullable', 'string'],
+				'deed_number' => ['nullable', 'string'],
+				'video_url' => ['nullable', 'string'],
+				'virtual_tour' => ['nullable', 'string'],
+				'size' => ['nullable', 'numeric'],
+
+				// Property content fields
+				'address' => ['nullable', 'string'],
+				'title' => ['nullable', 'string', 'max:255'],
+				'description' => ['nullable', 'string'],
+				'city_id' => ['nullable', 'integer'],
+				'state_id' => ['nullable', 'integer'],
+
+				// Property characteristics
+				'facade_id' => ['nullable', 'numeric'],
+				'length' => ['nullable', 'numeric'],
+				'width' => ['nullable', 'numeric'],
+				'street_width_north' => ['nullable', 'numeric'],
+				'street_width_south' => ['nullable', 'numeric'],
+				'street_width_east' => ['nullable', 'numeric'],
+				'street_width_west' => ['nullable', 'numeric'],
+				'building_age' => ['nullable', 'integer'],
+				'rooms' => ['nullable', 'integer'],
+				'bathrooms' => ['nullable', 'integer'],
+				'floors' => ['nullable', 'integer'],
+				'floor_number' => ['nullable', 'integer'],
+				'driver_room' => ['nullable', 'integer'],
+				'maid_room' => ['nullable', 'integer'],
+				'dining_room' => ['nullable', 'integer'],
+				'living_room' => ['nullable', 'integer'],
+				'majlis' => ['nullable', 'integer'],
+				'storage_room' => ['nullable', 'integer'],
+				'basement' => ['nullable', 'integer'],
+				'swimming_pool' => ['nullable', 'integer'],
+				'kitchen' => ['nullable', 'integer'],
+				'balcony' => ['nullable', 'integer'],
+				'garden' => ['nullable', 'integer'],
+				'annex' => ['nullable', 'integer'],
+				'elevator' => ['nullable', 'integer'],
+				'private_parking' => ['nullable', 'integer'],
+			]);
+		}
+
+		$validator = Validator::make($request->all(), $rules);
 
 		$validator->after(function ($v) use ($request) {
 			if ($request->filled('property_id') && $request->filled('property_specifications')) {
@@ -591,14 +698,148 @@ class CrmRequestController extends ApiController
 			$newStageId = $validated['stage_id'];
 			if (!is_null($newStageId) && !array_key_exists('position', $validated)) {
 				$max = CrmRequest::query()
-					->forUser($user->id)
+					->forUser($userId)
 					->where('stage_id', $newStageId)
 					->max('position');
 				$validated['position'] = is_null($max) ? 1 : ($max + 1);
 			}
 		}
 
-		$model->fill($validated)->save();
+		// Extract property-related fields from validated data (keep request fields clean)
+		$propertyFields = [];
+		$propertyContentFields = [];
+		$propertyCharacteristicFields = [];
+
+		$propertyFieldKeys = [
+			'region_id', 'price', 'pricePerMeter', 'purpose', 'type', 'beds', 'bath', 'area',
+			'video_url', 'virtual_tour', 'status', 'latitude', 'longitude', 'features',
+			'category_id', 'project_id', 'payment_method', 'building_id', 'water_meter_number',
+			'electricity_meter_number', 'deed_number', 'size',
+		];
+
+		$propertyContentFieldKeys = ['address', 'title', 'description', 'city_id', 'state_id'];
+
+		$propertyCharacteristicFieldKeys = [
+			'facade_id', 'length', 'width', 'street_width_north', 'street_width_south', 'street_width_east', 'street_width_west',
+			'building_age', 'rooms', 'bathrooms', 'floors', 'floor_number', 'driver_room', 'maid_room', 'dining_room',
+			'living_room', 'majlis', 'storage_room', 'basement', 'swimming_pool', 'kitchen', 'balcony', 'garden',
+			'annex', 'elevator', 'private_parking', 'size',
+		];
+
+		foreach ($propertyFieldKeys as $key) {
+			if (array_key_exists($key, $validated)) {
+				$propertyFields[$key] = $validated[$key];
+				unset($validated[$key]);
+			}
+		}
+
+		foreach ($propertyContentFieldKeys as $key) {
+			if (array_key_exists($key, $validated)) {
+				$propertyContentFields[$key] = $validated[$key];
+				unset($validated[$key]);
+			}
+		}
+
+		foreach ($propertyCharacteristicFieldKeys as $key) {
+			if (array_key_exists($key, $validated)) {
+				$propertyCharacteristicFields[$key] = $validated[$key];
+				unset($validated[$key]);
+			}
+		}
+
+		$finalPropertyId = $validated['property_id'] ?? $model->property_id;
+
+		DB::transaction(function () use (&$model, $validated, $userId, $finalPropertyId, $propertyFields, $propertyContentFields, $propertyCharacteristicFields) {
+			// Update CRM request
+			$model->fill($validated)->save();
+
+			// If no property is linked, skip property update
+			if (!$finalPropertyId) {
+				return;
+			}
+
+			// Only update property if we received property-related fields
+			if (empty($propertyFields) && empty($propertyContentFields) && empty($propertyCharacteristicFields)) {
+				return;
+			}
+
+			$property = UserProperty::where('id', $finalPropertyId)
+				->where('user_id', $userId)
+				->first();
+
+			if (!$property) {
+				return;
+			}
+
+			// Update main property record
+			if (!empty($propertyFields)) {
+				// Normalize features
+				if (isset($propertyFields['features'])) {
+					if (is_string($propertyFields['features'])) {
+						$decoded = json_decode($propertyFields['features'], true);
+						if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+							$propertyFields['features'] = $decoded;
+						} else {
+							$propertyFields['features'] = [$propertyFields['features']];
+						}
+					} elseif (!is_array($propertyFields['features'])) {
+						$propertyFields['features'] = [];
+					}
+				}
+
+				$property->updateProperty($propertyFields);
+			}
+
+			// Update / create PropertyContent for default language
+			if (!empty($propertyContentFields)) {
+				$defaultLanguage = Language::where('user_id', $userId)
+					->where('is_default', 1)
+					->first();
+
+				if ($defaultLanguage) {
+					$content = PropertyContent::where('property_id', $property->id)
+						->where('language_id', $defaultLanguage->id)
+						->first();
+
+					$updateData = $propertyContentFields;
+
+					if (isset($updateData['title'])) {
+						$updateData['slug'] = PropertyContent::generateUniqueSlug($updateData['title'], $property->id);
+					}
+
+					if ($content) {
+						$content->update($updateData);
+					} else {
+						$categoryId = $property->category_id ?? ApiUserCategory::where('slug', 'other')->value('id');
+						$stateId = $updateData['state_id'] ?? 3;
+
+						PropertyContent::create([
+							'user_id' => $userId,
+							'property_id' => $property->id,
+							'language_id' => $defaultLanguage->id,
+							'category_id' => $categoryId,
+							'state_id' => $stateId,
+							'city_id' => $updateData['city_id'] ?? null,
+							'title' => $updateData['title'] ?? '',
+							'slug' => $updateData['slug'] ?? PropertyContent::generateUniqueSlug('property-' . $property->id, $property->id),
+							'address' => $updateData['address'] ?? '',
+							'description' => $updateData['description'] ?? '',
+						]);
+					}
+				}
+			}
+
+			// Update property characteristics
+			if (!empty($propertyCharacteristicFields)) {
+				$propertyCharacteristicFields['property_id'] = $property->id;
+				$propertyCharacteristicFields['facade_id'] = !empty($propertyCharacteristicFields['facade_id']) ? $propertyCharacteristicFields['facade_id'] : null;
+
+				UserPropertyCharacteristic::updateOrCreate(
+					['property_id' => $property->id],
+					$propertyCharacteristicFields
+				);
+			}
+		});
 
 		return $this->success(['request' => $model]);
 	}
@@ -694,5 +935,3 @@ class CrmRequestController extends ApiController
 		]);
 	}
 }
-
-

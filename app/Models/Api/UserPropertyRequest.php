@@ -2,6 +2,7 @@
 
 namespace App\Models\Api;
 
+use App\Models\ApiCustomer;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,6 +34,7 @@ class UserPropertyRequest extends Model
         'notes',
         'is_read',
         'is_active',
+        'status_id',
     ];
 
     protected $casts = [
@@ -42,10 +44,87 @@ class UserPropertyRequest extends Model
         'budget_to'            => 'float',
         'area_from'            => 'integer',
         'area_to'              => 'integer',
+        'status_id'            => 'integer',
+    ];
+
+    protected $hidden = [
+        'statusOption',
+        'customer',
+        'responsibleEmployee',
+        'status_id',
+        'is_active',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function statusOption()
+    {
+        return $this->belongsTo(\App\Models\PropertyRequestStatus::class, 'status_id');
+    }
+
+    public function customer()
+    {
+        return $this->hasOne(ApiCustomer::class, 'property_request_id');
+    }
+
+    public function toArray(): array
+    {
+        $array = parent::toArray();
+
+        $array['status'] = $this->statusOption
+            ? [
+                'id' => $this->statusOption->id,
+                'name_ar' => $this->statusOption->name_ar,
+                'name_en' => $this->statusOption->name_en,
+            ]
+            : null;
+
+        $array['employee'] = $this->formatEmployeePayload();
+
+        return $array;
+    }
+
+    protected function formatEmployeePayload(): ?array
+    {
+        $customer = $this->relationLoaded('customer') ? $this->customer : $this->customer;
+
+        if (!$customer || !$customer->responsibleEmployee) {
+            return null;
+        }
+
+        $employee = $customer->responsibleEmployee;
+        $name = trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? ''));
+        if ($name === '') {
+            $name = $employee->email;
+        }
+
+        return [
+            'id' => $employee->id,
+            'name' => $name ?: null,
+        ];
+    }
+
+    /**
+     * Scope a query to filter by status_id.
+     */
+    public function scopeByStatus($query, $statusId)
+    {
+        return $query->where('status_id', $statusId);
+    }
+
+    public function getStatusNameAttribute(): ?string
+    {
+        if ($this->relationLoaded('statusOption') && $this->statusOption) {
+            return $this->statusOption->name_ar ?? $this->statusOption->name_en;
+        }
+
+        if ($this->statusOption) {
+            return $this->statusOption->name_ar ?? $this->statusOption->name_en;
+        }
+
+        return null;
     }
 }

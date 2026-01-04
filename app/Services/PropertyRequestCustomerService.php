@@ -37,6 +37,15 @@ class PropertyRequestCustomerService
             // Normalize phone number
             $normalizedPhone = PhoneNormalizer::normalize($propertyRequest->phone);
 
+            // Skip if phone cannot be normalized
+            if (!$normalizedPhone) {
+                Log::warning('Cannot normalize phone number for property request', [
+                    'property_request_id' => $propertyRequest->id,
+                    'phone' => $propertyRequest->phone,
+                ]);
+                return null;
+            }
+
             // Check for existing customer (with normalized phone)
             if ($this->customerExists($propertyRequest->user_id, $normalizedPhone)) {
                 Log::info('Customer already exists with phone number', [
@@ -156,6 +165,9 @@ class PropertyRequestCustomerService
                     'procedure_id' => $defaults['procedure_id'],
                     'created_by_type' => 'system',
                     'created_by_id' => null,
+                    'property_request_id' => $propertyRequest->id,
+                    'source' => 'property_request',
+                    'source_id' => $propertyRequest->id,
                 ]);
 
                 Log::info('Customer auto-created from property request', [
