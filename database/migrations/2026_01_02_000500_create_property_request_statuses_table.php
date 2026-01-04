@@ -9,17 +9,22 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('property_request_statuses', function (Blueprint $table) {
-            $table->id();
-            $table->string('name_ar', 100);
-            $table->string('name_en', 100)->nullable();
-            $table->string('slug', 100)->unique();
-            $table->unsignedTinyInteger('display_order')->default(1);
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('property_request_statuses')) {
+            Schema::create('property_request_statuses', function (Blueprint $table) {
+                $table->id();
+                $table->string('name_ar', 100);
+                $table->string('name_en', 100)->nullable();
+                $table->string('slug', 100)->unique();
+                $table->unsignedTinyInteger('display_order')->default(1);
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+            });
+        }
 
-        DB::table('property_request_statuses')->insert([
+        // Check existing slugs to avoid duplicates
+        $existingSlugs = DB::table('property_request_statuses')->pluck('slug')->toArray();
+
+        $statusesToInsert = [
             [
                 'name_ar' => 'جديد',
                 'name_en' => 'New',
@@ -65,7 +70,13 @@ return new class extends Migration
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-        ]);
+        ];
+
+        foreach ($statusesToInsert as $status) {
+            if (!in_array($status['slug'], $existingSlugs)) {
+                DB::table('property_request_statuses')->insert($status);
+            }
+        }
     }
 
     public function down(): void
