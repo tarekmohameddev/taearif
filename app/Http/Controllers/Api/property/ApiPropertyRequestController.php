@@ -410,6 +410,21 @@ class ApiPropertyRequestController extends Controller
             ]),
         ]);
     }
+
+    /**
+     * Get a single property request by ID.
+     */
+    public function show(Request $request, $id): JsonResponse
+    {
+        $user = $request->user();
+        $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+
+        $propertyRequest = UserPropertyRequest::where('id', $id)
+            ->where('user_id', $ownerId)
+            ->firstOrFail();
+
+        return response()->json($propertyRequest);
+    }
     
     public function destroy($id)
     {

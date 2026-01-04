@@ -681,6 +681,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::middleware([SetTenantForPermissions::class, 'can:properties.view'])->group(function () {
         Route::get('/property-requests/filters', [ApiPropertyRequestController::class, 'filterOptions']);
         Route::get('/property-requests', [ApiPropertyRequestController::class, 'index']);
+        Route::get('/property-requests/{id}', [ApiPropertyRequestController::class, 'show']);
         Route::post('/property-requests', [ApiPropertyRequestController::class, 'store']);
         // DELETE
         Route::delete('/property-requests/{id}', [ApiPropertyRequestController::class, 'destroy']);
