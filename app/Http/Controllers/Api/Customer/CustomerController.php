@@ -24,6 +24,7 @@ use App\Models\ApiCustomerPropertyInterested;
 use Illuminate\Validation\ValidationException;
 use App\Models\User\RealestateManagement\Property;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Models\User;
 use App\Support\Audit;
 
 
@@ -69,6 +70,21 @@ class CustomerController extends Controller
         }
         $districts = $districtQuery->orderBy('name_ar')->get(['id','city_id','name_ar','name_en']);
 
+        $employees = User::where('tenant_id', $user->tenantOwnerId())
+            ->where('account_type', 'employee')
+            ->where('active', true)
+            ->with('activeWhatsappUser')
+            ->get(['id', 'first_name', 'last_name', 'email']);
+
+        $employeesList = $employees->map(function ($emp) {
+            return [
+                'id' => $emp->id,
+                'name' => trim(($emp->first_name ?? '') . ' ' . ($emp->last_name ?? '')),
+                'email' => $emp->email,
+                'whatsapp_number' => $emp->activeWhatsappUser ? $emp->activeWhatsappUser->number : null,
+            ];
+        });
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -78,6 +94,7 @@ class CustomerController extends Controller
                 'procedures' => $procedures,
                 'cities'     => $cities,
                 'districts'  => $districts,
+                'employees'  => $employeesList,
             ],
         ]);
     }
@@ -91,15 +108,71 @@ class CustomerController extends Controller
     {
         $user = $request->user();
 
+        // OPTIMIZED: Paginate first, then load related data only for paginated customers
         $customers = ApiCustomer::where('user_id', $user->id)
             ->with([
+                'city:id,name_ar,name_en',
+                'district:id,name_ar,name_en',
                 'type:id,name',
                 'stage:id,stage_name',
                 'priorityRef:id,name',
                 'procedure:id,procedure_name',
+                'responsibleEmployee.activeWhatsappUser',
             ])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
+
+        // Get paginated customer IDs (only 10 per page instead of all customers)
+        $customerIds = $customers->pluck('id');
+
+        // Batch load all interested categories for paginated customers only
+        $allInterestedCategories = collect();
+        if ($customerIds->isNotEmpty()) {
+            $allInterestedCategories = ApiCustomerPropertyInterested::whereIn('customer_id', $customerIds)
+                ->join('api_user_categories', 'api_user_categories.id', '=', 'api_customer_property_interested.category_id')
+                ->select('api_customer_property_interested.customer_id', 'api_user_categories.id', 'api_user_categories.name')
+                ->distinct()
+                ->get()
+                ->groupBy('customer_id')
+                ->map(function ($items) {
+                    return $items->map(function ($item) {
+                        return (object) [
+                            'id' => $item->id,
+                            'name' => $item->name,
+                        ];
+                    });
+                });
+        }
+
+        // Batch load all interested properties for paginated customers only
+        $allInterestedProperties = collect();
+        if ($customerIds->isNotEmpty()) {
+            $allInterestedProperties = ApiCustomerPropertyInterested::whereIn('customer_id', $customerIds)
+                ->join('user_properties as up', 'up.id', '=', 'api_customer_property_interested.property_id')
+                ->leftJoin('user_property_contents as upc', 'upc.property_id', '=', 'up.id')
+                ->select('api_customer_property_interested.customer_id', 'up.id', DB::raw('MAX(upc.title) as name'))
+                ->groupBy('api_customer_property_interested.customer_id', 'up.id')
+                ->get()
+                ->groupBy('customer_id')
+                ->map(function ($items) {
+                    return $items->map(function ($item) {
+                        return (object) [
+                            'id' => $item->id,
+                            'name' => $item->name,
+                        ];
+                    });
+                });
+        }
+
+        // Batch load all inquiries for paginated customers only
+        $allInquiries = collect();
+        if ($customerIds->isNotEmpty()) {
+            $allInquiries = DB::table('api_customer_inquiry')
+                ->whereIn('customer_id', $customerIds)
+                ->orderByDesc('created_at')
+                ->get(['customer_id', 'message', 'inquiry_type', 'property_type', 'location', 'city', 'district'])
+                ->groupBy('customer_id');
+        }
 
         // Helpers to map values to Arabic
         $mapInquiryTypeToArabic = function ($type) {
@@ -136,25 +209,13 @@ class CustomerController extends Controller
             return $map[$t] ?? $val;
         };
 
-        $formattedCustomers = $customers->map(function ($customer) use ($mapInquiryTypeToArabic, $mapPropertyTypeToArabic) {
-            $interestedCategories = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
-            ->join('api_user_categories', 'api_user_categories.id', '=', 'api_customer_property_interested.category_id')
-            ->select('api_user_categories.id', 'api_user_categories.name')
-            ->distinct()
-            ->get();
-
-        $interestedProperties = ApiCustomerPropertyInterested::where('customer_id', $customer->id)
-            ->join('user_properties as up', 'up.id', '=', 'api_customer_property_interested.property_id')
-            ->leftJoin('user_property_contents as upc', 'upc.property_id', '=', 'up.id')
-            ->select('up.id', DB::raw('MAX(upc.title) as name'))
-            ->groupBy('up.id')
-            ->get();
-
-            // Collect and merge customer inquiries
-            $inquiries = DB::table('api_customer_inquiry')
-                ->where('customer_id', $customer->id)
-                ->orderByDesc('created_at')
-                ->get(['message', 'inquiry_type', 'property_type', 'location', 'city', 'district']);
+        $formattedCustomers = $customers->map(function ($customer) use ($mapInquiryTypeToArabic, $mapPropertyTypeToArabic, $allInterestedCategories, $allInterestedProperties, $allInquiries) {
+            $district = $customer->district;
+            
+            // Get pre-loaded data (same format as before)
+            $interestedCategories = $allInterestedCategories->get($customer->id, collect());
+            $interestedProperties = $allInterestedProperties->get($customer->id, collect());
+            $inquiries = $allInquiries->get($customer->id, collect());
 
             $agg = [
                 'message'       => null,
@@ -231,10 +292,20 @@ class CustomerController extends Controller
                     'id' => $customer->procedure->id,
                     'name' => $customer->procedure->procedure_name,
                 ] : null,
+                'responsible_employee' => $customer->responsibleEmployee ? [
+                    'id' => $customer->responsibleEmployee->id,
+                    'name' => trim(($customer->responsibleEmployee->first_name ?? '') . ' ' . ($customer->responsibleEmployee->last_name ?? '')),
+                    'email' => $customer->responsibleEmployee->email,
+                    'whatsapp_number' => $customer->responsibleEmployee->activeWhatsappUser ? $customer->responsibleEmployee->activeWhatsappUser->number : null,
+                ] : null,
                 'note' => $customer->note ?? null,
                 'inquiry' => $inquiryPayload,
                 'city_id' => $customer->city_id ?? null,
-                'district' => $districtInfo,
+                'district' => $district ? [
+                    'id'      => $district->id,
+                    'name_ar' => $district->name_ar,
+                    'name_en' => $district->name_en,
+                ] : $districtInfo, // fallback to inquiry-derived info when relation absent
                 'created_by' => $customer->user_id,
                 'created_at' => $customer->created_at->toISOString(),
                 'updated_at' => $customer->updated_at->toISOString(),
@@ -246,11 +317,40 @@ class CustomerController extends Controller
 
         $totalCustomers = ApiCustomer::where('user_id', $user->id)->count();
 
+        // Get customer count per stage
+        $stagesCounts = ApiCustomer::where('user_id', $user->id)
+            ->select('stage_id', DB::raw('COUNT(*) as count'))
+            ->groupBy('stage_id')
+            ->get()
+            ->keyBy('stage_id');
+
+        // Get all stages for this user with their counts
+        $stages = UserApiCustomerStage::where('user_id', $user->id)
+            ->orderBy('order')
+            ->get(['id', 'stage_name', 'icon', 'color'])
+            ->map(function ($stage) use ($stagesCounts) {
+                $count = $stagesCounts->get($stage->id)?->count ?? 0;
+                return [
+                    'id' => $stage->id,
+                    'name' => $stage->stage_name,
+                    'icon' => $stage->icon,
+                    'color' => $stage->color,
+                    'count' => $count,
+                ];
+            });
+
+        // Count customers with no stage assigned
+        $noStageCount = ApiCustomer::where('user_id', $user->id)
+            ->whereNull('stage_id')
+            ->count();
+
         return response()->json([
             'status' => 'success',
             'data' => [
                 'summary' => [
                     'total_customers' => $totalCustomers,
+                    'stages' => $stages,
+                    'no_stage_count' => $noStageCount,
                 ],
                 'customers' => $formattedCustomers,
                 'pagination' => [
@@ -301,7 +401,15 @@ class CustomerController extends Controller
                 'district_id'  => 'nullable|exists:user_districts,id',
                 'note'         => 'nullable|string',
                 'type_id'      => ['required', Rule::exists('users_api_customers_types','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-                'priority_id'  => ['required', Rule::exists('users_api_customers_priorities','id')->where(fn($q)=>$q->where('user_id',$user->id))],
+                'priority_id'  => ['nullable', Rule::exists('users_api_customers_priorities','id')->where(fn($q)=>$q->where('user_id',$user->id))],
+                'responsible_employee_id' => [
+                    'nullable',
+                    Rule::exists('users', 'id')->where(function ($query) use ($user) {
+                        $query->where('tenant_id', $user->tenantOwnerId())
+                              ->where('account_type', 'employee')
+                              ->where('active', true);
+                    }),
+                ],
                 'stage_id'     => ['nullable', Rule::exists('users_api_customers_stages','id')->where(fn($q)=>$q->where('user_id',$user->id))],
                 'procedure_id' => ['nullable', Rule::exists('users_api_customers_procedures','id')->where(fn($q)=>$q->where('user_id',$user->id))],
                 'password'     => 'required|string|min:6',
@@ -323,6 +431,7 @@ class CustomerController extends Controller
                     'note'         => $request->note,
                     'type_id'      => $request->type_id,
                     'priority_id'  => $request->priority_id,
+                    'responsible_employee_id' => $request->responsible_employee_id,
                     'stage_id'     => $request->stage_id,
                     'procedure_id' => $request->procedure_id,
                     'phone_number' => $request->phone_number,
@@ -364,7 +473,9 @@ class CustomerController extends Controller
     {
         $user = $request->user();
 
-        $customer = ApiCustomer::where('user_id', $user->id)->find($id);
+        $customer = ApiCustomer::where('user_id', $user->id)
+            ->with(['responsibleEmployee.activeWhatsappUser'])
+            ->find($id);
 
         if (!$customer) {
             return response()->json([
@@ -373,9 +484,21 @@ class CustomerController extends Controller
             ], 404);
         }
 
+        $customerData = $customer->toArray();
+        if ($customer->responsibleEmployee) {
+            $customerData['responsible_employee'] = [
+                'id' => $customer->responsibleEmployee->id,
+                'name' => trim(($customer->responsibleEmployee->first_name ?? '') . ' ' . ($customer->responsibleEmployee->last_name ?? '')),
+                'email' => $customer->responsibleEmployee->email,
+                'whatsapp_number' => $customer->responsibleEmployee->activeWhatsappUser ? $customer->responsibleEmployee->activeWhatsappUser->number : null,
+            ];
+        } else {
+            $customerData['responsible_employee'] = null;
+        }
+
         return response()->json([
             'status' => 'success',
-            'data' => $customer
+            'data' => $customerData
         ]);
 
     }
@@ -393,6 +516,7 @@ class CustomerController extends Controller
                 'stage:id,stage_name',
                 'priorityRef:id,name',
                 'procedure:id,procedure_name',
+                'responsibleEmployee.activeWhatsappUser',
             ])
             ->find($id);
 
@@ -492,6 +616,12 @@ class CustomerController extends Controller
                     'stage' => $customer->stage ? [ 'id' => $customer->stage->id, 'name' => $customer->stage->stage_name ] : null,
                     'priority' => $customer->priorityRef ? [ 'id' => $customer->priorityRef->id, 'name' => $customer->priorityRef->name ] : null,
                     'procedure' => $customer->procedure ? [ 'id' => $customer->procedure->id, 'name' => $customer->procedure->procedure_name ] : null,
+                    'responsible_employee' => $customer->responsibleEmployee ? [
+                        'id' => $customer->responsibleEmployee->id,
+                        'name' => trim(($customer->responsibleEmployee->first_name ?? '') . ' ' . ($customer->responsibleEmployee->last_name ?? '')),
+                        'email' => $customer->responsibleEmployee->email,
+                        'whatsapp_number' => $customer->responsibleEmployee->activeWhatsappUser ? $customer->responsibleEmployee->activeWhatsappUser->number : null,
+                    ] : null,
                     'district' => $districtInfo,
                     'created_at' => optional($customer->created_at)->toISOString(),
                     'updated_at' => optional($customer->updated_at)->toISOString(),
@@ -536,8 +666,18 @@ class CustomerController extends Controller
             'city_id'      => 'nullable|exists:user_cities,id',
             'district_id'  => 'nullable|exists:user_districts,id',
             'note'         => 'nullable|string',
+            'type_id'      => ['nullable', Rule::exists('users_api_customers_types','id')->where(fn($q)=>$q->where('user_id',$user->id))],
+            'priority_id'  => ['nullable', Rule::exists('users_api_customers_priorities','id')->where(fn($q)=>$q->where('user_id',$user->id))],
 
             'stage_id'     => ['nullable', Rule::exists('users_api_customers_stages','id')->where(fn($q)=>$q->where('user_id',$user->id))],
+            'responsible_employee_id' => [
+                'nullable',
+                Rule::exists('users', 'id')->where(function ($query) use ($user) {
+                    $query->where('tenant_id', $user->tenantOwnerId())
+                          ->where('account_type', 'employee')
+                          ->where('active', true);
+                }),
+            ],
             'procedure_id' => ['nullable', Rule::exists('users_api_customers_procedures','id')->where(fn($q)=>$q->where('user_id',$user->id))],
 
             'password'     => 'nullable|string|min:6',
@@ -554,7 +694,10 @@ class CustomerController extends Controller
             'note'         => $request->input('note'),
             'city_id'      => $request->input('city_id'),
             'district_id'  => $request->input('district_id'),
+            'type_id'      => $request->input('type_id'),
+            'priority_id'  => $request->input('priority_id'),
             // stage_id is handled via CrmCustomerStageService to centralize CRM side effects
+            'responsible_employee_id' => $request->input('responsible_employee_id'),
             'procedure_id' => $request->input('procedure_id'),
             'phone_number' => $request->input('phone_number'),
         ], fn($v)=>!is_null($v));
@@ -598,7 +741,7 @@ class CustomerController extends Controller
             }
         });
 
-        TenantActivity::emit($request, 'customer.updated', 'api_customers', $customer->id, $old ?? null, $customer->only(['name','email','phone_number']));
+        TenantActivity::emit($request, 'customer.updated', 'api_customers', $customer->id, $old ?? null, $customer->only(['name','email','phone_number', 'responsible_employee_id']));
 
         return response()->json([
             'status'  => 'success',
@@ -652,6 +795,17 @@ class CustomerController extends Controller
 
     /**
      * Search customers by name, email or phone
+     * 
+     * Filters:
+     * - q: text search on name, email, phone_number
+     * - city_id, district_id, type_id, priority_id, procedure_id: exact match
+     * - phone_number: partial match on customer phone
+     * - responsible_employee_id: filter by assigned employee
+     * - employee_whatsapp_number: partial match on assigned employee's active WhatsApp number
+     * - created_from, created_to: date range on created_at (YYYY-MM-DD, inclusive full days)
+     * - interested_category_ids, interested_property_ids: array of IDs
+     * - sort_by: name|created_at|priority_id (default: created_at)
+     * - sort_dir: asc|desc (default: desc)
     */
     public function search(Request $request)
     {
@@ -675,6 +829,10 @@ class CustomerController extends Controller
             'priority_id'   => 'nullable|integer',
             'procedure_id'  => 'nullable|integer',
             'phone_number'  => 'nullable|string|max:20',
+            'responsible_employee_id' => 'nullable|integer',
+            'employee_whatsapp_number' => 'nullable|string|max:20',
+            'created_from'  => 'nullable|date',
+            'created_to'    => 'nullable|date',
             'page'          => 'nullable|integer|min:1',
             'per_page'      => 'nullable|integer|min:1|max:100',
             'sort_by'       => 'nullable|in:name,created_at,priority_id',
@@ -693,7 +851,9 @@ class CustomerController extends Controller
             'stage:id,stage_name',
             'priorityRef:id,name',
             'procedure:id,procedure_name',
-        ]);
+            'responsibleEmployee.activeWhatsappUser',
+        ])
+        ->whereNotNull('stage_id'); // exclude customers without a stage
 
         if (!empty($qText)) {
             $query->where(function ($sub) use ($qText) {
@@ -709,6 +869,22 @@ class CustomerController extends Controller
         if ($request->filled('priority_id'))   $query->where('priority_id',   (int)$request->input('priority_id'));
         if ($request->filled('procedure_id'))  $query->where('procedure_id',  (int)$request->input('procedure_id'));
         if ($request->filled('phone_number'))  $query->where('phone_number', 'like', '%'.$request->input('phone_number').'%');
+        if ($request->filled('responsible_employee_id')) $query->where('responsible_employee_id', (int)$request->input('responsible_employee_id'));
+        
+        // Filter by employee's WhatsApp number
+        if ($request->filled('employee_whatsapp_number')) {
+            $query->whereHas('responsibleEmployee.activeWhatsappUser', function ($sub) use ($request) {
+                $sub->where('number', 'like', '%'.$request->input('employee_whatsapp_number').'%');
+            });
+        }
+        
+        // Date range filters (inclusive)
+        if ($request->filled('created_from')) {
+            $query->whereDate('created_at', '>=', $request->input('created_from'));
+        }
+        if ($request->filled('created_to')) {
+            $query->whereDate('created_at', '<=', $request->input('created_to'));
+        }
 
         if (!empty($catIds)) {
             $query->whereExists(function ($sub) use ($catIds) {
@@ -751,7 +927,23 @@ class CustomerController extends Controller
             ->get()
             ->groupBy('customer_id');
 
-        $customers = $paginator->getCollection()->map(function ($customer) use ($catRows, $propRows) {
+        // OPTIMIZED: Batch load all inquiries for paginated customers (fixes N+1 query)
+        $allCustomerInquiries = collect();
+        if (!empty($customerIds)) {
+            $allCustomerInquiries = DB::table('api_customer_inquiry')
+                ->whereIn('customer_id', $customerIds)
+                ->whereNotNull('district')
+                ->whereNotNull('city')
+                ->select('customer_id', 'district', 'city')
+                ->distinct()
+                ->get()
+                ->groupBy('customer_id')
+                ->map(function ($inquiries) {
+                    return $inquiries->take(3);
+                });
+        }
+
+        $customers = $paginator->getCollection()->map(function ($customer) use ($catRows, $propRows, $allCustomerInquiries) {
             $city = $customer->city;
             $district = $customer->district;
 
@@ -763,15 +955,8 @@ class CustomerController extends Controller
                 ->map(fn($r) => ['id' => (int)$r->id, 'name' => $r->name])
                 ->values();
 
-            // Get customer inquiries for district information
-            $customerInquiries = DB::table('api_customer_inquiry')
-                ->where('customer_id', $customer->id)
-                ->whereNotNull('district')
-                ->whereNotNull('city')
-                ->select('district', 'city')
-                ->distinct()
-                ->limit(3)
-                ->get();
+            // Get customer inquiries from pre-loaded collection (no N+1 query)
+            $customerInquiries = $allCustomerInquiries->get($customer->id, collect());
 
             // Format district information
             $districtInfo = null;
@@ -809,12 +994,22 @@ class CustomerController extends Controller
                     'id' => $customer->procedure->id,
                     'name' => $customer->procedure->procedure_name,
                 ] : null,
+                'responsible_employee' => $customer->responsibleEmployee ? [
+                    'id' => $customer->responsibleEmployee->id,
+                    'name' => trim(($customer->responsibleEmployee->first_name ?? '') . ' ' . ($customer->responsibleEmployee->last_name ?? '')),
+                    'email' => $customer->responsibleEmployee->email,
+                    'whatsapp_number' => $customer->responsibleEmployee->activeWhatsappUser ? $customer->responsibleEmployee->activeWhatsappUser->number : null,
+                ] : null,
                 'city' => $city ? [
                     'id'      => $city->id,
                     'name_ar' => $city->name_ar,
                     'name_en' => $city->name_en,
                 ] : null,
-                'district' => $districtInfo,
+                'district' => $district ? [
+                    'id'      => $district->id,
+                    'name_ar' => $district->name_ar,
+                    'name_en' => $district->name_en,
+                ] : $districtInfo,
                 'note'                  => $customer->note ?? null,
                 'district_id'           => $customer->district_id ?? null,
                 'city_id'               => $customer->city_id ?? null,
@@ -889,9 +1084,33 @@ class CustomerController extends Controller
     public function downloadTemplate(Request $request)
     {
         $user = $request->user();
+        $userId = $user?->id;
+
+        // Resolve tenant context for unauthenticated access
+        if (!$userId) {
+            $tenantId = $request->input('tenant_id');
+
+            if ($tenantId) {
+                $tenantUser = \App\Models\User::find($tenantId);
+
+                if (!$tenantUser) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Invalid tenant_id',
+                    ], 400);
+                }
+
+                $userId = $tenantUser->id;
+            } else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'tenant_id is required when not authenticated',
+                ], 400);
+            }
+        }
 
         return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\CustomersTemplateExport($user->id),
+            new \App\Exports\CustomersTemplateExport($userId),
             'customers_import_template.xlsx'
         );
     }

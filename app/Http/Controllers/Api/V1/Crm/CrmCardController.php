@@ -17,7 +17,7 @@ class CrmCardController extends ApiController
     {
         $user = $request->user();
         $query = CrmCard::query()
-            ->forUser($user->id)
+            ->forUser($request->user()->tenantOwnerId())
             ->when($request->filled('card_procedure'), fn($q) => $q->where('card_procedure', $request->card_procedure))
             ->when($request->filled('card_request_id'), fn($q) => $q->where('card_request_id', (int) $request->card_request_id))
             ->when($request->filled('date_from'), fn($q) => $q->where('card_date', '>=', $request->date_from))
@@ -40,11 +40,12 @@ class CrmCardController extends ApiController
     public function store(Request $request)
     {
         $user = $request->user();
+        $tenantId = $request->user()->tenantOwnerId();
 
         $validated = $request->validate([
             'card_request_id' => [
                 'required','integer',
-                Rule::exists('crm_requests', 'id')->where(fn($q) => $q->where('user_id', $user->id)),
+                Rule::exists('crm_requests', 'id')->where(fn($q) => $q->where('user_id', $tenantId)),
             ],
             'card_content'     => ['nullable','string'],
             'card_procedure'   => ['required', Rule::in(['reminder','note','interaction','appointment'])],
@@ -54,7 +55,7 @@ class CrmCardController extends ApiController
         ]);
 
         $card = new CrmCard($validated);
-        $card->user_id = $user->id;
+        $card->user_id = $tenantId;
         $card->save();
 
         return response()->json(['status' => true, 'data' => $card], 201);
@@ -66,7 +67,7 @@ class CrmCardController extends ApiController
     public function show(Request $request, int $id)
     {
         try {
-            $card = CrmCard::forUser($request->user()->id)->findOrFail($id);
+            $card = CrmCard::forUser($request->user()->tenantOwnerId())->findOrFail($id);
 
             return $this->success([
                 'card' => $card
@@ -91,12 +92,13 @@ class CrmCardController extends ApiController
     {
         try {
             $user = $request->user();
-            $card = CrmCard::forUser($user->id)->findOrFail($id);
+            $tenantId = $request->user()->tenantOwnerId();
+            $card = CrmCard::forUser($tenantId)->findOrFail($id);
 
             $validated = $request->validate([
                 'card_request_id' => [
                     'sometimes', 'required', 'integer',
-                    Rule::exists('crm_requests', 'id')->where(fn($q) => $q->where('user_id', $user->id)),
+                    Rule::exists('crm_requests', 'id')->where(fn($q) => $q->where('user_id', $tenantId)),
                 ],
                 'card_content'      => ['nullable', 'string'],
                 'card_procedure'    => ['sometimes', 'required', Rule::in(['reminder','note','interaction','appointment'])],
@@ -134,7 +136,7 @@ class CrmCardController extends ApiController
     {
         try {
             $user = $request->user();
-            $card = CrmCard::forUser($user->id)->findOrFail($id);
+            $card = CrmCard::forUser($request->user()->tenantOwnerId())->findOrFail($id);
             $card->delete();
 
             return $this->success(['message' => 'Deleted']);

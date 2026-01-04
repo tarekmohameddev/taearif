@@ -42,6 +42,7 @@ class PlanResource extends JsonResource
                 'real_estate' => $this->real_estate_limit_number,
                 'video_size' => $this->video_size_limit,
                 'file_size' => $this->file_size_limit,
+                'whatsapp_numbers' => $this->whatsapp_numbers_limit,
             ],
             'features' => $this->features,
             'new_features' => $this->new_features,

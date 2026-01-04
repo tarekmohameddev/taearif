@@ -34,6 +34,7 @@ class Property extends Model
         'category_id',
         'region_id',
         'user_id',
+        'created_by',
         'payment_method',
         'featured_image',
         'floor_planning_image',
@@ -82,13 +83,18 @@ class Property extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by', 'id');
+    }
+
     public function category()
     {
         return $this->belongsTo(ApiUserCategory::class, 'category_id', 'id');
     }
 
 
-    public static function storeProperty($userId, $request, $featuredImgName, $floorPlanningImage, $videoImage,$featured)
+    public static function storeProperty($userId, $request, $featuredImgName, $floorPlanningImage, $videoImage, $featured, $createdBy = null)
     {
         // Ensure default "other" category exists
         $defaultCategory = ApiUserCategory::firstOrCreate(
@@ -105,6 +111,7 @@ class Property extends Model
             'region_id' => $request['region_id'] ?? null,
             'project_id' => $request['project_id'] ?? null,
             'user_id' => $userId,
+            'created_by' => $createdBy ?? auth()->id(),
             'featured_image' => $featuredImgName,
             'floor_planning_image' => $floorPlanningImage ?? null,
             'video_image' => $videoImage,

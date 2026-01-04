@@ -2483,7 +2483,13 @@
 
         "Menu Builder": "منشئ القوائم",
     "Number Limit": "الحد الأقصى",
+    "Project Limit": "حد المشروع",
+    "Real Estate Limit": "حد العقارات",
+    "Real estate Limit": "حد العقارات",
+    "WhatsApp Limit": "حد واتساب",
     "Project Number Limit": "الحد الأقصى لعدد المشروع",
+    "Real Estate Number Limit": "الحد الأقصى لعدد العقارات",
+    "WhatsApp Number Limit": "الحد الأقصى لأرقام واتساب",
     "No Categories Found": "لم يتم العثور على فئات!",
     "No Property Found": "لم يتم العثور على أي عقار!",
     "Sqft": "مساحة",

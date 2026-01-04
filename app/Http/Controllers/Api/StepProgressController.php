@@ -8,20 +8,10 @@ use App\Http\Controllers\Controller;
 
 class StepProgressController extends Controller
 {
-    //
     /**
-     * Display the progress of a specific step for a user.
-     *
-     * @param  int  $userId
-     * @param  string  $stepName
-     * @return \Illuminate\Http\Response
+     * Step map configuration - moved to class constant to avoid per-request allocation
      */
-public function getSteps(Request $request)
-{
-    $user = $request->user();
-    $steps = UserStep::firstOrCreate(['user_id' => $user->id]);
-
-    $stepMap = [
+    private const STEP_MAP = [
         'footer' => [
             'path' => '/content/footer',
             'text' => "قم بتخصيص التذييل الخاص بك",
@@ -32,7 +22,30 @@ public function getSteps(Request $request)
         ],
     ];
 
-    $rawData = $steps->only(array_keys($stepMap));
+    /**
+     * Display the progress of a specific step for a user.
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function getSteps(Request $request)
+    {
+        $user = $request->user();
+        
+        // Check if performance optimizations are enabled
+        $useOptimizations = config('performance.enable_api_performance_optimizations');
+        
+        if ($useOptimizations) {
+            // Select only the columns we use to avoid pulling large blobs
+            $stepKeys = array_keys(self::STEP_MAP);
+            $steps = UserStep::select(['user_id', ...$stepKeys])
+                ->firstOrCreate(['user_id' => $user->id], array_fill_keys($stepKeys, false));
+        } else {
+            $steps = UserStep::firstOrCreate(['user_id' => $user->id]);
+        }
+
+        $stepMap = self::STEP_MAP;
+        $rawData = $steps->only(array_keys($stepMap));
 
     $stepsWithStatus = [];
     foreach ($stepMap as $key => $info) {

@@ -12,7 +12,11 @@ use Google\Analytics\Data\V1beta\Filter;
 use Illuminate\Support\Facades\Log;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\ApiCustomer;
+use App\Models\Analytics\AnalyticsDailySummary;
+use App\Models\Api\EmployeeActivityLog;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class AnalyticsDashboardController extends Controller
 {
@@ -41,6 +45,114 @@ class AnalyticsDashboardController extends Controller
         return [ Carbon::now()->subDays($days), Carbon::now() ];
     }
 
+    /**
+     * Build tenant filter for Google Analytics queries
+     *
+     * @param string $tenantId
+     * @param bool $useContains Whether to use CONTAINS match type (default: false for EXACT)
+     * @return FilterExpression
+     */
+    protected function buildTenantFilter(string $tenantId, bool $useContains = false): FilterExpression
+    {
+        $stringFilterOptions = [
+            'value' => $tenantId,
+        ];
+
+        if ($useContains) {
+            $stringFilterOptions['match_type'] = StringFilter\MatchType::CONTAINS;
+        }
+
+        return new FilterExpression([
+            'filter' => new Filter([
+                'field_name' => 'customEvent:tenant_id',
+                'string_filter' => new StringFilter($stringFilterOptions),
+            ]),
+        ]);
+    }
+
+    /**
+     * Validate time_range against allowed values
+     *
+     * @param mixed $timeRange
+     * @param int $default
+     * @return int
+     */
+    protected function validateTimeRange($timeRange, int $default = 30): int
+    {
+        $allowedRanges = [7, 30, 90, 365];
+        $timeRange = (int) $timeRange;
+        
+        return in_array($timeRange, $allowedRanges) ? $timeRange : $default;
+    }
+
+    /**
+     * Generate cache key for GA visitors endpoint
+     *
+     * @param string $tenantId
+     * @param int $timeRange
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @return string
+     */
+    protected function getVisitorsCacheKey(string $tenantId, int $timeRange, Carbon $startDate, Carbon $endDate): string
+    {
+        return "ga:visitors:{$tenantId}:{$timeRange}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
+    }
+
+    /**
+     * Generate cache key for GA devices endpoint
+     *
+     * @param string $tenantId
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @return string
+     */
+    protected function getDevicesCacheKey(string $tenantId, Carbon $startDate, Carbon $endDate): string
+    {
+        return "ga:devices:{$tenantId}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
+    }
+
+    /**
+     * Generate cache key for GA traffic sources endpoint
+     *
+     * @param string $tenantId
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @return string
+     */
+    protected function getTrafficSourcesCacheKey(string $tenantId, Carbon $startDate, Carbon $endDate): string
+    {
+        return "ga:traffic-sources:{$tenantId}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
+    }
+
+    /**
+     * Generate cache key for GA summary endpoint
+     *
+     * @param string $tenantId
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @param Carbon $previousStartDate
+     * @param Carbon $previousEndDate
+     * @return string
+     */
+    protected function getSummaryCacheKey(string $tenantId, Carbon $startDate, Carbon $endDate, Carbon $previousStartDate, Carbon $previousEndDate): string
+    {
+        return "ga:summary:{$tenantId}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}:{$previousStartDate->format('Y-m-d')}:{$previousEndDate->format('Y-m-d')}";
+    }
+
+    /**
+     * Generate cache key for GA most visited pages endpoint
+     *
+     * @param string $tenantId
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @return string
+     */
+    protected function getMostVisitedPagesCacheKey(string $tenantId, Carbon $startDate, Carbon $endDate): string
+    {
+        return "ga:most-visited-pages:{$tenantId}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
+    }
+
     public function dashboard(Request $request)
     {
         $tenant = $this->tenantId($request);
@@ -58,17 +170,19 @@ class AnalyticsDashboardController extends Controller
 
     public function visitors(Request $request, GoogleAnalyticsService $analytics)
     {
+        $startTime = microtime(true);
+        $cacheHit = false;
+        
         // Get the user and tenant ID
         $tenantId = $this->tenantId($request);
 
+        // Retrieve and validate time range from the request (default to 30 days if not provided)
+        $timeRange = $this->validateTimeRange($request->input('time_range', 30), 30);
 
-        // Retrieve the time range from the request (default to 30 days if not provided)
-        $timeRange = $request->input('time_range', 30);
-
-        // Calculate the start and end dates based on the time_range
+        // Normalize Carbon::now() to compute once per request
         $endDate = Carbon::now();
 
-        // Calculate the start date based on the time_range
+        // Calculate the start date based on the validated time_range
         switch ($timeRange) {
             case 7:
                 $startDate = $endDate->copy()->subDays(7); // Last 7 days
@@ -87,28 +201,99 @@ class AnalyticsDashboardController extends Controller
                 break;
         }
 
-        // Fetch the visitor data using the dynamic date range
-        $visitorData = $analytics->getVisitorData($tenantId, $startDate, $endDate); // Custom method for time series data
+        // Try to get from materialized data first
+        $cachedData = $this->getMaterializedVisitorsData($tenantId, $startDate, $endDate);
+        
+        if ($cachedData !== null) {
+            $cacheHit = true;
+            
+            // Return cached data (already formatted)
+            return response()->json($cachedData);
+        }
 
-        // Format the visitor data
-        $visitorDataFormatted = collect($visitorData)->map(function ($item) {
-            return [
-                'date' => $item['date']->locale('ar')->isoFormat('D MMMM'), // Convert to Arabic date (e.g., '1 يناير')
-                'visits' => $item['sessions'],
-                'uniqueVisitors' => $item['users']
-            ];
-        });
+        // Fallback to GA API - use cache lock to prevent concurrent requests
+        $lockKey = "ga:visitors:{$tenantId}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
+        $lock = Cache::lock($lockKey, 30); // 30 second lock timeout
 
-        // Calculate total visits and total unique visitors
-        $totalVisits = collect($visitorData)->sum('sessions');
-        $totalUniqueVisitors = collect($visitorData)->sum('users');
+        try {
+            if ($lock->get()) {
+                try {
+                    // Double-check after acquiring lock (another request might have stored it)
+                    $cachedData = $this->getMaterializedVisitorsData($tenantId, $startDate, $endDate);
+                    if ($cachedData !== null) {
+                        $lock->release();
+                        return response()->json($cachedData);
+                    }
 
-        // Return the response with the dynamic time range
-        return response()->json([
-            'visitor_data' => $visitorDataFormatted,
-            'total_visits' => $totalVisits,
-            'total_unique_visitors' => $totalUniqueVisitors,
-        ]);
+                    // Fetch from GA API
+                    $visitorData = $analytics->getVisitorData($tenantId, $startDate, $endDate);
+                    
+                    // Ensure visitorData is an array
+                    $visitorDataArray = is_array($visitorData) ? $visitorData : collect($visitorData)->toArray();
+
+                    // Format the visitor data
+                    $visitorDataFormatted = collect($visitorDataArray)->map(function ($item) {
+                        return [
+                            'date' => $item['date']->locale('ar')->isoFormat('D MMMM'), // Convert to Arabic date (e.g., '1 يناير')
+                            'visits' => $item['sessions'],
+                            'uniqueVisitors' => $item['users']
+                        ];
+                    })->toArray();
+
+                    // Calculate total visits and total unique visitors
+                    $totalVisits = collect($visitorDataArray)->sum('sessions');
+                    $totalUniqueVisitors = collect($visitorDataArray)->sum('users');
+
+                    $responseData = [
+                        'visitor_data' => $visitorDataFormatted,
+                        'total_visits' => $totalVisits,
+                        'total_unique_visitors' => $totalUniqueVisitors,
+                    ];
+
+                    // Store materialized data in database for each day
+                    $this->storeMaterializedVisitorsData($tenantId, $startDate, $endDate, $visitorDataArray);
+
+                    $lock->release();
+                    return response()->json($responseData);
+                } catch (\Exception $e) {
+                    $lock->release();
+                    Log::error('Failed to fetch/store visitors data', [
+                        'tenant_id' => $tenantId,
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date' => $endDate->format('Y-m-d'),
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    throw $e;
+                }
+            } else {
+                // Lock acquisition failed - wait a bit and retry with DB
+                sleep(1);
+                $cachedData = $this->getMaterializedVisitorsData($tenantId, $startDate, $endDate);
+                if ($cachedData !== null) {
+                    return response()->json($cachedData);
+                }
+                // If still no data, return empty response
+                return response()->json([
+                    'visitor_data' => [],
+                    'total_visits' => 0,
+                    'total_unique_visitors' => 0,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Lock acquisition failed for visitors data', [
+                'tenant_id' => $tenantId,
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date' => $endDate->format('Y-m-d'),
+                'error' => $e->getMessage(),
+            ]);
+            // Return empty response on error
+            return response()->json([
+                'visitor_data' => [],
+                'total_visits' => 0,
+                'total_unique_visitors' => 0,
+            ]);
+        }
     }
 
     protected function formatDuration($seconds)
@@ -120,20 +305,87 @@ class AnalyticsDashboardController extends Controller
 
     public function summary(Request $request, GoogleAnalyticsService $analytics)
     {
+        $startTime = microtime(true);
+        $cacheHit = false;
+        
         $user = $request->user();
         $tenantId = $user->username;
 
-        // Current period (last 7 days)
-        $startDate = Carbon::now()->subDays(7);
+        // Normalize Carbon::now() to compute once per request
         $endDate = Carbon::now();
 
-        // Previous period (last 14 days to 7 days ago)
-        $previousStartDate = Carbon::now()->subDays(14);
-        $previousEndDate = Carbon::now()->subDays(7);
+        // Current period (last 7 days)
+        $startDate = $endDate->copy()->subDays(7);
 
-        // Get current and previous overview data
-        $overview = $analytics->getDashboardData($tenantId, $startDate, $endDate)['overview'];
-        $previousOverview = $analytics->getDashboardData($tenantId, $previousStartDate, $previousEndDate)['overview'];
+        // Previous period (last 14 days to 7 days ago)
+        $previousStartDate = $endDate->copy()->subDays(14);
+        $previousEndDate = $endDate->copy()->subDays(7);
+
+        // OPTIMIZATION: Always query database first (materialized data)
+        $currentOverview = $this->getMaterializedSummaryData($tenantId, $startDate, $endDate);
+        $previousOverviewData = $this->getMaterializedSummaryData($tenantId, $previousStartDate, $previousEndDate);
+        
+        // Track data source for logging
+        $dataSource = 'database';
+        
+        // If we have both periods from database, use them
+        if ($currentOverview !== null && $previousOverviewData !== null) {
+            $cacheHit = true;
+            $overview = $currentOverview;
+            $previousOverview = $previousOverviewData;
+        } else {
+            // Fallback to GA API only if database has no data
+            $dataSource = 'mixed';
+            if ($currentOverview === null && $previousOverviewData === null) {
+                $dataSource = 'ga_api';
+            }
+            
+            try {
+                // Only fetch missing periods from GA API (not both if one exists)
+                if ($currentOverview === null) {
+                    $overview = $analytics->getOverviewMetricsOnly($tenantId, $startDate, $endDate);
+                    
+                    // Validate GA API response structure before processing
+                    if (!$this->validateOverviewResponse($overview, "current period ({$startDate->format('Y-m-d')} to {$endDate->format('Y-m-d')})")) {
+                        throw new \RuntimeException('Invalid GA API response structure - missing required keys');
+                    }
+                    
+                    // OPTIMIZATION: Store fetched GA API data in database for future requests
+                    // Note: We store aggregated data for the date range under the end date
+                    // This matches the materialization service pattern and allows getMaterializedSummaryData
+                    // to find it when querying the same date range. The data represents aggregated metrics
+                    // for the entire date range, not individual daily breakdowns.
+                    $this->storeSummaryDataSafely($tenantId, $endDate, $overview);
+                } else {
+                    $overview = $currentOverview;
+                }
+                
+                if ($previousOverviewData === null) {
+                    $previousOverview = $analytics->getOverviewMetricsOnly($tenantId, $previousStartDate, $previousEndDate);
+                    
+                    // Validate GA API response structure before processing
+                    if (!$this->validateOverviewResponse($previousOverview, "previous period ({$previousStartDate->format('Y-m-d')} to {$previousEndDate->format('Y-m-d')})")) {
+                        throw new \RuntimeException('Invalid GA API response structure - missing required keys');
+                    }
+                    
+                    // OPTIMIZATION: Store fetched GA API data in database for future requests
+                    // Note: We store aggregated data for the date range under the end date
+                    $this->storeSummaryDataSafely($tenantId, $previousEndDate, $previousOverview);
+                } else {
+                    $previousOverview = $previousOverviewData;
+                }
+            } catch (\Exception $e) {
+                // Graceful fallback for slow/failed GA requests
+                Log::warning('GA summary request failed', [
+                    'tenant_id' => $tenantId,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                // Use database data if available, otherwise return defaults
+                $overview = $currentOverview ?? ['sessions' => 0, 'pageViews' => 0, 'bounceRate' => 0, 'averageSessionDuration' => 0, 'users' => 0];
+                $previousOverview = $previousOverviewData ?? ['sessions' => 0, 'pageViews' => 0, 'bounceRate' => 0, 'averageSessionDuration' => 0, 'users' => 0];
+            }
+        }
 
         // Calculate changes
         $visitsChange = $overview['sessions'] - $previousOverview['sessions'];
@@ -143,17 +395,23 @@ class AnalyticsDashboardController extends Controller
         // Format average session time
         $formattedAverageTime = $this->formatDuration($overview['averageSessionDuration']);
 
-        $totalcustomers = ApiCustomer::where('user_id', $user->id)->count();
+        // OPTIMIZATION: Cache database queries (5 minutes cache)
+        $dbCacheKey = "summary:db:{$user->id}";
+        $dbData = Cache::remember($dbCacheKey, 300, function() use ($user) {
+            return [
+                'totalcustomers' => ApiCustomer::where('user_id', $user->id)->count(),
+                'purposeCounts' => DB::table('user_properties')
+                    ->where('user_id', $user->id)
+                    ->select('purpose', DB::raw('COUNT(*) as total'))
+                    ->groupBy('purpose')
+                    ->orderByDesc('total')
+                    ->get(),
+            ];
+        });
 
-        $purposeCounts = DB::table('user_properties')
-        ->where('user_id', $user->id)
-        ->select('purpose', DB::raw('COUNT(*) as total'))
-        ->groupBy('purpose')
-        ->orderByDesc('total')
-        ->get();
-
+        $totalcustomers = $dbData['totalcustomers'];
+        $purposeCounts = $dbData['purposeCounts'];
         $propertiesTotal = $purposeCounts->sum('total');
-
 
         return response()->json([
             'status' => 'success',
@@ -165,12 +423,11 @@ class AnalyticsDashboardController extends Controller
             'average_time_change' => 0,  // Add logic here if you want to compare average time between periods
             'bounce_rate' => $overview['bounceRate'],
             'bounce_rate_change' => $bounceRateChange,
-            'totalcustomers' =>$totalcustomers,
+            'totalcustomers' => $totalcustomers,
             'properties' => [
-                'total'    => $propertiesTotal,
+                'total' => $propertiesTotal,
                 'properties_purposes' => $purposeCounts,
             ],
-
         ]);
     }
 
@@ -178,91 +435,181 @@ class AnalyticsDashboardController extends Controller
 
     public function devices(Request $request, GoogleAnalyticsService $analytics)
     {
+        $startTime = microtime(true);
+        $cacheHit = false;
+        $dataSource = 'database';
+        
         $tenantId = $this->tenantId($request);
 
-        $startDate = Carbon::now()->subDays(7);
         $endDate = Carbon::now();
+        $startDate = $endDate->copy()->subDays(7);
 
-        // Build the tenant filter
-        $tenantFilter = new FilterExpression([
-            'filter' => new Filter([
-                'field_name' => 'customEvent:tenant_id',
-                'string_filter' => new StringFilter([
-                    'value' => $tenantId,
-                ]),
-            ]),
-        ]);
+        // Try to get from materialized data first
+        $cachedData = $this->getMaterializedDevicesData($tenantId, $startDate, $endDate);
+        
+        if ($cachedData !== null) {
+            $cacheHit = true;
+            
+            return response()->json($cachedData);
+        }
 
-        // Now pass the tenantFilter as the 4th argument
-        $devices = $analytics->getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter);
+        // Fallback to GA API
+        $dataSource = 'ga_api';
+        $tenantFilter = $this->buildTenantFilter($tenantId, false);
+        
+        try {
+            $devices = $analytics->getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter);
+            
+            // Validate and store fetched data
+            if (is_array($devices) && !empty($devices)) {
+                $this->storeDevicesDataSafely($tenantId, $endDate, $devices);
+            } else {
+                Log::warning('GA devices API returned empty array', [
+                    'tenant_id' => $tenantId,
+                    'date_range' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d')
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Graceful fallback for slow GA requests
+            Log::warning('GA devices request failed', [
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            $devices = [];
+        }
 
-        return response()->json(['devices' => $devices]);
+        return response()->json(['devices' => $devices ?? []]);
     }
 
     public function trafficSources(Request $request, GoogleAnalyticsService $analytics)
     {
+        $startTime = microtime(true);
+        $cacheHit = false;
+        $dataSource = 'database';
+        
         $tenantId = $this->tenantId($request);
-        // $tenantId = 'ress';
 
-        $startDate = Carbon::now()->subDays(7);
         $endDate = Carbon::now();
+        $startDate = $endDate->copy()->subDays(7);
 
-        $tenantFilter = new FilterExpression([
-            'filter' => new Filter([
-                'field_name' => 'customEvent:tenant_id',
-                'string_filter' => new StringFilter([
-                    'value' => $tenantId,
-                    'match_type' => StringFilter\MatchType::CONTAINS,
-                ]),
-            ]),
-        ]);
+        // Try to get from materialized data first
+        $cachedData = $this->getMaterializedTrafficSourcesData($tenantId, $startDate, $endDate);
+        
+        if ($cachedData !== null) {
+            $cacheHit = true;
+            
+            return response()->json($cachedData);
+        }
 
-        $sources = $analytics->getTrafficSources($startDate, $endDate, $tenantFilter);
+        // Fallback to GA API
+        $dataSource = 'ga_api';
+        $tenantFilter = $this->buildTenantFilter($tenantId, true);
+        
+        try {
+            $sources = $analytics->getTrafficSources($startDate, $endDate, $tenantFilter);
+            
+            // Validate and store fetched data
+            if (is_array($sources) && !empty($sources)) {
+                $this->storeTrafficSourcesDataSafely($tenantId, $endDate, $sources);
+            } else {
+                Log::warning('GA traffic sources API returned empty array', [
+                    'tenant_id' => $tenantId,
+                    'date_range' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d')
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Graceful fallback for slow GA requests
+            Log::warning('GA traffic sources request failed', [
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            $sources = [];
+        }
 
-        return response()->json(['sources' => $sources]);
+        return response()->json(['sources' => $sources ?? []]);
     }
 
     public function mostVisitedPages(Request $request, GoogleAnalyticsService $analytics)
     {
+        $startTime = microtime(true);
+        $cacheHit = false;
+        $dataSource = 'database';
+        
         $tenantId = $this->tenantId($request);
 
-        $startDate = Carbon::now()->subDays(7);
+        // Normalize Carbon::now() to compute once per request
         $endDate = Carbon::now();
+        $startDate = $endDate->copy()->subDays(7);
 
-        $pages = $analytics->getDashboardData($tenantId, $startDate, $endDate)['topPages'];
+        // Try to get from materialized data first
+        $cachedData = $this->getMaterializedTopPagesData($tenantId, $startDate, $endDate);
+        
+        if ($cachedData !== null) {
+            $cacheHit = true;
+            
+            return response()->json($cachedData);
+        }
 
-        $totalViews = collect($pages)->sum('pageViews');
+        // Fallback to GA API
+        $dataSource = 'ga_api';
+        
+        try {
+            $dashboardData = $analytics->getDashboardData($tenantId, $startDate, $endDate);
+            $pages = $dashboardData['topPages'] ?? [];
+            
+            if (!empty($pages)) {
+                $totalViews = collect($pages)->sum('pageViews');
 
-        $formattedPages = collect($pages)->map(function ($page) use ($totalViews) {
+                $formattedPages = collect($pages)->map(function ($page) use ($totalViews) {
+                    $percentage = $totalViews > 0 ? round(($page['pageViews'] / $totalViews) * 100, 2) : 0;
 
-            $percentage = $totalViews > 0 ? round(($page['pageViews'] / $totalViews) * 100, 2) : 0;
+                    $avgTime = isset($page['averageSessionDuration']) ? $this->formatDuration($page['averageSessionDuration']) : 'N/A';
 
-            $avgTime = isset($page['averageSessionDuration']) ? $this->formatDuration($page['averageSessionDuration']) : 'N/A';
+                    $uniqueVisitors = isset($page['users']) ? $page['users'] : 0;
 
-            $uniqueVisitors = isset($page['users']) ? $page['users'] : 0;
+                    $bounceRate = isset($page['bounceRate']) ? $page['bounceRate'] : 0.0;
 
-            $bounceRate = isset($page['bounceRate']) ? $page['bounceRate'] : 0.0;
+                    if (is_numeric($bounceRate)) {
+                        $bounceRate = (float)$bounceRate;
+                        $bounceRateFormatted = $bounceRate <= 1.0
+                            ? round($bounceRate * 100, 1)
+                            : round($bounceRate, 1);
+                    } else {
+                        $bounceRateFormatted = 0.0;
+                    }
 
-            if (is_numeric($bounceRate)) {
-                $bounceRate = (float)$bounceRate;
-                $bounceRateFormatted = $bounceRate <= 1.0
-                    ? round($bounceRate * 100, 1)
-                    : round($bounceRate, 1);
+                    return [
+                        'path' => $page['path'],
+                        'views' => $page['pageViews'],
+                        'unique_visitors' => $uniqueVisitors,
+                        'bounce_rate' => (float) $bounceRateFormatted,
+                        'avg_time' => $avgTime,
+                        'percentage' => $percentage,
+                    ];
+                })->toArray();
+                
+                // Store fetched data
+                $this->storeTopPagesDataSafely($tenantId, $endDate, $formattedPages);
             } else {
-                $bounceRateFormatted = 0.0;
+                Log::warning('GA most visited pages API returned empty array', [
+                    'tenant_id' => $tenantId,
+                    'date_range' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d')
+                ]);
+                $formattedPages = [];
             }
+        } catch (\Exception $e) {
+            // Graceful fallback for slow/failed GA requests
+            Log::warning('GA most visited pages request failed', [
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            $formattedPages = [];
+        }
 
-            return [
-                'path' => $page['path'],
-                'views' => $page['pageViews'],
-                'unique_visitors' => $uniqueVisitors,
-                'bounce_rate' => (float) $bounceRateFormatted,
-                'avg_time' => $avgTime,
-                'percentage' => $percentage,
-            ];
-        });
-
-        return response()->json(['pages' => $formattedPages]);
+        return response()->json(['pages' => $formattedPages ?? []]);
     }
 
     protected function translateDeviceName($deviceName)
@@ -289,7 +636,484 @@ class AnalyticsDashboardController extends Controller
         ];
 
         return $translations[$sourceName] ?? $sourceName;
+    }
+
+    /**
+     * Get materialized visitors data for date range
+     */
+    protected function getMaterializedVisitorsData(string $tenantId, Carbon $start, Carbon $end): ?array
+    {
+        // Query analytics_daily_summary for date range
+        $records = AnalyticsDailySummary::forTenant($tenantId)
+            ->forDateRange($start, $end)
+            ->get();
+            
+        if ($records->isEmpty()) {
+            return null;
         }
+        
+        // Merge data from multiple days - extract visitors metric from each day's data
+        $allVisitorData = [];
+        $totalVisits = 0;
+        $totalUniqueVisitors = 0;
+        
+        foreach ($records as $record) {
+            $dayData = $record->data;
+            if (isset($dayData['visitors']) && is_array($dayData['visitors'])) {
+                $visitorsData = $dayData['visitors'];
+                if (isset($visitorsData['visitor_data']) && is_array($visitorsData['visitor_data'])) {
+                    $allVisitorData = array_merge($allVisitorData, $visitorsData['visitor_data']);
+                    $totalVisits += $visitorsData['total_visits'] ?? 0;
+                    $totalUniqueVisitors += $visitorsData['total_unique_visitors'] ?? 0;
+                }
+            }
+        }
+        
+        // If we have data, return it
+        if (!empty($allVisitorData)) {
+            return [
+                'visitor_data' => $allVisitorData,
+                'total_visits' => $totalVisits,
+                'total_unique_visitors' => $totalUniqueVisitors,
+            ];
+        }
+        
+        return null;
+    }
+
+    /**
+     * Store materialized visitors data in database
+     * Stores each day's data separately using storeMetric
+     * 
+     * @param string $tenantId
+     * @param Carbon $start Start date of the range
+     * @param Carbon $end End date of the range
+     * @param array $visitorData Raw visitor data from GA API (array of daily data points)
+     * @return void
+     */
+    protected function storeMaterializedVisitorsData(string $tenantId, Carbon $start, Carbon $end, array $visitorData): void
+    {
+        // Only store if materialization is enabled
+        if (!config('analytics.materialization.enabled', true)) {
+            return;
+        }
+
+        try {
+            // Group visitor data by date
+            $dataByDate = [];
+            foreach ($visitorData as $item) {
+                $date = $item['date']->format('Y-m-d');
+                if (!isset($dataByDate[$date])) {
+                    $dataByDate[$date] = [];
+                }
+                $dataByDate[$date][] = $item;
+            }
+
+            // Store each day's data separately
+            foreach ($dataByDate as $dateStr => $dayData) {
+                $targetDate = Carbon::parse($dateStr);
+                
+                // Skip today's data (will be synced by scheduled job)
+                if ($targetDate->isToday()) {
+                    continue;
+                }
+
+                // Format data to match API response structure
+                $formattedData = collect($dayData)->map(function ($item) {
+                    return [
+                        'date' => $item['date']->locale('ar')->isoFormat('D MMMM'), // Arabic date format
+                        'visits' => $item['sessions'],
+                        'uniqueVisitors' => $item['users']
+                    ];
+                })->toArray();
+
+                // Calculate totals for this day
+                $totalVisits = collect($dayData)->sum('sessions');
+                $totalUniqueVisitors = collect($dayData)->sum('users');
+
+                // Store using atomic JSON_SET (won't overwrite other metrics)
+                AnalyticsDailySummary::storeMetric(
+                    $tenantId,
+                    $targetDate,
+                    'visitors',
+                    [
+                        'visitor_data' => $formattedData,
+                        'total_visits' => $totalVisits,
+                        'total_unique_visitors' => $totalUniqueVisitors,
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to store materialized visitors data', [
+                'tenant_id' => $tenantId,
+                'start_date' => $start->format('Y-m-d'),
+                'end_date' => $end->format('Y-m-d'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Don't throw - allow request to complete even if storage fails
+        }
+    }
+
+    /**
+     * Get materialized traffic sources data - improved to check date range
+     */
+    protected function getMaterializedTrafficSourcesData(string $tenantId, Carbon $start, Carbon $end): ?array
+    {
+        // Try to get most recent data within the date range
+        // Check yesterday first, then today, then any date in range
+        $datesToCheck = [
+            $end->copy()->subDay(), // Yesterday
+            $end->copy(), // Today
+        ];
+        
+        // Also check a few days back in the range
+        for ($i = 2; $i <= 7 && $i <= $start->diffInDays($end); $i++) {
+            $datesToCheck[] = $end->copy()->subDays($i);
+        }
+        
+        foreach ($datesToCheck as $checkDate) {
+            $record = AnalyticsDailySummary::forTenant($tenantId)
+                ->forDate($checkDate)
+                ->first();
+                
+            if ($record && isset($record->data['traffic_sources']['sources']) && !empty($record->data['traffic_sources']['sources'])) {
+                return ['sources' => $record->data['traffic_sources']['sources']];
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Get materialized devices data - improved to check date range
+     */
+    protected function getMaterializedDevicesData(string $tenantId, Carbon $start, Carbon $end): ?array
+    {
+        // Try to get most recent data within the date range
+        // Check yesterday first, then today, then any date in range
+        $datesToCheck = [
+            $end->copy()->subDay(), // Yesterday
+            $end->copy(), // Today
+        ];
+        
+        // Also check a few days back in the range
+        for ($i = 2; $i <= 7 && $i <= $start->diffInDays($end); $i++) {
+            $datesToCheck[] = $end->copy()->subDays($i);
+        }
+        
+        foreach ($datesToCheck as $checkDate) {
+            $record = AnalyticsDailySummary::forTenant($tenantId)
+                ->forDate($checkDate)
+                ->first();
+                
+            if ($record && isset($record->data['devices']['devices']) && !empty($record->data['devices']['devices'])) {
+                return ['devices' => $record->data['devices']['devices']];
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Get materialized top pages data - improved to check date range
+     */
+    protected function getMaterializedTopPagesData(string $tenantId, Carbon $start, Carbon $end): ?array
+    {
+        // Try to get most recent data within the date range
+        // Check yesterday first, then today, then any date in range
+        $datesToCheck = [
+            $end->copy()->subDay(), // Yesterday
+            $end->copy(), // Today
+        ];
+        
+        // Also check a few days back in the range
+        for ($i = 2; $i <= 7 && $i <= $start->diffInDays($end); $i++) {
+            $datesToCheck[] = $end->copy()->subDays($i);
+        }
+        
+        foreach ($datesToCheck as $checkDate) {
+            $record = AnalyticsDailySummary::forTenant($tenantId)
+                ->forDate($checkDate)
+                ->first();
+                
+            if ($record && isset($record->data['top_pages']['pages']) && !empty($record->data['top_pages']['pages'])) {
+                return ['pages' => $record->data['top_pages']['pages']];
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Store summary data safely - uses atomic JSON_SET to prevent race conditions
+     * 
+     * @param string $tenantId
+     * @param Carbon $date The date to store the data under
+     * @param array $overview The overview data from GA API
+     * @return bool True if stored successfully, false otherwise
+     */
+    protected function storeSummaryDataSafely(string $tenantId, Carbon $date, array $overview): bool
+    {
+        // Validate response structure before storage
+        $requiredKeys = ['sessions', 'pageViews', 'bounceRate', 'averageSessionDuration', 'users'];
+        foreach ($requiredKeys as $key) {
+            if (!isset($overview[$key])) {
+                Log::warning('Invalid GA API response structure - missing key', [
+                    'tenant_id' => $tenantId,
+                    'date' => $date->format('Y-m-d'),
+                    'missing_key' => $key,
+                    'available_keys' => array_keys($overview)
+                ]);
+                return false;
+            }
+        }
+
+        try {
+            // JSON_SET is atomic, so no cache lock needed
+            AnalyticsDailySummary::storeMetric(
+                $tenantId,
+                $date,
+                'summary',
+                ['overview' => $overview]
+            );
+            return true;
+        } catch (\Exception $e) {
+            Log::warning('Failed to store GA API data in database', [
+                'tenant_id' => $tenantId,
+                'date' => $date->format('Y-m-d'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Validate GA API overview response structure
+     * 
+     * @param array $overview The overview data from GA API
+     * @param string $context Context for error messages (e.g., 'current period', 'previous period')
+     * @return bool True if valid, false otherwise
+     */
+    protected function validateOverviewResponse(array $overview, string $context = ''): bool
+    {
+        $requiredKeys = ['sessions', 'pageViews', 'bounceRate', 'averageSessionDuration', 'users'];
+        $missingKeys = [];
+        
+        foreach ($requiredKeys as $key) {
+            if (!isset($overview[$key])) {
+                $missingKeys[] = $key;
+            }
+        }
+        
+        if (!empty($missingKeys)) {
+            Log::error('Invalid GA API response structure', [
+                'context' => $context,
+                'missing_keys' => $missingKeys,
+                'available_keys' => array_keys($overview)
+            ]);
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Store devices data safely - uses atomic JSON_SET to prevent race conditions
+     * 
+     * @param string $tenantId
+     * @param Carbon $date The date to store the data under
+     * @param array $devices The devices data from GA API
+     * @return bool True if stored successfully, false otherwise
+     */
+    protected function storeDevicesDataSafely(string $tenantId, Carbon $date, array $devices): bool
+    {
+        if (empty($devices)) {
+            return false;
+        }
+        
+        try {
+            // JSON_SET is atomic, so no cache lock needed
+            AnalyticsDailySummary::storeMetric(
+                $tenantId,
+                $date,
+                'devices',
+                ['devices' => $devices]
+            );
+            return true;
+        } catch (\Exception $e) {
+            Log::warning('Failed to store devices data in database', [
+                'tenant_id' => $tenantId,
+                'date' => $date->format('Y-m-d'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Store traffic sources data safely - uses atomic JSON_SET to prevent race conditions
+     * 
+     * @param string $tenantId
+     * @param Carbon $date The date to store the data under
+     * @param array $sources The traffic sources data from GA API
+     * @return bool True if stored successfully, false otherwise
+     */
+    protected function storeTrafficSourcesDataSafely(string $tenantId, Carbon $date, array $sources): bool
+    {
+        if (empty($sources)) {
+            return false;
+        }
+        
+        try {
+            // JSON_SET is atomic, so no cache lock needed
+            AnalyticsDailySummary::storeMetric(
+                $tenantId,
+                $date,
+                'traffic_sources',
+                ['sources' => $sources]
+            );
+            return true;
+        } catch (\Exception $e) {
+            Log::warning('Failed to store traffic sources data in database', [
+                'tenant_id' => $tenantId,
+                'date' => $date->format('Y-m-d'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Store top pages data safely - uses atomic JSON_SET to prevent race conditions
+     * 
+     * @param string $tenantId
+     * @param Carbon $date The date to store the data under
+     * @param array $pages The top pages data from GA API
+     * @return bool True if stored successfully, false otherwise
+     */
+    protected function storeTopPagesDataSafely(string $tenantId, Carbon $date, array $pages): bool
+    {
+        if (empty($pages)) {
+            return false;
+        }
+        
+        try {
+            // JSON_SET is atomic, so no cache lock needed
+            AnalyticsDailySummary::storeMetric(
+                $tenantId,
+                $date,
+                'top_pages',
+                ['pages' => $pages]
+            );
+            return true;
+        } catch (\Exception $e) {
+            Log::warning('Failed to store top pages data in database', [
+                'tenant_id' => $tenantId,
+                'date' => $date->format('Y-m-d'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Get materialized summary data for date range (aggregates across days)
+     * OPTIMIZED: Uses SQL aggregation instead of PHP loops for better performance
+     */
+    protected function getMaterializedSummaryData(string $tenantId, Carbon $start, Carbon $end): ?array
+    {
+        try {
+            // OPTIMIZATION: Use SQL aggregation - much faster than PHP loops
+            // This aggregates all days in the date range in a single query
+            // Note: data structure changed - summary is now at $.summary.overview
+            $result = DB::table('analytics_daily_summary')
+                ->where('tenant_id', $tenantId)
+                ->whereBetween('date', [
+                    $start->format('Y-m-d'),
+                    $end->format('Y-m-d')
+                ])
+                ->selectRaw('
+                    COALESCE(SUM(CAST(JSON_EXTRACT(data, "$.summary.overview.pageViews") AS UNSIGNED)), 0) as pageViews,
+                    COALESCE(SUM(CAST(JSON_EXTRACT(data, "$.summary.overview.sessions") AS UNSIGNED)), 0) as sessions,
+                    COALESCE(SUM(CAST(JSON_EXTRACT(data, "$.summary.overview.users") AS UNSIGNED)), 0) as users,
+                    COALESCE(AVG(CAST(JSON_EXTRACT(data, "$.summary.overview.bounceRate") AS DECIMAL(10,4))), 0) as bounceRate,
+                    COALESCE(AVG(CAST(JSON_EXTRACT(data, "$.summary.overview.averageSessionDuration") AS DECIMAL(10,2))), 0) as averageSessionDuration,
+                    COUNT(*) as rowCount
+                ')
+                ->first();
+            
+            // Check if we have any data
+            if (!$result || $result->rowCount == 0) {
+                return null;
+            }
+            
+            return [
+                'pageViews' => (int) $result->pageViews,
+                'sessions' => (int) $result->sessions,
+                'users' => (int) $result->users,
+                'bounceRate' => (float) $result->bounceRate,
+                'averageSessionDuration' => (float) $result->averageSessionDuration,
+            ];
+        } catch (\Exception $e) {
+            // Fallback to Eloquent with PHP aggregation if SQL JSON extraction fails
+            // This handles edge cases or database compatibility issues
+            Log::warning('SQL aggregation failed, falling back to Eloquent', [
+                'tenant_id' => $tenantId,
+                'start_date' => $start->format('Y-m-d'),
+                'end_date' => $end->format('Y-m-d'),
+                'error' => $e->getMessage()
+            ]);
+            
+            // Fallback: Use Eloquent model with PHP aggregation (original method)
+            $records = AnalyticsDailySummary::forTenant($tenantId)
+                ->forDateRange($start, $end)
+                ->get();
+                
+            if ($records->isEmpty()) {
+                return null;
+            }
+            
+            // Aggregate overview metrics across all days
+            $totals = [
+                'pageViews' => 0,
+                'sessions' => 0,
+                'users' => 0,
+                'bounceRateSum' => 0,
+                'durationSum' => 0,
+                'rowCount' => 0,
+            ];
+            
+            foreach ($records as $record) {
+                // Extract summary data from consolidated JSON structure
+                if (isset($record->data['summary']['overview'])) {
+                    $overview = $record->data['summary']['overview'];
+                    $totals['pageViews'] += $overview['pageViews'] ?? 0;
+                    $totals['sessions'] += $overview['sessions'] ?? 0;
+                    $totals['users'] += $overview['users'] ?? 0;
+                    $totals['bounceRateSum'] += $overview['bounceRate'] ?? 0;
+                    $totals['durationSum'] += $overview['averageSessionDuration'] ?? 0;
+                    $totals['rowCount']++;
+                }
+            }
+            
+            if ($totals['rowCount'] === 0) {
+                return null;
+            }
+            
+            return [
+                'pageViews' => $totals['pageViews'],
+                'sessions' => $totals['sessions'],
+                'users' => $totals['users'],
+                'bounceRate' => $totals['bounceRateSum'] / $totals['rowCount'],
+                'averageSessionDuration' => $totals['durationSum'] / $totals['rowCount'],
+            ];
+        }
+    }
 
 
 
@@ -308,41 +1132,144 @@ class AnalyticsDashboardController extends Controller
         ]);
     }
 
-    public function getRecentActivity(Request $request, GoogleAnalyticsService $analytics)
+    public function getRecentActivity(Request $request)
     {
         $user = $request->user();
-        $tenantId = $user->username;
+        $tenantOwnerId = $user->tenantOwnerId();
 
-        $startDate = Carbon::now()->subDays(7);
-        $endDate = Carbon::now();
+        // Get optional filters
+        $limit = max(1, min(100, (int) $request->input('limit', 50)));
+        $actorId = $request->input('actor_id');
+        $action = $request->input('action');
 
-        // Get the recent events data from Google Analytics
-        $events = $analytics->getRecentEvents($startDate, $endDate, $tenantId);
+        // Build query for tenant-wide activity logs with eager loading to avoid N+1
+        // Only eager load actor when actor_id is not null to avoid unnecessary queries
+        $query = EmployeeActivityLog::with([
+                'actor' => function ($query) {
+                    $query->select('id', 'first_name', 'last_name', 'username', 'email');
+                }
+            ])
+            ->where('user_id', $tenantOwnerId)
+            ->when($actorId, fn($q) => $q->where('actor_id', (int) $actorId))
+            ->when($action, fn($q) => $q->where('action', $action))
+            ->orderByDesc('created_at')
+            ->limit($limit);
 
-        // Map over the events to match your desired format
-        $activities = collect($events)->map(function ($event, $key) {
-            // Simulate the time calculation (this needs to be replaced with your actual logic)
-            // You can use event['created_at'] for actual date difference calculations
-            $created_at = Carbon::parse($event['created_at'] ?? now());
-            $time = $created_at->diffForHumans();
+        $logs = $query->get();
 
-            // Ensure the 'users' key exists, otherwise, use a default value of 0
-            $uniqueVisitors = $event['users'] ?? 0;
+        // Map logs to frontend format
+        $activities = $logs->map(function ($log) {
+            $actor = $log->actor;
+            $userName = $this->getUserName($actor);
 
             return [
-                'id' => $event['id'] ?? $key + 1, // Default ID if not present
-                'action' => $event['action'] ?? 'No Action', // Default action if not present
-                'section' => $event['section'] ?? 'No Section', // Default section if not present
-                'time' => $time,
-                'icon' => $event['icon'] ?? 'file-text', // Default icon if not present
-                'user_id' => $event['user_id'] ?? 1, // Default user_id if not present
-                'created_at' => $event['created_at'] ?? Carbon::now()->toISOString(), // Default created_at if not present
+                'id' => $log->id,
+                'action' => $log->action ?? 'Unknown Action',
+                'section' => $this->getSectionFromTargetType($log->target_type),
+                'time' => $log->created_at ? $log->created_at->diffForHumans() : 'just now',
+                'icon' => $this->getIconForTargetType($log->target_type, $log->action),
+                'actor_id' => $log->actor_id,
+                'actor_name' => $userName,
+                'created_at' => $log->created_at ? $log->created_at->toISOString() : Carbon::now()->toISOString(),
             ];
         });
 
         return response()->json([
             'activities' => $activities
         ]);
+    }
+
+    /**
+     * Get user name from actor model
+     */
+    protected function getUserName(?User $actor): string
+    {
+        if (!$actor) {
+            return 'Unknown User';
+        }
+
+        // Try to get full name first
+        $fullName = trim(($actor->first_name ?? '') . ' ' . ($actor->last_name ?? ''));
+        if ($fullName) {
+            return $fullName;
+        }
+
+        // Fallback to username or email
+        return $actor->username ?? $actor->email ?? 'Unknown User';
+    }
+
+    /**
+     * Get section name from target_type (model class name)
+     */
+    protected function getSectionFromTargetType(?string $targetType): string
+    {
+        if (!$targetType) {
+            return 'General';
+        }
+
+        // Extract class basename if it's a full class name
+        $basename = class_basename($targetType);
+        
+        // Map common model names to readable section names
+        $sectionMap = [
+            'Property' => 'Properties',
+            'ApiCustomer' => 'Customers',
+            'CrmCard' => 'CRM',
+            'CrmRequest' => 'CRM',
+            'RmRental' => 'Rentals',
+            'RmContract' => 'Contracts',
+            'RmPayment' => 'Payments',
+            'RmMaintenanceTicket' => 'Maintenance',
+            'UserPropertyRequest' => 'Property Requests',
+            'ApiCustomerInquiry' => 'Inquiries',
+        ];
+
+        return $sectionMap[$basename] ?? $basename;
+    }
+
+    /**
+     * Get icon name for target type and action
+     */
+    protected function getIconForTargetType(?string $targetType, ?string $action): string
+    {
+        if (!$targetType) {
+            return 'activity';
+        }
+
+        $basename = class_basename($targetType);
+
+        // Icon mapping based on target type
+        $iconMap = [
+            'Property' => 'home',
+            'ApiCustomer' => 'user',
+            'CrmCard' => 'briefcase',
+            'CrmRequest' => 'file-text',
+            'RmRental' => 'file-text',
+            'RmContract' => 'file-text',
+            'RmPayment' => 'dollar-sign',
+            'RmMaintenanceTicket' => 'tool',
+            'UserPropertyRequest' => 'search',
+            'ApiCustomerInquiry' => 'message-circle',
+        ];
+
+        // Action-based icon overrides
+        if ($action) {
+            $actionLower = strtolower($action);
+            if (str_contains($actionLower, 'create') || str_contains($actionLower, 'add')) {
+                return 'plus-circle';
+            }
+            if (str_contains($actionLower, 'update') || str_contains($actionLower, 'edit')) {
+                return 'edit';
+            }
+            if (str_contains($actionLower, 'delete') || str_contains($actionLower, 'remove')) {
+                return 'trash';
+            }
+            if (str_contains($actionLower, 'view') || str_contains($actionLower, 'show')) {
+                return 'eye';
+            }
+        }
+
+        return $iconMap[$basename] ?? 'file-text';
     }
 
     //  user customers

@@ -425,6 +425,13 @@
     "Location":"الموقع",
     "real_estate_Limit":"حد العقارات",
     "projectLimit":"حد المشروع",
+    "Project Limit": "حد المشروع",
+    "Real Estate Limit": "حد العقارات",
+    "Real estate Limit": "حد العقارات",
+    "WhatsApp Limit": "حد واتساب",
+    "Project Number Limit": "الحد الأقصى لعدد المشروع",
+    "Real Estate Number Limit": "الحد الأقصى لعدد العقارات",
+    "WhatsApp Number Limit": "الحد الأقصى لأرقام واتساب",
     "Enter Phone Number": "أدخل رقم الهاتف",
 
     "virtual_tour": "جولة افتراضية"

@@ -18,17 +18,17 @@ class UserApiCustomerProcedureController extends Controller
             'direction' => 'required|in:up,down',
         ]);
 
-        $proc = UserApiCustomerProcedure::where('user_id', $user->id)->findOrFail($id);
+        $proc = UserApiCustomerProcedure::where('user_id', $request->user()->tenantOwnerId())->findOrFail($id);
 
         $currentOrder = $proc->order;
 
         if ($validated['direction'] === 'up') {
-            $adjacent = UserApiCustomerProcedure::where('user_id', $user->id)
+            $adjacent = UserApiCustomerProcedure::where('user_id', $request->user()->tenantOwnerId())
                 ->where('order', '<', $currentOrder)
                 ->orderBy('order', 'desc')
                 ->first();
         } else {
-            $adjacent = UserApiCustomerProcedure::where('user_id', $user->id)
+            $adjacent = UserApiCustomerProcedure::where('user_id', $request->user()->tenantOwnerId())
                 ->where('order', '>', $currentOrder)
                 ->orderBy('order', 'asc')
                 ->first();
@@ -64,9 +64,9 @@ class UserApiCustomerProcedureController extends Controller
             'order.*' => 'integer|exists:users_api_customers_procedures,id',
         ]);
 
-        DB::transaction(function () use ($validated, $user) {
+        DB::transaction(function () use ($validated, $request) {
             foreach ($validated['order'] as $index => $procId) {
-                UserApiCustomerProcedure::where('user_id', $user->id)
+                UserApiCustomerProcedure::where('user_id', $request->user()->tenantOwnerId())
                     ->where('id', $procId)
                     ->update(['order' => $index + 1]);
             }
@@ -82,7 +82,7 @@ class UserApiCustomerProcedureController extends Controller
     {
         $user = $request->user();
 
-        $procs = UserApiCustomerProcedure::where('user_id', $user->id)
+        $procs = UserApiCustomerProcedure::where('user_id', $request->user()->tenantOwnerId())
             ->orderBy('order')
             ->get();
 
@@ -105,7 +105,7 @@ class UserApiCustomerProcedureController extends Controller
             'is_active'   => 'boolean',
         ]);
 
-        $validated['user_id'] = $user->id;
+        $validated['user_id'] = $request->user()->tenantOwnerId();
 
         $proc = UserApiCustomerProcedure::create($validated);
 
@@ -118,7 +118,7 @@ class UserApiCustomerProcedureController extends Controller
     {
         $user = $request->user();
 
-        $proc = UserApiCustomerProcedure::where('user_id',$user->id)->findOrFail($id);
+        $proc = UserApiCustomerProcedure::where('user_id',$request->user()->tenantOwnerId())->findOrFail($id);
 
         return response()->json(['status'=>'success','data'=>$proc]);
     }
@@ -127,7 +127,7 @@ class UserApiCustomerProcedureController extends Controller
     {
         $user = $request->user();
 
-        $proc = UserApiCustomerProcedure::where('user_id',$user->id)->findOrFail($id);
+        $proc = UserApiCustomerProcedure::where('user_id',$request->user()->tenantOwnerId())->findOrFail($id);
 
         $validated = $request->validate([
             'procedure_name' => [
@@ -152,7 +152,7 @@ class UserApiCustomerProcedureController extends Controller
     {
         $user = $request->user();
 
-        $proc = UserApiCustomerProcedure::where('user_id',$user->id)->findOrFail($id);
+        $proc = UserApiCustomerProcedure::where('user_id',$request->user()->tenantOwnerId())->findOrFail($id);
         $proc->delete();
 
         return response()->json(['status'=>'success','message'=>'Procedure type deleted successfully']);

@@ -9,14 +9,22 @@ class PopulateAuditContext
 {
     public function handle($request, Closure $next)
     {
-        $user = $request->user(); // sanctum user (tenant OR employee in  design)
-        // decide actor_type from  users table: employee vs user(tenant)
-        $type = $user?->type === 'employee' ? 'employee' : 'tenant';
+        $user = $request->user(); // sanctum user (tenant OR employee in design)
+
+        if ($user && method_exists($user, 'isEmployee')) {
+            // Use account_type to determine actor type
+            $actorType = $user->isEmployee() ? 'employee' : 'tenant';
+            // Use tenantOwnerId() to get the tenant id for both employees and tenants
+            $tenantId = $user->tenantOwnerId();
+        } else {
+            $actorType = 'system';
+            $tenantId = null;
+        }
 
         AuditContext::set(
             actorId: $user?->id,
-            actorType: $type,
-            tenantId: $user?->id ?? null, // or $user->tenant_id if separate tenant id
+            actorType: $actorType,
+            tenantId: $tenantId,
             ip_address: $request->ip(),
             ua: substr($request->userAgent() ?? '', 0, 255)
         );

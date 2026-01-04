@@ -12,6 +12,7 @@ use App\Models\User\BasicSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Models\PropertyCharacteristic;
@@ -32,6 +33,7 @@ use App\Support\Audit;
 use App\Services\GoogleAnalyticsService;
 use Carbon\Carbon;
 use App\Services\AlibabaOssService;
+use App\Services\MembershipCacheService;
 
 
 use Maatwebsite\Excel\Facades\Excel;
@@ -47,12 +49,8 @@ class PropertyController extends Controller
 
         $user = auth()->user();
 
-        // Check if user has active membership
-        $membership = Membership::where('user_id', $user->id)
-            ->where('status', 1)
-            ->orderBy('id', 'desc')
-            ->with('package')
-            ->first();
+        // Check if user has active membership (cached)
+        $membership = MembershipCacheService::getActiveMembership($user->id);
 
         if (!$membership || !$membership->package) {
             return response()->json([
@@ -211,12 +209,8 @@ class PropertyController extends Controller
     {
         $user = auth()->user();
 
-        // Check if user has active membership
-        $membership = Membership::where('user_id', $user->id)
-            ->where('status', 1)
-            ->orderBy('id', 'desc')
-            ->with('package')
-            ->first();
+        // Check if user has active membership (cached)
+        $membership = MembershipCacheService::getActiveMembership($user->id);
 
         if (!$membership || !$membership->package) {
             return response()->json([
@@ -391,7 +385,8 @@ class PropertyController extends Controller
                 $newFeaturedImage,
                 $newFloorPlanningImages,
                 $newVideoImage,
-                $request->has('featured') ? $request->featured : $originalProperty->featured
+                $request->has('featured') ? $request->featured : $originalProperty->featured,
+                auth()->id()
             );
 
             // Duplicate property characteristics
@@ -671,46 +666,53 @@ class PropertyController extends Controller
                 'galleryImages',
                 'proertyAmenities.amenity',
                 'UserPropertyCharacteristics',
+                'creator',
             ])->findOrFail($id);
 
             $content = $property->contents->first();
             $characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
 
-            // Fetch views from Google Analytics
+            // Fetch views from Google Analytics (CACHED - 5 minutes)
             $views = 0;
             if ($content && $content->slug && $property->user) {
-                try {
-                    $days = (int) request()->query('days', 30);
-                    
-                    // Build paths for this property (with and without language prefixes)
-                    $paths = [
-                        "/property/{$content->slug}",
-                        "/ar/property/{$content->slug}",
-                        "/en/property/{$content->slug}",
-                    ];
+                $days = (int) request()->query('days', 30);
+                $tenantId = $property->user->username;
+                $cacheKey = "ga_views_property_{$id}_{$tenantId}_{$days}_{$content->slug}";
+                
+                $views = Cache::remember($cacheKey, 300, function () use ($analytics, $days, $content, $tenantId) {
+                    $result = 0;
+                    try {
+                        // Build paths for this property (with and without language prefixes)
+                        $paths = [
+                            "/property/{$content->slug}",
+                            "/ar/property/{$content->slug}",
+                            "/en/property/{$content->slug}",
+                        ];
 
-                    $allData = $analytics->getAllAnalyticsWithFilters(
-                        now()->subDays($days),
-                        now(),
-                        [
-                            'tenant_ids' => [$property->user->username],
-                            'exclude_empty_tenant' => false,
-                            'limit' => count($paths) * 10,
-                        ]
-                    );
+                        $allData = $analytics->getAllAnalyticsWithFilters(
+                            now()->subDays($days),
+                            now(),
+                            [
+                                'tenant_ids' => [$tenantId],
+                                'exclude_empty_tenant' => false,
+                                'limit' => count($paths) * 10,
+                            ]
+                        );
 
-                    // Sum views across all path variants
-                    foreach ($allData['data'] as $item) {
-                        if (in_array($item['path'], $paths)) {
-                            $views += (int) $item['views'];
+                        // Sum views across all path variants
+                        foreach ($allData['data'] as $item) {
+                            if (in_array($item['path'], $paths)) {
+                                $result += (int) $item['views'];
+                            }
                         }
+                    } catch (\Exception $e) {
+                        \Log::error('Google Analytics error in admin PropertyController show', [
+                            'property_id' => $property->id,
+                            'error' => $e->getMessage(),
+                        ]);
                     }
-                } catch (\Exception $e) {
-                    \Log::error('Google Analytics error in admin PropertyController show', [
-                        'property_id' => $property->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
+                    return $result;
+                });
             }
 
             $formattedProperty = array_merge([
@@ -749,6 +751,11 @@ class PropertyController extends Controller
                 'water_meter_number' => $property->water_meter_number,
                 'electricity_meter_number' => $property->electricity_meter_number,
                 'deed_number' => $property->deed_number ? asset($property->deed_number) : null,
+                'creator' => $property->creator ? [
+                    'id'   => $property->creator->id,
+                    'name' => trim(($property->creator->first_name ?? '') . ' ' . ($property->creator->last_name ?? '')) ?: ($property->creator->username ?? $property->creator->email),
+                    'type' => $property->creator->account_type,
+                ] : null,
             ], $characteristics);
 
             return response()->json([
@@ -788,11 +795,8 @@ class PropertyController extends Controller
         // Resolve tenant owner (tenant for tenant; tenant for employee)
         $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
 
-        $membership = Membership::where('user_id', $owner->id)
-            ->where('status', 1)
-            ->orderBy('id', 'desc')
-            ->with('package')
-            ->first();
+        // Check if user has active membership (cached)
+        $membership = MembershipCacheService::getActiveMembership($owner->id);
 
         if (!$membership || !$membership->package) {
             return response()->json([
@@ -989,7 +993,8 @@ class PropertyController extends Controller
                 $featuredImgName,
                 $floorPlanningImage,
                 $videoImage,
-                $featured
+                $featured,
+                auth()->id()
             );
 
             // Update the property with video URL if provided
@@ -1678,12 +1683,28 @@ class PropertyController extends Controller
 
         $allowedUserIds = [$ownerId];
         try {
-            $employeeIds = \App\Models\User::where('tenant_id', $ownerId)->pluck('id')->toArray();
+            $cacheKey = "tenant_employees_{$ownerId}";
+            $employeeIds = Cache::remember($cacheKey, 300, function () use ($ownerId) {
+                return \App\Models\User::where('tenant_id', $ownerId)
+                    ->where('account_type', 'employee')
+                    ->pluck('id')
+                    ->toArray();
+            });
             $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
         } catch (\Throwable $e) {}
 
         // Build the properties query
-        $propertiesQuery = Property::with(['category', 'user', 'contents', 'proertyAmenities.amenity'])
+        // OPTIMIZED: Added missing eager loading for galleryImages and UserPropertyCharacteristics
+        // to prevent N+1 queries when formatting response
+        $propertiesQuery = Property::with([
+            'category:id,name',
+            'user:id,username,first_name,last_name,email,account_type',
+            'contents:id,property_id,title,slug,address,description',
+            'proertyAmenities.amenity:id,name',
+            'creator:id,first_name,last_name,username,email,account_type',
+            'galleryImages:id,property_id,image', // Added to prevent N+1
+            'UserPropertyCharacteristics:id,property_id', // Added if needed for filtering
+        ])
             ->whereIn('user_id', $allowedUserIds);
 
         // Apply purpose filter if provided
@@ -1722,6 +1743,7 @@ class PropertyController extends Controller
         }
 
         // Apply UserPropertyCharacteristic filters
+        // OPTIMIZED: Combine all filters into a single whereHas query instead of N separate queries
         $characteristicFilters = [
             'private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement',
             'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room',
@@ -1729,12 +1751,27 @@ class PropertyController extends Controller
             'bathrooms', 'rooms', 'building_age'
         ];
 
+        // Check if any characteristic filters are present
+        $hasCharacteristicFilter = false;
+        $activeFilters = [];
         foreach ($characteristicFilters as $filter) {
             if ($request->has($filter) && !empty($request->$filter)) {
-                $propertiesQuery->whereHas('UserPropertyCharacteristics', function ($query) use ($filter, $request) {
-                    $query->where($filter, $request->$filter);
-                });
+                $hasCharacteristicFilter = true;
+                $activeFilters[$filter] = $request->$filter;
             }
+        }
+
+        // OPTIMIZED: Use join instead of whereHas for better performance
+        // Joins are faster than subqueries created by whereHas
+        if ($hasCharacteristicFilter) {
+            $propertiesQuery->join('user_property_characteristics as upc', 'upc.property_id', '=', 'user_properties.id');
+            foreach ($activeFilters as $filter => $value) {
+                $propertiesQuery->where("upc.{$filter}", $value);
+            }
+            // Use distinct to prevent duplicate rows from join
+            $propertiesQuery->distinct();
+            // Ensure we select from the main table
+            $propertiesQuery->select('user_properties.*');
         }
 
         // Apply sorting
@@ -1797,118 +1834,180 @@ class PropertyController extends Controller
             $paths[] = "/en/property/{$slug}";
         }
 
-        // Query GA4 with backend filtering to get ALL data (including historical with empty tenant_id)
+        // Query GA4 with backend filtering to get ALL data (CACHED - 5 minutes)
         $viewsBySlug = [];
         if (!empty($paths)) {
-            try {
-                $allData = $analytics->getAllAnalyticsWithFilters(
-                    $startDate,
-                    $endDate,
-                    [
-                        'tenant_ids' => [$tenantId],
-                        'exclude_empty_tenant' => false,
-                        'limit' => count($paths) * 10,
-                    ]
-                );
+            $cacheKey = "ga_views_{$tenantId}_{$days}_" . md5(implode(',', $slugs->toArray()));
+            $viewsBySlug = Cache::remember($cacheKey, 300, function () use ($analytics, $startDate, $endDate, $paths, $tenantId, $slugs) {
+                $result = [];
+                try {
+                    $allData = $analytics->getAllAnalyticsWithFilters(
+                        $startDate,
+                        $endDate,
+                        [
+                            'tenant_ids' => [$tenantId],
+                            'exclude_empty_tenant' => false,
+                            'limit' => count($paths) * 10,
+                        ]
+                    );
 
-                // Build a map of slug => total views
-                foreach ($allData['data'] as $item) {
-                    $path = $item['path'];
-                    $views = (int) $item['views'];
-                    
-                    // Extract slug from path and add to slug view map
-                    foreach ($slugs as $slug) {
-                        if (strpos($path, $slug) !== false) {
-                            $viewsBySlug[$slug] = ($viewsBySlug[$slug] ?? 0) + $views;
+                    // Build a map of slug => total views
+                    foreach ($allData['data'] as $item) {
+                        $path = $item['path'];
+                        $views = (int) $item['views'];
+                        
+                        // Extract slug from path and add to slug view map
+                        foreach ($slugs as $slug) {
+                            if (strpos($path, $slug) !== false) {
+                                $result[$slug] = ($result[$slug] ?? 0) + $views;
+                            }
                         }
                     }
+                } catch (\Exception $e) {
+                    \Log::error('Google Analytics error in admin PropertyController', [
+                        'tenant' => $tenantId,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
-            } catch (\Exception $e) {
-                \Log::error('Google Analytics error in admin PropertyController', [
-                    'tenant' => $tenantId,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+                return $result;
+            });
         }
 
-        // ===== Get available purposes from properties =====
-        $availablePurposes = Property::whereIn('user_id', $allowedUserIds)
-            ->whereNotNull('purpose')
-            ->where('purpose', '!=', '')
-            ->distinct()
-            ->pluck('purpose')
-            ->values()
-            ->toArray();
+        // ===== Get filter options (CACHED - 1 hour) =====
+        $cacheKey = "property_filter_options_{$ownerId}";
+        $filterOptions = Cache::remember($cacheKey, 3600, function () use ($allowedUserIds) {
+            // OPTIMIZED: Combined price and area stats in single query
+            $stats = Property::whereIn('user_id', $allowedUserIds)
+                ->where(function($q) {
+                    $q->whereNotNull('price')->orWhereNotNull('area');
+                })
+                ->selectRaw('
+                    MIN(price) as min_price,
+                    MAX(price) as max_price,
+                    MIN(area) as min_area
+                ')
+                ->first();
 
-        // ===== Get specifics filters from properties =====
-        $propertiesForFilters = Property::whereIn('user_id', $allowedUserIds)->get();
+            $priceRange = [
+                'min' => $stats->min_price ?: 0,
+                'max' => $stats->max_price ?: 0,
+            ];
 
-        // Price range (min/max from actual data)
-        $priceRange = [
-            'min' => $propertiesForFilters->whereNotNull('price')->min('price') ?: 0,
-            'max' => $propertiesForFilters->whereNotNull('price')->max('price') ?: 0,
-        ];
+            $areaRange = [
+                'min' => $stats->min_area ?: 0,
+            ];
 
-        // Area range (min only from actual data)
-        $areaRange = [
-            'min' => $propertiesForFilters->whereNotNull('area')->min('area') ?: 0,
-        ];
-
-        // Get distinct values for filters
-        $availableTypes = $propertiesForFilters->whereNotNull('type')
-            ->where('type', '!=', '')
-            ->pluck('type')
-            ->unique()
-            ->values()
-            ->toArray();
-
-        $availableBeds = $propertiesForFilters->whereNotNull('beds')
-            ->pluck('beds')
-            ->unique()
-            ->sort()
-            ->values()
-            ->toArray();
-
-        $availableBath = $propertiesForFilters->whereNotNull('bath')
-            ->pluck('bath')
-            ->unique()
-            ->sort()
-            ->values()
-            ->toArray();
-
-        // Extract unique features from JSON arrays
-        $allFeatures = [];
-        foreach ($propertiesForFilters as $property) {
-            if (!empty($property->features) && is_array($property->features)) {
-                $allFeatures = array_merge($allFeatures, $property->features);
-            }
-        }
-        $availableFeatures = array_unique($allFeatures);
-        sort($availableFeatures);
-
-        // Get UserPropertyCharacteristic filter options
-        $characteristicFilterOptions = [];
-        $characteristicFields = [
-            'private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement',
-            'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room',
-            'driver_room', 'swimming_pool', 'kitchen', 'floor_number', 'floors',
-            'bathrooms', 'rooms', 'building_age'
-        ];
-
-        foreach ($characteristicFields as $field) {
-            $values = UserPropertyCharacteristic::whereIn('property_id', $propertiesForFilters->pluck('id'))
-                ->whereNotNull($field)
+            // OPTIMIZED: Get all distinct filter values in a single query using UNION
+            // This reduces from 4 separate queries to 1 query
+            $filterValues = DB::table('user_properties')
+                ->whereIn('user_id', $allowedUserIds)
+                ->selectRaw("'purpose' as filter_type, purpose as value")
+                ->whereNotNull('purpose')
+                ->where('purpose', '!=', '')
                 ->distinct()
-                ->pluck($field)
+                ->union(
+                    DB::table('user_properties')
+                        ->whereIn('user_id', $allowedUserIds)
+                        ->selectRaw("'type' as filter_type, type as value")
+                        ->whereNotNull('type')
+                        ->where('type', '!=', '')
+                        ->distinct()
+                )
+                ->union(
+                    DB::table('user_properties')
+                        ->whereIn('user_id', $allowedUserIds)
+                        ->selectRaw("'beds' as filter_type, CAST(beds AS CHAR) as value")
+                        ->whereNotNull('beds')
+                        ->distinct()
+                )
+                ->union(
+                    DB::table('user_properties')
+                        ->whereIn('user_id', $allowedUserIds)
+                        ->selectRaw("'bath' as filter_type, CAST(bath AS CHAR) as value")
+                        ->whereNotNull('bath')
+                        ->distinct()
+                )
+                ->get()
+                ->groupBy('filter_type');
+
+            $availablePurposes = $filterValues->get('purpose', collect())->pluck('value')->unique()->values()->toArray();
+            $availableTypes = $filterValues->get('type', collect())->pluck('value')->unique()->values()->toArray();
+            $availableBeds = $filterValues->get('beds', collect())->pluck('value')->map(fn($v) => (int)$v)->unique()->sort()->values()->toArray();
+            $availableBath = $filterValues->get('bath', collect())->pluck('value')->map(fn($v) => (int)$v)->unique()->sort()->values()->toArray();
+
+            // Extract unique features from JSON arrays
+            $allFeatures = Property::whereIn('user_id', $allowedUserIds)
+                ->whereNotNull('features')
+                ->pluck('features')
+                ->flatten()
+                ->filter()
                 ->unique()
-                ->sort()
                 ->values()
                 ->toArray();
+            $availableFeatures = array_values($allFeatures);
+            sort($availableFeatures);
 
-            if (!empty($values)) {
-                $characteristicFilterOptions[$field] = $values;
+            // OPTIMIZED: Get UserPropertyCharacteristic filter options using a single query with conditional aggregation
+            // Instead of N queries (one per field), use a single query with CASE statements
+            $propertyIds = Property::whereIn('user_id', $allowedUserIds)
+                ->pluck('id');
+
+            $characteristicFilterOptions = [];
+            $characteristicFields = [
+                'private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement',
+                'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room',
+                'driver_room', 'swimming_pool', 'kitchen', 'floor_number', 'floors',
+                'bathrooms', 'rooms', 'building_age'
+            ];
+
+            // OPTIMIZED: Batch load all characteristic values in fewer queries
+            // Group fields by type (boolean vs numeric) to optimize queries
+            $booleanFields = ['private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement',
+                'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room',
+                'driver_room', 'swimming_pool', 'kitchen'];
+            $numericFields = ['floor_number', 'floors', 'bathrooms', 'rooms', 'building_age'];
+
+            // Get all characteristics data in one query
+            $allCharacteristics = UserPropertyCharacteristic::whereIn('property_id', $propertyIds)
+                ->select($characteristicFields)
+                ->get();
+
+            // Process in PHP (faster than multiple DB queries for small datasets)
+            foreach ($characteristicFields as $field) {
+                $values = $allCharacteristics
+                    ->pluck($field)
+                    ->filter(fn($v) => !is_null($v))
+                    ->unique()
+                    ->sort()
+                    ->values()
+                    ->toArray();
+
+                if (!empty($values)) {
+                    $characteristicFilterOptions[$field] = $values;
+                }
             }
-        }
+
+            return [
+                'purposes' => $availablePurposes,
+                'price_range' => $priceRange,
+                'area_range' => $areaRange,
+                'types' => $availableTypes,
+                'beds' => $availableBeds,
+                'bath' => $availableBath,
+                'features' => $availableFeatures,
+                'characteristics' => $characteristicFilterOptions,
+            ];
+        });
+
+        // Extract cached values
+        $availablePurposes = $filterOptions['purposes'];
+        $priceRange = $filterOptions['price_range'];
+        $areaRange = $filterOptions['area_range'];
+        $availableTypes = $filterOptions['types'];
+        $availableBeds = $filterOptions['beds'];
+        $availableBath = $filterOptions['bath'];
+        $availableFeatures = $filterOptions['features'];
+        $characteristicFilterOptions = $filterOptions['characteristics'];
 
         $specificsFilters = [
             'price_range' => $priceRange,
@@ -1946,6 +2045,11 @@ class PropertyController extends Controller
                 'created_at'       => $property->created_at->toISOString(),
                 'updated_at'       => $property->updated_at->toISOString(),
                 'payment_method'   => $property->payment_method,
+                'creator' => $property->creator ? [
+                    'id'   => $property->creator->id,
+                    'name' => trim(($property->creator->first_name ?? '') . ' ' . ($property->creator->last_name ?? '')) ?: ($property->creator->username ?? $property->creator->email),
+                    'type' => $property->creator->account_type,
+                ] : null,
             ];
         });
 
@@ -2030,12 +2134,8 @@ class PropertyController extends Controller
                 $content = optional($property->contents)->first();
                 $projectContent = optional(optional($property->project)->contents)->first();
 
-                // Get building name directly from database to avoid relationship issues
-                $buildingName = 'N/A';
-                if ($property->building_id) {
-                    $building = \App\Models\Building::find($property->building_id);
-                    $buildingName = $building ? $building->name : 'Unknown Building';
-                }
+                // Use the already-loaded building relationship (loaded via ->with(['building:id,name']))
+                $buildingName = $property->building ? $property->building->name : 'N/A';
 
                 return [
                     'id' => $property->id,

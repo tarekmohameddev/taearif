@@ -13,6 +13,7 @@ use App\Models\User\BasicSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -29,6 +30,7 @@ use App\Models\User\RealestateManagement\ProjectFloorplanImg;
 use App\Models\User\RealestateManagement\ProjectSpecification;
 use Carbon\Carbon;
 use App\Services\GoogleAnalyticsService;
+use App\Services\MembershipCacheService;
 
 class ProjectController extends Controller
 {
@@ -50,11 +52,17 @@ class ProjectController extends Controller
 
         $allowedUserIds = [$ownerId];
         try {
-            $employeeIds = \App\Models\User::where('tenant_id', $ownerId)->pluck('id')->toArray();
+            $cacheKey = "tenant_employees_{$ownerId}";
+            $employeeIds = Cache::remember($cacheKey, 300, function () use ($ownerId) {
+                return \App\Models\User::where('tenant_id', $ownerId)
+                    ->where('account_type', 'employee')
+                    ->pluck('id')
+                    ->toArray();
+            });
             $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
         } catch (\Throwable $e) {}
 
-        $projects = Project::with(['contents', 'specifications', 'types'])
+        $projects = Project::with(['contents', 'specifications', 'types', 'creator'])
             ->whereIn('user_id', $allowedUserIds)
             ->orderBy('id', 'desc')
             ->paginate(10);
@@ -89,36 +97,42 @@ class ProjectController extends Controller
             }
         }
 
-        // One GA call for this page
+        // One GA call for this page (CACHED - 5 minutes)
         // Use backend filtering to get ALL data (including historical), not just recent tenant-filtered data
         $viewsByPath = [];
         if (!empty($paths)) {
-            try {
-                $allData = $analytics->getAllAnalyticsWithFilters(
-                    $startDate,
-                    $endDate,
-                    [
-                        'tenant_ids' => [$tenantId],       // Filter by this tenant
-                        'exclude_empty_tenant' => false,   // Include old data (will be matched by slug)
-                        'limit' => count($paths) * 10,     // Get more to ensure we capture all variants
-                    ]
-                );
+            $slugsHash = md5(implode(',', array_keys($slugsPerProject->toArray())));
+            $cacheKey = "ga_views_project_{$tenantId}_{$days}_{$slugsHash}";
+            $viewsByPath = Cache::remember($cacheKey, 300, function () use ($analytics, $startDate, $endDate, $paths, $tenantId) {
+                $result = [];
+                try {
+                    $allData = $analytics->getAllAnalyticsWithFilters(
+                        $startDate,
+                        $endDate,
+                        [
+                            'tenant_ids' => [$tenantId],       // Filter by this tenant
+                            'exclude_empty_tenant' => false,   // Include old data (will be matched by slug)
+                            'limit' => count($paths) * 10,     // Get more to ensure we capture all variants
+                        ]
+                    );
 
-                // Build a map of path => views from all returned data
-                foreach ($allData['data'] as $item) {
-                    $path = $item['path'];
-                    $views = (int) $item['views'];
-                    if (in_array($path, $paths)) {
-                        $viewsByPath[$path] = ($viewsByPath[$path] ?? 0) + $views;
+                    // Build a map of path => views from all returned data
+                    foreach ($allData['data'] as $item) {
+                        $path = $item['path'];
+                        $views = (int) $item['views'];
+                        if (in_array($path, $paths)) {
+                            $result[$path] = ($result[$path] ?? 0) + $views;
+                        }
                     }
+                } catch (\Exception $e) {
+                    // Log error but continue without views
+                    \Log::error('Google Analytics error in ProjectController', [
+                        'tenant' => $tenantId,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
-            } catch (\Exception $e) {
-                // Log error but continue without views
-                \Log::error('Google Analytics error in ProjectController', [
-                    'tenant' => $tenantId,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+                return $result;
+            });
         }
 
         // Sum views per project across its content slugs and language variations
@@ -174,6 +188,11 @@ class ProjectController extends Controller
                     "title" => $t->title, "min_area" => $t->min_area, "max_area" => $t->max_area,
                     "min_price" => $t->min_price, "max_price" => $t->max_price, "unit" => $t->unit,
                 ]),
+                "creator"         => $project->creator ? [
+                    "id"   => $project->creator->id,
+                    "name" => trim(($project->creator->first_name ?? '') . ' ' . ($project->creator->last_name ?? '')) ?: ($project->creator->username ?? $project->creator->email),
+                    "type" => $project->creator->account_type,
+                ] : null,
             ];
         });
 
@@ -206,7 +225,8 @@ class ProjectController extends Controller
             'floorplanImages',
             'specifications',
             'types',
-            'user',  // Add user relationship to get tenant
+            'user',  
+            'creator',
         ])->find($id);
 
         if (!$project) {
@@ -216,47 +236,55 @@ class ProjectController extends Controller
             ], 404);
         }
 
-        // Get views from Google Analytics
+        // Get views from Google Analytics (CACHED - 5 minutes)
         $visits = 0;
         if ($project->user && $project->contents->first()) {
-            try {
-                $analytics = app(\App\Services\GoogleAnalyticsService::class);
-                $days = request()->query('days', 30);
+            $analytics = app(\App\Services\GoogleAnalyticsService::class);
+            $days = request()->query('days', 30);
+            $tenantId = $project->user->username;
+            
+            // Get all slugs for this project (multi-language support)
+            $slugs = $project->contents->pluck('slug')->filter()->values()->all();
+            
+            if (!empty($slugs)) {
+                $slugsHash = md5(implode(',', $slugs));
+                $cacheKey = "ga_views_project_{$id}_{$tenantId}_{$days}_{$slugsHash}";
                 
-                // Get all slugs for this project (multi-language support)
-                $slugs = $project->contents->pluck('slug')->filter()->values()->all();
-                
-                if (!empty($slugs)) {
-                    // Build paths for all slug variants
-                    $paths = [];
-                    foreach ($slugs as $slug) {
-                        $paths[] = "/project/{$slug}";
-                        $paths[] = "/ar/project/{$slug}";
-                        $paths[] = "/en/project/{$slug}";
-                    }
-
-                    $allData = $analytics->getAllAnalyticsWithFilters(
-                        now()->subDays($days),
-                        now(),
-                        [
-                            'tenant_ids' => [$project->user->username],
-                            'exclude_empty_tenant' => false,
-                            'limit' => count($paths) * 10,
-                        ]
-                    );
-
-                    // Sum views across all path variants
-                    foreach ($allData['data'] as $item) {
-                        if (in_array($item['path'], $paths)) {
-                            $visits += (int) $item['views'];
+                $visits = Cache::remember($cacheKey, 300, function () use ($analytics, $days, $slugs, $tenantId) {
+                    $result = 0;
+                    try {
+                        // Build paths for all slug variants
+                        $paths = [];
+                        foreach ($slugs as $slug) {
+                            $paths[] = "/project/{$slug}";
+                            $paths[] = "/ar/project/{$slug}";
+                            $paths[] = "/en/project/{$slug}";
                         }
+
+                        $allData = $analytics->getAllAnalyticsWithFilters(
+                            now()->subDays($days),
+                            now(),
+                            [
+                                'tenant_ids' => [$tenantId],
+                                'exclude_empty_tenant' => false,
+                                'limit' => count($paths) * 10,
+                            ]
+                        );
+
+                        // Sum views across all path variants
+                        foreach ($allData['data'] as $item) {
+                            if (in_array($item['path'], $paths)) {
+                                $result += (int) $item['views'];
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error('Google Analytics error in ProjectController show', [
+                            'project_id' => $project->id,
+                            'error' => $e->getMessage(),
+                        ]);
                     }
-                }
-            } catch (\Exception $e) {
-                \Log::error('Google Analytics error in ProjectController show', [
-                    'project_id' => $project->id,
-                    'error' => $e->getMessage(),
-                ]);
+                    return $result;
+                });
             }
         }
 
@@ -318,6 +346,11 @@ class ProjectController extends Controller
                     "unit" => $type->unit,
                 ];
             }),
+            "creator" => $project->creator ? [
+                "id"   => $project->creator->id,
+                "name" => trim(($project->creator->first_name ?? '') . ' ' . ($project->creator->last_name ?? '')) ?: ($project->creator->username ?? $project->creator->email),
+                "type" => $project->creator->account_type,
+            ] : null,
         ];
 
         return response()->json([
@@ -346,11 +379,8 @@ class ProjectController extends Controller
         $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
         $ownerId = $owner->id;
 
-        $membership = Membership::where('user_id', $ownerId)
-            ->where('status', 1)
-            ->orderBy('id', 'desc')
-            ->with('package')
-            ->first();
+        // Check if user has active membership (cached)
+        $membership = MembershipCacheService::getActiveMembership($ownerId);
 
         if (!$membership || !$membership->package) {
             return response()->json([
@@ -416,7 +446,7 @@ class ProjectController extends Controller
             $requestData['video_url'] = !empty($request->video_url) ? $request->video_url : null; // Handle empty string
             $requestData['amenities'] = $this->normalizeAmenities($request->input('amenities'));
 
-            $project = Project::storeProject($ownerId, $requestData);
+            $project = Project::storeProject($ownerId, $requestData, auth()->id());
 
             // Gallery images
             if ($request->has('gallery_images') && is_array($request->gallery_images)) {

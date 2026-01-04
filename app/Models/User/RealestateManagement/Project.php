@@ -18,6 +18,7 @@ class Project extends Model
 
     protected $fillable = [
         'user_id',
+        'created_by',
         'featured_image',
         'video_url',
         'min_price',
@@ -126,11 +127,12 @@ class Project extends Model
         );
     }
 
-    public static function storeProject($userId, $request)
+    public static function storeProject($userId, $request, $createdBy = null)
     {
 
         return self::create([
             'user_id' => $userId,
+            'created_by' => $createdBy ?? auth()->id(),
             'featured_image' => $request['featured_image'],
             'video_url' => !empty($request['video_url']) ? $request['video_url'] : null,
             'min_price' => $request['min_price'] ?? null,
@@ -180,6 +182,11 @@ class Project extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by', 'id');
     }
 
     public function projectTypes()

@@ -1616,7 +1616,17 @@ class RegisterUserController extends Controller
         $userId = $request->user_id;
         $user = User::findOrFail($userId);
         $currMembership = UserPermissionHelper::currMembOrPending($userId);
-        $currPackage = Package::select('title')->findOrFail($currMembership->package_id);
+        if (empty($currMembership)) {
+            Session::flash('warning', 'No current package found for this user.');
+            return back();
+        }
+
+        $currPackage = Package::select('title')->find($currMembership->package_id);
+        if (!$currPackage) {
+            Session::flash('warning', 'Current package record is missing.');
+            return back();
+        }
+
         $nextMembership = UserPermissionHelper::nextMembership($userId);
         $be = BasicExtended::first();
         $bs = BasicSetting::select('website_title')->first();
@@ -1632,18 +1642,20 @@ class RegisterUserController extends Controller
         $currMembership->save();
 
         // if next package exists
-        if (!empty($nextMembership)) {
+        if (!empty($nextMembership) && $nextMembership->package_id) {
             $nextPackage = Package::find($nextMembership->package_id);
+            if ($nextPackage) {
 
-            $nextMembership->start_date = Carbon::parse(Carbon::today()->format('d-m-Y'));
-            if ($nextPackage->term == 'monthly') {
-                $nextMembership->expire_date = Carbon::parse(Carbon::today()->addMonth()->format('d-m-Y'));
-            } elseif ($nextPackage->term == 'yearly') {
-                $nextMembership->expire_date = Carbon::parse(Carbon::today()->addYear()->format('d-m-Y'));
-            } elseif ($nextPackage->term == 'lifetime') {
-                $nextMembership->expire_date = Carbon::parse(Carbon::maxValue()->format('d-m-Y'));
+                $nextMembership->start_date = Carbon::parse(Carbon::today()->format('d-m-Y'));
+                if ($nextPackage->term == 'monthly') {
+                    $nextMembership->expire_date = Carbon::parse(Carbon::today()->addMonth()->format('d-m-Y'));
+                } elseif ($nextPackage->term == 'yearly') {
+                    $nextMembership->expire_date = Carbon::parse(Carbon::today()->addYear()->format('d-m-Y'));
+                } elseif ($nextPackage->term == 'lifetime') {
+                    $nextMembership->expire_date = Carbon::parse(Carbon::maxValue()->format('d-m-Y'));
+                }
+                $nextMembership->save();
             }
-            $nextMembership->save();
         }
 
         $this->sendMail(NULL, NULL, $request->payment_method, $user, $bs, $be, 'admin_removed_current_package', NULL, $currPackage->title);

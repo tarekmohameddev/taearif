@@ -48,6 +48,8 @@ class StorePlanRequest extends FormRequest
             'video_size_limit' => ['nullable', 'integer', 'min:0'],
             'file_size_limit' => ['nullable', 'integer', 'min:0'],
             'serial_number' => ['nullable', 'integer', 'min:0'],
+            'whatsapp_numbers_limit' => ['nullable', 'integer', 'min:0'],
+            'employees_limit' => ['nullable', 'integer', 'min:0'],
         ];
     }
 

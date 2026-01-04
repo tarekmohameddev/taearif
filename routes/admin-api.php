@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\Admin\PlatformController;
 use App\Http\Controllers\Api\Admin\AnalyticsController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\PermissionController;
+use App\Http\Controllers\Api\Admin\WhatsappAddonController;
 
 // =============================================================================
 // PUBLIC ROUTES - No Authentication Required
@@ -161,7 +162,35 @@ Route::prefix(config('admin-api.prefix'))
             ->name('dashboard.quick-stats');
     });
 
+    // -------------------------------------------------------------------------
+    // WhatsApp Add-ons
+    // -------------------------------------------------------------------------
+    Route::prefix('whatsapp-addons')->name('whatsapp-addons.')->group(function () {
+        Route::get('/', [WhatsappAddonController::class, 'index'])->name('index');
 
+        // Plans Management
+        Route::prefix('plans')->name('plans.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\Admin\WhatsappAddonPlanController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Api\Admin\WhatsappAddonPlanController::class, 'store'])->name('store');
+            Route::put('{id}', [\App\Http\Controllers\Api\Admin\WhatsappAddonPlanController::class, 'update'])->name('update');
+            Route::delete('{id}', [\App\Http\Controllers\Api\Admin\WhatsappAddonPlanController::class, 'destroy'])->name('destroy');
+            Route::post('{id}/toggle-status', [\App\Http\Controllers\Api\Admin\WhatsappAddonPlanController::class, 'toggleStatus'])->name('toggle-status');
+        });
+    });
+
+    // -------------------------------------------------------------------------
+    // Employee Add-ons
+    // -------------------------------------------------------------------------
+    Route::prefix('employee-addons')->name('employee-addons.')->group(function () {
+        // Plans Management
+        Route::prefix('plans')->name('plans.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\Admin\EmployeeAddonPlanController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Api\Admin\EmployeeAddonPlanController::class, 'store'])->name('store');
+            Route::put('{id}', [\App\Http\Controllers\Api\Admin\EmployeeAddonPlanController::class, 'update'])->name('update');
+            Route::delete('{id}', [\App\Http\Controllers\Api\Admin\EmployeeAddonPlanController::class, 'destroy'])->name('destroy');
+            Route::post('{id}/toggle-status', [\App\Http\Controllers\Api\Admin\EmployeeAddonPlanController::class, 'toggleStatus'])->name('toggle-status');
+        });
+    });
 
     // -------------------------------------------------------------------------
     // User Management Module — إدارة المستخدمين

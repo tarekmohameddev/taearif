@@ -26,11 +26,12 @@ class WhatsappController extends Controller
         $tenantId = $this->tenantId();
 
         $validated = $request->validate([
-            'phoneNumber'      => ['required', 'regex:/^[0-9]{9}$/'], // 9 digits for KSA
+            'phoneNumber'      => ['required', 'regex:/^[0-9]{9,20}$/'], // Allowing more digits as per user SQL example
             'linkingMethod'    => ['required', 'in:support,automatic'],
             'apiMethod'        => ['required', 'in:official,unofficial'],
             'customerName'     => ['nullable', 'string'],
             'supportMessage'   => ['nullable', 'string'],
+            'notLinked'        => ['nullable', 'boolean'],
             'employeeId'       => [
                 'nullable',
                 'integer',
@@ -39,10 +40,24 @@ class WhatsappController extends Controller
                           ->where('account_type', 'employee')
                           ->where('active', true);
                 }),
+                // One-to-one: employee must not be linked to another WhatsApp number
+                Rule::unique('whatsapp_users', 'employee_id')->where(fn ($q) => $q->where('user_id', $tenantId)),
             ],
         ]);
 
-        $fullPhoneNumber = '+966' . $validated['phoneNumber'];
+        $user = $request->user()->tenantOwner();
+        $isNotLinked = $validated['notLinked'] ?? false;
+
+        if (!$isNotLinked && $user->whatsapp_usage >= $user->whatsapp_quota) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لقد وصلت للحد الأقصى لعدد الأرقام المسموح بها. يرجى شراء إضافة لزيادة الحد.'
+            ], 422);
+        }
+
+        $fullPhoneNumber = str_starts_with($validated['phoneNumber'], '966') 
+            ? '+' . $validated['phoneNumber'] 
+            : '+966' . $validated['phoneNumber'];
         
         // Check for duplicate phone number
         $existing = WhatsappUser::where('user_id', $tenantId)
@@ -56,7 +71,8 @@ class WhatsappController extends Controller
         }
 
         $requestId = 'req_' . Str::random(8);
-        $status = self::STATUS_ACTIVE;
+        // All new WhatsApp numbers start as not_linked with pending status
+        $status = self::STATUS_NOT_LINKED;
         $request_status = self::STATUS_PENDING;
 
         try {
@@ -115,64 +131,67 @@ class WhatsappController extends Controller
     {
         $tenantId = $this->tenantId();
 
-        $whatsappUser = WhatsappUser::where('user_id', $tenantId)
+        $whatsappUsers = WhatsappUser::where('user_id', $tenantId)
             ->with('employee:id,first_name,last_name,email')
-            ->latest()
-            ->first();
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        if (!$whatsappUser) {
+        if ($whatsappUsers->isEmpty()) {
             return response()->json([
                 'success' => true,
                 'data' => [
                     'status' => self::STATUS_NOT_LINKED,
+                    'numbers' => [],
+                    'total' => 0,
                 ],
-                'message' => 'لم يتم ربط الرقم بعد'
+                'message' => 'لم يتم ربط أي رقم بعد'
             ]);
         }
 
-        $noteData = json_decode($whatsappUser->note, true) ?? [];
+        $numbers = $whatsappUsers->map(function ($whatsappUser) {
+            $noteData = json_decode($whatsappUser->note, true) ?? [];
 
-        $responseData = [
-            'phoneNumber' => $whatsappUser->number,
-            'linkingMethod' => $noteData['linkingMethod'] ?? null,
-            'apiMethod' => $noteData['apiMethod'] ?? null,
-        ];
-
-        if ($whatsappUser->employee_id && $whatsappUser->employee) {
-            $responseData['employee'] = [
-                'id' => $whatsappUser->employee->id,
-                'name' => trim(($whatsappUser->employee->first_name ?? '') . ' ' . ($whatsappUser->employee->last_name ?? '')),
-                'email' => $whatsappUser->employee->email,
+            $numberData = [
+                'id' => $whatsappUser->id,
+                'phoneNumber' => $whatsappUser->number,
+                'name' => $whatsappUser->name,
+                'status' => $whatsappUser->status,
+                'request_status' => $whatsappUser->request_status,
+                'linkingMethod' => $noteData['linkingMethod'] ?? null,
+                'apiMethod' => $noteData['apiMethod'] ?? null,
+                'requestId' => $noteData['requestId'] ?? null,
+                'created_at' => $whatsappUser->created_at?->toIso8601String(),
+                'updated_at' => $whatsappUser->updated_at?->toIso8601String(),
             ];
-        }
 
-        if (($noteData['requestId'] ?? null) && $whatsappUser->request_status === self::STATUS_PENDING) {
-            return response()->json([
-                'success' => true,
-                'data' => array_merge($responseData, [
-                    'status' => self::STATUS_PENDING,
-                    'requestId' => $noteData['requestId'],
-                ]),
-                'message' => 'طلب الربط قيد الانتظار'
-            ]);
-        }
+            if ($whatsappUser->employee_id && $whatsappUser->employee) {
+                $numberData['employee'] = [
+                    'id' => $whatsappUser->employee->id,
+                    'name' => trim(($whatsappUser->employee->first_name ?? '') . ' ' . ($whatsappUser->employee->last_name ?? '')),
+                    'email' => $whatsappUser->employee->email,
+                ];
+            }
 
-        if ($whatsappUser->request_status === self::STATUS_REJECTED) {
-            return response()->json([
-                'success' => true,
-                'data' => array_merge($responseData, [
-                    'status' => self::STATUS_REJECTED,
-                ]),
-                'message' => 'تم رفض طلب الربط'
-            ]);
-        }
+            return $numberData;
+        });
+
+        // Determine overall status
+        $hasActive = $whatsappUsers->where('status', self::STATUS_ACTIVE)->isNotEmpty();
+        $hasPending = $whatsappUsers->where('request_status', self::STATUS_PENDING)->isNotEmpty();
+        $overallStatus = $hasActive ? self::STATUS_LINKED : ($hasPending ? self::STATUS_PENDING : self::STATUS_REJECTED);
 
         return response()->json([
             'success' => true,
-            'data' => array_merge($responseData, [
-                'status' => self::STATUS_LINKED,
-            ]),
-            'message' => 'تم ربط الرقم بنجاح'
+            'data' => [
+                'status' => $overallStatus,
+                'numbers' => $numbers,
+                'total' => $whatsappUsers->count(),
+                'active_count' => $whatsappUsers->where('status', self::STATUS_ACTIVE)->count(),
+                'pending_count' => $whatsappUsers->where('request_status', self::STATUS_PENDING)->count(),
+                'quota' => $request->user()->tenantOwner()->whatsapp_quota,
+                'usage' => $request->user()->tenantOwner()->whatsapp_usage,
+            ],
+            'message' => $this->getStatusMessage($overallStatus)
         ]);
     }
 
@@ -193,6 +212,10 @@ class WhatsappController extends Controller
                           ->where('account_type', 'employee')
                           ->where('active', true);
                 }),
+                // One-to-one: employee must not be linked elsewhere (ignore current record)
+                Rule::unique('whatsapp_users', 'employee_id')
+                    ->where(fn ($q) => $q->where('user_id', $tenantId))
+                    ->ignore($whatsappUser->id),
             ],
         ]);
 
@@ -224,5 +247,69 @@ class WhatsappController extends Controller
                 ? 'تم تعيين الموظف بنجاح' 
                 : 'تم إلغاء تعيين الموظف بنجاح'
         ]);
+    }
+
+    public function destroy($id)
+    {
+        $tenantId = $this->tenantId();
+        $whatsappUser = WhatsappUser::where('user_id', $tenantId)->findOrFail($id);
+
+        $whatsappUser->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم حذف الرقم بنجاح'
+        ]);
+    }
+
+    public function unlink($id)
+    {
+        $tenantId = $this->tenantId();
+        $whatsappUser = WhatsappUser::where('user_id', $tenantId)->findOrFail($id);
+
+        $whatsappUser->status = self::STATUS_NOT_LINKED;
+        $whatsappUser->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم فك ربط الرقم بنجاح'
+        ]);
+    }
+
+    public function link($id)
+    {
+        $tenantId = $this->tenantId();
+        $whatsappUser = WhatsappUser::where('user_id', $tenantId)->findOrFail($id);
+
+        if ($whatsappUser->status === self::STATUS_ACTIVE) {
+            return response()->json([
+                'success' => false,
+                'message' => 'الرقم مربوط بالفعل'
+            ], 422);
+        }
+
+        $whatsappUser->status = self::STATUS_ACTIVE;
+        $whatsappUser->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم ربط الرقم بنجاح',
+            'data' => [
+                'id' => $whatsappUser->id,
+                'phoneNumber' => $whatsappUser->number,
+                'status' => $whatsappUser->status,
+            ]
+        ]);
+    }
+
+    private function getStatusMessage(string $status): string
+    {
+        return match ($status) {
+            self::STATUS_LINKED => 'تم ربط الأرقام بنجاح',
+            self::STATUS_PENDING => 'طلب الربط قيد الانتظار',
+            self::STATUS_REJECTED => 'تم رفض طلب الربط',
+            self::STATUS_NOT_LINKED => 'لم يتم ربط أي رقم بعد',
+            default => 'حالة غير معروفة',
+        };
     }
 }

@@ -171,13 +171,13 @@
                 @endif
 
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Credit Management', $permissions)))
-                    <li class="nav-item submenu @if (request()->is('admin/credit-transactions*') || request()->is('admin/credit-management*')) active @endif">
+                    <li class="nav-item submenu @if (request()->is('admin/credit-transactions*') || request()->is('admin/credit-management*') || request()->is('admin/whatsapp-addons*') || request()->is('whatsapp-addons*') || request()->is('admin/whatsapp-addon-plans*') || request()->is('admin/employee-addon-plans*')) active @endif">
                         <a data-toggle="collapse" href="#creditManagement">
                             <i class="fas fa-coins"></i>
                             <p>{{ __('Credit Management') }}</p>
                             <span class="caret"></span>
                         </a>
-                        <div class="collapse @if (request()->is('admin/credit-transactions*') || request()->is('admin/credit-management*')) show @endif" id="creditManagement">
+                        <div class="collapse @if (request()->is('admin/credit-transactions*') || request()->is('admin/credit-management*') || request()->is('admin/whatsapp-addons*') || request()->is('whatsapp-addons*') || request()->is('admin/whatsapp-addon-plans*') || request()->is('admin/employee-addon-plans*')) show @endif" id="creditManagement">
                             <ul class="nav nav-collapse">
                                 <li class="nav-item @if (request()->path() == 'admin/credit-transactions') active @endif">
                                     <a href="{{ route('admin.credit.transactions.index') }}">
@@ -187,6 +187,21 @@
                                 <li class="nav-item @if (request()->is('admin/credit-management*')) active @endif">
                                     <a href="{{ route('admin.credit-management.index') }}">
                                         <span class="sub-item">{{ __('Credit Management') }}</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item @if (request()->is('admin/whatsapp-addons*') || request()->is('whatsapp-addons*')) active @endif">
+                                    <a href="{{ url('admin/whatsapp-addons') }}">
+                                        <span class="sub-item">إضافات واتساب</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item @if (request()->is('admin/whatsapp-addon-plans*')) active @endif">
+                                    <a href="{{ route('admin.whatsapp-addon-plans.index') }}">
+                                        <span class="sub-item">خطط إضافات واتساب</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item @if (request()->is('admin/employee-addon-plans*')) active @endif">
+                                    <a href="{{ route('admin.employee-addon-plans.index') }}">
+                                        <span class="sub-item">خطط إضافات الموظفين</span>
                                     </a>
                                 </li>
                             </ul>
