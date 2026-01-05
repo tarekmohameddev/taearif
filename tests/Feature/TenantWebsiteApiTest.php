@@ -9,6 +9,8 @@ use App\Models\TenantPage;
 use App\Models\TenantStaticPage;
 use App\Models\TenantGlobalComponent;
 use App\Models\TenantWebsiteLayout;
+use App\Models\User\BasicSetting;
+use App\Models\TenantSetting;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -33,6 +35,11 @@ class TenantWebsiteApiTest extends TestCase
     public function test_get_tenant_returns_pages_and_globals(): void
     {
         $tenant = $this->createTenant();
+        BasicSetting::create([
+            'user_id' => $tenant->id,
+            'company_name' => 'Acme Co',
+            'logo' => '/logo.png',
+        ]);
         TenantPage::create(['id' => (string) \Illuminate\Support\Str::uuid(), 'user_id' => $tenant->id, 'page_id' => 'homepage', 'components' => [['id' => 'c1', 'position' => 0]]]);
         TenantGlobalComponent::create(['id' => (string) \Illuminate\Support\Str::uuid(), 'user_id' => $tenant->id, 'data' => ['header' => []]]);
         TenantWebsiteLayout::create(['id' => (string) \Illuminate\Support\Str::uuid(), 'user_id' => $tenant->id, 'data' => ['metaTags' => ['pages' => []]]]);
@@ -40,6 +47,8 @@ class TenantWebsiteApiTest extends TestCase
         $this->postJson('/api/v1/tenant-website/getTenant', ['websiteName' => 'acme'])
             ->assertOk()
             ->assertJsonPath('username', 'acme')
+            ->assertJsonPath('branding.logo', url('/logo.png'))
+            ->assertJsonPath('branding.name', 'Acme Co')
             ->assertJsonPath('componentSettings.homepage.0.id', 'c1')
             ->assertJsonPath('globalComponentsData.header', [])
             ->assertJsonPath('WebsiteLayout.metaTags.pages', []);
@@ -111,6 +120,40 @@ class TenantWebsiteApiTest extends TestCase
         $response = $this->postJson('/api/v1/tenant-website/getTenant', ['websiteName' => 'acme'])
             ->assertOk()
             ->assertJsonPath('ThemesBackup', $themesBackup);
+    }
+
+    public function test_save_pages_persists_branding_website_branding_and_get_tenant_returns_it(): void
+    {
+        $tenant = $this->createTenant();
+        BasicSetting::create([
+            'user_id' => $tenant->id,
+            'company_name' => 'Acme Co',
+            'logo' => '/logo.png',
+        ]);
+
+        $this->actingAs($tenant, 'sanctum');
+
+        $websiteBranding = [
+            'primaryColor' => '#ff0000',
+            'fontFamily' => 'Inter',
+            'custom' => ['any' => 'json'],
+        ];
+
+        $this->postJson('/api/v1/tenant-website/save-pages', [
+            'tenantId' => 'acme',
+            'pages' => ['homepage' => []],
+            'branding' => [
+                'websiteBranding' => $websiteBranding,
+            ],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('tenant_settings', ['user_id' => $tenant->id]);
+        $settings = TenantSetting::where('user_id', $tenant->id)->first();
+        $this->assertEquals($websiteBranding, $settings->settings['websiteBranding'] ?? null);
+
+        $this->postJson('/api/v1/tenant-website/getTenant', ['websiteName' => 'acme'])
+            ->assertOk()
+            ->assertJsonPath('branding.websiteBranding', $websiteBranding);
     }
 
     public function test_get_tenant_returns_null_when_themes_backup_not_set(): void

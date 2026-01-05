@@ -13,9 +13,20 @@ class WhatsAppService
 
     public function __construct()
     {
-        $this->settings = Schema::hasTable('basic_settings')
-            ? BasicSetting::first()
-            : null;
+        try {
+            $this->settings = Schema::hasTable('basic_settings')
+                ? BasicSetting::first()
+                : null;
+        } catch (\Throwable $e) {
+            // Avoid hard-failing app boot (e.g. during tests or when DB is temporarily unavailable).
+            $this->settings = null;
+
+            if (!app()->environment('testing')) {
+                Log::warning('WhatsAppService: unable to load basic settings (DB unavailable)', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     /**

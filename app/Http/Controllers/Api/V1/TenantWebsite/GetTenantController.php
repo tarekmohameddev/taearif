@@ -9,7 +9,9 @@ use App\Models\TenantPage;
 use App\Models\TenantStaticPage;
 use App\Models\TenantGlobalComponent;
 use App\Models\TenantWebsiteLayout;
+use App\Models\TenantSetting;
 use App\Models\Api\ApiDomainSetting;
+use App\Models\User\BasicSetting;
 
 class GetTenantController extends Controller
 {
@@ -50,15 +52,94 @@ class GetTenantController extends Controller
         $staticPagesData = $staticPages->isEmpty() ? null : $staticPages->keyBy('page_id')->map->components;
         $globals = TenantGlobalComponent::where('user_id', $tenant->id)->first();
         $layout = TenantWebsiteLayout::where('user_id', $tenant->id)->first();
+        $basicSetting = BasicSetting::where('user_id', $tenant->id)->first();
+        $tenantSetting = TenantSetting::where('user_id', $tenant->id)->first();
+
+        $rawLogo = $basicSetting?->logo ?: $this->extractLogoFromWebsiteData($globals?->data ?? []);
+        $logoUrl = $this->toPublicUrl($rawLogo);
+
+        $branding = [
+            'logo' => $logoUrl,
+            'name' => $basicSetting?->company_name ?: $tenant->username,
+            'websiteBranding' => data_get($tenantSetting?->settings, 'websiteBranding'),
+        ];
         return response()->json([
             'username' => $tenant->username,
             'websiteName' => $tenant->username,
+            'branding' => $branding,
             'componentSettings' => $pages,
             'globalComponentsData' => $globals?->data ?? [],
             'WebsiteLayout' => $layout?->data ?? [],
             'ThemesBackup' => $layout?->themes_backup ?? null,
             'StaticPages' => $staticPagesData,
         ]);
+    }
+
+    private function toPublicUrl(?string $value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        // Already absolute
+        if (preg_match('#^https?://#i', $value)) {
+            return $value;
+        }
+
+        // Absolute path on this host
+        if (str_starts_with($value, '/')) {
+            return url($value);
+        }
+
+        // If it's just a filename (common in web onboarding), serve from the public user assets folder.
+        if (!str_contains($value, '/')) {
+            return asset('assets/front/img/user/' . $value);
+        }
+
+        // Otherwise treat as a relative public path.
+        return asset($value);
+    }
+
+    /**
+     * Best-effort fallback: find a logo string inside the seeded website data structure.
+     * We look for known shapes used in templates: companyInfo.logo, logo.image, or a direct logo string.
+     */
+    private function extractLogoFromWebsiteData(array $data): ?string
+    {
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                // companyInfo.logo (string)
+                if (isset($value['companyInfo']) && is_array($value['companyInfo']) && isset($value['companyInfo']['logo']) && is_string($value['companyInfo']['logo'])) {
+                    return $value['companyInfo']['logo'];
+                }
+
+                // logo.image (string)
+                if (isset($value['logo']) && is_array($value['logo']) && isset($value['logo']['image']) && is_string($value['logo']['image'])) {
+                    return $value['logo']['image'];
+                }
+
+                // direct logo (string)
+                if ($key === 'logo' && is_string($value)) {
+                    return $value;
+                }
+
+                $nested = $this->extractLogoFromWebsiteData($value);
+                if ($nested) {
+                    return $nested;
+                }
+            }
+
+            if ($key === 'logo' && is_string($value)) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 
     private function normalizeDomain(string $value): string
