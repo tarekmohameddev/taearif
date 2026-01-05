@@ -693,6 +693,11 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::put('/property-requests/{id}/employee', [ApiPropertyRequestController::class, 'updateEmployee']);
     });
 
+    // Assign employee to customer via property request (direct customer update)
+    Route::prefix('v1')->middleware([SetTenantForPermissions::class, 'can:properties.view'])->group(function () {
+        Route::put('/property-requests/{customerID}/employee', [ApiPropertyRequestController::class, 'assignEmployeeToCustomer']);
+    });
+
 
     // ApiPropertyRequestSettingsController
     Route::prefix('property-request-settings')->group(function () {
