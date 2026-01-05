@@ -34,7 +34,7 @@
         <div class="card-body pt-5 pb-5">
           <div class="row">
             <div class="col-lg-6 offset-lg-3">
-              <form id="settingsForm" class="" action="{{ route('user.donation.settings') }}" method="post"
+              <form id="settingsForm" class="" action="{{ route('user.donation.settings.update') }}" method="post"
                 enctype="multipart/form-data">
                 @csrf
                 <div class="form-group">

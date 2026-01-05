@@ -34,7 +34,7 @@
       <div class="card-body pt-5 pb-5">
         <div class="row">
           <div class="col-lg-6 offset-lg-3">
-            <form id="textsForm" action="{{route('admin.custom-domain.texts')}}" method="POST">
+            <form id="textsForm" action="{{ route('admin.custom-domain.texts.update') }}" method="POST">
               @csrf
                 <div class="form-group">
                     <label>{{__('Message After Domain Request')}} **</label>

@@ -213,7 +213,7 @@ Route::middleware(['auth'])->group(function () {
 //
 
 // cron job for sending expiry mail
-Route::get('/subcheck', 'CronJobController@expired')->name('cron.expired');
+Route::get('/subcheck', 'CronJobController@expired')->name('cron.subcheck');
 Route::get('/check-payment', 'CronJobController@check_payment')->name('cron.check_payment');
 
 Route::get('/midtrans/bank-notify', 'MidtransBankNotifyController@bank_notify')->name('midtrans.bank_notify');
@@ -228,7 +228,7 @@ Route::domain($domain)->group(function () {
     Route::get('/changelanguage/{lang}', 'Front\FrontendController@changeLanguage')->name('changeLanguage');
     // cron job for sending expiry mail
     Route::get('/expired', 'CronJobController@expired')->name('cron.expired');
-    Route::get('/expiry-reminder', 'CronJobController@expired')->name('cron.expired');
+    Route::get('/expiry-reminder', 'CronJobController@expired')->name('cron.expiry.reminder');
 
     Route::group(['middleware' => 'setlang'], function () {
         Route::get('/', 'Front\FrontendController@index')->name('front.index');
@@ -592,7 +592,6 @@ Route::domain($domain)->group(function () {
             Route::post('/portfolio/sliderrmv', 'User\PortfolioController@sliderrmv')->name('user.portfolio.sliderrmv');
             Route::get('/portfolio/{id}/edit', 'User\PortfolioController@edit')->name('user.portfolio.edit');
             Route::get('/portfolio/{id}/images', 'User\PortfolioController@images')->name('user.portfolio.images');
-            Route::post('/portfolio/sliderupdate', 'User\PortfolioController@sliderupdate')->name('user.portfolio.sliderupdate');
             Route::post('/portfolio/update', 'User\PortfolioController@update')->name('user.portfolio.update');
             Route::post('/portfolio/delete', 'User\PortfolioController@delete')->name('user.portfolio.delete');
             Route::post('/portfolio/bulk-delete', 'User\PortfolioController@bulkDelete')->name('user.portfolio.bulk.delete');
@@ -906,7 +905,7 @@ Route::domain($domain)->group(function () {
 
             Route::get('/donation/create', 'User\DonationManagement\DonationController@create')->name('user.donation.create');
             Route::get('/donation/settings', 'User\DonationManagement\DonationController@settings')->name('user.donation.settings');
-            Route::post('/donation/settings', 'User\DonationManagement\DonationController@updateSettings')->name('user.donation.settings');
+            Route::post('/donation/settings', 'User\DonationManagement\DonationController@updateSettings')->name('user.donation.settings.update');
             Route::post('/donation/store', 'User\DonationManagement\DonationController@store')->name('user.donation.store');
             Route::get('/donation/{id}/edit', 'User\DonationManagement\DonationController@edit')->name('user.donation.edit');
             Route::post('/donation/{id}/update', 'User\DonationManagement\DonationController@update')->name('user.donation.update');
@@ -1137,7 +1136,6 @@ Route::domain($domain)->group(function () {
             Route::post('/item/sub-category-getter', 'User\ItemController@subcatGetter')->name('user.item.subcatGetter');
 
             Route::get('item/{id}/getcategory', 'User\ItemController@getCategory')->name('user.item.getcategory');
-            Route::post('/item/delete', 'User\ItemController@delete')->name('user.item.delete');
             Route::post('/item/bulk-delete', 'User\ItemController@bulkDelete')->name('user.item.bulk.delete');
             Route::post('/item/sliderupdate', 'User\ItemController@sliderupdate')->name('user.item.sliderupdate');
 
@@ -1146,7 +1144,7 @@ Route::domain($domain)->group(function () {
             // Route::post('/item/update', 'User\ItemController@update')->name('user.item.update');
 
             Route::get('/item/settings', 'User\ItemController@settings')->name('user.item.settings');
-            Route::post('/item/settings', 'User\ItemController@updateSettings')->name('user.item.settings');
+            Route::post('/item/settings', 'User\ItemController@updateSettings')->name('user.item.settings.update');
 
             // User Coupon Routes
             Route::get('/coupon', 'User\CouponController@index')->name('user.coupon.index');
@@ -1352,7 +1350,7 @@ Route::domain($domain)->group(function () {
         Route::post('/coupon', 'Front\CheckoutController@coupon')->name('front.membership.coupon');
         Route::post('/membership/checkout', 'Front\CheckoutController@checkout')->name('front.membership.checkout');
         Route::post('/payment/instructions', 'Front\FrontendController@paymentInstruction')->name('front.payment.instructions');
-        Route::post('/contact/message', 'Front\FrontendController@contactMessage')->name('front.contact.message');
+        Route::post('/contact/message', 'Front\FrontendController@contactMessage')->name('front.main.contact.message');
         Route::post('/admin/contact-msg', 'Front\FrontendController@adminContactMessage')->name('front.admin.contact.message');
         Route::post('/realestate/deposit', 'Front\CustomerController@paydeposit')->name('user.pay.deposit');
 
@@ -1665,7 +1663,7 @@ Route::group(['domain' => $domain, 'prefix' => $prefix, 'middleware' => 'check.m
         // update password route
         Route::post('/update-password',  'Front\CustomerController@updatePassword')->name('customer.update_password');
         // user logout attempt route
-        Route::get('/logout',  'Front\CustomerController@logoutSubmit')->name('customer.logout');
+        Route::get('/logout',  'Front\CustomerController@logoutSubmit')->name('customer.panel.logout');
         // all ads route
         // Route::middleware('routeAccess:Ecommerce')->group(function () {
             Route::get('/shipping/details', 'Front\CustomerController@shippingdetails')->name('customer.shpping-details');

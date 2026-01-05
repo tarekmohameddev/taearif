@@ -34,7 +34,7 @@
       <div class="card-body pt-5 pb-5">
         <div class="row">
           <div class="col-lg-6 offset-lg-3">
-            <form id="settingsForm" action="{{route('admin.package.settings')}}" method="POST">
+            <form id="settingsForm" action="{{ route('admin.package.settings.update') }}" method="POST">
               @csrf
               <div id="recurringBilling">
                 <div class="form-group">
