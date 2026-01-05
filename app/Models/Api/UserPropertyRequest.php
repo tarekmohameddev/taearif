@@ -83,8 +83,8 @@ class UserPropertyRequest extends Model
         $districtName = $this->district ? $this->district->name_ar : null;
         
         // Get customer_id from the customer relationship
-        // Check if relationship is loaded, if not, try to access it (will lazy load if needed)
-        $customer = $this->relationLoaded('customer') ? $this->customer : ($this->customer ?? null);
+        // This will use the eager loaded relationship if available, or lazy load it if not
+        $customer = $this->customer;
         $customerId = $customer ? $customer->id : null;
         
         // Insert districtName right after districts_id and customer_id after user_id
@@ -124,7 +124,7 @@ class UserPropertyRequest extends Model
 
     protected function formatEmployeePayload(): ?array
     {
-        $customer = $this->relationLoaded('customer') ? $this->customer : $this->customer;
+        $customer = $this->customer;
 
         if (!$customer || !$customer->responsibleEmployee) {
             return null;

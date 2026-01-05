@@ -8,6 +8,7 @@ use App\Models\Api\PropertyRequestAutoCustomerSetting;
 use App\Models\Api\UserApiCustomerType;
 use App\Models\Api\UserApiCustomerPriority;
 use App\Models\Api\UserApiCustomerProcedure;
+use App\Models\Api\UserApiCustomerStage;
 use App\Support\PhoneNormalizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -26,8 +27,14 @@ class PropertyRequestCustomerService
             // Get settings (with caching)
             $settings = $this->getSettings($propertyRequest->user_id);
 
+            // Get default stage ID if settings don't exist (for default enabled behavior)
+            $defaultStageId = null;
+            if (!$settings) {
+                $defaultStageId = $this->getDefaultStageId($propertyRequest->user_id);
+            }
+
             // Check if feature is enabled
-            if (!$this->shouldCreateCustomer($settings)) {
+            if (!$this->shouldCreateCustomer($settings, $propertyRequest->user_id)) {
                 Log::debug('Auto-create customer skipped - feature disabled', [
                     'property_request_id' => $propertyRequest->id,
                 ]);
@@ -55,8 +62,11 @@ class PropertyRequestCustomerService
                 return null;
             }
 
+            // Determine stage ID: use from settings if available, otherwise use default
+            $stageId = $settings ? $settings->default_stage_id : $defaultStageId;
+
             // Create customer in transaction
-            return $this->createCustomer($propertyRequest, $settings, $normalizedPhone);
+            return $this->createCustomer($propertyRequest, $settings, $normalizedPhone, $stageId);
 
         } catch (\Throwable $e) {
             Log::error('Failed to auto-create customer from property request', [
@@ -120,11 +130,26 @@ class PropertyRequestCustomerService
     /**
      * Check if customer creation should proceed
      */
-    private function shouldCreateCustomer(?PropertyRequestAutoCustomerSetting $settings): bool
+    private function shouldCreateCustomer(?PropertyRequestAutoCustomerSetting $settings, int $userId): bool
     {
-        return $settings
-            && $settings->auto_create_customer
-            && $settings->default_stage_id;
+        // If settings exist, use them
+        if ($settings) {
+            return $settings->auto_create_customer && $settings->default_stage_id;
+        }
+
+        // If no settings exist, enable by default if tenant has at least one active stage
+        return $this->getDefaultStageId($userId) !== null;
+    }
+
+    /**
+     * Get the first active stage ID for a tenant (for default behavior)
+     */
+    private function getDefaultStageId(int $userId): ?int
+    {
+        return UserApiCustomerStage::where('user_id', $userId)
+            ->where('is_active', true)
+            ->orderBy('order', 'asc')
+            ->value('id');
     }
 
     /**
@@ -142,10 +167,11 @@ class PropertyRequestCustomerService
      */
     private function createCustomer(
         UserPropertyRequest $propertyRequest,
-        PropertyRequestAutoCustomerSetting $settings,
-        string $normalizedPhone
+        ?PropertyRequestAutoCustomerSetting $settings,
+        string $normalizedPhone,
+        int $stageId
     ): ApiCustomer {
-        return DB::transaction(function () use ($propertyRequest, $settings, $normalizedPhone) {
+        return DB::transaction(function () use ($propertyRequest, $settings, $normalizedPhone, $stageId) {
             try {
                 // Get cached default attributes (avoids 3 queries per customer creation)
                 $defaults = $this->getDefaultCustomerAttributes($propertyRequest->user_id);
@@ -155,7 +181,7 @@ class PropertyRequestCustomerService
                     'name' => $propertyRequest->full_name,
                     'phone_number' => $normalizedPhone,
                     'email' => null,
-                    'stage_id' => $settings->default_stage_id,
+                    'stage_id' => $stageId,
                     'city_id' => $propertyRequest->city_id,
                     'district_id' => $propertyRequest->districts_id,
                     'note' => $this->buildCustomerNote($propertyRequest),
@@ -173,7 +199,7 @@ class PropertyRequestCustomerService
                 Log::info('Customer auto-created from property request', [
                     'property_request_id' => $propertyRequest->id,
                     'customer_id' => $customer->id,
-                    'stage_id' => $settings->default_stage_id,
+                    'stage_id' => $stageId,
                     'type_id' => $defaults['type_id'],
                     'priority_id' => $defaults['priority_id'],
                     'phone' => $normalizedPhone,
