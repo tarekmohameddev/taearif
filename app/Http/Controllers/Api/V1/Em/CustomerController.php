@@ -99,7 +99,7 @@ class CustomerController extends Controller
             'district_id'    => $data['district_id'] ?? null,
             'created_by_type'=> $actor['type'],
             'created_by_id'  => $actor['id'],
-            'password'       => bcrypt(\Illuminate\Support\Str::random(16)),
+            'password'       => bcrypt('12345678'),
         ]);
 
         if ($stageId !== null) {

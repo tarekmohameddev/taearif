@@ -185,7 +185,7 @@ class PropertyRequestCustomerService
                     'city_id' => $propertyRequest->city_id,
                     'district_id' => $propertyRequest->districts_id,
                     'note' => $this->buildCustomerNote($propertyRequest),
-                    'password' => bcrypt(Str::random(16)),
+                    'password' => bcrypt('12345678'),
                     'type_id' => $defaults['type_id'],
                     'priority_id' => $defaults['priority_id'],
                     'procedure_id' => $defaults['procedure_id'],

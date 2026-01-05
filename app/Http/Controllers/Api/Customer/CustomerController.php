@@ -412,7 +412,7 @@ class CustomerController extends Controller
                 ],
                 'stage_id'     => ['nullable', Rule::exists('users_api_customers_stages','id')->where(fn($q)=>$q->where('user_id',$user->id))],
                 'procedure_id' => ['nullable', Rule::exists('users_api_customers_procedures','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-                'password'     => 'required|string|min:6',
+                'password'     => 'nullable|string|min:6',
                 'interested_category_ids'   => 'nullable|array',
                 'interested_category_ids.*' => 'integer|exists:api_user_categories,id',
                 'interested_property_ids'   => 'nullable|array',
@@ -435,7 +435,7 @@ class CustomerController extends Controller
                     'stage_id'     => $request->stage_id,
                     'procedure_id' => $request->procedure_id,
                     'phone_number' => $request->phone_number,
-                    'password'     => bcrypt($request->password),
+                    'password'     => bcrypt($request->password ?? '12345678'),
                 ]);
 
                 foreach (($request->interested_category_ids ?? []) as $catId) {
