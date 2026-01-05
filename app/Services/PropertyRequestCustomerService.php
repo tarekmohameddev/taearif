@@ -103,7 +103,7 @@ class PropertyRequestCustomerService
      * Get default customer attributes for a user (cached)
      * Returns array with default type_id, priority_id, procedure_id
      */
-    private function getDefaultCustomerAttributes(int $userId): array
+    protected function getDefaultCustomerAttributes(int $userId): array
     {
         $cacheKey = "customer_defaults:{$userId}";
 
@@ -144,7 +144,7 @@ class PropertyRequestCustomerService
     /**
      * Get the first active stage ID for a tenant (for default behavior)
      */
-    private function getDefaultStageId(int $userId): ?int
+    protected function getDefaultStageId(int $userId): ?int
     {
         return UserApiCustomerStage::where('user_id', $userId)
             ->where('is_active', true)
@@ -165,7 +165,7 @@ class PropertyRequestCustomerService
     /**
      * Create customer with all data
      */
-    private function createCustomer(
+    protected function createCustomer(
         UserPropertyRequest $propertyRequest,
         ?PropertyRequestAutoCustomerSetting $settings,
         string $normalizedPhone,
@@ -226,6 +226,114 @@ class PropertyRequestCustomerService
                 }
                 throw $e;
             }
+        });
+    }
+
+    /**
+     * Link existing customer or create new one for property request
+     * This method tries to link first, then creates if no match found
+     * Always attempts creation (ignores auto-create settings for command usage)
+     */
+    public function linkOrCreateCustomer(UserPropertyRequest $propertyRequest): ?ApiCustomer
+    {
+        try {
+            // Normalize phone number
+            $normalizedPhone = PhoneNormalizer::normalize($propertyRequest->phone);
+
+            if (!$normalizedPhone) {
+                Log::warning('Cannot normalize phone number for property request', [
+                    'property_request_id' => $propertyRequest->id,
+                    'phone' => $propertyRequest->phone,
+                ]);
+                return null;
+            }
+
+            // Try to find existing customer
+            $existingCustomer = ApiCustomer::where('user_id', $propertyRequest->user_id)
+                ->where('phone_number', $normalizedPhone)
+                ->first();
+
+            // If customer exists and is not linked, link it
+            if ($existingCustomer && $existingCustomer->property_request_id === null) {
+                return $this->linkExistingCustomer($existingCustomer, $propertyRequest);
+            }
+
+            // If customer exists but is already linked, return null
+            if ($existingCustomer) {
+                Log::info('Customer already linked to another property request', [
+                    'property_request_id' => $propertyRequest->id,
+                    'customer_id' => $existingCustomer->id,
+                    'existing_property_request_id' => $existingCustomer->property_request_id,
+                ]);
+                return null;
+            }
+
+            // No customer found, create new one
+            // Get settings and stage ID (always attempt creation for command usage)
+            $settings = $this->getSettings($propertyRequest->user_id);
+            $defaultStageId = $this->getDefaultStageId($propertyRequest->user_id);
+            $stageId = $settings ? $settings->default_stage_id : $defaultStageId;
+
+            // If no stage ID available, skip creation
+            if (!$stageId) {
+                Log::warning('Cannot create customer - no stage_id available for tenant', [
+                    'property_request_id' => $propertyRequest->id,
+                    'user_id' => $propertyRequest->user_id,
+                ]);
+                return null;
+            }
+
+            // Create customer
+            return $this->createCustomer($propertyRequest, $settings, $normalizedPhone, $stageId);
+
+        } catch (\Throwable $e) {
+            Log::error('Failed to link or create customer from property request', [
+                'property_request_id' => $propertyRequest->id,
+                'error' => $e->getMessage(),
+                'trace' => substr($e->getTraceAsString(), 0, 2000),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Link an existing customer to a property request
+     * Preserves existing customer data (non-destructive)
+     */
+    public function linkExistingCustomer(ApiCustomer $customer, UserPropertyRequest $propertyRequest): ApiCustomer
+    {
+        return DB::transaction(function () use ($customer, $propertyRequest) {
+            // Link the customer
+            $customer->property_request_id = $propertyRequest->id;
+
+            // Update source only if not already set (preserve original source)
+            if (!$customer->source || $customer->source === 'manual') {
+                $customer->source = 'property_request';
+                $customer->source_id = $propertyRequest->id;
+            }
+
+            // Update empty fields only (non-destructive)
+            if (!$customer->city_id && $propertyRequest->city_id) {
+                $customer->city_id = $propertyRequest->city_id;
+            }
+
+            if (!$customer->district_id && $propertyRequest->districts_id) {
+                $customer->district_id = $propertyRequest->districts_id;
+            }
+
+            // Append to notes (preserve history)
+            $linkNote = "\n\nتم ربط العميل بطلب عقار (#{$propertyRequest->id}) في " . now()->format('Y-m-d H:i');
+            $customer->note = ($customer->note ?? '') . $linkNote;
+
+            $customer->save();
+
+            Log::info('Customer linked to property request', [
+                'customer_id' => $customer->id,
+                'property_request_id' => $propertyRequest->id,
+                'phone_number' => $customer->phone_number,
+            ]);
+
+            return $customer;
         });
     }
 

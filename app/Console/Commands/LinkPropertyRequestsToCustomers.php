@@ -4,9 +4,9 @@ namespace App\Console\Commands;
 
 use App\Models\ApiCustomer;
 use App\Models\Api\UserPropertyRequest;
+use App\Services\PropertyRequestCustomerService;
 use App\Support\PhoneNormalizer;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 
 class LinkPropertyRequestsToCustomers extends Command
 {
@@ -16,15 +16,22 @@ class LinkPropertyRequestsToCustomers extends Command
      * @var string
      */
     protected $signature = 'property-requests:link-customers 
-                            {--dry-run : Show what would be linked without making changes}
-                            {--tenant= : Only process requests for a specific tenant (user_id)}';
+                            {--dry-run : Show what would be linked/created without making changes}
+                            {--tenant= : Only process requests for a specific tenant (user_id)}
+                            {--link-only : Only link to existing customers, do not create new ones}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Link existing property requests to existing customers by phone number (one-time data fix)';
+    protected $description = 'Link existing property requests to existing customers by phone, or create customers for unmatched requests (one-time data fix)';
+
+    public function __construct(
+        private PropertyRequestCustomerService $customerService
+    ) {
+        parent::__construct();
+    }
 
     /**
      * Execute the console command.
@@ -33,12 +40,18 @@ class LinkPropertyRequestsToCustomers extends Command
     {
         $dryRun = (bool) $this->option('dry-run');
         $tenantId = $this->option('tenant');
+        $linkOnly = (bool) $this->option('link-only');
 
-        $this->info('Starting to link property requests to customers by phone number...');
+        $this->info('Starting to link property requests to customers (and create if needed)...');
         $this->newLine();
 
         if ($dryRun) {
             $this->warn('DRY RUN MODE - No changes will be made');
+            $this->newLine();
+        }
+
+        if ($linkOnly) {
+            $this->info('LINK-ONLY MODE - Will only link to existing customers');
             $this->newLine();
         }
 
@@ -61,6 +74,7 @@ class LinkPropertyRequestsToCustomers extends Command
         $this->newLine();
 
         $linked = 0;
+        $created = 0;
         $skipped = 0;
         $failed = 0;
 
@@ -68,7 +82,7 @@ class LinkPropertyRequestsToCustomers extends Command
         $bar->start();
 
         // Process in chunks for better performance
-        $query->chunkById(500, function ($propertyRequests) use (&$linked, &$skipped, &$failed, $dryRun, $bar) {
+        $query->chunkById(500, function ($propertyRequests) use (&$linked, &$created, &$skipped, &$failed, $dryRun, $linkOnly, $bar) {
             foreach ($propertyRequests as $propertyRequest) {
                 try {
                     // Normalize phone number
@@ -80,53 +94,62 @@ class LinkPropertyRequestsToCustomers extends Command
                         continue;
                     }
 
-                    // Find customer with matching phone number in the same tenant
-                    $customer = ApiCustomer::where('user_id', $propertyRequest->user_id)
-                        ->where('phone_number', $normalizedPhone)
-                        ->first();
+                    if ($linkOnly) {
+                        // Only link mode: find existing customer
+                        $customer = ApiCustomer::where('user_id', $propertyRequest->user_id)
+                            ->where('phone_number', $normalizedPhone)
+                            ->whereNull('property_request_id')
+                            ->first();
 
-                    if (!$customer) {
-                        $skipped++;
-                        $bar->advance();
-                        continue;
+                        if ($customer) {
+                            if (!$dryRun) {
+                                $this->customerService->linkExistingCustomer($customer, $propertyRequest);
+                            }
+                            $linked++;
+                        } else {
+                            $skipped++;
+                        }
+                    } else {
+                        // Combined mode: link or create
+                        // Check if customer exists before calling service method for accurate tracking
+                        $existingCustomer = ApiCustomer::where('user_id', $propertyRequest->user_id)
+                            ->where('phone_number', $normalizedPhone)
+                            ->first();
+
+                        if (!$dryRun) {
+                            $customer = $this->customerService->linkOrCreateCustomer($propertyRequest);
+
+                            if ($customer) {
+                                // If customer existed before and was not linked, it was linked
+                                // If customer didn't exist, it was created
+                                if ($existingCustomer && $existingCustomer->property_request_id === null) {
+                                    $linked++;
+                                } elseif (!$existingCustomer) {
+                                    $created++;
+                                } else {
+                                    // Customer existed but was already linked (shouldn't happen, but handle it)
+                                    $skipped++;
+                                }
+                            } else {
+                                $skipped++;
+                            }
+                        } else {
+                            // Dry run: just check what would happen
+                            if ($existingCustomer) {
+                                if ($existingCustomer->property_request_id === null) {
+                                    $linked++;
+                                } else {
+                                    $skipped++;
+                                }
+                            } else {
+                                // Would create new customer (if stage available)
+                                // For dry run, we'll count as "created" potential
+                                // But we can't check stage availability easily here, so count as created
+                                $created++;
+                            }
+                        }
                     }
 
-                    // Only link if customer doesn't already have a property_request_id
-                    if ($customer->property_request_id !== null) {
-                        $skipped++;
-                        $bar->advance();
-                        continue;
-                    }
-
-                    if (!$dryRun) {
-                        DB::transaction(function () use ($customer, $propertyRequest) {
-                            // Link the customer
-                            $customer->property_request_id = $propertyRequest->id;
-
-                            // Update source only if not already set (preserve original source)
-                            if (!$customer->source || $customer->source === 'manual') {
-                                $customer->source = 'property_request';
-                                $customer->source_id = $propertyRequest->id;
-                            }
-
-                            // Update empty fields only (non-destructive)
-                            if (!$customer->city_id && $propertyRequest->city_id) {
-                                $customer->city_id = $propertyRequest->city_id;
-                            }
-
-                            if (!$customer->district_id && $propertyRequest->districts_id) {
-                                $customer->district_id = $propertyRequest->districts_id;
-                            }
-
-                            // Append to notes (preserve history)
-                            $linkNote = "\n\nتم ربط العميل بطلب عقار (#{$propertyRequest->id}) في " . now()->format('Y-m-d H:i');
-                            $customer->note = ($customer->note ?? '') . $linkNote;
-
-                            $customer->save();
-                        });
-                    }
-
-                    $linked++;
                     $bar->advance();
 
                 } catch (\Exception $e) {
@@ -144,14 +167,17 @@ class LinkPropertyRequestsToCustomers extends Command
 
         // Display results
         $this->info('Completed!');
+        $rows = [
+            ['Linked', $linked],
+            ['Created', $created],
+            ['Skipped', $skipped],
+            ['Failed', $failed],
+            ['Total Processed', $total],
+        ];
+
         $this->table(
             ['Status', 'Count'],
-            [
-                ['Linked', $linked],
-                ['Skipped', $skipped],
-                ['Failed', $failed],
-                ['Total Processed', $total],
-            ]
+            $rows
         );
 
         if ($dryRun) {
