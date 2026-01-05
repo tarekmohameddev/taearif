@@ -23,6 +23,7 @@ use App\Models\User\CounterInformation;
 use App\Models\Api\GeneralSetting;
 use App\Models\Api\FooterSetting;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 
 class OnboardingController extends Controller
@@ -189,6 +190,12 @@ class OnboardingController extends Controller
             // Always mark onboarding as completed after successful submission
             $user->onboarding_completed = true;
             $user->save();
+
+            // Clear user profile cache to ensure GET /user returns updated onboarding_completed status
+            // Cache key format matches AuthController::getUserProfile()
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+            $cacheKey = "user:profile:{$user->id}:{$owner->id}";
+            Cache::forget($cacheKey);
 
                 DB::afterCommit(function () use ($user) {
                     app(\App\Services\TenantWebsiteSeeder::class)->reseedWebsite($user);
