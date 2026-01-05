@@ -456,6 +456,7 @@ class ApiPropertyRequestController extends Controller
 
         $propertyRequest = UserPropertyRequest::where('id', $id)
             ->where('user_id', $ownerId)
+            ->with('customer')
             ->firstOrFail();
 
         return response()->json($propertyRequest);

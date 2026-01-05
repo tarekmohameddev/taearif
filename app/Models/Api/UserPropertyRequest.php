@@ -82,13 +82,24 @@ class UserPropertyRequest extends Model
         // Get district name
         $districtName = $this->district ? $this->district->name_ar : null;
         
-        // Insert districtName right after districts_id
+        // Get customer_id from the customer relationship
+        $customerId = $this->customer ? $this->customer->id : null;
+        
+        // Insert districtName right after districts_id and customer_id after user_id
         $result = [];
         foreach ($array as $key => $value) {
             $result[$key] = $value;
+            if ($key === 'user_id') {
+                $result['customer_id'] = $customerId;
+            }
             if ($key === 'districts_id') {
                 $result['districtName'] = $districtName;
             }
+        }
+        
+        // Fallback: if user_id wasn't in the array, add customer_id anyway
+        if (!isset($result['customer_id'])) {
+            $result['customer_id'] = $customerId;
         }
         
         // Fallback: if districts_id wasn't in the array, add districtName anyway
