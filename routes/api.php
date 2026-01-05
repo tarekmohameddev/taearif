@@ -689,10 +689,10 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::put('/property-requests/{id}', [ApiPropertyRequestController::class, 'update']);
         // update status
         Route::put('/property-requests/{id}/status', [ApiPropertyRequestController::class, 'updateStatus']);
-        // update employee
+        // assign employee to customer (must come before property request employee route to avoid route conflict)
+        Route::put('/property-requests/customer/{customerID}/employee', [ApiPropertyRequestController::class, 'assignEmployeeToCustomer']);
+        // update employee (property request)
         Route::put('/property-requests/{id}/employee', [ApiPropertyRequestController::class, 'updateEmployee']);
-        // assign employee to customer
-        Route::put('/property-requests/{customerID}/employee', [ApiPropertyRequestController::class, 'assignEmployeeToCustomer']);
     });
 
 
