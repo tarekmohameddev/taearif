@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class ApiInstallation extends Model
 {
     use HasFactory, SoftDeletes;
-    use HasFactory;
     protected $table = 'api_installations';
     protected $fillable = [
         'user_id',
@@ -25,6 +24,8 @@ class ApiInstallation extends Model
         'trial_ends_at',
         'current_period_end',
         'payment_subscription_id', // Subscription ID for billing
+        'invoice_id',
+        'recurring_id',
     ];
     protected $casts = [
         'installed_at' => 'datetime',
@@ -47,6 +48,16 @@ class ApiInstallation extends Model
     public function markPending(string $invoiceId): void
     {
         $this->update(['status' => InstallStatus::PendingPayment, 'invoice_id' => $invoiceId]);
+    }
+
+    public function markInstalled(?string $recurringId = null): void
+    {
+        $this->update([
+            'status' => InstallStatus::Installed,
+            'installed' => true,
+            'installed_at' => $this->installed_at ?? now(),
+            'recurring_id' => $recurringId,
+        ]);
     }
 
     public function isActive(): bool

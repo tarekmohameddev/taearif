@@ -11,8 +11,7 @@ return new class extends Migration {
                 'installed',
                 'uninstalled',
                 'trialing',
-                'pending_payment',
-                'expired'
+                'pending_payment'
             ) NOT NULL DEFAULT 'installed'
         ");
     }
