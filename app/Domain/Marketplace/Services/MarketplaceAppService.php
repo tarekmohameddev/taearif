@@ -78,13 +78,12 @@ class MarketplaceAppService extends BaseService
     public function createApp(array $data, ?UploadedFile $image = null): ApiApp
     {
         // Generate a unique key for this submission to prevent duplicates
-        // Use request fingerprint: name + price + billing_type + user_id + timestamp (with microseconds for precision)
+        // Use request fingerprint: name + price + billing_type + user_id (NO timestamp - ensures same data = same lock key)
         $requestFingerprint = md5(
             ($data['name'] ?? '') . 
             ($data['price'] ?? '') . 
             ($data['billing_type'] ?? '') . 
-            (auth('admin')->id() ?? 'guest') .
-            now()->format('Y-m-d H:i:s.u') // Include microseconds for better uniqueness
+            (auth('admin')->id() ?? 'guest')
         );
         
         // Use database-level lock for true atomicity (works with all cache drivers)
@@ -134,12 +133,14 @@ class MarketplaceAppService extends BaseService
         // Step 3: Create app (inside transaction)
         try {
             $result = $this->executeInTransaction(function () use ($appData) {
-                // Double-check: Check if an identical app was just created by the same user in the last 3 seconds
+                // Double-check: Check if an identical app was just created in the last 30 seconds
                 // This provides additional protection against race conditions even if locks fail
+                // Extended window to catch rapid duplicate submissions while allowing legitimate duplicates later
                 $recentDuplicate = ApiApp::where('name', $appData['name'])
                     ->where('price', $appData['price'])
                     ->where('billing_type', $appData['billing_type'])
-                    ->where('created_at', '>=', now()->subSeconds(3))
+                    ->where('created_at', '>=', now()->subSeconds(30))
+                    ->orderBy('created_at', 'desc')
                     ->first();
                 
                 if ($recentDuplicate) {
