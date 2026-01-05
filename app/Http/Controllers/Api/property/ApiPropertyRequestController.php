@@ -170,6 +170,7 @@ class ApiPropertyRequestController extends Controller
         $query = UserPropertyRequest::query()
             ->with([
                 'statusOption:id,name_ar,name_en',
+                'customer:id,property_request_id,user_id,responsible_employee_id', // Explicitly load customer
                 'customer.responsibleEmployee:id,first_name,last_name,email',
                 'district:id,name_ar',
             ])

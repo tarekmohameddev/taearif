@@ -83,7 +83,9 @@ class UserPropertyRequest extends Model
         $districtName = $this->district ? $this->district->name_ar : null;
         
         // Get customer_id from the customer relationship
-        $customerId = $this->customer ? $this->customer->id : null;
+        // Check if relationship is loaded, if not, try to access it (will lazy load if needed)
+        $customer = $this->relationLoaded('customer') ? $this->customer : ($this->customer ?? null);
+        $customerId = $customer ? $customer->id : null;
         
         // Insert districtName right after districts_id and customer_id after user_id
         $result = [];
