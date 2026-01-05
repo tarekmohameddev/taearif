@@ -23,13 +23,14 @@ class ApiApp extends Model
         'img',
         'billing_type',
         'trial_days',
-
+        'is_enabled',
     ];
     protected $casts = [
         'price' => 'decimal:2',
         'rating' => 'float',
         'trial_days' => 'integer',
         'billing_type' => BillingType::class,
+        'is_enabled' => 'boolean',
     ];
     protected $attributes = [
         'type' => 'marketplace',

@@ -52,6 +52,11 @@ class MarketplaceAppService extends BaseService
             $query->where('billing_type', $filters['billing_type']);
         }
 
+        // Only show enabled apps to users (admin can see all)
+        if (isset($filters['for_users']) && $filters['for_users'] === true) {
+            $query->where('is_enabled', true);
+        }
+
         return $query->orderBy('created_at', 'DESC')->paginate($perPage);
     }
 
@@ -124,6 +129,7 @@ class MarketplaceAppService extends BaseService
             'rating' => $data['rating'] ?? 0,
             'billing_type' => BillingType::from($data['billing_type']),
             'trial_days' => $data['billing_type'] === 'paid_trial' ? ($data['trial_days'] ?? null) : null,
+            'is_enabled' => $data['is_enabled'] ?? true,
         ];
 
         if ($imagePath) {
@@ -219,6 +225,7 @@ class MarketplaceAppService extends BaseService
             'billing_type' => BillingType::from($data['billing_type']),
             'trial_days' => $data['billing_type'] === 'paid_trial' ? ($data['trial_days'] ?? null) : null,
             'img' => $imagePath,
+            'is_enabled' => isset($data['is_enabled']) ? (bool)$data['is_enabled'] : $app->is_enabled,
         ];
 
         // Step 3: Update app (inside transaction)
@@ -303,6 +310,29 @@ class MarketplaceAppService extends BaseService
         }
 
         return $deletedCount;
+    }
+
+    /**
+     * Toggle app enabled status
+     *
+     * @param int $id
+     * @return ApiApp
+     * @throws ResourceNotFoundException
+     */
+    public function toggleAppStatus(int $id): ApiApp
+    {
+        $app = $this->getAppById($id);
+        
+        $this->executeInTransaction(function () use ($app) {
+            $app->is_enabled = !$app->is_enabled;
+            $app->save();
+            $this->logActivity('marketplace_app.status_toggled', [
+                'app_id' => $app->id,
+                'is_enabled' => $app->is_enabled,
+            ]);
+        });
+        
+        return $app->fresh();
     }
 }
 

@@ -86,6 +86,7 @@
                                                 <th scope="col">نوع الفوترة</th>
                                                 <th scope="col">السعر</th>
                                                 <th scope="col">التقييم</th>
+                                                <th scope="col">الحالة</th>
                                                 <th scope="col">الإجراءات</th>
                                             </tr>
                                         </thead>
@@ -142,6 +143,15 @@
                                                     </td>
                                                     <td>
                                                         <span class="badge badge-info">{{ number_format($app->rating, 1) }}/5.0</span>
+                                                    </td>
+                                                    <td>
+                                                        <button 
+                                                            class="btn btn-sm toggle-status-btn {{ $app->is_enabled ? 'btn-outline-success' : 'btn-secondary' }}"
+                                                            data-app-id="{{ $app->id }}"
+                                                            data-enabled="{{ $app->is_enabled ? '1' : '0' }}">
+                                                            <i class="fas {{ $app->is_enabled ? 'fa-check-circle' : 'fa-times-circle' }}"></i>
+                                                            {{ $app->is_enabled ? 'مفعل' : 'معطل' }}
+                                                        </button>
                                                     </td>
                                                     <td>
                                                         <a class="btn btn-secondary btn-sm"
@@ -319,7 +329,7 @@
                             window.marketplaceAppSubmitting = false;
                             $btn.prop('disabled', false);
                             $btn.html(originalText);
-                        }, 2000);
+                        }, 1500);
                     }
                 });
                 
@@ -344,6 +354,65 @@
                 // Reset billing_type to first option
                 var firstOption = $('#billing_type option:first').val();
                 $('#billing_type').val(firstOption);
+            });
+
+            // Toggle app status
+            $(document).on('click', '.toggle-status-btn', function(e) {
+                e.preventDefault();
+                var $btn = $(this);
+                var appId = $btn.data('app-id');
+                var isEnabled = $btn.data('enabled') == '1';
+                
+                // Disable button during request
+                $btn.prop('disabled', true);
+                
+                $.ajax({
+                    url: '{{ route("admin.marketplace-apps.toggle-status") }}',
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        app_id: appId
+                    },
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            // Update button appearance
+                            if (response.is_enabled) {
+                                $btn.removeClass('btn-secondary').addClass('btn-outline-success');
+                                $btn.find('i').removeClass('fa-times-circle').addClass('fa-check-circle');
+                                $btn.html('<i class="fas fa-check-circle"></i> مفعل');
+                                $btn.data('enabled', '1');
+                            } else {
+                                $btn.removeClass('btn-outline-success').addClass('btn-secondary');
+                                $btn.find('i').removeClass('fa-check-circle').addClass('fa-times-circle');
+                                $btn.html('<i class="fas fa-times-circle"></i> معطل');
+                                $btn.data('enabled', '0');
+                            }
+                            
+                            // Show success message with SweetAlert
+                            swal({
+                                title: response.is_enabled ? 'تم التفعيل' : 'تم التعطيل',
+                                text: response.message,
+                                icon: 'success',
+                                button: 'موافق',
+                                timer: 1500,
+                                timerProgressBar: true
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        swal({
+                            title: 'خطأ',
+                            text: 'حدث خطأ. يرجى المحاولة مرة أخرى.',
+                            icon: 'error',
+                            button: 'موافق',
+                            timer: 1500,
+                            timerProgressBar: true
+                        });
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false);
+                    }
+                });
             });
         });
     </script>

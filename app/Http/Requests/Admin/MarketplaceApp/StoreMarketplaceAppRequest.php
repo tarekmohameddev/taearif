@@ -33,6 +33,7 @@ class StoreMarketplaceAppRequest extends FormRequest
             'image' => 'nullable|file|image|mimes:jpg,jpeg,png|max:2048',
             'billing_type' => 'required|in:free,paid,paid_trial',
             'trial_days' => 'nullable|integer|min:1|max:365|required_if:billing_type,paid_trial',
+            'is_enabled' => 'nullable|boolean',
         ];
     }
 

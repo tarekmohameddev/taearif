@@ -25,7 +25,7 @@ class ApiInstallationController extends Controller
     public function index()
     {
         $userId = auth()->id();
-        $apps = ApiApp::all();
+        $apps = ApiApp::where('is_enabled', true)->get();
 
         $installations = ApiInstallation::with('settings')
             ->where('user_id', $userId)
@@ -165,7 +165,9 @@ class ApiInstallationController extends Controller
     {
         $req->validate(['app_id' => 'required|exists:api_apps,id', 'settings' => 'array']);
         $user   = $req->user();
-        $app    = ApiApp::findOrFail($req->app_id);
+        $app    = ApiApp::where('id', $req->app_id)
+            ->where('is_enabled', true)
+            ->firstOrFail();
         $result = $svc->install($user, $app, $req->input('settings', []));
 
         if ($app->name === 'واتس اب') {
@@ -239,7 +241,9 @@ class ApiInstallationController extends Controller
     public function whatsapp()
     {
         $userId = auth()->id();
-        $app = ApiApp::where('name', 'واتس اب')->first();
+        $app = ApiApp::where('name', 'واتس اب')
+            ->where('is_enabled', true)
+            ->first();
 
         if (!$app) {
             return response()->json([
@@ -282,7 +286,9 @@ class ApiInstallationController extends Controller
      */
     public function installWhatsapp(Request $req, InstallationService $svc)
     {
-        $app = ApiApp::where('name', 'واتس اب')->firstOrFail();
+        $app = ApiApp::where('name', 'واتس اب')
+            ->where('is_enabled', true)
+            ->firstOrFail();
         $user = $req->user();
         $result = $svc->install($user, $app, $req->input('settings', []));
 
@@ -328,7 +334,9 @@ class ApiInstallationController extends Controller
     public function uninstallWhatsapp()
     {
         $userId = Auth::id();
-        $app = ApiApp::where('name', 'واتس اب')->firstOrFail();
+        $app = ApiApp::where('name', 'واتس اب')
+            ->where('is_enabled', true)
+            ->firstOrFail();
 
         $installation = ApiInstallation::where('user_id', $userId)
             ->where('app_id', $app->id)

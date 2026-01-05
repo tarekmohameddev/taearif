@@ -126,5 +126,29 @@ class MarketplaceAppController extends Controller
         Session::flash('success', "تم حذف {$deletedCount} تطبيق(ات) المتجر بنجاح!");
         return redirect()->route('admin.marketplace-apps.index');
     }
+
+    /**
+     * Toggle app enabled/disabled status
+     */
+    public function toggleStatus(Request $request)
+    {
+        $request->validate([
+            'app_id' => 'required|exists:api_apps,id',
+        ]);
+
+        $app = $this->appService->toggleAppStatus($request->app_id);
+
+        // Handle AJAX requests
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => $app->is_enabled ? 'تم تفعيل التطبيق بنجاح' : 'تم إلغاء تفعيل التطبيق بنجاح',
+                'is_enabled' => $app->is_enabled,
+            ]);
+        }
+
+        Session::flash('success', $app->is_enabled ? 'تم تفعيل التطبيق بنجاح!' : 'تم إلغاء تفعيل التطبيق بنجاح!');
+        return back();
+    }
 }
 

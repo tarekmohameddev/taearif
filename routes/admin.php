@@ -507,6 +507,7 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/marketplace-apps/update', 'Admin\MarketplaceAppController@update')->name('marketplace-apps.update');
         Route::post('/marketplace-apps/delete', 'Admin\MarketplaceAppController@delete')->name('marketplace-apps.delete');
         Route::post('/marketplace-apps/bulk-delete', 'Admin\MarketplaceAppController@bulkDelete')->name('marketplace-apps.bulk-delete');
+        Route::post('/marketplace-apps/toggle-status', 'Admin\MarketplaceAppController@toggleStatus')->name('marketplace-apps.toggle-status');
     });
 
     //AdminCreditController
