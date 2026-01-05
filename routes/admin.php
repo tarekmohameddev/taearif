@@ -498,6 +498,17 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/app-request/delete', 'Admin\AppInstallationController@delete')->name('app.request.delete');
     });
 
+    //MarketplaceAppsController
+    Route::group(['middleware' => 'checkpermission:App Request'], function () {
+        Route::get('/marketplace-apps', 'Admin\MarketplaceAppController@index')->name('marketplace-apps.index');
+        Route::get('/marketplace-apps/create', 'Admin\MarketplaceAppController@create')->name('marketplace-apps.create');
+        Route::post('/marketplace-apps/store', 'Admin\MarketplaceAppController@store')->name('marketplace-apps.store');
+        Route::get('/marketplace-apps/{id}/edit', 'Admin\MarketplaceAppController@edit')->name('marketplace-apps.edit');
+        Route::post('/marketplace-apps/update', 'Admin\MarketplaceAppController@update')->name('marketplace-apps.update');
+        Route::post('/marketplace-apps/delete', 'Admin\MarketplaceAppController@delete')->name('marketplace-apps.delete');
+        Route::post('/marketplace-apps/bulk-delete', 'Admin\MarketplaceAppController@bulkDelete')->name('marketplace-apps.bulk-delete');
+    });
+
     //AdminCreditController
     Route::group(['middleware' => 'checkpermission:Credit Management'], function () {
         Route::get('/credit-transactions', 'Admin\AdminCreditController@index')->name('credit.transactions.index');

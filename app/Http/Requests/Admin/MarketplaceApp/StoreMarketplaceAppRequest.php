@@ -1,0 +1,90 @@
+<?php
+
+namespace App\Http\Requests\Admin\MarketplaceApp;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreMarketplaceAppRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     *
+     * @return bool
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array
+     */
+    public function rules(): array
+    {
+        return [
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:5000',
+            'price' => 'required|numeric|min:0|max:999999.99',
+            'type' => 'required|in:builtin,marketplace',
+            'rating' => 'nullable|numeric|min:0|max:5',
+            'img' => 'nullable|url|max:500',
+            'image' => 'nullable|file|image|mimes:jpg,jpeg,png|max:2048',
+            'billing_type' => 'required|in:free,paid,paid_trial',
+            'trial_days' => 'nullable|integer|min:1|max:365|required_if:billing_type,paid_trial',
+        ];
+    }
+
+    /**
+     * Configure the validator instance.
+     *
+     * @param  \Illuminate\Validation\Validator  $validator
+     * @return void
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            // At least one of img or image must be provided
+            if (empty($this->input('img')) && !$this->hasFile('image')) {
+                $validator->errors()->add('image', 'يجب توفير إما رابط صورة أو ملف صورة.');
+            }
+        });
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array
+     */
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'اسم التطبيق مطلوب',
+            'name.max' => 'اسم التطبيق لا يمكن أن يكون أكبر من 255 حرف',
+            'price.required' => 'السعر مطلوب',
+            'price.numeric' => 'السعر يجب أن يكون رقماً',
+            'price.min' => 'السعر يجب أن يكون على الأقل 0',
+            'type.required' => 'نوع التطبيق مطلوب',
+            'type.in' => 'نوع التطبيق يجب أن يكون إما مدمج أو متجر',
+            'rating.numeric' => 'التقييم يجب أن يكون رقماً',
+            'rating.min' => 'التقييم يجب أن يكون على الأقل 0',
+            'rating.max' => 'التقييم لا يجب أن يتجاوز 5',
+            'image.file' => 'الصورة يجب أن تكون ملف',
+            'image.image' => 'الصورة يجب أن تكون ملف صورة',
+            'image.mimes' => 'الصورة يجب أن تكون ملف jpg أو jpeg أو png',
+            'image.max' => 'حجم الصورة لا يجب أن يتجاوز 2 ميجابايت',
+            'billing_type.required' => 'نوع الفوترة مطلوب',
+            'billing_type.in' => 'نوع الفوترة يجب أن يكون مجاني أو مدفوع أو مدفوع مع تجربة',
+            'trial_days.required_if' => 'أيام التجربة مطلوبة عندما يكون نوع الفوترة مدفوع مع تجربة',
+            'trial_days.integer' => 'أيام التجربة يجب أن تكون رقماً صحيحاً',
+            'trial_days.min' => 'أيام التجربة يجب أن تكون على الأقل 1',
+            'trial_days.max' => 'أيام التجربة لا يجب أن تتجاوز 365',
+            'img.url' => 'رابط الصورة يجب أن يكون رابطاً صحيحاً',
+            'img.max' => 'رابط الصورة لا يجب أن يتجاوز 500 حرف',
+            'description.max' => 'الوصف لا يجب أن يتجاوز 5000 حرف',
+            'price.max' => 'السعر لا يجب أن يتجاوز 999999.99',
+        ];
+    }
+}
+

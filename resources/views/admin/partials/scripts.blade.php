@@ -80,7 +80,7 @@
     var content = {};
 
     content.message = '{{ session('success') }}';
-    content.title = 'Success';
+    content.title = 'نجاح';
     content.icon = 'fa fa-bell';
 
     $.notify(content, {
@@ -103,7 +103,7 @@
     var content = {};
 
     content.message = '{{ session('warning') }}';
-    content.title = 'Warning!';
+    content.title = 'تحذير!';
     content.icon = 'fa fa-bell';
 
     $.notify(content, {
@@ -125,7 +125,7 @@
     var content = {};
 
     content.message = '{{ session('error') }}';
-    content.title = 'Error!';
+    content.title = 'خطأ!';
     content.icon = 'fa fa-exclamation-triangle';
 
     $.notify(content, {
