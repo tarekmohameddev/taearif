@@ -185,10 +185,8 @@ class CustomersSingleSheetImport implements OnEachRow, WithHeadingRow, WithValid
                 'district_id' => $districtId,
             ];
 
-            // Handle password if provided
-            if (!empty($row['password'])) {
-                $customerData['password'] = bcrypt($row['password']);
-            }
+            // Handle password - use provided or default to '12345678'
+            $customerData['password'] = bcrypt($row['password'] ?? '12345678');
 
             $customer = ApiCustomer::create($customerData);
 

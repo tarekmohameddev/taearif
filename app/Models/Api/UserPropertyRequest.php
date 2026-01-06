@@ -70,11 +70,46 @@ class UserPropertyRequest extends Model
         return $this->hasOne(ApiCustomer::class, 'property_request_id');
     }
 
+    public function district()
+    {
+        return $this->belongsTo(\App\Models\User\UserDistrict::class, 'districts_id');
+    }
+
     public function toArray(): array
     {
         $array = parent::toArray();
+        
+        // Get district name
+        $districtName = $this->district ? $this->district->name_ar : null;
+        
+        // Get customer_id from the customer relationship
+        // This will use the eager loaded relationship if available, or lazy load it if not
+        $customer = $this->customer;
+        $customerId = $customer ? $customer->id : null;
+        
+        // Insert districtName right after districts_id and customer_id after user_id
+        $result = [];
+        foreach ($array as $key => $value) {
+            $result[$key] = $value;
+            if ($key === 'user_id') {
+                $result['customer_id'] = $customerId;
+            }
+            if ($key === 'districts_id') {
+                $result['districtName'] = $districtName;
+            }
+        }
+        
+        // Fallback: if user_id wasn't in the array, add customer_id anyway
+        if (!isset($result['customer_id'])) {
+            $result['customer_id'] = $customerId;
+        }
+        
+        // Fallback: if districts_id wasn't in the array, add districtName anyway
+        if (!isset($result['districtName'])) {
+            $result['districtName'] = $districtName;
+        }
 
-        $array['status'] = $this->statusOption
+        $result['status'] = $this->statusOption
             ? [
                 'id' => $this->statusOption->id,
                 'name_ar' => $this->statusOption->name_ar,
@@ -82,14 +117,14 @@ class UserPropertyRequest extends Model
             ]
             : null;
 
-        $array['employee'] = $this->formatEmployeePayload();
+        $result['employee'] = $this->formatEmployeePayload();
 
-        return $array;
+        return $result;
     }
 
     protected function formatEmployeePayload(): ?array
     {
-        $customer = $this->relationLoaded('customer') ? $this->customer : $this->customer;
+        $customer = $this->customer;
 
         if (!$customer || !$customer->responsibleEmployee) {
             return null;

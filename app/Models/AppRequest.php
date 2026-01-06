@@ -11,7 +11,7 @@ class AppRequest extends Model
 {
     use HasFactory;
     protected $table = 'app_requests';
-    protected $fillable = ['user_id', 'app_id', 'phone_number', 'token', 'status'];
+    protected $fillable = ['user_id', 'app_id', 'username', 'phone_number', 'token', 'status'];
     protected $casts = [
         'status' => 'string',
         'phone_number' => 'string',

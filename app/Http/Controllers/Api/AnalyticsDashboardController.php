@@ -15,6 +15,7 @@ use App\Models\ApiCustomer;
 use App\Models\Analytics\AnalyticsDailySummary;
 use App\Models\Api\EmployeeActivityLog;
 use App\Models\User;
+use App\Services\ActivityActionMapper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 
@@ -1136,6 +1137,9 @@ class AnalyticsDashboardController extends Controller
     {
         $user = $request->user();
         $tenantOwnerId = $user->tenantOwnerId();
+        
+        // Get locale from request or use default
+        $locale = $request->get('locale', app()->getLocale());
 
         // Get optional filters
         $limit = max(1, min(100, (int) $request->input('limit', 50)));
@@ -1158,13 +1162,18 @@ class AnalyticsDashboardController extends Controller
         $logs = $query->get();
 
         // Map logs to frontend format
-        $activities = $logs->map(function ($log) {
+        $activities = $logs->map(function ($log) use ($locale) {
             $actor = $log->actor;
             $userName = $this->getUserName($actor);
+            
+            // Translate action key
+            $actionKey = $log->action ?? 'activity.unknown';
+            $translatedAction = ActivityActionMapper::translateActionKey($actionKey, $locale);
 
             return [
                 'id' => $log->id,
-                'action' => $log->action ?? 'Unknown Action',
+                'action' => $actionKey, // Keep original key
+                'action_label' => $translatedAction, // Translated label
                 'section' => $this->getSectionFromTargetType($log->target_type),
                 'time' => $log->created_at ? $log->created_at->diffForHumans() : 'just now',
                 'icon' => $this->getIconForTargetType($log->target_type, $log->action),

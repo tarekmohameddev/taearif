@@ -3,8 +3,10 @@ namespace App\Http\Controllers\Api\V1;
 
 use Illuminate\Http\Request;
 use App\Models\Api\EmployeeActivityLog;
+use App\Services\ActivityActionMapper;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\ResolvesTenant;
+use Illuminate\Support\Facades\Lang;
 
 class LogController extends Controller
 {
@@ -22,6 +24,9 @@ class LogController extends Controller
     {
         $u        = $request->user();
         $tenantId = $u->tenantOwnerId(); // <- from your User model helpers
+        
+        // Get locale from request or use default
+        $locale = $request->get('locale', app()->getLocale());
 
         $q = EmployeeActivityLog::query()
             ->where('user_id', $tenantId)
@@ -48,10 +53,14 @@ class LogController extends Controller
         $paginator = $q->paginate($perPage);
 
         $withActor = (bool) $request->boolean('with_actor', false);
-        $rows = $paginator->getCollection()->map(function ($r) use ($withActor) {
+        $rows = $paginator->getCollection()->map(function ($r) use ($withActor, $locale) {
+            // Translate the action key
+            $translatedAction = ActivityActionMapper::translateActionKey($r->action, $locale);
+            
             $item = [
                 'id'          => $r->id,
-                'action'      => $r->action,
+                'action'      => $r->action, // Keep original key for filtering/searching
+                'action_label' => $translatedAction, // Human-readable translated label
                 'actor_type'  => $r->actor_type, // 'user' or 'employee'
                 'actor_id'    => $r->actor_id,
                 'target_type' => $r->target_type,

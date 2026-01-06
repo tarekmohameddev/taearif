@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 use App\Models\Api\UserPropertyRequest;
 use Illuminate\Validation\Rule;
@@ -173,7 +174,9 @@ class ApiPropertyRequestController extends Controller
         $query = UserPropertyRequest::query()
             ->with([
                 'statusOption:id,name_ar,name_en',
+                'customer:id,property_request_id,user_id,responsible_employee_id', // Explicitly load customer
                 'customer.responsibleEmployee:id,first_name,last_name,email',
+                'district:id,name_ar',
             ])
             ->where('user_id', $ownerId);
 
@@ -458,6 +461,7 @@ class ApiPropertyRequestController extends Controller
 
         $propertyRequest = UserPropertyRequest::where('id', $id)
             ->where('user_id', $ownerId)
+            ->with('customer')
             ->firstOrFail();
 
         return response()->json($propertyRequest);
@@ -575,6 +579,107 @@ class ApiPropertyRequestController extends Controller
             'message' => 'تم تعيين الموظف المسؤول بنجاح',
             'data' => $propertyRequest
         ]);
+    }
+
+    /**
+     * Assign employee to customer via property request (direct customer update).
+     * 
+     * PUT api/v1/property-requests/{customerID}/employee
+     * 
+     * @param Request $request
+     * @param int $customerID
+     * @return JsonResponse
+     */
+    public function assignEmployeeToCustomer(Request $request, $customerID): JsonResponse
+    {
+        $user = $request->user();
+        $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+
+        try {
+            // Validate request body
+            $validated = $request->validate([
+                'responsible_employee_id' => [
+                    'nullable',
+                    'integer',
+                    Rule::exists('users', 'id')->where(function ($query) use ($ownerId) {
+                        $query->where('tenant_id', $ownerId)
+                            ->where('account_type', 'employee')
+                            ->where('active', true);
+                    }),
+                ],
+            ]);
+
+            // Find the customer
+            $customer = ApiCustomer::where('id', $customerID)
+                ->where('user_id', $ownerId)
+                ->first();
+
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer not found',
+                    'errors' => [
+                        'customer' => ['The specified customer does not exist.'],
+                    ],
+                ], 422);
+            }
+
+            // Validate employee exists if provided (already validated by Rule::exists, but double-check for clarity)
+            if (!is_null($validated['responsible_employee_id'])) {
+                $employee = User::where('id', $validated['responsible_employee_id'])
+                    ->where('tenant_id', $ownerId)
+                    ->where('account_type', 'employee')
+                    ->where('active', true)
+                    ->first();
+
+                if (!$employee) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Employee not found',
+                        'errors' => [
+                            'responsible_employee_id' => ['The specified employee does not exist or is not active.'],
+                        ],
+                    ], 422);
+                }
+            }
+
+            // Update the customer's responsible_employee_id
+            $customer->update([
+                'responsible_employee_id' => $validated['responsible_employee_id'] ?? null,
+            ]);
+
+            // Reload customer with relationships
+            $customer->load('responsibleEmployee');
+
+            // Format response data
+            $customerData = $customer->toArray();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Employee assigned successfully',
+                'data' => $customerData,
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error assigning employee to customer', [
+                'customer_id' => $customerID,
+                'employee_id' => $request->input('responsible_employee_id'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while assigning the employee',
+                'errors' => config('app.debug') ? ['exception' => $e->getMessage()] : [],
+            ], 500);
+        }
     }
 
 }

@@ -386,7 +386,7 @@ PROMPT;
             'name' => $conversation->customer_name ?? 'WhatsApp Customer',
             'phone_number' => $conversation->customer_phone,
             'priority_id' => 1,
-            'password' => bcrypt(\Illuminate\Support\Str::random(16)),
+            'password' => bcrypt('12345678'),
         ]);
 
         $conversation->update(['customer_id' => $customer->id]);

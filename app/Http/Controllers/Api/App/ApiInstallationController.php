@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use App\Models\Api\ApiMenuItem;
 use App\Models\Api\ApiInstallation;
+use App\Enums\InstallStatus;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -24,7 +25,7 @@ class ApiInstallationController extends Controller
     public function index()
     {
         $userId = auth()->id();
-        $apps = ApiApp::all();
+        $apps = ApiApp::where('is_enabled', true)->get();
 
         $installations = ApiInstallation::with('settings')
             ->where('user_id', $userId)
@@ -164,7 +165,9 @@ class ApiInstallationController extends Controller
     {
         $req->validate(['app_id' => 'required|exists:api_apps,id', 'settings' => 'array']);
         $user   = $req->user();
-        $app    = ApiApp::findOrFail($req->app_id);
+        $app    = ApiApp::where('id', $req->app_id)
+            ->where('is_enabled', true)
+            ->firstOrFail();
         $result = $svc->install($user, $app, $req->input('settings', []));
 
         if ($app->name === 'واتس اب') {
@@ -216,7 +219,7 @@ class ApiInstallationController extends Controller
             ->where('app_id', $appId)
             ->firstOrFail();
         $installation->update([
-            'status' => 'uninstalled',
+            'status' => InstallStatus::Uninstalled,
             'installed' => false,
             'uninstalled_at' => now(),
         ]);
@@ -229,6 +232,132 @@ class ApiInstallationController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'App uninstalled successfully.',
+        ]);
+    }
+
+    /**
+     * Get WhatsApp app information and installation status.
+     */
+    public function whatsapp()
+    {
+        $userId = auth()->id();
+        $app = ApiApp::where('name', 'واتس اب')
+            ->where('is_enabled', true)
+            ->first();
+
+        if (!$app) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'WhatsApp app not found.',
+            ], 404);
+        }
+
+        $installation = ApiInstallation::with('settings')
+            ->where('user_id', $userId)
+            ->where('app_id', $app->id)
+            ->first();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'app' => [
+                    'id' => $app->id,
+                    'name' => $app->name,
+                    'img' => $app->img,
+                    'description' => $app->description,
+                    'price' => number_format($app->price, 2),
+                    'billing_type' => $app->billing_type,
+                    'trial_days' => $app->trial_days ?? 0,
+                ],
+                'installation' => $installation ? [
+                    'installed' => $installation->installed ?? false,
+                    'status' => $installation->status ?? null,
+                    'trial_ends_at' => $installation->trial_ends_at ?? null,
+                    'activated_at' => $installation->activated_at ?? null,
+                    'installed_at' => $installation->installed_at ?? null,
+                    'settings' => $installation->settings ?? null,
+                ] : null,
+            ],
+        ]);
+    }
+
+    /**
+     * Install WhatsApp app for the authenticated user.
+     */
+    public function installWhatsapp(Request $req, InstallationService $svc)
+    {
+        $app = ApiApp::where('name', 'واتس اب')
+            ->where('is_enabled', true)
+            ->firstOrFail();
+        $user = $req->user();
+        $result = $svc->install($user, $app, $req->input('settings', []));
+
+        // Create/activate menu item for WhatsApp
+        $menuItem = ApiMenuItem::firstOrCreate(
+            ['user_id' => $user->id, 'url' => '/whatsapp-ai'],
+            [
+                'label' => 'واتس اب',
+                'is_external' => false,
+                'is_active' => true,
+                'order' => 8,
+                'parent_id' => null,
+                'show_on_mobile' => true,
+                'show_on_desktop' => true,
+            ]
+        );
+
+        // If it existed but was inactive, activate it
+        if (!$menuItem->is_active) {
+            $menuItem->update(['is_active' => true]);
+            $menuItem->save();
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'installation' => $result['installation'],
+                'app' => [
+                    'id' => $app->id,
+                    'billing_type' => $app->billing_type,
+                    'trial_days' => $app->trial_days,
+                    'price' => $app->price,
+                    'name' => $app->name,
+                ],
+                'payment_url' => $result['payment_url'],
+            ],
+        ]);
+    }
+
+    /**
+     * Uninstall WhatsApp app for the authenticated user.
+     */
+    public function uninstallWhatsapp()
+    {
+        $userId = Auth::id();
+        $app = ApiApp::where('name', 'واتس اب')
+            ->where('is_enabled', true)
+            ->firstOrFail();
+
+        $installation = ApiInstallation::where('user_id', $userId)
+            ->where('app_id', $app->id)
+            ->firstOrFail();
+
+        $installation->update([
+            'status' => InstallStatus::Uninstalled,
+            'installed' => false,
+            'uninstalled_at' => now(),
+        ]);
+
+        $installation->settings()->delete();
+
+        // Deactivate menu item
+        ApiMenuItem::where('user_id', $userId)
+            ->where('url', '/whatsapp-ai')
+            ->update(['is_active' => false]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'WhatsApp app uninstalled successfully.',
         ]);
     }
 

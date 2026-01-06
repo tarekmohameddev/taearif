@@ -170,6 +170,15 @@
                     </li>
                 @endif
 
+                @if (empty($admin->role) || (!empty($permissions) && in_array('app Request', $permissions)))
+                    <li class="nav-item @if (request()->is('admin/marketplace-apps*')) active @endif">
+                        <a href="{{ route('admin.marketplace-apps.index') }}">
+                            <i class="fas fa-store"></i>
+                            <p>تطبيقات المتجر</p>
+                        </a>
+                    </li>
+                @endif
+
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Credit Management', $permissions)))
                     <li class="nav-item submenu @if (request()->is('admin/credit-transactions*') || request()->is('admin/credit-management*') || request()->is('admin/whatsapp-addons*') || request()->is('whatsapp-addons*') || request()->is('admin/whatsapp-addon-plans*') || request()->is('admin/employee-addon-plans*')) active @endif">
                         <a data-toggle="collapse" href="#creditManagement">

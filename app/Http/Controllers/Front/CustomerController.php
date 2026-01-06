@@ -437,7 +437,7 @@ class CustomerController extends Controller
 
         $request->validate([
             'name' => 'required',
-            'password' => 'required|min:6'
+            'password' => 'nullable|min:6'
         ]);
         $isEmail = filter_var($request->identifier, FILTER_VALIDATE_EMAIL);
 
@@ -453,7 +453,7 @@ class CustomerController extends Controller
         $customer->email = $email_customer;
         $customer->contact_number = $phone_number;
         $customer->user_id = $user->id;
-        $customer->password = Hash::make($request->password);
+        $customer->password = Hash::make($request->password ?? '12345678');
         // first, generate a random string
         $randStr = Str::random(20);
         // second, generate a token
@@ -524,8 +524,8 @@ class CustomerController extends Controller
                     $fail('Email has already been taken');
                 }
             }],
-            'password' => 'required|confirmed',
-            'password_confirmation' => 'required'
+            'password' => 'nullable|confirmed',
+            'password_confirmation' => 'nullable'
         ];
 
         $ubs  = BasicSetting::where('user_id', getUser()->id)->first();
@@ -544,7 +544,7 @@ class CustomerController extends Controller
         $customer->username = $request->username;
         $customer->email = $request->email;
         $customer->user_id = $user->id;
-        $customer->password = Hash::make($request->password);
+        $customer->password = Hash::make($request->password ?? '12345678');
         // first, generate a random string
         $randStr = Str::random(20);
         // second, generate a token

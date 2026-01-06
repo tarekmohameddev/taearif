@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use App\Models\Api\EmployeeActivityLog;
+use App\Services\ActivityActionMapper;
 use Illuminate\Support\Facades\Log;
 
 class LogEmployeeRequestActivity
@@ -80,8 +81,8 @@ class LogEmployeeRequestActivity
         $user = $request->user();
         $tenantId = $user->tenantOwnerId();
 
-        // Build stable action signature
-        $action = $this->buildActionSignature($request);
+        // Get human-readable action key
+        $actionKey = ActivityActionMapper::getActionKeyOnly($request);
 
         // Get target information
         $targetInfo = $this->extractTargetInfo($request);
@@ -96,25 +97,13 @@ class LogEmployeeRequestActivity
             'user_id' => $tenantId,
             'actor_type' => 'employee',
             'actor_id' => $user->id,
-            'action' => $action,
+            'action' => $actionKey,
             'target_type' => $targetInfo['type'],
             'target_id' => $targetInfo['id'],
             'new_values' => $requestData,
             'ip' => $request->ip(),
             'user_agent' => substr($request->userAgent() ?? '', 0, 255),
         ]);
-    }
-
-    private function buildActionSignature(Request $request): string
-    {
-        $method = $request->method();
-        $uri = $request->getRequestUri();
-
-        // Remove query parameters and trailing slashes for stability
-        $uri = preg_replace('/\?.*/', '', $uri);
-        $uri = rtrim($uri, '/');
-
-        return $method . ' ' . $uri;
     }
 
     private function extractTargetInfo(Request $request): array

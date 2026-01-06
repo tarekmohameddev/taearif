@@ -74,6 +74,11 @@ class Handler extends ExceptionHandler
                 return $exception->render();
             }
 
+            // Handle BusinessLogicException (includes marketplace exceptions)
+            if ($exception instanceof \App\Exceptions\BusinessLogicException) {
+                return $exception->render();
+            }
+
             // Validation (you also have invalidJson; this is just a safeguard)
             if ($exception instanceof ValidationException) {
                 return response()->json([
@@ -178,6 +183,46 @@ class Handler extends ExceptionHandler
                 'timestamp' => now()->toIso8601String(),
             ], 500);
         }
+
+        // Handle BusinessLogicException for web requests
+        if ($exception instanceof \App\Exceptions\BusinessLogicException) {
+            \Log::warning('Business logic violation', [
+                'exception' => get_class($exception),
+                'message' => $exception->getMessage(),
+                'error_code' => $exception->getErrorCode(),
+                'url' => $request->fullUrl(),
+                'user_id' => auth()->id(),
+            ]);
+
+            // For AJAX requests, return JSON
+            if ($request->expectsJson() || $request->ajax()) {
+                return $exception->render();
+            }
+
+            // For regular web requests, flash error and redirect back
+            \Session::flash('error', $exception->getMessage());
+            return back();
+        }
+
+        // Handle ResourceNotFoundException for web requests
+        if ($exception instanceof \App\Exceptions\ResourceNotFoundException) {
+            \Log::warning('Resource not found', [
+                'exception' => get_class($exception),
+                'message' => $exception->getMessage(),
+                'url' => $request->fullUrl(),
+                'user_id' => auth()->id(),
+            ]);
+
+            // For AJAX requests, return JSON
+            if ($request->expectsJson() || $request->ajax()) {
+                return $exception->render();
+            }
+
+            // For regular web requests, flash error and redirect back
+            \Session::flash('error', $exception->getMessage());
+            return back();
+        }
+
         //check if exception is an instance of ModelNotFoundException.
         if ($exception instanceof ModelNotFoundException) {
             // normal 404 view page feedback

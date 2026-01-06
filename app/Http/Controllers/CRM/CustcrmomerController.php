@@ -96,8 +96,8 @@ class CustcrmomerController extends Controller
                     $fail('Email has already been taken');
                 }
             }],
-            'password' => 'required|confirmed',
-            'password_confirmation' => 'required'
+            'password' => 'nullable|confirmed',
+            'password_confirmation' => 'nullable'
         ];
 
         $ubs  = BasicSetting::where('user_id', Auth::user()->id)->first();
@@ -122,7 +122,7 @@ class CustcrmomerController extends Controller
         $customer->username = $request->username;
         $customer->email = $request->email;
         $customer->user_id = $user->id;
-        $customer->password = Hash::make($request->password);
+        $customer->password = Hash::make($request->password ?? '12345678');
         // first, generate a random string
         $randStr = Str::random(20);
         // second, generate a token

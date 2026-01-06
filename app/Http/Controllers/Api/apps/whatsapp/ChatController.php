@@ -297,7 +297,7 @@ public function handleWhatsappWebhook(Request $request)
                 'name'         => $contactName,
                 'phone_number' => $fromNumber,
                 'priority'     => 1,
-                'password'     => bcrypt(Str::random(10)),
+                'password'     => bcrypt('12345678'),
             ]);
 
             return response()->json([

@@ -97,7 +97,7 @@ class ApiCustomerController extends Controller
                     }
                 }
             ],
-            'password' => 'required',
+            'password' => 'nullable',
         ];
 
         // reCAPTCHA optional
@@ -123,7 +123,7 @@ class ApiCustomerController extends Controller
             $customer->phone_number = $identifier;
         }
 
-        $customer->password = Hash::make($request->password);
+        $customer->password = Hash::make($request->password ?? '12345678');
         $customer->save();
 
         Auth::guard('api_customer')->login($customer);

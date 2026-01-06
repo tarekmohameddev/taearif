@@ -434,7 +434,37 @@
     "WhatsApp Number Limit": "الحد الأقصى لأرقام واتساب",
     "Enter Phone Number": "أدخل رقم الهاتف",
 
-    "virtual_tour": "جولة افتراضية"
+    "virtual_tour": "جولة افتراضية",
+    "Marketplace Apps": "تطبيقات المتجر",
+    "Add Marketplace App": "إضافة تطبيق متجر",
+    "Edit Marketplace App": "تعديل تطبيق متجر",
+    "Marketplace": "متجر",
+    "Built-in": "مدمج",
+    "App Name": "اسم التطبيق",
+    "App Type": "نوع التطبيق",
+    "Billing Type": "نوع الفوترة",
+    "Trial Days": "أيام التجربة",
+    "Image URL": "رابط الصورة",
+    "Upload Image": "رفع صورة",
+    "Upload New Image": "رفع صورة جديدة",
+    "Current Image": "الصورة الحالية",
+    "Paid": "مدفوع",
+    "Paid with Trial": "مدفوع مع تجربة",
+    "Enter app name": "أدخل اسم التطبيق",
+    "Enter app description": "أدخل وصف التطبيق",
+    "Enter app price": "أدخل سعر التطبيق",
+    "Enter rating": "أدخل التقييم",
+    "Enter image URL": "أدخل رابط الصورة",
+    "Enter trial days": "أدخل أيام التجربة",
+    "Enter 0 for free apps": "أدخل 0 للتطبيقات المجانية",
+    "OR upload an image file below": "أو قم برفع ملف صورة أدناه",
+    "OR upload a new image file below": "أو قم برفع ملف صورة جديد أدناه",
+    "Allowed: JPG, JPEG, PNG. Max size: 2MB": "مسموح: JPG، JPEG، PNG. الحد الأقصى للحجم: 2 ميجابايت",
+    "NO MARKETPLACE APP FOUND YET": "لم يتم العثور على تطبيقات متجر بعد",
+    "Search by name or description": "البحث بالاسم أو الوصف",
+    "Please select at least one app to delete": "يرجى اختيار تطبيق واحد على الأقل للحذف",
+    "Are you sure you want to delete selected apps?": "هل أنت متأكد من حذف التطبيقات المحددة؟",
+    "An error occurred while deleting apps": "حدث خطأ أثناء حذف التطبيقات"
 
 
   }

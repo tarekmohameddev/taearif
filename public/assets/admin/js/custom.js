@@ -2215,12 +2215,12 @@ $(function ($) {
     $(".request-loader").addClass("show");
 
     swal({
-      title: 'Are you sure?',
-      text: "You won't be able to revert this!",
+      title: 'هل أنت متأكد؟',
+      text: "لن تتمكن من التراجع عن هذا!",
       type: 'warning',
       buttons: {
         confirm: {
-          text: 'Yes, delete it!',
+          text: 'نعم، احذفه!',
           className: 'btn btn-success'
         },
         cancel: {
@@ -2325,12 +2325,12 @@ $(function ($) {
   $('.bulk-delete').on('click', function () {
 
     swal({
-      title: 'Are you sure?',
-      text: "You won't be able to revert this!",
+      title: 'هل أنت متأكد؟',
+      text: "لن تتمكن من التراجع عن هذا!",
       type: 'warning',
       buttons: {
         confirm: {
-          text: 'Yes, delete it!',
+          text: 'نعم، احذفه!',
           className: 'btn btn-success'
         },
         cancel: {
