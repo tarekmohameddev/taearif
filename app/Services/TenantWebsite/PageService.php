@@ -6,6 +6,7 @@ use App\Models\TenantPage;
 use App\Models\TenantStaticPage;
 use App\Models\TenantGlobalComponent;
 use App\Models\TenantWebsiteLayout;
+use App\Models\TenantSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -50,9 +51,17 @@ class PageService
         TenantPage::where('user_id', $tenant->id)->where('page_id', $pageId)->delete();
     }
 
-    public function savePagesPayload(User $tenant, array $pages, ?array $globals, ?array $websiteLayout = null, ?array $themesBackup = null, ?array $staticPages = null): array
+    public function savePagesPayload(
+        User $tenant,
+        array $pages,
+        ?array $globals,
+        ?array $websiteLayout = null,
+        ?array $themesBackup = null,
+        ?array $staticPages = null,
+        ?array $websiteBranding = null
+    ): array
     {
-        return DB::transaction(function () use ($tenant, $pages, $globals, $websiteLayout, $themesBackup, $staticPages) {
+        return DB::transaction(function () use ($tenant, $pages, $globals, $websiteLayout, $themesBackup, $staticPages, $websiteBranding) {
             $pagesSaved = 0;
             $pagesDeleted = 0;
             $componentsSaved = 0;
@@ -132,6 +141,14 @@ class PageService
                 }
                 
                 $layout->save();
+            }
+
+            if ($websiteBranding !== null) {
+                $settings = TenantSetting::firstOrNew(['user_id' => $tenant->id]);
+                $current = is_array($settings->settings) ? $settings->settings : [];
+                $current['websiteBranding'] = $websiteBranding;
+                $settings->settings = $current;
+                $settings->save();
             }
 
             return [

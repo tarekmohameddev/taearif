@@ -22,16 +22,20 @@ use App\Models\Api\UserApiCustomerPriority;
 use App\Models\PropertyRequestStatus;
 use App\Models\User;
 use App\Models\ApiCustomer;
+use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 
 class ApiPropertyRequestController extends Controller
 {
+    use ResolvesTenant;
+
     /**
      * Store a new property request.
      */
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'tenant_username' => 'required|string|exists:users,username',
+            // Accept tenant username OR custom domain (e.g. macsaib.sa / www.macsaib.sa)
+            'tenant_username' => 'required|string|max:255',
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'property_type' => 'nullable',
@@ -55,10 +59,10 @@ class ApiPropertyRequestController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Find the tenant user by username
-        $tenant = \App\Models\User::where('username', $request->tenant_username)->first();
-
-        if (!$tenant) {
+        // Resolve tenant (username OR custom domain)
+        try {
+            $tenant = $this->resolveTenant($request, (string) $request->input('tenant_username'));
+        } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Tenant not found.',
                 'errors' => ['tenant_username' => ['The specified tenant username does not exist.']]

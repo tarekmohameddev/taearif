@@ -3,24 +3,21 @@
 namespace App\Http\Controllers\Api\V1\TenantWebsite;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\Project;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 
 class AiExportController extends Controller
 {
-    protected function resolveTenant(string $tenantId): User
-    {
-        return User::where('username', $tenantId)->firstOrFail();
-    }
+    use ResolvesTenant;
 
     public function index(Request $request, string $tenantId): JsonResponse
     {
-        $tenant = $this->resolveTenant($tenantId);
+        $tenant = $this->resolveTenant($request, $tenantId);
 
         $includeParam = trim((string) $request->query('include', 'tenant,properties,projects,documents'));
         $include = array_filter(array_map('trim', explode(',', $includeParam)));
@@ -120,7 +117,7 @@ class AiExportController extends Controller
 
     public function downloadTxt(Request $request, string $tenantId): StreamedResponse
     {
-        $tenant = $this->resolveTenant($tenantId);
+        $tenant = $this->resolveTenant($request, $tenantId);
         $since = $request->query('since');
         $includeDrafts = (int) $request->query('include_drafts', 0) === 1;
         $lang = $request->query('lang');

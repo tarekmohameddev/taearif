@@ -33,7 +33,7 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-lg-8 offset-lg-2">
-                            <form id="permissionsForm" class="" action="{{ route('admin.package.features') }}"
+                            <form id="permissionsForm" class="" action="{{ route('admin.package.features.update') }}"
                                 method="post">
                                 {{ csrf_field() }}
                                 <div class="alert alert-warning">

@@ -443,10 +443,10 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
     Route::group(['middleware' => 'checkpermission:Packages'], function () {
         // Package Settings routes
         Route::get('/package/settings', 'Admin\PackageController@settings')->name('package.settings');
-        Route::post('/package/settings', 'Admin\PackageController@updateSettings')->name('package.settings');
+        Route::post('/package/settings', 'Admin\PackageController@updateSettings')->name('package.settings.update');
         // Package Settings routes
         Route::get('/package/features', 'Admin\PackageController@features')->name('package.features');
-        Route::post('/package/features', 'Admin\PackageController@updateFeatures')->name('package.features');
+        Route::post('/package/features', 'Admin\PackageController@updateFeatures')->name('package.features.update');
         // Package routes
         Route::get('packages', 'Admin\PackageController@index')->name('package.index');
         Route::post('package/upload', 'Admin\PackageController@upload')->name('package.upload');
@@ -476,7 +476,7 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
     Route::group(['middleware' => 'checkpermission:Custom Domains'], function () {
         Route::get('/domains', 'Admin\CustomDomainController@index')->name('custom-domain.index');
         Route::get('/domain/texts', 'Admin\CustomDomainController@texts')->name('custom-domain.texts');
-        Route::post('/domain/texts', 'Admin\CustomDomainController@updateTexts')->name('custom-domain.texts');
+        Route::post('/domain/texts', 'Admin\CustomDomainController@updateTexts')->name('custom-domain.texts.update');
         Route::post('/domain/status', 'Admin\CustomDomainController@status')->name('custom-domain.status');
         Route::post('/domain/mail', 'Admin\CustomDomainController@mail')->name('custom-domain.mail');
         Route::post('/domain/delete', 'Admin\CustomDomainController@delete')->name('custom-domain.delete');

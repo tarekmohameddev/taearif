@@ -4,21 +4,18 @@ namespace App\Http\Controllers\Api\V1\TenantWebsite;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\User;
 use App\Models\Reservation;
 use App\Models\User\RealestateManagement\Property;
 use App\Http\Requests\TenantWebsite\Reservation\StoreRequest;
+use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 
 class ReservationController extends Controller
 {
-    protected function resolveTenant(string $tenantId): User
-    {
-        return User::where('username', $tenantId)->firstOrFail();
-    }
+    use ResolvesTenant;
 
     public function store(StoreRequest $request, string $tenantId)
     {
-        $tenant = $this->resolveTenant($tenantId);
+        $tenant = $this->resolveTenant($request, $tenantId);
 
         $validated = $request->validated();
         $propertySlug = $validated['propertySlug'];
