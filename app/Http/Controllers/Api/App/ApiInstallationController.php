@@ -2,67 +2,89 @@
 
 namespace App\Http\Controllers\Api\App;
 
+use App\Http\Controllers\Controller;
 use App\Models\Api\ApiApp;
-use App\Models\AppRequest;
-use Carbon\CarbonImmutable;
-use Illuminate\Http\Request;
 use App\Models\Api\ApiMenuItem;
 use App\Models\Api\ApiInstallation;
 use App\Enums\InstallStatus;
-use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
 use App\Services\InstallationService;
+use App\Services\InstallationStateMachine;
+use App\Traits\ApiResponseTrait;
+use App\Exceptions\Installation\InvalidInstallationException;
+use App\Exceptions\Installation\ConcurrentInstallationException;
+use App\Exceptions\Installation\PaymentInitiationException;
+use App\Exceptions\Installation\InvalidStatusTransitionException;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class ApiInstallationController extends Controller
 {
+    use ApiResponseTrait;
     /**
      * Display a listing of the installed apps for the authenticated user.
      *
      * @return \Illuminate\Http\JsonResponse
      */
 
+    /**
+     * Display a listing of the installed apps for the authenticated user.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function index()
     {
-        $userId = auth()->id();
-        $apps = ApiApp::where('is_enabled', true)->get();
+        try {
+            $userId = auth()->id();
 
-        $installations = ApiInstallation::with('settings')
-            ->where('user_id', $userId)
-            ->whereIn('app_id', $apps->pluck('id'))
-            ->get()
-            ->keyBy('app_id');
+            // Optimize query with eager loading
+            $apps = ApiApp::where('is_enabled', true)
+                ->with(['installations' => function ($query) use ($userId) {
+                    $query->where('user_id', $userId)->with('settings');
+                }])
+                ->get();
 
-        $apps = $apps->map(function ($app) use ($installations) {
-            $installation = $installations->get($app->id);
+            $apps = $apps->map(function ($app) {
+                $installation = $app->installations->first();
 
-            return [
-                'id' => $app->id,
-                'name' => $app->name,
-                'img' => $app->img,
-                'description' => $app->description,
-                'price' => number_format($app->price, 2),
-                'type' => $app->type,
-                'rating' => round($app->rating, 1),
-                'billing_type' => $app->billing_type,
-                'trial_days' => $app->trial_days ?? 0,
-                'installed' => $installation->installed ?? false,
-                'trial_ends_at' => $installation->trial_ends_at ?? null,
-                'current_period_end' => $installation->current_period_end ?? null,
-                'activated_at' => $installation->activated_at ?? null,
-                'status' => $installation->status ?? 'pending',
-                'settings' => $installation->settings ?? null,
-                'installed_at' => $installation->installed_at ?? null,
-                'uninstalled_at' => $installation->uninstalled_at ?? null,
-            ];
+                return [
+                    'id' => $app->id,
+                    'name' => $app->name,
+                    'img' => $app->img,
+                    'description' => $app->description,
+                    'price' => number_format($app->price, 2),
+                    'type' => $app->type,
+                    'rating' => round($app->rating, 1),
+                    'billing_type' => $app->billing_type->value,
+                    'trial_days' => $app->trial_days ?? 0,
+                    'installed' => $installation?->installed ?? false,
+                    'trial_ends_at' => $installation?->trial_ends_at?->toIso8601String(),
+                    'current_period_end' => $installation?->current_period_end?->toIso8601String(),
+                    'activated_at' => $installation?->activated_at?->toIso8601String(),
+                    'status' => $installation?->status->value ?? 'pending',
+                    'settings' => $installation?->settings?->settings ?? null,
+                    'installed_at' => $installation?->installed_at?->toIso8601String(),
+                    'uninstalled_at' => $installation?->uninstalled_at?->toIso8601String(),
+                ];
+            });
 
-        });
-        return response()->json([
-            'status' => 'success',
-            'data' => [
+            return $this->successResponse([
                 'apps' => $apps,
-            ],
-        ]);
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to list apps', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->errorResponse(
+                'Failed to retrieve apps',
+                'APPS_LIST_ERROR',
+                500
+            );
+        }
     }
 
     /**
@@ -161,17 +183,120 @@ class ApiInstallationController extends Controller
     //         'data'    => ['installation' => $installation],
     //     ]);
     // }
-    public function install(Request $req, InstallationService $svc)
+    /**
+     * Install an app for the authenticated user.
+     *
+     * @param Request $request
+     * @param InstallationService $service
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function install(Request $request, InstallationService $service)
     {
-        $req->validate(['app_id' => 'required|exists:api_apps,id', 'settings' => 'array']);
-        $user   = $req->user();
-        $app    = ApiApp::where('id', $req->app_id)
-            ->where('is_enabled', true)
-            ->firstOrFail();
-        $result = $svc->install($user, $app, $req->input('settings', []));
+        try {
+            // Validate request
+            $validated = $request->validate([
+                'app_id' => 'required|exists:api_apps,id',
+                'settings' => 'nullable|array',
+                'settings.phone_number' => 'nullable|string|max:20',
+                'settings.token' => 'nullable|string|max:255',
+            ]);
 
+            $user = $request->user();
+            $app = ApiApp::where('id', $validated['app_id'])
+                ->where('is_enabled', true)
+                ->first();
+
+            if (!$app) {
+                return $this->errorResponse(
+                    'App not found or not enabled',
+                    'APP_NOT_FOUND',
+                    404
+                );
+            }
+
+            // Install app
+            $result = $service->install($user, $app, $validated['settings'] ?? []);
+
+            // Handle app-specific post-installation logic
+            $this->handleAppSpecificInstallation($user, $app, $result['installation']);
+
+            return $this->successResponse([
+                'installation' => [
+                    'id' => $result['installation']->id,
+                    'status' => $result['installation']->status->value,
+                    'installed' => $result['installation']->installed,
+                    'trial_ends_at' => $result['installation']->trial_ends_at?->toIso8601String(),
+                    'activated_at' => $result['installation']->activated_at?->toIso8601String(),
+                ],
+                'app' => [
+                    'id' => $app->id,
+                    'billing_type' => $app->billing_type->value,
+                    'trial_days' => $app->trial_days,
+                    'price' => $app->price,
+                    'name' => $app->name,
+                ],
+                'payment_url' => $result['payment_url'],
+            ], 'App installed successfully');
+
+        } catch (ValidationException $e) {
+            return $this->validationError($e->errors());
+
+        } catch (ConcurrentInstallationException $e) {
+            return $this->errorResponse(
+                $e->getMessage(),
+                $e->getErrorCode(),
+                $e->getStatusCode()
+            );
+
+        } catch (InvalidInstallationException $e) {
+            return $this->errorResponse(
+                $e->getMessage(),
+                $e->getErrorCode(),
+                $e->getStatusCode()
+            );
+
+        } catch (PaymentInitiationException $e) {
+            Log::error('Payment initiation failed during install', [
+                'user_id' => $request->user()?->id,
+                'app_id' => $request->input('app_id'),
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->errorResponse(
+                'Failed to initiate payment. Please try again.',
+                $e->getErrorCode(),
+                500
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Unexpected error during app installation', [
+                'user_id' => $request->user()?->id,
+                'app_id' => $request->input('app_id'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return $this->errorResponse(
+                'An error occurred during installation',
+                'INSTALLATION_ERROR',
+                500
+            );
+        }
+    }
+
+    /**
+     * Handle app-specific post-installation logic
+     *
+     * @param \App\Models\User $user
+     * @param ApiApp $app
+     * @param ApiInstallation $installation
+     * @return void
+     */
+    protected function handleAppSpecificInstallation($user, ApiApp $app, ApiInstallation $installation): void
+    {
+        // TODO: Replace hardcoded check with event system or strategy pattern
         if ($app->name === 'واتس اب') {
-            $menuItem = \App\Models\Api\ApiMenuItem::firstOrCreate(
+            $menuItem = ApiMenuItem::firstOrCreate(
                 ['user_id' => $user->id, 'url' => '/whatsapp-ai'],
                 [
                     'label' => 'واتس اب',
@@ -184,181 +309,262 @@ class ApiInstallationController extends Controller
                 ]
             );
 
-            // If it existed but was inactive, activate it
             if (!$menuItem->is_active) {
                 $menuItem->update(['is_active' => true]);
-                $menuItem->save();
             }
         }
-
-        return response()->json([
-            'status' => 'success',
-            'data'   => [
-                'installation' => $result['installation'],
-                'app'          => [
-                    'id'           => $app->id,
-                    'billing_type' => $app->billing_type,
-                    'trial_days'   => $app->trial_days,
-                    'price'        => $app->price,
-                    'name'         => $app->name,
-                ],
-                'payment_url'  => $result['payment_url'],
-            ],
-        ]);
     }
 
 
     /**
      * Uninstall an app for the authenticated user.
+     *
+     * @param int $appId
+     * @param InstallationStateMachine $stateMachine
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function uninstall($appId)
+    public function uninstall(int $appId, InstallationStateMachine $stateMachine)
     {
-        $userId = Auth::id();
+        try {
+            $userId = Auth::id();
 
-        $installation = ApiInstallation::where('user_id', $userId)
-            ->where('app_id', $appId)
-            ->firstOrFail();
-        $installation->update([
-            'status' => InstallStatus::Uninstalled,
-            'installed' => false,
-            'uninstalled_at' => now(),
-        ]);
-        $installation->settings()->delete();
+            $installation = ApiInstallation::where('user_id', $userId)
+                ->where('app_id', $appId)
+                ->first();
 
-        \App\Models\Api\ApiMenuItem::where('user_id', $userId)
-        ->where('url', '/whatsapp-ai')
-        ->update(['is_active' => false]);
+            if (!$installation) {
+                return $this->notFound('Installation not found');
+            }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'App uninstalled successfully.',
-        ]);
+            // Use state machine for safe transition
+            $stateMachine->transition($installation, InstallStatus::Uninstalled);
+
+            // Delete settings
+            $installation->settings()->delete();
+
+            // Deactivate menu items (app-specific)
+            $this->handleAppSpecificUninstallation($userId, $installation->app);
+
+            return $this->successResponse(
+                null,
+                'App uninstalled successfully'
+            );
+
+        } catch (InvalidStatusTransitionException $e) {
+            return $this->errorResponse(
+                $e->getMessage(),
+                $e->getErrorCode(),
+                $e->getStatusCode()
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Failed to uninstall app', [
+                'user_id' => Auth::id(),
+                'app_id' => $appId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->errorResponse(
+                'Failed to uninstall app',
+                'UNINSTALL_ERROR',
+                500
+            );
+        }
+    }
+
+    /**
+     * Handle app-specific uninstallation logic
+     *
+     * @param int $userId
+     * @param ApiApp $app
+     * @return void
+     */
+    protected function handleAppSpecificUninstallation(int $userId, ApiApp $app): void
+    {
+        // TODO: Replace hardcoded check with event system
+        if ($app->name === 'واتس اب') {
+            ApiMenuItem::where('user_id', $userId)
+                ->where('url', '/whatsapp-ai')
+                ->update(['is_active' => false]);
+        }
     }
 
     /**
      * Get WhatsApp app information and installation status.
+     *
+     * @return \Illuminate\Http\JsonResponse
      */
     public function whatsapp()
     {
-        $userId = auth()->id();
-        $app = ApiApp::where('name', 'واتس اب')
-            ->where('is_enabled', true)
-            ->first();
+        try {
+            $userId = auth()->id();
+            $app = ApiApp::where('name', 'واتس اب')
+                ->where('is_enabled', true)
+                ->first();
 
-        if (!$app) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'WhatsApp app not found.',
-            ], 404);
-        }
+            if (!$app) {
+                return $this->notFound('WhatsApp app not found');
+            }
 
-        $installation = ApiInstallation::with('settings')
-            ->where('user_id', $userId)
-            ->where('app_id', $app->id)
-            ->first();
+            $installation = ApiInstallation::with('settings')
+                ->where('user_id', $userId)
+                ->where('app_id', $app->id)
+                ->first();
 
-        return response()->json([
-            'status' => 'success',
-            'data' => [
+            return $this->successResponse([
                 'app' => [
                     'id' => $app->id,
                     'name' => $app->name,
                     'img' => $app->img,
                     'description' => $app->description,
                     'price' => number_format($app->price, 2),
-                    'billing_type' => $app->billing_type,
+                    'billing_type' => $app->billing_type->value,
                     'trial_days' => $app->trial_days ?? 0,
                 ],
                 'installation' => $installation ? [
                     'installed' => $installation->installed ?? false,
-                    'status' => $installation->status ?? null,
-                    'trial_ends_at' => $installation->trial_ends_at ?? null,
-                    'activated_at' => $installation->activated_at ?? null,
-                    'installed_at' => $installation->installed_at ?? null,
-                    'settings' => $installation->settings ?? null,
+                    'status' => $installation->status->value ?? null,
+                    'trial_ends_at' => $installation->trial_ends_at?->toIso8601String(),
+                    'activated_at' => $installation->activated_at?->toIso8601String(),
+                    'installed_at' => $installation->installed_at?->toIso8601String(),
+                    'settings' => $installation->settings?->settings ?? null,
                 ] : null,
-            ],
-        ]);
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to get WhatsApp app info', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->errorResponse(
+                'Failed to retrieve WhatsApp app information',
+                'WHATSAPP_INFO_ERROR',
+                500
+            );
+        }
     }
 
     /**
      * Install WhatsApp app for the authenticated user.
+     *
+     * @param Request $request
+     * @param InstallationService $service
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function installWhatsapp(Request $req, InstallationService $svc)
+    public function installWhatsapp(Request $request, InstallationService $service)
     {
-        $app = ApiApp::where('name', 'واتس اب')
-            ->where('is_enabled', true)
-            ->firstOrFail();
-        $user = $req->user();
-        $result = $svc->install($user, $app, $req->input('settings', []));
+        try {
+            $app = ApiApp::where('name', 'واتس اب')
+                ->where('is_enabled', true)
+                ->first();
 
-        // Create/activate menu item for WhatsApp
-        $menuItem = ApiMenuItem::firstOrCreate(
-            ['user_id' => $user->id, 'url' => '/whatsapp-ai'],
-            [
-                'label' => 'واتس اب',
-                'is_external' => false,
-                'is_active' => true,
-                'order' => 8,
-                'parent_id' => null,
-                'show_on_mobile' => true,
-                'show_on_desktop' => true,
-            ]
-        );
+            if (!$app) {
+                return $this->notFound('WhatsApp app not found');
+            }
 
-        // If it existed but was inactive, activate it
-        if (!$menuItem->is_active) {
-            $menuItem->update(['is_active' => true]);
-            $menuItem->save();
-        }
+            $user = $request->user();
+            $result = $service->install($user, $app, $request->input('settings', []));
 
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'installation' => $result['installation'],
+            // Handle app-specific installation
+            $this->handleAppSpecificInstallation($user, $app, $result['installation']);
+
+            return $this->successResponse([
+                'installation' => [
+                    'id' => $result['installation']->id,
+                    'status' => $result['installation']->status->value,
+                    'installed' => $result['installation']->installed,
+                ],
                 'app' => [
                     'id' => $app->id,
-                    'billing_type' => $app->billing_type,
+                    'billing_type' => $app->billing_type->value,
                     'trial_days' => $app->trial_days,
                     'price' => $app->price,
                     'name' => $app->name,
                 ],
                 'payment_url' => $result['payment_url'],
-            ],
-        ]);
+            ], 'WhatsApp app installed successfully');
+
+        } catch (ConcurrentInstallationException | InvalidInstallationException | PaymentInitiationException $e) {
+            return $this->errorResponse(
+                $e->getMessage(),
+                $e->getErrorCode(),
+                $e->getStatusCode()
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Failed to install WhatsApp app', [
+                'user_id' => $request->user()?->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->errorResponse(
+                'Failed to install WhatsApp app',
+                'WHATSAPP_INSTALL_ERROR',
+                500
+            );
+        }
     }
 
     /**
      * Uninstall WhatsApp app for the authenticated user.
+     *
+     * @param InstallationStateMachine $stateMachine
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function uninstallWhatsapp()
+    public function uninstallWhatsapp(InstallationStateMachine $stateMachine)
     {
-        $userId = Auth::id();
-        $app = ApiApp::where('name', 'واتس اب')
-            ->where('is_enabled', true)
-            ->firstOrFail();
+        try {
+            $userId = Auth::id();
+            $app = ApiApp::where('name', 'واتس اب')
+                ->where('is_enabled', true)
+                ->first();
 
-        $installation = ApiInstallation::where('user_id', $userId)
-            ->where('app_id', $app->id)
-            ->firstOrFail();
+            if (!$app) {
+                return $this->notFound('WhatsApp app not found');
+            }
 
-        $installation->update([
-            'status' => InstallStatus::Uninstalled,
-            'installed' => false,
-            'uninstalled_at' => now(),
-        ]);
+            $installation = ApiInstallation::where('user_id', $userId)
+                ->where('app_id', $app->id)
+                ->first();
 
-        $installation->settings()->delete();
+            if (!$installation) {
+                return $this->notFound('WhatsApp installation not found');
+            }
 
-        // Deactivate menu item
-        ApiMenuItem::where('user_id', $userId)
-            ->where('url', '/whatsapp-ai')
-            ->update(['is_active' => false]);
+            // Use state machine for safe transition
+            $stateMachine->transition($installation, InstallStatus::Uninstalled);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'WhatsApp app uninstalled successfully.',
-        ]);
+            // Delete settings
+            $installation->settings()->delete();
+
+            // Handle app-specific uninstallation
+            $this->handleAppSpecificUninstallation($userId, $app);
+
+            return $this->successResponse(
+                null,
+                'WhatsApp app uninstalled successfully'
+            );
+
+        } catch (InvalidStatusTransitionException $e) {
+            return $this->errorResponse(
+                $e->getMessage(),
+                $e->getErrorCode(),
+                $e->getStatusCode()
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Failed to uninstall WhatsApp app', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->errorResponse(
+                'Failed to uninstall WhatsApp app',
+                'WHATSAPP_UNINSTALL_ERROR',
+                500
+            );
+        }
     }
 
 }

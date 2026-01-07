@@ -8,120 +8,228 @@ use App\Models\Api\ApiApp;
 use Carbon\CarbonImmutable;
 use App\Enums\InstallStatus;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\Api\ApiInstallation;
 use App\Http\Controllers\Payment\ArbController;
+use App\Exceptions\Installation\InvalidInstallationException;
+use App\Exceptions\Installation\PaymentInitiationException;
+use App\Services\TrialPeriodService;
+use App\Services\InstallationStateMachine;
+use App\Services\InstallationLockService;
 
+/**
+ * Installation Service
+ *
+ * Handles app installation logic with proper error handling,
+ * trial period management, and concurrent installation protection
+ */
 class InstallationService
 {
+    protected TrialPeriodService $trialService;
+    protected InstallationStateMachine $stateMachine;
+    protected InstallationLockService $lockService;
 
+    public function __construct(
+        TrialPeriodService $trialService,
+        InstallationStateMachine $stateMachine,
+        InstallationLockService $lockService
+    ) {
+        $this->trialService = $trialService;
+        $this->stateMachine = $stateMachine;
+        $this->lockService = $lockService;
+    }
+
+    /**
+     * Install an app for a user
+     *
+     * @param User $user The user installing the app
+     * @param ApiApp $app The app to install
+     * @param array $settings Optional installation settings
+     * @return array{installation: ApiInstallation, payment_url: string|null}
+     * @throws InvalidInstallationException
+     * @throws PaymentInitiationException
+     */
     public function install(User $user, ApiApp $app, array $settings = []): array
     {
-        // Validate user and app
-        return DB::transaction(function () use ($user, $app, $settings) {
+        // Validate inputs
+        if (!$user || !$app) {
+            throw InvalidInstallationException::invalidUser($user?->id);
+        }
 
-            if (! $user || ! $app) {
-                throw new \Exception('Invalid user or app');
-            }
-            $trialUsedAt = null;
-            $hadInstallBefore = ApiInstallation::withTrashed()
-                ->forUser($user->id)
-                ->forApp($app->id)
-                ->whereNotNull('activated_at')->exists();
+        if (!$app->is_enabled) {
+            throw InvalidInstallationException::appNotEnabled($app->id);
+        }
 
-            $eligibleForTrial = ! $hadInstallBefore;
-            $status     = InstallStatus::Installed;
-            $trialEnds  = null;
+        // Use lock to prevent concurrent installations
+        return $this->lockService->withLock($user->id, $app->id, function () use ($user, $app, $settings) {
+            return DB::transaction(function () use ($user, $app, $settings) {
+                Log::info('Starting app installation', [
+                    'user_id' => $user->id,
+                    'app_id' => $app->id,
+                    'app_name' => $app->name,
+                ]);
 
-            $existingInstall = ApiInstallation::withTrashed()
-            ->where('user_id', $user->id)
-            ->where('app_id', $app->id)
-            ->first();
-
-            if ($app->billing_type === BillingType::Paid) {
-                $status = InstallStatus::PendingPayment;
-            }
-
-            if ($app->billing_type === BillingType::PaidTrial) {
-                $now = CarbonImmutable::now();
-
-                $previousInstall = ApiInstallation::withTrashed()
-                    ->forUser($user->id)
-                    ->forApp($app->id)
-                    ->orderByDesc('activated_at')
+                // Get existing installation if any
+                $existingInstall = ApiInstallation::withTrashed()
+                    ->where('user_id', $user->id)
+                    ->where('app_id', $app->id)
                     ->first();
 
-                $alreadyUsedTrial = $previousInstall && $previousInstall->trial_used_at !== null;
+                // Determine installation status and trial info
+                [$status, $trialEnds, $trialUsedAt] = $this->determineInstallationStatus(
+                    $user,
+                    $app,
+                    $existingInstall
+                );
 
-                if (! $alreadyUsedTrial) {
-                    // First time trial
-                    $status     = InstallStatus::Trialing;
-                    $trialEnds  = $now->addDays($app->trial_days ?? 15);
-                    $trialUsedAt = $now;
-                } elseif (
-                    $previousInstall->status === InstallStatus::Trialing &&
-                    $previousInstall->trial_ends_at &&
-                    $now->lt($previousInstall->trial_ends_at)
-                ) {
-                    // Still within previous trial
-                    $status     = InstallStatus::Trialing;
-                    $trialEnds  = $previousInstall->trial_ends_at;
-                    $trialUsedAt = $previousInstall->trial_used_at;
+                // Create or update installation
+                $install = ApiInstallation::updateOrCreate(
+                    ['user_id' => $user->id, 'app_id' => $app->id],
+                    [
+                        'status' => $status,
+                        'activated_at' => $existingInstall?->activated_at ?? now(),
+                        'trial_ends_at' => $existingInstall?->trial_ends_at ?? $trialEnds,
+                        'trial_used_at' => $existingInstall?->trial_used_at ?? $trialUsedAt,
+                        'installed' => in_array($status, [InstallStatus::Installed, InstallStatus::Trialing], true),
+                        'installed_at' => $existingInstall?->installed_at ?? ($status === InstallStatus::Installed ? now() : null),
+                        'uninstalled_at' => null,
+                        'current_period_end' => $existingInstall?->current_period_end ?? $trialEnds,
+                        'invoice_id' => null,
+                        'payment_subscription_id' => null,
+                    ]
+                );
+
+                // Save settings
+                $install->settings()->updateOrCreate([], ['settings' => $settings]);
+
+                // Initiate payment if required
+                $paymentUrl = null;
+                if ($status === InstallStatus::PendingPayment) {
+                    $paymentUrl = $this->initiatePayment($install, $app, $user);
                 }
 
-            }
-            if ($app->billing_type === BillingType::Free) {
-                $status = InstallStatus::Installed;
-                $trialEnds = null;
-                $trialUsedAt = null;
-            }
+                Log::info('App installation completed', [
+                    'installation_id' => $install->id,
+                    'user_id' => $user->id,
+                    'app_id' => $app->id,
+                    'status' => $status->value,
+                    'requires_payment' => $status === InstallStatus::PendingPayment,
+                ]);
 
-
-            $install = ApiInstallation::updateOrCreate(
-                ['user_id' => $user->id, 'app_id' => $app->id],
-                [
-                    'status'              => $status,
-                    'activated_at'        => $existingInstall?->activated_at ?? now(),
-                    'trial_ends_at'       => $existingInstall?->trial_ends_at ?? $trialEnds,
-                    'trial_used_at'       => $existingInstall?->trial_used_at ?? $trialUsedAt ?? null,
-                    'installed'           => in_array($status, [InstallStatus::Installed, InstallStatus::Trialing]),
-                    'installed_at'        => $existingInstall?->installed_at ?? ($status === InstallStatus::Installed ? now() : null),
-                    'uninstalled_at'      => null,
-                    'current_period_end'  => $existingInstall?->current_period_end ?? $trialEnds,
-                    'invoice_id'          => null,
-                    'payment_subscription_id' => null,
-                ]
-            );
-
-            $install->settings()->updateOrCreate([], ['settings' => $settings]);
-
-            $paymentUrl = null;
-            if ($status === InstallStatus::PendingPayment) {
-                $paymentUrl = $this->kickOffPayment($install, $app, $user);
-            }
-
-            return ['installation' => $install->fresh(), 'payment_url' => $paymentUrl];
+                return [
+                    'installation' => $install->fresh(['settings', 'app']),
+                    'payment_url' => $paymentUrl,
+                ];
+            });
         });
     }
 
-    private function kickOffPayment(ApiInstallation $install, ApiApp $app, User $user): ?string
-    {
-        $arb  = app(\App\Http\Controllers\Payment\ArbController::class);
-        $resp = $arb->paymentProcessForApp($user, $app);
+    /**
+     * Determine installation status based on billing type and trial eligibility
+     *
+     * @param User $user
+     * @param ApiApp $app
+     * @param ApiInstallation|null $existingInstall
+     * @return array{0: InstallStatus, 1: CarbonImmutable|null, 2: CarbonImmutable|null}
+     */
+    protected function determineInstallationStatus(
+        User $user,
+        ApiApp $app,
+        ?ApiInstallation $existingInstall
+    ): array {
+        $status = InstallStatus::Installed;
+        $trialEnds = null;
+        $trialUsedAt = null;
 
-        if ($resp === 'error') {
+        switch ($app->billing_type) {
+            case BillingType::Free:
+                $status = InstallStatus::Installed;
+                break;
 
-            return null;
+            case BillingType::Paid:
+                $status = InstallStatus::PendingPayment;
+                break;
+
+            case BillingType::PaidTrial:
+                $trialInfo = $this->trialService->getExistingTrialInfo($user, $app);
+
+                if ($trialInfo && $trialInfo['status'] === 'active') {
+                    // Still within existing trial period
+                    $status = InstallStatus::Trialing;
+                    $trialEnds = $trialInfo['trial_ends_at'];
+                    $trialUsedAt = $trialInfo['trial_used_at'];
+                } elseif ($this->trialService->isEligibleForTrial($user, $app)) {
+                    // Eligible for new trial
+                    $status = InstallStatus::Trialing;
+                    $trialEnds = $this->trialService->calculateTrialEndDate($app);
+                    $trialUsedAt = CarbonImmutable::now();
+                } else {
+                    // Trial used, requires payment
+                    $status = InstallStatus::PendingPayment;
+                }
+                break;
         }
 
-        if (! isset($resp['redirect_url'])) {
-            throw new \Exception('Payment process failed, no redirect URL provided');
-        }
-
-        parse_str(parse_url($resp['redirect_url'], PHP_URL_QUERY), $q);
-        $install->markPending($q['PaymentID'] ?? '');
-
-        return $resp['redirect_url'];
+        return [$status, $trialEnds, $trialUsedAt];
     }
 
+    /**
+     * Initiate payment for paid apps
+     *
+     * @param ApiInstallation $install
+     * @param ApiApp $app
+     * @param User $user
+     * @return string Payment redirect URL
+     * @throws PaymentInitiationException
+     */
+    protected function initiatePayment(
+        ApiInstallation $install,
+        ApiApp $app,
+        User $user
+    ): string {
+        try {
+            $arb = app(ArbController::class);
+            $resp = $arb->paymentProcessForApp($user, $app);
 
+            if ($resp === 'error') {
+                throw PaymentInitiationException::gatewayError('arb', 'Payment gateway returned error');
+            }
+
+            if (!isset($resp['redirect_url'])) {
+                throw PaymentInitiationException::noRedirectUrl('arb');
+            }
+
+            // Extract payment ID from redirect URL
+            parse_str(parse_url($resp['redirect_url'], PHP_URL_QUERY), $query);
+            $paymentId = $query['PaymentID'] ?? null;
+
+            if ($paymentId) {
+                $install->markPending($paymentId);
+            }
+
+            Log::info('Payment initiated for installation', [
+                'installation_id' => $install->id,
+                'payment_id' => $paymentId,
+                'app_id' => $app->id,
+            ]);
+
+            return $resp['redirect_url'];
+
+        } catch (PaymentInitiationException $e) {
+            Log::error('Payment initiation failed', [
+                'installation_id' => $install->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Unexpected error during payment initiation', [
+                'installation_id' => $install->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw PaymentInitiationException::gatewayError('arb', $e->getMessage());
+        }
+    }
 }
