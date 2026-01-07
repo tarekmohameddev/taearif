@@ -200,6 +200,36 @@ class UserApiCustomerReminderController extends Controller
                     'message' => 'Customer not found or does not belong to you.'
                 ], 404);
             }
+
+            // Check if reminder with same title already exists for this customer
+            $existingReminder = UserApiCustomerReminder::where('user_id', $tenantId)
+                ->where('customer_id', $validated['customer_id'])
+                ->where('title', $validated['title'])
+                ->first();
+
+            if ($existingReminder) {
+                // Update existing reminder instead of creating duplicate
+                $existingReminder->update([
+                    'datetime' => $validated['datetime'],
+                    'priority' => $validated['priority'] ?? $existingReminder->priority,
+                ]);
+
+                $existingReminder->refresh();
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Reminder updated successfully',
+                    'data' => [
+                        'id'            => $existingReminder->id,
+                        'title'         => $existingReminder->title,
+                        'priority'      => $existingReminder->priority,
+                        'priority_label'=> $existingReminder->priority_label,
+                        'datetime'      => $existingReminder->datetime,
+                        'customer'      => $existingReminder->customer?->only(['id', 'name']),
+                        'is_default'    => false,
+                    ]
+                ], 200);
+            }
         }
 
         // Always set user_id to tenantOwnerId (users cannot create default reminders)
