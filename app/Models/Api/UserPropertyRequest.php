@@ -139,6 +139,7 @@ class UserPropertyRequest extends Model
         return [
             'id' => $employee->id,
             'name' => $name ?: null,
+            'whatsapp_number' => $employee->activeWhatsappUser ? $employee->activeWhatsappUser->number : null,
         ];
     }
 
