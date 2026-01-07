@@ -464,6 +464,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx', 
     Route::apiResource('customer-appointments', UserApiCustomerAppointmentController::class);
 
     // Reminders
+    Route::get('customer-reminders/filter-options', [UserApiCustomerReminderController::class, 'filterOptions']);
     Route::apiResource('customer-reminders', UserApiCustomerReminderController::class);
 
     // CRM Dashboard
