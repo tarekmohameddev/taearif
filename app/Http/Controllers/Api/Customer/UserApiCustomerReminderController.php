@@ -146,17 +146,50 @@ class UserApiCustomerReminderController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Unauthorized user.'], 401);
         }
 
-        $validated = $request->validate([
-            'customer_id' => 'nullable|integer', // Make nullable for general reminders
-            'title'       => 'required|string|max:255',
-            'priority'    => 'nullable|integer|in:1,2,3', // 1=low, 2=medium, 3=high
-            'datetime'    => 'required|date',
-        ]);
-
         $tenantId = $user->tenantOwnerId();
 
+        // First validate reminder_id if provided (before main validation)
+        if ($request->has('reminder_id')) {
+            $sourceReminder = UserApiCustomerReminder::where(function($query) use ($tenantId) {
+                $query->whereNull('user_id')  // Can clone from default reminders
+                      ->orWhere('user_id', $tenantId);  // Or user's own reminders
+            })->find($request->reminder_id);
+
+            if (!$sourceReminder) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Reminder not found or you do not have access to it.'
+                ], 404);
+            }
+        }
+
+        $validated = $request->validate([
+            'customer_id' => 'nullable|integer', // Make nullable for general reminders
+            'title'       => 'required_without:reminder_id|string|max:255', // Required if not cloning
+            'priority'    => 'nullable|integer|in:1,2,3', // 1=low, 2=medium, 3=high
+            'datetime'    => 'required|date',
+            'reminder_id' => 'nullable|integer|exists:users_api_customers_reminders,id', // For cloning
+        ]);
+
+        // If reminder_id is provided, clone from existing reminder
+        if (isset($validated['reminder_id'])) {
+            $sourceReminder = UserApiCustomerReminder::where(function($query) use ($tenantId) {
+                $query->whereNull('user_id')  // Can clone from default reminders
+                      ->orWhere('user_id', $tenantId);  // Or user's own reminders
+            })->findOrFail($validated['reminder_id']);
+
+            // Copy title and priority from source reminder
+            $validated['title'] = $sourceReminder->title;
+            if (!isset($validated['priority']) && $sourceReminder->priority) {
+                $validated['priority'] = $sourceReminder->priority;
+            }
+            
+            // Remove reminder_id from validated data (not a database field)
+            unset($validated['reminder_id']);
+        }
+
         // If customer_id is provided, validate it belongs to user's tenant
-        if ($validated['customer_id']) {
+        if (isset($validated['customer_id']) && $validated['customer_id']) {
             $customer = ApiCustomer::where('id', $validated['customer_id'])
                 ->where('user_id', $tenantId)
                 ->first();
