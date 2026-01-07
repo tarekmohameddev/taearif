@@ -56,7 +56,7 @@ class UserApiCustomerReminderController extends Controller
         $validated = $request->validate([
             'customer_id' => 'required|integer',
             'title'       => 'required|string|max:255',
-            'priority'    => 'required|integer|in:1,2,3', // 1=low, 2=medium, 3=high
+            'priority'    => 'nullable|integer|in:1,2,3', // 1=low, 2=medium, 3=high
             'datetime'    => 'required|date',
         ]);
 
@@ -133,7 +133,7 @@ class UserApiCustomerReminderController extends Controller
 
         $validated = $request->validate([
             'title'    => 'sometimes|string|max:255',
-            'priority'    => 'required|integer|in:1,2,3', // 1=low, 2=medium, 3=high
+            'priority' => 'nullable|integer|in:1,2,3', // 1=low, 2=medium, 3=high
             'datetime' => 'sometimes|date',
         ]);
 

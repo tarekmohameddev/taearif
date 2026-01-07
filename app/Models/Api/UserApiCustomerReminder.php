@@ -51,6 +51,7 @@ class UserApiCustomerReminder extends Model
             1 => 'Low',
             2 => 'Medium',
             3 => 'High',
+            null => 'Not Set',
             default => 'Unknown',
         };
     }
