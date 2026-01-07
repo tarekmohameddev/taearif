@@ -3,16 +3,50 @@
 namespace App\Http\Controllers\Api\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Customer\StoreCustomerReminderRequest;
+use App\Http\Requests\Customer\UpdateCustomerReminderRequest;
 use Illuminate\Http\Request;
 use App\Models\ApiCustomer;
 use Illuminate\Validation\Rule;
 use App\Models\Api\UserApiCustomerReminder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
 
 class UserApiCustomerReminderController extends Controller
 {
+    /**
+     * Format reminder response with standardized structure.
+     *
+     * @param UserApiCustomerReminder $reminder
+     * @param string $message
+     * @param int $statusCode
+     * @return \Illuminate\Http\JsonResponse
+     */
+    private function formatReminderResponse(UserApiCustomerReminder $reminder, string $message = 'Success', int $statusCode = 200)
+    {
+        // Ensure customer relationship is loaded
+        if (!$reminder->relationLoaded('customer')) {
+            $reminder->load('customer');
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => $message,
+            'data' => [
+                'id'            => $reminder->id,
+                'title'         => $reminder->title,
+                'priority'      => $reminder->priority,
+                'priority_label'=> $reminder->priority_label,
+                'datetime'      => $reminder->datetime,
+                'customer'      => $reminder->customer?->only(['id', 'name']),
+                'is_default'    => $reminder->isDefault(),
+            ]
+        ], $statusCode);
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -22,6 +56,14 @@ class UserApiCustomerReminderController extends Controller
     {
         $user = $request->user();
         $tenantId = $user->tenantOwnerId();
+
+        // Validate tenant ID
+        if ($tenantId <= 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid tenant. You must be associated with a tenant.'
+            ], 403);
+        }
 
         // Validate filter and sort parameters
         $validated = $request->validate([
@@ -92,6 +134,14 @@ class UserApiCustomerReminderController extends Controller
         $user = $request->user();
         $tenantId = $user->tenantOwnerId();
 
+        // Validate tenant ID
+        if ($tenantId <= 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid tenant. You must be associated with a tenant.'
+            ], 403);
+        }
+
         // Cache for 1 hour (filter options change infrequently)
         $cacheKey = "customer_reminders_filter_options_{$tenantId}";
 
@@ -135,10 +185,10 @@ class UserApiCustomerReminderController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  StoreCustomerReminderRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreCustomerReminderRequest $request)
     {
         $user = $request->user();
 
@@ -148,28 +198,15 @@ class UserApiCustomerReminderController extends Controller
 
         $tenantId = $user->tenantOwnerId();
 
-        // First validate reminder_id if provided (before main validation)
-        if ($request->has('reminder_id')) {
-            $sourceReminder = UserApiCustomerReminder::where(function($query) use ($tenantId) {
-                $query->whereNull('user_id')  // Can clone from default reminders
-                      ->orWhere('user_id', $tenantId);  // Or user's own reminders
-            })->find($request->reminder_id);
-
-            if (!$sourceReminder) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Reminder not found or you do not have access to it.'
-                ], 404);
-            }
+        // Validate tenant ID
+        if ($tenantId <= 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid tenant. You must be associated with a tenant.'
+            ], 403);
         }
 
-        $validated = $request->validate([
-            'customer_id' => 'nullable|integer', // Make nullable for general reminders
-            'title'       => 'required_without:reminder_id|string|max:255', // Required if not cloning
-            'priority'    => 'nullable|integer|in:1,2,3', // 1=low, 2=medium, 3=high
-            'datetime'    => 'required|date',
-            'reminder_id' => 'nullable|integer|exists:users_api_customers_reminders,id', // For cloning
-        ]);
+        $validated = $request->validated();
 
         // If reminder_id is provided, clone from existing reminder
         if (isset($validated['reminder_id'])) {
@@ -202,6 +239,7 @@ class UserApiCustomerReminderController extends Controller
             }
 
             // Check if reminder with same title already exists for this customer
+            // Note: Database unique constraint will also prevent duplicates (handles race conditions)
             $existingReminder = UserApiCustomerReminder::where('user_id', $tenantId)
                 ->where('customer_id', $validated['customer_id'])
                 ->where('title', $validated['title'])
@@ -209,47 +247,57 @@ class UserApiCustomerReminderController extends Controller
 
             if ($existingReminder) {
                 // Update existing reminder instead of creating duplicate
-                $existingReminder->update([
-                    'datetime' => $validated['datetime'],
-                    'priority' => $validated['priority'] ?? $existingReminder->priority,
-                ]);
+                return DB::transaction(function () use ($existingReminder, $validated) {
+                    $existingReminder->update([
+                        'datetime' => $validated['datetime'],
+                        'priority' => array_key_exists('priority', $validated) ? $validated['priority'] : $existingReminder->priority,
+                    ]);
 
-                $existingReminder->refresh();
-
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Reminder updated successfully',
-                    'data' => [
-                        'id'            => $existingReminder->id,
-                        'title'         => $existingReminder->title,
-                        'priority'      => $existingReminder->priority,
-                        'priority_label'=> $existingReminder->priority_label,
-                        'datetime'      => $existingReminder->datetime,
-                        'customer'      => $existingReminder->customer?->only(['id', 'name']),
-                        'is_default'    => false,
-                    ]
-                ], 200);
+                    return $this->formatReminderResponse($existingReminder, 'Reminder updated successfully', 200);
+                });
             }
         }
 
         // Always set user_id to tenantOwnerId (users cannot create default reminders)
         $validated['user_id'] = $tenantId;
 
-        $reminder = UserApiCustomerReminder::create($validated);
+        try {
+            $reminder = DB::transaction(function () use ($validated) {
+                return UserApiCustomerReminder::create($validated);
+            });
+        } catch (QueryException $e) {
+            // Handle unique constraint violation (race condition)
+            if ($e->getCode() == 23000 || str_contains($e->getMessage(), 'reminders_user_customer_title_unique')) {
+                // If this is for a customer reminder, try to update instead
+                if (isset($validated['customer_id']) && $validated['customer_id']) {
+                    $existingReminder = UserApiCustomerReminder::where('user_id', $validated['user_id'])
+                        ->where('customer_id', $validated['customer_id'])
+                        ->where('title', $validated['title'])
+                        ->first();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Reminder created successfully',
-            'data' => [
-                'id'            => $reminder->id,
-                'title'         => $reminder->title,
-                'priority'      => $reminder->priority,
-                'priority_label'=> $reminder->priority_label,
-                'datetime'      => $reminder->datetime,
-                'customer'      => $reminder->customer?->only(['id', 'name']),
-                'is_default'    => false,
-            ]
-        ], 201);
+                    if ($existingReminder) {
+                        return DB::transaction(function () use ($existingReminder, $validated) {
+                            $existingReminder->update([
+                                'datetime' => $validated['datetime'],
+                                'priority' => array_key_exists('priority', $validated) ? $validated['priority'] : $existingReminder->priority,
+                            ]);
+
+                            return $this->formatReminderResponse($existingReminder, 'Reminder updated successfully', 200);
+                        });
+                    }
+                }
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'A reminder with this title already exists for this customer.'
+                ], 422);
+            }
+
+            // Re-throw if it's not a unique constraint violation
+            throw $e;
+        }
+
+        return $this->formatReminderResponse($reminder, 'Reminder created successfully', 201);
     }
 
 
@@ -264,6 +312,14 @@ class UserApiCustomerReminderController extends Controller
         $user = $request->user();
         $tenantId = $user->tenantOwnerId();
 
+        // Validate tenant ID
+        if ($tenantId <= 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid tenant. You must be associated with a tenant.'
+            ], 403);
+        }
+
         // Allow viewing default reminders OR user's own reminders
         $reminder = UserApiCustomerReminder::with('customer')
             ->where(function($query) use ($tenantId) {
@@ -272,31 +328,28 @@ class UserApiCustomerReminderController extends Controller
             })
             ->findOrFail($id);
 
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'id'            => $reminder->id,
-                'title'         => $reminder->title,
-                'priority'      => $reminder->priority,
-                'priority_label'=> $reminder->priority_label,
-                'datetime'      => $reminder->datetime,
-                'customer'      => $reminder->customer?->only(['id', 'name']),
-                'is_default'    => $reminder->isDefault(),
-            ]
-        ]);
+        return $this->formatReminderResponse($reminder, 'Success');
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  UpdateCustomerReminderRequest  $request
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UpdateCustomerReminderRequest $request, $id)
     {
         $user = $request->user();
         $tenantId = $user->tenantOwnerId();
+
+        // Validate tenant ID
+        if ($tenantId <= 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid tenant. You must be associated with a tenant.'
+            ], 403);
+        }
 
         // Only allow updating user's own reminders (not default reminders)
         $reminder = UserApiCustomerReminder::where('user_id', $tenantId)
@@ -310,12 +363,7 @@ class UserApiCustomerReminderController extends Controller
             ], 403);
         }
 
-        $validated = $request->validate([
-            'title'    => 'sometimes|string|max:255',
-            'priority' => 'nullable|integer|in:1,2,3', // 1=low, 2=medium, 3=high
-            'datetime' => 'sometimes|date',
-            'customer_id' => 'nullable|integer',
-        ]);
+        $validated = $request->validated();
 
         // If customer_id is being updated, validate it belongs to the user
         if (isset($validated['customer_id']) && $validated['customer_id']) {
@@ -333,19 +381,7 @@ class UserApiCustomerReminderController extends Controller
 
         $reminder->update($validated);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Reminder updated successfully',
-            'data' => [
-                'id'            => $reminder->id,
-                'title'         => $reminder->title,
-                'priority'      => $reminder->priority,
-                'priority_label'=> $reminder->priority_label,
-                'datetime'      => $reminder->datetime,
-                'customer'      => $reminder->customer?->only(['id', 'name']),
-                'is_default'    => false,
-            ]
-        ]);
+        return $this->formatReminderResponse($reminder, 'Reminder updated successfully');
     }
 
 
@@ -359,6 +395,14 @@ class UserApiCustomerReminderController extends Controller
     {
         $user = $request->user();
         $tenantId = $user->tenantOwnerId();
+
+        // Validate tenant ID
+        if ($tenantId <= 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid tenant. You must be associated with a tenant.'
+            ], 403);
+        }
 
         // Only allow deleting user's own reminders (not default reminders)
         $reminder = UserApiCustomerReminder::where('user_id', $tenantId)
