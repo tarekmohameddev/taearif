@@ -1,8 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -13,9 +12,10 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('users_api_customers_reminders', function (Blueprint $table) {
-            $table->tinyInteger('priority')->nullable()->change();
-        });
+        DB::statement("
+            ALTER TABLE users_api_customers_reminders
+            MODIFY priority TINYINT NULL COMMENT '1=low, 2=medium, 3=high'
+        ");
     }
 
     /**
@@ -25,8 +25,9 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('users_api_customers_reminders', function (Blueprint $table) {
-            $table->tinyInteger('priority')->default(1)->nullable(false)->change();
-        });
+        DB::statement("
+            ALTER TABLE users_api_customers_reminders
+            MODIFY priority TINYINT NOT NULL DEFAULT 1 COMMENT '1=low, 2=medium, 3=high'
+        ");
     }
 };
