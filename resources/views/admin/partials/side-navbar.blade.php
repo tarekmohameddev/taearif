@@ -150,6 +150,15 @@
                     </li>
                 @endif
 
+                {{-- Themes Management --}}
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Packages', $permissions)))
+                    <li class="nav-item @if (request()->is('admin/themes*')) active @endif">
+                        <a href="{{ route('admin.themes.index') }}">
+                            <i class="fas fa-palette"></i>
+                            <p>إدارة السمات</p>
+                        </a>
+                    </li>
+                @endif
 
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Payment Log', $permissions)))
                     <li class="nav-item

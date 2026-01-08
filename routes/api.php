@@ -370,6 +370,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/settings/theme', [ThemeSettingsController::class, 'index']);
     Route::post('/settings/theme/set-active', [ThemeSettingsController::class, 'setActiveTheme']);
+    Route::post('/settings/theme/purchase', [ThemeSettingsController::class, 'purchase']);
 });
 
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -540,6 +541,15 @@ Route::prefix('v1/employee-addons')->group(function () {
         ->name('api.employee.addons.payment.success');
     Route::match(['get', 'post'], 'payment/cancel/{addon_id}/{gateway}', [\App\Http\Controllers\Api\apps\employee\EmployeeAddonController::class, 'paymentCancel'])
         ->name('api.employee.addons.payment.cancel');
+});
+
+// Theme Payment Callback Routes (public, no auth required)
+Route::prefix('themes')->group(function () {
+    // Accept both GET and POST because some gateways call back with POST
+    Route::match(['get', 'post'], 'payment/success/{user_theme_id}/{gateway}', [ThemeSettingsController::class, 'paymentSuccess'])
+        ->name('api.themes.payment.success');
+    Route::match(['get', 'post'], 'payment/cancel/{user_theme_id}/{gateway}', [ThemeSettingsController::class, 'paymentCancel'])
+        ->name('api.themes.payment.cancel');
 });
 
 Route::middleware(['auth:sanctum', \App\Http\Middleware\RequireActiveMembership::class])->group(function () {

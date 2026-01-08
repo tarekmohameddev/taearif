@@ -36,6 +36,7 @@ use App\Http\Controllers\Api\Admin\AnalyticsController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\PermissionController;
 use App\Http\Controllers\Api\Admin\WhatsappAddonController;
+use App\Http\Controllers\Api\Admin\ThemeController;
 
 // =============================================================================
 // PUBLIC ROUTES - No Authentication Required
@@ -297,6 +298,21 @@ Route::prefix(config('admin-api.prefix'))
         Route::post('{plan}/featured', [PlanController::class, 'toggleFeatured'])
             ->name('featured');
     });
+
+    // -------------------------------------------------------------------------
+    // Themes Management Module — إدارة السمات
+    // -------------------------------------------------------------------------
+
+    Route::prefix('themes')->name('themes.')
+        ->group(function () {
+            Route::get('/', [ThemeController::class, 'index'])->name('index');
+            Route::get('/categories', [ThemeController::class, 'categories'])->name('categories');
+            Route::post('/', [ThemeController::class, 'store'])->name('store');
+            Route::get('/{themeId}', [ThemeController::class, 'show'])->name('show');
+            Route::put('/{themeId}', [ThemeController::class, 'update'])->name('update');
+            Route::delete('/{themeId}', [ThemeController::class, 'destroy'])->name('destroy');
+            Route::patch('/{themeId}/toggle-enabled', [ThemeController::class, 'toggleEnabled'])->name('toggle-enabled');
+        });
 
     // -------------------------------------------------------------------------
     // Subscriptions Module — الاشتراكات
