@@ -225,7 +225,12 @@ class ThemeSettingsController extends Controller
             $user = $request->user();
 
             if (!$user) {
-                return $this->errorResponse('Unauthorized', 401);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized access',
+                    'payment_url' => null,
+                    'payment_token' => null
+                ], 401);
             }
 
             $request->validate([
@@ -235,7 +240,12 @@ class ThemeSettingsController extends Controller
             $canPurchase = $this->themeService->canPurchaseTheme($user, $request->theme_id);
 
             if (!$canPurchase['can_purchase']) {
-                return $this->errorResponse($canPurchase['reason'], 400);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $canPurchase['reason'],
+                    'payment_url' => null,
+                    'payment_token' => null
+                ], 400);
             }
 
             // Create pending purchase (wrapped in transaction in service)
@@ -245,13 +255,14 @@ class ThemeSettingsController extends Controller
             $paymentResult = $this->initiatePayment($userTheme, $user);
 
             if ($paymentResult['success']) {
-                return $this->successResponse([
+                return response()->json([
+                    'status' => 'success',
                     'payment_url' => $paymentResult['redirect_url'],
                     'payment_token' => $paymentResult['payment_token'] ?? null,
                     'user_theme_id' => $userTheme->id,
                     'amount' => $userTheme->amount_paid,
                     'currency' => $userTheme->currency,
-                ], 'Payment initiated successfully');
+                ], 200);
             }
 
             // Payment init failed - update status in transaction
@@ -259,19 +270,33 @@ class ThemeSettingsController extends Controller
                 $userTheme->update(['status' => UserTheme::STATUS_REJECTED]);
             });
 
-            return $this->errorResponse(
-                'Payment initialization failed: ' . ($paymentResult['error'] ?? 'Unknown error'),
-                422
-            );
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Payment initialization failed: ' . ($paymentResult['error'] ?? 'Unknown error'),
+                'payment_url' => null,
+                'payment_token' => null
+            ], 422);
         } catch (\App\Exceptions\BusinessLogicException $e) {
-            return $this->errorResponse($e->getMessage(), 400);
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'payment_url' => null,
+                'payment_token' => null
+            ], 400);
         } catch (\App\Exceptions\ResourceNotFoundException $e) {
-            return $this->errorResponse($e->getMessage(), 404);
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'payment_url' => null,
+                'payment_token' => null
+            ], 404);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
-                'success' => false,
+                'status' => 'error',
                 'message' => 'Validation failed',
                 'errors' => $e->errors(),
+                'payment_url' => null,
+                'payment_token' => null
             ], 422);
         } catch (\Exception $e) {
             Log::error("Theme Purchase Error: " . $e->getMessage(), [
@@ -279,7 +304,12 @@ class ThemeSettingsController extends Controller
                 'theme_id' => $request->input('theme_id'),
                 'trace' => $e->getTraceAsString(),
             ]);
-            return $this->errorResponse('An error occurred while processing your request', 500);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occurred while processing your request',
+                'payment_url' => null,
+                'payment_token' => null
+            ], 500);
         }
     }
 
@@ -378,21 +408,35 @@ class ThemeSettingsController extends Controller
 
     /**
      * Payment success callback
-     * Includes ownership verification and transaction handling
+     * Returns JSON response when Accept: application/json header is present (for API calls)
+     * Otherwise redirects to frontend (for browser redirects from payment gateway)
      */
     public function paymentSuccess(Request $request, $user_theme_id, $gateway)
     {
         try {
             $userTheme = UserTheme::with('theme')->findOrFail($user_theme_id);
+            $wantsJson = $request->wantsJson() || $request->expectsJson() || ($request->has('format') && $request->get('format') === 'json');
 
-            // Ownership verification: Verify the purchase belongs to the authenticated user
-            // Note: Payment callbacks may not have authenticated user, so we verify via payment_ref
-            // For additional security, we could add a signed URL parameter or token
+            // Check if already activated
             if ($userTheme->status === UserTheme::STATUS_ACTIVE) {
+                if ($wantsJson) {
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Theme already activated',
+                        'theme_id' => $userTheme->theme_id,
+                        'user_theme_id' => $userTheme->id,
+                    ], 200);
+                }
                 return $this->redirectToFrontend('success', 'Theme already activated');
             }
 
             if ($userTheme->status !== UserTheme::STATUS_PENDING) {
+                if ($wantsJson) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Invalid purchase status'
+                    ], 400);
+                }
                 return $this->redirectToFrontend('error', 'Invalid purchase status');
             }
 
@@ -405,6 +449,14 @@ class ThemeSettingsController extends Controller
                 if (config('app.env') === 'local') {
                     $verified = true;
                     $transactionId = 'TEST_' . time();
+                } else {
+                    if ($wantsJson) {
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Test gateway only available in local environment'
+                        ], 403);
+                    }
+                    return $this->redirectToFrontend('error', 'Test gateway only available in local environment');
                 }
             } elseif ($gateway === 'myfatoorah') {
                 $paymentId = $request->paymentId;
@@ -466,6 +518,22 @@ class ThemeSettingsController extends Controller
                         $gateway
                     );
 
+                    // Refresh the model to get updated data
+                    $userTheme->refresh();
+
+                    if ($wantsJson) {
+                        return response()->json([
+                            'status' => 'success',
+                            'message' => 'Theme purchased successfully',
+                            'theme_id' => $userTheme->theme_id,
+                            'theme_name' => $userTheme->theme->name ?? null,
+                            'user_theme_id' => $userTheme->id,
+                            'transaction_id' => $transactionId ?? 'N/A',
+                            'amount_paid' => $userTheme->amount_paid,
+                            'currency' => $userTheme->currency,
+                        ], 200);
+                    }
+
                     return $this->redirectToFrontend('success', 'Theme purchased successfully', [
                         'theme_id' => $userTheme->theme_id
                     ]);
@@ -474,6 +542,13 @@ class ThemeSettingsController extends Controller
                         'user_theme_id' => $userTheme->id,
                         'user_id' => $userTheme->user_id,
                     ]);
+                    
+                    if ($wantsJson) {
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => $e->getMessage()
+                        ], 400);
+                    }
                     return $this->redirectToFrontend('error', $e->getMessage());
                 }
             }
@@ -484,11 +559,25 @@ class ThemeSettingsController extends Controller
                 'request_data' => $request->all(),
             ]);
 
+            if ($wantsJson) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Payment verification failed'
+                ], 400);
+            }
+
             return $this->redirectToFrontend('error', 'Payment verification failed');
         } catch (ModelNotFoundException $e) {
             Log::error("Theme Payment Success: Purchase not found", [
                 'user_theme_id' => $user_theme_id,
             ]);
+            
+            if ($request->wantsJson() || $request->expectsJson() || ($request->has('format') && $request->get('format') === 'json')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Purchase record not found'
+                ], 404);
+            }
             return $this->redirectToFrontend('error', 'Purchase record not found');
         } catch (\Exception $e) {
             Log::error("Theme Payment Success Error: " . $e->getMessage(), [
@@ -496,18 +585,27 @@ class ThemeSettingsController extends Controller
                 'gateway' => $gateway,
                 'trace' => $e->getTraceAsString(),
             ]);
+            
+            if ($request->wantsJson() || $request->expectsJson() || ($request->has('format') && $request->get('format') === 'json')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'System error occurred'
+                ], 500);
+            }
             return $this->redirectToFrontend('error', 'System error occurred');
         }
     }
 
     /**
      * Payment cancel callback
-     * Includes ownership verification and transaction handling
+     * Returns JSON response when Accept: application/json header is present (for API calls)
+     * Otherwise redirects to frontend (for browser redirects from payment gateway)
      */
     public function paymentCancel(Request $request, $user_theme_id, $gateway)
     {
         try {
             $userTheme = UserTheme::findOrFail($user_theme_id);
+            $wantsJson = $request->wantsJson() || $request->expectsJson() || ($request->has('format') && $request->get('format') === 'json');
             
             // Ownership verification: The purchase record itself serves as verification
             // Payment gateway will only redirect to this URL for the correct purchase
@@ -524,11 +622,27 @@ class ThemeSettingsController extends Controller
                 }
             });
 
+            if ($wantsJson) {
+                return response()->json([
+                    'status' => 'cancelled',
+                    'message' => 'Payment was cancelled',
+                    'theme_id' => $userTheme->theme_id,
+                    'user_theme_id' => $userTheme->id,
+                ], 200);
+            }
+
             return $this->redirectToFrontend('cancelled', 'Payment was cancelled');
         } catch (ModelNotFoundException $e) {
             Log::error("Theme Payment Cancel: Purchase not found", [
                 'user_theme_id' => $user_theme_id,
             ]);
+            
+            if ($request->wantsJson() || $request->expectsJson() || ($request->has('format') && $request->get('format') === 'json')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Purchase record not found'
+                ], 404);
+            }
             return $this->redirectToFrontend('error', 'Purchase record not found');
         } catch (\Exception $e) {
             Log::error("Theme Payment Cancel Error: " . $e->getMessage(), [
@@ -536,6 +650,13 @@ class ThemeSettingsController extends Controller
                 'gateway' => $gateway,
                 'trace' => $e->getTraceAsString(),
             ]);
+            
+            if ($request->wantsJson() || $request->expectsJson() || ($request->has('format') && $request->get('format') === 'json')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'System error occurred'
+                ], 500);
+            }
             return $this->redirectToFrontend('error', 'System error occurred');
         }
     }
