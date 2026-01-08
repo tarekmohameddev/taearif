@@ -145,20 +145,24 @@ class ThemeSettingsController extends Controller
         //
     }
 
+    /**
+     * Set active theme for the authenticated user
+     * Checks if user has access (free or purchased) before activating
+     */
     public function setActiveTheme(Request $request)
     {
         try {
-        $user = Auth::user();
+            $user = Auth::user();
 
-        if (!$user) {
+            if (!$user) {
                 return $this->errorResponse('Unauthorized', 401);
-        }
+            }
 
-        $request->validate([
-            'theme_id' => 'required|exists:api_themes_settings,theme_id',
-        ]);
+            $request->validate([
+                'theme_id' => 'required|exists:api_themes_settings,theme_id',
+            ]);
 
-        $themeId = $request->theme_id;
+            $themeId = $request->theme_id;
             $theme = ApiThemeSettings::where('theme_id', $themeId)->firstOrFail();
 
             // Check if theme is enabled
@@ -180,15 +184,15 @@ class ThemeSettingsController extends Controller
 
             // Update user's active theme
             DB::transaction(function () use ($user, $themeId) {
-        $basicSetting = BasicSetting::firstOrCreate(
-            ['user_id' => $user->id],
-            ['theme' => $themeId]
-        );
+                $basicSetting = BasicSetting::firstOrCreate(
+                    ['user_id' => $user->id],
+                    ['theme' => $themeId]
+                );
 
-        if ($basicSetting->theme !== $themeId) {
-            $basicSetting->theme = $themeId;
-            $basicSetting->save();
-        }
+                if ($basicSetting->theme !== $themeId) {
+                    $basicSetting->theme = $themeId;
+                    $basicSetting->save();
+                }
             });
 
             return $this->successResponse([
@@ -197,6 +201,8 @@ class ThemeSettingsController extends Controller
                 'description' => $theme->description,
                 'thumbnail' => asset($theme->thumbnail),
                 'category' => $theme->category,
+                'is_free' => $theme->isFree(),
+                'has_access' => true,
             ], 'Theme activated successfully');
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
