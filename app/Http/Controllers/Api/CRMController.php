@@ -516,7 +516,6 @@ class CRMController extends Controller
         ->with([
             'city:id,name_ar,name_en',
             'district:id,name_ar,name_en',
-            'city',
             'type:id,name',
             'stage:id,stage_name',
             'priorityRef:id,name',
