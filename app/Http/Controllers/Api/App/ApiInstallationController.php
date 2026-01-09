@@ -56,6 +56,7 @@ class ApiInstallationController extends Controller
                     'price' => number_format($app->price, 2),
                     'type' => $app->type,
                     'rating' => round($app->rating, 1),
+                    'path' => $app->path,
                     'billing_type' => $app->billing_type->value,
                     'trial_days' => $app->trial_days ?? 0,
                     'installed' => $installation?->installed ?? false,
