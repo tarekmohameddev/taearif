@@ -544,13 +544,27 @@ class CRMController extends Controller
             $query->where('phone_number','like', '%' . trim($request->input('phone_number')) . '%');
         }
 
-        if ($request->filled('city_id'))       $query->where('city_id',       (int)$request->input('city_id'));
+        // Fix: Use explicit checks for integer filters to ensure they work correctly
+        if ($request->has('city_id') && $request->input('city_id') !== null && $request->input('city_id') !== '') {
+            $query->where('city_id', (int)$request->input('city_id'));
+        }
         // if ($request->filled('district_id'))   $query->where('district_id',   (int)$request->input('district_id'));
-        if ($request->filled('type_id'))       $query->where('type_id',       (int)$request->input('type_id'));
-        if ($request->filled('priority_id'))   $query->where('priority_id',   (int)$request->input('priority_id'));
-        if ($request->filled('procedure_id'))  $query->where('procedure_id',  (int)$request->input('procedure_id'));
-        if ($request->filled('stage_id'))      $query->where('stage_id',      (int)$request->input('stage_id'));
-        if ($request->filled('responsible_employee_id')) $query->where('responsible_employee_id', (int)$request->input('responsible_employee_id'));
+        if ($request->has('type_id') && $request->input('type_id') !== null && $request->input('type_id') !== '') {
+            $query->where('type_id', (int)$request->input('type_id'));
+        }
+        if ($request->has('priority_id') && $request->input('priority_id') !== null && $request->input('priority_id') !== '') {
+            $query->where('priority_id', (int)$request->input('priority_id'));
+        }
+        if ($request->has('procedure_id') && $request->input('procedure_id') !== null && $request->input('procedure_id') !== '') {
+            $query->where('procedure_id', (int)$request->input('procedure_id'));
+        }
+        // Fix: Explicit check for stage_id filter to ensure it's applied correctly
+        if ($request->has('stage_id') && $request->input('stage_id') !== null && $request->input('stage_id') !== '') {
+            $query->where('stage_id', (int)$request->input('stage_id'));
+        }
+        if ($request->filled('responsible_employee_id')) {
+            $query->where('responsible_employee_id', (int)$request->input('responsible_employee_id'));
+        }
         
         // Filter by employee's WhatsApp number
         if ($request->filled('employee_whatsapp_number')) {
@@ -577,6 +591,9 @@ class CRMController extends Controller
         }
 
         $query->orderBy($sortBy, $sortDir);
+        
+        // Fix: Get filtered total count before pagination
+        $totalFiltered = (clone $query)->count();
         $paginator = $query->paginate($perPage);
 
         $customerIds = $paginator->getCollection()->pluck('id')->all();
@@ -665,12 +682,11 @@ class CRMController extends Controller
                 ];
             })->values();
 
-        $totalAll = \App\Models\ApiCustomer::where('user_id', $request->user()->tenantOwnerId())->count();
-
+        // Fix: Use filtered count instead of total count of all customers
         return response()->json([
             'status' => 'success',
             'data' => [
-                'summary' => ['total_customers' => $totalAll],
+                'summary' => ['total_customers' => $totalFiltered],
                 'customers' => $customers,
                 'pagination' => [
                     'total'        => $paginator->total(),
