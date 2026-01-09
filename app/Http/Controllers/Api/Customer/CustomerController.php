@@ -828,6 +828,7 @@ class CustomerController extends Controller
             'type_id'       => 'nullable|integer',
             'priority_id'   => 'nullable|integer',
             'procedure_id'  => 'nullable|integer',
+            'stage_id'      => 'nullable|integer',
             'phone_number'  => 'nullable|string|max:20',
             'responsible_employee_id' => 'nullable|integer',
             'employee_whatsapp_number' => 'nullable|string|max:20',
@@ -868,6 +869,10 @@ class CustomerController extends Controller
         if ($request->filled('type_id'))       $query->where('type_id',       (int)$request->input('type_id'));
         if ($request->filled('priority_id'))   $query->where('priority_id',   (int)$request->input('priority_id'));
         if ($request->filled('procedure_id'))  $query->where('procedure_id',  (int)$request->input('procedure_id'));
+        if ($request->filled('stage_id')) {
+            $query->where('stage_id', (int)$request->input('stage_id'));
+        }
+        
         if ($request->filled('phone_number'))  $query->where('phone_number', 'like', '%'.$request->input('phone_number').'%');
         if ($request->filled('responsible_employee_id')) $query->where('responsible_employee_id', (int)$request->input('responsible_employee_id'));
         

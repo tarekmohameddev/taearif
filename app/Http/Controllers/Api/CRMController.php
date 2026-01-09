@@ -559,17 +559,8 @@ class CRMController extends Controller
         if ($request->filled('procedure_id')) {
             $query->where('procedure_id', (int)$request->input('procedure_id'));
         }
-        // Fix: Direct check after validation - stage_id will be integer or null
-        $stageId = $request->input('stage_id');
-        if ($stageId !== null) {
-            $stageId = (int)$stageId;
-            $query->where('stage_id', $stageId);
-            // Debug: Log to verify filter is being applied
-            Log::info('Stage ID filter applied', [
-                'stage_id' => $stageId,
-                'request_stage_id' => $request->input('stage_id'),
-                'all_params' => $request->only(['stage_id', 'sort_by', 'sort_dir'])
-            ]);
+        if ($request->filled('stage_id')) {
+            $query->where('stage_id', (int)$request->input('stage_id'));
         }
         if ($request->filled('responsible_employee_id')) {
             $query->where('responsible_employee_id', (int)$request->input('responsible_employee_id'));
@@ -600,14 +591,6 @@ class CRMController extends Controller
         }
 
         $query->orderBy($sortBy, $sortDir);
-        
-        // Debug: Log the SQL query to verify stage_id filter is in WHERE clause
-        if ($request->filled('stage_id')) {
-            Log::info('SQL Query with stage_id filter', [
-                'sql' => $query->toSql(),
-                'bindings' => $query->getBindings()
-            ]);
-        }
         
         // Fix: Get filtered total count before pagination
         $totalFiltered = (clone $query)->count();
