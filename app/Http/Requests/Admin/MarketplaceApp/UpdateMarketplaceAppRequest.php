@@ -30,6 +30,7 @@ class UpdateMarketplaceAppRequest extends FormRequest
             'price' => 'required|numeric|min:0|max:999999.99',
             'type' => 'required|in:builtin,marketplace',
             'rating' => 'nullable|numeric|min:0|max:5',
+            'path' => 'nullable|string|max:255|regex:/^\/dashboard\/[a-z0-9-]+$/',
             'img' => 'nullable|url|max:500',
             'image' => 'nullable|file|image|mimes:jpg,jpeg,png|max:2048',
             'billing_type' => 'required|in:free,paid,paid_trial',
@@ -72,6 +73,8 @@ class UpdateMarketplaceAppRequest extends FormRequest
             'img.max' => 'رابط الصورة لا يجب أن يتجاوز 500 حرف',
             'description.max' => 'الوصف لا يجب أن يتجاوز 5000 حرف',
             'price.max' => 'السعر لا يجب أن يتجاوز 999999.99',
+            'path.regex' => 'المسار يجب أن يبدأ بـ /dashboard/ متبوعاً بأحرف صغيرة وأرقام وشرطات فقط. مثال: /dashboard/whatsapp-center',
+            'path.max' => 'المسار لا يجب أن يتجاوز 255 حرف',
         ];
     }
 }
