@@ -541,7 +541,9 @@ class CRMController extends Controller
 
         if ($request->filled('name'))         $query->where('name',        'like', '%' . trim($request->input('name')) . '%');
         if ($request->filled('email'))        $query->where('email',       'like', '%' . trim($request->input('email')) . '%');
-        if ($request->filled('phone_number')) $query->where('phone_number','like', '%' . trim($request->input('phone_number')) . '%');
+        if ($request->filled('phone_number') && strtolower(trim($request->input('phone_number'))) !== 'all') {
+            $query->where('phone_number','like', '%' . trim($request->input('phone_number')) . '%');
+        }
 
         if ($request->filled('city_id'))       $query->where('city_id',       (int)$request->input('city_id'));
         // if ($request->filled('district_id'))   $query->where('district_id',   (int)$request->input('district_id'));
