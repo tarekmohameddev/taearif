@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\Api\UserApiCustomerType;
 use App\Models\Api\UserApiCustomerStage;
@@ -544,23 +545,31 @@ class CRMController extends Controller
             $query->where('phone_number','like', '%' . trim($request->input('phone_number')) . '%');
         }
 
-        // Fix: Use explicit checks for integer filters to ensure they work correctly
-        if ($request->has('city_id') && $request->input('city_id') !== null && $request->input('city_id') !== '') {
+        // Fix: Use filled() for all integer filters - more reliable than has() + null checks
+        if ($request->filled('city_id')) {
             $query->where('city_id', (int)$request->input('city_id'));
         }
         // if ($request->filled('district_id'))   $query->where('district_id',   (int)$request->input('district_id'));
-        if ($request->has('type_id') && $request->input('type_id') !== null && $request->input('type_id') !== '') {
+        if ($request->filled('type_id')) {
             $query->where('type_id', (int)$request->input('type_id'));
         }
-        if ($request->has('priority_id') && $request->input('priority_id') !== null && $request->input('priority_id') !== '') {
+        if ($request->filled('priority_id')) {
             $query->where('priority_id', (int)$request->input('priority_id'));
         }
-        if ($request->has('procedure_id') && $request->input('procedure_id') !== null && $request->input('procedure_id') !== '') {
+        if ($request->filled('procedure_id')) {
             $query->where('procedure_id', (int)$request->input('procedure_id'));
         }
-        // Fix: Explicit check for stage_id filter to ensure it's applied correctly
-        if ($request->has('stage_id') && $request->input('stage_id') !== null && $request->input('stage_id') !== '') {
-            $query->where('stage_id', (int)$request->input('stage_id'));
+        // Fix: Direct check after validation - stage_id will be integer or null
+        $stageId = $request->input('stage_id');
+        if ($stageId !== null) {
+            $stageId = (int)$stageId;
+            $query->where('stage_id', $stageId);
+            // Debug: Log to verify filter is being applied
+            Log::info('Stage ID filter applied', [
+                'stage_id' => $stageId,
+                'request_stage_id' => $request->input('stage_id'),
+                'all_params' => $request->only(['stage_id', 'sort_by', 'sort_dir'])
+            ]);
         }
         if ($request->filled('responsible_employee_id')) {
             $query->where('responsible_employee_id', (int)$request->input('responsible_employee_id'));
@@ -591,6 +600,14 @@ class CRMController extends Controller
         }
 
         $query->orderBy($sortBy, $sortDir);
+        
+        // Debug: Log the SQL query to verify stage_id filter is in WHERE clause
+        if ($request->filled('stage_id')) {
+            Log::info('SQL Query with stage_id filter', [
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings()
+            ]);
+        }
         
         // Fix: Get filtered total count before pagination
         $totalFiltered = (clone $query)->count();
