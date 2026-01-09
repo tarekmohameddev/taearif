@@ -24,6 +24,7 @@ class ApiApp extends Model
         'billing_type',
         'trial_days',
         'is_enabled',
+        'path',
     ];
     protected $casts = [
         'price' => 'decimal:2',

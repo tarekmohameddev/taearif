@@ -56,8 +56,12 @@ class DailyService extends BaseService
             $query->where('priority', $filters['priority']);
         }
 
+        // If user_id filter is provided, include both that user's reminders AND default reminders
         if (isset($filters['user_id'])) {
-            $query->where('user_id', $filters['user_id']);
+            $query->where(function($q) use ($filters) {
+                $q->whereNull('user_id')  // Default reminders
+                  ->orWhere('user_id', $filters['user_id']);  // User's own reminders
+            });
         }
 
         if (isset($filters['from_date'])) {

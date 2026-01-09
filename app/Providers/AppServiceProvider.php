@@ -38,8 +38,10 @@ use App\Models\Api\ApiPixel;
 use App\Models\Api\CustomerDropdownSetting;
 use App\Models\Api\UserPropertyRequest;
 use App\Models\Api\ApiCustomerInquiry;
+use App\Models\Api\UserApiCustomerReminder;
 use App\Observers\Matching\UsersPropertyRequestObserver;
 use App\Observers\Matching\ApiCustomerInquiryObserver;
+use App\Observers\UserApiCustomerReminderObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -420,6 +422,7 @@ class AppServiceProvider extends ServiceProvider
         try {
             UserPropertyRequest::observe(UsersPropertyRequestObserver::class);
             ApiCustomerInquiry::observe(ApiCustomerInquiryObserver::class);
+            UserApiCustomerReminder::observe(UserApiCustomerReminderObserver::class);
         } catch (\Throwable $e) {
             \Log::warning('Failed to register matching observers', ['error' => $e->getMessage()]);
         }

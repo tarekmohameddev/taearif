@@ -176,6 +176,7 @@ class ApiPropertyRequestController extends Controller
                 'statusOption:id,name_ar,name_en',
                 'customer:id,property_request_id,user_id,responsible_employee_id', // Explicitly load customer
                 'customer.responsibleEmployee:id,first_name,last_name,email',
+                'customer.responsibleEmployee.activeWhatsappUser:id,employee_id,number',
                 'district:id,name_ar',
             ])
             ->where('user_id', $ownerId);

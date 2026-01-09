@@ -49,6 +49,15 @@
                         <p id="errrating" class="mb-0 text-danger em"></p>
                     </div>
                     <div class="form-group">
+                        <label for="path">مسار صفحة التطبيق</label>
+                        <input id="path" type="text" class="form-control" name="path"
+                            placeholder="/dashboard/app-slug" value="">
+                        <p class="text-info">
+                            <small>مسار صفحة التطبيق (اختياري). مثال: /dashboard/whatsapp-center</small>
+                        </p>
+                        <p id="errpath" class="mb-0 text-danger em"></p>
+                    </div>
+                    <div class="form-group">
                         <label for="img">رابط الصورة</label>
                         <input id="img" type="text" class="form-control" name="img"
                             placeholder="أدخل رابط الصورة" value="">

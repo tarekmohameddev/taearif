@@ -68,6 +68,10 @@ class VerifyCsrfToken extends Middleware
         '/api/auth/google/redirect',
         '/api/auth/google/callback',
 
+        // MyFatoorah routes
+        '/mf/app/success',
+        '/mf/app/cancel',
+
         // '*/property-requests/*',
     ];
 }

@@ -21,6 +21,9 @@ use App\Models\User;
 use App\Models\BasicExtended;
 use App\Models\BasicSetting;
 use App\Models\User\BasicSetting as UserBasicSetting;
+use App\Models\Api\ApiInstallation;
+use App\Services\InstallationStateMachine;
+use App\Enums\InstallStatus;
 
 class ArbController extends Controller
 {
@@ -152,8 +155,8 @@ class ArbController extends Controller
         return $this->paymentProcess(
             $dummyReq,
             $app->price,
-            route('mf.app.success', [], true),
-            route('mf.app.cancel',  [], true),
+            route('membership.arb.success', [], true),
+            route('membership.arb.cancel',  [], true),
             "شراء تطبيق {$app->name}",
             $user->id,
             'APP',
@@ -222,6 +225,14 @@ class ArbController extends Controller
         log::info($dataArr);
         if (!empty($dataArr) && is_array($dataArr)) {
             $paymentData = $dataArr[0]; // Get the first element
+
+            // Check context from udf3 to route to appropriate handler
+            $context = $paymentData['udf3'] ?? 'MEMBERSHIP';
+            
+            // Handle APP context payments separately
+            if ($context === 'APP') {
+                return $this->handleAppPayment($request, $paymentData);
+            }
 
             if (isset($paymentData['result']) && $paymentData['result'] === 'CAPTURED') {
                 $isSuccessful = true;
@@ -366,6 +377,123 @@ class ArbController extends Controller
 
 
 
+    }
+
+    /**
+     * Handle app payment callback from ARB gateway
+     *
+     * @param Request $request
+     * @param array $paymentData Decrypted payment data from ARB
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    protected function handleAppPayment(Request $request, array $paymentData)
+    {
+        try {
+            // Validate payment was successful
+            if (!isset($paymentData['result']) || $paymentData['result'] !== 'CAPTURED') {
+                Log::info('ARB app payment failed or cancelled', [
+                    'result' => $paymentData['result'] ?? 'unknown',
+                    'payment_id' => $paymentData['transId'] ?? null,
+                ]);
+                return redirect()->route('failed.page');
+            }
+
+            // Extract payment information
+            $paymentId = $paymentData['transId'] ?? $request->input('PaymentID');
+            $appId = $paymentData['udf4'] ?? null;
+            $userId = $paymentData['udf2'] ?? null;
+            $paidAmount = $paymentData['amt'] ?? 0;
+
+            // Validate required data exists
+            if (!$paymentId || !$appId || !$userId) {
+                Log::error('ARB app payment missing required data', [
+                    'payment_id' => $paymentId,
+                    'app_id' => $appId,
+                    'user_id' => $userId,
+                    'payment_data' => $paymentData,
+                ]);
+                return redirect()->route('failed.page');
+            }
+
+            // Find installation by invoice_id (which stores the PaymentID)
+            $installation = ApiInstallation::where('invoice_id', $paymentId)
+                ->where('user_id', $userId)
+                ->where('app_id', $appId)
+                ->with('app', 'user')
+                ->first();
+
+            if (!$installation) {
+                Log::error('Installation not found for ARB app payment', [
+                    'payment_id' => $paymentId,
+                    'app_id' => $appId,
+                    'user_id' => $userId,
+                ]);
+                return redirect()->route('failed.page');
+            }
+
+            // Verify amount matches app price (prevent tampering)
+            $expectedAmount = (float) $installation->app->price;
+            $paidAmount = (float) $paidAmount;
+
+            if (abs($paidAmount - $expectedAmount) > 0.01) {
+                Log::warning('ARB app payment amount mismatch', [
+                    'expected' => $expectedAmount,
+                    'received' => $paidAmount,
+                    'installation_id' => $installation->id,
+                    'app_id' => $appId,
+                    'user_id' => $userId,
+                ]);
+                return redirect()->route('failed.page');
+            }
+
+            // Activate installation using state machine
+            try {
+                $stateMachine = app(InstallationStateMachine::class);
+                $stateMachine->transition(
+                    $installation,
+                    InstallStatus::Installed,
+                    [
+                        'recurring_id' => $paymentData['RecurringId'] ?? null,
+                        'payment_subscription_id' => $paymentData['RecurringId'] ?? null,
+                    ]
+                );
+
+                Log::info('App installation activated via ARB payment', [
+                    'installation_id' => $installation->id,
+                    'user_id' => $userId,
+                    'app_id' => $appId,
+                    'app_name' => $installation->app->name,
+                    'payment_id' => $paymentId,
+                    'amount' => $paidAmount,
+                ]);
+
+                return redirect()->route('success.page')
+                    ->with('success', 'App installed successfully');
+
+            } catch (\App\Exceptions\Installation\InvalidStatusTransitionException $e) {
+                Log::error('Invalid status transition for app installation', [
+                    'installation_id' => $installation->id,
+                    'current_status' => $installation->status->value,
+                    'error' => $e->getMessage(),
+                ]);
+                return redirect()->route('failed.page');
+            } catch (\Exception $e) {
+                Log::error('Failed to activate app installation via ARB payment', [
+                    'installation_id' => $installation->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                return redirect()->route('failed.page');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Unexpected error in ARB app payment handler', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'payment_data' => $paymentData ?? [],
+            ]);
+            return redirect()->route('failed.page');
+        }
     }
 
     public function decryption($code, $key): false|string

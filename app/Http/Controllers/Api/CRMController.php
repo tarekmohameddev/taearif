@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\Api\UserApiCustomerType;
 use App\Models\Api\UserApiCustomerStage;
@@ -516,7 +517,6 @@ class CRMController extends Controller
         ->with([
             'city:id,name_ar,name_en',
             'district:id,name_ar,name_en',
-            'city',
             'type:id,name',
             'stage:id,stage_name',
             'priorityRef:id,name',
@@ -541,15 +541,30 @@ class CRMController extends Controller
 
         if ($request->filled('name'))         $query->where('name',        'like', '%' . trim($request->input('name')) . '%');
         if ($request->filled('email'))        $query->where('email',       'like', '%' . trim($request->input('email')) . '%');
-        if ($request->filled('phone_number')) $query->where('phone_number','like', '%' . trim($request->input('phone_number')) . '%');
+        if ($request->filled('phone_number') && strtolower(trim($request->input('phone_number'))) !== 'all') {
+            $query->where('phone_number','like', '%' . trim($request->input('phone_number')) . '%');
+        }
 
-        if ($request->filled('city_id'))       $query->where('city_id',       (int)$request->input('city_id'));
+        // Fix: Use filled() for all integer filters - more reliable than has() + null checks
+        if ($request->filled('city_id')) {
+            $query->where('city_id', (int)$request->input('city_id'));
+        }
         // if ($request->filled('district_id'))   $query->where('district_id',   (int)$request->input('district_id'));
-        if ($request->filled('type_id'))       $query->where('type_id',       (int)$request->input('type_id'));
-        if ($request->filled('priority_id'))   $query->where('priority_id',   (int)$request->input('priority_id'));
-        if ($request->filled('procedure_id'))  $query->where('procedure_id',  (int)$request->input('procedure_id'));
-        if ($request->filled('stage_id'))      $query->where('stage_id',      (int)$request->input('stage_id'));
-        if ($request->filled('responsible_employee_id')) $query->where('responsible_employee_id', (int)$request->input('responsible_employee_id'));
+        if ($request->filled('type_id')) {
+            $query->where('type_id', (int)$request->input('type_id'));
+        }
+        if ($request->filled('priority_id')) {
+            $query->where('priority_id', (int)$request->input('priority_id'));
+        }
+        if ($request->filled('procedure_id')) {
+            $query->where('procedure_id', (int)$request->input('procedure_id'));
+        }
+        if ($request->filled('stage_id')) {
+            $query->where('stage_id', (int)$request->input('stage_id'));
+        }
+        if ($request->filled('responsible_employee_id')) {
+            $query->where('responsible_employee_id', (int)$request->input('responsible_employee_id'));
+        }
         
         // Filter by employee's WhatsApp number
         if ($request->filled('employee_whatsapp_number')) {
@@ -576,6 +591,9 @@ class CRMController extends Controller
         }
 
         $query->orderBy($sortBy, $sortDir);
+        
+        // Fix: Get filtered total count before pagination
+        $totalFiltered = (clone $query)->count();
         $paginator = $query->paginate($perPage);
 
         $customerIds = $paginator->getCollection()->pluck('id')->all();
@@ -664,12 +682,11 @@ class CRMController extends Controller
                 ];
             })->values();
 
-        $totalAll = \App\Models\ApiCustomer::where('user_id', $request->user()->tenantOwnerId())->count();
-
+        // Fix: Use filtered count instead of total count of all customers
         return response()->json([
             'status' => 'success',
             'data' => [
-                'summary' => ['total_customers' => $totalAll],
+                'summary' => ['total_customers' => $totalFiltered],
                 'customers' => $customers,
                 'pagination' => [
                     'total'        => $paginator->total(),

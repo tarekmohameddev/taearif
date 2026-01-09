@@ -510,6 +510,17 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/marketplace-apps/toggle-status', 'Admin\MarketplaceAppController@toggleStatus')->name('marketplace-apps.toggle-status');
     });
 
+    // Themes Management
+    Route::group(['middleware' => 'checkpermission:Packages'], function () {
+        Route::get('/themes', 'Admin\ThemeController@index')->name('themes.index');
+        Route::get('/themes/create', 'Admin\ThemeController@create')->name('themes.create');
+        Route::post('/themes/store', 'Admin\ThemeController@store')->name('themes.store');
+        Route::get('/themes/{themeId}/edit', 'Admin\ThemeController@edit')->name('themes.edit');
+        Route::post('/themes/update', 'Admin\ThemeController@update')->name('themes.update');
+        Route::post('/themes/delete', 'Admin\ThemeController@delete')->name('themes.delete');
+        Route::post('/themes/toggle-enabled', 'Admin\ThemeController@toggleEnabled')->name('themes.toggle-enabled');
+    });
+
     //AdminCreditController
     Route::group(['middleware' => 'checkpermission:Credit Management'], function () {
         Route::get('/credit-transactions', 'Admin\AdminCreditController@index')->name('credit.transactions.index');

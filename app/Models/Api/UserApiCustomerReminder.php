@@ -34,7 +34,17 @@ class UserApiCustomerReminder extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->nullable();
+    }
+
+    /**
+     * Check if this is a default system reminder
+     *
+     * @return bool
+     */
+    public function isDefault(): bool
+    {
+        return $this->user_id === null;
     }
 
     public function customer()
@@ -51,6 +61,7 @@ class UserApiCustomerReminder extends Model
             1 => 'Low',
             2 => 'Medium',
             3 => 'High',
+            null => 'Not Set',
             default => 'Unknown',
         };
     }
