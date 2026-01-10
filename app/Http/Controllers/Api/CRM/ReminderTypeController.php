@@ -114,9 +114,19 @@ class ReminderTypeController extends Controller
 
             $reminderTypes = ReminderTypeResource::collection($items);
 
+            // Calculate pagination metadata
             $lastPage = max(1, (int) ceil($total / $perPage));
-            $from = $page === 1 ? 1 : ($offset + 1);
-            $to = min($offset + $perPage, $total);
+
+            // Calculate from and to based on the actual items shown
+            if ($page === 1) {
+                $from = $total > 0 ? 1 : null;
+                $to = min($items->count(), $total);
+            } else {
+                // For page > 1, calculate based on adjusted offset
+                $adjustedOffset = ($page - 1) * $perPage - $defaultCount;
+                $from = $total > 0 ? ($adjustedOffset + 1) : null;
+                $to = min($adjustedOffset + $items->count(), $total);
+            }
 
             return $this->successResponse([
                 'reminder_types' => $reminderTypes,
@@ -125,7 +135,7 @@ class ReminderTypeController extends Controller
                     'per_page' => $perPage,
                     'total' => $total,
                     'last_page' => $lastPage,
-                    'from' => $total > 0 ? $from : null,
+                    'from' => $from,
                     'to' => $total > 0 ? $to : null,
                 ],
             ], 'Reminder types retrieved successfully', 'تم استرجاع أنواع التذكير بنجاح');
