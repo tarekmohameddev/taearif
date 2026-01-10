@@ -81,6 +81,10 @@ use App\Http\Controllers\Api\Customer\{
     UserApiCustomerAppointmentController,
     CustomerController,
 };
+use App\Http\Controllers\Api\Crm\{
+    ReminderTypeController,
+    ReminderController,
+};
 
 use App\Http\Controllers\Api\V1\{
     Em\EmployeeAuthController,
@@ -98,7 +102,7 @@ use App\Http\Controllers\Api\V1\Rms\{
     ContractController,
     InstallmentController,
     MaintenanceController,
-    ReminderController,
+    ReminderController as RmsReminderController,
     RmsDashboardController,
     ExpenseController,
 };
@@ -468,6 +472,12 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx', 
     Route::get('customer-reminders/filter-options', [UserApiCustomerReminderController::class, 'filterOptions']);
     Route::apiResource('customer-reminders', UserApiCustomerReminderController::class);
 
+    // Reminder Types (New System)
+    Route::apiResource('reminder-types', ReminderTypeController::class);
+    
+    // Reminders (New System)
+    Route::apiResource('reminders', ReminderController::class);
+
     // CRM Dashboard
     Route::get('/', [CRMController::class, 'index']);
     // CRM customer filters (same payload as /api/customers/filters)
@@ -643,9 +653,9 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::delete('maintenance/{id}', [MaintenanceController::class, 'destroy']);
 
         // Reminders
-        Route::get('reminders', [ReminderController::class, 'index']);
-        Route::post('reminders/{id}/dismiss', [ReminderController::class, 'dismiss']);
-        Route::post('reminders/{id}/snooze', [ReminderController::class, 'snooze']);
+        Route::get('reminders', [RmsReminderController::class, 'index']);
+        Route::post('reminders/{id}/dismiss', [RmsReminderController::class, 'dismiss']);
+        Route::post('reminders/{id}/snooze', [RmsReminderController::class, 'snooze']);
     });
 
     // Purchase Management System
