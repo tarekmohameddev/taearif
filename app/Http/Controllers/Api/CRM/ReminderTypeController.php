@@ -8,9 +8,11 @@ use App\Http\Requests\Crm\UpdateReminderTypeRequest;
 use App\Http\Resources\Crm\ReminderTypeResource;
 use App\Repositories\Crm\ReminderTypeRepository;
 use App\Services\Crm\ReminderTypeService;
+use App\Services\Crm\DefaultReminderTypeService;
 use App\Traits\BilingualResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Collection;
 
 class ReminderTypeController extends Controller
 {
@@ -52,19 +54,79 @@ class ReminderTypeController extends Controller
                 'is_active' => $request->has('is_active') ? filter_var($request->get('is_active'), FILTER_VALIDATE_BOOLEAN) : null,
             ];
 
-            $paginated = $this->repository->paginate($tenantId, $filters, $perPage);
+            // Get default types (hardcoded)
+            $defaultTypes = collect(DefaultReminderTypeService::getDefaultTypes());
+            
+            // Filter default types based on filters
+            if (isset($filters['search']) && $filters['search']) {
+                $search = strtolower($filters['search']);
+                $defaultTypes = $defaultTypes->filter(function ($type) use ($search) {
+                    return stripos($type['name'], $search) !== false 
+                        || stripos($type['name_ar'], $search) !== false;
+                });
+            }
 
-            $reminderTypes = ReminderTypeResource::collection($paginated->items());
+            if (isset($filters['is_active'])) {
+                $defaultTypes = $defaultTypes->filter(function ($type) use ($filters) {
+                    return $type['is_active'] === $filters['is_active'];
+                });
+            }
+
+            // Get database types (excluding default types that may have been auto-created)
+            $dbTypes = $this->repository->getAll($tenantId, $filters)
+                ->filter(function ($type) {
+                    // Exclude auto-created default types from DB results to avoid duplicates
+                    return !$type->is_default;
+                })
+                ->map(function ($type) {
+                    // Ensure is_default is false for DB types
+                    $type->is_default = false;
+                    return $type;
+                });
+
+            // Convert defaults to collection of objects for resource compatibility
+            $defaultTypesCollection = $defaultTypes->map(function ($type) {
+                return (object) $type;
+            });
+
+            // Calculate totals
+            $defaultCount = $defaultTypesCollection->count();
+            $dbCount = $dbTypes->count();
+            $total = $defaultCount + $dbCount;
+
+            // Pagination: defaults always appear on first page
+            $items = collect();
+            if ($page === 1) {
+                // Page 1: include all defaults + remaining slots from DB
+                $items = $defaultTypesCollection;
+                $dbSlots = max(0, $perPage - $defaultCount);
+                if ($dbSlots > 0) {
+                    $items = $items->merge($dbTypes->take($dbSlots));
+                }
+            } else {
+                // Page > 1: skip defaults, show only DB types
+                // Adjust offset: we already showed $defaultCount items on page 1
+                $adjustedOffset = ($page - 1) * $perPage - $defaultCount;
+                if ($adjustedOffset >= 0 && $adjustedOffset < $dbCount) {
+                    $items = $dbTypes->slice($adjustedOffset, $perPage)->values();
+                }
+            }
+
+            $reminderTypes = ReminderTypeResource::collection($items);
+
+            $lastPage = max(1, (int) ceil($total / $perPage));
+            $from = $page === 1 ? 1 : ($offset + 1);
+            $to = min($offset + $perPage, $total);
 
             return $this->successResponse([
                 'reminder_types' => $reminderTypes,
                 'pagination' => [
-                    'current_page' => $paginated->currentPage(),
-                    'per_page' => $paginated->perPage(),
-                    'total' => $paginated->total(),
-                    'last_page' => $paginated->lastPage(),
-                    'from' => $paginated->firstItem(),
-                    'to' => $paginated->lastItem(),
+                    'current_page' => $page,
+                    'per_page' => $perPage,
+                    'total' => $total,
+                    'last_page' => $lastPage,
+                    'from' => $total > 0 ? $from : null,
+                    'to' => $total > 0 ? $to : null,
                 ],
             ], 'Reminder types retrieved successfully', 'تم استرجاع أنواع التذكير بنجاح');
         } catch (\Exception $e) {

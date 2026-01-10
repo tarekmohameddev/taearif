@@ -8,6 +8,7 @@ use App\Http\Requests\Crm\UpdateReminderRequest;
 use App\Http\Resources\Crm\ReminderResource;
 use App\Repositories\Crm\ReminderRepository;
 use App\Services\Crm\ReminderService;
+use App\Services\Crm\DefaultReminderTypeService;
 use App\Traits\BilingualResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -109,6 +110,15 @@ class ReminderController extends Controller
 
             $validated = $request->validated();
             $validated['user_id'] = $tenantId;
+
+            // Handle negative IDs (default types)
+            if (isset($validated['reminder_type_id']) && $validated['reminder_type_id'] < 0) {
+                $defaultType = DefaultReminderTypeService::getOrCreateDefaultType(
+                    $tenantId,
+                    $validated['reminder_type_id']
+                );
+                $validated['reminder_type_id'] = $defaultType->id;
+            }
 
             // Set default priority if not provided
             if (!isset($validated['priority'])) {
@@ -232,6 +242,15 @@ class ReminderController extends Controller
             }
 
             $validated = $request->validated();
+
+            // Handle negative IDs (default types) if reminder_type_id is being updated
+            if (isset($validated['reminder_type_id']) && $validated['reminder_type_id'] < 0) {
+                $defaultType = DefaultReminderTypeService::getOrCreateDefaultType(
+                    $tenantId,
+                    $validated['reminder_type_id']
+                );
+                $validated['reminder_type_id'] = $defaultType->id;
+            }
 
             // If status is being updated to completed, ensure we handle it properly
             if (isset($validated['status']) && $validated['status'] === 'completed') {

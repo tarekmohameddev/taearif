@@ -4,6 +4,7 @@ namespace App\Http\Requests\Crm;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Services\Crm\DefaultReminderTypeService;
 
 class StoreReminderRequest extends FormRequest
 {
@@ -37,9 +38,26 @@ class StoreReminderRequest extends FormRequest
             'reminder_type_id' => [
                 'required',
                 'integer',
-                Rule::exists('reminder_types', 'id')
-                    ->where('user_id', $userId)
-                    ->where('is_active', true),
+                function ($attribute, $value, $fail) use ($userId) {
+                    // If negative ID, check if it's a valid default type
+                    if ($value < 0) {
+                        if (!DefaultReminderTypeService::isDefaultTypeId($value)) {
+                            $fail('The selected reminder type ID is invalid.');
+                        }
+                        return;
+                    }
+                    
+                    // If positive ID, validate it exists in database
+                    $exists = \DB::table('reminder_types')
+                        ->where('id', $value)
+                        ->where('user_id', $userId)
+                        ->where('is_active', true)
+                        ->exists();
+                    
+                    if (!$exists) {
+                        $fail('The selected reminder type does not exist, does not belong to your account, or is inactive.');
+                    }
+                },
             ],
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
