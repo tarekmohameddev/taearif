@@ -431,6 +431,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::prefix('customers')->group(function () {
         Route::get   ('/filters',  [CustomerController::class, 'filterOptions'])->middleware('can:customers.view');
         Route::get   ('/',         [CustomerController::class, 'index'])->middleware('can:customers.view');
+        Route::get   ('/all',      [CustomerController::class, 'all'])->middleware('can:customers.view');
         Route::get   ('/search',   [CustomerController::class, 'search'])->middleware('can:customers.view');
         Route::get   ('/export',   [CustomerController::class, 'export'])->middleware('can:customers.view');
         Route::post  ('/bulk-import', [CustomerController::class, 'bulkImport'])->middleware('can:customers.create');

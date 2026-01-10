@@ -100,6 +100,47 @@ class CustomerController extends Controller
     }
 
     /**
+     * Get all customers for dropdown selection (no pagination).
+     * Returns only id, name, and phone_number fields.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function all(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            $customers = ApiCustomer::where('user_id', $user->id)
+                ->select('id', 'name', 'phone_number')
+                ->orderBy('name', 'asc')
+                ->limit(10000)
+                ->get();
+
+            $formattedCustomers = $customers->map(function ($customer) {
+                return [
+                    'id' => $customer->id,
+                    'name' => $customer->name,
+                    'phone_number' => $customer->phone_number,
+                ];
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'customers' => $formattedCustomers,
+                ],
+            ], 200);
+        } catch (Throwable $e) {
+            return response()->json([
+                'status'    => 'error',
+                'message'   => 'Failed to retrieve customers: ' . $e->getMessage(),
+                'exception' => config('app.debug') ? class_basename($e) : null,
+            ], 500);
+        }
+    }
+
+    /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
