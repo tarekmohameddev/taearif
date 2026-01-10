@@ -81,7 +81,7 @@ use App\Http\Controllers\Api\Customer\{
     UserApiCustomerAppointmentController,
     CustomerController,
 };
-use App\Http\Controllers\Api\Crm\{
+use App\Http\Controllers\Api\CRM\{
     ReminderTypeController,
     ReminderController,
 };
