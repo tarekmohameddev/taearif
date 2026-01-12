@@ -45,9 +45,16 @@ class ApiInstallation extends Model
 
 
         /*──────── state helpers ────────*/
+    /**
+     * @deprecated This method is deprecated. Installations are now installed immediately.
+     * Payment is tracked separately via AppPaymentTransaction.
+     * Kept for backward compatibility only.
+     */
     public function markPending(string $invoiceId): void
     {
-        $this->update(['status' => InstallStatus::PendingPayment, 'invoice_id' => $invoiceId]);
+        // Deprecated: No longer used in new flow
+        // Just store invoice_id, installation should already be installed
+        $this->update(['invoice_id' => $invoiceId]);
     }
 
     public function markInstalled(?string $recurringId = null): void

@@ -20,20 +20,20 @@ class InstallationStateMachine
      * @var array<string, array<string>>
      */
     protected array $allowedTransitions = [
+        // PendingPayment is deprecated - kept for backward compatibility during migration
+        // Will be removed after all pending_payment installations are migrated
         InstallStatus::PendingPayment->value => [
             InstallStatus::Installed->value,
             InstallStatus::Uninstalled->value,
         ],
         InstallStatus::Trialing->value => [
             InstallStatus::Installed->value,
-            InstallStatus::PendingPayment->value,
             InstallStatus::Uninstalled->value,
         ],
         InstallStatus::Installed->value => [
             InstallStatus::Uninstalled->value,
         ],
         InstallStatus::Uninstalled->value => [
-            InstallStatus::PendingPayment->value,
             InstallStatus::Trialing->value,
             InstallStatus::Installed->value,
         ],
