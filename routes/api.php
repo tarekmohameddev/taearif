@@ -64,6 +64,7 @@ use App\Http\Controllers\Api\{
     ApiSideMenusController,
     ApiContractController,
     RentalContractController,
+    AppPaymentController,
 };
 
 use App\Http\Controllers\Api\V1\Logs\{
@@ -424,7 +425,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/apps/whatsapp/install', [ApiInstallationController::class, 'installWhatsapp']);
     Route::post('/apps/whatsapp/uninstall', [ApiInstallationController::class, 'uninstallWhatsapp']);
 
+    // App Payment Endpoints
+    Route::get('/installations/{installationId}/payment/status', [AppPaymentController::class, 'getPaymentStatus']);
+    Route::post('/apps/{appId}/payment/verify', [AppPaymentController::class, 'verifyPayment']);
+    Route::get('/apps/payments', [AppPaymentController::class, 'getPaymentHistory']);
+
 });
+
+// App Payment Callback (public, no auth required for webhooks)
+Route::post('/apps/payment/callback/{gateway}', [AppPaymentController::class, 'handleCallback']);
 
 // api_customers
 Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {

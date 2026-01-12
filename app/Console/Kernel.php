@@ -37,6 +37,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('expire:user')->daily();
         $schedule->command('app:expire-trials')->daily();
+        $schedule->command('app:verify-pending-payments')->everyThirtyMinutes();
         $schedule->command('reminders:process')->dailyAt('04:00')->timezone('Asia/Riyadh');
         $schedule->command('health:check --auto')->dailyAt('03:55')->timezone('Asia/Riyadh');
         

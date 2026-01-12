@@ -10,6 +10,7 @@ use App\Enums\InstallStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Api\ApiInstallation;
+use App\Models\Api\AppPaymentTransaction;
 use App\Http\Controllers\Payment\ArbController;
 use App\Exceptions\Installation\InvalidInstallationException;
 use App\Exceptions\Installation\PaymentInitiationException;
@@ -203,14 +204,35 @@ class InstallationService
             parse_str(parse_url($resp['redirect_url'], PHP_URL_QUERY), $query);
             $paymentId = $query['PaymentID'] ?? null;
 
-            if ($paymentId) {
-                $install->markPending($paymentId);
+            if (!$paymentId) {
+                throw PaymentInitiationException::gatewayError('arb', 'Payment ID not found in redirect URL');
             }
+
+            // Create payment transaction record
+            $transaction = AppPaymentTransaction::create([
+                'user_id' => $user->id,
+                'installation_id' => $install->id,
+                'app_id' => $app->id,
+                'payment_transaction_id' => $paymentId,
+                'gateway' => 'arb',
+                'amount' => $app->price,
+                'currency' => 'SAR',
+                'status' => 'pending',
+                'gateway_response' => $resp,
+                'metadata' => [
+                    'payment_initiated_at' => now()->toIso8601String(),
+                    'redirect_url' => $resp['redirect_url'],
+                ],
+            ]);
+
+            // Mark installation as pending payment
+            $install->markPending($paymentId);
 
             Log::info('Payment initiated for installation', [
                 'installation_id' => $install->id,
                 'payment_id' => $paymentId,
                 'app_id' => $app->id,
+                'transaction_id' => $transaction->id,
             ]);
 
             return $resp['redirect_url'];
