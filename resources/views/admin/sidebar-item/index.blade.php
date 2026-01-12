@@ -42,8 +42,13 @@
         margin-top: 0 !important;
     }
     /* Enable horizontal scrolling for table at 100% zoom */
-    .sidebar-item-card .table-responsive {
+    .sidebar-item-card .card-body.p-0 .table-responsive {
         overflow-x: auto !important;
+        overflow-y: visible !important;
+    }
+    .sidebar-item-card .card-body.p-0 .table-responsive .modern-table {
+        width: auto !important;
+        min-width: 100%;
     }
     .modern-table thead th {
         background: #f8f9fa;
@@ -116,6 +121,26 @@
     }
     .modern-table tbody td:nth-child(8) {
         padding: 12px 20px;
+    }
+    /* Make Order column (7th column) smaller */
+    .modern-table thead th:nth-child(7),
+    .modern-table tbody td:nth-child(7) {
+        padding: 12px 10px;
+        text-align: center;
+        font-size: 0.8rem;
+    }
+    .modern-table tbody td:nth-child(7) .font-weight-bold {
+        font-size: 0.85rem;
+    }
+    /* Make Condition column (6th column) smaller */
+    .modern-table thead th:nth-child(6),
+    .modern-table tbody td:nth-child(6) {
+        padding: 12px 10px;
+        min-width: 80px;
+    }
+    .modern-table tbody td:nth-child(6) .badge-modern {
+        padding: 4px 8px;
+        font-size: 0.65rem;
     }
     .element-info {
         display: flex;
@@ -193,16 +218,20 @@
     .badge-warning-soft { background: #fef3c7; color: #a16207; }
     .badge-secondary-soft { background: #f1f5f9; color: #475569; }
     .action-btn {
-        width: 35px;
-        height: 35px;
+        width: 28px;
+        height: 28px;
         padding: 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 8px;
+        border-radius: 6px;
         margin: 0 2px;
         transition: all 0.2s;
         border: none;
+        font-size: 0.75rem;
+    }
+    .action-btn i {
+        font-size: 0.75rem;
     }
     .action-btn:hover {
         transform: scale(1.1);
