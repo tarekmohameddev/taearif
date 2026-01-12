@@ -58,6 +58,7 @@ class CrmRequestController extends ApiController
 			'interested_category_ids' => 'nullable',
 			'interested_property_ids' => 'nullable',
 			'has_property' => 'nullable|in:0,1',
+			'reminder_type_id' => 'nullable|integer',
 			'sort_by' => 'nullable|in:position,created_at,id',
 			'sort_dir' => 'nullable|in:asc,desc',
 		]);
@@ -98,11 +99,12 @@ class CrmRequestController extends ApiController
 			$request->filled('procedure_id') || 
 			$request->filled('responsible_employee_id') || 
 			$request->filled('employee_whatsapp_number') || 
+			$request->filled('reminder_type_id') || 
 			!empty($catIds) || 
 			!empty($propIds);
 
 		if ($hasCustomerFilters) {
-			$baseQuery->whereHas('customer', function ($customerQuery) use ($request, $catIds, $propIds) {
+			$baseQuery->whereHas('customer', function ($customerQuery) use ($request, $catIds, $propIds, $userId) {
 			// General search (q)
 			if ($request->filled('q')) {
 				$qText = trim($request->input('q'));
@@ -144,6 +146,18 @@ class CrmRequestController extends ApiController
 			if ($request->filled('employee_whatsapp_number')) {
 				$customerQuery->whereHas('responsibleEmployee.activeWhatsappUser', function ($sub) use ($request) {
 					$sub->where('number', 'like', '%' . $request->input('employee_whatsapp_number') . '%');
+				});
+			}
+
+			// Reminder type filter
+			if ($request->filled('reminder_type_id')) {
+				$customerQuery->whereExists(function ($sub) use ($request, $userId) {
+					$sub->select(DB::raw(1))
+						->from('reminders')
+						->whereColumn('reminders.customer_id', 'api_customers.id')
+						->where('reminders.user_id', $userId)
+						->where('reminders.reminder_type_id', (int)$request->input('reminder_type_id'))
+						->whereNull('reminders.deleted_at');
 				});
 			}
 
