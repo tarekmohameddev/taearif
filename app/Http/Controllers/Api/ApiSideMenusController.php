@@ -110,10 +110,15 @@ class ApiSideMenusController extends Controller
             }
 
             // Add item to sections
+            $icon = $item->icon;
+            if (!str_contains($icon, ' ') && !str_starts_with($icon, 'fa') && !str_starts_with($icon, 'flaticon')) {
+                $icon = 'flaticon-' . $icon;
+            }
+
             $sections[] = [
                 'title' => $item->title,
                 'description' => $item->description,
-                'icon' => $item->icon,
+                'icon' => $icon,
                 'path' => $item->path,
             ];
         }

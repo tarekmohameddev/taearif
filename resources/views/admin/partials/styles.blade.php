@@ -15,4 +15,43 @@
     <link rel="stylesheet" href="{{ asset('assets/admin/css/dark.css') }}">
 @endif
 
+{{-- Lucide Icons --}}
+<script src="https://unpkg.com/lucide@latest"></script>
+
+{{-- Global Table Styles: Prevent Horizontal Scrolling --}}
+<style>
+    /* Override Bootstrap's table-responsive to prevent horizontal scrolling */
+    .table-responsive {
+        overflow-x: visible !important;
+        -webkit-overflow-scrolling: auto !important;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    /* Ensure tables fit within container width */
+    .table-responsive table,
+    .table {
+        width: 100% !important;
+        max-width: 100% !important;
+        table-layout: auto;
+    }
+
+    /* Enable text wrapping in table cells */
+    .table-responsive table td,
+    .table-responsive table th,
+    .table td,
+    .table th {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+    }
+
+    /* Ensure container doesn't create overflow */
+    .card-body .table-responsive {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: visible !important;
+    }
+</style>
+
 @yield('styles')

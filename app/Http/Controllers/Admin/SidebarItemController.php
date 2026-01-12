@@ -115,7 +115,7 @@ class SidebarItemController extends Controller
 
         $status = $item->is_active ? 'activated' : 'deactivated';
         Session::flash('success', "Sidebar item {$status} successfully!");
-        return "success";
+        return back();
     }
 
     public function reorder(Request $request)
