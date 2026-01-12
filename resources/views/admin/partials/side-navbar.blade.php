@@ -266,7 +266,14 @@
 
 
                 {{-- Settings --}}
-
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Settings', $permissions)))
+                    <li class="nav-item @if (request()->is('admin/sidebar-items*') || request()->is('admin/sidebar-item/*')) active @endif">
+                        <a href="{{ route('admin.sidebar-item.index') }}">
+                            <i class="fas fa-bars"></i>
+                            <p>{{ __('Sidebar Items') }}</p>
+                        </a>
+                    </li>
+                @endif
 
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Custom Domains', $permissions)))
                     <li
