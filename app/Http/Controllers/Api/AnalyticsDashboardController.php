@@ -1209,7 +1209,8 @@ class AnalyticsDashboardController extends Controller
             
             // Get Arabic translations
             $actionAR = $this->getActionArabic($actionKey);
-            $actionLabelAR = ActivityActionMapper::translateActionKey($actionKey, 'ar');
+            // Use the same method as actionAR to ensure proper Arabic translation
+            $actionLabelAR = $this->getActionArabic($actionKey);
             $sectionAR = $this->getSectionArabic($section);
 
             return [
@@ -1395,6 +1396,19 @@ class AnalyticsDashboardController extends Controller
             'Inquiries' => 'الاستفسارات',
             'General' => 'عام',
             'Projects' => 'المشاريع',
+            // Handle table names or unmapped values that might appear
+            'user_properties' => 'عقارات المستخدم',
+            'api_customers' => 'العملاء',
+            'Property' => 'عقارات المستخدم',
+            'ApiCustomer' => 'العملاء',
+            'CrmCard' => 'إدارة علاقات العملاء',
+            'CrmRequest' => 'إدارة علاقات العملاء',
+            'RmRental' => 'الإيجارات',
+            'RmContract' => 'العقود',
+            'RmPayment' => 'المدفوعات',
+            'RmMaintenanceTicket' => 'الصيانة',
+            'UserPropertyRequest' => 'طلبات العقارات',
+            'ApiCustomerInquiry' => 'الاستفسارات',
         ];
 
         return $sectionTranslations[$section] ?? $section;
