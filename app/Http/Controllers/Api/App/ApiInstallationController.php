@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Api\ApiApp;
 use App\Models\Api\ApiMenuItem;
 use App\Models\Api\ApiInstallation;
+use App\Models\Api\AppPaymentTransaction;
 use App\Enums\InstallStatus;
+use App\Enums\BillingType;
 use App\Services\InstallationService;
 use App\Services\InstallationStateMachine;
 use App\Traits\ApiResponseTrait;
@@ -38,6 +40,13 @@ class ApiInstallationController extends Controller
         try {
             $userId = auth()->id();
 
+            // Single query to get all completed payments for this user (optimize to avoid N+1)
+            $completedPayments = AppPaymentTransaction::where('user_id', $userId)
+                ->where('status', 'completed')
+                ->pluck('app_id')
+                ->unique()
+                ->toArray();
+
             // Optimize query with eager loading
             $apps = ApiApp::where('is_enabled', true)
                 ->with(['installations' => function ($query) use ($userId) {
@@ -46,8 +55,30 @@ class ApiInstallationController extends Controller
                 }])
                 ->get();
 
-            $apps = $apps->map(function ($app) {
+            $apps = $apps->map(function ($app) use ($userId, $completedPayments) {
                 $installation = $app->installations->first();
+
+                // Determine purchase status - check if user has completed payment for this app
+                $isPurchased = in_array($app->id, $completedPayments);
+
+                // Determine pricing model
+                $pricingModel = null;
+                if ($app->billing_type !== BillingType::Free) {
+                    // If app has subscription_duration > 0, it's a subscription model
+                    // Otherwise, it's a one-time purchase
+                    $pricingModel = ($app->subscription_duration && $app->subscription_duration > 0)
+                        ? 'subscription'
+                        : 'one-time';
+                }
+
+                // Get subscription expiration (only if active subscription with future date)
+                $subscriptionExpiresAt = null;
+                if ($installation && $installation->current_period_end) {
+                    // Only return expiration if subscription is still active (future date)
+                    if ($installation->current_period_end->isFuture()) {
+                        $subscriptionExpiresAt = $installation->current_period_end->toIso8601String();
+                    }
+                }
 
                 return [
                     'id' => $app->id,
@@ -61,6 +92,10 @@ class ApiInstallationController extends Controller
                     'billing_type' => $app->billing_type->value,
                     'trial_days' => $app->trial_days ?? 0,
                     'installed' => $installation?->installed ?? false,
+                    'isInstalled' => $installation?->installed ?? false,
+                    'isPurchased' => $isPurchased,
+                    'pricingModel' => $pricingModel,
+                    'subscriptionExpiresAt' => $subscriptionExpiresAt,
                     'trial_ends_at' => $installation?->trial_ends_at?->toIso8601String(),
                     'current_period_end' => $installation?->current_period_end?->toIso8601String(),
                     'activated_at' => $installation?->activated_at?->toIso8601String(),
@@ -323,6 +358,11 @@ class ApiInstallationController extends Controller
     /**
      * Uninstall an app for the authenticated user.
      *
+     * IMPORTANT: This method only changes the installation status to 'Uninstalled'.
+     * It does NOT delete or remove purchase/subscription records (AppPaymentTransaction).
+     * Purchase history is preserved even after uninstall to maintain data integrity
+     * and allow users to see their purchase history regardless of installation status.
+     *
      * @param int $appId
      * @param InstallationStateMachine $stateMachine
      * @return \Illuminate\Http\JsonResponse
@@ -341,6 +381,7 @@ class ApiInstallationController extends Controller
             }
 
             // Use state machine for safe transition
+            // This only updates the installation status - purchase records are preserved
             $stateMachine->transition($installation, InstallStatus::Uninstalled);
 
             // Preserve settings for reinstall - don't delete
