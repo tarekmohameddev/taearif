@@ -343,8 +343,8 @@ class ApiInstallationController extends Controller
             // Use state machine for safe transition
             $stateMachine->transition($installation, InstallStatus::Uninstalled);
 
-            // Delete settings
-            $installation->settings()->delete();
+            // Preserve settings for reinstall - don't delete
+            // $installation->settings()->delete(); // REMOVED - keep settings for reinstall
 
             // Deactivate menu items (app-specific)
             $this->handleAppSpecificUninstallation($userId, $installation->app);
@@ -541,8 +541,8 @@ class ApiInstallationController extends Controller
             // Use state machine for safe transition
             $stateMachine->transition($installation, InstallStatus::Uninstalled);
 
-            // Delete settings
-            $installation->settings()->delete();
+            // Preserve settings for reinstall - don't delete
+            // $installation->settings()->delete(); // REMOVED - keep settings for reinstall
 
             // Handle app-specific uninstallation
             $this->handleAppSpecificUninstallation($userId, $app);

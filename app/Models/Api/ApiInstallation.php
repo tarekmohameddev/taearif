@@ -85,6 +85,20 @@ class ApiInstallation extends Model
             ->exists();
     }
 
+    /**
+     * Check if installation has a valid subscription period
+     *
+     * @return bool
+     */
+    public function hasValidSubscription(): bool
+    {
+        if (!$this->current_period_end) {
+            return false;
+        }
+
+        return $this->current_period_end->isFuture();
+    }
+
     /*──────── relations ────────*/
 
 

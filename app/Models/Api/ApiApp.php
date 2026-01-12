@@ -23,6 +23,7 @@ class ApiApp extends Model
         'img',
         'billing_type',
         'trial_days',
+        'subscription_duration',
         'is_enabled',
         'path',
     ];
@@ -30,12 +31,14 @@ class ApiApp extends Model
         'price' => 'decimal:2',
         'rating' => 'float',
         'trial_days' => 'integer',
+        'subscription_duration' => 'integer',
         'billing_type' => BillingType::class,
         'is_enabled' => 'boolean',
     ];
     protected $attributes = [
         'type' => 'marketplace',
         'rating' => 0,
+        'subscription_duration' => 30,
     ];
 
     /**

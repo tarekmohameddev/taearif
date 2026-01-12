@@ -225,6 +225,10 @@ class AppPaymentController extends Controller
                 ]
             );
 
+            // Calculate subscription period end date
+            $subscriptionDuration = $installation->app->subscription_duration ?? 30; // Default 30 days
+            $currentPeriodEnd = now()->addDays($subscriptionDuration);
+
             // Update installation if not already installed (for backward compatibility with old flow)
             // New flow: installation is already installed, just mark transaction as complete
             try {
@@ -236,16 +240,21 @@ class AppPaymentController extends Controller
                         [
                             'recurring_id' => $paymentData['RecurringId'] ?? null,
                             'payment_subscription_id' => $paymentData['RecurringId'] ?? null,
+                            'current_period_end' => $currentPeriodEnd,
                         ]
                     );
                 } else {
-                    // Installation already installed, just update recurring_id if present
+                    // Installation already installed, update recurring_id and current_period_end
+                    $updateData = [
+                        'current_period_end' => $currentPeriodEnd,
+                    ];
+                    
                     if (isset($paymentData['RecurringId'])) {
-                        $installation->update([
-                            'recurring_id' => $paymentData['RecurringId'],
-                            'payment_subscription_id' => $paymentData['RecurringId'],
-                        ]);
+                        $updateData['recurring_id'] = $paymentData['RecurringId'];
+                        $updateData['payment_subscription_id'] = $paymentData['RecurringId'];
                     }
+                    
+                    $installation->update($updateData);
                 }
 
                 Log::info('App payment processed via ARB payment callback', [
@@ -436,8 +445,14 @@ class AppPaymentController extends Controller
             // Update transaction
             $transaction->markCompleted($verification['details']);
 
-            // Update installation if not already installed (for backward compatibility)
+            // Calculate subscription period end date
             $installation = $transaction->installation;
+            $subscriptionDuration = $installation && $installation->app 
+                ? ($installation->app->subscription_duration ?? 30) 
+                : 30; // Default 30 days
+            $currentPeriodEnd = now()->addDays($subscriptionDuration);
+
+            // Update installation if not already installed (for backward compatibility)
             if ($installation && $installation->status !== InstallStatus::Installed) {
                 try {
                     $this->stateMachine->transition(
@@ -446,6 +461,7 @@ class AppPaymentController extends Controller
                         [
                             'recurring_id' => $verification['details']['RecurringId'] ?? null,
                             'payment_subscription_id' => $verification['details']['RecurringId'] ?? null,
+                            'current_period_end' => $currentPeriodEnd,
                         ]
                     );
 
@@ -459,12 +475,18 @@ class AppPaymentController extends Controller
                         'error' => $e->getMessage(),
                     ]);
                 }
-            } else if ($installation && isset($verification['details']['RecurringId'])) {
-                // Installation already installed, just update recurring_id if present
-                $installation->update([
-                    'recurring_id' => $verification['details']['RecurringId'],
-                    'payment_subscription_id' => $verification['details']['RecurringId'],
-                ]);
+            } else if ($installation) {
+                // Installation already installed, update recurring_id and current_period_end
+                $updateData = [
+                    'current_period_end' => $currentPeriodEnd,
+                ];
+                
+                if (isset($verification['details']['RecurringId'])) {
+                    $updateData['recurring_id'] = $verification['details']['RecurringId'];
+                    $updateData['payment_subscription_id'] = $verification['details']['RecurringId'];
+                }
+                
+                $installation->update($updateData);
             }
 
             return response()->json([

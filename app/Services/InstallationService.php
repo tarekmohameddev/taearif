@@ -83,6 +83,11 @@ class InstallationService
                     $existingInstall
                 );
 
+                // Check if reinstalling with valid subscription
+                $hasValidSubscription = $existingInstall && 
+                                       $existingInstall->status === InstallStatus::Uninstalled &&
+                                       $existingInstall->hasValidSubscription();
+
                 // Create or update installation
                 $install = ApiInstallation::updateOrCreate(
                     ['user_id' => $user->id, 'app_id' => $app->id],
@@ -93,20 +98,31 @@ class InstallationService
                         'trial_used_at' => $existingInstall?->trial_used_at ?? $trialUsedAt,
                         'installed' => in_array($status, [InstallStatus::Installed, InstallStatus::Trialing], true),
                         'installed_at' => $existingInstall?->installed_at ?? ($status === InstallStatus::Installed ? now() : null),
-                        'uninstalled_at' => null,
-                        'current_period_end' => $existingInstall?->current_period_end ?? $trialEnds,
-                        'invoice_id' => null,
-                        'payment_subscription_id' => null,
+                        'uninstalled_at' => null, // Clear uninstalled_at on reinstall
+                        // Preserve subscription data if subscription is valid, otherwise reset
+                        'current_period_end' => $hasValidSubscription 
+                            ? $existingInstall->current_period_end 
+                            : ($existingInstall?->current_period_end ?? $trialEnds),
+                        'invoice_id' => $hasValidSubscription 
+                            ? ($existingInstall->invoice_id ?? null) 
+                            : null,
+                        'payment_subscription_id' => $hasValidSubscription 
+                            ? ($existingInstall->payment_subscription_id ?? null) 
+                            : null,
+                        'recurring_id' => $hasValidSubscription 
+                            ? ($existingInstall->recurring_id ?? null) 
+                            : null,
                     ]
                 );
 
                 // Save settings
                 $install->settings()->updateOrCreate([], ['settings' => $settings]);
 
-                // Initiate payment if app requires payment (regardless of installation status)
+                // Initiate payment if app requires payment and subscription is not valid
                 $paymentUrl = null;
-                if ($app->billing_type === BillingType::Paid || 
-                    ($app->billing_type === BillingType::PaidTrial && $status !== InstallStatus::Trialing)) {
+                if (!$hasValidSubscription && 
+                    ($app->billing_type === BillingType::Paid || 
+                     ($app->billing_type === BillingType::PaidTrial && $status !== InstallStatus::Trialing))) {
                     $paymentUrl = $this->initiatePayment($install, $app, $user);
                 }
 
@@ -149,6 +165,15 @@ class InstallationService
                 break;
 
             case BillingType::Paid:
+                // Check if reinstalling with valid subscription period
+                if ($existingInstall && $existingInstall->status === InstallStatus::Uninstalled) {
+                    if ($existingInstall->hasValidSubscription()) {
+                        // Subscription still valid, reinstall without payment
+                        $status = InstallStatus::Installed;
+                        break;
+                    }
+                    // Subscription expired, proceed with normal flow (will require payment)
+                }
                 // Install immediately, payment handled separately
                 $status = InstallStatus::Installed;
                 break;
@@ -167,6 +192,15 @@ class InstallationService
                     $trialEnds = $this->trialService->calculateTrialEndDate($app);
                     $trialUsedAt = CarbonImmutable::now();
                 } else {
+                    // Check if reinstalling with valid subscription period
+                    if ($existingInstall && $existingInstall->status === InstallStatus::Uninstalled) {
+                        if ($existingInstall->hasValidSubscription()) {
+                            // Subscription still valid, reinstall without payment
+                            $status = InstallStatus::Installed;
+                            break;
+                        }
+                        // Subscription expired, proceed with normal flow (will require payment)
+                    }
                     // Trial used, install immediately, payment handled separately
                     $status = InstallStatus::Installed;
                 }
