@@ -270,7 +270,7 @@
                     <li class="nav-item @if (request()->is('admin/sidebar-items*') || request()->is('admin/sidebar-item/*')) active @endif">
                         <a href="{{ route('admin.sidebar-item.index') }}">
                             <i class="fas fa-bars"></i>
-                            <p>{{ __('Sidebar Items') }}</p>
+                            <p>عناصر الشريط الجانبي</p>
                         </a>
                     </li>
                 @endif

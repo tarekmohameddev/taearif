@@ -48,7 +48,7 @@
         color: #4a5568;
         font-weight: 600;
         text-transform: uppercase;
-        font-size: 0.85rem;
+        font-size: 0.75rem;
         letter-spacing: 0.025em;
         padding: 15px 20px;
         text-align: right;
@@ -59,6 +59,7 @@
         color: #2d3748;
         border-bottom: 1px solid #edf2f7;
         text-align: right;
+        font-size: 0.875rem;
     }
     .modern-table tbody tr:hover {
         background-color: #f7fafc;
@@ -88,7 +89,7 @@
         text-align: center;
     }
     .icon-meta code {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         background: #f1f5f9;
         padding: 2px 6px;
         border-radius: 4px;
@@ -125,7 +126,7 @@
     .main-title {
         font-weight: 700;
         color: #1e293b;
-        font-size: 0.95rem;
+        font-size: 0.85rem;
     }
     .status-dot {
         width: 8px;
@@ -135,7 +136,7 @@
     .status-dot.online { background: #10b981; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
     .status-dot.offline { background: #94a3b8; }
     .desc-text {
-        font-size: 0.8rem;
+        font-size: 0.7rem;
         color: #64748b;
         max-width: 200px;
         overflow: hidden;
@@ -145,7 +146,7 @@
     .badge-modern {
         padding: 6px 12px;
         border-radius: 20px;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 600;
         letter-spacing: 0.02em;
         display: inline-flex;
@@ -208,7 +209,7 @@
         padding: 4px 8px;
         border-radius: 4px;
         font-family: 'Courier New', Courier, monospace;
-        font-size: 0.85rem;
+        font-size: 0.7rem;
         direction: ltr;
         display: inline-block;
     }
