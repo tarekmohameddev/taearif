@@ -94,6 +94,24 @@
         border-radius: 4px;
         color: #64748b;
     }
+    /* Make icon column smaller */
+    .modern-table thead th:nth-child(3),
+    .modern-table tbody td:nth-child(3) {
+        width: 110px;
+        max-width: 110px;
+        min-width: 100px;
+        padding: 10px 10px;
+        text-align: center;
+    }
+    /* Style status column (8th column) */
+    .modern-table thead th:nth-child(8),
+    .modern-table tbody td:nth-child(8) {
+        text-align: center;
+        vertical-align: middle;
+    }
+    .modern-table tbody td:nth-child(8) {
+        padding: 12px 20px;
+    }
     .element-info {
         display: flex;
         flex-direction: column;
@@ -125,15 +143,48 @@
         white-space: nowrap;
     }
     .badge-modern {
-        padding: 5px 10px;
+        padding: 6px 12px;
         border-radius: 20px;
         font-size: 0.75rem;
         font-weight: 600;
         letter-spacing: 0.02em;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        white-space: nowrap;
     }
     .badge-info-soft { background: #e0f2fe; color: #0369a1; }
-    .badge-success-soft { background: #dcfce7; color: #15803d; }
-    .badge-danger-soft { background: #fee2e2; color: #b91c1c; }
+    .badge-success-soft { 
+        background: #dcfce7; 
+        color: #15803d; 
+    }
+    .badge-success-soft i {
+        background: rgba(16, 185, 129, 0.15);
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        padding: 0;
+    }
+    .badge-danger-soft { 
+        background: #fee2e2; 
+        color: #b91c1c; 
+    }
+    .badge-danger-soft i {
+        background: rgba(185, 28, 28, 0.15);
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        padding: 0;
+    }
     .badge-warning-soft { background: #fef3c7; color: #a16207; }
     .badge-secondary-soft { background: #f1f5f9; color: #475569; }
     .action-btn {

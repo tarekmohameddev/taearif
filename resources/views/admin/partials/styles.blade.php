@@ -18,39 +18,102 @@
 {{-- Lucide Icons --}}
 <script src="https://unpkg.com/lucide@latest"></script>
 
-{{-- Global Table Styles: Prevent Horizontal Scrolling --}}
+{{-- Global Table Styles: Auto-Fit Tables, No Horizontal Scrolling --}}
 <style>
-    /* Override Bootstrap's table-responsive to prevent horizontal scrolling */
+    /**
+     * Table Responsive Container Overrides
+     * Remove horizontal scrolling and fixed heights
+     */
     .table-responsive {
         overflow-x: visible !important;
+        overflow-y: visible !important;
         -webkit-overflow-scrolling: auto !important;
         width: 100%;
         max-width: 100%;
+        /* Remove any fixed heights */
+        min-height: auto !important;
+        height: auto !important;
+        max-height: none !important;
     }
 
-    /* Ensure tables fit within container width */
+    /**
+     * Table Base Styles
+     * Auto-fit width, use auto layout for natural column sizing
+     */
+    .table-responsive > table,
     .table-responsive table,
     .table {
         width: 100% !important;
         max-width: 100% !important;
-        table-layout: auto;
+        table-layout: auto !important;
+        margin-bottom: 0;
     }
 
-    /* Enable text wrapping in table cells */
+    /**
+     * Table Cell Content Handling
+     * Enable natural text wrapping and prevent overflow
+     */
     .table-responsive table td,
     .table-responsive table th,
     .table td,
     .table th {
         word-wrap: break-word;
         overflow-wrap: break-word;
+        word-break: break-word;
         white-space: normal;
+        hyphens: auto;
+        /* Allow natural column width based on content */
+        max-width: none;
+        min-width: 0;
     }
 
-    /* Ensure container doesn't create overflow */
-    .card-body .table-responsive {
+    /**
+     * Container Constraints
+     * Ensure parent containers don't create overflow
+     */
+    .card-body .table-responsive,
+    .card .table-responsive,
+    .page-inner .table-responsive {
         width: 100%;
         max-width: 100%;
         overflow-x: visible !important;
+        overflow-y: visible !important;
+    }
+
+    /**
+     * Prevent horizontal overflow at page level
+     * Allow vertical page scrolling instead
+     */
+    .main-panel,
+    .page-inner,
+    .content {
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    /**
+     * Ensure card-body allows natural table sizing
+     */
+    .card-body {
+        overflow-x: visible;
+    }
+
+    .card-body.p-0 .table-responsive {
+        overflow-x: visible !important;
+    }
+
+    /**
+     * Responsive adjustments for smaller screens
+     * Tables will naturally wrap content instead of scrolling
+     */
+    @media (max-width: 768px) {
+        .table-responsive table td,
+        .table-responsive table th,
+        .table td,
+        .table th {
+            padding: 8px 12px;
+            font-size: 0.875rem;
+        }
     }
 </style>
 
