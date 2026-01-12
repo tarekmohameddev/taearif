@@ -1707,6 +1707,20 @@ class PropertyController extends Controller
         ])
             ->whereIn('user_id', $allowedUserIds);
 
+        // Filter by city_id
+        if ($request->has('city_id') && !empty($request->city_id)) {
+            $propertiesQuery->whereHas('contents', function ($q) use ($request) {
+                $q->where('city_id', $request->city_id);
+            });
+        }
+
+        // Filter by district_id (stored as state_id in PropertyContent)
+        if ($request->has('district_id') && !empty($request->district_id)) {
+            $propertiesQuery->whereHas('contents', function ($q) use ($request) {
+                $q->where('state_id', $request->district_id);
+            });
+        }
+
         // Apply purpose filter if provided
         if ($request->has('purposes_filter') && !empty($request->purposes_filter)) {
             $propertiesQuery->where('purpose', $request->purposes_filter);
