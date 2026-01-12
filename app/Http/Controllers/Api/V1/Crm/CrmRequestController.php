@@ -16,6 +16,8 @@ use App\Models\User\Language;
 use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\RealestateManagement\ApiUserCategory;
+use App\Models\Reminder;
+use App\Http\Resources\Crm\ReminderResource;
 
 class CrmRequestController extends ApiController
 {
@@ -436,6 +438,18 @@ class CrmRequestController extends ApiController
 
 		$model = CrmRequest::forUser($userId)->findOrFail($id);
 
+		// Get reminders for the customer
+		$reminders = [];
+		if (!empty($model->customer_id)) {
+			$tenantId = $request->user()->tenantOwnerId();
+			$reminders = Reminder::forUser($tenantId)
+				->forCustomer($model->customer_id)
+				->with(['reminderType', 'customer.city', 'customer.district'])
+				->orderBy('datetime', 'asc')
+				->get();
+			$reminders = ReminderResource::collection($reminders);
+		}
+
 		$customer = null;
 		if (!empty($model->customer_id)) {
 			$c = \App\Models\ApiCustomer::with('responsibleEmployee.activeWhatsappUser')->find($model->customer_id);
@@ -547,6 +561,7 @@ class CrmRequestController extends ApiController
 			'request' => $requestData,
 			'customer' => $customer,
 			'cards'   => $cards,
+			'reminders' => $reminders,
 			'property_source' => $model->property_id ? 'existing_property' : 'specifications',
 		];
 		if ($property) {
