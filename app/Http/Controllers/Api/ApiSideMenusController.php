@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Membership;
 use App\Models\Api\ApiMenuItem;
+use App\Models\Api\ApiApp;
+use App\Models\Api\ApiInstallation;
+use App\Enums\InstallStatus;
 
 class ApiSideMenusController extends Controller
 {
@@ -160,6 +163,20 @@ class ApiSideMenusController extends Controller
             $sections[] = $item['section'];
         }
 
+        // Add installed apps to the sidebar
+        $installedApps = $this->getInstalledApps($user->id);
+        foreach ($installedApps as $app) {
+            $sections[] = [
+                'title' => $app['name'],
+                'description' => $app['description'] ?? '',
+                'icon' => 'app', // Default icon for apps, can be customized per app
+                'path' => $app['path'],
+                'type' => 'app', // Indicate this is an app
+                'app_id' => $app['id'],
+                'img' => $app['img'] ?? null,
+            ];
+        }
+
         return $sections;
     }
 
@@ -176,5 +193,38 @@ class ApiSideMenusController extends Controller
     private function isTenant($user): bool
     {
         return method_exists($user, 'isTenant') ? $user->isTenant() : (($user->account_type ?? 'tenant') === 'tenant');
+    }
+
+    /**
+     * Get installed apps for the user
+     *
+     * @param int $userId
+     * @return array
+     */
+    private function getInstalledApps(int $userId): array
+    {
+        // Cache installed apps per user
+        return Cache::remember("installed_apps:{$userId}", now()->addMinutes(5), function () use ($userId) {
+            $installations = ApiInstallation::where('user_id', $userId)
+                ->whereIn('status', [InstallStatus::Installed->value, InstallStatus::Trialing->value])
+                ->whereHas('app', function ($query) {
+                    $query->where('is_enabled', true)
+                          ->whereNotNull('path')
+                          ->where('path', '!=', '');
+                })
+                ->with('app')
+                ->get();
+
+            return $installations->map(function ($installation) {
+                $app = $installation->app;
+                return [
+                    'id' => $app->id,
+                    'name' => $app->name,
+                    'description' => $app->description,
+                    'path' => $app->path,
+                    'img' => $app->img,
+                ];
+            })->toArray();
+        });
     }
 }
