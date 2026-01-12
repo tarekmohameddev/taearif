@@ -190,18 +190,30 @@ class AppPaymentController extends Controller
                 ]
             );
 
-            // Activate installation using state machine
+            // Update installation if not already installed (for backward compatibility with old flow)
+            // New flow: installation is already installed, just mark transaction as complete
             try {
-                $this->stateMachine->transition(
-                    $installation,
-                    InstallStatus::Installed,
-                    [
-                        'recurring_id' => $paymentData['RecurringId'] ?? null,
-                        'payment_subscription_id' => $paymentData['RecurringId'] ?? null,
-                    ]
-                );
+                if ($installation->status !== InstallStatus::Installed) {
+                    // Only transition if not already installed (backward compatibility)
+                    $this->stateMachine->transition(
+                        $installation,
+                        InstallStatus::Installed,
+                        [
+                            'recurring_id' => $paymentData['RecurringId'] ?? null,
+                            'payment_subscription_id' => $paymentData['RecurringId'] ?? null,
+                        ]
+                    );
+                } else {
+                    // Installation already installed, just update recurring_id if present
+                    if (isset($paymentData['RecurringId'])) {
+                        $installation->update([
+                            'recurring_id' => $paymentData['RecurringId'],
+                            'payment_subscription_id' => $paymentData['RecurringId'],
+                        ]);
+                    }
+                }
 
-                Log::info('App installation activated via ARB payment callback', [
+                Log::info('App payment processed via ARB payment callback', [
                     'installation_id' => $installation->id,
                     'user_id' => $userId,
                     'app_id' => $appId,
@@ -209,6 +221,7 @@ class AppPaymentController extends Controller
                     'payment_id' => $paymentId,
                     'amount' => $paidAmount,
                     'transaction_id' => $transaction->id,
+                    'was_already_installed' => $installation->status === InstallStatus::Installed,
                 ]);
 
                 return response()->json([
@@ -235,7 +248,7 @@ class AppPaymentController extends Controller
                     'error' => $e->getMessage(),
                 ], 422);
             } catch (\Exception $e) {
-                Log::error('Failed to activate app installation via ARB payment', [
+                Log::error('Failed to process app payment via ARB payment callback', [
                     'installation_id' => $installation->id,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
@@ -246,7 +259,7 @@ class AppPaymentController extends Controller
 
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Failed to activate installation',
+                    'message' => 'Failed to process payment',
                     'error' => $e->getMessage(),
                 ], 500);
             }
@@ -370,9 +383,9 @@ class AppPaymentController extends Controller
             // Update transaction
             $transaction->markCompleted($verification['details']);
 
-            // Activate installation if still pending
+            // Update installation if not already installed (for backward compatibility)
             $installation = $transaction->installation;
-            if ($installation && $installation->status === InstallStatus::PendingPayment) {
+            if ($installation && $installation->status !== InstallStatus::Installed) {
                 try {
                     $this->stateMachine->transition(
                         $installation,
@@ -393,6 +406,12 @@ class AppPaymentController extends Controller
                         'error' => $e->getMessage(),
                     ]);
                 }
+            } else if ($installation && isset($verification['details']['RecurringId'])) {
+                // Installation already installed, just update recurring_id if present
+                $installation->update([
+                    'recurring_id' => $verification['details']['RecurringId'],
+                    'payment_subscription_id' => $verification['details']['RecurringId'],
+                ]);
             }
 
             return response()->json([

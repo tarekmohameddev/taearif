@@ -41,7 +41,8 @@ class ApiInstallationController extends Controller
             // Optimize query with eager loading
             $apps = ApiApp::where('is_enabled', true)
                 ->with(['installations' => function ($query) use ($userId) {
-                    $query->where('user_id', $userId)->with('settings');
+                    $query->where('user_id', $userId)
+                        ->with(['settings', 'paymentTransactions']);
                 }])
                 ->get();
 
@@ -64,6 +65,7 @@ class ApiInstallationController extends Controller
                     'current_period_end' => $installation?->current_period_end?->toIso8601String(),
                     'activated_at' => $installation?->activated_at?->toIso8601String(),
                     'status' => $installation?->status->value ?? 'pending',
+                    'payment_status' => $this->getPaymentStatus($installation, $app),
                     'settings' => $installation?->settings?->settings ?? null,
                     'installed_at' => $installation?->installed_at?->toIso8601String(),
                     'uninstalled_at' => $installation?->uninstalled_at?->toIso8601String(),
@@ -228,6 +230,7 @@ class ApiInstallationController extends Controller
                     'installed' => $result['installation']->installed,
                     'trial_ends_at' => $result['installation']->trial_ends_at?->toIso8601String(),
                     'activated_at' => $result['installation']->activated_at?->toIso8601String(),
+                    'payment_status' => $this->getPaymentStatus($result['installation'], $app),
                 ],
                 'app' => [
                     'id' => $app->id,
@@ -425,6 +428,7 @@ class ApiInstallationController extends Controller
                 'installation' => $installation ? [
                     'installed' => $installation->installed ?? false,
                     'status' => $installation->status->value ?? null,
+                    'payment_status' => $this->getPaymentStatus($installation, $app),
                     'trial_ends_at' => $installation->trial_ends_at?->toIso8601String(),
                     'activated_at' => $installation->activated_at?->toIso8601String(),
                     'installed_at' => $installation->installed_at?->toIso8601String(),
@@ -475,6 +479,7 @@ class ApiInstallationController extends Controller
                     'id' => $result['installation']->id,
                     'status' => $result['installation']->status->value,
                     'installed' => $result['installation']->installed,
+                    'payment_status' => $this->getPaymentStatus($result['installation'], $app),
                 ],
                 'app' => [
                     'id' => $app->id,
@@ -566,6 +571,50 @@ class ApiInstallationController extends Controller
                 500
             );
         }
+    }
+
+    /**
+     * Get payment status for an installation
+     *
+     * @param ApiInstallation|null $installation
+     * @param ApiApp $app
+     * @return string
+     */
+    private function getPaymentStatus(?ApiInstallation $installation, ApiApp $app): string
+    {
+        // Free apps don't require payment
+        if ($app->billing_type === \App\Enums\BillingType::Free) {
+            return 'not_required';
+        }
+
+        // No installation means not installed yet
+        if (!$installation) {
+            return 'unpaid';
+        }
+
+        // Check if there's a completed payment transaction
+        if ($installation->hasCompletedPayment()) {
+            return 'paid';
+        }
+
+        // Check if there's a pending payment transaction
+        $hasPendingPayment = $installation->paymentTransactions()
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($hasPendingPayment) {
+            return 'pending';
+        }
+
+        // For paid apps with trial, check if trial is active
+        if ($app->billing_type === \App\Enums\BillingType::PaidTrial) {
+            if ($installation->status === \App\Enums\InstallStatus::Trialing) {
+                return 'trial';
+            }
+        }
+
+        // Default to unpaid
+        return 'unpaid';
     }
 
 }

@@ -103,9 +103,10 @@ class InstallationService
                 // Save settings
                 $install->settings()->updateOrCreate([], ['settings' => $settings]);
 
-                // Initiate payment if required
+                // Initiate payment if app requires payment (regardless of installation status)
                 $paymentUrl = null;
-                if ($status === InstallStatus::PendingPayment) {
+                if ($app->billing_type === BillingType::Paid || 
+                    ($app->billing_type === BillingType::PaidTrial && $status !== InstallStatus::Trialing)) {
                     $paymentUrl = $this->initiatePayment($install, $app, $user);
                 }
 
@@ -114,7 +115,7 @@ class InstallationService
                     'user_id' => $user->id,
                     'app_id' => $app->id,
                     'status' => $status->value,
-                    'requires_payment' => $status === InstallStatus::PendingPayment,
+                    'requires_payment' => $paymentUrl !== null,
                 ]);
 
                 return [
@@ -148,7 +149,8 @@ class InstallationService
                 break;
 
             case BillingType::Paid:
-                $status = InstallStatus::PendingPayment;
+                // Install immediately, payment handled separately
+                $status = InstallStatus::Installed;
                 break;
 
             case BillingType::PaidTrial:
@@ -165,8 +167,8 @@ class InstallationService
                     $trialEnds = $this->trialService->calculateTrialEndDate($app);
                     $trialUsedAt = CarbonImmutable::now();
                 } else {
-                    // Trial used, requires payment
-                    $status = InstallStatus::PendingPayment;
+                    // Trial used, install immediately, payment handled separately
+                    $status = InstallStatus::Installed;
                 }
                 break;
         }
@@ -225,8 +227,8 @@ class InstallationService
                 ],
             ]);
 
-            // Mark installation as pending payment
-            $install->markPending($paymentId);
+            // Store invoice_id for payment tracking (installation is already installed)
+            $install->update(['invoice_id' => $paymentId]);
 
             Log::info('Payment initiated for installation', [
                 'installation_id' => $install->id,

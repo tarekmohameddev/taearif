@@ -20,7 +20,7 @@ class ExpireTrials extends Command
      *
      * @var string
      */
-    protected $description = 'Expire trial installations and move them to PendingPayment status';
+    protected $description = 'Expire trial installations and move them to Installed status (payment tracked separately)';
 
     /**
      * Execute the console command.
@@ -49,13 +49,14 @@ class ExpireTrials extends Command
             ->where('trial_ends_at', '<', now())
             ->chunkById(100, function ($installs) use (&$processedCount) {
                 foreach ($installs as $i) {
+                    // Transition to Installed status - app remains usable, payment tracked separately via transactions
                     $i->update([
-                        'status'    => InstallStatus::PendingPayment,
-                        'installed' => false,
+                        'status'    => InstallStatus::Installed,
+                        'installed' => true,
                     ]);
                     $processedCount++;
                     
-                    $this->info("Expired trial: Installation ID {$i->id} moved to PendingPayment status");
+                    $this->info("Expired trial: Installation ID {$i->id} moved to Installed status (payment tracked separately)");
                 }
             });
 

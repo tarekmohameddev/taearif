@@ -66,13 +66,6 @@ class VerifyPendingAppPayments extends Command
 
         foreach ($pendingTransactions as $transaction) {
             try {
-                // Skip if installation is already installed
-                if ($transaction->installation && $transaction->installation->status === InstallStatus::Installed) {
-                    $this->warn("Skipping transaction {$transaction->id}: Installation already activated");
-                    $skippedCount++;
-                    continue;
-                }
-
                 $this->info("Verifying payment transaction ID: {$transaction->payment_transaction_id}");
 
                 // Verify payment with ARB API
@@ -85,38 +78,63 @@ class VerifyPendingAppPayments extends Command
                         'verified_at' => now()->toIso8601String(),
                     ]);
 
-                    // Activate installation if still pending
-                    if ($transaction->installation && $transaction->installation->status === InstallStatus::PendingPayment) {
-                        try {
-                            $this->stateMachine->transition(
-                                $transaction->installation,
-                                InstallStatus::Installed,
-                                [
-                                    'recurring_id' => $verification['details']['RecurringId'] ?? null,
-                                    'payment_subscription_id' => $verification['details']['RecurringId'] ?? null,
-                                ]
-                            );
+                    // Handle installation update (support both old and new flows)
+                    if ($transaction->installation) {
+                        if ($transaction->installation->status === InstallStatus::PendingPayment) {
+                            // Old flow: transition from PendingPayment to Installed
+                            try {
+                                $this->stateMachine->transition(
+                                    $transaction->installation,
+                                    InstallStatus::Installed,
+                                    [
+                                        'recurring_id' => $verification['details']['RecurringId'] ?? null,
+                                        'payment_subscription_id' => $verification['details']['RecurringId'] ?? null,
+                                    ]
+                                );
 
-                            $this->info("✓ Payment verified and installation activated: Transaction {$transaction->id}, Installation {$transaction->installation->id}");
+                                $this->info("✓ Payment verified and installation activated: Transaction {$transaction->id}, Installation {$transaction->installation->id}");
+                                $verifiedCount++;
+
+                                Log::info('App payment verified and installation activated via background job', [
+                                    'transaction_id' => $transaction->id,
+                                    'installation_id' => $transaction->installation->id,
+                                    'payment_id' => $transaction->payment_transaction_id,
+                                ]);
+                            } catch (\Exception $e) {
+                                $this->error("✗ Failed to activate installation for transaction {$transaction->id}: {$e->getMessage()}");
+                                $failedCount++;
+
+                                Log::error('Failed to activate installation during background payment verification', [
+                                    'transaction_id' => $transaction->id,
+                                    'installation_id' => $transaction->installation->id,
+                                    'error' => $e->getMessage(),
+                                ]);
+                            }
+                        } else if ($transaction->installation->status === InstallStatus::Installed) {
+                            // New flow: installation already installed, just mark transaction as complete
+                            if (isset($verification['details']['RecurringId'])) {
+                                $transaction->installation->update([
+                                    'recurring_id' => $verification['details']['RecurringId'],
+                                    'payment_subscription_id' => $verification['details']['RecurringId'],
+                                ]);
+                            }
+
+                            $this->info("✓ Payment verified (installation already active): Transaction {$transaction->id}, Installation {$transaction->installation->id}");
                             $verifiedCount++;
 
-                            Log::info('App payment verified and installation activated via background job', [
+                            Log::info('App payment verified via background job (installation already active)', [
                                 'transaction_id' => $transaction->id,
                                 'installation_id' => $transaction->installation->id,
                                 'payment_id' => $transaction->payment_transaction_id,
                             ]);
-                        } catch (\Exception $e) {
-                            $this->error("✗ Failed to activate installation for transaction {$transaction->id}: {$e->getMessage()}");
-                            $failedCount++;
-
-                            Log::error('Failed to activate installation during background payment verification', [
-                                'transaction_id' => $transaction->id,
-                                'installation_id' => $transaction->installation->id,
-                                'error' => $e->getMessage(),
-                            ]);
+                        } else {
+                            // Installation in other state (e.g., Trialing, Uninstalled)
+                            $this->info("✓ Payment verified but installation in state {$transaction->installation->status->value}: Transaction {$transaction->id}");
+                            $verifiedCount++;
                         }
                     } else {
-                        $this->info("✓ Payment verified but installation not in pending state: Transaction {$transaction->id}");
+                        // No installation found
+                        $this->info("✓ Payment verified but no installation found: Transaction {$transaction->id}");
                         $verifiedCount++;
                     }
                 } else {

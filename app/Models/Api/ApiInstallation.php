@@ -66,6 +66,18 @@ class ApiInstallation extends Model
             || ($this->status === InstallStatus::Trialing && $this->trial_ends_at?->isFuture());
     }
 
+    /**
+     * Check if installation has a completed payment transaction
+     *
+     * @return bool
+     */
+    public function hasCompletedPayment(): bool
+    {
+        return $this->paymentTransactions()
+            ->where('status', 'completed')
+            ->exists();
+    }
+
     /*──────── relations ────────*/
 
 
@@ -84,6 +96,11 @@ class ApiInstallation extends Model
     public function settings()
     {
         return $this->hasOne(ApiInstallationSetting::class, 'installation_id');
+    }
+
+    public function paymentTransactions()
+    {
+        return $this->hasMany(AppPaymentTransaction::class, 'installation_id');
     }
     public function scopeInstalled($query)
     {
