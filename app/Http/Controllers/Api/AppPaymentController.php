@@ -37,6 +37,9 @@ class AppPaymentController extends Controller
      */
     public function handleCallback(Request $request, string $gateway)
     {
+        // Detect if this is an API request
+        $isApiRequest = $this->isApiRequest($request);
+
         // Rate limiting: max 50 requests per minute per IP
         $key = 'app_payment_callback:' . $gateway . ':' . $request->ip();
         if (RateLimiter::tooManyAttempts($key, 50)) {
@@ -45,10 +48,14 @@ class AppPaymentController extends Controller
                 'ip' => $request->ip(),
             ]);
 
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Too many requests',
-            ], 429);
+            if ($isApiRequest) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Too many requests',
+                ], 429);
+            }
+
+            return $this->finalizeRedirect(false, 'Too many requests');
         }
 
         RateLimiter::hit($key, 60);
@@ -56,10 +63,14 @@ class AppPaymentController extends Controller
         try {
             // Only support ARB for now
             if ($gateway !== 'arb') {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Unsupported payment gateway',
-                ], 400);
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Unsupported payment gateway',
+                    ], 400);
+                }
+
+                return $this->finalizeRedirect(false, 'Unsupported payment gateway');
             }
 
             // Extract and decrypt payment data
@@ -72,10 +83,14 @@ class AppPaymentController extends Controller
                     'ip' => $request->ip(),
                 ]);
 
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Invalid payment data',
-                ], 422);
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Invalid payment data',
+                    ], 422);
+                }
+
+                return $this->finalizeRedirect(false, 'Invalid payment data');
             }
 
             // Validate payment was successful
@@ -85,11 +100,15 @@ class AppPaymentController extends Controller
                     'payment_id' => $paymentData['transId'] ?? null,
                 ]);
 
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Payment failed or cancelled',
-                    'result' => $paymentData['result'] ?? 'unknown',
-                ], 400);
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Payment failed or cancelled',
+                        'result' => $paymentData['result'] ?? 'unknown',
+                    ], 400);
+                }
+
+                return $this->finalizeRedirect(false, 'Payment failed or cancelled');
             }
 
             // Extract payment information
@@ -107,10 +126,14 @@ class AppPaymentController extends Controller
                     'payment_data' => $paymentData,
                 ]);
 
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Missing required payment data',
-                ], 422);
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Missing required payment data',
+                    ], 422);
+                }
+
+                return $this->finalizeRedirect(false, 'Missing required payment data');
             }
 
             // Check idempotency: if transaction already processed, return success
@@ -123,12 +146,16 @@ class AppPaymentController extends Controller
                     'transaction_id' => $existingTransaction->id,
                 ]);
 
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Payment already processed',
-                    'installation_id' => $existingTransaction->installation_id,
-                    'transaction_id' => $existingTransaction->id,
-                ], 200);
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Payment already processed',
+                        'installation_id' => $existingTransaction->installation_id,
+                        'transaction_id' => $existingTransaction->id,
+                    ], 200);
+                }
+
+                return $this->finalizeRedirect(true, 'Payment already processed');
             }
 
             // Find installation by invoice_id (which stores the PaymentID)
@@ -145,10 +172,14 @@ class AppPaymentController extends Controller
                     'user_id' => $userId,
                 ]);
 
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Installation not found',
-                ], 404);
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Installation not found',
+                    ], 404);
+                }
+
+                return $this->finalizeRedirect(false, 'Installation not found');
             }
 
             // Verify amount matches app price (prevent tampering)
@@ -164,10 +195,14 @@ class AppPaymentController extends Controller
                     'user_id' => $userId,
                 ]);
 
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Payment amount mismatch',
-                ], 422);
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Payment amount mismatch',
+                    ], 422);
+                }
+
+                return $this->finalizeRedirect(false, 'Payment amount mismatch');
             }
 
             // Create or update transaction record
@@ -224,13 +259,17 @@ class AppPaymentController extends Controller
                     'was_already_installed' => $installation->status === InstallStatus::Installed,
                 ]);
 
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Payment processed successfully',
-                    'installation_id' => $installation->id,
-                    'transaction_id' => $transaction->id,
-                    'app_name' => $installation->app->name,
-                ], 200);
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Payment processed successfully',
+                        'installation_id' => $installation->id,
+                        'transaction_id' => $transaction->id,
+                        'app_name' => $installation->app->name,
+                    ], 200);
+                }
+
+                return $this->finalizeRedirect(true, 'Payment processed successfully');
 
             } catch (\App\Exceptions\Installation\InvalidStatusTransitionException $e) {
                 Log::error('Invalid status transition for app installation', [
@@ -242,11 +281,15 @@ class AppPaymentController extends Controller
                 // Mark transaction as failed
                 $transaction->markFailed($paymentData, ['error' => $e->getMessage()]);
 
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Invalid installation status transition',
-                    'error' => $e->getMessage(),
-                ], 422);
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Invalid installation status transition',
+                        'error' => $e->getMessage(),
+                    ], 422);
+                }
+
+                return $this->finalizeRedirect(false, 'Invalid installation status transition');
             } catch (\Exception $e) {
                 Log::error('Failed to process app payment via ARB payment callback', [
                     'installation_id' => $installation->id,
@@ -257,11 +300,15 @@ class AppPaymentController extends Controller
                 // Mark transaction as failed
                 $transaction->markFailed($paymentData, ['error' => $e->getMessage()]);
 
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Failed to process payment',
-                    'error' => $e->getMessage(),
-                ], 500);
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Failed to process payment',
+                        'error' => $e->getMessage(),
+                    ], 500);
+                }
+
+                return $this->finalizeRedirect(false, 'Failed to process payment');
             }
 
         } catch (\Exception $e) {
@@ -272,10 +319,16 @@ class AppPaymentController extends Controller
                 'request_data' => $request->all(),
             ]);
 
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Internal server error',
-            ], 500);
+            $isApiRequest = $this->isApiRequest($request);
+
+            if ($isApiRequest) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Internal server error',
+                ], 500);
+            }
+
+            return $this->finalizeRedirect(false, 'Internal server error');
         }
     }
 
@@ -462,6 +515,49 @@ class AppPaymentController extends Controller
                 'total' => $transactions->total(),
             ],
         ], 200);
+    }
+
+    /**
+     * Check if request is an API request
+     *
+     * @param Request $request
+     * @return bool
+     */
+    protected function isApiRequest(Request $request): bool
+    {
+        return $request->expectsJson() 
+            || $request->wantsJson() 
+            || $request->is('api/*')
+            || $request->header('Accept') === 'application/json';
+    }
+
+    /**
+     * Finalize redirect - return success or failed view for web requests
+     * Returns views that send postMessage to parent window (for iframe/popup scenarios)
+     *
+     * @param bool $success
+     * @param string $message
+     * @return \Illuminate\Contracts\View\View
+     */
+    protected function finalizeRedirect(bool $success, string $message): \Illuminate\Contracts\View\View
+    {
+        // Get language and basic settings for the views
+        $currentLang = \App\Models\Language::where('is_default', 1)->first();
+        $bs = $currentLang ? $currentLang->basic_setting : \App\Models\BasicSetting::first();
+        
+        if (!$success) {
+            return view('front.failed', [
+                'bs' => $bs,
+                'rtl' => $bs->rtl ?? 0
+            ]);
+        }
+
+        // Return success page that notifies parent window (React/Next.js frontend)
+        // The view will send postMessage("payment_success") to notify the frontend
+        return view('front.success', [
+            'bs' => $bs,
+            'rtl' => $bs->rtl ?? 0
+        ]);
     }
 
     /**
