@@ -1142,7 +1142,42 @@ class AnalyticsDashboardController extends Controller
         $locale = $request->get('locale', app()->getLocale());
 
         // Get optional filters
-        $limit = max(1, min(100, (int) $request->input('limit', 50)));
+        // Validate limit parameter
+        $limitInput = $request->input('limit');
+        $defaultLimit = 10;
+        
+        if ($limitInput !== null) {
+            // Limit parameter was provided - validate it
+            if (!is_numeric($limitInput)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid limit parameter',
+                    'errors' => ['limit' => ['The limit must be a positive integer between 1 and 100.']]
+                ], 400);
+            }
+            
+            $limit = (int) $limitInput;
+            
+            if ($limit <= 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid limit parameter',
+                    'errors' => ['limit' => ['The limit must be a positive integer between 1 and 100.']]
+                ], 400);
+            }
+            
+            if ($limit > 100) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid limit parameter',
+                    'errors' => ['limit' => ['The limit must not exceed 100.']]
+                ], 400);
+            }
+        } else {
+            // Limit parameter not provided - use default
+            $limit = $defaultLimit;
+        }
+        
         $actorId = $request->input('actor_id');
         $action = $request->input('action');
 
@@ -1169,12 +1204,22 @@ class AnalyticsDashboardController extends Controller
             // Translate action key
             $actionKey = $log->action ?? 'activity.unknown';
             $translatedAction = ActivityActionMapper::translateActionKey($actionKey, $locale);
+            
+            $section = $this->getSectionFromTargetType($log->target_type);
+            
+            // Get Arabic translations
+            $actionAR = $this->getActionArabic($actionKey);
+            $actionLabelAR = ActivityActionMapper::translateActionKey($actionKey, 'ar');
+            $sectionAR = $this->getSectionArabic($section);
 
             return [
                 'id' => $log->id,
                 'action' => $actionKey, // Keep original key
                 'action_label' => $translatedAction, // Translated label
-                'section' => $this->getSectionFromTargetType($log->target_type),
+                'section' => $section,
+                'actionAR' => $actionAR,
+                'action_labelAR' => $actionLabelAR,
+                'sectionAR' => $sectionAR,
                 'time' => $log->created_at ? $log->created_at->diffForHumans() : 'just now',
                 'icon' => $this->getIconForTargetType($log->target_type, $log->action),
                 'actor_id' => $log->actor_id,
@@ -1279,6 +1324,80 @@ class AnalyticsDashboardController extends Controller
         }
 
         return $iconMap[$basename] ?? 'file-text';
+    }
+
+    /**
+     * Convert action format from "property.created" to "activity.create.property"
+     */
+    protected function convertActionToTranslationKey(string $action): string
+    {
+        // Handle already formatted keys (e.g., "activity.create.property")
+        if (str_starts_with($action, 'activity.')) {
+            return $action;
+        }
+
+        // Handle format like "property.created", "customer.updated", etc.
+        if (str_contains($action, '.')) {
+            [$resource, $actionType] = explode('.', $action, 2);
+            
+            // Check if actionType contains underscore (special actions like "toggle_featured")
+            if (str_contains($actionType, '_')) {
+                // Special action format: "toggle_featured.property" -> "activity.toggle_featured.property"
+                return "activity.{$actionType}.{$resource}";
+            }
+            
+            // Map standard action types
+            $actionTypeMap = [
+                'created' => 'create',
+                'updated' => 'update',
+                'deleted' => 'delete',
+                'viewed' => 'view',
+            ];
+            
+            $normalizedActionType = $actionTypeMap[$actionType] ?? $actionType;
+            
+            return "activity.{$normalizedActionType}.{$resource}";
+        }
+
+        // Fallback for unknown format
+        return 'activity.unknown';
+    }
+
+    /**
+     * Get Arabic translation for action (e.g., "property.created" -> "تم إنشاء عقار")
+     */
+    protected function getActionArabic(string $actionKey): string
+    {
+        // Convert action format from "property.created" to "activity.create.property"
+        $translationKey = $this->convertActionToTranslationKey($actionKey);
+        
+        // Get Arabic translation
+        $translation = trans("activity_log.{$translationKey}", [], 'ar');
+        
+        // If translation not found, return the original key
+        return $translation !== "activity_log.{$translationKey}" ? $translation : $actionKey;
+    }
+
+    /**
+     * Get Arabic translation for section name
+     */
+    protected function getSectionArabic(string $section): string
+    {
+        $sectionTranslations = [
+            'Properties' => 'عقارات المستخدم',
+            'Customers' => 'العملاء',
+            'CRM' => 'إدارة علاقات العملاء',
+            'Rentals' => 'الإيجارات',
+            'Contracts' => 'العقود',
+            'Payments' => 'المدفوعات',
+            'Maintenance' => 'الصيانة',
+            'Property Requests' => 'طلبات العقارات',
+            'Inquiries' => 'الاستفسارات',
+            'General' => 'عام',
+            'Projects' => 'المشاريع',
+        ];
+
+        return $sectionTranslations[$section] ?? $section;
     }
 
     //  user customers
