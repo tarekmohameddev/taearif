@@ -20,6 +20,7 @@ use Illuminate\Database\QueryException;
 use App\Models\Api\UserApiCustomerStage;
 use App\Models\Api\UserApiCustomerPriority;
 use App\Models\Api\UserApiCustomerProcedure;
+use App\Models\ReminderType;
 use App\Models\ApiCustomerPropertyInterested;
 use Illuminate\Validation\ValidationException;
 use App\Models\User\RealestateManagement\Property;
@@ -85,6 +86,13 @@ class CustomerController extends Controller
             ];
         });
 
+        $tenantId = $user->tenantOwnerId();
+        $reminderTypes = ReminderType::forUser($tenantId)
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -95,6 +103,7 @@ class CustomerController extends Controller
                 'cities'     => $cities,
                 'districts'  => $districts,
                 'employees'  => $employeesList,
+                'reminder_types' => $reminderTypes,
             ],
         ]);
     }
