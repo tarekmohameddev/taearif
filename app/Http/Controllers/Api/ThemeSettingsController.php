@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\Api\ApiThemeSettings;
 use App\Models\UserTheme;
+use App\Models\Language;
 use App\Domain\Themes\Services\ThemeService;
 use App\Http\Controllers\Payment\ArbController;
 use App\Http\Controllers\Payment\MyFatoorahController;
@@ -413,37 +414,18 @@ class ThemeSettingsController extends Controller
     }
 
     /**
-     * Payment success callback
-     * Returns JSON response when Accept: application/json header is present (for API calls)
-     * Otherwise redirects to frontend (for browser redirects from payment gateway)
+     * Payment success callback - activate theme purchase.
      */
     public function paymentSuccess(Request $request, $user_theme_id, $gateway)
     {
         try {
             $userTheme = UserTheme::with('theme')->findOrFail($user_theme_id);
-            $wantsJson = $request->wantsJson() || $request->expectsJson() || ($request->has('format') && $request->get('format') === 'json');
-
-            // Check if already activated
             if ($userTheme->status === UserTheme::STATUS_ACTIVE) {
-                if ($wantsJson) {
-                    return response()->json([
-                        'status' => 'success',
-                        'message' => 'Theme already activated',
-                        'theme_id' => $userTheme->theme_id,
-                        'user_theme_id' => $userTheme->id,
-                    ], 200);
-                }
-                return $this->redirectToFrontend('success', 'Theme already activated');
+                return $this->finalizeRedirect(true, 'Already activated');
             }
 
             if ($userTheme->status !== UserTheme::STATUS_PENDING) {
-                if ($wantsJson) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'Invalid purchase status'
-                    ], 400);
-                }
-                return $this->redirectToFrontend('error', 'Invalid purchase status');
+                return $this->finalizeRedirect(false, 'Invalid purchase status');
             }
 
             // Verify payment based on gateway
@@ -451,29 +433,19 @@ class ThemeSettingsController extends Controller
             $transactionId = null;
 
             if ($gateway === 'test') {
-                // Secure 'test' gateway: only allow in local environment
                 if (config('app.env') === 'local') {
                     $verified = true;
                     $transactionId = 'TEST_' . time();
-                } else {
-                    if ($wantsJson) {
-                        return response()->json([
-                            'status' => 'error',
-                            'message' => 'Test gateway only available in local environment'
-                        ], 403);
-                    }
-                    return $this->redirectToFrontend('error', 'Test gateway only available in local environment');
                 }
             } elseif ($gateway === 'myfatoorah') {
                 $paymentId = $request->paymentId;
                 if ($paymentId) {
-                    // Verify with MyFatoorah API
                     try {
                         $paymentMethod = \App\Models\PaymentGateway::where('keyword', 'myfatoorah')->first();
                         if ($paymentMethod) {
                             $paydata = $paymentMethod->convertAutoData();
                             Config::set('myfatorah.token', $paydata['token']);
-                            
+
                             $myfatoorah = \Basel\MyFatoorah\MyFatoorah::getInstance($paydata['sandbox_status'] == 1);
                             $result = $myfatoorah->getPaymentStatus('paymentId', $paymentId);
 
@@ -524,163 +496,59 @@ class ThemeSettingsController extends Controller
                         $gateway
                     );
 
-                    // Refresh the model to get updated data
-                    $userTheme->refresh();
-
-                    if ($wantsJson) {
-                        return response()->json([
-                            'status' => 'success',
-                            'message' => 'Theme purchased successfully',
-                            'theme_id' => $userTheme->theme_id,
-                            'theme_name' => $userTheme->theme->name ?? null,
-                            'user_theme_id' => $userTheme->id,
-                            'transaction_id' => $transactionId ?? 'N/A',
-                            'amount_paid' => $userTheme->amount_paid,
-                            'currency' => $userTheme->currency,
-                        ], 200);
-                    }
-
-                    return $this->redirectToFrontend('success', 'Theme purchased successfully', [
-                        'theme_id' => $userTheme->theme_id
-                    ]);
+                    return $this->finalizeRedirect(true, 'تم الدفع بنجاح');
                 } catch (\App\Exceptions\BusinessLogicException $e) {
                     Log::warning("Theme Purchase Activation Failed: " . $e->getMessage(), [
                         'user_theme_id' => $userTheme->id,
                         'user_id' => $userTheme->user_id,
                     ]);
-                    
-                    if ($wantsJson) {
-                        return response()->json([
-                            'status' => 'error',
-                            'message' => $e->getMessage()
-                        ], 400);
-                    }
-                    return $this->redirectToFrontend('error', $e->getMessage());
+                    return $this->finalizeRedirect(false, $e->getMessage());
                 }
             }
 
-            Log::warning('Theme Payment Verification Failed', [
-                'user_theme_id' => $userTheme->id,
-                'gateway' => $gateway,
-                'request_data' => $request->all(),
-            ]);
+            return $this->finalizeRedirect(false, 'فشل التحقق من الدفع');
 
-            if ($wantsJson) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Payment verification failed'
-                ], 400);
-            }
-
-            return $this->redirectToFrontend('error', 'Payment verification failed');
-        } catch (ModelNotFoundException $e) {
-            Log::error("Theme Payment Success: Purchase not found", [
-                'user_theme_id' => $user_theme_id,
-            ]);
-            
-            if ($request->wantsJson() || $request->expectsJson() || ($request->has('format') && $request->get('format') === 'json')) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Purchase record not found'
-                ], 404);
-            }
-            return $this->redirectToFrontend('error', 'Purchase record not found');
         } catch (\Exception $e) {
-            Log::error("Theme Payment Success Error: " . $e->getMessage(), [
-                'user_theme_id' => $user_theme_id,
-                'gateway' => $gateway,
-                'trace' => $e->getTraceAsString(),
-            ]);
-            
-            if ($request->wantsJson() || $request->expectsJson() || ($request->has('format') && $request->get('format') === 'json')) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'System error occurred'
-                ], 500);
-            }
-            return $this->redirectToFrontend('error', 'System error occurred');
+            Log::error("Theme Payment Success Error: " . $e->getMessage());
+            return $this->finalizeRedirect(false, "خطأ في النظام");
         }
     }
 
     /**
-     * Payment cancel callback
-     * Returns JSON response when Accept: application/json header is present (for API calls)
-     * Otherwise redirects to frontend (for browser redirects from payment gateway)
+     * Payment cancel callback.
      */
     public function paymentCancel(Request $request, $user_theme_id, $gateway)
     {
-        try {
-            $userTheme = UserTheme::findOrFail($user_theme_id);
-            $wantsJson = $request->wantsJson() || $request->expectsJson() || ($request->has('format') && $request->get('format') === 'json');
-            
-            // Ownership verification: The purchase record itself serves as verification
-            // Payment gateway will only redirect to this URL for the correct purchase
-            
-            DB::transaction(function () use ($userTheme) {
-                if ($userTheme->status === UserTheme::STATUS_PENDING) {
-                    $userTheme->update(['status' => UserTheme::STATUS_REJECTED]);
-                    
-                    Log::info('Theme purchase cancelled', [
-                        'user_theme_id' => $userTheme->id,
-                        'user_id' => $userTheme->user_id,
-                        'theme_id' => $userTheme->theme_id,
-                    ]);
-                }
-            });
-
-            if ($wantsJson) {
-                return response()->json([
-                    'status' => 'cancelled',
-                    'message' => 'Payment was cancelled',
-                    'theme_id' => $userTheme->theme_id,
-                    'user_theme_id' => $userTheme->id,
-                ], 200);
-            }
-
-            return $this->redirectToFrontend('cancelled', 'Payment was cancelled');
-        } catch (ModelNotFoundException $e) {
-            Log::error("Theme Payment Cancel: Purchase not found", [
-                'user_theme_id' => $user_theme_id,
-            ]);
-            
-            if ($request->wantsJson() || $request->expectsJson() || ($request->has('format') && $request->get('format') === 'json')) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Purchase record not found'
-                ], 404);
-            }
-            return $this->redirectToFrontend('error', 'Purchase record not found');
-        } catch (\Exception $e) {
-            Log::error("Theme Payment Cancel Error: " . $e->getMessage(), [
-                'user_theme_id' => $user_theme_id,
-                'gateway' => $gateway,
-                'trace' => $e->getTraceAsString(),
-            ]);
-            
-            if ($request->wantsJson() || $request->expectsJson() || ($request->has('format') && $request->get('format') === 'json')) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'System error occurred'
-                ], 500);
-            }
-            return $this->redirectToFrontend('error', 'System error occurred');
+        $userTheme = UserTheme::find($user_theme_id);
+        if ($userTheme && $userTheme->status === UserTheme::STATUS_PENDING) {
+            $userTheme->update(['status' => UserTheme::STATUS_REJECTED]);
         }
+        return $this->finalizeRedirect(false, 'تم إلغاء الدفع');
     }
 
     /**
-     * Helper method to redirect to frontend with consistent URL format
-     * Uses FRONTEND_URL from .env file
+     * Finalize payment redirect - return HTML view
+     * Matches EmployeeAddonController implementation
      */
-    private function redirectToFrontend(string $status, string $message, array $additionalParams = []): \Illuminate\Http\RedirectResponse
+    private function finalizeRedirect($success, $message)
     {
-        $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
-        $params = array_merge([
-            'status' => $status,
-            'message' => $message,
-        ], $additionalParams);
+        // Get language and basic settings for the views
+        $currentLang = Language::where('is_default', 1)->first();
+        $bs = $currentLang ? $currentLang->basic_setting : \App\Models\BasicSetting::first();
+        
+        if (!$success) {
+            return view('front.failed', [
+                'bs' => $bs,
+                'rtl' => $bs->rtl ?? 0
+            ]);
+        }
 
-        $queryString = http_build_query($params);
-        return redirect($frontendUrl . '/themes?' . $queryString);
+        // Return success page that notifies parent window (React/Next.js frontend)
+        // The view will send postMessage("payment_success") to notify the frontend
+        return view('front.success', [
+            'bs' => $bs,
+            'rtl' => $bs->rtl ?? 0
+        ]);
     }
 
 }

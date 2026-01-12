@@ -41,6 +41,7 @@ class CrmRequestController extends ApiController
 		// Validate all filters
 		$request->validate([
 			'q' => 'nullable|string|max:255',
+			'customer_id' => 'nullable|integer',
 			'name' => 'nullable|string|max:255',
 			'email' => 'nullable|string|max:255',
 			'phone_number' => 'nullable|string|max:20',
@@ -76,8 +77,30 @@ class CrmRequestController extends ApiController
 		$baseQuery = CrmRequest::query()
 			->forUser($userId);
 
-		// Apply customer filters via whereHas
-		$baseQuery->whereHas('customer', function ($customerQuery) use ($request, $catIds, $propIds) {
+		// Apply direct customer_id filter on requests table (if provided)
+		// This is more efficient than using whereHas when filtering by customer_id
+		if ($request->filled('customer_id')) {
+			$baseQuery->where('customer_id', (int)$request->input('customer_id'));
+		}
+
+		// Apply customer filters via whereHas (if any customer-related filters are present)
+		// Note: If customer_id is also provided, these filters will work within that constraint
+		$hasCustomerFilters = $request->filled('q') || 
+			$request->filled('name') || 
+			$request->filled('email') || 
+			$request->filled('phone_number') || 
+			$request->filled('city_id') || 
+			$request->filled('district_id') || 
+			$request->filled('type_id') || 
+			$request->filled('priority_id') || 
+			$request->filled('procedure_id') || 
+			$request->filled('responsible_employee_id') || 
+			$request->filled('employee_whatsapp_number') || 
+			!empty($catIds) || 
+			!empty($propIds);
+
+		if ($hasCustomerFilters) {
+			$baseQuery->whereHas('customer', function ($customerQuery) use ($request, $catIds, $propIds) {
 			// General search (q)
 			if ($request->filled('q')) {
 				$qText = trim($request->input('q'));
@@ -141,7 +164,8 @@ class CrmRequestController extends ApiController
 						->whereIn('ac2.property_id', $propIds);
 				});
 			}
-		});
+			});
+		}
 
 		// Apply request-level filters
 		if ($request->filled('stage_id')) {
