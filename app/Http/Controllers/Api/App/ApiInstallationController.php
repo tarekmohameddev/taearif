@@ -274,7 +274,6 @@ class ApiInstallationController extends Controller
                     'price' => $app->price,
                     'name' => $app->name,
                 ],
-                'payment_url' => $result['payment_url'],
             ], 'App installed successfully');
 
         } catch (ValidationException $e) {
@@ -292,19 +291,6 @@ class ApiInstallationController extends Controller
                 $e->getMessage(),
                 $e->getErrorCode(),
                 $e->getStatusCode()
-            );
-
-        } catch (PaymentInitiationException $e) {
-            Log::error('Payment initiation failed during install', [
-                'user_id' => $request->user()?->id,
-                'app_id' => $request->input('app_id'),
-                'error' => $e->getMessage(),
-            ]);
-
-            return $this->errorResponse(
-                'Failed to initiate payment. Please try again.',
-                $e->getErrorCode(),
-                500
             );
 
         } catch (\Exception $e) {
@@ -529,10 +515,9 @@ class ApiInstallationController extends Controller
                     'price' => $app->price,
                     'name' => $app->name,
                 ],
-                'payment_url' => $result['payment_url'],
             ], 'WhatsApp app installed successfully');
 
-        } catch (ConcurrentInstallationException | InvalidInstallationException | PaymentInitiationException $e) {
+        } catch (ConcurrentInstallationException | InvalidInstallationException $e) {
             return $this->errorResponse(
                 $e->getMessage(),
                 $e->getErrorCode(),
@@ -609,6 +594,97 @@ class ApiInstallationController extends Controller
             return $this->errorResponse(
                 'Failed to uninstall WhatsApp app',
                 'WHATSAPP_UNINSTALL_ERROR',
+                500
+            );
+        }
+    }
+
+    /**
+     * Get purchase URL for an app
+     *
+     * @param Request $request
+     * @param int $appId
+     * @param InstallationService $service
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPurchaseUrl(Request $request, int $appId, InstallationService $service)
+    {
+        try {
+            $user = $request->user();
+            $app = ApiApp::where('id', $appId)
+                ->where('is_enabled', true)
+                ->first();
+
+            if (!$app) {
+                return $this->errorResponse(
+                    'App not found or not enabled',
+                    'APP_NOT_FOUND',
+                    404
+                );
+            }
+
+            // Get or create installation if needed
+            $installation = ApiInstallation::where('user_id', $user->id)
+                ->where('app_id', $appId)
+                ->first();
+
+            if (!$installation) {
+                return $this->errorResponse(
+                    'App must be installed first',
+                    'INSTALLATION_NOT_FOUND',
+                    404
+                );
+            }
+
+            // Check if app requires payment
+            if ($app->billing_type === BillingType::Free) {
+                return $this->errorResponse(
+                    'This app is free and does not require payment',
+                    'PAYMENT_NOT_REQUIRED',
+                    400
+                );
+            }
+
+            // Check if already has valid subscription
+            if ($installation->hasValidSubscription()) {
+                return $this->errorResponse(
+                    'You already have an active subscription for this app',
+                    'SUBSCRIPTION_ACTIVE',
+                    400
+                );
+            }
+
+            // Get purchase URL
+            $paymentUrl = $service->getPurchaseUrl($installation, $app, $user);
+
+            return $this->successResponse([
+                'payment_url' => $paymentUrl,
+            ], 'Purchase URL generated successfully');
+
+        } catch (PaymentInitiationException $e) {
+            Log::error('Payment initiation failed', [
+                'user_id' => $request->user()?->id,
+                'app_id' => $appId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->errorResponse(
+                $e->getMessage(),
+                $e->getErrorCode(),
+                $e->getStatusCode()
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Failed to get purchase URL', [
+                'user_id' => $request->user()?->id,
+                'app_id' => $appId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return $this->errorResponse(
+                'Failed to generate purchase URL',
+                'PURCHASE_URL_ERROR',
                 500
             );
         }

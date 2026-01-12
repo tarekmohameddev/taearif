@@ -419,6 +419,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/apps', [ApiInstallationController::class, 'index']);
     Route::post('/apps/install', [ApiInstallationController::class, 'install']);
     Route::post('/apps/uninstall/{appId}', [ApiInstallationController::class, 'uninstall']);
+    Route::get('/apps/{appId}/purchase-url', [ApiInstallationController::class, 'getPurchaseUrl']);
 
     // whatsapp
     Route::get('/apps/whatsapp', [ApiInstallationController::class, 'whatsapp']);

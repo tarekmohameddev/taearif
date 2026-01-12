@@ -46,9 +46,8 @@ class InstallationService
      * @param User $user The user installing the app
      * @param ApiApp $app The app to install
      * @param array $settings Optional installation settings
-     * @return array{installation: ApiInstallation, payment_url: string|null}
+     * @return array{installation: ApiInstallation, payment_url: null}
      * @throws InvalidInstallationException
-     * @throws PaymentInitiationException
      */
     public function install(User $user, ApiApp $app, array $settings = []): array
     {
@@ -103,40 +102,23 @@ class InstallationService
                         'current_period_end' => $hasValidSubscription 
                             ? $existingInstall->current_period_end 
                             : ($existingInstall?->current_period_end ?? $trialEnds),
-                        'invoice_id' => $hasValidSubscription 
-                            ? ($existingInstall->invoice_id ?? null) 
-                            : null,
-                        'payment_subscription_id' => $hasValidSubscription 
-                            ? ($existingInstall->payment_subscription_id ?? null) 
-                            : null,
-                        'recurring_id' => $hasValidSubscription 
-                            ? ($existingInstall->recurring_id ?? null) 
-                            : null,
+                        // Purchase keys are not updated here - they are only updated when payment is initiated via getPurchaseUrl()
                     ]
                 );
 
                 // Save settings
                 $install->settings()->updateOrCreate([], ['settings' => $settings]);
 
-                // Initiate payment if app requires payment and subscription is not valid
-                $paymentUrl = null;
-                if (!$hasValidSubscription && 
-                    ($app->billing_type === BillingType::Paid || 
-                     ($app->billing_type === BillingType::PaidTrial && $status !== InstallStatus::Trialing))) {
-                    $paymentUrl = $this->initiatePayment($install, $app, $user);
-                }
-
                 Log::info('App installation completed', [
                     'installation_id' => $install->id,
                     'user_id' => $user->id,
                     'app_id' => $app->id,
                     'status' => $status->value,
-                    'requires_payment' => $paymentUrl !== null,
                 ]);
 
                 return [
                     'installation' => $install->fresh(['settings', 'app']),
-                    'payment_url' => $paymentUrl,
+                    'payment_url' => null,
                 ];
             });
         });
@@ -211,7 +193,7 @@ class InstallationService
     }
 
     /**
-     * Initiate payment for paid apps
+     * Get purchase URL for paid apps
      *
      * @param ApiInstallation $install
      * @param ApiApp $app
@@ -219,7 +201,7 @@ class InstallationService
      * @return string Payment redirect URL
      * @throws PaymentInitiationException
      */
-    protected function initiatePayment(
+    public function getPurchaseUrl(
         ApiInstallation $install,
         ApiApp $app,
         User $user
