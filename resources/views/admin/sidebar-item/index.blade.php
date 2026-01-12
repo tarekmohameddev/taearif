@@ -41,6 +41,10 @@
     .modern-table {
         margin-top: 0 !important;
     }
+    /* Enable horizontal scrolling for table at 100% zoom */
+    .sidebar-item-card .table-responsive {
+        overflow-x: auto !important;
+    }
     .modern-table thead th {
         background: #f8f9fa;
         border-top: none;
