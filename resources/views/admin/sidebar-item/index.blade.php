@@ -67,6 +67,13 @@
         padding: 15px 5px !important;
         text-align: right;
     }
+    /* Center align العنصر column header and set width */
+    .modern-table thead th:nth-child(2),
+    .modern-table tbody td:nth-child(2) {
+        text-align: center;
+        max-width: 150px;
+        width: 150px;
+    }
     .modern-table tbody td {
         padding: 18px 5px !important;
         vertical-align: middle;
@@ -77,6 +84,12 @@
     }
     .modern-table tbody tr:hover {
         background-color: #f7fafc;
+    }
+    .icon-display-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
     .icon-box-modern {
         width: 48px;
@@ -161,16 +174,22 @@
         display: flex;
         flex-direction: column;
         gap: 2px;
+        direction: rtl;
+        text-align: center;
+        align-items: center;
     }
     .title-wrap {
         display: flex;
         align-items: center;
         gap: 8px;
+        justify-content: center;
+        direction: rtl;
     }
     .main-title {
         font-weight: 700;
         color: #1e293b;
         font-size: 0.85rem;
+        text-align: center;
     }
     .status-dot {
         width: 8px;
@@ -186,6 +205,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        text-align: center;
     }
     .badge-modern {
         padding: 6px 12px;
