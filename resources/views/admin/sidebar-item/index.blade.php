@@ -50,6 +50,11 @@
         width: auto !important;
         min-width: 100%;
     }
+    /* Override atlantis.css padding for sidebar-items table */
+    .modern-table.table td,
+    .modern-table.table th {
+        padding: 0 5px !important;
+    }
     .modern-table thead th {
         background: #f8f9fa;
         border-top: none;
@@ -59,11 +64,11 @@
         text-transform: uppercase;
         font-size: 0.75rem;
         letter-spacing: 0.025em;
-        padding: 15px 20px;
+        padding: 15px 5px !important;
         text-align: right;
     }
     .modern-table tbody td {
-        padding: 18px 20px;
+        padding: 18px 5px !important;
         vertical-align: middle;
         color: #2d3748;
         border-bottom: 1px solid #edf2f7;
@@ -141,6 +146,16 @@
     .modern-table tbody td:nth-child(6) .badge-modern {
         padding: 4px 8px;
         font-size: 0.65rem;
+    }
+    /* Reduce font size for first column (# numbers) */
+    .modern-table thead th:first-child,
+    .modern-table tbody td:first-child {
+        font-size: 0.75rem;
+        padding: 0;
+        text-align: center;
+        width: 50px;
+        min-width: 50px;
+        max-width: 50px;
     }
     .element-info {
         display: flex;
