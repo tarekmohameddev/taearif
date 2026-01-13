@@ -2335,7 +2335,13 @@ class PropertyController extends Controller
             $buildingId = $request->get('building_id');
 
             // Get properties (units) that don't have active or draft rentals
-            $query = Property::with(['project.contents', 'building:id,name', 'contents'])
+            $query = Property::with([
+                'project.contents', 
+                'building' => function($q) {
+                    $q->select('id', 'name');
+                }, 
+                'contents'
+            ])
                 ->where('user_id', $userId)
                 ->whereDoesntHave('rentals', function ($q) use ($userId) {
                     $q->where('user_id', $userId)
@@ -2367,8 +2373,25 @@ class PropertyController extends Controller
                 $content = optional($property->contents)->first();
                 $projectContent = optional(optional($property->project)->contents)->first();
 
-                // Use the already-loaded building relationship (loaded via ->with(['building:id,name']))
-                $buildingName = $property->building ? $property->building->name : 'N/A';
+                // Safely get building name - handle case where building might not be loaded or is null
+                $buildingName = 'N/A';
+                try {
+                    if ($property->relationLoaded('building') && $property->building) {
+                        // Building relationship is loaded
+                        if (is_object($property->building) && property_exists($property->building, 'name')) {
+                            $buildingName = $property->building->name ?? 'N/A';
+                        }
+                    } elseif ($property->building_id) {
+                        // Try to access building if not loaded (lazy load)
+                        $building = $property->building;
+                        if ($building && is_object($building) && property_exists($building, 'name')) {
+                            $buildingName = $building->name ?? 'N/A';
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // If any error accessing building, just use default
+                    $buildingName = 'N/A';
+                }
 
                 return [
                     'id' => $property->id,
