@@ -122,14 +122,10 @@
         border-radius: 4px;
         color: #64748b;
     }
-    /* Make icon column smaller */
+    /* Hide icon column */
     .modern-table thead th:nth-child(3),
     .modern-table tbody td:nth-child(3) {
-        width: 110px;
-        max-width: 110px;
-        min-width: 100px;
-        padding: 10px 10px;
-        text-align: center;
+        display: none;
     }
     /* Style status column (8th column) */
     .modern-table thead th:nth-child(8),
