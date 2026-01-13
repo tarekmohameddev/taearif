@@ -1926,6 +1926,24 @@ class PropertyController extends Controller
         ])
             ->whereIn('user_id', $allowedUserIds);
 
+        // Text search functionality (title, address, description, price)
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = trim($request->search);
+            $propertiesQuery->where(function($q) use ($searchTerm) {
+                // Search in PropertyContent (title, address, description)
+                $q->whereHas('contents', function($contentQuery) use ($searchTerm) {
+                    $contentQuery->where('title', 'like', "%{$searchTerm}%")
+                        ->orWhere('address', 'like', "%{$searchTerm}%")
+                        ->orWhere('description', 'like', "%{$searchTerm}%");
+                });
+                // Search in price if numeric
+                if (is_numeric($searchTerm)) {
+                    $q->orWhere('price', $searchTerm)
+                        ->orWhere('price', 'like', "%{$searchTerm}%");
+                }
+            });
+        }
+
         // Filter by city_id
         if ($request->has('city_id') && !empty($request->city_id)) {
             $propertiesQuery->whereHas('contents', function ($q) use ($request) {
@@ -1940,9 +1958,59 @@ class PropertyController extends Controller
             });
         }
 
-        // Apply purpose filter if provided
-        if ($request->has('purposes_filter') && !empty($request->purposes_filter)) {
+        // Apply purpose filter if provided (consolidate purposes_filter and purpose)
+        if ($request->has('purpose') && !empty($request->purpose)) {
+            $purposeValue = $request->purpose;
+            if (is_array($purposeValue)) {
+                $propertiesQuery->whereIn('purpose', $purposeValue);
+            } else {
+                $propertiesQuery->where('purpose', $purposeValue);
+            }
+        } elseif ($request->has('purposes_filter') && !empty($request->purposes_filter)) {
+            // Backward compatibility
             $propertiesQuery->where('purpose', $request->purposes_filter);
+        }
+
+        // Filter by employee (user_id or created_by)
+        if ($request->has('employee_id') && !empty($request->employee_id)) {
+            $employeeIds = is_array($request->employee_id) ? $request->employee_id : [$request->employee_id];
+            // Validate that employees belong to the tenant
+            $validEmployeeIds = array_intersect($employeeIds, $allowedUserIds);
+            if (!empty($validEmployeeIds)) {
+                $propertiesQuery->where(function($q) use ($validEmployeeIds) {
+                    $q->whereIn('user_id', $validEmployeeIds)
+                        ->orWhereIn('created_by', $validEmployeeIds);
+                });
+            }
+        }
+
+        // Filter by category_id
+        if ($request->has('category_id') && !empty($request->category_id)) {
+            $categoryIds = is_array($request->category_id) ? $request->category_id : [$request->category_id];
+            $propertiesQuery->whereIn('category_id', $categoryIds);
+        }
+
+        // Filter by payment_method
+        if ($request->has('payment_method') && !empty($request->payment_method)) {
+            $propertiesQuery->where('payment_method', $request->payment_method);
+        }
+
+        // Filter by date range (created_at)
+        if ($request->has('date_from') && !empty($request->date_from)) {
+            try {
+                $dateFrom = Carbon::parse($request->date_from)->startOfDay();
+                $propertiesQuery->where('created_at', '>=', $dateFrom);
+            } catch (\Exception $e) {
+                // Invalid date format, skip filter
+            }
+        }
+        if ($request->has('date_to') && !empty($request->date_to)) {
+            try {
+                $dateTo = Carbon::parse($request->date_to)->endOfDay();
+                $propertiesQuery->where('created_at', '<=', $dateTo);
+            } catch (\Exception $e) {
+                // Invalid date format, skip filter
+            }
         }
 
         // Apply specifics filters
@@ -2220,6 +2288,75 @@ class PropertyController extends Controller
                 }
             }
 
+            // Get employees who have created or own properties
+            $employeeIds = Property::whereIn('user_id', $allowedUserIds)
+                ->select('user_id', 'created_by')
+                ->distinct()
+                ->get()
+                ->pluck('user_id')
+                ->merge(Property::whereIn('user_id', $allowedUserIds)
+                    ->select('created_by')
+                    ->distinct()
+                    ->get()
+                    ->pluck('created_by'))
+                ->filter()
+                ->unique()
+                ->values();
+
+            $employees = \App\Models\User::whereIn('id', $employeeIds)
+                ->whereIn('id', $allowedUserIds)
+                ->select('id', 'first_name', 'last_name', 'email', 'username')
+                ->get()
+                ->map(function($emp) {
+                    return [
+                        'id' => $emp->id,
+                        'name' => trim(($emp->first_name ?? '') . ' ' . ($emp->last_name ?? '')) ?: ($emp->username ?? $emp->email),
+                        'email' => $emp->email,
+                    ];
+                })
+                ->values()
+                ->toArray();
+
+            // Get categories used in properties
+            $categoryIds = Property::whereIn('user_id', $allowedUserIds)
+                ->whereNotNull('category_id')
+                ->distinct()
+                ->pluck('category_id');
+
+            $categories = ApiUserCategory::whereIn('id', $categoryIds)
+                ->select('id', 'name')
+                ->get()
+                ->map(function($cat) {
+                    return [
+                        'id' => $cat->id,
+                        'name' => $cat->name,
+                    ];
+                })
+                ->values()
+                ->toArray();
+
+            // Get distinct payment methods
+            $paymentMethods = Property::whereIn('user_id', $allowedUserIds)
+                ->whereNotNull('payment_method')
+                ->where('payment_method', '!=', '')
+                ->distinct()
+                ->pluck('payment_method')
+                ->filter()
+                ->sort()
+                ->values()
+                ->toArray();
+
+            // Get date range (min/max created_at)
+            $dateStats = Property::whereIn('user_id', $allowedUserIds)
+                ->whereNotNull('created_at')
+                ->selectRaw('MIN(created_at) as min_date, MAX(created_at) as max_date')
+                ->first();
+
+            $dateRange = [
+                'min' => $dateStats && $dateStats->min_date ? Carbon::parse($dateStats->min_date)->format('Y-m-d') : null,
+                'max' => $dateStats && $dateStats->max_date ? Carbon::parse($dateStats->max_date)->format('Y-m-d') : null,
+            ];
+
             return [
                 'purposes' => $availablePurposes,
                 'price_range' => $priceRange,
@@ -2229,6 +2366,10 @@ class PropertyController extends Controller
                 'bath' => $availableBath,
                 'features' => $availableFeatures,
                 'characteristics' => $characteristicFilterOptions,
+                'employees' => $employees,
+                'categories' => $categories,
+                'payment_methods' => $paymentMethods,
+                'date_range' => $dateRange,
             ];
         });
 
@@ -2241,6 +2382,10 @@ class PropertyController extends Controller
         $availableBath = $filterOptions['bath'];
         $availableFeatures = $filterOptions['features'];
         $characteristicFilterOptions = $filterOptions['characteristics'];
+        $employees = $filterOptions['employees'] ?? [];
+        $categories = $filterOptions['categories'] ?? [];
+        $paymentMethods = $filterOptions['payment_methods'] ?? [];
+        $dateRange = $filterOptions['date_range'] ?? ['min' => null, 'max' => null];
 
         $specificsFilters = [
             'price_range' => $priceRange,
@@ -2251,6 +2396,10 @@ class PropertyController extends Controller
             'bath' => $availableBath,
             'features' => array_values($availableFeatures),
             'characteristics' => $characteristicFilterOptions,
+            'employees' => $employees,
+            'categories' => $categories,
+            'payment_methods' => $paymentMethods,
+            'date_range' => $dateRange,
         ];
 
         // === Format response ===
@@ -2308,6 +2457,306 @@ class PropertyController extends Controller
                 ]
             ]
         ], 200);
+    }
+
+    /**
+     * Get filter options for properties
+     * Returns all available filter options for frontend dropdowns and filters
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function filterOptions(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // Resolve tenant owner and include all employees under that tenant
+        $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+        $ownerId = (int) $owner->id;
+
+        $allowedUserIds = [$ownerId];
+        try {
+            $cacheKey = "tenant_employees_{$ownerId}";
+            $employeeIds = Cache::remember($cacheKey, 300, function () use ($ownerId) {
+                return \App\Models\User::where('tenant_id', $ownerId)
+                    ->where('account_type', 'employee')
+                    ->pluck('id')
+                    ->toArray();
+            });
+            $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
+        } catch (\Throwable $e) {}
+
+        // Cache filter options (1 hour TTL)
+        $cacheKey = "property_filter_options_{$ownerId}";
+        $filterOptions = Cache::remember($cacheKey, 3600, function () use ($allowedUserIds) {
+            // OPTIMIZED: Combined price and area stats in single query
+            $stats = Property::whereIn('user_id', $allowedUserIds)
+                ->where(function($q) {
+                    $q->whereNotNull('price')->orWhereNotNull('area');
+                })
+                ->selectRaw('
+                    MIN(price) as min_price,
+                    MAX(price) as max_price,
+                    MIN(area) as min_area
+                ')
+                ->first();
+
+            $priceRange = [
+                'min' => $stats->min_price ?: 0,
+                'max' => $stats->max_price ?: 0,
+            ];
+
+            $areaRange = [
+                'min' => $stats->min_area ?: 0,
+            ];
+
+            // OPTIMIZED: Get all distinct filter values in a single query using UNION
+            $filterValues = DB::table('user_properties')
+                ->whereIn('user_id', $allowedUserIds)
+                ->selectRaw("'purpose' as filter_type, purpose as value")
+                ->whereNotNull('purpose')
+                ->where('purpose', '!=', '')
+                ->distinct()
+                ->union(
+                    DB::table('user_properties')
+                        ->whereIn('user_id', $allowedUserIds)
+                        ->selectRaw("'type' as filter_type, type as value")
+                        ->whereNotNull('type')
+                        ->where('type', '!=', '')
+                        ->distinct()
+                )
+                ->union(
+                    DB::table('user_properties')
+                        ->whereIn('user_id', $allowedUserIds)
+                        ->selectRaw("'beds' as filter_type, CAST(beds AS CHAR) as value")
+                        ->whereNotNull('beds')
+                        ->distinct()
+                )
+                ->union(
+                    DB::table('user_properties')
+                        ->whereIn('user_id', $allowedUserIds)
+                        ->selectRaw("'bath' as filter_type, CAST(bath AS CHAR) as value")
+                        ->whereNotNull('bath')
+                        ->distinct()
+                )
+                ->get()
+                ->groupBy('filter_type');
+
+            $availablePurposes = $filterValues->get('purpose', collect())->pluck('value')->unique()->values()->toArray();
+            $availableTypes = $filterValues->get('type', collect())->pluck('value')->unique()->values()->toArray();
+            $availableBeds = $filterValues->get('beds', collect())->pluck('value')->map(fn($v) => (int)$v)->unique()->sort()->values()->toArray();
+            $availableBath = $filterValues->get('bath', collect())->pluck('value')->map(fn($v) => (int)$v)->unique()->sort()->values()->toArray();
+
+            // Extract unique features from JSON arrays
+            $allFeatures = Property::whereIn('user_id', $allowedUserIds)
+                ->whereNotNull('features')
+                ->pluck('features')
+                ->flatten()
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
+            $availableFeatures = array_values($allFeatures);
+            sort($availableFeatures);
+
+            // OPTIMIZED: Get UserPropertyCharacteristic filter options
+            $propertyIds = Property::whereIn('user_id', $allowedUserIds)
+                ->pluck('id');
+
+            $characteristicFilterOptions = [];
+            $characteristicFields = [
+                'private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement',
+                'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room',
+                'driver_room', 'swimming_pool', 'kitchen', 'floor_number', 'floors',
+                'bathrooms', 'rooms', 'building_age'
+            ];
+
+            // Get all characteristics data in one query
+            $allCharacteristics = UserPropertyCharacteristic::whereIn('property_id', $propertyIds)
+                ->select($characteristicFields)
+                ->get();
+
+            // Process in PHP (faster than multiple DB queries for small datasets)
+            foreach ($characteristicFields as $field) {
+                $values = $allCharacteristics
+                    ->pluck($field)
+                    ->filter(fn($v) => !is_null($v))
+                    ->unique()
+                    ->sort()
+                    ->values()
+                    ->toArray();
+
+                if (!empty($values)) {
+                    $characteristicFilterOptions[$field] = $values;
+                }
+            }
+
+            // Get employees who have created or own properties
+            $employeeIds = Property::whereIn('user_id', $allowedUserIds)
+                ->select('user_id', 'created_by')
+                ->distinct()
+                ->get()
+                ->pluck('user_id')
+                ->merge(Property::whereIn('user_id', $allowedUserIds)
+                    ->select('created_by')
+                    ->distinct()
+                    ->get()
+                    ->pluck('created_by'))
+                ->filter()
+                ->unique()
+                ->values();
+
+            $employees = \App\Models\User::whereIn('id', $employeeIds)
+                ->whereIn('id', $allowedUserIds)
+                ->select('id', 'first_name', 'last_name', 'email', 'username')
+                ->get()
+                ->map(function($emp) {
+                    return [
+                        'id' => $emp->id,
+                        'name' => trim(($emp->first_name ?? '') . ' ' . ($emp->last_name ?? '')) ?: ($emp->username ?? $emp->email),
+                        'email' => $emp->email,
+                    ];
+                })
+                ->values()
+                ->toArray();
+
+            // Get categories used in properties
+            $categoryIds = Property::whereIn('user_id', $allowedUserIds)
+                ->whereNotNull('category_id')
+                ->distinct()
+                ->pluck('category_id');
+
+            $categories = ApiUserCategory::whereIn('id', $categoryIds)
+                ->select('id', 'name')
+                ->get()
+                ->map(function($cat) {
+                    return [
+                        'id' => $cat->id,
+                        'name' => $cat->name,
+                    ];
+                })
+                ->values()
+                ->toArray();
+
+            // Get distinct payment methods
+            $paymentMethods = Property::whereIn('user_id', $allowedUserIds)
+                ->whereNotNull('payment_method')
+                ->where('payment_method', '!=', '')
+                ->distinct()
+                ->pluck('payment_method')
+                ->filter()
+                ->sort()
+                ->values()
+                ->toArray();
+
+            // Get date range (min/max created_at)
+            $dateStats = Property::whereIn('user_id', $allowedUserIds)
+                ->whereNotNull('created_at')
+                ->selectRaw('MIN(created_at) as min_date, MAX(created_at) as max_date')
+                ->first();
+
+            $dateRange = [
+                'min' => $dateStats && $dateStats->min_date ? Carbon::parse($dateStats->min_date)->format('Y-m-d') : null,
+                'max' => $dateStats && $dateStats->max_date ? Carbon::parse($dateStats->max_date)->format('Y-m-d') : null,
+            ];
+
+            return [
+                'purposes' => $availablePurposes,
+                'price_range' => $priceRange,
+                'area_range' => $areaRange,
+                'types' => $availableTypes,
+                'beds' => $availableBeds,
+                'bath' => $availableBath,
+                'features' => $availableFeatures,
+                'characteristics' => $characteristicFilterOptions,
+                'employees' => $employees,
+                'categories' => $categories,
+                'payment_methods' => $paymentMethods,
+                'date_range' => $dateRange,
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $filterOptions,
+        ], 200);
+    }
+
+    /**
+     * Get property statistics cards for the authenticated tenant
+     * Returns counts for properties for sale, for rent, and total
+     * Works for both tenant owners and their employees
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function cards(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthenticated',
+                ], 401);
+            }
+
+            // Resolve tenant owner and include all employees under that tenant
+            // This ensures employees see the same statistics as the tenant owner
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+            $ownerId = (int) $owner->id;
+
+            $allowedUserIds = [$ownerId];
+            try {
+                $cacheKey = "tenant_employees_{$ownerId}";
+                $employeeIds = Cache::remember($cacheKey, 300, function () use ($ownerId) {
+                    return \App\Models\User::where('tenant_id', $ownerId)
+                        ->where('account_type', 'employee')
+                        ->pluck('id')
+                        ->toArray();
+                });
+                $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
+            } catch (\Throwable $e) {
+                // Continue with owner only if employee fetch fails
+            }
+
+            // Count properties for sale
+            $forSale = Property::whereIn('user_id', $allowedUserIds)
+                ->where('purpose', 'sale')
+                ->count();
+
+            // Count properties for rent
+            $forRent = Property::whereIn('user_id', $allowedUserIds)
+                ->where('purpose', 'rent')
+                ->count();
+
+            // Total count (all properties regardless of purpose)
+            $total = Property::whereIn('user_id', $allowedUserIds)
+                ->count();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'for_sale' => $forSale,
+                    'for_rent' => $forRent,
+                    'total' => $total,
+                ],
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching property cards', [
+                'user_id' => $user->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch property statistics',
+                'error' => app()->environment('local') ? $e->getMessage() : 'Internal server error',
+            ], 500);
+        }
     }
 
     /**

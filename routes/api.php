@@ -285,6 +285,8 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::get   ('/properties/categories',              [PropertyController::class, 'properties_categories']);
 
     Route::get   ('/properties',                         [PropertyController::class, 'index'])->middleware('can:properties.view');
+    Route::get   ('/properties/filter-options',         [PropertyController::class, 'filterOptions'])->middleware('can:properties.view');
+    Route::get   ('/properties/cards',                  [PropertyController::class, 'cards'])->middleware('can:properties.view');
     Route::get   ('/properties/available-units',         [PropertyController::class, 'availableUnits'])->middleware('can:properties.view');
     Route::get   ('/properties/export',                  [PropertyController::class, 'export'])->middleware('can:properties.view');
     Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
