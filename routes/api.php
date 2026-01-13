@@ -286,6 +286,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
 
     Route::get   ('/properties',                         [PropertyController::class, 'index'])->middleware('can:properties.view');
     Route::get   ('/properties/available-units',         [PropertyController::class, 'availableUnits'])->middleware('can:properties.view');
+    Route::get   ('/properties/export',                  [PropertyController::class, 'export'])->middleware('can:properties.view');
     Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
     Route::post  ('/properties/bulk-import',             [PropertyController::class, 'bulkImport'])->middleware('can:properties.create');
     // Route::get   ('/properties/bulk-import/template',    [PropertyController::class, 'downloadTemplate']); // Moved to public routes
@@ -298,7 +299,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::post  ('/properties/{propertyId}/duplicate',  [PropertyController::class, 'duplicate'])->middleware('can:properties.create');
     Route::get   ('/property/facades',                   [UserFacadeController::class, 'index'])->middleware('can:properties.view');
     // faqs
-    Route::get   ('/property-faqs',                               [PropertyController::class, 'faqs']);
+    Route::get   ('/property-faqs',                      [PropertyController::class, 'faqs']);
 
     // Building management routes
     Route::get   ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'index']);

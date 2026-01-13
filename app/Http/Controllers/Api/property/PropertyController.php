@@ -43,152 +43,371 @@ class PropertyController extends Controller
 {
     public function bulkImport(Request $request)
     {
-        $request->validate([
-            'file' => 'required|mimes:xlsx,csv',
-        ]);
-
-        $user = auth()->user();
-
-        // Check if user has active membership (cached)
-        $membership = MembershipCacheService::getActiveMembership($user->id);
-
-        if (!$membership || !$membership->package) {
-            return response()->json([
-                'status' => 'fail',
-                'message' => 'No active package found for the user.',
-            ], 403);
-        }
-
-        // Check property limit before processing the file
-        $realEstateLimit = $membership->package->real_estate_limit_number;
-        $currentPropertyCount = Property::where('user_id', $user->id)->count();
-
-        // Estimate row count from uploaded file
         try {
-            // Smart Method: Calculate the exact number of rows with data
-            // This avoids reading thousands of empty rows
-            $filePath = $request->file('file')->getPathname();
-            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($filePath);
-            $reader->setReadDataOnly(true); // Optimization: Read only data, ignore formatting
-            $spreadsheet = $reader->load($filePath);
-            $worksheet = $spreadsheet->getActiveSheet();
-            $highestRow = $worksheet->getHighestDataRow(); // This gets the last row with actual data
-            
-            // Pass the smart limit to the import class
-            // highestRow includes header, so we pass it as the limit
-            $import = new PropertiesImport($user->id, $highestRow);
-            
-            $collection = Excel::toCollection($import, $request->file('file'));
-            
-            // Count only actual data rows (excluding header which is row 1)
-            // The collection excludes the header due to WithHeadingRow trait
-            $firstSheet = $collection->first();
-            // Filter out empty rows (all values are null or empty)
-            $incomingRowCount = $firstSheet->filter(function($row) {
-                $rowArray = $row->toArray();
-                
-                // Skip rows marked as empty by prepareForValidation
-                if (isset($rowArray['_skip_empty_row']) && $rowArray['_skip_empty_row'] === true) {
-                    return false;
-                }
-                
-                // Skip rows where title is the dummy empty marker
-                if (isset($rowArray['title']) && $rowArray['title'] === '_EMPTY_ROW_SKIP_') {
-                    return false;
-                }
-                
-                // Skip completely empty rows (all values are null or empty)
-                $hasData = !empty(array_filter($rowArray, function($value) {
-                    return !is_null($value) && $value !== '';
-                }));
-                
-                return $hasData;
-            })->count();
-            
-            if (!is_null($realEstateLimit) && ($currentPropertyCount + $incomingRowCount) > $realEstateLimit) {
+            // Validate file presence and type
+            $request->validate([
+                'file' => 'required|mimes:xlsx,csv|max:10240', // 10MB max
+            ], [
+                'file.required' => 'A file is required for import. Please select an Excel or CSV file.',
+                'file.mimes' => 'The file must be an Excel (.xlsx) or CSV (.csv) file.',
+                'file.max' => 'The file size must not exceed 10MB. Please use a smaller file or split it into multiple files.',
+            ]);
+
+            $user = auth()->user();
+
+            // Check authentication
+            if (!$user) {
                 return response()->json([
-                    'status' => 'fail',
-                    'message' => 'Bulk import would exceed your property listing limit.',
-                    'limit' => $realEstateLimit,
-                    'current_count' => $currentPropertyCount,
-                    'incoming_count' => $incomingRowCount,
-                    'available_slots' => max(0, $realEstateLimit - $currentPropertyCount)
+                    'status' => 'error',
+                    'code' => 'IMPORT_PERMISSION_DENIED',
+                    'message' => 'Authentication required to import properties',
+                    'timestamp' => now()->toIso8601String(),
+                ], 401);
+            }
+
+            // Check if user has active membership (cached)
+            $membership = MembershipCacheService::getActiveMembership($user->id);
+
+            if (!$membership || !$membership->package) {
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'IMPORT_PERMISSION_DENIED',
+                    'message' => 'No active package found for the user',
+                    'details' => [
+                        'user_id' => $user->id,
+                        'suggestion' => 'Please activate a membership package to import properties.',
+                    ],
+                    'timestamp' => now()->toIso8601String(),
                 ], 403);
             }
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to read uploaded file: ' . $e->getMessage(),
-            ], 422);
-        }
 
-        try {
-        // Use the same smart limit for the actual import
-        $import = new PropertiesImport($user->id, $highestRow);
-        Excel::import($import, $request->file('file'));
+            // Check property limit before processing the file
+            $realEstateLimit = $membership->package->real_estate_limit_number;
+            $currentPropertyCount = Property::where('user_id', $user->id)->count();
 
-        $failures = $import->sheetImport->failures();
-        $errors = $import->sheetImport->errors();
-        $detailedErrors = [];
+            // Estimate row count from uploaded file
+            try {
+                // Validate file can be read
+                if (!$request->hasFile('file') || !$request->file('file')->isValid()) {
+                    return response()->json([
+                        'status' => 'error',
+                        'code' => 'IMPORT_FILE_INVALID',
+                        'message' => 'Invalid or corrupted file uploaded',
+                        'details' => [
+                            'suggestion' => 'Please ensure the file is a valid Excel (.xlsx) or CSV (.csv) file and try again.',
+                        ],
+                        'timestamp' => now()->toIso8601String(),
+                    ], 422);
+                }
 
-        // Collect Validation Failures
-        foreach ($failures as $failure) {
-            $detailedErrors[] = [
-                'row' => $failure->row(),
-                'message' => 'Validation Error: ' . implode(', ', $failure->errors()),
-                'values' => $failure->values(),
-            ];
-        }
+                // Smart Method: Calculate the exact number of rows with data
+                // This avoids reading thousands of empty rows
+                $filePath = $request->file('file')->getPathname();
+                $fileSize = $request->file('file')->getSize();
+                
+                // Check file size (10MB = 10485760 bytes)
+                if ($fileSize > 10485760) {
+                    return response()->json([
+                        'status' => 'error',
+                        'code' => 'IMPORT_FILE_TOO_LARGE',
+                        'message' => 'File size exceeds the maximum allowed size',
+                        'details' => [
+                            'file_size' => $fileSize,
+                            'max_size' => 10485760,
+                            'max_size_mb' => '10MB',
+                            'suggestion' => 'Please split your file into smaller files (max 10MB each) or reduce the number of rows.',
+                        ],
+                        'timestamp' => now()->toIso8601String(),
+                    ], 422);
+                }
 
-        // Collect Logic Errors (Exceptions)
-        foreach ($errors as $error) {
-            $message = $error->getMessage();
-            $row = null;
-            
-            // Extract row number if present in exception message
-            if (preg_match('/Row (\d+):/', $message, $matches)) {
-                $row = (int)$matches[1];
+                $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($filePath);
+                $reader->setReadDataOnly(true); // Optimization: Read only data, ignore formatting
+                $spreadsheet = $reader->load($filePath);
+                $worksheet = $spreadsheet->getActiveSheet();
+                $highestRow = $worksheet->getHighestDataRow(); // This gets the last row with actual data
+                
+                // Pass the smart limit to the import class
+                // highestRow includes header, so we pass it as the limit
+                $import = new PropertiesImport($user->id, $highestRow);
+                
+                $collection = Excel::toCollection($import, $request->file('file'));
+                
+                // Count only actual data rows (excluding header which is row 1)
+                // The collection excludes the header due to WithHeadingRow trait
+                $firstSheet = $collection->first();
+                // Filter out empty rows (all values are null or empty)
+                $incomingRowCount = $firstSheet->filter(function($row) {
+                    $rowArray = $row->toArray();
+                    
+                    // Skip rows marked as empty by prepareForValidation
+                    if (isset($rowArray['_skip_empty_row']) && $rowArray['_skip_empty_row'] === true) {
+                        return false;
+                    }
+                    
+                    // Skip rows where title is the dummy empty marker
+                    if (isset($rowArray['title']) && $rowArray['title'] === '_EMPTY_ROW_SKIP_') {
+                        return false;
+                    }
+                    
+                    // Skip completely empty rows (all values are null or empty)
+                    $hasData = !empty(array_filter($rowArray, function($value) {
+                        return !is_null($value) && $value !== '';
+                    }));
+                    
+                    return $hasData;
+                })->count();
+                
+                if (!is_null($realEstateLimit) && ($currentPropertyCount + $incomingRowCount) > $realEstateLimit) {
+                    return response()->json([
+                        'status' => 'error',
+                        'code' => 'IMPORT_PERMISSION_DENIED',
+                        'message' => 'Bulk import would exceed your property listing limit',
+                        'details' => [
+                            'limit' => $realEstateLimit,
+                            'current_count' => $currentPropertyCount,
+                            'incoming_count' => $incomingRowCount,
+                            'available_slots' => max(0, $realEstateLimit - $currentPropertyCount),
+                            'suggestion' => 'Please remove some existing properties or upgrade your package to increase the limit.',
+                        ],
+                        'timestamp' => now()->toIso8601String(),
+                    ], 403);
+                }
+            } catch (\PhpOffice\PhpSpreadsheet\Exception $e) {
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'IMPORT_FILE_INVALID',
+                    'message' => 'Failed to read uploaded file',
+                    'details' => [
+                        'error' => config('app.debug') ? $e->getMessage() : 'The file format is invalid or corrupted.',
+                        'suggestion' => 'Please ensure the file is a valid Excel (.xlsx) or CSV (.csv) file. Try opening it in Excel first to verify it\'s not corrupted.',
+                    ],
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'IMPORT_FILE_INVALID',
+                    'message' => 'Failed to process uploaded file',
+                    'details' => [
+                        'error' => config('app.debug') ? $e->getMessage() : 'An error occurred while reading the file.',
+                        'suggestion' => 'Please check that the file is not corrupted and try again.',
+                    ],
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
             }
 
-            $detailedErrors[] = [
-                'row' => $row,
-                'message' => $message,
-            ];
-        }
+            try {
+                // Use the same smart limit for the actual import
+                $import = new PropertiesImport($user->id, $highestRow);
+                Excel::import($import, $request->file('file'));
 
-        $importedCount = $import->sheetImport->importedCount;
-        $failedCount = count($detailedErrors);
+                $failures = $import->sheetImport->failures();
+                $errors = $import->sheetImport->errors();
+                $detailedErrors = [];
 
-        if ($failedCount > 0) {
+                // Collect Validation Failures with enhanced structure
+                foreach ($failures as $failure) {
+                    $failureErrors = $failure->errors();
+                    $failureValues = $failure->values();
+                    
+                    // Extract field name from error message if possible
+                    foreach ($failureErrors as $field => $errorMessages) {
+                        foreach ($errorMessages as $errorMessage) {
+                            $detailedErrors[] = [
+                                'row' => $failure->row(),
+                                'field' => $field,
+                                'error' => $errorMessage,
+                                'expected' => $this->getExpectedFormat($field),
+                                'actual' => $failureValues[$field] ?? null,
+                                'severity' => 'error',
+                                'suggestion' => $this->getSuggestion($field, $errorMessage),
+                            ];
+                        }
+                    }
+                }
+
+                // Collect Logic Errors (Exceptions) with enhanced structure
+                foreach ($errors as $error) {
+                    $message = $error->getMessage();
+                    $row = null;
+                    $field = null;
+                    
+                    // Extract row number if present in exception message
+                    if (preg_match('/Row (\d+):/', $message, $matches)) {
+                        $row = (int)$matches[1];
+                    }
+
+                    // Try to extract field name from error message
+                    if (preg_match('/Invalid (\w+)/i', $message, $fieldMatches)) {
+                        $field = strtolower($fieldMatches[1]);
+                    }
+
+                    $detailedErrors[] = [
+                        'row' => $row,
+                        'field' => $field,
+                        'error' => $message,
+                        'expected' => null,
+                        'actual' => null,
+                        'severity' => 'error',
+                        'suggestion' => 'Please check the row data and ensure all required fields are provided correctly.',
+                    ];
+                }
+
+                $importedCount = $import->sheetImport->importedCount;
+                $updatedCount = $import->sheetImport->updatedCount ?? 0;
+                $failedCount = count($detailedErrors);
+                $totalProcessed = $importedCount + $updatedCount;
+
+                if ($failedCount > 0) {
+                    $message = "Import completed with {$failedCount} validation error(s). ";
+                    if ($importedCount > 0) $message .= "Created: {$importedCount} properties. ";
+                    if ($updatedCount > 0) $message .= "Updated: {$updatedCount} properties.";
+
+                    return response()->json([
+                        'status' => 'partial_success',
+                        'code' => 'IMPORT_VALIDATION_ERROR',
+                        'message' => $message,
+                        'imported_count' => $importedCount,
+                        'updated_count' => $updatedCount,
+                        'failed_count' => $failedCount,
+                        'errors' => $detailedErrors,
+                        'timestamp' => now()->toIso8601String(),
+                    ], 422);
+                }
+
+                $message = "Import successful. ";
+                if ($importedCount > 0) $message .= "Created: {$importedCount} properties. ";
+                if ($updatedCount > 0) $message .= "Updated: {$updatedCount} properties.";
+
+                return response()->json([
+                    'status' => 'success',
+                    'code' => 'IMPORT_SUCCESS',
+                    'message' => $message,
+                    'imported_count' => $importedCount,
+                    'updated_count' => $updatedCount,
+                    'failed_count' => 0,
+                    'errors' => [],
+                    'timestamp' => now()->toIso8601String(),
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error('Bulk property import processing error', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'IMPORT_PROCESSING_ERROR',
+                    'message' => 'An error occurred during import processing',
+                    'details' => [
+                        'user_id' => $user->id,
+                        'error' => config('app.debug') ? $e->getMessage() : 'A critical error occurred while processing the import. Please try again or contact support.',
+                        'suggestion' => 'Please verify your file format and data, then try again. If the problem persists, contact support.',
+                    ],
+                    'timestamp' => now()->toIso8601String(),
+                ], 500);
+            }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
-                'status' => 'partial_success', // or 'fail' if 0 imported
-                'message' => "Import completed with issues. Imported: {$importedCount}, Failed: {$failedCount}.",
-                'imported_count' => $importedCount,
-                'failed_count' => $failedCount,
-                'errors' => $detailedErrors,
+                'status' => 'error',
+                'code' => 'IMPORT_VALIDATION_ERROR',
+                'message' => 'File validation failed',
+                'errors' => $e->errors(),
+                'details' => [
+                    'user_id' => auth()->id(),
+                    'suggestion' => 'Please ensure you are uploading a valid Excel (.xlsx) or CSV (.csv) file that does not exceed 10MB.',
+                ],
+                'timestamp' => now()->toIso8601String(),
             ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Bulk property import critical error', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'code' => 'IMPORT_PROCESSING_ERROR',
+                'message' => 'A critical error occurred during import',
+                'details' => [
+                    'user_id' => auth()->id(),
+                    'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred. Please try again later.',
+                ],
+                'timestamp' => now()->toIso8601String(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get expected format for a field (helper for error messages)
+     */
+    private function getExpectedFormat(string $field): ?string
+    {
+        $formats = [
+            'title' => 'Non-empty text string (max 255 characters)',
+            'price' => 'Positive numeric value (e.g., 500000)',
+            'address' => 'Non-empty text string',
+            'description' => 'Non-empty text string',
+            'purpose' => 'Either "sale" or "rent"',
+            'type' => 'Either "residential" or "commercial"',
+            'area' => 'Positive numeric value (e.g., 150)',
+            'beds' => 'Positive integer (e.g., 3)',
+            'bath' => 'Positive integer (e.g., 2)',
+            'status' => 'Either "1" (active) or "0" (inactive)',
+            'featured' => 'Either "Yes", "1", "true" or "No", "0", "false"',
+            'category_name' => 'Valid category name from your categories list',
+            'city_name' => 'Valid city name from your cities list',
+            'district_name' => 'Valid district name from your districts list',
+            'featured_image' => 'Valid URL to an image file (http:// or https://)',
+            'gallery_images' => 'Comma-separated list of image URLs',
+            'video_url' => 'Valid URL to a video file',
+        ];
+
+        return $formats[$field] ?? 'Valid value according to field requirements';
+    }
+
+    /**
+     * Get suggestion for fixing an error (helper for error messages)
+     */
+    private function getSuggestion(string $field, string $errorMessage): string
+    {
+        $suggestions = [
+            'title' => 'Please provide a title for the property.',
+            'price' => 'Please provide a valid positive number for the price (e.g., 500000).',
+            'address' => 'Please provide a valid address for the property.',
+            'description' => 'Please provide a description for the property.',
+            'purpose' => 'Please specify either "sale" or "rent" as the purpose.',
+            'type' => 'Please specify either "residential" or "commercial" as the type.',
+            'area' => 'Please provide a valid positive number for the area (e.g., 150).',
+            'category_name' => 'Please check that the category name exists in your categories list, or create it first.',
+            'city_name' => 'Please check that the city name exists in your cities list, or create it first.',
+            'district_name' => 'Please check that the district name exists in your districts list, or create it first.',
+            'featured_image' => 'Please provide a valid image URL (must start with http:// or https://).',
+        ];
+
+        if (isset($suggestions[$field])) {
+            return $suggestions[$field];
         }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => "Import successful. {$importedCount} properties created.",
-            'imported_count' => $importedCount,
-            'failed_count' => 0,
-            'errors' => [],
-        ]);
+        if (str_contains($errorMessage, 'required')) {
+            return "Please provide a value for the {$field} field.";
+        }
 
-    } catch (\Exception $e) {
-        Log::error('Bulk property import critical error', [
-            'user_id' => $user->id,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
+        if (str_contains($errorMessage, 'numeric')) {
+            return "Please provide a valid numeric value for the {$field} field.";
+        }
 
-        return response()->json([
-            'status' => 'error',
-            'message' => 'A critical error occurred during import: ' . $e->getMessage(),
-        ], 500);
-    }
+        if (str_contains($errorMessage, 'invalid') || str_contains($errorMessage, 'not found')) {
+            return "Please check that the {$field} value is valid and exists in your system.";
+        }
+
+        return "Please check the {$field} field and ensure it meets the requirements.";
     }
 
     public function downloadTemplate()
@@ -706,8 +925,8 @@ class PropertyController extends Controller
                             }
                         }
                     } catch (\Exception $e) {
-                        \Log::error('Google Analytics error in admin PropertyController show', [
-                            'property_id' => $property->id,
+                        Log::error('Google Analytics error in admin PropertyController show', [
+                            'property_id' => $property->id ?? null,
                             'error' => $e->getMessage(),
                         ]);
                     }
@@ -1878,7 +2097,7 @@ class PropertyController extends Controller
                         }
                     }
                 } catch (\Exception $e) {
-                    \Log::error('Google Analytics error in admin PropertyController', [
+                    Log::error('Google Analytics error in admin PropertyController', [
                         'tenant' => $tenantId,
                         'error' => $e->getMessage(),
                     ]);
@@ -2194,6 +2413,367 @@ class PropertyController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
             ], 500);
         }
+    }
+
+    /**
+     * Export properties to CSV
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse
+     */
+    public function export(Request $request)
+    {
+        try {
+            // Helper function to convert IDs to int array (supports array, comma-separated string, or single value)
+            $toIntArray = function ($v): array {
+                if (is_null($v) || $v === '') return [];
+                if (is_int($v) || (is_string($v) && is_numeric($v))) return [(int)$v];
+                if (is_string($v)) return array_values(array_filter(array_map('intval', explode(',', $v))));
+                if (is_array($v))  return array_values(array_filter(array_map('intval', $v)));
+                return [];
+            };
+
+            // Get property IDs if provided
+            $propertyIds = $toIntArray($request->input('ids'));
+
+            // Validate: Either ids OR date range must be provided
+            if (empty($propertyIds)) {
+                // If no IDs, date range is required
+                $request->validate([
+                    'date_from' => 'required|date',
+                    'date_to' => 'required|date|after_or_equal:date_from',
+                ], [
+                    'date_from.required' => 'Either ids parameter or date_from parameter is required. Please provide a date range or specific property IDs to export.',
+                    'date_to.required' => 'Either ids parameter or date_to parameter is required. Please provide a date range or specific property IDs to export.',
+                    'date_to.after_or_equal' => 'The date_to must be after or equal to date_from. Please ensure your end date is not before your start date.',
+                    'date_from.date' => 'The date_from must be a valid date in YYYY-MM-DD format.',
+                    'date_to.date' => 'The date_to must be a valid date in YYYY-MM-DD format.',
+                ]);
+            } else {
+                // If IDs provided, validate them and make date range optional
+                $request->validate([
+                    'ids' => 'required',
+                    'date_from' => 'nullable|date',
+                    'date_to' => 'nullable|date|after_or_equal:date_from',
+                ], [
+                    'ids.required' => 'The ids parameter is required when provided.',
+                    'date_from.date' => 'The date_from must be a valid date in YYYY-MM-DD format.',
+                    'date_to.date' => 'The date_to must be a valid date in YYYY-MM-DD format.',
+                    'date_to.after_or_equal' => 'The date_to must be after or equal to date_from.',
+                ]);
+            }
+
+            $user = $request->user();
+
+            // Check permission
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'EXPORT_PERMISSION_DENIED',
+                    'message' => 'Authentication required to export properties',
+                    'timestamp' => now()->toIso8601String(),
+                ], 401);
+            }
+
+            // Resolve tenant owner (same logic as index method)
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+            $ownerId = (int) $owner->id;
+
+            $allowedUserIds = [$ownerId];
+            try {
+                $cacheKey = "tenant_employees_{$ownerId}";
+                $employeeIds = Cache::remember($cacheKey, 300, function () use ($ownerId) {
+                    return \App\Models\User::where('tenant_id', $ownerId)
+                        ->where('account_type', 'employee')
+                        ->pluck('id')
+                        ->toArray();
+                });
+                $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
+            } catch (\Throwable $e) {
+                // Continue with owner only if employee fetch fails
+            }
+
+            // Collect filters from request
+            $filters = $request->only([
+                'date_from',
+                'date_to',
+                'purpose',
+                'purposes_filter',
+                'type',
+                'price_from',
+                'price_to',
+                'area_from',
+                'area_to',
+                'beds',
+                'bath',
+                'category_id',
+                'status',
+                'featured',
+                'city_id',
+                'district_id',
+                'search',
+                'features',
+            ]);
+
+            // Add property IDs to filters
+            $filters['ids'] = $propertyIds;
+
+            // Check if any properties exist matching the criteria
+            $availableIds = $this->getAvailablePropertyIds($filters, $ownerId, $allowedUserIds);
+            if (empty($availableIds)) {
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'EXPORT_NO_PROPERTIES',
+                    'message' => 'No properties found matching the specified criteria',
+                    'details' => [
+                        'user_id' => $ownerId,
+                        'filters_applied' => $filters,
+                        'suggestion' => 'Try adjusting your filters (date range, purpose, type, etc.) or check if you have any available properties.',
+                    ],
+                    'timestamp' => now()->toIso8601String(),
+                ], 404);
+            }
+
+            // Get format (default: 'xlsx')
+            $format = $request->input('format', 'xlsx');
+            if (!in_array($format, ['xlsx', 'csv'])) {
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'EXPORT_VALIDATION_ERROR',
+                    'message' => 'Invalid export format specified',
+                    'errors' => [
+                        'format' => ['The format must be either "xlsx" or "csv".'],
+                    ],
+                    'details' => [
+                        'provided_format' => $format,
+                        'allowed_formats' => ['xlsx', 'csv'],
+                    ],
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            // Generate filename with timestamp
+            $filename = 'properties_export_' . now()->format('Y-m-d_His');
+
+            // Create export instance
+            $export = new \App\Exports\PropertiesExport($ownerId, $allowedUserIds, $filters);
+
+            // Return file download based on format
+            try {
+                if ($format === 'csv') {
+                    return Excel::download($export, $filename . '.csv', \Maatwebsite\Excel\Excel::CSV);
+                }
+
+                return Excel::download($export, $filename . '.xlsx');
+            } catch (\Exception $e) {
+                Log::error('Properties export file generation error', [
+                    'user_id' => auth()->id(),
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'filters' => $filters,
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'EXPORT_FILE_GENERATION_ERROR',
+                    'message' => 'Failed to generate export file',
+                    'details' => [
+                        'user_id' => auth()->id(),
+                        'error' => config('app.debug') ? $e->getMessage() : 'An error occurred while generating the export file. Please try again.',
+                    ],
+                    'timestamp' => now()->toIso8601String(),
+                ], 500);
+            }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'code' => 'EXPORT_VALIDATION_ERROR',
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+                'details' => [
+                    'user_id' => auth()->id(),
+                ],
+                'timestamp' => now()->toIso8601String(),
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Properties export error', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'code' => 'EXPORT_SYSTEM_ERROR',
+                'message' => 'Failed to export properties',
+                'details' => [
+                    'user_id' => auth()->id(),
+                    'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred. Please try again later.',
+                ],
+                'timestamp' => now()->toIso8601String(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available property IDs based on filters
+     * 
+     * Returns array of property IDs that are:
+     * - Owned by the authenticated user/tenant
+     * - Have property_status = 'available' or null (not 'rented')
+     * - Optionally: without active rentals (if rentals relationship exists)
+     * - Respects all the same filters as the export query
+     * 
+     * @param array $filters Optional filters (date_from, date_to, purpose, type, status, etc.)
+     * @param int|null $ownerId Optional owner ID (defaults to authenticated user's tenant owner)
+     * @param array|null $allowedUserIds Optional array of allowed user IDs (defaults to owner + employees)
+     * @return array Array of property IDs
+     */
+    protected function getAvailablePropertyIds(array $filters = [], ?int $ownerId = null, ?array $allowedUserIds = null): array
+    {
+        $user = auth()->user();
+        
+        // Resolve tenant owner if not provided
+        if ($ownerId === null) {
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+            $ownerId = (int) $owner->id;
+        }
+
+        // Get allowed user IDs if not provided
+        if ($allowedUserIds === null) {
+            $allowedUserIds = [$ownerId];
+            try {
+                $cacheKey = "tenant_employees_{$ownerId}";
+                $employeeIds = Cache::remember($cacheKey, 300, function () use ($ownerId) {
+                    return \App\Models\User::where('tenant_id', $ownerId)
+                        ->where('account_type', 'employee')
+                        ->pluck('id')
+                        ->toArray();
+                });
+                $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
+            } catch (\Throwable $e) {
+                // Continue with owner only if employee fetch fails
+            }
+        }
+
+        $query = Property::query()
+            ->whereIn('user_id', $allowedUserIds)
+            ->where(function ($q) {
+                $q->whereNull('property_status')
+                  ->orWhere('property_status', 'available')
+                  ->orWhere('property_status', '!=', 'rented');
+            });
+
+        // Apply property IDs filter if provided
+        if (!empty($filters['ids']) && is_array($filters['ids']) && count($filters['ids']) > 0) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        // Apply date range filter
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
+        // Apply purpose filter
+        if (!empty($filters['purposes_filter'])) {
+            $query->where('purpose', $filters['purposes_filter']);
+        }
+        if (!empty($filters['purpose'])) {
+            $query->where('purpose', $filters['purpose']);
+        }
+
+        // Apply type filter
+        if (!empty($filters['type'])) {
+            $query->where('type', $filters['type']);
+        }
+
+        // Apply price filters
+        if (!empty($filters['price_from'])) {
+            $query->where('price', '>=', $filters['price_from']);
+        }
+        if (!empty($filters['price_to'])) {
+            $query->where('price', '<=', $filters['price_to']);
+        }
+
+        // Apply area filters
+        if (!empty($filters['area_from'])) {
+            $query->where('area', '>=', $filters['area_from']);
+        }
+        if (!empty($filters['area_to'])) {
+            $query->where('area', '<=', $filters['area_to']);
+        }
+
+        // Apply beds filter
+        if (!empty($filters['beds'])) {
+            $query->where('beds', $filters['beds']);
+        }
+
+        // Apply bath filter
+        if (!empty($filters['bath'])) {
+            $query->where('bath', $filters['bath']);
+        }
+
+        // Apply category filter
+        if (!empty($filters['category_id'])) {
+            $query->where('category_id', $filters['category_id']);
+        }
+
+        // Apply status filter
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            $query->where('status', $filters['status']);
+        }
+
+        // Apply featured filter
+        if (isset($filters['featured']) && $filters['featured'] !== '') {
+            $query->where('featured', $filters['featured']);
+        }
+
+        // Apply city filter
+        if (!empty($filters['city_id'])) {
+            $query->whereHas('contents', function ($q) use ($filters) {
+                $q->where('city_id', $filters['city_id']);
+            });
+        }
+
+        // Apply district filter
+        if (!empty($filters['district_id'])) {
+            $query->whereHas('contents', function ($q) use ($filters) {
+                $q->where('state_id', $filters['district_id']);
+            });
+        }
+
+        // Apply search filter (title/address)
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->whereHas('contents', function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply features filter
+        if (!empty($filters['features'])) {
+            $featuresArray = explode(',', $filters['features']);
+            foreach ($featuresArray as $feature) {
+                $feature = trim($feature);
+                $query->whereJsonContains('features', $feature);
+            }
+        }
+
+        // Optionally filter out properties with active rentals
+        if (method_exists(Property::class, 'rentals')) {
+            $query->whereDoesntHave('rentals', function ($q) use ($ownerId) {
+                $q->where('user_id', $ownerId)
+                  ->whereIn('status', ['active', 'draft']);
+            });
+        }
+
+        return $query->pluck('id')->toArray();
     }
 
 }
