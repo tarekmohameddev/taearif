@@ -507,6 +507,11 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx', 
     // searchCustomers
     Route::get('/customers/search', [CRMController::class, 'searchCustomers']); // search customers
 
+    // CRM Customer Import/Export
+    Route::get('/customers/export', [CRMController::class, 'export'])->middleware('can:crm.view');
+    Route::get('/customers/import/template', [CRMController::class, 'downloadTemplate'])->middleware('can:crm.view');
+    Route::post('/customers/import', [CRMController::class, 'bulkImport'])->middleware('can:crm.create');
+
     // Property Request Auto-Customer Settings
     Route::get('/property-requests/settings', [\App\Http\Controllers\Api\CRM\PropertyRequestSettingsController::class, 'index']);
     Route::put('/property-requests/settings', [\App\Http\Controllers\Api\CRM\PropertyRequestSettingsController::class, 'update']);
