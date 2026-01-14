@@ -3090,6 +3090,206 @@ class PropertyController extends Controller
     }
 
     /**
+     * Export properties in import-ready format (optimized for bulk updates)
+     * This export includes only importable columns plus the 'id' column for updates
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse
+     */
+    public function exportForImport(Request $request)
+    {
+        try {
+            // Helper function to convert IDs to int array
+            $toIntArray = function ($v): array {
+                if (is_null($v) || $v === '') return [];
+                if (is_int($v) || (is_string($v) && is_numeric($v))) return [(int)$v];
+                if (is_string($v)) return array_values(array_filter(array_map('intval', explode(',', $v))));
+                if (is_array($v))  return array_values(array_filter(array_map('intval', $v)));
+                return [];
+            };
+
+            // Get property IDs if provided
+            $propertyIds = $toIntArray($request->input('ids'));
+
+            // Validate: Either ids OR date range must be provided
+            if (empty($propertyIds)) {
+                $request->validate([
+                    'date_from' => 'required|date',
+                    'date_to' => 'required|date|after_or_equal:date_from',
+                ], [
+                    'date_from.required' => 'Either ids parameter or date_from parameter is required.',
+                    'date_to.required' => 'Either ids parameter or date_to parameter is required.',
+                    'date_to.after_or_equal' => 'The date_to must be after or equal to date_from.',
+                    'date_from.date' => 'The date_from must be a valid date in YYYY-MM-DD format.',
+                    'date_to.date' => 'The date_to must be a valid date in YYYY-MM-DD format.',
+                ]);
+            } else {
+                $request->validate([
+                    'ids' => 'required',
+                    'date_from' => 'nullable|date',
+                    'date_to' => 'nullable|date|after_or_equal:date_from',
+                ], [
+                    'ids.required' => 'The ids parameter is required when provided.',
+                    'date_from.date' => 'The date_from must be a valid date in YYYY-MM-DD format.',
+                    'date_to.date' => 'The date_to must be a valid date in YYYY-MM-DD format.',
+                    'date_to.after_or_equal' => 'The date_to must be after or equal to date_from.',
+                ]);
+            }
+
+            $user = $request->user();
+
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'EXPORT_PERMISSION_DENIED',
+                    'message' => 'Authentication required to export properties',
+                    'timestamp' => now()->toIso8601String(),
+                ], 401);
+            }
+
+            // Resolve tenant owner
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+            $ownerId = (int) $owner->id;
+
+            $allowedUserIds = [$ownerId];
+            try {
+                $cacheKey = "tenant_employees_{$ownerId}";
+                $employeeIds = Cache::remember($cacheKey, 300, function () use ($ownerId) {
+                    return \App\Models\User::where('tenant_id', $ownerId)
+                        ->where('account_type', 'employee')
+                        ->pluck('id')
+                        ->toArray();
+                });
+                $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
+            } catch (\Throwable $e) {
+                // Continue with owner only if employee fetch fails
+            }
+
+            // Collect filters from request
+            $filters = $request->only([
+                'date_from',
+                'date_to',
+                'purpose',
+                'purposes_filter',
+                'type',
+                'price_from',
+                'price_to',
+                'area_from',
+                'area_to',
+                'beds',
+                'bath',
+                'category_id',
+                'status',
+                'featured',
+                'city_id',
+                'district_id',
+                'search',
+                'features',
+            ]);
+
+            // Add property IDs to filters
+            $filters['ids'] = $propertyIds;
+
+            // Check if any properties exist matching the criteria
+            $availableIds = $this->getAvailablePropertyIds($filters, $ownerId, $allowedUserIds);
+            if (empty($availableIds)) {
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'EXPORT_NO_PROPERTIES',
+                    'message' => 'No properties found matching the specified criteria',
+                    'details' => [
+                        'user_id' => $ownerId,
+                        'filters_applied' => $filters,
+                        'suggestion' => 'Try adjusting your filters or check if you have any available properties.',
+                    ],
+                    'timestamp' => now()->toIso8601String(),
+                ], 404);
+            }
+
+            // Get format (default: 'xlsx')
+            $format = $request->input('format', 'xlsx');
+            if (!in_array($format, ['xlsx', 'csv'])) {
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'EXPORT_VALIDATION_ERROR',
+                    'message' => 'Invalid export format specified',
+                    'errors' => [
+                        'format' => ['The format must be either "xlsx" or "csv".'],
+                    ],
+                    'details' => [
+                        'provided_format' => $format,
+                        'allowed_formats' => ['xlsx', 'csv'],
+                    ],
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            // Generate filename with timestamp
+            $filename = 'properties_import_ready_' . now()->format('Y-m-d_His');
+
+            // Create import-ready export instance
+            $export = new \App\Exports\PropertiesImportReadyExport($ownerId, $allowedUserIds, $filters);
+
+            // Return file download based on format
+            try {
+                if ($format === 'csv') {
+                    return Excel::download($export, $filename . '.csv', \Maatwebsite\Excel\Excel::CSV);
+                }
+
+                return Excel::download($export, $filename . '.xlsx');
+            } catch (\Exception $e) {
+                Log::error('Properties import-ready export file generation error', [
+                    'user_id' => auth()->id(),
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'filters' => $filters,
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'code' => 'EXPORT_FILE_GENERATION_ERROR',
+                    'message' => 'Failed to generate import-ready export file',
+                    'details' => [
+                        'user_id' => auth()->id(),
+                        'error' => config('app.debug') ? $e->getMessage() : 'An error occurred while generating the export file. Please try again.',
+                    ],
+                    'timestamp' => now()->toIso8601String(),
+                ], 500);
+            }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'code' => 'EXPORT_VALIDATION_ERROR',
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+                'details' => [
+                    'user_id' => auth()->id(),
+                ],
+                'timestamp' => now()->toIso8601String(),
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Properties import-ready export error', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'code' => 'EXPORT_SYSTEM_ERROR',
+                'message' => 'Failed to export properties for import',
+                'details' => [
+                    'user_id' => auth()->id(),
+                    'error' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred. Please try again later.',
+                ],
+                'timestamp' => now()->toIso8601String(),
+            ], 500);
+        }
+    }
+
+    /**
      * Get available property IDs based on filters
      * 
      * Returns array of property IDs that are:

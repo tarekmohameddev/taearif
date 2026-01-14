@@ -289,6 +289,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::get   ('/properties/cards',                  [PropertyController::class, 'cards'])->middleware('can:properties.view');
     Route::get   ('/properties/available-units',         [PropertyController::class, 'availableUnits'])->middleware('can:properties.view');
     Route::get   ('/properties/export',                  [PropertyController::class, 'export'])->middleware('can:properties.view');
+    Route::get   ('/properties/export-for-import',     [PropertyController::class, 'exportForImport'])->middleware('can:properties.view');
     Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
     Route::post  ('/properties/bulk-import',             [PropertyController::class, 'bulkImport'])->middleware('can:properties.create');
     // Route::get   ('/properties/bulk-import/template',    [PropertyController::class, 'downloadTemplate']); // Moved to public routes
