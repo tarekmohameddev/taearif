@@ -2064,36 +2064,74 @@ class PropertyController extends Controller
         ])
             ->whereIn('user_id', $allowedUserIds);
 
+        // OPTIMIZED: Track JOINs to avoid duplicates and ensure proper query structure
+        $hasContentJoin = false;
+        $contentJoinAlias = 'pc_content'; // Single alias for all content joins
+        $useInnerJoin = false; // Determine if we need INNER JOIN (for city/district filters)
+
+        // Check if city_id or district_id filters are present (require INNER JOIN)
+        $hasCityFilter = $request->has('city_id') && !empty($request->city_id);
+        $hasDistrictFilter = $request->has('district_id') && !empty($request->district_id);
+        if ($hasCityFilter || $hasDistrictFilter) {
+            $useInnerJoin = true;
+        }
+
+        // Filter by city_id
+        // OPTIMIZED: Use INNER JOIN instead of whereHas for better performance
+        if ($hasCityFilter) {
+            if (!$hasContentJoin) {
+                $propertiesQuery->join('user_property_contents as ' . $contentJoinAlias, 
+                    $contentJoinAlias . '.property_id', '=', 'user_properties.id');
+                $hasContentJoin = true;
+            }
+            $propertiesQuery->where($contentJoinAlias . '.city_id', $request->city_id);
+        }
+
+        // Filter by district_id (stored as state_id in PropertyContent)
+        // OPTIMIZED: Use INNER JOIN instead of whereHas for better performance
+        if ($hasDistrictFilter) {
+            if (!$hasContentJoin) {
+                $propertiesQuery->join('user_property_contents as ' . $contentJoinAlias, 
+                    $contentJoinAlias . '.property_id', '=', 'user_properties.id');
+                $hasContentJoin = true;
+            }
+            $propertiesQuery->where($contentJoinAlias . '.state_id', $request->district_id);
+        }
+
         // Text search functionality (title, address, description, price)
+        // OPTIMIZED: Use JOIN instead of whereHas for better performance
+        // Use INNER JOIN if city/district filters are present, otherwise LEFT JOIN for search-only
         if ($request->has('search') && !empty($request->search)) {
             $searchTerm = trim($request->search);
-            $propertiesQuery->where(function($q) use ($searchTerm) {
+            if (!$hasContentJoin) {
+                if ($useInnerJoin) {
+                    $propertiesQuery->join('user_property_contents as ' . $contentJoinAlias, 
+                        $contentJoinAlias . '.property_id', '=', 'user_properties.id');
+                } else {
+                    $propertiesQuery->leftJoin('user_property_contents as ' . $contentJoinAlias, 
+                        $contentJoinAlias . '.property_id', '=', 'user_properties.id');
+                }
+                $hasContentJoin = true;
+            }
+            $propertiesQuery->where(function($q) use ($searchTerm, $contentJoinAlias) {
                 // Search in PropertyContent (title, address, description)
-                $q->whereHas('contents', function($contentQuery) use ($searchTerm) {
-                    $contentQuery->where('title', 'like', "%{$searchTerm}%")
-                        ->orWhere('address', 'like', "%{$searchTerm}%")
-                        ->orWhere('description', 'like', "%{$searchTerm}%");
+                $q->where(function($subQ) use ($searchTerm, $contentJoinAlias) {
+                    $subQ->where($contentJoinAlias . '.title', 'like', "%{$searchTerm}%")
+                        ->orWhere($contentJoinAlias . '.address', 'like', "%{$searchTerm}%")
+                        ->orWhere($contentJoinAlias . '.description', 'like', "%{$searchTerm}%");
                 });
                 // Search in price if numeric
                 if (is_numeric($searchTerm)) {
-                    $q->orWhere('price', $searchTerm)
-                        ->orWhere('price', 'like', "%{$searchTerm}%");
+                    $q->orWhere('user_properties.price', $searchTerm)
+                        ->orWhere('user_properties.price', 'like', "%{$searchTerm}%");
                 }
             });
         }
 
-        // Filter by city_id
-        if ($request->has('city_id') && !empty($request->city_id)) {
-            $propertiesQuery->whereHas('contents', function ($q) use ($request) {
-                $q->where('city_id', $request->city_id);
-            });
-        }
-
-        // Filter by district_id (stored as state_id in PropertyContent)
-        if ($request->has('district_id') && !empty($request->district_id)) {
-            $propertiesQuery->whereHas('contents', function ($q) use ($request) {
-                $q->where('state_id', $request->district_id);
-            });
+        // Ensure proper selection and distinct after content JOINs
+        if ($hasContentJoin) {
+            $propertiesQuery->distinct();
+            $propertiesQuery->select('user_properties.*');
         }
 
         // Apply purpose filter if provided (consolidate purposes_filter and purpose)
@@ -2161,9 +2199,7 @@ class PropertyController extends Controller
         if ($request->has('area_from') && !empty($request->area_from)) {
             $propertiesQuery->where('area', '>=', $request->area_from);
         }
-        if ($request->has('purpose') && !empty($request->purpose)) {
-            $propertiesQuery->where('purpose', $request->purpose);
-        }
+        // Note: purpose filter is already handled above (lines 2099-2110), removed duplicate check
         if ($request->has('type') && !empty($request->type)) {
             $propertiesQuery->where('type', $request->type);
         }
@@ -2573,15 +2609,23 @@ class PropertyController extends Controller
             ];
         });
 
-        $totalReorderFeatured = Property::whereIn('user_id', $allowedUserIds)
-            ->where('featured', 1)
-            ->where('reorder_featured', '>', 0)
-            ->count();
+        // OPTIMIZED: Cache count queries to improve performance
+        // Cache totalReorderFeatured for 5 minutes
+        $cacheKey = "total_reorder_featured_{$ownerId}";
+        $totalReorderFeatured = Cache::remember($cacheKey, 300, function () use ($allowedUserIds) {
+            return Property::whereIn('user_id', $allowedUserIds)
+                ->where('featured', 1)
+                ->where('reorder_featured', '>', 0)
+                ->count();
+        });
 
-        // Count incomplete (not completed) properties
-        $incompleteCount = Property::whereIn('user_id', $allowedUserIds)
-            ->where('completion_status', 'incomplete')
-            ->count();
+        // Cache incompleteCount for 5 minutes
+        $cacheKey = "incomplete_count_{$ownerId}";
+        $incompleteCount = Cache::remember($cacheKey, 300, function () use ($allowedUserIds) {
+            return Property::whereIn('user_id', $allowedUserIds)
+                ->where('completion_status', 'incomplete')
+                ->count();
+        });
 
         return response()->json([
             'status' => 'success',
