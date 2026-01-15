@@ -83,7 +83,9 @@ class PropertyController extends Controller
 
             // Check property limit before processing the file
             $realEstateLimit = $membership->package->real_estate_limit_number;
-            $currentPropertyCount = Property::where('user_id', $user->id)->count();
+            $currentPropertyCount = Property::where('user_id', $user->id)
+                ->where('completion_status', 'complete')
+                ->count();
 
             // Estimate row count from uploaded file
             try {
@@ -256,11 +258,38 @@ class PropertyController extends Controller
 
                 $importedCount = $import->sheetImport->importedCount;
                 $updatedCount = $import->sheetImport->updatedCount ?? 0;
+                $incompleteCount = $import->sheetImport->incompleteCount ?? 0;
                 $failedCount = count($detailedErrors);
                 $totalProcessed = $importedCount + $updatedCount;
 
-                if ($failedCount > 0) {
-                    $message = "Import completed with {$failedCount} validation error(s). ";
+                // Get incomplete properties details
+                $incompleteProperties = [];
+                if ($incompleteCount > 0) {
+                    $importBatchId = $import->sheetImport->importBatchId ?? null;
+                    if ($importBatchId) {
+                        $incompleteProperties = Property::where('user_id', $user->id)
+                            ->where('import_batch_id', $importBatchId)
+                            ->where('completion_status', 'incomplete')
+                            ->with(['contents:id,property_id,title'])
+                            ->get(['id', 'missing_fields', 'validation_errors', 'created_at'])
+                            ->map(function($property) {
+                                return [
+                                    'id' => $property->id,
+                                    'title' => $property->contents->first()?->title ?? 'Untitled',
+                                    'missing_fields' => $property->missing_fields ?? [],
+                                    'validation_errors' => $property->validation_errors ?? [],
+                                    'created_at' => $property->created_at,
+                                ];
+                            })
+                            ->toArray();
+                    }
+                }
+
+                if ($failedCount > 0 || $incompleteCount > 0) {
+                    $message = "Import completed";
+                    if ($failedCount > 0) $message .= " with {$failedCount} validation error(s)";
+                    if ($incompleteCount > 0) $message .= " with {$incompleteCount} incomplete property/properties";
+                    $message .= ". ";
                     if ($importedCount > 0) $message .= "Created: {$importedCount} properties. ";
                     if ($updatedCount > 0) $message .= "Updated: {$updatedCount} properties.";
 
@@ -270,7 +299,9 @@ class PropertyController extends Controller
                         'message' => $message,
                         'imported_count' => $importedCount,
                         'updated_count' => $updatedCount,
+                        'incomplete_count' => $incompleteCount,
                         'failed_count' => $failedCount,
+                        'incomplete_properties' => $incompleteProperties,
                         'errors' => $detailedErrors,
                         'timestamp' => now()->toIso8601String(),
                     ], 422);
@@ -286,7 +317,9 @@ class PropertyController extends Controller
                     'message' => $message,
                     'imported_count' => $importedCount,
                     'updated_count' => $updatedCount,
+                    'incomplete_count' => $incompleteCount,
                     'failed_count' => 0,
+                    'incomplete_properties' => $incompleteProperties,
                     'errors' => [],
                     'timestamp' => now()->toIso8601String(),
                 ]);
@@ -440,7 +473,9 @@ class PropertyController extends Controller
 
         // Check property limit
         $realEstateLimit = $membership->package->real_estate_limit_number;
-        $currentPropertyCount = Property::where('user_id', $user->id)->count();
+        $currentPropertyCount = Property::where('user_id', $user->id)
+            ->where('completion_status', 'complete')
+            ->count();
 
         if (!is_null($realEstateLimit) && $currentPropertyCount >= $realEstateLimit) {
             return response()->json([
@@ -1027,7 +1062,9 @@ class PropertyController extends Controller
         }
 
         $realEstateLimit = $membership->package->real_estate_limit_number;
-        $currentPropertyCount = Property::where('user_id', $owner->id)->count();
+        $currentPropertyCount = Property::where('user_id', $owner->id)
+            ->where('completion_status', 'complete')
+            ->count();
 
         if (!is_null($realEstateLimit) && $currentPropertyCount >= $realEstateLimit) {
             return response()->json([
@@ -2731,15 +2768,18 @@ class PropertyController extends Controller
             // Count properties for sale
             $forSale = Property::whereIn('user_id', $allowedUserIds)
                 ->where('purpose', 'sale')
+                ->where('completion_status', 'complete')
                 ->count();
 
             // Count properties for rent
             $forRent = Property::whereIn('user_id', $allowedUserIds)
                 ->where('purpose', 'rent')
+                ->where('completion_status', 'complete')
                 ->count();
 
             // Total count (all properties regardless of purpose)
             $total = Property::whereIn('user_id', $allowedUserIds)
+                ->where('completion_status', 'complete')
                 ->count();
 
             return response()->json([
@@ -3453,6 +3493,527 @@ class PropertyController extends Controller
         }
 
         return $query->pluck('id')->toArray();
+    }
+
+    /**
+     * List incomplete/draft properties
+     * GET /api/properties/drafts
+     */
+    public function listDrafts(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+            $ownerId = (int) $owner->id;
+
+            $query = Property::with(['contents:id,property_id,title,address'])
+                ->where('user_id', $ownerId)
+                ->where('completion_status', 'incomplete');
+
+            // Search by title or address
+            if ($request->has('search') && !empty($request->search)) {
+                $searchTerm = trim($request->search);
+                $query->whereHas('contents', function($q) use ($searchTerm) {
+                    $q->where('title', 'like', "%{$searchTerm}%")
+                      ->orWhere('address', 'like', "%{$searchTerm}%");
+                });
+            }
+
+            // Filter by import batch
+            if ($request->has('import_batch_id') && !empty($request->import_batch_id)) {
+                $query->where('import_batch_id', $request->import_batch_id);
+            }
+
+            // Pagination
+            $perPage = $request->get('per_page', 15);
+            $drafts = $query->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $drafts->items(),
+                'pagination' => [
+                    'current_page' => $drafts->currentPage(),
+                    'last_page' => $drafts->lastPage(),
+                    'per_page' => $drafts->perPage(),
+                    'total' => $drafts->total(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error listing drafts: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to list draft properties',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Show draft property details
+     * GET /api/properties/drafts/{id}
+     */
+    public function showDraft($id)
+    {
+        try {
+            $user = auth()->user();
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+
+            $property = Property::with([
+                'contents',
+                'galleryImages',
+                'proertyAmenities.amenity',
+                'specifications',
+                'UserPropertyCharacteristics',
+                'category',
+            ])
+                ->where('id', $id)
+                ->where('user_id', $owner->id)
+                ->where('completion_status', 'incomplete')
+                ->first();
+
+            if (!$property) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Draft property not found',
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $property,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error showing draft: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve draft property',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Update draft property (partial completion)
+     * PATCH /api/properties/drafts/{id}
+     */
+    public function updateDraft(Request $request, $id)
+    {
+        try {
+            $user = auth()->user();
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+
+            $property = Property::where('id', $id)
+                ->where('user_id', $owner->id)
+                ->where('completion_status', 'incomplete')
+                ->first();
+
+            if (!$property) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Draft property not found',
+                ], 404);
+            }
+
+            $defaultLanguage = Language::where('user_id', $owner->id)
+                ->where('is_default', 1)
+                ->firstOrFail();
+
+            DB::transaction(function () use ($property, $request, $owner, $defaultLanguage) {
+                // Update property fields
+                $propertyData = [];
+                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'type', 'beds', 'bath', 'area', 
+                    'size', 'video_url', 'virtual_tour', 'features', 'payment_method', 
+                    'water_meter_number', 'electricity_meter_number', 'deed_number', 
+                    'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id'];
+
+                foreach ($allowedFields as $field) {
+                    if ($request->has($field)) {
+                        $propertyData[$field] = $request->input($field);
+                    }
+                }
+
+                if (!empty($propertyData)) {
+                    $property->update($propertyData);
+                }
+
+                // Update PropertyContent if provided
+                if ($request->has('title') || $request->has('address') || $request->has('description')) {
+                    $contentData = [];
+                    if ($request->has('title')) $contentData['title'] = $request->title;
+                    if ($request->has('address')) $contentData['address'] = $request->address;
+                    if ($request->has('description')) {
+                        $contentData['description'] = $request->description;
+                        $contentData['meta_description'] = Str::limit($request->description, 150);
+                    }
+
+                    $existingContent = PropertyContent::where('property_id', $property->id)
+                        ->where('language_id', $defaultLanguage->id)
+                        ->first();
+
+                    if ($existingContent) {
+                        $existingContent->update($contentData);
+                    } else {
+                        $contentData['language_id'] = $defaultLanguage->id;
+                        $contentData['category_id'] = $property->category_id;
+                        PropertyContent::storePropertyContent($owner->id, $property->id, $contentData);
+                    }
+                }
+
+                // Recalculate missing fields
+                $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'type', 'area'];
+                $missing = [];
+                
+                // Get current property data
+                $currentData = [
+                    'title' => $property->contents()->where('language_id', $defaultLanguage->id)->value('title'),
+                    'price' => $property->price,
+                    'address' => $property->contents()->where('language_id', $defaultLanguage->id)->value('address'),
+                    'description' => $property->contents()->where('language_id', $defaultLanguage->id)->value('description'),
+                    'purpose' => $property->purpose,
+                    'type' => $property->type,
+                    'area' => $property->area,
+                ];
+
+                foreach ($requiredFields as $field) {
+                    $value = $currentData[$field] ?? null;
+                    if (is_null($value) || (is_string($value) && trim($value) === '') || $value === '') {
+                        $missing[] = $field;
+                    }
+                }
+
+                $property->update([
+                    'missing_fields' => $missing,
+                ]);
+            });
+
+            $property->refresh();
+            $property->load(['contents', 'galleryImages']);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Draft property updated successfully',
+                'data' => $property,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error updating draft: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update draft property',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Complete draft property
+     * POST /api/properties/drafts/{id}/complete
+     */
+    public function completeDraft(Request $request, $id)
+    {
+        try {
+            $user = auth()->user();
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+
+            // Check property limit
+            $membership = MembershipCacheService::getActiveMembership($owner->id);
+            if (!$membership || !$membership->package) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No active package found',
+                ], 403);
+            }
+
+            $realEstateLimit = $membership->package->real_estate_limit_number;
+            $currentPropertyCount = Property::where('user_id', $owner->id)
+                ->where('completion_status', 'complete')
+                ->count();
+
+            if (!is_null($realEstateLimit) && $currentPropertyCount >= $realEstateLimit) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'You have reached your property listing limit',
+                    'limit' => $realEstateLimit,
+                    'used' => $currentPropertyCount,
+                ], 403);
+            }
+
+            $property = Property::where('id', $id)
+                ->where('user_id', $owner->id)
+                ->where('completion_status', 'incomplete')
+                ->first();
+
+            if (!$property) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Draft property not found',
+                ], 404);
+            }
+
+            $defaultLanguage = Language::where('user_id', $owner->id)
+                ->where('is_default', 1)
+                ->firstOrFail();
+
+            // Collect all data for validation
+            $propertyContent = $property->contents()->where('language_id', $defaultLanguage->id)->first();
+            $completeData = [
+                'title' => $request->input('title') ?? $propertyContent?->title,
+                'price' => $request->input('price') ?? $property->price,
+                'address' => $request->input('address') ?? $propertyContent?->address,
+                'description' => $request->input('description') ?? $propertyContent?->description,
+                'purpose' => $request->input('purpose') ?? $property->purpose,
+                'type' => $request->input('type') ?? $property->type,
+                'area' => $request->input('area') ?? $property->area,
+            ];
+
+            // Check for conflicts
+            $conflictService = new \App\Services\PropertyConflictDetectionService();
+            $conflicts = $conflictService->detectConflicts($property, $completeData);
+
+            // Filter only errors (not warnings)
+            $errors = array_filter($conflicts, fn($c) => $c['severity'] === 'error');
+
+            if (!empty($errors)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Cannot complete property due to validation errors',
+                    'conflicts' => array_values($errors),
+                ], 422);
+            }
+
+            DB::transaction(function () use ($property, $request, $owner, $defaultLanguage, $completeData) {
+                // Update property with all data
+                $propertyData = [];
+                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'type', 'beds', 'bath', 'area', 
+                    'size', 'video_url', 'virtual_tour', 'features', 'payment_method', 
+                    'water_meter_number', 'electricity_meter_number', 'deed_number', 
+                    'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id'];
+
+                foreach ($allowedFields as $field) {
+                    if ($request->has($field)) {
+                        $propertyData[$field] = $request->input($field);
+                    }
+                }
+
+                // Ensure required fields are set
+                if (isset($completeData['price'])) $propertyData['price'] = $completeData['price'];
+                if (isset($completeData['purpose'])) $propertyData['purpose'] = $completeData['purpose'];
+                if (isset($completeData['type'])) $propertyData['type'] = $completeData['type'];
+                if (isset($completeData['area'])) $propertyData['area'] = $completeData['area'];
+
+                $propertyData['status'] = 1; // Active
+                $propertyData['completion_status'] = 'complete';
+                $propertyData['completed_at'] = now();
+                $propertyData['missing_fields'] = null;
+                $propertyData['validation_errors'] = null;
+
+                $property->update($propertyData);
+
+                // Create/update PropertyContent
+                $contentData = [
+                    'language_id' => $defaultLanguage->id,
+                    'title' => $completeData['title'],
+                    'address' => $completeData['address'],
+                    'description' => $completeData['description'],
+                    'meta_keyword' => null,
+                    'meta_description' => Str::limit($completeData['description'], 150),
+                    'category_id' => $property->category_id,
+                ];
+
+                $existingContent = PropertyContent::where('property_id', $property->id)
+                    ->where('language_id', $defaultLanguage->id)
+                    ->first();
+
+                if ($existingContent) {
+                    $existingContent->update($contentData);
+                } else {
+                    PropertyContent::storePropertyContent($owner->id, $property->id, $contentData);
+                }
+
+                // Handle gallery images if provided
+                if ($request->has('gallery_images') && is_array($request->gallery_images)) {
+                    PropertySliderImg::where('property_id', $property->id)->delete();
+                    foreach ($request->gallery_images as $imageUrl) {
+                        PropertySliderImg::storeSliderImage($owner->id, $property->id, $imageUrl);
+                    }
+                }
+
+                // Handle amenities if provided
+                if ($request->has('amenity_ids') && is_array($request->amenity_ids)) {
+                    PropertyAmenity::where('property_id', $property->id)->delete();
+                    foreach ($request->amenity_ids as $amenityId) {
+                        PropertyAmenity::sotreAmenity($owner->id, $property->id, $amenityId);
+                    }
+                }
+            });
+
+            $property->refresh();
+            $property->load(['contents', 'galleryImages', 'proertyAmenities']);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Property completed successfully',
+                'data' => $property,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error completing draft: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to complete draft property',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk complete draft properties
+     * POST /api/properties/drafts/bulk-complete
+     */
+    public function bulkCompleteDrafts(Request $request)
+    {
+        try {
+            $request->validate([
+                'property_ids' => 'required|array',
+                'property_ids.*' => 'integer|exists:user_properties,id',
+            ]);
+
+            $user = auth()->user();
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+
+            // Check property limit
+            $membership = MembershipCacheService::getActiveMembership($owner->id);
+            if (!$membership || !$membership->package) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No active package found',
+                ], 403);
+            }
+
+            $realEstateLimit = $membership->package->real_estate_limit_number;
+            $currentPropertyCount = Property::where('user_id', $owner->id)
+                ->where('completion_status', 'complete')
+                ->count();
+
+            $propertyIds = $request->input('property_ids');
+            $completed = 0;
+            $failed = 0;
+            $errors = [];
+            $conflictService = new \App\Services\PropertyConflictDetectionService();
+            $defaultLanguage = Language::where('user_id', $owner->id)
+                ->where('is_default', 1)
+                ->firstOrFail();
+
+            foreach ($propertyIds as $propertyId) {
+                try {
+                    DB::beginTransaction();
+                    
+                    // Get the property to complete
+                    $property = Property::where('id', $propertyId)
+                        ->where('user_id', $owner->id)
+                        ->where('completion_status', 'incomplete')
+                        ->first();
+
+                    if (!$property) {
+                        DB::rollBack();
+                        $failed++;
+                        $errors[] = [
+                            'property_id' => $propertyId,
+                            'error' => 'Draft property not found',
+                        ];
+                        continue;
+                    }
+
+                    // Check limit before completing
+                    if (!is_null($realEstateLimit) && ($currentPropertyCount + $completed + 1) > $realEstateLimit) {
+                        DB::rollBack();
+                        $failed++;
+                        $errors[] = [
+                            'property_id' => $propertyId,
+                            'error' => 'Property limit would be exceeded',
+                        ];
+                        continue;
+                    }
+
+                    // Get property data for validation
+                    $propertyContent = $property->contents()->where('language_id', $defaultLanguage->id)->first();
+                    $completeData = [
+                        'title' => $propertyContent?->title,
+                        'price' => $property->price,
+                        'address' => $propertyContent?->address,
+                        'description' => $propertyContent?->description,
+                        'purpose' => $property->purpose,
+                        'type' => $property->type,
+                        'area' => $property->area,
+                    ];
+
+                    // Check for conflicts
+                    $conflicts = $conflictService->detectConflicts($property, $completeData);
+                    $errorConflicts = array_filter($conflicts, fn($c) => $c['severity'] === 'error');
+
+                    if (!empty($errorConflicts)) {
+                        DB::rollBack();
+                        $failed++;
+                        $errors[] = [
+                            'property_id' => $propertyId,
+                            'error' => 'Validation errors: ' . implode(', ', array_column($errorConflicts, 'message')),
+                        ];
+                        continue;
+                    }
+
+                    // Complete the property
+                    $property->update([
+                        'status' => 1,
+                        'completion_status' => 'complete',
+                        'completed_at' => now(),
+                        'missing_fields' => null,
+                        'validation_errors' => null,
+                    ]);
+
+                    // Ensure PropertyContent exists
+                    if (!$propertyContent) {
+                        $contentData = [
+                            'language_id' => $defaultLanguage->id,
+                            'title' => $completeData['title'] ?? 'Untitled',
+                            'address' => $completeData['address'] ?? '',
+                            'description' => $completeData['description'] ?? '',
+                            'meta_keyword' => null,
+                            'meta_description' => !empty($completeData['description']) ? Str::limit($completeData['description'], 150) : null,
+                            'category_id' => $property->category_id,
+                        ];
+                        PropertyContent::storePropertyContent($owner->id, $property->id, $contentData);
+                    }
+
+                    DB::commit();
+                    $completed++;
+                    $currentPropertyCount++;
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    $failed++;
+                    $errors[] = [
+                        'property_id' => $propertyId,
+                        'error' => $e->getMessage(),
+                    ];
+                    Log::error("Error completing draft property {$propertyId}: " . $e->getMessage());
+                }
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Bulk completion processed',
+                'data' => [
+                    'completed_count' => $completed,
+                    'failed_count' => $failed,
+                    'errors' => $errors,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in bulk complete: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to process bulk completion',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
     }
 
 }

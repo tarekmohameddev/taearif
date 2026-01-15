@@ -27,6 +27,9 @@ class Property extends Model
         'faqs' => 'array',
         'beds' => 'integer',
         'bath' => 'integer',
+        'missing_fields' => 'array',
+        'validation_errors' => 'array',
+        'completed_at' => 'datetime',
     ];
 
 
@@ -65,6 +68,11 @@ class Property extends Model
         'advertising_license',
         'reorder',
         'reorder_featured',
+        'completion_status',
+        'missing_fields',
+        'validation_errors',
+        'import_batch_id',
+        'completed_at',
     ];
 
     public function displayFaqs(): array
@@ -142,6 +150,7 @@ class Property extends Model
             'reorder_featured' => $reorderFeatured,
             'reorder' => 0,
             'show_reservations' => $request['show_reservations'] ?? true,
+            'completion_status' => $request['completion_status'] ?? 'complete',
         ]);
     }
 
@@ -424,5 +433,28 @@ class Property extends Model
         return asset(ltrim($path, '/'));
     }
 
+    /**
+     * Scope to exclude incomplete/draft properties from counts
+     */
+    public function scopeComplete($query)
+    {
+        return $query->where('completion_status', 'complete');
+    }
+
+    /**
+     * Scope to get only incomplete properties
+     */
+    public function scopeIncomplete($query)
+    {
+        return $query->where('completion_status', 'incomplete');
+    }
+
+    /**
+     * Scope to get draft properties (incomplete or pending review)
+     */
+    public function scopeDrafts($query)
+    {
+        return $query->where('completion_status', '!=', 'complete');
+    }
 
 }

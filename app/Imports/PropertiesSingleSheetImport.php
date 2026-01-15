@@ -38,11 +38,13 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
     
     public $importedCount = 0;
     public $updatedCount = 0;
+    public $incompleteCount = 0;
     
     // Cache TTL in seconds (1 hour)
     private const CACHE_TTL = 3600;
 
     protected $limit;
+    public $importBatchId;
 
     public function __construct($userId, $limit = 1000)
     {
@@ -56,6 +58,9 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         if (!$this->defaultLanguageId) {
             throw new \Exception('No default language configured for user. Please set a default language before importing properties.');
         }
+        
+        // Generate unique batch ID for this import
+        $this->importBatchId = Str::uuid()->toString();
         
         // No upfront loading - cities and districts are loaded lazily on demand
         // This improves constructor performance and reduces memory usage
@@ -150,8 +155,62 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         // Business rule validation (after determining if it's an update)
         $this->validateBusinessRules($row, $rowIndex, $isUpdate);
 
+        // Check for missing required fields (only for new properties, not updates)
+        $missingFields = [];
+        $validationErrors = [];
+        
+        if (!$isUpdate) {
+            $requiredFields = [
+                'title' => ['min' => 3, 'max' => 255],
+                'price' => ['min' => 0],
+                'address' => ['min' => 5, 'max' => 500],
+                'description' => ['min' => 10],
+                'purpose' => ['values' => ['sale', 'rent']],
+                'type' => ['values' => ['residential', 'commercial']],
+                'area' => ['min' => 1],
+            ];
+            
+            foreach ($requiredFields as $field => $rules) {
+                $value = $row[$field] ?? null;
+                
+                // Check if field is missing or empty
+                if (is_null($value) || (is_string($value) && trim($value) === '') || $value === '') {
+                    $missingFields[] = $field;
+                    continue;
+                }
+                
+                // Validate field rules
+                if (isset($rules['min']) && isset($rules['max'])) {
+                    $length = is_string($value) ? strlen($value) : $value;
+                    if ($length < $rules['min'] || $length > $rules['max']) {
+                        $validationErrors[] = "{$field} must be between {$rules['min']} and {$rules['max']} characters";
+                    }
+                } elseif (isset($rules['min'])) {
+                    if (is_string($value)) {
+                        if (strlen($value) < $rules['min']) {
+                            $validationErrors[] = "{$field} must be at least {$rules['min']} characters";
+                        }
+                    } elseif (is_numeric($value) && $value < $rules['min']) {
+                        $validationErrors[] = "{$field} must be at least {$rules['min']}";
+                    }
+                } elseif (isset($rules['values'])) {
+                    if (!in_array($value, $rules['values'])) {
+                        $validationErrors[] = "{$field} must be one of: " . implode(', ', $rules['values']);
+                    }
+                }
+            }
+            
+            // Validate numeric fields
+            if (isset($row['price']) && !is_numeric($row['price'])) {
+                $validationErrors[] = "price must be a number";
+            }
+            if (isset($row['area']) && !is_numeric($row['area'])) {
+                $validationErrors[] = "area must be a number";
+            }
+        }
+
         // Wrap entire row processing in transaction
-        DB::transaction(function () use ($row, $rowIndex, $galleryImages, $amenityIds, $specifications, $cityId, $stateId, $features, $featured, $isUpdate, $existingProperty, $propertyId) {
+        DB::transaction(function () use ($row, $rowIndex, $galleryImages, $amenityIds, $specifications, $cityId, $stateId, $features, $featured, $isUpdate, $existingProperty, $propertyId, $missingFields, $validationErrors) {
             if ($isUpdate && $existingProperty) {
                 // UPDATE EXISTING PROPERTY
                 $property = $existingProperty;
@@ -246,95 +305,193 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                 $this->updatedCount++;
             } else {
                 // CREATE NEW PROPERTY
-                // Prepare request data for Property::storeProperty
-                $propertyData = [
-                    'price'           => $row['price'],
-                    'pricePerMeter'   => $row['price_per_meter'] ?? null,
-                    'purpose'         => $row['purpose'],
-                    'type'            => $row['type'],
-                    'beds'            => $row['beds'] ?? null,
-                    'bath'            => $row['bath'] ?? null,
-                    'area'            => $row['area'],
-                    'video_url'       => $row['video_url'] ?? null,
-                    'status'          => $row['status'] ?? 1,
-                    'latitude'        => null,
-                    'longitude'       => null,
-                    'features'        => $features,
-                    'region_id'       => null, // Region is automatically set to السعودية
-                    'city_id'         => $cityId,
-                    'category_id'     => null,
-                    'show_reservations' => true,
-                    'payment_method'  => $this->mapPaymentMethod($row['payment_method'] ?? null),
-                ];
-
-                // Images (Expect URLs)
-                $featuredImage = $row['featured_image'] ?? null;
-                $videoImage    = null;
-                $floorPlans    = null;
-                // $featured is now set above based on row data
-
-                // Create Property
-                $property = Property::storeProperty(
-                    $this->userId,
-                    $propertyData,
-                    $featuredImage,
-                    $floorPlans,
-                    $videoImage,
-                    $featured
-                );
-
-                // Create Property Content (Title, Description, Address)
-                // Note: slug is auto-generated by PropertyContent::storePropertyContent
-                $contentData = [
-                    'language_id'      => $this->defaultLanguageId,
-                    'title'            => $row['title'],
-                    'address'          => $row['address'],
-                    'description'      => $row['description'],
-                    'meta_keyword'     => null,
-                    'meta_description' => Str::limit($row['description'], 150),
-                    'category_id'      => $property->category_id,
-                    'city_id'          => $cityId,
-                    'state_id'         => $stateId, // District ID from user_districts table
-                ];
-
-                PropertyContent::storePropertyContent($this->userId, $property->id, $contentData);
-
-                // Process gallery images
-                foreach ($galleryImages as $galleryUrl) {
-                    try {
-                        PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
-                    } catch (\Exception $e) {
-                        Log::error("Row {$rowIndex}: Failed to store gallery image", [
-                            'url' => $galleryUrl,
-                            'error' => $e->getMessage()
-                        ]);
-                        throw new \Exception("Row {$rowIndex}: Invalid gallery image URL: {$galleryUrl}");
-                    }
-                }
-
-                // Process amenities (no validation - same as API store method)
-                if (!empty($amenityIds)) {
-                    foreach ($amenityIds as $amenityId) {
-                        PropertyAmenity::sotreAmenity($this->userId, $property->id, $amenityId);
-                    }
-                }
-
-                // Process specifications (use integer keys matching API behavior)
-                $specIndex = 0; // Counter for integer keys (matching API store method)
-                foreach ($specifications as $spec) {
-                    $specData = [
-                        'language_id' => $this->defaultLanguageId,
-                        'key' => $specIndex++, // Use integer counter instead of string key (matching API)
-                        'label' => $spec['label'] ?? $spec['key'],
-                        'value' => $spec['value'],
-                    ];
-                    PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
-                }
-
-                // Create characteristics if provided
-                $this->updateCharacteristics($property, $row, $rowIndex);
                 
-                $this->importedCount++;
+                // Check if this is an incomplete property (missing required fields)
+                if (!empty($missingFields) || !empty($validationErrors)) {
+                    // Create incomplete property with partial data
+                    $propertyData = [
+                        'price'           => $row['price'] ?? null,
+                        'pricePerMeter'   => $row['price_per_meter'] ?? null,
+                        'purpose'         => $row['purpose'] ?? null,
+                        'type'            => $row['type'] ?? null,
+                        'beds'            => $row['beds'] ?? null,
+                        'bath'            => $row['bath'] ?? null,
+                        'area'            => $row['area'] ?? null,
+                        'video_url'       => $row['video_url'] ?? null,
+                        'status'          => 0, // Hidden
+                        'latitude'        => null,
+                        'longitude'       => null,
+                        'features'        => $features,
+                        'region_id'       => null,
+                        'city_id'         => $cityId,
+                        'category_id'     => null,
+                        'show_reservations' => true,
+                        'payment_method'  => $this->mapPaymentMethod($row['payment_method'] ?? null),
+                        'completion_status' => 'incomplete',
+                        'missing_fields'  => $missingFields,
+                        'validation_errors' => $validationErrors,
+                        'import_batch_id' => $this->importBatchId,
+                    ];
+
+                    // Images (Expect URLs)
+                    $featuredImage = $row['featured_image'] ?? null;
+                    $videoImage    = null;
+                    $floorPlans    = null;
+
+                    // Create incomplete Property
+                    $property = Property::storeProperty(
+                        $this->userId,
+                        $propertyData,
+                        $featuredImage,
+                        $floorPlans,
+                        $videoImage,
+                        $featured
+                    );
+
+                    // Only create PropertyContent if title and address are provided
+                    if (!empty($row['title']) && !empty($row['address'])) {
+                        $contentData = [
+                            'language_id'      => $this->defaultLanguageId,
+                            'title'            => $row['title'],
+                            'address'          => $row['address'],
+                            'description'      => $row['description'] ?? '',
+                            'meta_keyword'     => null,
+                            'meta_description' => !empty($row['description']) ? Str::limit($row['description'], 150) : null,
+                            'category_id'      => $property->category_id,
+                            'city_id'          => $cityId,
+                            'state_id'         => $stateId,
+                        ];
+
+                        PropertyContent::storePropertyContent($this->userId, $property->id, $contentData);
+                    }
+
+                    // Process gallery images if provided
+                    foreach ($galleryImages as $galleryUrl) {
+                        try {
+                            PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
+                        } catch (\Exception $e) {
+                            Log::warning("Row {$rowIndex}: Failed to store gallery image for incomplete property", [
+                                'url' => $galleryUrl,
+                                'error' => $e->getMessage()
+                            ]);
+                        }
+                    }
+
+                    // Process amenities if provided
+                    if (!empty($amenityIds)) {
+                        foreach ($amenityIds as $amenityId) {
+                            PropertyAmenity::sotreAmenity($this->userId, $property->id, $amenityId);
+                        }
+                    }
+
+                    // Process specifications if provided
+                    $specIndex = 0;
+                    foreach ($specifications as $spec) {
+                        $specData = [
+                            'language_id' => $this->defaultLanguageId,
+                            'key' => $specIndex++,
+                            'label' => $spec['label'] ?? $spec['key'],
+                            'value' => $spec['value'],
+                        ];
+                        PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
+                    }
+
+                    // Create characteristics if provided
+                    $this->updateCharacteristics($property, $row, $rowIndex);
+                    
+                    $this->incompleteCount++;
+                } else {
+                    // All required fields present - create complete property
+                    $propertyData = [
+                        'price'           => $row['price'],
+                        'pricePerMeter'   => $row['price_per_meter'] ?? null,
+                        'purpose'         => $row['purpose'],
+                        'type'            => $row['type'],
+                        'beds'            => $row['beds'] ?? null,
+                        'bath'            => $row['bath'] ?? null,
+                        'area'            => $row['area'],
+                        'video_url'       => $row['video_url'] ?? null,
+                        'status'          => $row['status'] ?? 1,
+                        'latitude'        => null,
+                        'longitude'       => null,
+                        'features'        => $features,
+                        'region_id'       => null, // Region is automatically set to السعودية
+                        'city_id'         => $cityId,
+                        'category_id'     => null,
+                        'show_reservations' => true,
+                        'payment_method'  => $this->mapPaymentMethod($row['payment_method'] ?? null),
+                        'completion_status' => 'complete',
+                    ];
+
+                    // Images (Expect URLs)
+                    $featuredImage = $row['featured_image'] ?? null;
+                    $videoImage    = null;
+                    $floorPlans    = null;
+                    // $featured is now set above based on row data
+
+                    // Create Property
+                    $property = Property::storeProperty(
+                        $this->userId,
+                        $propertyData,
+                        $featuredImage,
+                        $floorPlans,
+                        $videoImage,
+                        $featured
+                    );
+
+                    // Create Property Content (Title, Description, Address)
+                    // Note: slug is auto-generated by PropertyContent::storePropertyContent
+                    $contentData = [
+                        'language_id'      => $this->defaultLanguageId,
+                        'title'            => $row['title'],
+                        'address'          => $row['address'],
+                        'description'      => $row['description'],
+                        'meta_keyword'     => null,
+                        'meta_description' => Str::limit($row['description'], 150),
+                        'category_id'      => $property->category_id,
+                        'city_id'          => $cityId,
+                        'state_id'         => $stateId, // District ID from user_districts table
+                    ];
+
+                    PropertyContent::storePropertyContent($this->userId, $property->id, $contentData);
+
+                    // Process gallery images
+                    foreach ($galleryImages as $galleryUrl) {
+                        try {
+                            PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
+                        } catch (\Exception $e) {
+                            Log::error("Row {$rowIndex}: Failed to store gallery image", [
+                                'url' => $galleryUrl,
+                                'error' => $e->getMessage()
+                            ]);
+                            throw new \Exception("Row {$rowIndex}: Invalid gallery image URL: {$galleryUrl}");
+                        }
+                    }
+
+                    // Process amenities (no validation - same as API store method)
+                    if (!empty($amenityIds)) {
+                        foreach ($amenityIds as $amenityId) {
+                            PropertyAmenity::sotreAmenity($this->userId, $property->id, $amenityId);
+                        }
+                    }
+
+                    // Process specifications (use integer keys matching API behavior)
+                    $specIndex = 0; // Counter for integer keys (matching API store method)
+                    foreach ($specifications as $spec) {
+                        $specData = [
+                            'language_id' => $this->defaultLanguageId,
+                            'key' => $specIndex++, // Use integer counter instead of string key (matching API)
+                            'label' => $spec['label'] ?? $spec['key'],
+                            'value' => $spec['value'],
+                        ];
+                        PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
+                    }
+
+                    // Create characteristics if provided
+                    $this->updateCharacteristics($property, $row, $rowIndex);
+                    
+                    $this->importedCount++;
+                }
             }
         });
     }
