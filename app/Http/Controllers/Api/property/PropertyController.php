@@ -138,8 +138,13 @@ class PropertyController extends Controller
                 // Count only actual data rows (excluding header which is row 1)
                 // The collection excludes the header due to WithHeadingRow trait
                 $firstSheet = $collection->first();
-                // Filter out empty rows (all values are null or empty)
-                $incomingRowCount = $firstSheet->filter(function($row) {
+                
+                // Required fields for a complete property
+                $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'type', 'area'];
+                
+                // Count rows that will be complete (have all required fields)
+                // Only complete properties count toward the limit
+                $incomingCompleteCount = $firstSheet->filter(function($row) use ($requiredFields) {
                     $rowArray = $row->toArray();
                     
                     // Skip rows marked as empty by prepareForValidation
@@ -152,15 +157,47 @@ class PropertyController extends Controller
                         return false;
                     }
                     
-                    // Skip completely empty rows (all values are null or empty)
+                    // Skip completely empty rows
                     $hasData = !empty(array_filter($rowArray, function($value) {
                         return !is_null($value) && $value !== '';
                     }));
                     
-                    return $hasData;
+                    if (!$hasData) {
+                        return false;
+                    }
+                    
+                    // Check if this row has all required fields (will be complete)
+                    foreach ($requiredFields as $field) {
+                        $value = $rowArray[$field] ?? null;
+                        if (is_null($value) || (is_string($value) && trim($value) === '') || $value === '') {
+                            return false; // Missing required field - will be incomplete
+                        }
+                    }
+                    
+                    // Validate numeric fields
+                    if (isset($rowArray['price']) && !is_numeric($rowArray['price'])) {
+                        return false; // Invalid price - will fail validation
+                    }
+                    if (isset($rowArray['area']) && (!is_numeric($rowArray['area']) || $rowArray['area'] < 1)) {
+                        return false; // Invalid area - will fail validation
+                    }
+                    
+                    // Validate enum fields
+                    if (isset($rowArray['purpose']) && !in_array($rowArray['purpose'], ['sale', 'rent'])) {
+                        return false; // Invalid purpose - will fail validation
+                    }
+                    if (isset($rowArray['type']) && !in_array($rowArray['type'], ['residential', 'commercial'])) {
+                        return false; // Invalid type - will fail validation
+                    }
+                    
+                    // All required fields present and valid - will be complete
+                    return true;
                 })->count();
                 
-                if (!is_null($realEstateLimit) && ($currentPropertyCount + $incomingRowCount) > $realEstateLimit) {
+                // Only check limit for complete properties
+                // Incomplete properties don't count toward the limit
+                // Block only if complete properties would exceed the limit
+                if (!is_null($realEstateLimit) && $incomingCompleteCount > 0 && ($currentPropertyCount + $incomingCompleteCount) > $realEstateLimit) {
                     return response()->json([
                         'status' => 'error',
                         'code' => 'IMPORT_PERMISSION_DENIED',
@@ -168,9 +205,9 @@ class PropertyController extends Controller
                         'details' => [
                             'limit' => $realEstateLimit,
                             'current_count' => $currentPropertyCount,
-                            'incoming_count' => $incomingRowCount,
+                            'incoming_complete_count' => $incomingCompleteCount,
                             'available_slots' => max(0, $realEstateLimit - $currentPropertyCount),
-                            'suggestion' => 'Please remove some existing properties or upgrade your package to increase the limit.',
+                            'suggestion' => 'Please remove some existing properties or upgrade your package to increase the limit. Note: Incomplete properties do not count toward your limit.',
                         ],
                         'timestamp' => now()->toIso8601String(),
                     ], 403);
@@ -208,13 +245,27 @@ class PropertyController extends Controller
                 $errors = $import->sheetImport->errors();
                 $detailedErrors = [];
 
+                // Ensure failures is an array
+                if (!is_array($failures) && !is_iterable($failures)) {
+                    $failures = [];
+                }
+
                 // Collect Validation Failures with enhanced structure
                 foreach ($failures as $failure) {
                     $failureErrors = $failure->errors();
                     $failureValues = $failure->values();
                     
+                    // Ensure failureErrors is an array
+                    if (!is_array($failureErrors)) {
+                        continue;
+                    }
+                    
                     // Extract field name from error message if possible
                     foreach ($failureErrors as $field => $errorMessages) {
+                        // Ensure errorMessages is an array
+                        if (!is_array($errorMessages)) {
+                            $errorMessages = [$errorMessages];
+                        }
                         foreach ($errorMessages as $errorMessage) {
                             $detailedErrors[] = [
                                 'row' => $failure->row(),
@@ -227,6 +278,11 @@ class PropertyController extends Controller
                             ];
                         }
                     }
+                }
+
+                // Ensure errors is an array
+                if (!is_array($errors) && !is_iterable($errors)) {
+                    $errors = [];
                 }
 
                 // Collect Logic Errors (Exceptions) with enhanced structure
@@ -273,11 +329,28 @@ class PropertyController extends Controller
                             ->with(['contents:id,property_id,title'])
                             ->get(['id', 'missing_fields', 'validation_errors', 'created_at'])
                             ->map(function($property) {
+                                // Ensure missing_fields and validation_errors are arrays
+                                $missingFields = $property->missing_fields ?? [];
+                                if (is_string($missingFields)) {
+                                    $decoded = json_decode($missingFields, true);
+                                    $missingFields = (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) ? $decoded : [];
+                                } elseif (!is_array($missingFields)) {
+                                    $missingFields = [];
+                                }
+                                
+                                $validationErrors = $property->validation_errors ?? [];
+                                if (is_string($validationErrors)) {
+                                    $decoded = json_decode($validationErrors, true);
+                                    $validationErrors = (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) ? $decoded : [];
+                                } elseif (!is_array($validationErrors)) {
+                                    $validationErrors = [];
+                                }
+                                
                                 return [
                                     'id' => $property->id,
                                     'title' => $property->contents->first()?->title ?? 'Untitled',
-                                    'missing_fields' => $property->missing_fields ?? [],
-                                    'validation_errors' => $property->validation_errors ?? [],
+                                    'missing_fields' => $missingFields,
+                                    'validation_errors' => $validationErrors,
                                     'created_at' => $property->created_at,
                                 ];
                             })
@@ -285,10 +358,10 @@ class PropertyController extends Controller
                     }
                 }
 
-                if ($failedCount > 0 || $incompleteCount > 0) {
-                    $message = "Import completed";
-                    if ($failedCount > 0) $message .= " with {$failedCount} validation error(s)";
-                    if ($incompleteCount > 0) $message .= " with {$incompleteCount} incomplete property/properties";
+                // If there are actual failures (validation errors that prevented creation), return 422
+                if ($failedCount > 0) {
+                    $message = "Import completed with {$failedCount} validation error(s)";
+                    if ($incompleteCount > 0) $message .= " and {$incompleteCount} incomplete property/properties";
                     $message .= ". ";
                     if ($importedCount > 0) $message .= "Created: {$importedCount} properties. ";
                     if ($updatedCount > 0) $message .= "Updated: {$updatedCount} properties.";
@@ -305,6 +378,27 @@ class PropertyController extends Controller
                         'errors' => $detailedErrors,
                         'timestamp' => now()->toIso8601String(),
                     ], 422);
+                }
+
+                // If there are incomplete properties but no failures, return 200 with partial_success
+                if ($incompleteCount > 0) {
+                    $message = "Import completed with {$incompleteCount} incomplete property/properties";
+                    $message .= ". ";
+                    if ($importedCount > 0) $message .= "Created: {$importedCount} properties. ";
+                    if ($updatedCount > 0) $message .= "Updated: {$updatedCount} properties.";
+
+                    return response()->json([
+                        'status' => 'partial_success',
+                        'code' => 'IMPORT_PARTIAL_SUCCESS',
+                        'message' => $message,
+                        'imported_count' => $importedCount,
+                        'updated_count' => $updatedCount,
+                        'incomplete_count' => $incompleteCount,
+                        'failed_count' => 0,
+                        'incomplete_properties' => $incompleteProperties,
+                        'errors' => [],
+                        'timestamp' => now()->toIso8601String(),
+                    ], 200);
                 }
 
                 $message = "Import successful. ";
@@ -2484,6 +2578,11 @@ class PropertyController extends Controller
             ->where('reorder_featured', '>', 0)
             ->count();
 
+        // Count incomplete (not completed) properties
+        $incompleteCount = Property::whereIn('user_id', $allowedUserIds)
+            ->where('completion_status', 'incomplete')
+            ->count();
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -2491,6 +2590,7 @@ class PropertyController extends Controller
                 'purposes_filter' => $availablePurposes,
                 'specifics_filters' => $specificsFilters,
                 'total_reorder_featured' => $totalReorderFeatured,
+                'incomplete_count' => $incompleteCount,
                 'pagination' => [
                     'total'        => $properties->total(),
                     'per_page'     => $properties->perPage(),

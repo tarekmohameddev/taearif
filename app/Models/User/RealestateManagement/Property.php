@@ -116,6 +116,40 @@ class Property extends Model
             $last = self::where('featured', 1)->max('reorder_featured');
             $reorderFeatured = $last ? $last + 1 : 1;
         }
+        
+        // Normalize features to array format
+        $features = $request['features'] ?? [];
+        if (is_string($features)) {
+            // Try to decode as JSON first
+            $decoded = json_decode($features, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $features = $decoded;
+            } else {
+                // If it's a plain string, wrap it in an array
+                $features = [$features];
+            }
+        } elseif (!is_array($features)) {
+            // If it's neither string nor array, default to empty array
+            $features = [];
+        }
+        
+        // Normalize missing_fields and validation_errors to arrays
+        $missingFields = $request['missing_fields'] ?? null;
+        if (is_string($missingFields)) {
+            $decoded = json_decode($missingFields, true);
+            $missingFields = (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) ? $decoded : null;
+        } elseif (!is_array($missingFields) && !is_null($missingFields)) {
+            $missingFields = null;
+        }
+        
+        $validationErrors = $request['validation_errors'] ?? null;
+        if (is_string($validationErrors)) {
+            $decoded = json_decode($validationErrors, true);
+            $validationErrors = (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) ? $decoded : null;
+        } elseif (!is_array($validationErrors) && !is_null($validationErrors)) {
+            $validationErrors = null;
+        }
+        
         return self::create([
             'region_id' => $request['region_id'] ?? null,
             'project_id' => $request['project_id'] ?? null,
@@ -133,7 +167,7 @@ class Property extends Model
             'area' => $request['area'],
             'size' => $request['size'] ?? null,
             'featured' => $featured,
-            'features' => $request['features'],
+            'features' => $features,
             'video_url' => $request['video_url'] ?? null,
             'virtual_tour' => $request['virtual_tour'] ?? null,
             'status' => $request['status'],
@@ -151,6 +185,10 @@ class Property extends Model
             'reorder' => 0,
             'show_reservations' => $request['show_reservations'] ?? true,
             'completion_status' => $request['completion_status'] ?? 'complete',
+            'missing_fields' => $missingFields,
+            'validation_errors' => $validationErrors,
+            'import_batch_id' => $request['import_batch_id'] ?? null,
+            'completed_at' => $request['completed_at'] ?? null,
         ]);
     }
 

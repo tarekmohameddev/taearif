@@ -100,8 +100,22 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         $amenityIds = $this->parseAmenities($row, $rowIndex);
         $specifications = $this->parseSpecifications($row, $rowIndex);
         
+        // Ensure all parsed values are arrays
+        if (!is_array($galleryImages)) {
+            $galleryImages = [];
+        }
+        if (!is_array($amenityIds)) {
+            $amenityIds = [];
+        }
+        if (!is_array($specifications)) {
+            $specifications = [];
+        }
+        
         // Parse features (comma separated)
         $features = $this->parseCommaSeparated($row['features'] ?? null);
+        if (!is_array($features)) {
+            $features = [];
+        }
         
         // Parse featured (Yes/No or True/False or 1/0)
         $featuredInput = strtolower($row['featured'] ?? '');
@@ -116,6 +130,21 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         }
 
         [$cityId, $stateId] = $this->resolveLocationIds($row, $rowIndex);
+        
+        // Track location resolution failures as validation errors for incomplete properties
+        // Location (city_id) is REQUIRED - if missing, property must be incomplete
+        // This check is done before validation_errors array is populated
+        $locationValidationErrors = [];
+        
+        // Check if city_id is missing (location is required)
+        if (!$cityId && !$isUpdate) {
+            $locationValidationErrors[] = "City location is required. Please provide city_id or city_name.";
+        }
+        
+        // Check if district was provided but couldn't be resolved (location validation error)
+        if ($this->valueProvided($row['district_name'] ?? null) && !$stateId && $cityId) {
+            $locationValidationErrors[] = "District '{$row['district_name']}' not found in the specified city. Please verify the district name or use state_id.";
+        }
 
         // Validate featured image URL format
         if (!empty($row['featured_image'])) {
@@ -158,6 +187,9 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         // Check for missing required fields (only for new properties, not updates)
         $missingFields = [];
         $validationErrors = [];
+        
+        // Add location validation errors
+        $validationErrors = array_merge($validationErrors, $locationValidationErrors);
         
         if (!$isUpdate) {
             $requiredFields = [
@@ -265,15 +297,17 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                 // Replace gallery images (delete existing, add new)
                 if (isset($row['gallery_images'])) {
                     PropertySliderImg::where('property_id', $property->id)->delete();
-                    foreach ($galleryImages as $galleryUrl) {
-                        try {
-                            PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
-                        } catch (\Exception $e) {
-                            Log::error("Row {$rowIndex}: Failed to store gallery image", [
-                                'url' => $galleryUrl,
-                                'error' => $e->getMessage()
-                            ]);
-                            throw new \Exception("Row {$rowIndex}: Invalid gallery image URL: {$galleryUrl}");
+                    if (is_array($galleryImages)) {
+                        foreach ($galleryImages as $galleryUrl) {
+                            try {
+                                PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
+                            } catch (\Exception $e) {
+                                Log::error("Row {$rowIndex}: Failed to store gallery image", [
+                                    'url' => $galleryUrl,
+                                    'error' => $e->getMessage()
+                                ]);
+                                throw new \Exception("Row {$rowIndex}: Invalid gallery image URL: {$galleryUrl}");
+                            }
                         }
                     }
                 }
@@ -288,15 +322,20 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
 
                 // Replace specifications (delete existing, add new)
                 PropertySpecification::where('property_id', $property->id)->delete();
-                $specIndex = 0;
-                foreach ($specifications as $spec) {
-                    $specData = [
-                        'language_id' => $this->defaultLanguageId,
-                        'key' => $specIndex++,
-                        'label' => $spec['label'] ?? $spec['key'],
-                        'value' => $spec['value'],
-                    ];
-                    PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
+                if (is_array($specifications) && !empty($specifications)) {
+                    $specIndex = 0;
+                    foreach ($specifications as $spec) {
+                        if (!is_array($spec)) {
+                            continue; // Skip invalid entries
+                        }
+                        $specData = [
+                            'language_id' => $this->defaultLanguageId,
+                            'key' => $specIndex++,
+                            'label' => $spec['label'] ?? $spec['key'] ?? '',
+                            'value' => $spec['value'] ?? '',
+                        ];
+                        PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
+                    }
                 }
 
                 // Update characteristics if provided
@@ -366,34 +405,41 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                     }
 
                     // Process gallery images if provided
-                    foreach ($galleryImages as $galleryUrl) {
-                        try {
-                            PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
-                        } catch (\Exception $e) {
-                            Log::warning("Row {$rowIndex}: Failed to store gallery image for incomplete property", [
-                                'url' => $galleryUrl,
-                                'error' => $e->getMessage()
-                            ]);
+                    if (is_array($galleryImages)) {
+                        foreach ($galleryImages as $galleryUrl) {
+                            try {
+                                PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
+                            } catch (\Exception $e) {
+                                Log::warning("Row {$rowIndex}: Failed to store gallery image for incomplete property", [
+                                    'url' => $galleryUrl,
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
                         }
                     }
 
                     // Process amenities if provided
-                    if (!empty($amenityIds)) {
+                    if (!empty($amenityIds) && is_array($amenityIds)) {
                         foreach ($amenityIds as $amenityId) {
                             PropertyAmenity::sotreAmenity($this->userId, $property->id, $amenityId);
                         }
                     }
 
                     // Process specifications if provided
-                    $specIndex = 0;
-                    foreach ($specifications as $spec) {
-                        $specData = [
-                            'language_id' => $this->defaultLanguageId,
-                            'key' => $specIndex++,
-                            'label' => $spec['label'] ?? $spec['key'],
-                            'value' => $spec['value'],
-                        ];
-                        PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
+                    if (is_array($specifications) && !empty($specifications)) {
+                        $specIndex = 0;
+                        foreach ($specifications as $spec) {
+                            if (!is_array($spec)) {
+                                continue; // Skip invalid spec entries
+                            }
+                            $specData = [
+                                'language_id' => $this->defaultLanguageId,
+                                'key' => $specIndex++,
+                                'label' => $spec['label'] ?? $spec['key'] ?? '',
+                                'value' => $spec['value'] ?? '',
+                            ];
+                            PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
+                        }
                     }
 
                     // Create characteristics if provided
@@ -456,35 +502,42 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                     PropertyContent::storePropertyContent($this->userId, $property->id, $contentData);
 
                     // Process gallery images
-                    foreach ($galleryImages as $galleryUrl) {
-                        try {
-                            PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
-                        } catch (\Exception $e) {
-                            Log::error("Row {$rowIndex}: Failed to store gallery image", [
-                                'url' => $galleryUrl,
-                                'error' => $e->getMessage()
-                            ]);
-                            throw new \Exception("Row {$rowIndex}: Invalid gallery image URL: {$galleryUrl}");
+                    if (is_array($galleryImages)) {
+                        foreach ($galleryImages as $galleryUrl) {
+                            try {
+                                PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
+                            } catch (\Exception $e) {
+                                Log::error("Row {$rowIndex}: Failed to store gallery image", [
+                                    'url' => $galleryUrl,
+                                    'error' => $e->getMessage()
+                                ]);
+                                throw new \Exception("Row {$rowIndex}: Invalid gallery image URL: {$galleryUrl}");
+                            }
                         }
                     }
 
                     // Process amenities (no validation - same as API store method)
-                    if (!empty($amenityIds)) {
+                    if (!empty($amenityIds) && is_array($amenityIds)) {
                         foreach ($amenityIds as $amenityId) {
                             PropertyAmenity::sotreAmenity($this->userId, $property->id, $amenityId);
                         }
                     }
 
                     // Process specifications (use integer keys matching API behavior)
-                    $specIndex = 0; // Counter for integer keys (matching API store method)
-                    foreach ($specifications as $spec) {
-                        $specData = [
-                            'language_id' => $this->defaultLanguageId,
-                            'key' => $specIndex++, // Use integer counter instead of string key (matching API)
-                            'label' => $spec['label'] ?? $spec['key'],
-                            'value' => $spec['value'],
-                        ];
-                        PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
+                    if (is_array($specifications) && !empty($specifications)) {
+                        $specIndex = 0; // Counter for integer keys (matching API store method)
+                        foreach ($specifications as $spec) {
+                            if (!is_array($spec)) {
+                                continue; // Skip invalid entries
+                            }
+                            $specData = [
+                                'language_id' => $this->defaultLanguageId,
+                                'key' => $specIndex++, // Use integer counter instead of string key (matching API)
+                                'label' => $spec['label'] ?? $spec['key'] ?? '',
+                                'value' => $spec['value'] ?? '',
+                            ];
+                            PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
+                        }
                     }
 
                     // Create characteristics if provided
@@ -529,14 +582,25 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
     /**
      * Parse comma-separated string into array of trimmed values
      */
-    protected function parseCommaSeparated(?string $value): array
+    protected function parseCommaSeparated($value): array
     {
         if (empty($value)) {
             return [];
         }
+        
+        // If already an array, return as-is
+        if (is_array($value)) {
+            return array_filter($value, fn($item) => !empty($item));
+        }
+        
+        // Convert to string if not already
+        $stringValue = (string) $value;
+        if (empty($stringValue)) {
+            return [];
+        }
 
         return array_filter(
-            array_map('trim', explode(',', $value)),
+            array_map('trim', explode(',', $stringValue)),
             fn($item) => !empty($item)
         );
     }
@@ -596,11 +660,13 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         $additionalAmenities = $row['additional_amenities'] ?? null;
         if ($this->valueProvided($additionalAmenities)) {
             $additionalNames = $this->parseCommaSeparated($additionalAmenities);
-            $amenityNames = array_merge($amenityNames, $additionalNames);
+            if (is_array($additionalNames)) {
+                $amenityNames = array_merge($amenityNames, $additionalNames);
+            }
         }
 
         // If we have amenity names, resolve them to IDs
-        if (!empty($amenityNames)) {
+        if (!empty($amenityNames) && is_array($amenityNames)) {
             // Note: Since we don't have access to amenities table structure,
             // we'll just return the names for now
             // The actual resolution would happen in the database layer
@@ -615,7 +681,8 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             $amenityIds = $this->parseCommaSeparatedIntegers($amenityIdsRaw);
         }
 
-        return $amenityIds;
+        // Ensure we always return an array
+        return is_array($amenityIds) ? $amenityIds : [];
     }
 
     /**
@@ -625,6 +692,11 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
     protected function parseSpecifications(array $row, int $rowIndex): array
     {
         $specifications = [];
+        
+        // Ensure we always return an array
+        if (!is_array($row)) {
+            return [];
+        }
 
         // Map of individual columns to spec keys
         $specMapping = [
@@ -658,27 +730,34 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         $jsonValue = $row['specifications'] ?? null;
         if (!empty($jsonValue)) {
             $jsonSpecs = $this->parseSpecificationsFromJSON($jsonValue);
-            // Merge JSON specs (JSON takes precedence if key conflicts)
-            foreach ($jsonSpecs as $jsonSpec) {
-                $existingIndex = null;
-                foreach ($specifications as $index => $spec) {
-                    if ($spec['key'] === $jsonSpec['key']) {
-                        $existingIndex = $index;
-                        break;
+            // Ensure jsonSpecs is an array
+            if (is_array($jsonSpecs)) {
+                // Merge JSON specs (JSON takes precedence if key conflicts)
+                foreach ($jsonSpecs as $jsonSpec) {
+                    if (!is_array($jsonSpec)) {
+                        continue; // Skip invalid entries
                     }
-                }
-                
-                if ($existingIndex !== null) {
-                    // Replace with JSON value
-                    $specifications[$existingIndex] = $jsonSpec;
-                } else {
-                    // Add new spec from JSON
-                    $specifications[] = $jsonSpec;
+                    $existingIndex = null;
+                    foreach ($specifications as $index => $spec) {
+                        if (is_array($spec) && isset($spec['key']) && isset($jsonSpec['key']) && $spec['key'] === $jsonSpec['key']) {
+                            $existingIndex = $index;
+                            break;
+                        }
+                    }
+                    
+                    if ($existingIndex !== null) {
+                        // Replace with JSON value
+                        $specifications[$existingIndex] = $jsonSpec;
+                    } else {
+                        // Add new spec from JSON
+                        $specifications[] = $jsonSpec;
+                    }
                 }
             }
         }
 
-        return $specifications;
+        // Ensure we always return an array
+        return is_array($specifications) ? $specifications : [];
     }
 
     /**
@@ -824,16 +903,18 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
 
     public function rules(): array
     {
+        // Note: Fields are intentionally NOT required here to allow incomplete properties
+        // Custom validation in onRow() determines completeness and creates incomplete properties if needed
         return [
             'id'          => 'nullable|integer|exists:user_properties,id',
-            'title'       => 'required_without:id|string|max:255|min:3',
-            'price'       => 'required_without:id|numeric|min:0',
+            'title'       => 'nullable|string|max:255',
+            'price'       => 'nullable|numeric|min:0',
             'price_per_meter' => 'nullable|numeric|min:0',
-            'address'     => 'required_without:id|string|min:5|max:500',
-            'description' => 'required_without:id|string|min:10',
-            'purpose'     => 'required_without:id|in:sale,rent',
-            'type'        => 'required_without:id|in:residential,commercial',
-            'area'        => 'required_without:id|numeric|min:1',
+            'address'     => 'nullable|string|max:500',
+            'description' => 'nullable|string',
+            'purpose'     => 'nullable|in:sale,rent',
+            'type'        => 'nullable|in:residential,commercial',
+            'area'        => 'nullable|numeric|min:0',
             'size'        => 'nullable|numeric|min:0',
             'beds'        => 'nullable|integer|min:0|max:50',
             'bath'        => 'nullable|integer|min:0|max:50',
@@ -956,10 +1037,13 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                 }
             }
         } elseif ($this->valueProvided($districtNameRaw)) {
-            $stateId = $this->resolveDistrictId($districtNameRaw, $cityId, $rowIndex);
-            if (!$stateId) {
-                $cityHint = $cityId ? ' for the selected city' : '';
-                throw new \Exception("Row {$rowIndex}: Unable to find district '{$districtNameRaw}'{$cityHint}. Please copy a value from the reference sheet.");
+            try {
+                $stateId = $this->resolveDistrictId($districtNameRaw, $cityId, $rowIndex);
+                // If district not found, allow null - will be tracked as validation error for incomplete properties
+            } catch (\Exception $e) {
+                // If district resolution fails (e.g., multiple matches), allow null for incomplete properties
+                // The error will be tracked in validation_errors
+                $stateId = null;
             }
         }
 
@@ -1083,10 +1167,10 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                 throw new \Exception("{$prefix}Multiple districts named '{$value}' exist within the selected city. Please use state_id to specify the correct district.");
             }
 
-            // If city is specified but no district found in that city, throw error
+            // If city is specified but no district found in that city, return null
             // Don't fall through to global search as it could assign wrong district
-            $prefix = $rowIndex ? "Row {$rowIndex}: " : '';
-            throw new \Exception("{$prefix}District '{$value}' not found in the specified city. Please verify the district name or use state_id.");
+            // This allows incomplete property creation with location validation errors
+            return null;
         }
 
         // Global district lookup (no city specified)
