@@ -32,6 +32,7 @@ return [
         'properties.create',
         'properties.update',
         'properties.delete',
+        'properties.owner_deed',
 
 		'crm.view',
         'crm.create',
@@ -57,6 +58,7 @@ return [
             'properties.create',
             'properties.update',
             'properties.delete',
+            'properties.owner_deed',
 			'crm.view',
             'crm.create',
             'crm.update',
