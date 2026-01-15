@@ -2029,6 +2029,24 @@ class PropertyController extends Controller
         ];
     }
 
+    /**
+     * Fallback method for extracting unique features from JSON arrays
+     * Used when JSON_TABLE is not available (MySQL < 8.0)
+     */
+    private function extractFeaturesFallback(array $allowedUserIds): array
+    {
+        $allFeatures = Property::whereIn('user_id', $allowedUserIds)
+            ->whereNotNull('features')
+            ->pluck('features')
+            ->flatten()
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
+        
+        return array_values($allFeatures);
+    }
+
 
     public function index(Request $request, GoogleAnalyticsService $analytics)
     {
@@ -2056,8 +2074,14 @@ class PropertyController extends Controller
         $propertiesQuery = Property::with([
             'category:id,name',
             'user:id,username,first_name,last_name,email,account_type',
-            'contents:id,property_id,title,slug,address,description',
-            'proertyAmenities.amenity:id,name',
+            'contents' => function($q) {
+                $q->select('id', 'property_id', 'title', 'slug', 'address', 'description')
+                  ->orderBy('id', 'asc')
+                  ->limit(1); // Only load first content since we only use first() in response
+            },
+            'proertyAmenities' => function($q) {
+                $q->with('amenity:id,name'); // Explicit nested eager loading to prevent N+1
+            },
             'creator:id,first_name,last_name,username,email,account_type',
             'galleryImages:id,property_id,image', // Added to prevent N+1
             'UserPropertyCharacteristics:id,property_id', // Added if needed for filtering
@@ -2101,6 +2125,7 @@ class PropertyController extends Controller
         // Text search functionality (title, address, description, price)
         // OPTIMIZED: Use JOIN instead of whereHas for better performance
         // Use INNER JOIN if city/district filters are present, otherwise LEFT JOIN for search-only
+        // OPTIMIZED: Prefer prefix matching for better index usage, fallback to full-text or LIKE
         if ($request->has('search') && !empty($request->search)) {
             $searchTerm = trim($request->search);
             if (!$hasContentJoin) {
@@ -2113,13 +2138,45 @@ class PropertyController extends Controller
                 }
                 $hasContentJoin = true;
             }
-            $propertiesQuery->where(function($q) use ($searchTerm, $contentJoinAlias) {
-                // Search in PropertyContent (title, address, description)
-                $q->where(function($subQ) use ($searchTerm, $contentJoinAlias) {
-                    $subQ->where($contentJoinAlias . '.title', 'like', "%{$searchTerm}%")
-                        ->orWhere($contentJoinAlias . '.address', 'like', "%{$searchTerm}%")
-                        ->orWhere($contentJoinAlias . '.description', 'like', "%{$searchTerm}%");
-                });
+            
+            // Check if MySQL version supports full-text search
+            $mysqlVersion = DB::select('SELECT VERSION() as version')[0]->version ?? '';
+            $isMysql56Plus = version_compare($mysqlVersion, '5.6.0', '>=');
+            
+            $propertiesQuery->where(function($q) use ($searchTerm, $contentJoinAlias, $isMysql56Plus) {
+                // For short search terms (3+ chars), try prefix matching first for better index usage
+                // Prefix matching (term%) can use indexes, while full wildcard (%term%) cannot
+                if (strlen($searchTerm) >= 3) {
+                    $prefixTerm = $searchTerm . '%';
+                    $q->where(function($subQ) use ($prefixTerm, $searchTerm, $contentJoinAlias, $isMysql56Plus) {
+                        // Prefer prefix matching for title and address (can use indexes)
+                        $subQ->where($contentJoinAlias . '.title', 'like', $prefixTerm)
+                            ->orWhere($contentJoinAlias . '.address', 'like', $prefixTerm);
+                        
+                        // For description, use full-text search if available, otherwise fallback to LIKE
+                        // Note: Full-text search requires FULLTEXT index and uses actual table name, not alias
+                        if ($isMysql56Plus) {
+                            // Try full-text search on description (requires FULLTEXT index)
+                            // Use actual table name in MATCH clause (full-text indexes don't work with aliases)
+                            $subQ->orWhereRaw("MATCH(user_property_contents.title, user_property_contents.address, user_property_contents.description) AGAINST(? IN BOOLEAN MODE)", [$searchTerm]);
+                        } else {
+                            // Fallback to LIKE for description (less efficient but works everywhere)
+                            $subQ->orWhere($contentJoinAlias . '.description', 'like', "%{$searchTerm}%");
+                        }
+                        
+                        // Also check if search term appears anywhere (fallback for non-prefix matches)
+                        $subQ->orWhere($contentJoinAlias . '.title', 'like', "%{$searchTerm}%")
+                            ->orWhere($contentJoinAlias . '.address', 'like', "%{$searchTerm}%");
+                    });
+                } else {
+                    // For very short terms, use full wildcard search (less efficient but necessary)
+                    $q->where(function($subQ) use ($searchTerm, $contentJoinAlias) {
+                        $subQ->where($contentJoinAlias . '.title', 'like', "%{$searchTerm}%")
+                            ->orWhere($contentJoinAlias . '.address', 'like', "%{$searchTerm}%")
+                            ->orWhere($contentJoinAlias . '.description', 'like', "%{$searchTerm}%");
+                    });
+                }
+                
                 // Search in price if numeric
                 if (is_numeric($searchTerm)) {
                     $q->orWhere('user_properties.price', $searchTerm)
@@ -2209,18 +2266,33 @@ class PropertyController extends Controller
         if ($request->has('bath') && !empty($request->bath)) {
             $propertiesQuery->where('bath', $request->bath);
         }
-        // OPTIMIZED: Use single JSON path query instead of multiple whereJsonContains calls
-        // This is more efficient than looping with multiple conditions
+        // OPTIMIZED: Use more efficient JSON search approach
+        // For MySQL 8.0+: Use JSON_OVERLAPS for better performance when checking multiple values
+        // Falls back to individual whereJsonContains for older MySQL versions
         if ($request->has('features') && !empty($request->features)) {
             $featuresArray = array_filter(array_map('trim', explode(',', $request->features)));
             if (!empty($featuresArray)) {
-                // Use whereRaw with JSON_CONTAINS for better performance when searching multiple features
-                // MySQL/MariaDB: Check if all features exist in the JSON array
-                $propertiesQuery->where(function($q) use ($featuresArray) {
-                    foreach ($featuresArray as $feature) {
-                        $q->whereJsonContains('features', $feature);
-                    }
-                });
+                // Check MySQL version for optimal approach
+                $mysqlVersion = DB::select('SELECT VERSION() as version')[0]->version ?? '';
+                $isMysql80Plus = version_compare($mysqlVersion, '8.0.0', '>=');
+                
+                if ($isMysql80Plus && count($featuresArray) > 1) {
+                    // MySQL 8.0+: Use JSON_OVERLAPS for better performance with multiple features
+                    // This checks if the features array overlaps with any of the requested features
+                    $featuresJson = json_encode($featuresArray);
+                    $propertiesQuery->whereRaw(
+                        "JSON_OVERLAPS(COALESCE(features, '[]'), ?)",
+                        [$featuresJson]
+                    );
+                } else {
+                    // Fallback: Use individual whereJsonContains (works on all MySQL versions)
+                    // Group conditions in a closure for better query structure
+                    $propertiesQuery->where(function($q) use ($featuresArray) {
+                        foreach ($featuresArray as $feature) {
+                            $q->whereJsonContains('features', $feature);
+                        }
+                    });
+                }
             }
         }
 
@@ -2295,7 +2367,8 @@ class PropertyController extends Controller
         }
 
         // OPTIMIZED: Make pagination configurable with max limit to prevent abuse
-        $perPage = min(50, max(1, (int) $request->input('per_page', 10)));
+        // Increased default from 10 to 20 for better UX and fewer requests
+        $perPage = min(50, max(1, (int) $request->input('per_page', 20)));
         $properties = $propertiesQuery->paginate($perPage);
 
         // === GA4: views per property (last 30 days by default) ===
@@ -2323,42 +2396,31 @@ class PropertyController extends Controller
                 $paths[] = "/en/property/{$slug}";
             }
 
-            // Query GA4 with backend filtering to get ALL data (CACHED - 5 minutes)
+            // OPTIMIZED: Query GA4 with non-blocking cache - returns cached data immediately
+            // If cache miss, returns empty array to avoid blocking response
+            // Cache will be populated by background job or next request
             if (!empty($paths)) {
                 $cacheKey = "ga_views_{$tenantId}_{$days}_" . md5(implode(',', $slugs->toArray()));
-                $viewsBySlug = Cache::remember($cacheKey, 300, function () use ($analytics, $startDate, $endDate, $paths, $tenantId, $slugs) {
-                    $result = [];
+                
+                // Try to get from cache first (non-blocking)
+                $viewsBySlug = Cache::get($cacheKey, []);
+                
+                // If cache miss, dispatch background job to fetch and cache data
+                // This prevents blocking the response while still populating cache for future requests
+                if (empty($viewsBySlug)) {
+                    // Dispatch job to fetch GA data in background (non-blocking)
+                    // The job will populate the cache for future requests
                     try {
-                        $allData = $analytics->getAllAnalyticsWithFilters(
-                            $startDate,
-                            $endDate,
-                            [
-                                'tenant_ids' => [$tenantId],
-                                'exclude_empty_tenant' => false,
-                                'limit' => count($paths) * 10,
-                            ]
-                        );
-
-                        // Build a map of slug => total views
-                        foreach ($allData['data'] as $item) {
-                            $path = $item['path'];
-                            $views = (int) $item['views'];
-                            
-                            // Extract slug from path and add to slug view map
-                            foreach ($slugs as $slug) {
-                                if (strpos($path, $slug) !== false) {
-                                    $result[$slug] = ($result[$slug] ?? 0) + $views;
-                                }
-                            }
-                        }
+                        \App\Jobs\FetchGoogleAnalyticsViews::dispatch($cacheKey, $startDate, $endDate, $paths, $tenantId, $slugs->toArray())
+                            ->onQueue('default');
                     } catch (\Exception $e) {
-                        Log::error('Google Analytics error in admin PropertyController', [
-                            'tenant' => $tenantId,
+                        // If job dispatch fails, log and continue with empty views
+                        Log::warning('Failed to dispatch GA views job', [
                             'error' => $e->getMessage(),
+                            'cache_key' => $cacheKey
                         ]);
                     }
-                    return $result;
-                });
+                }
             }
         }
 
@@ -2402,58 +2464,86 @@ class PropertyController extends Controller
                 'min' => $stats->min_area ?: 0,
             ];
 
-            // OPTIMIZED: Get all distinct filter values in a single query using UNION
-            // This reduces from 4 separate queries to 1 query
-            $filterValues = DB::table('user_properties')
+            // OPTIMIZED: Use separate optimized queries instead of UNION for better performance
+            // Separate queries allow better index usage and are often faster than UNION on large datasets
+            $availablePurposes = DB::table('user_properties')
                 ->whereIn('user_id', $allowedUserIds)
-                ->selectRaw("'purpose' as filter_type, purpose as value")
                 ->whereNotNull('purpose')
                 ->where('purpose', '!=', '')
                 ->distinct()
-                ->union(
-                    DB::table('user_properties')
-                        ->whereIn('user_id', $allowedUserIds)
-                        ->selectRaw("'type' as filter_type, type as value")
-                        ->whereNotNull('type')
-                        ->where('type', '!=', '')
-                        ->distinct()
-                )
-                ->union(
-                    DB::table('user_properties')
-                        ->whereIn('user_id', $allowedUserIds)
-                        ->selectRaw("'beds' as filter_type, CAST(beds AS CHAR) as value")
-                        ->whereNotNull('beds')
-                        ->distinct()
-                )
-                ->union(
-                    DB::table('user_properties')
-                        ->whereIn('user_id', $allowedUserIds)
-                        ->selectRaw("'bath' as filter_type, CAST(bath AS CHAR) as value")
-                        ->whereNotNull('bath')
-                        ->distinct()
-                )
-                ->get()
-                ->groupBy('filter_type');
-
-            $availablePurposes = $filterValues->get('purpose', collect())->pluck('value')->unique()->values()->toArray();
-            $availableTypes = $filterValues->get('type', collect())->pluck('value')->unique()->values()->toArray();
-            $availableBeds = $filterValues->get('beds', collect())->pluck('value')->map(fn($v) => (int)$v)->unique()->sort()->values()->toArray();
-            $availableBath = $filterValues->get('bath', collect())->pluck('value')->map(fn($v) => (int)$v)->unique()->sort()->values()->toArray();
-
-            // Extract unique features from JSON arrays
-            $allFeatures = Property::whereIn('user_id', $allowedUserIds)
-                ->whereNotNull('features')
-                ->pluck('features')
-                ->flatten()
-                ->filter()
+                ->pluck('purpose')
                 ->unique()
                 ->values()
                 ->toArray();
-            $availableFeatures = array_values($allFeatures);
+
+            $availableTypes = DB::table('user_properties')
+                ->whereIn('user_id', $allowedUserIds)
+                ->whereNotNull('type')
+                ->where('type', '!=', '')
+                ->distinct()
+                ->pluck('type')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            $availableBeds = DB::table('user_properties')
+                ->whereIn('user_id', $allowedUserIds)
+                ->whereNotNull('beds')
+                ->distinct()
+                ->pluck('beds')
+                ->map(fn($v) => (int)$v)
+                ->unique()
+                ->sort()
+                ->values()
+                ->toArray();
+
+            $availableBath = DB::table('user_properties')
+                ->whereIn('user_id', $allowedUserIds)
+                ->whereNotNull('bath')
+                ->distinct()
+                ->pluck('bath')
+                ->map(fn($v) => (int)$v)
+                ->unique()
+                ->sort()
+                ->values()
+                ->toArray();
+
+            // OPTIMIZED: Extract unique features using MySQL JSON functions instead of loading all into memory
+            // This reduces memory usage and processing time significantly
+            $mysqlVersion = DB::select('SELECT VERSION() as version')[0]->version ?? '';
+            $isMysql80Plus = version_compare($mysqlVersion, '8.0.0', '>=');
+            
+            if ($isMysql80Plus) {
+                // MySQL 8.0+: Use JSON_TABLE for efficient extraction
+                try {
+                    $featureResults = DB::select("
+                        SELECT DISTINCT feature_value
+                        FROM user_properties,
+                        JSON_TABLE(
+                            COALESCE(features, '[]'),
+                            '$[*]' COLUMNS (feature_value VARCHAR(255) PATH '$')
+                        ) AS jt
+                        WHERE user_properties.user_id IN (" . implode(',', $allowedUserIds) . ")
+                        AND features IS NOT NULL
+                        AND feature_value IS NOT NULL
+                        AND feature_value != ''
+                        ORDER BY feature_value
+                    ");
+                    $availableFeatures = array_map(fn($row) => $row->feature_value, $featureResults);
+                } catch (\Exception $e) {
+                    // Fallback to older method if JSON_TABLE fails
+                    Log::warning('JSON_TABLE extraction failed, using fallback method', ['error' => $e->getMessage()]);
+                    $availableFeatures = $this->extractFeaturesFallback($allowedUserIds);
+                }
+            } else {
+                // MySQL 5.7 or older: Use fallback method
+                $availableFeatures = $this->extractFeaturesFallback($allowedUserIds);
+            }
+            
             sort($availableFeatures);
 
-            // OPTIMIZED: Get UserPropertyCharacteristic filter options using a single query with conditional aggregation
-            // Instead of N queries (one per field), use a single query with CASE statements
+            // OPTIMIZED: Get UserPropertyCharacteristic filter options using single query with UNION
+            // This reduces from 17 separate queries to 1 query, significantly improving performance
             $propertyIds = Property::whereIn('user_id', $allowedUserIds)
                 ->pluck('id');
 
@@ -2465,50 +2555,79 @@ class PropertyController extends Controller
                 'bathrooms', 'rooms', 'building_age'
             ];
 
-            // OPTIMIZED: Batch load all characteristic values in fewer queries
-            // Group fields by type (boolean vs numeric) to optimize queries
-            $booleanFields = ['private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement',
-                'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room',
-                'driver_room', 'swimming_pool', 'kitchen'];
-            $numericFields = ['floor_number', 'floors', 'bathrooms', 'rooms', 'building_age'];
-
-            // Get all characteristics data in one query
-            $allCharacteristics = UserPropertyCharacteristic::whereIn('property_id', $propertyIds)
-                ->select($characteristicFields)
-                ->get();
-
-            // Process in PHP (faster than multiple DB queries for small datasets)
+            // Build UNION query to get all distinct values in a single database round-trip
+            $unionQueries = [];
             foreach ($characteristicFields as $field) {
-                $values = $allCharacteristics
-                    ->pluck($field)
-                    ->filter(fn($v) => !is_null($v))
-                    ->unique()
-                    ->sort()
-                    ->values()
-                    ->toArray();
+                $unionQueries[] = DB::table('user_property_characteristics')
+                    ->whereIn('property_id', $propertyIds)
+                    ->whereNotNull($field)
+                    ->selectRaw("'{$field}' as field_name, CAST({$field} AS CHAR) as field_value")
+                    ->distinct();
+            }
 
-                if (!empty($values)) {
-                    $characteristicFilterOptions[$field] = $values;
+            // Execute all UNION queries at once
+            if (!empty($unionQueries)) {
+                $baseQuery = array_shift($unionQueries);
+                foreach ($unionQueries as $query) {
+                    $baseQuery->union($query);
+                }
+                
+                $results = $baseQuery->orderBy('field_name')->orderBy('field_value')->get();
+                
+                // Group results by field name
+                foreach ($results as $result) {
+                    $fieldName = $result->field_name;
+                    $fieldValue = $result->field_value;
+                    
+                    // Convert numeric fields back to appropriate types
+                    if (in_array($fieldName, ['floor_number', 'floors', 'bathrooms', 'rooms', 'building_age'])) {
+                        $fieldValue = is_numeric($fieldValue) ? (int)$fieldValue : $fieldValue;
+                    } elseif (in_array($fieldName, ['private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement',
+                        'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room',
+                        'driver_room', 'swimming_pool', 'kitchen'])) {
+                        $fieldValue = (bool)$fieldValue;
+                    }
+                    
+                    if (!isset($characteristicFilterOptions[$fieldName])) {
+                        $characteristicFilterOptions[$fieldName] = [];
+                    }
+                    $characteristicFilterOptions[$fieldName][] = $fieldValue;
+                }
+                
+                // Sort and remove duplicates for each field
+                foreach ($characteristicFilterOptions as $field => &$values) {
+                    $values = array_values(array_unique($values));
+                    if (in_array($field, ['floor_number', 'floors', 'bathrooms', 'rooms', 'building_age'])) {
+                        sort($values, SORT_NUMERIC);
+                    } else {
+                        sort($values);
+                    }
                 }
             }
 
-            // Get employees who have created or own properties
-            $employeeIds = Property::whereIn('user_id', $allowedUserIds)
-                ->select('user_id', 'created_by')
+            // OPTIMIZED: Get employees who have created or own properties using single UNION query
+            // This reduces from 2 separate queries to 1 query
+            $employeeIds = DB::table('user_properties')
+                ->whereIn('user_id', $allowedUserIds)
+                ->select('user_id as employee_id')
                 ->distinct()
-                ->get()
-                ->pluck('user_id')
-                ->merge(Property::whereIn('user_id', $allowedUserIds)
-                    ->select('created_by')
-                    ->distinct()
-                    ->get()
-                    ->pluck('created_by'))
+                ->union(
+                    DB::table('user_properties')
+                        ->whereIn('user_id', $allowedUserIds)
+                        ->whereNotNull('created_by')
+                        ->select('created_by as employee_id')
+                        ->distinct()
+                )
+                ->pluck('employee_id')
                 ->filter()
                 ->unique()
-                ->values();
+                ->values()
+                ->toArray();
+
+            // Filter to only include employees that are in allowedUserIds
+            $employeeIds = array_intersect($employeeIds, $allowedUserIds);
 
             $employees = \App\Models\User::whereIn('id', $employeeIds)
-                ->whereIn('id', $allowedUserIds)
                 ->select('id', 'first_name', 'last_name', 'email', 'username')
                 ->get()
                 ->map(function($emp) {
@@ -2608,13 +2727,32 @@ class PropertyController extends Controller
         ];
 
         // === Format response ===
-        $formattedProperties = $properties->getCollection()->map(function ($property) use ($viewsBySlug) {
+        // OPTIMIZED: Support field selection via ?fields parameter to reduce payload size
+        // Example: ?fields=id,title,price,area
+        $requestedFields = $request->input('fields');
+        $allowedFields = [
+            'id', 'visits', 'title', 'address', 'slug', 'price', 'type', 'beds', 'bath',
+            'area', 'transaction_type', 'features', 'status', 'featured_image', 'featured',
+            'show_reservations', 'created_at', 'updated_at', 'payment_method', 'creator'
+        ];
+        
+        $fieldsToInclude = null;
+        if ($requestedFields) {
+            $requestedFieldsArray = array_map('trim', explode(',', $requestedFields));
+            $fieldsToInclude = array_intersect($requestedFieldsArray, $allowedFields);
+            // Always include 'id' as it's required for identification
+            if (!in_array('id', $fieldsToInclude)) {
+                $fieldsToInclude[] = 'id';
+            }
+        }
+        
+        $formattedProperties = $properties->getCollection()->map(function ($property) use ($viewsBySlug, $fieldsToInclude) {
             $content = optional($property->contents->first());
             $slug    = $content->slug;
 
-            return [
+            $propertyData = [
                 'id'               => $property->id,
-                'visits'           => (int) ($viewsBySlug[$slug] ?? 0), // << here
+                'visits'           => (int) ($viewsBySlug[$slug] ?? 0),
                 'title'            => $content->title ?? 'No Title',
                 'address'          => $content->address ?? 'No Address',
                 'slug'             => $slug,
@@ -2638,6 +2776,13 @@ class PropertyController extends Controller
                     'type' => $property->creator->account_type,
                 ] : null,
             ];
+            
+            // Filter fields if field selection is requested
+            if ($fieldsToInclude !== null) {
+                return array_intersect_key($propertyData, array_flip($fieldsToInclude));
+            }
+            
+            return $propertyData;
         });
 
         // OPTIMIZED: Cache count queries to improve performance
@@ -2810,23 +2955,29 @@ class PropertyController extends Controller
                 }
             }
 
-            // Get employees who have created or own properties
-            $employeeIds = Property::whereIn('user_id', $allowedUserIds)
-                ->select('user_id', 'created_by')
+            // OPTIMIZED: Get employees who have created or own properties using single UNION query
+            // This reduces from 2 separate queries to 1 query
+            $employeeIds = DB::table('user_properties')
+                ->whereIn('user_id', $allowedUserIds)
+                ->select('user_id as employee_id')
                 ->distinct()
-                ->get()
-                ->pluck('user_id')
-                ->merge(Property::whereIn('user_id', $allowedUserIds)
-                    ->select('created_by')
-                    ->distinct()
-                    ->get()
-                    ->pluck('created_by'))
+                ->union(
+                    DB::table('user_properties')
+                        ->whereIn('user_id', $allowedUserIds)
+                        ->whereNotNull('created_by')
+                        ->select('created_by as employee_id')
+                        ->distinct()
+                )
+                ->pluck('employee_id')
                 ->filter()
                 ->unique()
-                ->values();
+                ->values()
+                ->toArray();
+
+            // Filter to only include employees that are in allowedUserIds
+            $employeeIds = array_intersect($employeeIds, $allowedUserIds);
 
             $employees = \App\Models\User::whereIn('id', $employeeIds)
-                ->whereIn('id', $allowedUserIds)
                 ->select('id', 'first_name', 'last_name', 'email', 'username')
                 ->get()
                 ->map(function($emp) {

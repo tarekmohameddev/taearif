@@ -45,6 +45,7 @@ class Kernel extends HttpKernel
             'bindings',
             \App\Http\Middleware\SetTenantSessionDomain::class,
             \App\Http\Middleware\SetTenantForPermissions::class,
+            \App\Http\Middleware\CompressResponse::class, // Compress API responses
         ],
 
         'admin-api' => [
