@@ -62,6 +62,7 @@ class Property extends Model
         'water_meter_number',
         'electricity_meter_number',
         'deed_number',
+        'advertising_license',
         'reorder',
         'reorder_featured',
     ];
@@ -137,6 +138,7 @@ class Property extends Model
             'water_meter_number' => $request['water_meter_number'] ?? null,
             'electricity_meter_number' => $request['electricity_meter_number'] ?? null,
             'deed_number' => $request['deed_number'] ?? null,
+            'advertising_license' => $request['advertising_license'] ?? null,
             'reorder_featured' => $reorderFeatured,
             'reorder' => 0,
             'show_reservations' => $request['show_reservations'] ?? true,
@@ -178,6 +180,7 @@ class Property extends Model
             'water_meter_number' => $requestData['water_meter_number'] ?? $this->water_meter_number,
             'electricity_meter_number' => $requestData['electricity_meter_number'] ?? $this->electricity_meter_number,
             'deed_number' => $requestData['deed_number'] ?? $this->deed_number,
+            'advertising_license' => $requestData['advertising_license'] ?? $this->advertising_license,
             'reorder_featured' => $requestData['reorder_featured'] ?? $this->reorder_featured,
             'reorder' => $requestData['reorder'] ?? $this->reorder,
             'show_reservations' => $requestData['show_reservations'] ?? $this->show_reservations,

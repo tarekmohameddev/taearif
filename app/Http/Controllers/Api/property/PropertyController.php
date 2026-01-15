@@ -708,6 +708,7 @@ class PropertyController extends Controller
             'water_meter_number' => $responseProperty->water_meter_number,
             'electricity_meter_number' => $responseProperty->electricity_meter_number,
             'deed_number' => $responseProperty->deed_number ? asset($responseProperty->deed_number) : null,
+            'advertising_license' => $responseProperty->advertising_license,
         ];
 
         TenantActivity::emit($request, 'property.duplicated', 'user_properties', $duplicatedProperty->id, [
@@ -970,6 +971,7 @@ class PropertyController extends Controller
                 'water_meter_number' => $property->water_meter_number,
                 'electricity_meter_number' => $property->electricity_meter_number,
                 'deed_number' => $property->deed_number ? asset($property->deed_number) : null,
+                'advertising_license' => $property->advertising_license,
                 'creator' => $property->creator ? [
                     'id'   => $property->creator->id,
                     'name' => trim(($property->creator->first_name ?? '') . ' ' . ($property->creator->last_name ?? '')) ?: ($property->creator->username ?? $property->creator->email),
@@ -1100,6 +1102,7 @@ class PropertyController extends Controller
             'water_meter_number' => 'nullable|string',
             'electricity_meter_number' => 'nullable|string',
             'deed_number' => 'nullable|string',
+            'advertising_license' => 'nullable|string',
             'video_file' => 'nullable|file', // Video upload now handled separately via VideoUploadController
         ];
 
@@ -1154,6 +1157,7 @@ class PropertyController extends Controller
                 'water_meter_number',
                 'electricity_meter_number',
                 'deed_number',
+                'advertising_license',
                 'show_reservations',
 
                 "facade_id",
@@ -1354,6 +1358,7 @@ class PropertyController extends Controller
             'water_meter_number' => $responseProperty->water_meter_number,
             'electricity_meter_number' => $responseProperty->electricity_meter_number,
             'deed_number' => $responseProperty->deed_number ? asset($responseProperty->deed_number) : null,
+            'advertising_license' => $responseProperty->advertising_license,
         ];
 
         TenantActivity::emit($request, 'property.created', 'user_properties', $responseProperty->id, null, [
@@ -1497,6 +1502,7 @@ class PropertyController extends Controller
             'water_meter_number' => 'nullable|string',
             'electricity_meter_number' => 'nullable|string',
             'deed_number' => 'nullable|string',
+            'advertising_license' => 'nullable|string',
             'video_url' => 'nullable|string',// For direct URL or OSS URL
             'virtual_tour' => 'nullable|string',
             'video_file' => 'nullable|file', // Video upload now handled separately via VideoUploadController
@@ -1679,6 +1685,7 @@ class PropertyController extends Controller
             'water_meter_number' => $responseProperty->water_meter_number,
             'electricity_meter_number' => $responseProperty->electricity_meter_number,
             'deed_number' => $responseProperty->deed_number ? asset($responseProperty->deed_number) : null,
+            'advertising_license' => $responseProperty->advertising_license,
         ], $characteristics);
 
         TenantActivity::emit($request, 'property.updated', 'user_properties', $property->id, $old ?? null, [
