@@ -74,4 +74,5 @@ database/seeds/DatabaseSeeder.php
 database/seeders/AdminSeeder.php
 .cursor/rules
 tests/api-scripts/*
-.bat
+*.bat
+
