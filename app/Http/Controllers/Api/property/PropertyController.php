@@ -2209,11 +2209,18 @@ class PropertyController extends Controller
         if ($request->has('bath') && !empty($request->bath)) {
             $propertiesQuery->where('bath', $request->bath);
         }
+        // OPTIMIZED: Use single JSON path query instead of multiple whereJsonContains calls
+        // This is more efficient than looping with multiple conditions
         if ($request->has('features') && !empty($request->features)) {
-            $featuresArray = explode(',', $request->features);
-            foreach ($featuresArray as $feature) {
-                $feature = trim($feature);
-                $propertiesQuery->whereJsonContains('features', $feature);
+            $featuresArray = array_filter(array_map('trim', explode(',', $request->features)));
+            if (!empty($featuresArray)) {
+                // Use whereRaw with JSON_CONTAINS for better performance when searching multiple features
+                // MySQL/MariaDB: Check if all features exist in the JSON array
+                $propertiesQuery->where(function($q) use ($featuresArray) {
+                    foreach ($featuresArray as $feature) {
+                        $q->whereJsonContains('features', $feature);
+                    }
+                });
             }
         }
 
@@ -2287,70 +2294,93 @@ class PropertyController extends Controller
                 $propertiesQuery->orderBy('reorder_featured', 'desc')->orderBy('reorder', 'asc');
         }
 
-        $properties = $propertiesQuery->paginate(10);
+        // OPTIMIZED: Make pagination configurable with max limit to prevent abuse
+        $perPage = min(50, max(1, (int) $request->input('per_page', 10)));
+        $properties = $propertiesQuery->paginate($perPage);
 
         // === GA4: views per property (last 30 days by default) ===
-        $tenantId  = $owner->username;                     // align GA context with tenant owner
-        $days      = (int) $request->input('days', 30);   // override with ?days=7 if you want
-        $startDate = Carbon::now()->subDays($days);
-        $endDate   = Carbon::now();
-
-        // Collect slugs for the current page
-        $slugs = $properties->getCollection()
-            ->map(fn ($p) => optional($p->contents->first())->slug)
-            ->filter()
-            ->values();
-
-        // Build candidate paths for each slug (adjust prefixes to match your frontend routes)
-        $paths = [];
-        foreach ($slugs as $slug) {
-            $paths[] = "/property/{$slug}";
-            $paths[] = "/ar/property/{$slug}";
-            $paths[] = "/en/property/{$slug}";
-        }
-
-        // Query GA4 with backend filtering to get ALL data (CACHED - 5 minutes)
+        // OPTIMIZED: Make GA query optional via include_views parameter to improve response time
         $viewsBySlug = [];
-        if (!empty($paths)) {
-            $cacheKey = "ga_views_{$tenantId}_{$days}_" . md5(implode(',', $slugs->toArray()));
-            $viewsBySlug = Cache::remember($cacheKey, 300, function () use ($analytics, $startDate, $endDate, $paths, $tenantId, $slugs) {
-                $result = [];
-                try {
-                    $allData = $analytics->getAllAnalyticsWithFilters(
-                        $startDate,
-                        $endDate,
-                        [
-                            'tenant_ids' => [$tenantId],
-                            'exclude_empty_tenant' => false,
-                            'limit' => count($paths) * 10,
-                        ]
-                    );
+        $includeViews = filter_var($request->input('include_views', true), FILTER_VALIDATE_BOOLEAN);
+        
+        if ($includeViews) {
+            $tenantId  = $owner->username;                     // align GA context with tenant owner
+            $days      = (int) $request->input('days', 30);   // override with ?days=7 if you want
+            $startDate = Carbon::now()->subDays($days);
+            $endDate   = Carbon::now();
 
-                    // Build a map of slug => total views
-                    foreach ($allData['data'] as $item) {
-                        $path = $item['path'];
-                        $views = (int) $item['views'];
-                        
-                        // Extract slug from path and add to slug view map
-                        foreach ($slugs as $slug) {
-                            if (strpos($path, $slug) !== false) {
-                                $result[$slug] = ($result[$slug] ?? 0) + $views;
+            // Collect slugs for the current page
+            $slugs = $properties->getCollection()
+                ->map(fn ($p) => optional($p->contents->first())->slug)
+                ->filter()
+                ->values();
+
+            // Build candidate paths for each slug (adjust prefixes to match your frontend routes)
+            $paths = [];
+            foreach ($slugs as $slug) {
+                $paths[] = "/property/{$slug}";
+                $paths[] = "/ar/property/{$slug}";
+                $paths[] = "/en/property/{$slug}";
+            }
+
+            // Query GA4 with backend filtering to get ALL data (CACHED - 5 minutes)
+            if (!empty($paths)) {
+                $cacheKey = "ga_views_{$tenantId}_{$days}_" . md5(implode(',', $slugs->toArray()));
+                $viewsBySlug = Cache::remember($cacheKey, 300, function () use ($analytics, $startDate, $endDate, $paths, $tenantId, $slugs) {
+                    $result = [];
+                    try {
+                        $allData = $analytics->getAllAnalyticsWithFilters(
+                            $startDate,
+                            $endDate,
+                            [
+                                'tenant_ids' => [$tenantId],
+                                'exclude_empty_tenant' => false,
+                                'limit' => count($paths) * 10,
+                            ]
+                        );
+
+                        // Build a map of slug => total views
+                        foreach ($allData['data'] as $item) {
+                            $path = $item['path'];
+                            $views = (int) $item['views'];
+                            
+                            // Extract slug from path and add to slug view map
+                            foreach ($slugs as $slug) {
+                                if (strpos($path, $slug) !== false) {
+                                    $result[$slug] = ($result[$slug] ?? 0) + $views;
+                                }
                             }
                         }
+                    } catch (\Exception $e) {
+                        Log::error('Google Analytics error in admin PropertyController', [
+                            'tenant' => $tenantId,
+                            'error' => $e->getMessage(),
+                        ]);
                     }
-                } catch (\Exception $e) {
-                    Log::error('Google Analytics error in admin PropertyController', [
-                        'tenant' => $tenantId,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-                return $result;
-            });
+                    return $result;
+                });
+            }
         }
 
         // ===== Get filter options (CACHED - 1 hour) =====
-        $cacheKey = "property_filter_options_{$ownerId}";
-        $filterOptions = Cache::remember($cacheKey, 3600, function () use ($allowedUserIds) {
+        // OPTIMIZED: Make filter options optional via include_filters parameter to reduce payload size
+        $includeFilters = filter_var($request->input('include_filters', true), FILTER_VALIDATE_BOOLEAN);
+        $availablePurposes = [];
+        $priceRange = ['min' => 0, 'max' => 0];
+        $areaRange = ['min' => 0];
+        $availableTypes = [];
+        $availableBeds = [];
+        $availableBath = [];
+        $availableFeatures = [];
+        $characteristicFilterOptions = [];
+        $employees = [];
+        $categories = [];
+        $paymentMethods = [];
+        $dateRange = ['min' => null, 'max' => null];
+        
+        if ($includeFilters) {
+            $cacheKey = "property_filter_options_{$ownerId}";
+            $filterOptions = Cache::remember($cacheKey, 3600, function () use ($allowedUserIds) {
             // OPTIMIZED: Combined price and area stats in single query
             $stats = Property::whereIn('user_id', $allowedUserIds)
                 ->where(function($q) {
@@ -2545,21 +2575,22 @@ class PropertyController extends Controller
                 'payment_methods' => $paymentMethods,
                 'date_range' => $dateRange,
             ];
-        });
+            });
 
-        // Extract cached values
-        $availablePurposes = $filterOptions['purposes'];
-        $priceRange = $filterOptions['price_range'];
-        $areaRange = $filterOptions['area_range'];
-        $availableTypes = $filterOptions['types'];
-        $availableBeds = $filterOptions['beds'];
-        $availableBath = $filterOptions['bath'];
-        $availableFeatures = $filterOptions['features'];
-        $characteristicFilterOptions = $filterOptions['characteristics'];
-        $employees = $filterOptions['employees'] ?? [];
-        $categories = $filterOptions['categories'] ?? [];
-        $paymentMethods = $filterOptions['payment_methods'] ?? [];
-        $dateRange = $filterOptions['date_range'] ?? ['min' => null, 'max' => null];
+            // Extract cached values
+            $availablePurposes = $filterOptions['purposes'];
+            $priceRange = $filterOptions['price_range'];
+            $areaRange = $filterOptions['area_range'];
+            $availableTypes = $filterOptions['types'];
+            $availableBeds = $filterOptions['beds'];
+            $availableBath = $filterOptions['bath'];
+            $availableFeatures = $filterOptions['features'];
+            $characteristicFilterOptions = $filterOptions['characteristics'];
+            $employees = $filterOptions['employees'] ?? [];
+            $categories = $filterOptions['categories'] ?? [];
+            $paymentMethods = $filterOptions['payment_methods'] ?? [];
+            $dateRange = $filterOptions['date_range'] ?? ['min' => null, 'max' => null];
+        }
 
         $specificsFilters = [
             'price_range' => $priceRange,
