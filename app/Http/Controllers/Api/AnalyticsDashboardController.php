@@ -2174,6 +2174,14 @@ class AnalyticsDashboardController extends Controller
      */
     public function liveTest(Request $request)
     {
+        // Start performance tracking
+        $startTime = microtime(true);
+        $performanceMetrics = [
+            'queries_executed' => 0,
+            'total_execution_time_ms' => 0,
+            'individual_query_times' => [],
+        ];
+        
         // Allow tenant_id from request for testing/debugging purposes
         // This is a debug endpoint, so we allow overriding the authenticated tenant
         $requestTenantId = $request->input('tenant_id');
@@ -2211,13 +2219,30 @@ class AnalyticsDashboardController extends Controller
         // Test query with tenant filter - same pattern as production methods
         // Use getTenantPageViews for simplicity (it already uses GA4 filters)
         try {
-            // Use existing service method which already implements GA4 filtering correctly
-            // This ensures we're testing the same code path as production
+            // Track query 1: getTenantPageViews
+            $query1Start = microtime(true);
             $tenantViews = $this->analytics->getTenantPageViews($tenantId, $startDate, $endDate);
+            $query1Time = (microtime(true) - $query1Start) * 1000; // Convert to milliseconds
+            $performanceMetrics['queries_executed']++;
+            $performanceMetrics['individual_query_times']['getTenantPageViews'] = round($query1Time, 2);
             
-            // Also test with a direct query to show the raw GA4 response structure
-            // This uses the same pattern as getOverviewMetrics
+            // Track query 2: getOverviewMetricsOnly
+            $query2Start = microtime(true);
             $overviewMetrics = $this->analytics->getOverviewMetricsOnly($tenantId, $startDate, $endDate);
+            $query2Time = (microtime(true) - $query2Start) * 1000;
+            $performanceMetrics['queries_executed']++;
+            $performanceMetrics['individual_query_times']['getOverviewMetricsOnly'] = round($query2Time, 2);
+            
+            // Get raw GA4 API response for detailed inspection
+            // Use reflection to access protected methods for raw response
+            $rawGA4Response = null;
+            try {
+                $rawGA4Response = $this->getRawGA4Response($tenantId, $startDate, $endDate, $tenantFilter);
+                $performanceMetrics['queries_executed']++;
+            } catch (\Exception $e) {
+                // If raw response fails, continue without it
+                $rawGA4Response = ['error' => 'Could not fetch raw GA4 response: ' . $e->getMessage()];
+            }
             
             // Get sample page paths for detailed verification
             $samplePaths = array_slice($tenantViews['paths'] ?? [], 0, 10);
@@ -2229,28 +2254,43 @@ class AnalyticsDashboardController extends Controller
             // Verify that data was returned (indicates GA4 filter is working)
             $hasData = $totalPageViews > 0 || $totalSessions > 0;
             
-            // Check what tenant_ids actually exist in GA4
+            // Track query 3: getTenantIdsInGA4
+            $query3Start = microtime(true);
             $tenantIdsInGA4 = $this->analytics->getTenantIdsInGA4($startDate, $endDate);
+            $query3Time = (microtime(true) - $query3Start) * 1000;
+            $performanceMetrics['queries_executed']++;
+            $performanceMetrics['individual_query_times']['getTenantIdsInGA4'] = round($query3Time, 2);
+            
             $tenantFoundInGA4 = isset($tenantIdsInGA4[$tenantId]);
             
-            // Verify GA4 is receiving data at all (across all tenants)
-            // Use getAllAnalyticsWithFilters without tenant filter to get all data
+            // Track query 4: Verify GA4 is receiving data at all (across all tenants)
+            $query4Start = microtime(true);
             try {
                 $allTenantsData = $this->analytics->getAllAnalyticsWithFilters($startDate, $endDate, []);
                 $hasAnyData = ($allTenantsData['total_views'] > 0 || !empty($allTenantsData['data']));
+                $query4Time = (microtime(true) - $query4Start) * 1000;
+                $performanceMetrics['queries_executed']++;
+                $performanceMetrics['individual_query_times']['getAllAnalyticsWithFilters'] = round($query4Time, 2);
             } catch (\Exception $e) {
-                // If query fails, assume no data
                 $allTenantsData = ['total_views' => 0, 'total_items' => 0, 'data' => []];
                 $hasAnyData = false;
+                $query4Time = (microtime(true) - $query4Start) * 1000;
+                $performanceMetrics['individual_query_times']['getAllAnalyticsWithFilters'] = round($query4Time, 2) . ' (failed)';
             }
             
-            // Get today's data for recent events check
+            // Track query 5: Get today's data for recent events check
+            $query5Start = microtime(true);
             try {
                 $todayData = $this->analytics->getTodayData($tenantId);
                 $hasTodayData = (($todayData['total_views'] ?? 0) > 0 || ($todayData['total_users'] ?? 0) > 0);
+                $query5Time = (microtime(true) - $query5Start) * 1000;
+                $performanceMetrics['queries_executed']++;
+                $performanceMetrics['individual_query_times']['getTodayData'] = round($query5Time, 2);
             } catch (\Exception $e) {
                 $todayData = ['total_views' => 0, 'total_users' => 0, 'total_pages' => 0, 'pages' => []];
                 $hasTodayData = false;
+                $query5Time = (microtime(true) - $query5Start) * 1000;
+                $performanceMetrics['individual_query_times']['getTodayData'] = round($query5Time, 2) . ' (failed)';
             }
             
             // Security verification: All data returned should belong to authenticated tenant
@@ -2351,6 +2391,12 @@ class AnalyticsDashboardController extends Controller
                     'security_fix_applied' => '2026-01-27 - Changed from backend filtering to GA4 API filtering',
                     'tenant_isolation' => 'Guaranteed by GA4 dimensionFilter with MatchType::EXACT',
                 ],
+                'raw_ga4_response' => [
+                    'note' => 'Raw GA4 API response structure for debugging',
+                    'response_structure' => $rawGA4Response,
+                    'usage' => 'Use this to verify the exact structure GA4 returns, including dimensions, metrics, and filters applied',
+                ],
+                'performance_metrics' => $this->calculatePerformanceMetrics($performanceMetrics, $startTime),
             ]);
             
         } catch (\Exception $e) {
@@ -2445,6 +2491,189 @@ class AnalyticsDashboardController extends Controller
         }
         
         return $recommendations;
+    }
+
+    /**
+     * Get raw GA4 API response for debugging
+     * 
+     * Returns the actual raw response structure from GA4 API
+     * Useful for understanding the exact data structure and verifying filters
+     * 
+     * @param string $tenantId
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @param FilterExpression $tenantFilter
+     * @return array
+     */
+    protected function getRawGA4Response(string $tenantId, Carbon $startDate, Carbon $endDate, FilterExpression $tenantFilter): array
+    {
+        try {
+            // Use reflection to access protected properties/methods for raw query
+            $reflection = new \ReflectionClass($this->analytics);
+            $clientProperty = $reflection->getProperty('client');
+            $clientProperty->setAccessible(true);
+            $client = $clientProperty->getValue($this->analytics);
+            
+            $propertyIdProperty = $reflection->getProperty('propertyId');
+            $propertyIdProperty->setAccessible(true);
+            $propertyId = $propertyIdProperty->getValue($this->analytics);
+            
+            $executeWithRetryMethod = $reflection->getMethod('executeWithRetry');
+            $executeWithRetryMethod->setAccessible(true);
+            
+            // Build the exact same query as production
+            $queryParams = [
+                'property' => $propertyId,
+                'dateRanges' => [
+                    new \Google\Analytics\Data\V1beta\DateRange([
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date' => $endDate->format('Y-m-d'),
+                    ]),
+                ],
+                'dimensions' => [
+                    new \Google\Analytics\Data\V1beta\Dimension(['name' => 'pagePath']),
+                    new \Google\Analytics\Data\V1beta\Dimension(['name' => 'customEvent:tenant_id']),
+                ],
+                'metrics' => [
+                    new \Google\Analytics\Data\V1beta\Metric(['name' => 'screenPageViews']),
+                    new \Google\Analytics\Data\V1beta\Metric(['name' => 'sessions']),
+                    new \Google\Analytics\Data\V1beta\Metric(['name' => 'totalUsers']),
+                ],
+                'dimensionFilter' => $tenantFilter, // GA4 filter applied
+                'limit' => 10, // Limit for raw response
+            ];
+            
+            $response = $executeWithRetryMethod->invoke($this->analytics, function() use ($client, $queryParams) {
+                return $client->runReport($queryParams);
+            }, 'getRawGA4Response');
+            
+            // Parse raw response
+            $rawRows = [];
+            foreach ($response->getRows() as $index => $row) {
+                $dimensions = $row->getDimensionValues();
+                $metrics = $row->getMetricValues();
+                
+                $rawRows[] = [
+                    'row_index' => $index,
+                    'dimensions' => [
+                        'pagePath' => $dimensions[0]->getValue(),
+                        'customEvent:tenant_id' => $dimensions[1]->getValue(),
+                    ],
+                    'metrics' => [
+                        'screenPageViews' => (int) $metrics[0]->getValue(),
+                        'sessions' => (int) $metrics[1]->getValue(),
+                        'totalUsers' => (int) $metrics[2]->getValue(),
+                    ],
+                ];
+            }
+            
+            return [
+                'query_params' => [
+                    'property' => $propertyId,
+                    'date_range' => [
+                        'start_date' => $startDate->format('Y-m-d'),
+                        'end_date' => $endDate->format('Y-m-d'),
+                    ],
+                    'dimensions_requested' => ['pagePath', 'customEvent:tenant_id'],
+                    'metrics_requested' => ['screenPageViews', 'sessions', 'totalUsers'],
+                    'filter_applied' => [
+                        'field_name' => 'customEvent:tenant_id',
+                        'filter_type' => 'string_filter',
+                        'match_type' => 'EXACT',
+                        'value' => $tenantId,
+                    ],
+                    'limit' => 10,
+                ],
+                'response_metadata' => [
+                    'total_rows_returned' => count($rawRows),
+                    'row_limit' => 10,
+                    'note' => 'Only first 10 rows shown for brevity',
+                ],
+                'raw_rows' => $rawRows,
+                'response_structure_explanation' => [
+                    'dimensions' => 'These are the breakdown dimensions from GA4',
+                    'metrics' => 'These are the aggregated metrics for each row',
+                    'filter_verification' => 'All rows should have customEvent:tenant_id matching: ' . $tenantId,
+                ],
+            ];
+        } catch (\Exception $e) {
+            return [
+                'error' => $e->getMessage(),
+                'error_type' => get_class($e),
+                'note' => 'Raw GA4 response could not be fetched - check GA4 credentials and property ID',
+            ];
+        }
+    }
+
+    /**
+     * Calculate and format performance metrics
+     * 
+     * @param array $performanceMetrics
+     * @param float $startTime
+     * @return array
+     */
+    protected function calculatePerformanceMetrics(array $performanceMetrics, float $startTime): array
+    {
+        $totalTime = (microtime(true) - $startTime) * 1000; // Convert to milliseconds
+        $performanceMetrics['total_execution_time_ms'] = round($totalTime, 2);
+        
+        // Calculate average query time
+        $successfulQueries = array_filter($performanceMetrics['individual_query_times'], function($time) {
+            return is_numeric($time);
+        });
+        
+        $avgQueryTime = !empty($successfulQueries) 
+            ? round(array_sum($successfulQueries) / count($successfulQueries), 2)
+            : 0;
+        
+        // Identify slowest query
+        $slowestQuery = null;
+        $slowestTime = 0;
+        foreach ($performanceMetrics['individual_query_times'] as $queryName => $queryTime) {
+            if (is_numeric($queryTime) && $queryTime > $slowestTime) {
+                $slowestTime = $queryTime;
+                $slowestQuery = $queryName;
+            }
+        }
+        
+        // Performance assessment
+        $performanceStatus = 'good';
+        $performanceNote = '';
+        if ($totalTime > 5000) {
+            $performanceStatus = 'slow';
+            $performanceNote = '⚠️ Total execution time exceeds 5 seconds - consider caching or optimization';
+        } elseif ($totalTime > 2000) {
+            $performanceStatus = 'moderate';
+            $performanceNote = 'ℹ️ Execution time is acceptable but could be optimized with caching';
+        } else {
+            $performanceNote = '✅ Performance is good';
+        }
+        
+        return [
+            'total_execution_time_ms' => $performanceMetrics['total_execution_time_ms'],
+            'total_execution_time_seconds' => round($performanceMetrics['total_execution_time_ms'] / 1000, 2),
+            'queries_executed' => $performanceMetrics['queries_executed'],
+            'average_query_time_ms' => $avgQueryTime,
+            'slowest_query' => $slowestQuery ? [
+                'query_name' => $slowestQuery,
+                'execution_time_ms' => $slowestTime,
+            ] : null,
+            'individual_query_times' => $performanceMetrics['individual_query_times'],
+            'performance_assessment' => [
+                'status' => $performanceStatus,
+                'note' => $performanceNote,
+                'recommendation' => $performanceStatus === 'slow' 
+                    ? 'Consider using materialized/cached data or reducing number of queries'
+                    : ($performanceStatus === 'moderate' 
+                        ? 'Caching recommended for frequently accessed data'
+                        : 'No optimization needed'),
+            ],
+            'performance_breakdown' => [
+                'api_calls' => 'Each GA4 API call is tracked separately',
+                'caching_note' => 'Production endpoints use caching to improve performance',
+                'optimization_tip' => 'For testing, these queries run without cache to show actual GA4 response times',
+            ],
+        ];
     }
 
 }
