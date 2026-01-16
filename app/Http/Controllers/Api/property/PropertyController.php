@@ -2135,16 +2135,14 @@ class PropertyController extends Controller
             ->whereNotNull('type')
             ->where('type', '!=', '');
         
-        // Ensure only properties with valid content (title, address, and slug) are returned
-        // This prevents "No Title", "No Address", and null slug fallback values
+        // Ensure only properties with valid content (title and address) are returned
+        // This prevents "No Title" and "No Address" fallback values
         if (!$willNeedContentJoin) {
             $propertiesQuery->whereHas('contents', function($q) {
                 $q->whereNotNull('title')
                   ->where('title', '!=', '')
                   ->whereNotNull('address')
-                  ->where('address', '!=', '')
-                  ->whereNotNull('slug')
-                  ->where('slug', '!=', '');
+                  ->where('address', '!=', '');
             });
         }
         
@@ -2250,13 +2248,11 @@ class PropertyController extends Controller
         // This ensures MySQL strict mode compliance while getting the first content per property
         // PERFORMANCE: Index idx_prop_content_property_id_id on (property_id, id) optimizes MIN(id) queries
         if ($hasContentJoin) {
-            // Ensure joined content has valid title, address, and slug (prevents "No Title", "No Address", and null slug)
+            // Ensure joined content has valid title and address (prevents "No Title" and "No Address")
             $propertiesQuery->whereNotNull($contentJoinAlias . '.title')
                            ->where($contentJoinAlias . '.title', '!=', '')
                            ->whereNotNull($contentJoinAlias . '.address')
-                           ->where($contentJoinAlias . '.address', '!=', '')
-                           ->whereNotNull($contentJoinAlias . '.slug')
-                           ->where($contentJoinAlias . '.slug', '!=', '');
+                           ->where($contentJoinAlias . '.address', '!=', '');
             
             // OPTIMIZED: Select content fields from JOIN to avoid eager loading
             // Use MIN() to get first content when multiple contents exist (avoids DISTINCT overhead)
@@ -2772,19 +2768,19 @@ class PropertyController extends Controller
                     'address'          => $content->address ?? 'No Address',
                     'slug'             => $slug,
                     'price'            => $property->price,
-                    'type'             => $property->type,
-                    'beds'             => $property->beds,
-                    'bath'             => $property->bath,
-                    'area'             => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : null,
-                    'transaction_type' => $property->purpose,
-                    'features'         => $property->features,
-                    'status'           => $property->status,
-                    'featured_image'   => asset($property->featured_image),
-                    'featured'         => (bool) $property->featured,
-                    'show_reservations' => (bool) $property->show_reservations,
-                    'created_at'       => $property->created_at->toISOString(),
-                    'updated_at'       => $property->updated_at->toISOString(),
-                    'payment_method'   => $property->payment_method,
+                'type'             => $property->type,
+                'beds'             => $property->beds,
+                'bath'             => $property->bath,
+                'area'             => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : null,
+                'transaction_type' => $property->purpose,
+                'features'         => $property->features,
+                'status'           => $property->status,
+                'featured_image'   => asset($property->featured_image),
+                'featured'         => (bool) $property->featured,
+                'show_reservations' => (bool) $property->show_reservations,
+                'created_at'       => $property->created_at->toISOString(),
+                'updated_at'       => $property->updated_at->toISOString(),
+                'payment_method'   => $property->payment_method,
                 'creator' => $property->creator ? [
                     'id'   => $property->creator->id,
                     'name' => trim(($property->creator->first_name ?? '') . ' ' . ($property->creator->last_name ?? '')) ?: ($property->creator->username ?? $property->creator->email),
