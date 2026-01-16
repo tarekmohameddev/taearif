@@ -2676,4 +2676,223 @@ class AnalyticsDashboardController extends Controller
         ];
     }
 
+    /**
+     * Get List of Tenants from GA4 Data
+     * 
+     * **Purpose:**
+     * Returns a list of all tenants that have analytics data in GA4 for the specified date range.
+     * Useful for administrative overview, debugging which tenants are being tracked, and
+     * verifying tenant tracking across the platform.
+     * 
+     * **Security:**
+     * This endpoint shows all tenants in GA4 (not filtered by authenticated user).
+     * Use with caution in production - consider adding admin-only middleware if needed.
+     * 
+     * **AI Agent Context:**
+     * This endpoint helps AI agents understand:
+     * 1. Which tenants are actively being tracked in GA4
+     * 2. Tenant activity levels (page views, sessions) for each tenant
+     * 3. The distribution of analytics data across tenants
+     * 4. Whether tenant tracking is working across all tenants
+     * 
+     * **Request Parameters:**
+     * - days (optional, default: 30) - Number of days to query. Recommended: 30 or 90 days.
+     *   Valid values: 7, 30, 90, 365
+     * 
+     * **Response Structure:**
+     * {
+     *   "status": "success",
+     *   "date_range": {
+     *     "start": "2025-12-17",
+     *     "end": "2026-01-16",
+     *     "days": 30
+     *   },
+     *   "tenants": [
+     *     {
+     *       "tenant_id": "asl-aledarh-real-estate",
+     *       "page_views": 150,
+     *       "sessions": 45,
+     *       "users": 20,
+     *       "rank": 1
+     *     }
+     *   ],
+     *   "summary": {
+     *     "total_tenants": 5,
+     *     "total_page_views": 500,
+     *     "average_views_per_tenant": 100
+     *   }
+     * }
+     * 
+     * **Example Usage:**
+     * ```bash
+     * # Get tenants from last 30 days (default)
+     * GET /api/analytics/tenants
+     * 
+     * # Get tenants from last 90 days
+     * GET /api/analytics/tenants?days=90
+     * 
+     * # Get tenants from last 7 days
+     * GET /api/analytics/tenants?days=7
+     * ```
+     * 
+     * **Example Response:**
+     * ```json
+     * {
+     *   "status": "success",
+     *   "date_range": {
+     *     "start": "2025-12-17",
+     *     "end": "2026-01-16",
+     *     "days": 30
+     *   },
+     *   "tenants": [
+     *     {
+     *       "tenant_id": "asl-aledarh-real-estate",
+     *       "page_views": 150,
+     *       "sessions": 45,
+     *       "users": 20,
+     *       "rank": 1
+     *     }
+     *   ],
+     *   "summary": {
+     *     "total_tenants": 1,
+     *     "total_page_views": 150,
+     *     "total_sessions": 45,
+     *     "average_views_per_tenant": 150
+     *   }
+     * }
+     * ```
+     * 
+     * **AI Agent Notes:**
+     * - This endpoint queries GA4 directly using customEvent:tenant_id dimension
+     * - Results are sorted by page views (descending)
+     * - Only includes tenants that have actual analytics data in the date range
+     * - Tenant IDs come from the customEvent:tenant_id parameter sent from frontend
+     * - Empty or "(not set)" tenant_ids are excluded from results
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getTenantsList(Request $request)
+    {
+        $startTime = microtime(true);
+        
+        // Validate days parameter (recommend 30 or 90, but allow 7 and 365 too)
+        $days = (int) $request->input('days', 30);
+        $allowedDays = [7, 30, 90, 365];
+        
+        if (!in_array($days, $allowedDays)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'days parameter must be one of: ' . implode(', ', $allowedDays),
+                'provided' => $days,
+                'allowed_values' => $allowedDays,
+            ], 400);
+        }
+        
+        $startDate = Carbon::now()->subDays($days);
+        $endDate = Carbon::now();
+        
+        try {
+            // Get tenant IDs with their page views from GA4
+            $tenantsData = $this->analytics->getTenantIdsInGA4($startDate, $endDate);
+            
+            // Calculate summary statistics
+            $totalTenants = count($tenantsData);
+            $totalPageViews = array_sum($tenantsData);
+            $averageViewsPerTenant = $totalTenants > 0 ? round($totalPageViews / $totalTenants, 2) : 0;
+            
+            // Format tenants list with ranking
+            $tenantsList = [];
+            $rank = 1;
+            foreach ($tenantsData as $tenantId => $pageViews) {
+                $tenantsList[] = [
+                    'tenant_id' => $tenantId,
+                    'page_views' => $pageViews,
+                    'rank' => $rank++,
+                ];
+            }
+            
+            // Get additional metrics for each tenant (sessions, users)
+            // This requires separate queries for each tenant, so we'll do batch queries
+            $tenantsWithMetrics = [];
+            foreach ($tenantsList as $tenant) {
+                try {
+                    // Quick query to get sessions and users for this tenant
+                    $overview = $this->analytics->getOverviewMetricsOnly(
+                        $tenant['tenant_id'],
+                        $startDate,
+                        $endDate
+                    );
+                    
+                    $tenantsWithMetrics[] = [
+                        'tenant_id' => $tenant['tenant_id'],
+                        'page_views' => $tenant['page_views'],
+                        'sessions' => $overview['sessions'] ?? 0,
+                        'users' => $overview['users'] ?? 0,
+                        'rank' => $tenant['rank'],
+                    ];
+                } catch (\Exception $e) {
+                    // If query fails, include tenant with page_views only
+                    $tenantsWithMetrics[] = [
+                        'tenant_id' => $tenant['tenant_id'],
+                        'page_views' => $tenant['page_views'],
+                        'sessions' => 0,
+                        'users' => 0,
+                        'rank' => $tenant['rank'],
+                        'note' => 'Additional metrics unavailable',
+                    ];
+                }
+            }
+            
+            $executionTime = (microtime(true) - $startTime) * 1000;
+            
+            // Calculate summary with all metrics
+            $totalSessions = array_sum(array_column($tenantsWithMetrics, 'sessions'));
+            $totalUsers = array_sum(array_column($tenantsWithMetrics, 'users'));
+            
+            return response()->json([
+                'status' => 'success',
+                'date_range' => [
+                    'start' => $startDate->format('Y-m-d'),
+                    'end' => $endDate->format('Y-m-d'),
+                    'days' => $days,
+                ],
+                'tenants' => $tenantsWithMetrics,
+                'summary' => [
+                    'total_tenants' => $totalTenants,
+                    'total_page_views' => $totalPageViews,
+                    'total_sessions' => $totalSessions,
+                    'total_users' => $totalUsers,
+                    'average_views_per_tenant' => $averageViewsPerTenant,
+                    'most_active_tenant' => $tenantsWithMetrics[0] ?? null,
+                ],
+                'performance' => [
+                    'execution_time_ms' => round($executionTime, 2),
+                    'execution_time_seconds' => round($executionTime / 1000, 2),
+                    'queries_executed' => $totalTenants + 1, // 1 for getTenantIdsInGA4 + N for getOverviewMetricsOnly
+                    'note' => 'Performance depends on number of tenants - consider caching for large tenant lists',
+                ],
+                'metadata' => [
+                    'data_source' => 'GA4 API (customEvent:tenant_id dimension)',
+                    'filter_applied' => 'None - returns all tenants with data',
+                    'sorting' => 'By page views (descending)',
+                    'note' => 'Only tenants with analytics data in the date range are included',
+                ],
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'error' => $e->getMessage(),
+                'error_type' => get_class($e),
+                'trace' => config('app.debug') ? $e->getTraceAsString() : 'Trace hidden in production',
+                'troubleshooting' => [
+                    'check_ga4_credentials' => 'Verify service-account-credentials.json exists and is valid',
+                    'check_property_id' => 'Verify services.google.analytics_property_id is configured',
+                    'check_ga4_data' => 'Verify GA4 has data for the specified date range',
+                ],
+            ], 500);
+        }
+    }
+
 }
