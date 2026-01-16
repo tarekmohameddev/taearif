@@ -2501,9 +2501,8 @@ class PropertyController extends Controller
 
         // === GA4: views per property (last 30 days by default) ===
         // OPTIMIZED: Make GA query optional via include_views parameter to improve response time
-        // PERFORMANCE: Changed default to false (opt-in) to reduce default response time
         $viewsBySlug = [];
-        $includeViews = filter_var($request->input('include_views', false), FILTER_VALIDATE_BOOLEAN);
+        $includeViews = filter_var($request->input('include_views', true), FILTER_VALIDATE_BOOLEAN);
         
         if ($includeViews) {
             $tenantId  = $owner->username;                     // align GA context with tenant owner
@@ -2555,8 +2554,7 @@ class PropertyController extends Controller
 
         // ===== Get filter options (CACHED - 1 hour) =====
         // OPTIMIZED: Make filter options optional via include_filters parameter to reduce payload size
-        // Changed default to false (opt-in) to reduce default payload size
-        $includeFilters = filter_var($request->input('include_filters', false), FILTER_VALIDATE_BOOLEAN);
+        $includeFilters = filter_var($request->input('include_filters', true), FILTER_VALIDATE_BOOLEAN);
         $availablePurposes = [];
         $priceRange = ['min' => 0, 'max' => 0];
         $areaRange = ['min' => 0];
@@ -2713,19 +2711,15 @@ class PropertyController extends Controller
             $paginationData['last_page'] = (int) ceil(($totalCount ?? $properties->total()) / $properties->perPage());
         }
         
-        // PERFORMANCE: Only include filter data when explicitly requested to reduce payload size
+        // Build response data
         $responseData = [
             'properties' => $formattedProperties,
+            'purposes_filter' => $availablePurposes,
+            'specifics_filters' => $specificsFilters,
             'total_reorder_featured' => $totalReorderFeatured,
             'incomplete_count' => $incompleteCount,
             'pagination' => $paginationData
         ];
-        
-        // Include filter options only when requested (opt-in to reduce default payload)
-        if ($includeFilters) {
-            $responseData['purposes_filter'] = $availablePurposes;
-            $responseData['specifics_filters'] = $specificsFilters;
-        }
         
         // PERFORMANCE: Log performance metrics for monitoring
         $endTime = microtime(true);
