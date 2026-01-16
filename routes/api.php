@@ -212,6 +212,7 @@ Route::middleware(['auth:sanctum', 'require.active.package'])->group(function ()
     Route::get('/analytics/page-locations', [AnalyticsDashboardController::class, 'getPageLocations']); // Get full URLs (page_location)
     Route::get('/analytics/today', [AnalyticsDashboardController::class, 'getToday']); // Get today's data (near realtime, perfect tenant filtering)
     Route::get('/analytics/realtime', [AnalyticsDashboardController::class, 'getRealtime']); // Get realtime data (last 30 minutes, limited filtering)
+    Route::get('/analytics/live-test', [AnalyticsDashboardController::class, 'liveTest']); // Live GA4 tenant filtering verification endpoint for debugging
 });
 
 Route::middleware('auth:sanctum')->group(function () {
