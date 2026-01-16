@@ -1010,119 +1010,133 @@ class PropertyController extends Controller
     public function show($id, GoogleAnalyticsService $analytics)
     {
         try {
-            $property = Property::with([
-                'category',
-                'user',
-                'contents',
-                'galleryImages',
-                'proertyAmenities.amenity',
-                'UserPropertyCharacteristics',
-                'creator',
-                'building',
-            ])->findOrFail($id);
+            $days = (int) request()->query('days', 30);
+            $cacheKey = "property_api_{$id}_v1_days_{$days}";
+            $cacheTtl = 300; // 5 minutes
 
-            $content = $property->contents->first();
-            $characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
+            $response = Cache::remember($cacheKey, $cacheTtl, function () use ($id, $analytics, $days) {
+                $property = Property::with([
+                    'category',
+                    'user',
+                    'contents' => fn($q) => $q->limit(1)->orderBy('language_id'),
+                    'galleryImages',
+                    'proertyAmenities.amenity',
+                    'UserPropertyCharacteristics',
+                    'creator',
+                    'building',
+                ])->findOrFail($id);
 
-            // Fetch views from Google Analytics (CACHED - 5 minutes)
-            $views = 0;
-            if ($content && $content->slug && $property->user) {
-                $days = (int) request()->query('days', 30);
-                $tenantId = $property->user->username;
-                $cacheKey = "ga_views_property_{$id}_{$tenantId}_{$days}_{$content->slug}";
-                
-                $views = Cache::remember($cacheKey, 300, function () use ($analytics, $days, $content, $tenantId) {
-                    $result = 0;
-                    try {
-                        // Build paths for this property (with and without language prefixes)
-                        $paths = [
-                            "/property/{$content->slug}",
-                            "/ar/property/{$content->slug}",
-                            "/en/property/{$content->slug}",
-                        ];
+                $content = $property->contents->first();
+                $characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
 
-                        $allData = $analytics->getAllAnalyticsWithFilters(
-                            now()->subDays($days),
-                            now(),
-                            [
-                                'tenant_ids' => [$tenantId],
-                                'exclude_empty_tenant' => false,
-                                'limit' => count($paths) * 10,
-                            ]
-                        );
+                // Fetch views from Google Analytics (CACHED - 5 minutes)
+                $views = 0;
+                if ($content && $content->slug && $property->user) {
+                    $tenantId = $property->user->username;
+                    $gaCacheKey = "ga_views_property_{$id}_{$tenantId}_{$days}_{$content->slug}";
+                    
+                    $views = Cache::remember($gaCacheKey, 300, function () use ($analytics, $days, $content, $tenantId) {
+                        $result = 0;
+                        try {
+                            // Build paths for this property (with and without language prefixes)
+                            $paths = [
+                                "/property/{$content->slug}",
+                                "/ar/property/{$content->slug}",
+                                "/en/property/{$content->slug}",
+                            ];
 
-                        // Sum views across all path variants
-                        foreach ($allData['data'] as $item) {
-                            if (in_array($item['path'], $paths)) {
-                                $result += (int) $item['views'];
+                            $allData = $analytics->getAllAnalyticsWithFilters(
+                                now()->subDays($days),
+                                now(),
+                                [
+                                    'tenant_ids' => [$tenantId],
+                                    'exclude_empty_tenant' => false,
+                                    'limit' => count($paths) * 10,
+                                ]
+                            );
+
+                            // Sum views across all path variants
+                            foreach ($allData['data'] as $item) {
+                                if (in_array($item['path'], $paths)) {
+                                    $result += (int) $item['views'];
+                                }
                             }
+                        } catch (\Exception $e) {
+                            Log::error('Google Analytics error in admin PropertyController show', [
+                                'property_id' => $property->id ?? null,
+                                'error' => $e->getMessage(),
+                            ]);
                         }
-                    } catch (\Exception $e) {
-                        Log::error('Google Analytics error in admin PropertyController show', [
-                            'property_id' => $property->id ?? null,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                    return $result;
-                });
-            }
+                        return $result;
+                    });
+                }
 
-            $formattedProperty = array_merge([
-                'id' => $property->id,
-                'project_id' => $property->project_id,
-                'payment_method' => $property->payment_method,
-                'title' => optional($content)->title ?? '',
-                'slug' => optional($content)->slug ?? '',
-                'address' => optional($content)->address ?? '',
-                'price' => isset($property->price) ? formatNumberWithoutTrailingZeros($property->price) : '0',
-                'views' => $views,
-                'pricePerMeter' => isset($property->pricePerMeter) ? formatNumberWithoutTrailingZeros($property->pricePerMeter) : null,
-                'purpose' => $property->purpose,
-                'type' => $property->type ?? '',
-                'beds' => $property->beds,
-                'bath' => $property->bath,
-                'area' => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : null,
-                'features' => $property->features ?? [],
-                'status' => (int) $property->status,
-                'featured_image' => asset($property->featured_image),
-                'floor_planning_image' => collect($property->floor_planning_image)->map(fn($img) => asset($img))->toArray(),
-                'gallery' => $property->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
-                'description' => optional($content)->description ?? '',
-                'latitude' => $property->latitude ? (float) $property->latitude : null,
-                'longitude' => $property->longitude ? (float) $property->longitude : null,
-                'location' => [
+                $formattedProperty = array_merge([
+                    'id' => $property->id,
+                    'project_id' => $property->project_id,
+                    'payment_method' => $property->payment_method,
+                    'title' => optional($content)->title ?? '',
+                    'slug' => optional($content)->slug ?? '',
+                    'address' => optional($content)->address ?? '',
+                    'price' => isset($property->price) ? formatNumberWithoutTrailingZeros($property->price) : '0',
+                    'views' => $views,
+                    'pricePerMeter' => isset($property->pricePerMeter) ? formatNumberWithoutTrailingZeros($property->pricePerMeter) : null,
+                    'purpose' => $property->purpose,
+                    'type' => $property->type ?? '',
+                    'beds' => $property->beds,
+                    'bath' => $property->bath,
+                    'area' => isset($property->area) ? formatNumberWithoutTrailingZeros($property->area) : null,
+                    'features' => $property->features ?? [],
+                    'status' => (int) $property->status,
+                    'featured_image' => asset($property->featured_image),
+                    'floor_planning_image' => $property->floor_planning_image_urls,
+                    'gallery' => $property->gallery_urls,
+                    'description' => optional($content)->description ?? '',
                     'latitude' => $property->latitude ? (float) $property->latitude : null,
                     'longitude' => $property->longitude ? (float) $property->longitude : null,
-                ],
-                'featured' => (bool) $property->featured,
-                'show_reservations' => (bool) $property->show_reservations,
-                'city_id' => optional($content)->city_id,
-                'state_id' => optional($content)->state_id,
-                'video_url' => $property->video_url ? asset($property->video_url) : null,
-                'virtual_tour' => $property->virtual_tour ? asset($property->virtual_tour) : null,
-                'video_image' => $property->video_image ? asset($property->video_image) : null,
-                'category_id' => $property->category_id,
-                'size' => $property->size ?? null,
-                'faqs' => $property->faqs ?? [],
-                'building' => $property->building,
-                'water_meter_number' => $property->water_meter_number,
-                'electricity_meter_number' => $property->electricity_meter_number,
-                'deed_number' => $property->deed_number ? asset($property->deed_number) : null,
-                'advertising_license' => $property->advertising_license,
-                'created_at' => $property->created_at->toISOString(),
-                'updated_at' => $property->updated_at->toISOString(),
-                'creator' => $property->creator ? [
-                    'id'   => $property->creator->id,
-                    'name' => trim(($property->creator->first_name ?? '') . ' ' . ($property->creator->last_name ?? '')) ?: ($property->creator->username ?? $property->creator->email),
-                    'type' => $property->creator->account_type,
-                ] : null,
-            ], $characteristics);
+                    'location' => [
+                        'latitude' => $property->latitude ? (float) $property->latitude : null,
+                        'longitude' => $property->longitude ? (float) $property->longitude : null,
+                    ],
+                    'featured' => (bool) $property->featured,
+                    'show_reservations' => (bool) $property->show_reservations,
+                    'city_id' => optional($content)->city_id,
+                    'state_id' => optional($content)->state_id,
+                    'video_url' => $property->video_url ? asset($property->video_url) : null,
+                    'virtual_tour' => $property->virtual_tour ? asset($property->virtual_tour) : null,
+                    'video_image' => $property->video_image ? asset($property->video_image) : null,
+                    'category_id' => $property->category_id,
+                    'size' => $property->size ?? null,
+                    'faqs' => $property->faqs ?? [],
+                    'building' => $property->building,
+                    'water_meter_number' => $property->water_meter_number,
+                    'electricity_meter_number' => $property->electricity_meter_number,
+                    'deed_number' => $property->deed_number ? asset($property->deed_number) : null,
+                    'advertising_license' => $property->advertising_license,
+                    'created_at' => $property->created_at->toISOString(),
+                    'updated_at' => $property->updated_at->toISOString(),
+                    'creator' => $property->creator ? [
+                        'id'   => $property->creator->id,
+                        'name' => trim(($property->creator->first_name ?? '') . ' ' . ($property->creator->last_name ?? '')) ?: ($property->creator->username ?? $property->creator->email),
+                        'type' => $property->creator->account_type,
+                    ] : null,
+                ], $characteristics);
 
-            return response()->json([
-                'status' => 'success',
-                'data' => [
-                    'property' => $formattedProperty
-                ]
+                return [
+                    'status' => 'success',
+                    'data' => [
+                        'property' => $formattedProperty
+                    ]
+                ];
+            });
+
+            // Build response with HTTP cache headers
+            $responseObj = response()->json($response);
+            $etag = md5($responseObj->getContent());
+            
+            return $responseObj->withHeaders([
+                'Cache-Control' => 'private, max-age=' . $cacheTtl,
+                'ETag' => $etag,
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
@@ -1810,8 +1824,8 @@ class PropertyController extends Controller
             'features' => $responseProperty->features ?? [],
             'status' => (int) $responseProperty->status,
             'featured_image' => asset($responseProperty->featured_image),
-            'floor_planning_image' => collect($responseProperty->floor_planning_image)->map(fn($img) => asset($img))->toArray(),
-            'gallery' => $responseProperty->galleryImages->pluck('image')->map(fn($image) => asset($image))->toArray(),
+            'floor_planning_image' => $responseProperty->floor_planning_image_urls,
+            'gallery' => $responseProperty->gallery_urls,
             'description' => optional($content)->description ?? '',
             'latitude' => $responseProperty->latitude ? (float) $responseProperty->latitude : null,
             'longitude' => $responseProperty->longitude ? (float) $responseProperty->longitude : null,
@@ -1832,6 +1846,12 @@ class PropertyController extends Controller
         TenantActivity::emit($request, 'property.updated', 'user_properties', $property->id, $old ?? null, [
             'id' => $property->id, 'title' => optional($property->contents->first())->title
         ]);
+
+        // Invalidate cache for this property (all days variants)
+        Cache::forget("property_api_{$id}_v1_days_7");
+        Cache::forget("property_api_{$id}_v1_days_30");
+        Cache::forget("property_api_{$id}_v1_days_90");
+        Cache::forget("property_api_{$id}_v1_days_365");
 
         return response()->json([
             'status' => 'success',
@@ -1862,6 +1882,12 @@ class PropertyController extends Controller
             }
 
             $property->delete();
+
+            // Invalidate cache for this property (all days variants)
+            Cache::forget("property_api_{$id}_v1_days_7");
+            Cache::forget("property_api_{$id}_v1_days_30");
+            Cache::forget("property_api_{$id}_v1_days_90");
+            Cache::forget("property_api_{$id}_v1_days_365");
 
             // TenantActivity::emit($request, 'property.deleted', 'user_properties', $property->id, $property->toArray(), null);
 

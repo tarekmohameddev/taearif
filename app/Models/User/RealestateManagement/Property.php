@@ -428,6 +428,42 @@ class Property extends Model
         return self::resolvePublicUrl($this->featured_image);
     }
 
+    /**
+     * Get gallery image URLs as array
+     * 
+     * @return array
+     */
+    public function getGalleryUrlsAttribute(): array
+    {
+        if (!$this->relationLoaded('galleryImages')) {
+            return [];
+        }
+        
+        return $this->galleryImages->map(function ($image) {
+            return asset($image->image);
+        })->toArray();
+    }
+
+    /**
+     * Get floor planning image URLs as array
+     * 
+     * @return array
+     */
+    public function getFloorPlanningImageUrlsAttribute(): array
+    {
+        if (empty($this->floor_planning_image)) {
+            return [];
+        }
+        
+        $images = is_array($this->floor_planning_image) 
+            ? $this->floor_planning_image 
+            : [$this->floor_planning_image];
+        
+        return array_map(function ($img) {
+            return asset($img);
+        }, array_filter($images));
+    }
+
     // If you expose gallery with legacy rows, you might want similar accessors
     // public function getVideoImageUrlAttribute(): ?string { ... }
 
