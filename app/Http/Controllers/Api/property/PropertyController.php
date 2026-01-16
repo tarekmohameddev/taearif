@@ -2127,12 +2127,23 @@ class PropertyController extends Controller
             ->where(function($q) {
                 $q->where('completion_status', 'complete')
                   ->orWhereNull('completion_status'); // Include older properties that might not have this field set
-            });
+            })
+            // Ensure required fields have values: category, purpose, and type
+            ->whereNotNull('category_id')
+            ->whereNotNull('purpose')
+            ->where('purpose', '!=', '')
+            ->whereNotNull('type')
+            ->where('type', '!=', '');
         
-        // Ensure only properties with content records are returned (when no content JOIN is used)
+        // Ensure only properties with valid content (title and address) are returned
         // This prevents "No Title" and "No Address" fallback values
         if (!$willNeedContentJoin) {
-            $propertiesQuery->whereHas('contents');
+            $propertiesQuery->whereHas('contents', function($q) {
+                $q->whereNotNull('title')
+                  ->where('title', '!=', '')
+                  ->whereNotNull('address')
+                  ->where('address', '!=', '');
+            });
         }
         
         $contentJoinAlias = 'pc_content'; // Single alias for all content joins
@@ -2237,6 +2248,12 @@ class PropertyController extends Controller
         // This ensures MySQL strict mode compliance while getting the first content per property
         // PERFORMANCE: Index idx_prop_content_property_id_id on (property_id, id) optimizes MIN(id) queries
         if ($hasContentJoin) {
+            // Ensure joined content has valid title and address (prevents "No Title" and "No Address")
+            $propertiesQuery->whereNotNull($contentJoinAlias . '.title')
+                           ->where($contentJoinAlias . '.title', '!=', '')
+                           ->whereNotNull($contentJoinAlias . '.address')
+                           ->where($contentJoinAlias . '.address', '!=', '');
+            
             // OPTIMIZED: Select content fields from JOIN to avoid eager loading
             // Use MIN() to get first content when multiple contents exist (avoids DISTINCT overhead)
             // The composite index (property_id, id) on user_property_contents makes MIN(id) queries efficient
