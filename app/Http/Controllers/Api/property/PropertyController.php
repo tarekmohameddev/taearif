@@ -2123,7 +2123,18 @@ class PropertyController extends Controller
         }
         
         $propertiesQuery = Property::with($eagerLoadRelations)
-            ->whereIn('user_id', $allowedUserIds);
+            ->whereIn('user_id', $allowedUserIds)
+            ->where(function($q) {
+                $q->where('completion_status', 'complete')
+                  ->orWhereNull('completion_status'); // Include older properties that might not have this field set
+            });
+        
+        // Ensure only properties with content records are returned (when no content JOIN is used)
+        // This prevents "No Title" and "No Address" fallback values
+        if (!$willNeedContentJoin) {
+            $propertiesQuery->whereHas('contents');
+        }
+        
         $contentJoinAlias = 'pc_content'; // Single alias for all content joins
         $useInnerJoin = false; // Determine if we need INNER JOIN (for city/district filters)
 
