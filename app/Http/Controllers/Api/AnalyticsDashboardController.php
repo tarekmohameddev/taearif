@@ -2092,6 +2092,8 @@ class AnalyticsDashboardController extends Controller
      * 
      * **Request Parameters:**
      * - days (optional, default: 7) - Number of days to query (1-365)
+     * - tenant_id (optional) - Specific tenant to test. If not provided, uses authenticated user's tenant.
+     *   **Note:** This parameter is allowed for debugging/testing purposes only.
      * 
      * **Response Structure:**
      * {
@@ -2120,11 +2122,14 @@ class AnalyticsDashboardController extends Controller
      * 
      * **Example Usage:**
      * ```bash
-     * # Test with default 7 days
+     * # Test with default 7 days (uses authenticated user's tenant)
      * GET /api/analytics/live-test
      * 
-     * # Test with 30 days
+     * # Test with 30 days (uses authenticated user's tenant)
      * GET /api/analytics/live-test?days=30
+     * 
+     * # Test specific tenant (for debugging/testing)
+     * GET /api/analytics/live-test?tenant_id=asl-aledarh-real-estate&days=30
      * ```
      * 
      * **Example Response (Success):**
@@ -2169,7 +2174,23 @@ class AnalyticsDashboardController extends Controller
      */
     public function liveTest(Request $request)
     {
-        $tenantId = $this->tenantId($request);
+        // Allow tenant_id from request for testing/debugging purposes
+        // This is a debug endpoint, so we allow overriding the authenticated tenant
+        $requestTenantId = $request->input('tenant_id');
+        $authenticatedTenantId = $this->tenantId($request);
+        
+        // Use requested tenant_id if provided, otherwise use authenticated user's tenant
+        $tenantId = $requestTenantId ?: $authenticatedTenantId;
+        
+        // Validate tenant_id if provided (must be non-empty string)
+        if ($requestTenantId && (!is_string($requestTenantId) || trim($requestTenantId) === '')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'tenant_id parameter must be a non-empty string',
+                'provided' => $requestTenantId,
+            ], 400);
+        }
+        
         $days = (int) $request->input('days', 7);
         
         // Validate days parameter
@@ -2241,7 +2262,11 @@ class AnalyticsDashboardController extends Controller
             return response()->json([
                 'status' => 'success',
                 'test_info' => [
-                    'authenticated_tenant' => $tenantId,
+                    'authenticated_tenant' => $authenticatedTenantId,
+                    'tested_tenant' => $tenantId,
+                    'tenant_source' => $requestTenantId 
+                        ? 'request_parameter' 
+                        : 'authenticated_user',
                     'date_range' => [
                         'start' => $startDate->format('Y-m-d'),
                         'end' => $endDate->format('Y-m-d'),
