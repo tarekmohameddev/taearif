@@ -13,6 +13,11 @@ class PropertyObserver
     /**
      * Clear property-related caches for a given user ID.
      * This ensures statistics and listings remain accurate after property changes.
+     * 
+     * Note: Cache keys with hashed filters (properties_list_{ownerId}_{hash}) cannot be
+     * easily cleared individually. The cache will expire naturally based on TTL (5-10 minutes).
+     * For immediate invalidation of all property list caches, consider using cache tags
+     * (requires Redis/Memcached) or implementing a cache key registry.
      */
     private function clearPropertyCachesForUser(?int $userId): void
     {
@@ -31,10 +36,11 @@ class PropertyObserver
                 Cache::forget($cacheKey);
                 
                 // Clear properties list cache (all variations)
-                // Use pattern matching to clear all cached property lists for this owner
                 // Note: Laravel cache doesn't support wildcard deletion, so we'll clear
-                // the most common cache keys. For full invalidation, consider using cache tags
-                // or a cache key registry if needed.
+                // the most common cache keys. The hashed cache keys (properties_list_{ownerId}_{hash})
+                // will expire naturally based on TTL (5-10 minutes). For immediate invalidation
+                // of all property list caches, consider using cache tags (requires Redis/Memcached)
+                // or implementing a cache key registry.
                 $cachePrefix = "properties_list_{$ownerId}_";
                 
                 // Clear count caches
@@ -44,6 +50,13 @@ class PropertyObserver
                 
                 // Clear filter options cache (may be affected by property changes)
                 Cache::forget("property_filter_options_{$ownerId}");
+                
+                // Clear tenant employees cache (may affect allowed user IDs)
+                Cache::forget("tenant_employees_{$ownerId}");
+                
+                // Note: Pagination count caches (properties_list_{ownerId}_{hash}_total) 
+                // are hashed and cannot be easily cleared individually. They will expire
+                // with the same TTL as the main query cache (5-10 minutes).
             }
         } catch (\Throwable $e) {
             // Silently fail cache clearing - don't break property operations

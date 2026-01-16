@@ -2372,19 +2372,41 @@ class PropertyController extends Controller
         // Increased default from 10 to 20 for better UX and fewer requests
         $perPage = min(50, max(1, (int) $request->input('per_page', 20)));
         
+        // OPTIMIZED: Support simple pagination to skip COUNT query for better performance
+        $useSimplePagination = filter_var($request->input('simple_pagination', false), FILTER_VALIDATE_BOOLEAN);
+        
         // OPTIMIZED: Cache query results to improve performance
         // Cache key includes owner ID and hash of filters/pagination for uniqueness
         $cacheKey = 'properties_list_' . $ownerId . '_' . md5(json_encode([
-            'filters' => $request->except(['page', 'per_page', 'include_views', 'include_filters']),
+            'filters' => $request->except(['page', 'per_page', 'include_views', 'include_filters', 'simple_pagination']),
             'page' => $request->input('page', 1),
-            'per_page' => $perPage
+            'per_page' => $perPage,
+            'simple_pagination' => $useSimplePagination
         ]));
         
         // Cache for 5 minutes (shorter TTL for first page, can be adjusted)
         $cacheTTL = $request->input('page', 1) == 1 ? 300 : 600; // 5 min for page 1, 10 min for others
-        $properties = Cache::remember($cacheKey, $cacheTTL, function () use ($propertiesQuery, $perPage) {
-            return $propertiesQuery->paginate($perPage);
-        });
+        
+        // OPTIMIZED: Cache pagination COUNT separately to avoid executing on every request
+        $totalCountCacheKey = $cacheKey . '_total';
+        $totalCount = null;
+        
+        if ($useSimplePagination) {
+            // Simple pagination skips COUNT query for better performance
+            $properties = Cache::remember($cacheKey, $cacheTTL, function () use ($propertiesQuery, $perPage) {
+                return $propertiesQuery->simplePaginate($perPage);
+            });
+        } else {
+            // Full pagination with COUNT query
+            $properties = Cache::remember($cacheKey, $cacheTTL, function () use ($propertiesQuery, $perPage) {
+                return $propertiesQuery->paginate($perPage);
+            });
+            
+            // Cache the total count separately to avoid re-executing COUNT on cached results
+            $totalCount = Cache::remember($totalCountCacheKey, $cacheTTL, function () use ($propertiesQuery) {
+                return $propertiesQuery->count();
+            });
+        }
 
         // === GA4: views per property (last 30 days by default) ===
         // OPTIMIZED: Make GA query optional via include_views parameter to improve response time
@@ -2578,6 +2600,26 @@ class PropertyController extends Controller
         $totalReorderFeatured = (int) ($counts->total_reorder_featured ?? 0);
         $incompleteCount = (int) ($counts->incomplete_count ?? 0);
 
+        // Build pagination metadata
+        $paginationData = [
+            'per_page'     => $properties->perPage(),
+            'current_page' => $properties->currentPage(),
+            'from'         => $properties->firstItem(),
+            'to'           => $properties->lastItem(),
+        ];
+        
+        if ($useSimplePagination) {
+            // Simple pagination: only include has_more_pages indicator
+            $paginationData['has_more_pages'] = $properties->hasMorePages();
+            if ($properties->hasMorePages()) {
+                $paginationData['next_page_url'] = $properties->nextPageUrl();
+            }
+        } else {
+            // Full pagination: include total count and last page
+            $paginationData['total'] = $totalCount ?? $properties->total();
+            $paginationData['last_page'] = (int) ceil(($totalCount ?? $properties->total()) / $properties->perPage());
+        }
+        
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -2586,14 +2628,7 @@ class PropertyController extends Controller
                 'specifics_filters' => $specificsFilters,
                 'total_reorder_featured' => $totalReorderFeatured,
                 'incomplete_count' => $incompleteCount,
-                'pagination' => [
-                    'total'        => $properties->total(),
-                    'per_page'     => $properties->perPage(),
-                    'current_page' => $properties->currentPage(),
-                    'last_page'    => $properties->lastPage(),
-                    'from'         => $properties->firstItem(),
-                    'to'           => $properties->lastItem(),
-                ]
+                'pagination' => $paginationData
             ]
         ], 200);
     }
