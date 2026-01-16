@@ -63,6 +63,14 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->runInBackground();
 
+        // Pre-warm property filter options cache (runs every 50 minutes to refresh before cache expiration)
+        // Cache TTL is 1 hour, so this runs every 50 minutes to keep cache fresh
+        $schedule->command('properties:prewarm-filter-cache')
+            ->cron('*/50 * * * *') // Every 50 minutes
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->runInBackground();
+
     }
 
     /**

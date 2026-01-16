@@ -21,6 +21,8 @@ use App\Models\User\HomePageText;
 use App\Models\Api\ApiMenuSetting;
 use App\Models\Api\GeneralSetting;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use App\Models\Api\ApiBannerSetting;
 use App\Models\User\FooterQuickLink;
 use App\Models\User\UserShopSetting;
@@ -70,7 +72,7 @@ class AppServiceProvider extends ServiceProvider
                 $langs = Language::all();
             } catch (\Exception $e) {
                 // Handle database connection errors gracefully
-                \Log::warning('AppServiceProvider: Database connection failed during bootstrap', [
+                Log::warning('AppServiceProvider: Database connection failed during bootstrap', [
                     'error' => $e->getMessage()
                 ]);
                 $socials = collect();
@@ -424,21 +426,84 @@ class AppServiceProvider extends ServiceProvider
             ApiCustomerInquiry::observe(ApiCustomerInquiryObserver::class);
             UserApiCustomerReminder::observe(UserApiCustomerReminderObserver::class);
         } catch (\Throwable $e) {
-            \Log::warning('Failed to register matching observers', ['error' => $e->getMessage()]);
+            Log::warning('Failed to register matching observers', ['error' => $e->getMessage()]);
         }
 
-        // Query performance logging (development only)
-        // Logs queries taking more than 100ms to help identify performance bottlenecks
-        if (config('app.debug') && !app()->environment('production')) {
-            DB::listen(function ($query) {
-                if ($query->time > 100) { // Log queries taking more than 100ms
-                    \Log::warning('Slow Query Detected', [
-                        'sql' => $query->sql,
-                        'bindings' => $query->bindings,
-                        'time' => $query->time . 'ms'
+        // OPTIMIZED: Enhanced query performance logging and cache hit rate tracking
+        // Logs slow queries (>100ms) in all environments for monitoring
+        // In production, uses info level; in development, uses warning level
+        $logLevel = app()->environment('production') ? 'info' : 'warning';
+        $slowQueryThreshold = (int) config('app.slow_query_threshold', 100); // Configurable threshold
+        
+        DB::listen(function ($query) use ($logLevel, $slowQueryThreshold) {
+            if ($query->time > $slowQueryThreshold) {
+                $logData = [
+                    'time' => $query->time . 'ms',
+                    'sql' => $query->sql,
+                    'bindings' => $query->bindings,
+                    'connection' => $query->connectionName ?? 'default',
+                ];
+                
+                // In production, don't log full SQL for security, just summary
+                if (app()->environment('production')) {
+                    // Extract table name and operation type for production logging
+                    $sql = $query->sql;
+                    $operation = 'unknown';
+                    $table = 'unknown';
+                    
+                    if (preg_match('/^\s*(SELECT|INSERT|UPDATE|DELETE)\s+/i', $sql, $matches)) {
+                        $operation = strtoupper(trim($matches[1]));
+                    }
+                    if (preg_match('/FROM\s+`?(\w+)`?/i', $sql, $matches)) {
+                        $table = $matches[1];
+                    } elseif (preg_match('/INTO\s+`?(\w+)`?/i', $sql, $matches)) {
+                        $table = $matches[1];
+                    } elseif (preg_match('/UPDATE\s+`?(\w+)`?/i', $sql, $matches)) {
+                        $table = $matches[1];
+                    }
+                    
+                    $logData = [
+                        'time' => $query->time . 'ms',
+                        'operation' => $operation,
+                        'table' => $table,
+                        'connection' => $query->connectionName ?? 'default',
+                    ];
+                }
+                
+                if ($logLevel === 'info') {
+                    Log::info('Slow Query Detected', $logData);
+                } else {
+                    Log::warning('Slow Query Detected', $logData);
+                }
+            }
+        });
+        
+        // Track cache hit rates for important caches (property filter options)
+        // Monitor cache effectiveness by logging cache misses
+        $originalRemember = Cache::getStore();
+        Cache::macro('rememberWithTracking', function ($key, $ttl, $callback) {
+            if (Cache::has($key)) {
+                // Cache hit - increment hit counter
+                $hitKey = "cache_stats_hit_{$key}";
+                Cache::increment($hitKey, 1);
+                return Cache::get($key);
+            } else {
+                // Cache miss - increment miss counter and log
+                $missKey = "cache_stats_miss_{$key}";
+                Cache::increment($missKey, 1);
+                
+                // Log cache miss for important caches
+                if (strpos($key, 'property_filter_options') !== false) {
+                    Log::info('Property filter options cache miss', [
+                        'cache_key' => $key,
+                        'ttl' => $ttl
                     ]);
                 }
-            });
-        }
+                
+                $value = $callback();
+                Cache::put($key, $value, $ttl);
+                return $value;
+            }
+        });
     }
 }
