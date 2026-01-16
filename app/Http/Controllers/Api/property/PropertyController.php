@@ -2127,23 +2127,12 @@ class PropertyController extends Controller
             ->where(function($q) {
                 $q->where('completion_status', 'complete')
                   ->orWhereNull('completion_status'); // Include older properties that might not have this field set
-            })
-            // Ensure required fields have values: category, purpose, and type
-            ->whereNotNull('category_id')
-            ->whereNotNull('purpose')
-            ->where('purpose', '!=', '')
-            ->whereNotNull('type')
-            ->where('type', '!=', '');
+            });
         
-        // Ensure only properties with valid content (title and address) are returned
+        // Ensure only properties with content records are returned (when no content JOIN is used)
         // This prevents "No Title" and "No Address" fallback values
         if (!$willNeedContentJoin) {
-            $propertiesQuery->whereHas('contents', function($q) {
-                $q->whereNotNull('title')
-                  ->where('title', '!=', '')
-                  ->whereNotNull('address')
-                  ->where('address', '!=', '');
-            });
+            $propertiesQuery->whereHas('contents');
         }
         
         $contentJoinAlias = 'pc_content'; // Single alias for all content joins
@@ -2248,12 +2237,6 @@ class PropertyController extends Controller
         // This ensures MySQL strict mode compliance while getting the first content per property
         // PERFORMANCE: Index idx_prop_content_property_id_id on (property_id, id) optimizes MIN(id) queries
         if ($hasContentJoin) {
-            // Ensure joined content has valid title and address (prevents "No Title" and "No Address")
-            $propertiesQuery->whereNotNull($contentJoinAlias . '.title')
-                           ->where($contentJoinAlias . '.title', '!=', '')
-                           ->whereNotNull($contentJoinAlias . '.address')
-                           ->where($contentJoinAlias . '.address', '!=', '');
-            
             // OPTIMIZED: Select content fields from JOIN to avoid eager loading
             // Use MIN() to get first content when multiple contents exist (avoids DISTINCT overhead)
             // The composite index (property_id, id) on user_property_contents makes MIN(id) queries efficient
@@ -2728,46 +2711,28 @@ class PropertyController extends Controller
         }
         
         // OPTIMIZED: Use content from JOIN if available, otherwise use eager loaded relationship
-        // Filter out properties with invalid content (should only appear in /api/properties/drafts)
-        // Properties with "No Title", "No Address", or null slug are considered incomplete
-        $formattedProperties = $properties->getCollection()
-            ->filter(function ($property) use ($hasContentJoin) {
-                // Ensure property has valid content (title, address, and slug)
-                if ($hasContentJoin && isset($property->content_slug)) {
-                    $hasValidTitle = !empty($property->content_title) && $property->content_title !== 'No Title';
-                    $hasValidAddress = !empty($property->content_address) && $property->content_address !== 'No Address';
-                    $hasValidSlug = !empty($property->content_slug);
-                    return $hasValidTitle && $hasValidAddress && $hasValidSlug;
-                } else {
-                    $content = $property->contents->first();
-                    $hasValidTitle = $content && !empty($content->title) && $content->title !== 'No Title';
-                    $hasValidAddress = $content && !empty($content->address) && $content->address !== 'No Address';
-                    $hasValidSlug = $content && !empty($content->slug);
-                    return $hasValidTitle && $hasValidAddress && $hasValidSlug;
-                }
-            })
-            ->map(function ($property) use ($viewsBySlug, $fieldsToInclude, $hasContentJoin) {
-                // Use content from JOIN if available (when filtering by city/district/search)
-                if ($hasContentJoin && isset($property->content_slug)) {
-                    $content = (object) [
-                        'title' => $property->content_title ?? null,
-                        'slug' => $property->content_slug ?? null,
-                        'address' => $property->content_address ?? null,
-                        'description' => $property->content_description ?? null,
-                    ];
-                } else {
-                    // Fallback to eager loaded relationship
-                    $content = optional($property->contents->first());
-                }
-                $slug = $content->slug ?? null;
+        $formattedProperties = $properties->getCollection()->map(function ($property) use ($viewsBySlug, $fieldsToInclude, $hasContentJoin) {
+            // Use content from JOIN if available (when filtering by city/district/search)
+            if ($hasContentJoin && isset($property->content_slug)) {
+                $content = (object) [
+                    'title' => $property->content_title ?? null,
+                    'slug' => $property->content_slug ?? null,
+                    'address' => $property->content_address ?? null,
+                    'description' => $property->content_description ?? null,
+                ];
+            } else {
+                // Fallback to eager loaded relationship
+                $content = optional($property->contents->first());
+            }
+            $slug = $content->slug ?? null;
 
-                $propertyData = [
-                    'id'               => $property->id,
-                    'visits'           => (int) ($viewsBySlug[$slug] ?? 0),
-                    'title'            => $content->title ?? 'No Title',
-                    'address'          => $content->address ?? 'No Address',
-                    'slug'             => $slug,
-                    'price'            => $property->price,
+            $propertyData = [
+                'id'               => $property->id,
+                'visits'           => (int) ($viewsBySlug[$slug] ?? 0),
+                'title'            => $content->title ?? 'No Title',
+                'address'          => $content->address ?? 'No Address',
+                'slug'             => $slug,
+                'price'            => $property->price,
                 'type'             => $property->type,
                 'beds'             => $property->beds,
                 'bath'             => $property->bath,
