@@ -2035,6 +2035,10 @@ class PropertyController extends Controller
 
     public function index(Request $request, GoogleAnalyticsService $analytics)
     {
+        // PERFORMANCE: Start timing for query performance monitoring
+        $startTime = microtime(true);
+        $queryStartCount = DB::getQueryLog() ? count(DB::getQueryLog()) : 0;
+        
         $user = $request->user();
 
         // Resolve tenant owner and include all employees under that tenant
@@ -2140,7 +2144,9 @@ class PropertyController extends Controller
             
             // OPTIMIZED: Simplify search query structure for better index usage
             // Prioritize full-text search, then prefix matching, then fallback to wildcard
-            $propertiesQuery->where(function($q) use ($searchTerm, $contentJoinAlias, $isMysql56Plus) {
+            // PERFORMANCE: Require minimum 3 characters for wildcard searches to prevent slow queries
+            $minWildcardLength = 3;
+            $propertiesQuery->where(function($q) use ($searchTerm, $contentJoinAlias, $isMysql56Plus, $minWildcardLength) {
                 // For search terms 3+ chars, prioritize full-text search (fastest with proper index)
                 if (strlen($searchTerm) >= 3 && $isMysql56Plus) {
                     // Full-text search is most efficient - try this first
@@ -2149,26 +2155,33 @@ class PropertyController extends Controller
                 } else {
                     // For shorter terms or when full-text not available, use prefix matching
                     $prefixTerm = $searchTerm . '%';
-                    $q->where(function($subQ) use ($prefixTerm, $searchTerm, $contentJoinAlias) {
+                    $q->where(function($subQ) use ($prefixTerm, $searchTerm, $contentJoinAlias, $minWildcardLength) {
                         // Prefix matching can use indexes (term%)
                         $subQ->where($contentJoinAlias . '.title', 'like', $prefixTerm)
                             ->orWhere($contentJoinAlias . '.address', 'like', $prefixTerm);
                         
-                        // Fallback to wildcard only if prefix doesn't match (less efficient)
-                        // Group wildcard searches together to minimize index scan impact
-                        $subQ->orWhere(function($wildcardQ) use ($searchTerm, $contentJoinAlias) {
-                            $wildcardQ->where($contentJoinAlias . '.title', 'like', "%{$searchTerm}%")
-                                ->orWhere($contentJoinAlias . '.address', 'like', "%{$searchTerm}%")
-                                ->orWhere($contentJoinAlias . '.description', 'like', "%{$searchTerm}%");
-                        });
+                        // PERFORMANCE: Only use wildcard search if term is long enough (prevents slow index scans)
+                        // Wildcard searches (%term%) cannot use indexes efficiently, so limit to 3+ characters
+                        if (strlen($searchTerm) >= $minWildcardLength) {
+                            // Group wildcard searches together to minimize index scan impact
+                            $subQ->orWhere(function($wildcardQ) use ($searchTerm, $contentJoinAlias) {
+                                $wildcardQ->where($contentJoinAlias . '.title', 'like', "%{$searchTerm}%")
+                                    ->orWhere($contentJoinAlias . '.address', 'like', "%{$searchTerm}%")
+                                    ->orWhere($contentJoinAlias . '.description', 'like', "%{$searchTerm}%");
+                            });
+                        }
                     });
                 }
                 
                 // Search in price if numeric (separate condition to allow index usage on price)
                 if (is_numeric($searchTerm)) {
-                    $q->orWhere(function($priceQ) use ($searchTerm) {
-                        $priceQ->where('user_properties.price', $searchTerm)
-                            ->orWhere('user_properties.price', 'like', "%{$searchTerm}%");
+                    $q->orWhere(function($priceQ) use ($searchTerm, $minWildcardLength) {
+                        // Exact match first (can use index)
+                        $priceQ->where('user_properties.price', $searchTerm);
+                        // Only use wildcard for price if search term is long enough
+                        if (strlen($searchTerm) >= $minWildcardLength) {
+                            $priceQ->orWhere('user_properties.price', 'like', "%{$searchTerm}%");
+                        }
                     });
                 }
             });
@@ -2177,9 +2190,11 @@ class PropertyController extends Controller
         // Ensure proper selection and distinct after content JOINs
         // OPTIMIZED: Use GROUP BY with MIN() aggregations instead of DISTINCT for better performance
         // This ensures MySQL strict mode compliance while getting the first content per property
+        // PERFORMANCE: Index idx_prop_content_property_id_id on (property_id, id) optimizes MIN(id) queries
         if ($hasContentJoin) {
             // OPTIMIZED: Select content fields from JOIN to avoid eager loading
             // Use MIN() to get first content when multiple contents exist (avoids DISTINCT overhead)
+            // The composite index (property_id, id) on user_property_contents makes MIN(id) queries efficient
             $propertiesQuery->select([
                 'user_properties.*',
                 DB::raw('MIN(' . $contentJoinAlias . '.id) as content_id'),
@@ -2191,6 +2206,7 @@ class PropertyController extends Controller
             
             // GROUP BY primary key - all user_properties columns are functionally dependent
             // MIN() aggregations ensure we get one content per property (the first one by ID)
+            // Optimized by idx_prop_content_property_id_id index on user_property_contents(property_id, id)
             $propertiesQuery->groupBy('user_properties.id');
         }
 
@@ -2401,13 +2417,19 @@ class PropertyController extends Controller
         // Prevents multiple requests from regenerating cache simultaneously when cache expires
         $lockKey = 'lock_' . $cacheKey;
         
+        // PERFORMANCE: Track cache hits/misses for monitoring
+        $cacheStats = ['hits' => 0, 'misses' => 0];
+        
         // Helper function to get or set cache with stampede protection
-        $getOrSetCache = function ($key, $ttl, $callback) use ($lockKey) {
+        $getOrSetCache = function ($key, $ttl, $callback) use ($lockKey, &$cacheStats) {
             // Try to get from cache first
             $cached = Cache::get($key);
             if ($cached !== null) {
+                $cacheStats['hits']++;
                 return $cached;
             }
+            
+            $cacheStats['misses']++;
             
             // Cache miss - use lock to prevent stampede
             $lock = Cache::lock($lockKey, 10); // 10 second lock timeout
@@ -2417,12 +2439,27 @@ class PropertyController extends Controller
                         // Double-check cache after acquiring lock (another request may have populated it)
                         $cached = Cache::get($key);
                         if ($cached !== null) {
+                            $cacheStats['hits']++;
+                            $cacheStats['misses']--; // Adjust stats
                             return $cached;
                         }
                         
                         // Generate and cache the value
+                        $queryStartTime = microtime(true);
                         $value = $callback();
+                        $queryTime = (microtime(true) - $queryStartTime) * 1000; // Convert to milliseconds
+                        
                         Cache::put($key, $value, $ttl);
+                        
+                        // PERFORMANCE: Log slow queries (>500ms) for monitoring
+                        if ($queryTime > 500) {
+                            Log::warning('Slow property query detected', [
+                                'cache_key' => $key,
+                                'query_time_ms' => round($queryTime, 2),
+                                'threshold_ms' => 500
+                            ]);
+                        }
+                        
                         return $value;
                     } finally {
                         $lock->release();
@@ -2430,7 +2467,13 @@ class PropertyController extends Controller
                 } else {
                     // Could not acquire lock - wait briefly and check cache again
                     usleep(200000); // 200ms
-                    return Cache::get($key) ?? $callback();
+                    $cached = Cache::get($key);
+                    if ($cached !== null) {
+                        $cacheStats['hits']++;
+                        $cacheStats['misses']--; // Adjust stats
+                        return $cached;
+                    }
+                    return $callback();
                 }
             } catch (\Exception $e) {
                 // If lock fails, fall back to direct callback
@@ -2458,8 +2501,9 @@ class PropertyController extends Controller
 
         // === GA4: views per property (last 30 days by default) ===
         // OPTIMIZED: Make GA query optional via include_views parameter to improve response time
+        // PERFORMANCE: Changed default to false (opt-in) to reduce default response time
         $viewsBySlug = [];
-        $includeViews = filter_var($request->input('include_views', true), FILTER_VALIDATE_BOOLEAN);
+        $includeViews = filter_var($request->input('include_views', false), FILTER_VALIDATE_BOOLEAN);
         
         if ($includeViews) {
             $tenantId  = $owner->username;                     // align GA context with tenant owner
@@ -2669,16 +2713,48 @@ class PropertyController extends Controller
             $paginationData['last_page'] = (int) ceil(($totalCount ?? $properties->total()) / $properties->perPage());
         }
         
+        // PERFORMANCE: Only include filter data when explicitly requested to reduce payload size
+        $responseData = [
+            'properties' => $formattedProperties,
+            'total_reorder_featured' => $totalReorderFeatured,
+            'incomplete_count' => $incompleteCount,
+            'pagination' => $paginationData
+        ];
+        
+        // Include filter options only when requested (opt-in to reduce default payload)
+        if ($includeFilters) {
+            $responseData['purposes_filter'] = $availablePurposes;
+            $responseData['specifics_filters'] = $specificsFilters;
+        }
+        
+        // PERFORMANCE: Log performance metrics for monitoring
+        $endTime = microtime(true);
+        $totalTime = ($endTime - $startTime) * 1000; // Convert to milliseconds
+        $queryEndCount = DB::getQueryLog() ? count(DB::getQueryLog()) : 0;
+        $queryCount = $queryEndCount - $queryStartCount;
+        $cacheHitRate = ($cacheStats['hits'] + $cacheStats['misses']) > 0 
+            ? round(($cacheStats['hits'] / ($cacheStats['hits'] + $cacheStats['misses'])) * 100, 2) 
+            : 0;
+        
+        // Log slow requests (>1000ms) or cache misses for monitoring
+        if ($totalTime > 1000 || $cacheStats['misses'] > 0) {
+            Log::info('PropertyController::index performance metrics', [
+                'total_time_ms' => round($totalTime, 2),
+                'query_count' => $queryCount,
+                'cache_hits' => $cacheStats['hits'],
+                'cache_misses' => $cacheStats['misses'],
+                'cache_hit_rate_percent' => $cacheHitRate,
+                'owner_id' => $ownerId,
+                'page' => $request->input('page', 1),
+                'per_page' => $perPage,
+                'has_filters' => $request->except(['page', 'per_page', 'include_views', 'include_filters', 'simple_pagination']) !== [],
+                'slow_request' => $totalTime > 1000
+            ]);
+        }
+        
         return response()->json([
             'status' => 'success',
-            'data' => [
-                'properties' => $formattedProperties,
-                'purposes_filter' => $availablePurposes,
-                'specifics_filters' => $specificsFilters,
-                'total_reorder_featured' => $totalReorderFeatured,
-                'incomplete_count' => $incompleteCount,
-                'pagination' => $paginationData
-            ]
+            'data' => $responseData
         ], 200);
     }
 
