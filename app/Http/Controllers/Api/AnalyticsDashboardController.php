@@ -2208,6 +2208,30 @@ class AnalyticsDashboardController extends Controller
             // Verify that data was returned (indicates GA4 filter is working)
             $hasData = $totalPageViews > 0 || $totalSessions > 0;
             
+            // Check what tenant_ids actually exist in GA4
+            $tenantIdsInGA4 = $this->analytics->getTenantIdsInGA4($startDate, $endDate);
+            $tenantFoundInGA4 = isset($tenantIdsInGA4[$tenantId]);
+            
+            // Verify GA4 is receiving data at all (across all tenants)
+            // Use getAllAnalyticsWithFilters without tenant filter to get all data
+            try {
+                $allTenantsData = $this->analytics->getAllAnalyticsWithFilters($startDate, $endDate, []);
+                $hasAnyData = ($allTenantsData['total_views'] > 0 || !empty($allTenantsData['data']));
+            } catch (\Exception $e) {
+                // If query fails, assume no data
+                $allTenantsData = ['total_views' => 0, 'total_items' => 0, 'data' => []];
+                $hasAnyData = false;
+            }
+            
+            // Get today's data for recent events check
+            try {
+                $todayData = $this->analytics->getTodayData($tenantId);
+                $hasTodayData = (($todayData['total_views'] ?? 0) > 0 || ($todayData['total_users'] ?? 0) > 0);
+            } catch (\Exception $e) {
+                $todayData = ['total_views' => 0, 'total_users' => 0, 'total_pages' => 0, 'pages' => []];
+                $hasTodayData = false;
+            }
+            
             // Security verification: All data returned should belong to authenticated tenant
             // (This is guaranteed by GA4 dimensionFilter, but we document it here)
             $verificationStatus = $hasData 
@@ -2240,6 +2264,42 @@ class AnalyticsDashboardController extends Controller
                     'total_paths_found' => $tenantViews['total_paths'] ?? 0,
                     'method_used' => 'getTenantPageViews + getOverviewMetricsOnly (both use GA4 dimensionFilter)',
                 ],
+                'ga4_health_check' => [
+                    'ga4_receiving_data' => $hasAnyData,
+                    'total_events_across_all_tenants' => [
+                        'total_views' => $allTenantsData['total_views'] ?? 0,
+                        'total_items' => $allTenantsData['total_items'] ?? 0,
+                    ],
+                    'status' => $hasAnyData 
+                        ? '✅ GA4 is receiving data - issue may be with tenant_id tracking' 
+                        : '⚠️ GA4 shows no data at all - check GA4 setup and tracking code',
+                ],
+                'tenant_tracking_status' => [
+                    'authenticated_tenant' => $tenantId,
+                    'tenant_found_in_ga4' => $tenantFoundInGA4,
+                    'tenant_page_views_in_ga4' => $tenantIdsInGA4[$tenantId] ?? 0,
+                    'all_tenants_in_ga4' => array_keys($tenantIdsInGA4),
+                    'total_tenants_tracked' => count($tenantIdsInGA4),
+                    'top_tenants_by_views' => array_slice($tenantIdsInGA4, 0, 10, true),
+                    'diagnosis' => $tenantFoundInGA4
+                        ? '✅ Your tenant_id is being tracked in GA4'
+                        : '❌ Your tenant_id is NOT found in GA4 - check frontend tracking code',
+                ],
+                'recent_events_check' => [
+                    'last_24h_note' => 'GA4 can take 24-48 hours to process data',
+                    'todays_data' => [
+                        'total_views' => $todayData['total_views'] ?? 0,
+                        'total_users' => $todayData['total_users'] ?? 0,
+                        'total_pages' => $todayData['total_pages'] ?? 0,
+                        'sample_pages' => array_slice($todayData['pages'] ?? [], 0, 5),
+                    ],
+                    'has_today_data' => $hasTodayData,
+                    'note' => $hasTodayData && !$hasData 
+                        ? '⚠️ Today\'s data exists but historical doesn\'t - data may still be processing (24-48 hour delay)' 
+                        : ($hasTodayData 
+                            ? '✅ Recent events are being tracked' 
+                            : 'ℹ️ No recent events found for today'),
+                ],
                 'security_verification' => [
                     'ga4_filter_used' => true,
                     'filter_applied_at' => 'GA4 API level (not backend filtering)',
@@ -2247,6 +2307,18 @@ class AnalyticsDashboardController extends Controller
                     'status' => $verificationStatus,
                     'note' => 'All data returned is pre-filtered by GA4 using dimensionFilter with MatchType::EXACT, ensuring tenant isolation',
                 ],
+                'frontend_verification_checklist' => [
+                    'check_1' => 'Verify React app is sending tenant_id with every GA4 event',
+                    'check_2' => 'Verify parameter name is exactly "tenant_id" (not "tenantId" or "tenant_id_value")',
+                    'check_3' => 'Verify value matches authenticated user\'s username: "' . $tenantId . '"',
+                    'check_4' => 'Check browser console for GA4 events using: gtag("event", ...)',
+                    'check_5' => 'Verify GA4 custom dimension "tenant_id" is configured as Event-scoped',
+                    'example_code' => [
+                        'gtag' => 'gtag("event", "page_view", { "tenant_id": "' . $tenantId . '" })',
+                        'measurement_id' => 'Verify Measurement ID matches config: ' . config('services.google.analytics_property_id'),
+                    ],
+                ],
+                'recommendations' => $this->generateRecommendations($hasData, $tenantIdsInGA4, $tenantId, $hasAnyData, $hasTodayData),
                 'implementation_details' => [
                     'production_method' => 'Uses GA4 dimensionFilter for security and performance',
                     'filter_location' => 'Applied at GA4 API level (not backend filtering)',
@@ -2271,6 +2343,83 @@ class AnalyticsDashboardController extends Controller
                 ],
             ], 500);
         }
+    }
+
+    /**
+     * Generate recommendations based on live test results
+     * 
+     * Provides actionable troubleshooting steps based on what the test found
+     * 
+     * @param bool $hasData Whether tenant has data
+     * @param array $tenantIdsInGA4 All tenant IDs found in GA4
+     * @param string $tenantId The authenticated tenant ID
+     * @param bool $hasAnyData Whether GA4 has any data at all
+     * @param bool $hasTodayData Whether tenant has today's data
+     * @return array
+     */
+    protected function generateRecommendations(bool $hasData, array $tenantIdsInGA4, string $tenantId, bool $hasAnyData, bool $hasTodayData): array
+    {
+        $recommendations = [];
+        
+        if (!$hasAnyData) {
+            $recommendations[] = [
+                'priority' => 'critical',
+                'issue' => 'GA4 is not receiving any data at all',
+                'checks' => [
+                    '1. Verify GA4 Measurement ID is correct in frontend code',
+                    '2. Check browser DevTools Network tab for GA4 requests to "collect" endpoint',
+                    '3. Verify GA4 property ID in config: ' . config('services.google.analytics_property_id'),
+                    '4. Test if GA4 is enabled and tracking code is loaded on frontend',
+                    '5. Check GA4 Real-time reports in Google Analytics dashboard',
+                ],
+            ];
+        } elseif (!$hasData && !isset($tenantIdsInGA4[$tenantId])) {
+            $recommendations[] = [
+                'priority' => 'critical',
+                'issue' => 'Tenant ID not found in GA4 data',
+                'checks' => [
+                    '1. Verify React frontend is sending tenant_id: "' . $tenantId . '" with every event',
+                    '2. Check GA4 DebugView in real-time to see incoming events',
+                    '3. Verify custom dimension parameter name matches exactly: "tenant_id"',
+                    '4. Test with browser DevTools open to see outgoing GA4 requests',
+                    '5. Verify GA4 custom dimension "tenant_id" is Event-scoped (not User Property)',
+                ],
+                'frontend_code_example' => [
+                    'correct' => 'gtag("event", "page_view", { "tenant_id": "' . $tenantId . '" })',
+                    'incorrect' => 'gtag("event", "page_view", { "tenantId": "' . $tenantId . '" }) // Wrong parameter name',
+                ],
+            ];
+        } elseif (!$hasData && isset($tenantIdsInGA4[$tenantId])) {
+            $recommendations[] = [
+                'priority' => 'medium',
+                'issue' => 'Tenant ID found in GA4 but no data for date range',
+                'checks' => [
+                    '1. Data may be outside the selected date range - try different date range',
+                    '2. Check if tenant had activity in the specified period',
+                    '3. Verify date range spans when events occurred',
+                ],
+            ];
+        } elseif ($hasTodayData && !$hasData) {
+            $recommendations[] = [
+                'priority' => 'low',
+                'issue' => 'Recent data exists but historical data missing',
+                'checks' => [
+                    '1. This is normal - GA4 takes 24-48 hours to process data',
+                    '2. Today\'s data is available but historical data still processing',
+                    '3. Wait 24-48 hours and check again',
+                ],
+            ];
+        }
+        
+        if (empty($recommendations)) {
+            $recommendations[] = [
+                'priority' => 'info',
+                'issue' => 'All checks passed',
+                'message' => '✅ Everything looks good! Tenant filtering is working correctly and data is being tracked.',
+            ];
+        }
+        
+        return $recommendations;
     }
 
 }

@@ -2080,5 +2080,57 @@ class GoogleAnalyticsService
         }
     }
 
+    /**
+     * Get all unique tenant_ids found in GA4 for a date range
+     * Useful for debugging which tenants are being tracked
+     * 
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @return array Associative array [tenant_id => total_page_views]
+     */
+    public function getTenantIdsInGA4(Carbon $startDate, Carbon $endDate): array
+    {
+        try {
+            $response = $this->executeWithRetry(function() use ($startDate, $endDate) {
+                return $this->client->runReport([
+                    'property' => $this->propertyId,
+                    'dateRanges' => [
+                        new DateRange([
+                            'start_date' => $startDate->format('Y-m-d'),
+                            'end_date' => $endDate->format('Y-m-d'),
+                        ]),
+                    ],
+                    'dimensions' => [
+                        new Dimension(['name' => 'customEvent:tenant_id']),
+                    ],
+                    'metrics' => [
+                        new Metric(['name' => 'screenPageViews']),
+                    ],
+                    'limit' => 100,
+                ]);
+            }, 'getTenantIdsInGA4');
+
+            $tenants = [];
+            foreach ($response->getRows() as $row) {
+                $tenantId = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                
+                if (!empty($tenantId) && $tenantId !== '(not set)') {
+                    $tenants[$tenantId] = ($tenants[$tenantId] ?? 0) + $views;
+                }
+            }
+
+            arsort($tenants);
+            return $tenants;
+        } catch (\Exception $e) {
+            Log::warning('Failed to get tenant IDs from GA4', [
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date' => $endDate->format('Y-m-d'),
+                'error' => $e->getMessage(),
+            ]);
+            return [];
+        }
+    }
+
 }
 
