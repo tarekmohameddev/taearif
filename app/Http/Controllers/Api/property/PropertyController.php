@@ -2053,28 +2053,39 @@ class PropertyController extends Controller
             $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
         } catch (\Throwable $e) {}
 
+        // OPTIMIZED: Track JOINs to avoid duplicates and ensure proper query structure
+        $hasContentJoin = false;
+        
+        // Check if we'll need a content JOIN (for city/district/search filters)
+        $willNeedContentJoin = $request->has('city_id') || $request->has('district_id') || 
+                               ($request->has('search') && !empty($request->search));
+
         // Build the properties query
         // OPTIMIZED: Added missing eager loading for galleryImages and UserPropertyCharacteristics
         // to prevent N+1 queries when formatting response
-        $propertiesQuery = Property::with([
+        // Skip contents eager loading if we'll use a JOIN instead
+        $eagerLoadRelations = [
             'category:id,name',
             'user:id,username,first_name,last_name,email,account_type',
-            'contents' => function($q) {
-                $q->select('id', 'property_id', 'title', 'slug', 'address', 'description')
-                  ->orderBy('id', 'asc')
-                  ->limit(1); // Only load first content since we only use first() in response
-            },
             'proertyAmenities' => function($q) {
                 $q->with('amenity:id,name'); // Explicit nested eager loading to prevent N+1
             },
             'creator:id,first_name,last_name,username,email,account_type',
             'galleryImages:id,property_id,image', // Added to prevent N+1
             'UserPropertyCharacteristics:id,property_id', // Added if needed for filtering
-        ])
+        ];
+        
+        // Only eager load contents if we won't be using a JOIN
+        if (!$willNeedContentJoin) {
+            $eagerLoadRelations['contents'] = function($q) {
+                $q->select('id', 'property_id', 'title', 'slug', 'address', 'description')
+                  ->orderBy('id', 'asc')
+                  ->limit(1); // Only load first content since we only use first() in response
+            };
+        }
+        
+        $propertiesQuery = Property::with($eagerLoadRelations)
             ->whereIn('user_id', $allowedUserIds);
-
-        // OPTIMIZED: Track JOINs to avoid duplicates and ensure proper query structure
-        $hasContentJoin = false;
         $contentJoinAlias = 'pc_content'; // Single alias for all content joins
         $useInnerJoin = false; // Determine if we need INNER JOIN (for city/district filters)
 
@@ -2172,7 +2183,15 @@ class PropertyController extends Controller
         // Ensure proper selection and distinct after content JOINs
         if ($hasContentJoin) {
             $propertiesQuery->distinct();
-            $propertiesQuery->select('user_properties.*');
+            // OPTIMIZED: Select content fields from JOIN to avoid eager loading
+            $propertiesQuery->select([
+                'user_properties.*',
+                $contentJoinAlias . '.id as content_id',
+                $contentJoinAlias . '.title as content_title',
+                $contentJoinAlias . '.slug as content_slug',
+                $contentJoinAlias . '.address as content_address',
+                $contentJoinAlias . '.description as content_description'
+            ]);
         }
 
         // Apply purpose filter if provided (consolidate purposes_filter and purpose)
@@ -2352,7 +2371,20 @@ class PropertyController extends Controller
         // OPTIMIZED: Make pagination configurable with max limit to prevent abuse
         // Increased default from 10 to 20 for better UX and fewer requests
         $perPage = min(50, max(1, (int) $request->input('per_page', 20)));
-        $properties = $propertiesQuery->paginate($perPage);
+        
+        // OPTIMIZED: Cache query results to improve performance
+        // Cache key includes owner ID and hash of filters/pagination for uniqueness
+        $cacheKey = 'properties_list_' . $ownerId . '_' . md5(json_encode([
+            'filters' => $request->except(['page', 'per_page', 'include_views', 'include_filters']),
+            'page' => $request->input('page', 1),
+            'per_page' => $perPage
+        ]));
+        
+        // Cache for 5 minutes (shorter TTL for first page, can be adjusted)
+        $cacheTTL = $request->input('page', 1) == 1 ? 300 : 600; // 5 min for page 1, 10 min for others
+        $properties = Cache::remember($cacheKey, $cacheTTL, function () use ($propertiesQuery, $perPage) {
+            return $propertiesQuery->paginate($perPage);
+        });
 
         // === GA4: views per property (last 30 days by default) ===
         // OPTIMIZED: Make GA query optional via include_views parameter to improve response time
@@ -2480,9 +2512,21 @@ class PropertyController extends Controller
             }
         }
         
-        $formattedProperties = $properties->getCollection()->map(function ($property) use ($viewsBySlug, $fieldsToInclude) {
-            $content = optional($property->contents->first());
-            $slug    = $content->slug;
+        // OPTIMIZED: Use content from JOIN if available, otherwise use eager loaded relationship
+        $formattedProperties = $properties->getCollection()->map(function ($property) use ($viewsBySlug, $fieldsToInclude, $hasContentJoin) {
+            // Use content from JOIN if available (when filtering by city/district/search)
+            if ($hasContentJoin && isset($property->content_slug)) {
+                $content = (object) [
+                    'title' => $property->content_title ?? null,
+                    'slug' => $property->content_slug ?? null,
+                    'address' => $property->content_address ?? null,
+                    'description' => $property->content_description ?? null,
+                ];
+            } else {
+                // Fallback to eager loaded relationship
+                $content = optional($property->contents->first());
+            }
+            $slug = $content->slug ?? null;
 
             $propertyData = [
                 'id'               => $property->id,
@@ -2519,23 +2563,20 @@ class PropertyController extends Controller
             return $propertyData;
         });
 
-        // OPTIMIZED: Cache count queries to improve performance
-        // Cache totalReorderFeatured for 5 minutes
-        $cacheKey = "total_reorder_featured_{$ownerId}";
-        $totalReorderFeatured = Cache::remember($cacheKey, 300, function () use ($allowedUserIds) {
+        // OPTIMIZED: Combine count queries into single query for better performance
+        // Cache combined counts for 5 minutes
+        $cacheKey = "property_counts_{$ownerId}";
+        $counts = Cache::remember($cacheKey, 300, function () use ($allowedUserIds) {
             return Property::whereIn('user_id', $allowedUserIds)
-                ->where('featured', 1)
-                ->where('reorder_featured', '>', 0)
-                ->count();
+                ->selectRaw('
+                    SUM(CASE WHEN featured = 1 AND reorder_featured > 0 THEN 1 ELSE 0 END) as total_reorder_featured,
+                    SUM(CASE WHEN completion_status = "incomplete" THEN 1 ELSE 0 END) as incomplete_count
+                ')
+                ->first();
         });
-
-        // Cache incompleteCount for 5 minutes
-        $cacheKey = "incomplete_count_{$ownerId}";
-        $incompleteCount = Cache::remember($cacheKey, 300, function () use ($allowedUserIds) {
-            return Property::whereIn('user_id', $allowedUserIds)
-                ->where('completion_status', 'incomplete')
-                ->count();
-        });
+        
+        $totalReorderFeatured = (int) ($counts->total_reorder_featured ?? 0);
+        $incompleteCount = (int) ($counts->incomplete_count ?? 0);
 
         return response()->json([
             'status' => 'success',

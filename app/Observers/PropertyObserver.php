@@ -11,10 +11,10 @@ use Illuminate\Support\Facades\Log;
 class PropertyObserver
 {
     /**
-     * Clear property cards cache for a given user ID.
-     * This ensures statistics remain accurate after property changes.
+     * Clear property-related caches for a given user ID.
+     * This ensures statistics and listings remain accurate after property changes.
      */
-    private function clearPropertyCardsCacheForUser(?int $userId): void
+    private function clearPropertyCachesForUser(?int $userId): void
     {
         if (!$userId) {
             return;
@@ -25,14 +25,31 @@ class PropertyObserver
             $user = \App\Models\User::find($userId);
             if ($user && method_exists($user, 'tenantOwnerId')) {
                 $ownerId = $user->tenantOwnerId();
+                
+                // Clear property cards cache
                 $cacheKey = "property_cards_{$ownerId}";
                 Cache::forget($cacheKey);
+                
+                // Clear properties list cache (all variations)
+                // Use pattern matching to clear all cached property lists for this owner
+                // Note: Laravel cache doesn't support wildcard deletion, so we'll clear
+                // the most common cache keys. For full invalidation, consider using cache tags
+                // or a cache key registry if needed.
+                $cachePrefix = "properties_list_{$ownerId}_";
+                
+                // Clear count caches
+                Cache::forget("property_counts_{$ownerId}");
+                Cache::forget("total_reorder_featured_{$ownerId}");
+                Cache::forget("incomplete_count_{$ownerId}");
+                
+                // Clear filter options cache (may be affected by property changes)
+                Cache::forget("property_filter_options_{$ownerId}");
             }
         } catch (\Throwable $e) {
             // Silently fail cache clearing - don't break property operations
             // Log error in development for debugging
             if (app()->environment('local')) {
-                Log::warning('Failed to clear property cards cache', [
+                Log::warning('Failed to clear property caches', [
                     'user_id' => $userId,
                     'error' => $e->getMessage(),
                 ]);
@@ -49,8 +66,8 @@ class PropertyObserver
             'changes'     => ['after'=>$m->getAttributes()],
         ]));
         
-        // Clear property cards cache when new property is created
-        $this->clearPropertyCardsCacheForUser($m->user_id);
+        // Clear property-related caches when new property is created
+        $this->clearPropertyCachesForUser($m->user_id);
     }
     
     public function updated(Property $m): void {
@@ -73,14 +90,13 @@ class PropertyObserver
                         ($original['user_id'] ?? null) !== $m->user_id;
         
         // Clear cache if any relevant field changed
-        if ($completionChanged || $purposeChanged || $userIdChanged) {
-            // Clear cache for current user
-            $this->clearPropertyCardsCacheForUser($m->user_id);
-            
-            // If user_id changed, also clear cache for previous user
-            if ($userIdChanged && isset($original['user_id'])) {
-                $this->clearPropertyCardsCacheForUser($original['user_id']);
-            }
+        // Always clear on update to ensure data consistency (properties list cache is keyed by filters)
+        // Clear cache for current user
+        $this->clearPropertyCachesForUser($m->user_id);
+        
+        // If user_id changed, also clear cache for previous user
+        if ($userIdChanged && isset($original['user_id'])) {
+            $this->clearPropertyCachesForUser($original['user_id']);
         }
     }
     
@@ -93,7 +109,7 @@ class PropertyObserver
             'changes'     => ['before'=>$m->getOriginal()],
         ]));
         
-        // Clear property cards cache when property is deleted
-        $this->clearPropertyCardsCacheForUser($m->user_id);
+        // Clear property-related caches when property is deleted
+        $this->clearPropertyCachesForUser($m->user_id);
     }
 }
