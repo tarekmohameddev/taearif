@@ -551,7 +551,7 @@ class AnalyticsDashboardController extends Controller
         } else {
             // Fallback to GA API
             $dataSource = 'ga_api';
-            $tenantFilter = $this->buildTenantFilter($tenantId, true);
+            $tenantFilter = $this->buildTenantFilter($tenantId, false); // Use EXACT match for security
             
             try {
                 $sources = $analytics->getTrafficSources($startDate, $endDate, $tenantFilter);
@@ -1553,12 +1553,14 @@ class AnalyticsDashboardController extends Controller
      * 
      * Usage examples:
      * - GET /api/analytics/page-locations?days=7
-     * - GET /api/analytics/page-locations?tenant_id=lira&days=30
+     * - GET /api/analytics/page-locations?days=30
+     * 
+     * Note: Tenant is automatically determined from authenticated user
      */
     public function getPageLocations(Request $request)
     {
         $days = (int) $request->input('days', 7);
-        $tenantId = $request->input('tenant_id', null);
+        $tenantId = $this->tenantId($request); // Use authenticated user's tenant
         
         $startDate = Carbon::now()->subDays($days);
         $endDate = Carbon::now();
@@ -1585,11 +1587,12 @@ class AnalyticsDashboardController extends Controller
      * 
      * Usage examples:
      * - GET /api/analytics/today
-     * - GET /api/analytics/today?tenant_id=lira
+     * 
+     * Note: Tenant is automatically determined from authenticated user
      */
     public function getToday(Request $request)
     {
-        $tenantId = $request->input('tenant_id', null);
+        $tenantId = $this->tenantId($request); // Use authenticated user's tenant
 
         $result = $this->analytics->getTodayData($tenantId);
 
@@ -1610,11 +1613,12 @@ class AnalyticsDashboardController extends Controller
      * 
      * Usage examples:
      * - GET /api/analytics/realtime
-     * - GET /api/analytics/realtime?tenant_id=lira (limited filtering)
+     * 
+     * Note: Tenant is automatically determined from authenticated user
      */
     public function getRealtime(Request $request)
     {
-        $tenantId = $request->input('tenant_id', null);
+        $tenantId = $this->tenantId($request); // Use authenticated user's tenant
 
         $result = $this->analytics->getRealtimeData($tenantId);
 
@@ -1628,13 +1632,14 @@ class AnalyticsDashboardController extends Controller
     /**
      * Search/Filter analytics - Get all data with backend filtering
      *
-     * Returns ALL GA4 data filtered by your criteria on the backend
+     * Returns tenant-specific GA4 data filtered by your criteria on the backend
      *
      * Usage examples:
-     * - GET /api/analytics/search?tenant_ids=lira,john&days=7
      * - GET /api/analytics/search?min_views=10&path_contains=/property/
-     * - GET /api/analytics/search?tenant_ids=lira&min_views=5&limit=20
-     * - GET /api/analytics/search?group_by_tenant=1
+     * - GET /api/analytics/search?min_views=5&limit=20
+     * - GET /api/analytics/search?days=7
+     * 
+     * Note: Tenant is automatically determined from authenticated user
      */
     public function searchAnalytics(Request $request)
     {
@@ -1645,10 +1650,9 @@ class AnalyticsDashboardController extends Controller
         // Build filters from request
         $filters = [];
 
-        // Tenant IDs filter
-        if ($request->has('tenant_ids')) {
-            $filters['tenant_ids'] = $request->input('tenant_ids');
-        }
+        // Always use authenticated user's tenant (security fix)
+        $tenantId = $this->tenantId($request);
+        $filters['tenant_ids'] = [$tenantId]; // Enforce single tenant
 
         // Views filters
         if ($request->has('min_views')) {
