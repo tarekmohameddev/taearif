@@ -2511,9 +2511,17 @@ class PropertyController extends Controller
             $endDate   = Carbon::now();
 
             // Collect slugs for the current page
+            // FIX: Handle both JOIN and eager loaded content scenarios
             $slugs = $properties->getCollection()
-                ->map(fn ($p) => optional($p->contents->first())->slug)
-                ->filter()
+                ->map(function ($p) use ($hasContentJoin) {
+                    // If content JOIN was used, get slug from JOIN data
+                    if ($hasContentJoin && isset($p->content_slug)) {
+                        return $p->content_slug;
+                    }
+                    // Otherwise, use eager loaded relationship
+                    return optional($p->contents->first())->slug;
+                })
+                ->filter() // Remove null/empty values
                 ->values();
 
             // Build candidate paths for each slug (adjust prefixes to match your frontend routes)
@@ -2533,6 +2541,16 @@ class PropertyController extends Controller
                 // Try to get from cache first (non-blocking)
                 $viewsBySlug = Cache::get($cacheKey, []);
                 
+                // DEBUG: Log if no slugs collected or cache miss
+                if ($slugs->isEmpty()) {
+                    Log::warning('No slugs collected for GA views', [
+                        'owner_id' => $ownerId,
+                        'tenant_id' => $tenantId,
+                        'has_content_join' => $hasContentJoin,
+                        'properties_count' => $properties->count()
+                    ]);
+                }
+                
                 // If cache miss, dispatch background job to fetch and cache data
                 // This prevents blocking the response while still populating cache for future requests
                 if (empty($viewsBySlug)) {
@@ -2541,14 +2559,36 @@ class PropertyController extends Controller
                     try {
                         \App\Jobs\FetchGoogleAnalyticsViews::dispatch($cacheKey, $startDate, $endDate, $paths, $tenantId, $slugs->toArray())
                             ->onQueue('default');
+                        
+                        // DEBUG: Log job dispatch for troubleshooting
+                        Log::debug('GA views job dispatched', [
+                            'cache_key' => $cacheKey,
+                            'slugs_count' => $slugs->count(),
+                            'paths_count' => count($paths),
+                            'tenant_id' => $tenantId
+                        ]);
                     } catch (\Exception $e) {
                         // If job dispatch fails, log and continue with empty views
                         Log::warning('Failed to dispatch GA views job', [
                             'error' => $e->getMessage(),
-                            'cache_key' => $cacheKey
+                            'cache_key' => $cacheKey,
+                            'tenant_id' => $tenantId
                         ]);
                     }
+                } else {
+                    // DEBUG: Log cache hit for monitoring
+                    Log::debug('GA views cache hit', [
+                        'cache_key' => $cacheKey,
+                        'views_count' => count($viewsBySlug),
+                        'tenant_id' => $tenantId
+                    ]);
                 }
+            } else {
+                // DEBUG: Log when no paths are built
+                Log::debug('No paths built for GA views', [
+                    'slugs_count' => $slugs->count(),
+                    'tenant_id' => $tenantId
+                ]);
             }
         }
 
