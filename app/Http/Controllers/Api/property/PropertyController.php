@@ -1018,6 +1018,7 @@ class PropertyController extends Controller
                 'proertyAmenities.amenity',
                 'UserPropertyCharacteristics',
                 'creator',
+                'building',
             ])->findOrFail($id);
 
             $content = $property->contents->first();
@@ -1071,6 +1072,7 @@ class PropertyController extends Controller
                 'project_id' => $property->project_id,
                 'payment_method' => $property->payment_method,
                 'title' => optional($content)->title ?? '',
+                'slug' => optional($content)->slug ?? '',
                 'address' => optional($content)->address ?? '',
                 'price' => isset($property->price) ? formatNumberWithoutTrailingZeros($property->price) : '0',
                 'views' => $views,
@@ -1088,6 +1090,10 @@ class PropertyController extends Controller
                 'description' => optional($content)->description ?? '',
                 'latitude' => $property->latitude ? (float) $property->latitude : null,
                 'longitude' => $property->longitude ? (float) $property->longitude : null,
+                'location' => [
+                    'latitude' => $property->latitude ? (float) $property->latitude : null,
+                    'longitude' => $property->longitude ? (float) $property->longitude : null,
+                ],
                 'featured' => (bool) $property->featured,
                 'show_reservations' => (bool) $property->show_reservations,
                 'city_id' => optional($content)->city_id,
@@ -1103,6 +1109,8 @@ class PropertyController extends Controller
                 'electricity_meter_number' => $property->electricity_meter_number,
                 'deed_number' => $property->deed_number ? asset($property->deed_number) : null,
                 'advertising_license' => $property->advertising_license,
+                'created_at' => $property->created_at->toISOString(),
+                'updated_at' => $property->updated_at->toISOString(),
                 'creator' => $property->creator ? [
                     'id'   => $property->creator->id,
                     'name' => trim(($property->creator->first_name ?? '') . ' ' . ($property->creator->last_name ?? '')) ?: ($property->creator->username ?? $property->creator->email),
