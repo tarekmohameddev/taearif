@@ -2144,7 +2144,8 @@ class PropertyController extends Controller
                 // For search terms 3+ chars, prioritize full-text search (fastest with proper index)
                 if (strlen($searchTerm) >= 3 && $isMysql56Plus) {
                     // Full-text search is most efficient - try this first
-                    $q->whereRaw("MATCH(user_property_contents.title, user_property_contents.address, user_property_contents.description) AGAINST(? IN BOOLEAN MODE)", [$searchTerm]);
+                    // Use JOIN alias to ensure proper index usage and query consistency
+                    $q->whereRaw("MATCH({$contentJoinAlias}.title, {$contentJoinAlias}.address, {$contentJoinAlias}.description) AGAINST(? IN BOOLEAN MODE)", [$searchTerm]);
                 } else {
                     // For shorter terms or when full-text not available, use prefix matching
                     $prefixTerm = $searchTerm . '%';
@@ -2510,7 +2511,8 @@ class PropertyController extends Controller
 
         // ===== Get filter options (CACHED - 1 hour) =====
         // OPTIMIZED: Make filter options optional via include_filters parameter to reduce payload size
-        $includeFilters = filter_var($request->input('include_filters', true), FILTER_VALIDATE_BOOLEAN);
+        // Changed default to false (opt-in) to reduce default payload size
+        $includeFilters = filter_var($request->input('include_filters', false), FILTER_VALIDATE_BOOLEAN);
         $availablePurposes = [];
         $priceRange = ['min' => 0, 'max' => 0];
         $areaRange = ['min' => 0];
