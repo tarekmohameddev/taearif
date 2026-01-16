@@ -2728,28 +2728,46 @@ class PropertyController extends Controller
         }
         
         // OPTIMIZED: Use content from JOIN if available, otherwise use eager loaded relationship
-        $formattedProperties = $properties->getCollection()->map(function ($property) use ($viewsBySlug, $fieldsToInclude, $hasContentJoin) {
-            // Use content from JOIN if available (when filtering by city/district/search)
-            if ($hasContentJoin && isset($property->content_slug)) {
-                $content = (object) [
-                    'title' => $property->content_title ?? null,
-                    'slug' => $property->content_slug ?? null,
-                    'address' => $property->content_address ?? null,
-                    'description' => $property->content_description ?? null,
-                ];
-            } else {
-                // Fallback to eager loaded relationship
-                $content = optional($property->contents->first());
-            }
-            $slug = $content->slug ?? null;
+        // Filter out properties with invalid content (should only appear in /api/properties/drafts)
+        // Properties with "No Title", "No Address", or null slug are considered incomplete
+        $formattedProperties = $properties->getCollection()
+            ->filter(function ($property) use ($hasContentJoin) {
+                // Ensure property has valid content (title, address, and slug)
+                if ($hasContentJoin && isset($property->content_slug)) {
+                    $hasValidTitle = !empty($property->content_title) && $property->content_title !== 'No Title';
+                    $hasValidAddress = !empty($property->content_address) && $property->content_address !== 'No Address';
+                    $hasValidSlug = !empty($property->content_slug);
+                    return $hasValidTitle && $hasValidAddress && $hasValidSlug;
+                } else {
+                    $content = $property->contents->first();
+                    $hasValidTitle = $content && !empty($content->title) && $content->title !== 'No Title';
+                    $hasValidAddress = $content && !empty($content->address) && $content->address !== 'No Address';
+                    $hasValidSlug = $content && !empty($content->slug);
+                    return $hasValidTitle && $hasValidAddress && $hasValidSlug;
+                }
+            })
+            ->map(function ($property) use ($viewsBySlug, $fieldsToInclude, $hasContentJoin) {
+                // Use content from JOIN if available (when filtering by city/district/search)
+                if ($hasContentJoin && isset($property->content_slug)) {
+                    $content = (object) [
+                        'title' => $property->content_title ?? null,
+                        'slug' => $property->content_slug ?? null,
+                        'address' => $property->content_address ?? null,
+                        'description' => $property->content_description ?? null,
+                    ];
+                } else {
+                    // Fallback to eager loaded relationship
+                    $content = optional($property->contents->first());
+                }
+                $slug = $content->slug ?? null;
 
-            $propertyData = [
-                'id'               => $property->id,
-                'visits'           => (int) ($viewsBySlug[$slug] ?? 0),
-                'title'            => $content->title ?? 'No Title',
-                'address'          => $content->address ?? 'No Address',
-                'slug'             => $slug,
-                'price'            => $property->price,
+                $propertyData = [
+                    'id'               => $property->id,
+                    'visits'           => (int) ($viewsBySlug[$slug] ?? 0),
+                    'title'            => $content->title ?? 'No Title',
+                    'address'          => $content->address ?? 'No Address',
+                    'slug'             => $slug,
+                    'price'            => $property->price,
                 'type'             => $property->type,
                 'beds'             => $property->beds,
                 'bath'             => $property->bath,
