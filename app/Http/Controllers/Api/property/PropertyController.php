@@ -2124,10 +2124,7 @@ class PropertyController extends Controller
         
         $propertiesQuery = Property::with($eagerLoadRelations)
             ->whereIn('user_id', $allowedUserIds)
-            ->where(function($q) {
-                $q->where('completion_status', 'complete')
-                  ->orWhereNull('completion_status'); // Include older properties that might not have this field set
-            });
+            ->where('completion_status', 'complete');
         
         // Ensure only properties with content records are returned (when no content JOIN is used)
         // This prevents "No Title" and "No Address" fallback values
@@ -2768,7 +2765,7 @@ class PropertyController extends Controller
             return Property::whereIn('user_id', $allowedUserIds)
                 ->selectRaw('
                     SUM(CASE WHEN featured = 1 AND reorder_featured > 0 THEN 1 ELSE 0 END) as total_reorder_featured,
-                    SUM(CASE WHEN completion_status = "incomplete" THEN 1 ELSE 0 END) as incomplete_count
+                    SUM(CASE WHEN completion_status != "complete" OR completion_status IS NULL THEN 1 ELSE 0 END) as incomplete_count
                 ')
                 ->first();
         });
@@ -3848,9 +3845,24 @@ class PropertyController extends Controller
             $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
             $ownerId = (int) $owner->id;
 
+            $allowedUserIds = [$ownerId];
+            try {
+                $cacheKey = "tenant_employees_{$ownerId}";
+                $employeeIds = Cache::remember($cacheKey, 300, function () use ($ownerId) {
+                    return \App\Models\User::where('tenant_id', $ownerId)
+                        ->where('account_type', 'employee')
+                        ->pluck('id')
+                        ->toArray();
+                });
+                $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
+            } catch (\Throwable $e) {}
+
             $query = Property::with(['contents:id,property_id,title,address'])
-                ->where('user_id', $ownerId)
-                ->where('completion_status', 'incomplete');
+                ->whereIn('user_id', $allowedUserIds)
+                ->where(function($q) {
+                    $q->where('completion_status', '!=', 'complete')
+                      ->orWhereNull('completion_status');
+                });
 
             // Search by title or address
             if ($request->has('search') && !empty($request->search)) {
