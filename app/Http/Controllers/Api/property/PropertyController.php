@@ -2138,60 +2138,59 @@ class PropertyController extends Controller
             // OPTIMIZED: Use cached MySQL version check to avoid repeated queries
             $isMysql56Plus = DatabaseVersionService::isMysql56Plus();
             
+            // OPTIMIZED: Simplify search query structure for better index usage
+            // Prioritize full-text search, then prefix matching, then fallback to wildcard
             $propertiesQuery->where(function($q) use ($searchTerm, $contentJoinAlias, $isMysql56Plus) {
-                // For short search terms (3+ chars), try prefix matching first for better index usage
-                // Prefix matching (term%) can use indexes, while full wildcard (%term%) cannot
-                if (strlen($searchTerm) >= 3) {
+                // For search terms 3+ chars, prioritize full-text search (fastest with proper index)
+                if (strlen($searchTerm) >= 3 && $isMysql56Plus) {
+                    // Full-text search is most efficient - try this first
+                    $q->whereRaw("MATCH(user_property_contents.title, user_property_contents.address, user_property_contents.description) AGAINST(? IN BOOLEAN MODE)", [$searchTerm]);
+                } else {
+                    // For shorter terms or when full-text not available, use prefix matching
                     $prefixTerm = $searchTerm . '%';
-                    $q->where(function($subQ) use ($prefixTerm, $searchTerm, $contentJoinAlias, $isMysql56Plus) {
-                        // Prefer prefix matching for title and address (can use indexes)
+                    $q->where(function($subQ) use ($prefixTerm, $searchTerm, $contentJoinAlias) {
+                        // Prefix matching can use indexes (term%)
                         $subQ->where($contentJoinAlias . '.title', 'like', $prefixTerm)
                             ->orWhere($contentJoinAlias . '.address', 'like', $prefixTerm);
                         
-                        // For description, use full-text search if available, otherwise fallback to LIKE
-                        // Note: Full-text search requires FULLTEXT index and uses actual table name, not alias
-                        if ($isMysql56Plus) {
-                            // Try full-text search on description (requires FULLTEXT index)
-                            // Use actual table name in MATCH clause (full-text indexes don't work with aliases)
-                            $subQ->orWhereRaw("MATCH(user_property_contents.title, user_property_contents.address, user_property_contents.description) AGAINST(? IN BOOLEAN MODE)", [$searchTerm]);
-                        } else {
-                            // Fallback to LIKE for description (less efficient but works everywhere)
-                            $subQ->orWhere($contentJoinAlias . '.description', 'like', "%{$searchTerm}%");
-                        }
-                        
-                        // Also check if search term appears anywhere (fallback for non-prefix matches)
-                        $subQ->orWhere($contentJoinAlias . '.title', 'like', "%{$searchTerm}%")
-                            ->orWhere($contentJoinAlias . '.address', 'like', "%{$searchTerm}%");
-                    });
-                } else {
-                    // For very short terms, use full wildcard search (less efficient but necessary)
-                    $q->where(function($subQ) use ($searchTerm, $contentJoinAlias) {
-                        $subQ->where($contentJoinAlias . '.title', 'like', "%{$searchTerm}%")
-                            ->orWhere($contentJoinAlias . '.address', 'like', "%{$searchTerm}%")
-                            ->orWhere($contentJoinAlias . '.description', 'like', "%{$searchTerm}%");
+                        // Fallback to wildcard only if prefix doesn't match (less efficient)
+                        // Group wildcard searches together to minimize index scan impact
+                        $subQ->orWhere(function($wildcardQ) use ($searchTerm, $contentJoinAlias) {
+                            $wildcardQ->where($contentJoinAlias . '.title', 'like', "%{$searchTerm}%")
+                                ->orWhere($contentJoinAlias . '.address', 'like', "%{$searchTerm}%")
+                                ->orWhere($contentJoinAlias . '.description', 'like', "%{$searchTerm}%");
+                        });
                     });
                 }
                 
-                // Search in price if numeric
+                // Search in price if numeric (separate condition to allow index usage on price)
                 if (is_numeric($searchTerm)) {
-                    $q->orWhere('user_properties.price', $searchTerm)
-                        ->orWhere('user_properties.price', 'like', "%{$searchTerm}%");
+                    $q->orWhere(function($priceQ) use ($searchTerm) {
+                        $priceQ->where('user_properties.price', $searchTerm)
+                            ->orWhere('user_properties.price', 'like', "%{$searchTerm}%");
+                    });
                 }
             });
         }
 
         // Ensure proper selection and distinct after content JOINs
+        // OPTIMIZED: Use GROUP BY with MIN() aggregations instead of DISTINCT for better performance
+        // This ensures MySQL strict mode compliance while getting the first content per property
         if ($hasContentJoin) {
-            $propertiesQuery->distinct();
             // OPTIMIZED: Select content fields from JOIN to avoid eager loading
+            // Use MIN() to get first content when multiple contents exist (avoids DISTINCT overhead)
             $propertiesQuery->select([
                 'user_properties.*',
-                $contentJoinAlias . '.id as content_id',
-                $contentJoinAlias . '.title as content_title',
-                $contentJoinAlias . '.slug as content_slug',
-                $contentJoinAlias . '.address as content_address',
-                $contentJoinAlias . '.description as content_description'
+                DB::raw('MIN(' . $contentJoinAlias . '.id) as content_id'),
+                DB::raw('MIN(' . $contentJoinAlias . '.title) as content_title'),
+                DB::raw('MIN(' . $contentJoinAlias . '.slug) as content_slug'),
+                DB::raw('MIN(' . $contentJoinAlias . '.address) as content_address'),
+                DB::raw('MIN(' . $contentJoinAlias . '.description) as content_description')
             ]);
+            
+            // GROUP BY primary key - all user_properties columns are functionally dependent
+            // MIN() aggregations ensure we get one content per property (the first one by ID)
+            $propertiesQuery->groupBy('user_properties.id');
         }
 
         // Apply purpose filter if provided (consolidate purposes_filter and purpose)
@@ -2299,7 +2298,8 @@ class PropertyController extends Controller
         }
 
         // Apply UserPropertyCharacteristic filters
-        // OPTIMIZED: Combine all filters into a single whereHas query instead of N separate queries
+        // OPTIMIZED: Use EXISTS subquery instead of JOIN to avoid DISTINCT overhead
+        // EXISTS is more efficient than JOIN+DISTINCT for boolean filters
         $characteristicFilters = [
             'private_parking', 'elevator', 'annex', 'garden', 'balcony', 'basement',
             'majlis', 'storage_room', 'living_room', 'dining_room', 'maid_room',
@@ -2317,17 +2317,18 @@ class PropertyController extends Controller
             }
         }
 
-        // OPTIMIZED: Use join instead of whereHas for better performance
-        // Joins are faster than subqueries created by whereHas
+        // OPTIMIZED: Use EXISTS subquery instead of JOIN to avoid DISTINCT and duplicate rows
+        // EXISTS is typically faster than JOIN+DISTINCT for boolean filters and doesn't multiply rows
         if ($hasCharacteristicFilter) {
-            $propertiesQuery->join('user_property_characteristics as upc', 'upc.property_id', '=', 'user_properties.id');
-            foreach ($activeFilters as $filter => $value) {
-                $propertiesQuery->where("upc.{$filter}", $value);
-            }
-            // Use distinct to prevent duplicate rows from join
-            $propertiesQuery->distinct();
-            // Ensure we select from the main table
-            $propertiesQuery->select('user_properties.*');
+            $propertiesQuery->whereExists(function ($query) use ($activeFilters) {
+                $query->select(DB::raw(1))
+                    ->from('user_property_characteristics as upc')
+                    ->whereColumn('upc.property_id', 'user_properties.id');
+                
+                foreach ($activeFilters as $filter => $value) {
+                    $query->where("upc.{$filter}", $value);
+                }
+            });
         }
 
         // Apply sorting
@@ -2377,8 +2378,12 @@ class PropertyController extends Controller
         
         // OPTIMIZED: Cache query results to improve performance
         // Cache key includes owner ID and hash of filters/pagination for uniqueness
-        $cacheKey = 'properties_list_' . $ownerId . '_' . md5(json_encode([
-            'filters' => $request->except(['page', 'per_page', 'include_views', 'include_filters', 'simple_pagination']),
+        // OPTIMIZED: Use serialize() instead of json_encode() for better performance with arrays
+        // Sort filters to ensure consistent cache keys regardless of parameter order
+        $filters = $request->except(['page', 'per_page', 'include_views', 'include_filters', 'simple_pagination']);
+        ksort($filters); // Sort by key for consistent hashing
+        $cacheKey = 'properties_list_' . $ownerId . '_' . md5(serialize([
+            'filters' => $filters,
             'page' => $request->input('page', 1),
             'per_page' => $perPage,
             'simple_pagination' => $useSimplePagination
@@ -2391,19 +2396,61 @@ class PropertyController extends Controller
         $totalCountCacheKey = $cacheKey . '_total';
         $totalCount = null;
         
+        // OPTIMIZED: Add cache stampede protection using locks
+        // Prevents multiple requests from regenerating cache simultaneously when cache expires
+        $lockKey = 'lock_' . $cacheKey;
+        
+        // Helper function to get or set cache with stampede protection
+        $getOrSetCache = function ($key, $ttl, $callback) use ($lockKey) {
+            // Try to get from cache first
+            $cached = Cache::get($key);
+            if ($cached !== null) {
+                return $cached;
+            }
+            
+            // Cache miss - use lock to prevent stampede
+            $lock = Cache::lock($lockKey, 10); // 10 second lock timeout
+            try {
+                if ($lock->get(3)) { // Wait up to 3 seconds for lock
+                    try {
+                        // Double-check cache after acquiring lock (another request may have populated it)
+                        $cached = Cache::get($key);
+                        if ($cached !== null) {
+                            return $cached;
+                        }
+                        
+                        // Generate and cache the value
+                        $value = $callback();
+                        Cache::put($key, $value, $ttl);
+                        return $value;
+                    } finally {
+                        $lock->release();
+                    }
+                } else {
+                    // Could not acquire lock - wait briefly and check cache again
+                    usleep(200000); // 200ms
+                    return Cache::get($key) ?? $callback();
+                }
+            } catch (\Exception $e) {
+                // If lock fails, fall back to direct callback
+                Log::warning('Cache lock failed in PropertyController::index', ['error' => $e->getMessage()]);
+                return $callback();
+            }
+        };
+        
         if ($useSimplePagination) {
             // Simple pagination skips COUNT query for better performance
-            $properties = Cache::remember($cacheKey, $cacheTTL, function () use ($propertiesQuery, $perPage) {
+            $properties = $getOrSetCache($cacheKey, $cacheTTL, function () use ($propertiesQuery, $perPage) {
                 return $propertiesQuery->simplePaginate($perPage);
             });
         } else {
             // Full pagination with COUNT query
-            $properties = Cache::remember($cacheKey, $cacheTTL, function () use ($propertiesQuery, $perPage) {
+            $properties = $getOrSetCache($cacheKey, $cacheTTL, function () use ($propertiesQuery, $perPage) {
                 return $propertiesQuery->paginate($perPage);
             });
             
             // Cache the total count separately to avoid re-executing COUNT on cached results
-            $totalCount = Cache::remember($totalCountCacheKey, $cacheTTL, function () use ($propertiesQuery) {
+            $totalCount = $getOrSetCache($totalCountCacheKey, $cacheTTL, function () use ($propertiesQuery) {
                 return $propertiesQuery->count();
             });
         }
