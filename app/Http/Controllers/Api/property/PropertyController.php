@@ -2129,7 +2129,13 @@ class PropertyController extends Controller
         // Ensure only properties with content records are returned (when no content JOIN is used)
         // This prevents "No Title" and "No Address" fallback values
         if (!$willNeedContentJoin) {
-            $propertiesQuery->whereHas('contents');
+            $propertiesQuery->whereHas('contents', function($q) {
+                // Ensure content has non-empty title and address
+                $q->whereNotNull('title')
+                  ->where('title', '!=', '')
+                  ->whereNotNull('address')
+                  ->where('address', '!=', '');
+            });
         }
         
         $contentJoinAlias = 'pc_content'; // Single alias for all content joins
@@ -2234,6 +2240,12 @@ class PropertyController extends Controller
         // This ensures MySQL strict mode compliance while getting the first content per property
         // PERFORMANCE: Index idx_prop_content_property_id_id on (property_id, id) optimizes MIN(id) queries
         if ($hasContentJoin) {
+            // Ensure content has non-empty title and address when using JOIN
+            $propertiesQuery->whereNotNull($contentJoinAlias . '.title')
+                           ->where($contentJoinAlias . '.title', '!=', '')
+                           ->whereNotNull($contentJoinAlias . '.address')
+                           ->where($contentJoinAlias . '.address', '!=', '');
+            
             // OPTIMIZED: Select content fields from JOIN to avoid eager loading
             // Use MIN() to get first content when multiple contents exist (avoids DISTINCT overhead)
             // The composite index (property_id, id) on user_property_contents makes MIN(id) queries efficient
@@ -2708,7 +2720,21 @@ class PropertyController extends Controller
         }
         
         // OPTIMIZED: Use content from JOIN if available, otherwise use eager loaded relationship
-        $formattedProperties = $properties->getCollection()->map(function ($property) use ($viewsBySlug, $fieldsToInclude, $hasContentJoin) {
+        // Filter out properties that don't have valid title and address to prevent "No Title"/"No Address" fallbacks
+        $formattedProperties = $properties->getCollection()->filter(function ($property) use ($hasContentJoin) {
+            if ($hasContentJoin && isset($property->content_slug)) {
+                // When using JOIN, check if content from JOIN has valid title and address
+                $hasTitle = !empty($property->content_title ?? null);
+                $hasAddress = !empty($property->content_address ?? null);
+                return $hasTitle && $hasAddress;
+            } else {
+                // When using eager loading, check if first content has valid title and address
+                $content = optional($property->contents->first());
+                $hasTitle = !empty($content->title ?? null);
+                $hasAddress = !empty($content->address ?? null);
+                return $hasTitle && $hasAddress;
+            }
+        })->map(function ($property) use ($viewsBySlug, $fieldsToInclude, $hasContentJoin) {
             // Use content from JOIN if available (when filtering by city/district/search)
             if ($hasContentJoin && isset($property->content_slug)) {
                 $content = (object) [
