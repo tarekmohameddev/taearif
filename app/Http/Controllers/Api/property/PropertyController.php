@@ -2721,6 +2721,7 @@ class PropertyController extends Controller
         
         // OPTIMIZED: Use content from JOIN if available, otherwise use eager loaded relationship
         // Filter out properties that don't have valid title and address to prevent "No Title"/"No Address" fallbacks
+        // Use ->values() after ->filter() to re-index the collection and maintain array structure (not object with keys)
         $formattedProperties = $properties->getCollection()->filter(function ($property) use ($hasContentJoin) {
             if ($hasContentJoin && isset($property->content_slug)) {
                 // When using JOIN, check if content from JOIN has valid title and address
@@ -2734,7 +2735,7 @@ class PropertyController extends Controller
                 $hasAddress = !empty($content->address ?? null);
                 return $hasTitle && $hasAddress;
             }
-        })->map(function ($property) use ($viewsBySlug, $fieldsToInclude, $hasContentJoin) {
+        })->values()->map(function ($property) use ($viewsBySlug, $fieldsToInclude, $hasContentJoin) {
             // Use content from JOIN if available (when filtering by city/district/search)
             if ($hasContentJoin && isset($property->content_slug)) {
                 $content = (object) [
