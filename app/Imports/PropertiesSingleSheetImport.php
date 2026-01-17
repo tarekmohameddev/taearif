@@ -129,6 +129,27 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             Log::warning("Row {$rowIndex}: Failed to parse amenity_ids", ['value' => $row['amenity_ids']]);
         }
 
+        // Check if this is an update (id column exists and has value)
+        $propertyId = isset($row['id']) && !empty($row['id']) ? (int)$row['id'] : null;
+        $isUpdate = false;
+        $existingProperty = null;
+
+        if ($propertyId) {
+            // Check if property exists and belongs to user
+            $existingProperty = Property::where('id', $propertyId)
+                ->where('user_id', $this->userId)
+                ->first();
+            
+            if ($existingProperty) {
+                $isUpdate = true;
+            } else {
+                // ID provided but property doesn't exist or doesn't belong to user
+                // Log warning and create new property instead
+                Log::warning("Row {$rowIndex}: Property ID {$propertyId} not found or doesn't belong to user. Creating new property.");
+                $propertyId = null;
+            }
+        }
+
         [$cityId, $stateId] = $this->resolveLocationIds($row, $rowIndex);
         
         // Track location resolution failures as validation errors for incomplete properties
@@ -157,27 +178,6 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         foreach ($galleryImages as $galleryUrl) {
             if (!$this->validateImageUrl($galleryUrl)) {
                 throw new \Exception("Row {$rowIndex}: Invalid gallery image URL: {$galleryUrl}. URL must be http/https with valid image extension (jpg, jpeg, png, gif, webp).");
-            }
-        }
-
-        // Check if this is an update (id column exists and has value)
-        $propertyId = isset($row['id']) && !empty($row['id']) ? (int)$row['id'] : null;
-        $isUpdate = false;
-        $existingProperty = null;
-
-        if ($propertyId) {
-            // Check if property exists and belongs to user
-            $existingProperty = Property::where('id', $propertyId)
-                ->where('user_id', $this->userId)
-                ->first();
-            
-            if ($existingProperty) {
-                $isUpdate = true;
-            } else {
-                // ID provided but property doesn't exist or doesn't belong to user
-                // Log warning and create new property instead
-                Log::warning("Row {$rowIndex}: Property ID {$propertyId} not found or doesn't belong to user. Creating new property.");
-                $propertyId = null;
             }
         }
 
