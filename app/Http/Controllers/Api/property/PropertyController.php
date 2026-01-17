@@ -2792,13 +2792,15 @@ class PropertyController extends Controller
             return Property::whereIn('user_id', $allowedUserIds)
                 ->selectRaw('
                     SUM(CASE WHEN featured = 1 AND reorder_featured > 0 THEN 1 ELSE 0 END) as total_reorder_featured,
-                    SUM(CASE WHEN completion_status != "complete" OR completion_status IS NULL THEN 1 ELSE 0 END) as incomplete_count
+                    SUM(CASE WHEN completion_status != "complete" OR completion_status IS NULL THEN 1 ELSE 0 END) as incomplete_count,
+                    SUM(CASE WHEN completion_status = "complete" THEN 1 ELSE 0 END) as completed_count
                 ')
                 ->first();
         });
         
         $totalReorderFeatured = (int) ($counts->total_reorder_featured ?? 0);
         $incompleteCount = (int) ($counts->incomplete_count ?? 0);
+        $completedCount = (int) ($counts->completed_count ?? 0);
 
         // Build pagination metadata
         $paginationData = [
@@ -2827,6 +2829,7 @@ class PropertyController extends Controller
             'specifics_filters' => $specificsFilters,
             'total_reorder_featured' => $totalReorderFeatured,
             'incomplete_count' => $incompleteCount,
+            'completed_count' => $completedCount,
             'pagination' => $paginationData
         ];
         
@@ -3145,10 +3148,20 @@ class PropertyController extends Controller
                     ', ['sale', 'rent'])
                     ->first();
 
+                // Get incomplete count
+                $incompleteCount = Property::whereIn('user_id', $allowedUserIds)
+                    ->where(function($query) {
+                        $query->where('completion_status', '!=', 'complete')
+                              ->orWhereNull('completion_status');
+                    })
+                    ->count();
+
                 return [
                     'for_sale' => (int) ($stats->for_sale ?? 0),
                     'for_rent' => (int) ($stats->for_rent ?? 0),
                     'total' => (int) ($stats->total ?? 0),
+                    'complete_count' => (int) ($stats->total ?? 0),
+                    'incomplete_count' => (int) $incompleteCount,
                 ];
             });
 
