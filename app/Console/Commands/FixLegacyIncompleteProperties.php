@@ -1,0 +1,326 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\User\RealestateManagement\Property;
+use App\Models\User\RealestateManagement\PropertyContent;
+use App\Models\User\Language;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+class FixLegacyIncompleteProperties extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'app:fix-legacy-incomplete-properties 
+                            {--dry-run : Show what would be fixed without making changes}
+                            {--force : Force migration without confirmation}
+                            {--chunk=100 : Number of properties to process per chunk}';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Fix legacy properties that are marked as complete but are missing required fields';
+
+    /**
+     * Required fields for a complete property
+     */
+    protected $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'type', 'area'];
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        $dryRun = $this->option('dry-run');
+        $force = $this->option('force');
+        $chunkSize = (int) $this->option('chunk');
+
+        $this->info('Checking for legacy incomplete properties...');
+        $this->newLine();
+
+        // Find all properties that are marked as complete or have NULL completion_status
+        // but might be missing required fields
+        $totalQuery = Property::where(function($q) {
+                $q->where('completion_status', 'complete')
+                  ->orWhereNull('completion_status');
+            });
+
+        $totalCount = $totalQuery->count();
+
+        if ($totalCount === 0) {
+            $this->info('✓ No properties found with completion_status = "complete" or NULL. Database is clean!');
+            return self::SUCCESS;
+        }
+
+        $this->info("Found {$totalCount} property(ies) to check:");
+        $this->newLine();
+
+        // Get sample properties to show preview
+        $sampleProperties = $totalQuery->limit(10)
+            ->with(['contents' => function($q) {
+                $q->select('id', 'property_id', 'language_id', 'title', 'address', 'description');
+            }])
+            ->get(['id', 'user_id', 'price', 'purpose', 'type', 'area', 'completion_status']);
+
+        $incompleteProperties = [];
+        $sampleData = [];
+
+        foreach ($sampleProperties as $property) {
+            // Get default language for this property's owner
+            $defaultLanguage = Language::where('user_id', $property->user_id)
+                ->where('is_default', 1)
+                ->first();
+
+            if (!$defaultLanguage) {
+                continue;
+            }
+
+            // Get property content for default language
+            $propertyContent = $property->contents
+                ->where('language_id', $defaultLanguage->id)
+                ->first();
+
+            // Check current data
+            $currentData = [
+                'title' => $propertyContent?->title,
+                'price' => $property->price,
+                'address' => $propertyContent?->address,
+                'description' => $propertyContent?->description,
+                'purpose' => $property->purpose,
+                'type' => $property->type,
+                'area' => $property->area,
+            ];
+
+            // Identify missing fields
+            $missingFields = [];
+            foreach ($this->requiredFields as $field) {
+                $value = $currentData[$field] ?? null;
+                if (is_null($value) || (is_string($value) && trim($value) === '') || $value === '') {
+                    $missingFields[] = $field;
+                }
+            }
+
+            if (!empty($missingFields)) {
+                $incompleteProperties[] = $property;
+                $sampleData[] = [
+                    'ID' => $property->id,
+                    'User ID' => $property->user_id,
+                    'Title' => $propertyContent?->title ?? 'NULL',
+                    'Address' => $propertyContent?->address ?? 'NULL',
+                    'Type' => $property->type ?? 'NULL',
+                    'Area' => $property->area ?? 'NULL',
+                    'Missing Fields' => implode(', ', $missingFields),
+                ];
+            }
+        }
+
+        if (empty($sampleData)) {
+            $this->info('✓ Sample check: No incomplete properties found in first 10 properties.');
+            $this->info('Checking all properties...');
+            $this->newLine();
+        } else {
+            $this->warn("Found " . count($sampleData) . " incomplete property(ies) in sample (showing first 10):");
+            $this->newLine();
+
+            $this->table(
+                ['ID', 'User ID', 'Title', 'Address', 'Type', 'Area', 'Missing Fields'],
+                $sampleData
+            );
+            $this->newLine();
+        }
+
+        if ($dryRun) {
+            $this->info('🔍 DRY RUN MODE - No changes will be made');
+            $this->info('Scanning all properties to show what would be fixed...');
+            $this->newLine();
+
+            // Count all incomplete properties
+            $incompleteCount = 0;
+            $this->output->progressStart($totalCount);
+
+            Property::where(function($q) {
+                    $q->where('completion_status', 'complete')
+                      ->orWhereNull('completion_status');
+                })
+                ->chunkById($chunkSize, function ($properties) use (&$incompleteCount) {
+                    foreach ($properties as $property) {
+                        if ($this->isPropertyIncomplete($property)) {
+                            $incompleteCount++;
+                        }
+                        $this->output->progressAdvance();
+                    }
+                });
+
+            $this->output->progressFinish();
+            $this->newLine();
+            $this->info("Would mark {$incompleteCount} property(ies) as incomplete");
+            $this->info('Run without --dry-run to perform the migration');
+            return self::SUCCESS;
+        }
+
+        // Ask for confirmation
+        if (!$force) {
+            $this->warn('This will update properties marked as "complete" to "incomplete" if they are missing required fields.');
+            if (!$this->confirm('Do you want to proceed?', false)) {
+                $this->info('Migration cancelled.');
+                return self::SUCCESS;
+            }
+        }
+
+        $this->info('Starting migration...');
+        $this->newLine();
+
+        $fixedCount = 0;
+        $skippedCount = 0;
+        $errorCount = 0;
+        $processedCount = 0;
+
+        // Process in chunks to avoid memory issues
+        $query = Property::where(function($q) {
+                $q->where('completion_status', 'complete')
+                  ->orWhereNull('completion_status');
+            });
+
+        $totalToProcess = $query->count();
+        $this->output->progressStart($totalToProcess);
+
+        $query->chunkById($chunkSize, function ($properties) use (
+            &$fixedCount, 
+            &$skippedCount, 
+            &$errorCount,
+            &$processedCount
+        ) {
+            foreach ($properties as $property) {
+                try {
+                    if (!$this->isPropertyIncomplete($property)) {
+                        $skippedCount++;
+                        $processedCount++;
+                        $this->output->progressAdvance();
+                        continue;
+                    }
+
+                    // Get missing fields
+                    $missingFields = $this->getMissingFields($property);
+
+                    // Update property to incomplete
+                    DB::table('user_properties')
+                        ->where('id', $property->id)
+                        ->update([
+                            'completion_status' => 'incomplete',
+                            'missing_fields' => json_encode($missingFields),
+                            'updated_at' => now(),
+                        ]);
+
+                    $fixedCount++;
+                    $processedCount++;
+
+                    Log::info('Fixed legacy incomplete property', [
+                        'property_id' => $property->id,
+                        'user_id' => $property->user_id,
+                        'missing_fields' => $missingFields,
+                        'old_status' => $property->completion_status ?? 'NULL',
+                    ]);
+
+                } catch (\Exception $e) {
+                    $errorCount++;
+                    $processedCount++;
+                    
+                    $this->newLine();
+                    $this->error("  ✗ Failed to fix Property ID {$property->id}: {$e->getMessage()}");
+                    
+                    Log::error('Failed to fix legacy incomplete property', [
+                        'property_id' => $property->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                $this->output->progressAdvance();
+            }
+        });
+
+        $this->output->progressFinish();
+        $this->newLine();
+        $this->newLine();
+
+        $this->info('Migration completed!');
+        $this->info("  ✓ Fixed (marked as incomplete): {$fixedCount}");
+        $this->info("  ⊙ Skipped (already complete): {$skippedCount}");
+        if ($errorCount > 0) {
+            $this->warn("  ✗ Errors: {$errorCount}");
+        }
+
+        // Verify migration
+        $incompleteAfter = Property::where('completion_status', 'incomplete')->count();
+        $this->newLine();
+        $this->info("Current incomplete properties count: {$incompleteAfter}");
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Check if a property is incomplete (missing required fields)
+     *
+     * @param Property $property
+     * @return bool
+     */
+    protected function isPropertyIncomplete(Property $property): bool
+    {
+        $missingFields = $this->getMissingFields($property);
+        return !empty($missingFields);
+    }
+
+    /**
+     * Get missing required fields for a property
+     *
+     * @param Property $property
+     * @return array
+     */
+    protected function getMissingFields(Property $property): array
+    {
+        // Get default language for this property's owner
+        $defaultLanguage = Language::where('user_id', $property->user_id)
+            ->where('is_default', 1)
+            ->first();
+
+        if (!$defaultLanguage) {
+            // If no default language, mark as incomplete with all fields missing
+            return $this->requiredFields;
+        }
+
+        // Get property content for default language
+        $propertyContent = PropertyContent::where('property_id', $property->id)
+            ->where('language_id', $defaultLanguage->id)
+            ->first();
+
+        // Check current data
+        $currentData = [
+            'title' => $propertyContent?->title,
+            'price' => $property->price,
+            'address' => $propertyContent?->address,
+            'description' => $propertyContent?->description,
+            'purpose' => $property->purpose,
+            'type' => $property->type,
+            'area' => $property->area,
+        ];
+
+        // Identify missing fields
+        $missingFields = [];
+        foreach ($this->requiredFields as $field) {
+            $value = $currentData[$field] ?? null;
+            if (is_null($value) || (is_string($value) && trim($value) === '') || $value === '') {
+                $missingFields[] = $field;
+            }
+        }
+
+        return $missingFields;
+    }
+}
