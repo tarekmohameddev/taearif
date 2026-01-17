@@ -182,13 +182,16 @@ class FixLegacyIncompleteProperties extends Command
         $fixedCount = 0;
         $skippedCount = 0;
         $errorCount = 0;
+        $warningCount = 0;
         $processedCount = 0;
 
         // Process in chunks to avoid memory issues
+        // Select only fields we need to avoid loading large JSON features that might trigger features_text virtual column issues
         $query = Property::where(function($q) {
                 $q->where('completion_status', 'complete')
                   ->orWhereNull('completion_status');
-            });
+            })
+            ->select(['id', 'user_id', 'price', 'purpose', 'type', 'area', 'completion_status']);
 
         $totalToProcess = $query->count();
         $this->output->progressStart($totalToProcess);
@@ -197,6 +200,7 @@ class FixLegacyIncompleteProperties extends Command
             &$fixedCount, 
             &$skippedCount, 
             &$errorCount,
+            &$warningCount,
             &$processedCount
         ) {
             foreach ($properties as $property) {
@@ -211,14 +215,36 @@ class FixLegacyIncompleteProperties extends Command
                     // Get missing fields
                     $missingFields = $this->getMissingFields($property);
 
-                    // Update property to incomplete
-                    DB::table('user_properties')
-                        ->where('id', $property->id)
-                        ->update([
-                            'completion_status' => 'incomplete',
-                            'missing_fields' => json_encode($missingFields),
-                            'updated_at' => now(),
-                        ]);
+                    // Update property to incomplete using raw SQL with SQL_MODE adjustment
+                    // Temporarily disable strict mode to allow virtual column recalculation even if it exceeds size limit
+                    // This is safe because we're only updating completion_status and missing_fields, not features
+                    $missingFieldsJson = json_encode($missingFields);
+                    
+                    DB::transaction(function () use ($property, $missingFieldsJson) {
+                        // Get current SQL mode
+                        $sqlMode = DB::selectOne("SELECT @@SESSION.sql_mode as mode");
+                        $originalMode = $sqlMode->mode ?? '';
+                        
+                        try {
+                            // Temporarily set SQL mode to allow truncation (removes strict mode)
+                            $relaxedMode = str_replace(['STRICT_TRANS_TABLES', 'STRICT_ALL_TABLES'], '', $originalMode);
+                            $relaxedMode = trim(str_replace(',,', ',', $relaxedMode), ',');
+                            DB::statement("SET SESSION sql_mode = ?", [$relaxedMode]);
+                            
+                            // Perform the update
+                            DB::statement(
+                                "UPDATE `user_properties` 
+                                 SET `completion_status` = 'incomplete', 
+                                     `missing_fields` = ?, 
+                                     `updated_at` = NOW() 
+                                 WHERE `id` = ?",
+                                [$missingFieldsJson, $property->id]
+                            );
+                        } finally {
+                            // Always restore original SQL mode
+                            DB::statement("SET SESSION sql_mode = ?", [$originalMode]);
+                        }
+                    });
 
                     $fixedCount++;
                     $processedCount++;
@@ -231,16 +257,35 @@ class FixLegacyIncompleteProperties extends Command
                     ]);
 
                 } catch (\Exception $e) {
-                    $errorCount++;
                     $processedCount++;
                     
-                    $this->newLine();
-                    $this->error("  ✗ Failed to fix Property ID {$property->id}: {$e->getMessage()}");
+                    // Check if it's the features_text virtual column issue
+                    $isFeaturesTextError = strpos($e->getMessage(), 'features_text') !== false || 
+                                          strpos($e->getMessage(), 'String data, right truncated') !== false;
                     
-                    Log::error('Failed to fix legacy incomplete property', [
-                        'property_id' => $property->id,
-                        'error' => $e->getMessage(),
-                    ]);
+                    if ($isFeaturesTextError) {
+                        // This is due to features_text virtual column size limitation
+                        // The property still has large features JSON that exceeds 255 chars
+                        // We'll skip these and they can be handled separately by fixing the features column
+                        $warningCount++;
+                        $this->newLine();
+                        $this->warn("  ⚠ Skipped Property ID {$property->id}: features_text virtual column size limit (features JSON too large)");
+                        
+                        Log::warning('Skipped legacy incomplete property - features_text virtual column size limit', [
+                            'property_id' => $property->id,
+                            'error' => $e->getMessage(),
+                            'note' => 'Property has large features JSON that exceeds virtual column size limit. Consider reducing features JSON size or increasing virtual column size.',
+                        ]);
+                    } else {
+                        $errorCount++;
+                        $this->newLine();
+                        $this->error("  ✗ Failed to fix Property ID {$property->id}: {$e->getMessage()}");
+                        
+                        Log::error('Failed to fix legacy incomplete property', [
+                            'property_id' => $property->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
 
                 $this->output->progressAdvance();
@@ -254,8 +299,11 @@ class FixLegacyIncompleteProperties extends Command
         $this->info('Migration completed!');
         $this->info("  ✓ Fixed (marked as incomplete): {$fixedCount}");
         $this->info("  ⊙ Skipped (already complete): {$skippedCount}");
+        if ($warningCount > 0) {
+            $this->warn("  ⚠ Warnings (features_text size limit): {$warningCount}");
+        }
         if ($errorCount > 0) {
-            $this->warn("  ✗ Errors: {$errorCount}");
+            $this->error("  ✗ Errors: {$errorCount}");
         }
 
         // Verify migration
