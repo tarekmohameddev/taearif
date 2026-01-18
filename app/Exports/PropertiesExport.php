@@ -156,7 +156,6 @@ class PropertiesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
         return [
             'id',
             'title',
-            'slug',
             'description',
             'address',
             'city_name',
@@ -368,7 +367,6 @@ class PropertiesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
         return [
             $property->id,
             $content?->title ?? '',
-            $content?->slug ?? '',
             $content?->description ?? '',
             $content?->address ?? '',
             $cityName,

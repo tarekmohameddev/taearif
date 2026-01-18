@@ -2,6 +2,7 @@
 
 namespace App\Imports;
 
+use App\Models\User\RealestateManagement\Amenity;
 use App\Models\User\RealestateManagement\City;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyContent;
@@ -93,6 +94,24 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         // Also skip rows marked by prepareForValidation
         if (isset($row['_skip_empty_row']) && $row['_skip_empty_row'] === true) {
             return;
+        }
+
+        // SAFETY CHECK: Detect raw export files (not import-safe)
+        // Export-only columns that should NOT be in import templates:
+        $exportOnlyColumns = ['slug', 'user_id', 'user_name', 'created_by', 'creator_name', 'created_at', 'updated_at'];
+        $hasExportOnlyColumn = false;
+        foreach ($exportOnlyColumns as $col) {
+            if (isset($row[$col]) && $this->valueProvided($row[$col])) {
+                $hasExportOnlyColumn = true;
+                break;
+            }
+        }
+
+        // Also check if they're using the old 'amenities' comma-separated column (should use individual amenity_* columns)
+        $hasOldAmenitiesFormat = isset($row['amenities']) && $this->valueProvided($row['amenities']) && !isset($row['amenity_مصعد']);
+
+        if ($hasExportOnlyColumn || $hasOldAmenitiesFormat) {
+            throw new \Exception("Row {$rowIndex}: Invalid file format. This appears to be a raw export file. Please use the official Import Template or the 'Export for Import' feature to get a safe, re-importable file.");
         }
 
         // Parse new relational columns
@@ -667,12 +686,21 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
 
         // If we have amenity names, resolve them to IDs
         if (!empty($amenityNames) && is_array($amenityNames)) {
-            // Note: Since we don't have access to amenities table structure,
-            // we'll just return the names for now
-            // The actual resolution would happen in the database layer
-            // For now, return empty array and let amenity_ids be used
-            Log::info("Row {$rowIndex}: Found amenity names", ['names' => $amenityNames]);
-            // TODO: Implement amenity name to ID resolution when amenity table structure is available
+            // Resolve amenity names to IDs
+            $amenityIdsFromDb = Amenity::where('user_id', $this->userId)
+                ->whereIn('name', $amenityNames)
+                ->pluck('id')
+                ->toArray();
+            
+            if (!empty($amenityIdsFromDb)) {
+                // Merge with existing IDs (avoiding duplicates)
+                foreach ($amenityIdsFromDb as $id) {
+                    if (!in_array($id, $amenityIds)) {
+                        $amenityIds[] = (int)$id;
+                    }
+                }
+                Log::info("Row {$rowIndex}: Resolved amenity names", ['count' => count($amenityIdsFromDb)]);
+            }
         }
 
         // Fallback to amenity_ids if provided (backward compatibility)

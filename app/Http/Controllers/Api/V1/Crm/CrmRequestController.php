@@ -856,11 +856,13 @@ class CrmRequestController extends ApiController
 
 					$updateData = $propertyContentFields;
 
-					if (isset($updateData['title'])) {
-						$updateData['slug'] = PropertyContent::generateUniqueSlug($updateData['title'], $property->id);
-					}
-
 					if ($content) {
+						// Ensure slug is never accepted from request
+						unset($updateData['slug']);
+						// Regenerate slug if title is being updated
+						if (isset($updateData['title'])) {
+							$updateData['slug'] = PropertyContent::generateUniqueSlug($updateData['title'], $property->id);
+						}
 						$content->update($updateData);
 					} else {
 						$categoryId = $property->category_id ?? ApiUserCategory::where('slug', 'other')->value('id');

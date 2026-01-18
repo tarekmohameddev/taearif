@@ -4046,6 +4046,12 @@ class PropertyController extends Controller
                         ->first();
 
                     if ($existingContent) {
+                        // Ensure slug is never accepted from request
+                        unset($contentData['slug']);
+                        // Regenerate slug if title is being updated
+                        if (isset($contentData['title'])) {
+                            $contentData['slug'] = PropertyContent::generateUniqueSlug($contentData['title'], $property->id);
+                        }
                         $existingContent->update($contentData);
                     } else {
                         $contentData['language_id'] = $defaultLanguage->id;
@@ -4219,6 +4225,12 @@ class PropertyController extends Controller
                     ->first();
 
                 if ($existingContent) {
+                    // Ensure slug is never accepted from request
+                    unset($contentData['slug']);
+                    // Regenerate slug if title is being updated
+                    if (isset($contentData['title'])) {
+                        $contentData['slug'] = PropertyContent::generateUniqueSlug($contentData['title'], $property->id);
+                    }
                     $existingContent->update($contentData);
                 } else {
                     PropertyContent::storePropertyContent($owner->id, $property->id, $contentData);
