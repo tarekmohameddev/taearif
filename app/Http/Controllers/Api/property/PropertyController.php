@@ -2132,8 +2132,11 @@ class PropertyController extends Controller
         if (!$willNeedContentJoin) {
             $eagerLoadRelations['contents'] = function($q) {
                 $q->select('id', 'property_id', 'title', 'slug', 'address', 'description')
-                  ->orderBy('id', 'asc')
-                  ->limit(1); // Only load first content since we only use first() in response
+                  ->whereNotNull('title')
+                  ->where('title', '!=', '')
+                  ->whereNotNull('address')
+                  ->where('address', '!=', '')
+                  ->orderBy('id', 'asc'); // Load all valid contents for batch loading to prevent limit(1) issues
             };
         }
         
