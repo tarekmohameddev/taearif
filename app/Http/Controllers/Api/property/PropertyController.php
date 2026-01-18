@@ -3163,20 +3163,31 @@ class PropertyController extends Controller
                     ', ['sale', 'rent'])
                     ->first();
 
-                // Get incomplete count
-                $incompleteCount = Property::whereIn('user_id', $allowedUserIds)
+                // Get incomplete stats: total, for_sale, for_rent (same completion filter as listDrafts)
+                $incompleteStats = Property::whereIn('user_id', $allowedUserIds)
                     ->where(function($query) {
                         $query->where('completion_status', '!=', 'complete')
                               ->orWhereNull('completion_status');
                     })
-                    ->count();
+                    ->selectRaw('
+                        COUNT(*) as total,
+                        SUM(CASE WHEN purpose = ? THEN 1 ELSE 0 END) as for_sale,
+                        SUM(CASE WHEN purpose = ? THEN 1 ELSE 0 END) as for_rent
+                    ', ['sale', 'rent'])
+                    ->first();
 
                 return [
-                    'for_sale' => (int) ($stats->for_sale ?? 0),
-                    'for_rent' => (int) ($stats->for_rent ?? 0),
-                    'total' => (int) ($stats->total ?? 0),
+                    'complete' => [
+                        'for_sale' => (int) ($stats->for_sale ?? 0),
+                        'for_rent' => (int) ($stats->for_rent ?? 0),
+                    ],
+                    'incomplete' => [
+                        'for_sale' => (int) ($incompleteStats->for_sale ?? 0),
+                        'for_rent' => (int) ($incompleteStats->for_rent ?? 0),
+                    ],
+                    'total' => (int) (($stats->total ?? 0) + ($incompleteStats->total ?? 0)),
                     'complete_count' => (int) ($stats->total ?? 0),
-                    'incomplete_count' => (int) $incompleteCount,
+                    'incomplete_count' => (int) ($incompleteStats->total ?? 0),
                 ];
             });
 
