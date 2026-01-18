@@ -338,9 +338,13 @@ class ApiPropertyRequestController extends Controller
 
     /**
      * Get filter options for property requests (dropdown data).
+     *
      * Query params:
-     * - used_only (bool, default true): return only cities/districts used in this tenant's requests
-     * - city_id (int): optionally scope districts to a city
+     * - used_only (bool, default true): return only cities/districts used in this tenant's requests.
+     * - city_id (int): optionally scope districts to a city.
+     *
+     * When used_only=false, cities and districts are capped at 500 for performance. Pass city_id
+     * to scope districts to one city when you need the full list for that city.
      */
     public function filterOptions(Request $request): JsonResponse
     {
@@ -361,7 +365,7 @@ class ApiPropertyRequestController extends Controller
                     ->pluck('city_id');
                 $cities = UserCity::whereIn('id', $cityIds)->orderBy('name_ar')->get(['id', 'name_ar', 'name_en']);
             } else {
-                $cities = UserCity::orderBy('name_ar')->get(['id', 'name_ar', 'name_en']);
+                $cities = UserCity::orderBy('name_ar')->limit(500)->get(['id', 'name_ar', 'name_en']);
             }
 
             // Districts
@@ -375,6 +379,9 @@ class ApiPropertyRequestController extends Controller
             }
             if ($cityId) {
                 $districtQuery->where('city_id', (int) $cityId);
+            }
+            if (!$usedOnly && !$cityId) {
+                $districtQuery->limit(500);
             }
             $districts = $districtQuery->orderBy('name_ar')->get(['id', 'city_id', 'name_ar', 'name_en']);
 
@@ -401,65 +408,60 @@ class ApiPropertyRequestController extends Controller
             ];
         });
 
-        // Dynamic options derived from existing property requests
-        $statuses = PropertyRequestStatus::ordered()
-            ->get(['id', 'name_ar', 'name_en']);
+        // Cache dynamic/meta options (1 hour TTL) — statuses, purchase_goals, seriousness, stages, procedures, types, priorities, employees
+        $metaCacheKey = "property_request_filter_options_meta_{$ownerId}";
+        $metaData = Cache::remember($metaCacheKey, 3600, function () use ($ownerId) {
+            $statuses = PropertyRequestStatus::ordered()
+                ->get(['id', 'name_ar', 'name_en']);
 
-        $purchaseGoals = UserPropertyRequest::where('user_id', $ownerId)
-            ->whereNotNull('purchase_goal')
-            ->distinct()
-            ->orderBy('purchase_goal')
-            ->pluck('purchase_goal')
-            ->filter()
-            ->values();
+            $purchaseGoals = UserPropertyRequest::where('user_id', $ownerId)
+                ->whereNotNull('purchase_goal')
+                ->distinct()
+                ->orderBy('purchase_goal')
+                ->pluck('purchase_goal')
+                ->filter()
+                ->values();
 
-        $seriousnessOptions = UserPropertyRequest::where('user_id', $ownerId)
-            ->whereNotNull('seriousness')
-            ->distinct()
-            ->orderBy('seriousness')
-            ->pluck('seriousness')
-            ->filter()
-            ->values();
+            $seriousnessOptions = UserPropertyRequest::where('user_id', $ownerId)
+                ->whereNotNull('seriousness')
+                ->distinct()
+                ->orderBy('seriousness')
+                ->pluck('seriousness')
+                ->filter()
+                ->values();
 
-        // Get customer stages (same as customers use)
-        $stages = UserApiCustomerStage::where('user_id', $ownerId)
-            ->orderBy('order')
-            ->get(['id', 'stage_name as name', 'icon', 'color']);
+            $stages = UserApiCustomerStage::where('user_id', $ownerId)
+                ->orderBy('order')
+                ->get(['id', 'stage_name as name', 'icon', 'color']);
 
-        // Get customer procedures (same as customers use)
-        $procedures = UserApiCustomerProcedure::where('user_id', $ownerId)
-            ->orderBy('order')
-            ->get(['id', 'procedure_name as name', 'icon', 'color']);
+            $procedures = UserApiCustomerProcedure::where('user_id', $ownerId)
+                ->orderBy('order')
+                ->get(['id', 'procedure_name as name', 'icon', 'color']);
 
-        // Get customer types (same as customers use)
-        $types = UserApiCustomerType::where('user_id', $ownerId)
-            ->orderBy('order')
-            ->get(['id', 'name', 'value', 'icon', 'color']);
+            $types = UserApiCustomerType::where('user_id', $ownerId)
+                ->orderBy('order')
+                ->get(['id', 'name', 'value', 'icon', 'color']);
 
-        // Get customer priorities (same as customers use)
-        $priorities = UserApiCustomerPriority::where('user_id', $ownerId)
-            ->orderBy('order')
-            ->get(['id', 'name', 'value', 'icon', 'color']);
+            $priorities = UserApiCustomerPriority::where('user_id', $ownerId)
+                ->orderBy('order')
+                ->get(['id', 'name', 'value', 'icon', 'color']);
 
-        // Get employees (same as customers use)
-        $employees = User::where('tenant_id', $ownerId)
-            ->where('account_type', 'employee')
-            ->where('active', true)
-            ->with('activeWhatsappUser')
-            ->get(['id', 'first_name', 'last_name', 'email']);
+            $employees = User::where('tenant_id', $ownerId)
+                ->where('account_type', 'employee')
+                ->where('active', true)
+                ->with('activeWhatsappUser')
+                ->get(['id', 'first_name', 'last_name', 'email']);
 
-        $employeesList = $employees->map(function ($emp) {
+            $employeesList = $employees->map(function ($emp) {
+                return [
+                    'id' => $emp->id,
+                    'name' => trim(($emp->first_name ?? '') . ' ' . ($emp->last_name ?? '')),
+                    'email' => $emp->email,
+                    'whatsapp_number' => $emp->activeWhatsappUser ? $emp->activeWhatsappUser->number : null,
+                ];
+            });
+
             return [
-                'id' => $emp->id,
-                'name' => trim(($emp->first_name ?? '') . ' ' . ($emp->last_name ?? '')),
-                'email' => $emp->email,
-                'whatsapp_number' => $emp->activeWhatsappUser ? $emp->activeWhatsappUser->number : null,
-            ];
-        });
-
-        return response()->json([
-            'status' => 'success',
-            'data' => array_merge($filterData, [
                 'status' => $statuses,
                 'purchase_goals' => $purchaseGoals,
                 'seriousness_options' => $seriousnessOptions,
@@ -468,7 +470,12 @@ class ApiPropertyRequestController extends Controller
                 'types' => $types,
                 'priorities' => $priorities,
                 'employees' => $employeesList,
-            ]),
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => array_merge($filterData, $metaData),
         ]);
     }
 

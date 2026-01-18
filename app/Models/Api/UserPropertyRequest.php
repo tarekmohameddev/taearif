@@ -23,6 +23,9 @@ class UserPropertyRequest extends Model
             );
             foreach (array_unique($ids) as $id) {
                 Cache::forget('property_requests_statistics_' . $id);
+                Cache::forget("property_request_filter_options_{$id}_1_all");
+                Cache::forget("property_request_filter_options_{$id}_0_all");
+                Cache::forget("property_request_filter_options_meta_{$id}");
             }
         };
 
