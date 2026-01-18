@@ -19,7 +19,9 @@ class FixLegacyIncompleteProperties extends Command
     protected $signature = 'app:fix-legacy-incomplete-properties 
                             {--dry-run : Show what would be fixed without making changes}
                             {--force : Force migration without confirmation}
-                            {--chunk=100 : Number of properties to process per chunk}';
+                            {--chunk=100 : Number of properties to process per chunk}
+                            {--only-complete : Only target completion_status = "complete" (exclude NULL)}
+                            {--update-status=1 : When 1, set completion_status to incomplete; when 0, only update missing_fields}';
 
     /**
      * The console command description.
@@ -43,21 +45,28 @@ class FixLegacyIncompleteProperties extends Command
         $dryRun = $this->option('dry-run');
         $force = $this->option('force');
         $chunkSize = (int) $this->option('chunk');
+        $onlyComplete = $this->option('only-complete');
+        $updateStatus = (string) $this->option('update-status') !== '0';
 
         $this->info('Checking for legacy incomplete properties...');
         $this->newLine();
 
-        // Find all properties that are marked as complete or have NULL completion_status
-        // but might be missing required fields
-        $totalQuery = Property::where(function($q) {
+        $baseQuery = function () use ($onlyComplete) {
+            if ($onlyComplete) {
+                return Property::where('completion_status', 'complete');
+            }
+            return Property::where(function ($q) {
                 $q->where('completion_status', 'complete')
                   ->orWhereNull('completion_status');
             });
+        };
 
+        $scopeDesc = $onlyComplete ? 'completion_status = "complete"' : 'completion_status = "complete" or NULL';
+        $totalQuery = $baseQuery();
         $totalCount = $totalQuery->count();
 
         if ($totalCount === 0) {
-            $this->info('✓ No properties found with completion_status = "complete" or NULL. Database is clean!');
+            $this->info("✓ No properties found with {$scopeDesc}. Database is clean!");
             return self::SUCCESS;
         }
 
@@ -147,10 +156,7 @@ class FixLegacyIncompleteProperties extends Command
             $incompleteCount = 0;
             $this->output->progressStart($totalCount);
 
-            Property::where(function($q) {
-                    $q->where('completion_status', 'complete')
-                      ->orWhereNull('completion_status');
-                })
+            $baseQuery()
                 ->chunkById($chunkSize, function ($properties) use (&$incompleteCount) {
                     foreach ($properties as $property) {
                         if ($this->isPropertyIncomplete($property)) {
@@ -162,14 +168,22 @@ class FixLegacyIncompleteProperties extends Command
 
             $this->output->progressFinish();
             $this->newLine();
-            $this->info("Would mark {$incompleteCount} property(ies) as incomplete");
+            $this->info(
+                $updateStatus
+                    ? "Would mark {$incompleteCount} property(ies) as incomplete"
+                    : "Would update missing_fields for {$incompleteCount} property(ies)"
+            );
             $this->info('Run without --dry-run to perform the migration');
             return self::SUCCESS;
         }
 
         // Ask for confirmation
         if (!$force) {
-            $this->warn('This will update properties marked as "complete" to "incomplete" if they are missing required fields.');
+            $this->warn(
+                $updateStatus
+                    ? 'This will update properties marked as "complete" to "incomplete" if they are missing required fields.'
+                    : 'This will update missing_fields only (completion_status will not be changed) for properties missing required fields.'
+            );
             if (!$this->confirm('Do you want to proceed?', false)) {
                 $this->info('Migration cancelled.');
                 return self::SUCCESS;
@@ -187,21 +201,19 @@ class FixLegacyIncompleteProperties extends Command
 
         // Process in chunks to avoid memory issues
         // Select only fields we need to avoid loading large JSON features that might trigger features_text virtual column issues
-        $query = Property::where(function($q) {
-                $q->where('completion_status', 'complete')
-                  ->orWhereNull('completion_status');
-            })
+        $query = $baseQuery()
             ->select(['id', 'user_id', 'price', 'purpose', 'type', 'area', 'completion_status']);
 
         $totalToProcess = $query->count();
         $this->output->progressStart($totalToProcess);
 
         $query->chunkById($chunkSize, function ($properties) use (
-            &$fixedCount, 
-            &$skippedCount, 
+            &$fixedCount,
+            &$skippedCount,
             &$errorCount,
             &$warningCount,
-            &$processedCount
+            &$processedCount,
+            $updateStatus
         ) {
             foreach ($properties as $property) {
                 try {
@@ -215,31 +227,40 @@ class FixLegacyIncompleteProperties extends Command
                     // Get missing fields
                     $missingFields = $this->getMissingFields($property);
 
-                    // Update property to incomplete using raw SQL with SQL_MODE adjustment
+                    // Update property using raw SQL with SQL_MODE adjustment
                     // Temporarily disable strict mode to allow virtual column recalculation even if it exceeds size limit
                     // This is safe because we're only updating completion_status and missing_fields, not features
                     $missingFieldsJson = json_encode($missingFields);
-                    
-                    DB::transaction(function () use ($property, $missingFieldsJson) {
+
+                    DB::transaction(function () use ($property, $missingFieldsJson, $updateStatus) {
                         // Get current SQL mode
                         $sqlMode = DB::selectOne("SELECT @@SESSION.sql_mode as mode");
                         $originalMode = $sqlMode->mode ?? '';
-                        
+
                         try {
                             // Temporarily set SQL mode to allow truncation (removes strict mode)
                             $relaxedMode = str_replace(['STRICT_TRANS_TABLES', 'STRICT_ALL_TABLES'], '', $originalMode);
                             $relaxedMode = trim(str_replace(',,', ',', $relaxedMode), ',');
                             DB::statement("SET SESSION sql_mode = ?", [$relaxedMode]);
-                            
-                            // Perform the update
-                            DB::statement(
-                                "UPDATE `user_properties` 
-                                 SET `completion_status` = 'incomplete', 
-                                     `missing_fields` = ?, 
-                                     `updated_at` = NOW() 
-                                 WHERE `id` = ?",
-                                [$missingFieldsJson, $property->id]
-                            );
+
+                            if ($updateStatus) {
+                                DB::statement(
+                                    "UPDATE `user_properties` 
+                                     SET `completion_status` = 'incomplete', 
+                                         `missing_fields` = ?, 
+                                         `updated_at` = NOW() 
+                                     WHERE `id` = ?",
+                                    [$missingFieldsJson, $property->id]
+                                );
+                            } else {
+                                DB::statement(
+                                    "UPDATE `user_properties` 
+                                     SET `missing_fields` = ?, 
+                                         `updated_at` = NOW() 
+                                     WHERE `id` = ?",
+                                    [$missingFieldsJson, $property->id]
+                                );
+                            }
                         } finally {
                             // Always restore original SQL mode
                             DB::statement("SET SESSION sql_mode = ?", [$originalMode]);
@@ -297,7 +318,11 @@ class FixLegacyIncompleteProperties extends Command
         $this->newLine();
 
         $this->info('Migration completed!');
-        $this->info("  ✓ Fixed (marked as incomplete): {$fixedCount}");
+        $this->info(
+            $updateStatus
+                ? "  ✓ Fixed (marked as incomplete): {$fixedCount}"
+                : "  ✓ Fixed (missing_fields updated): {$fixedCount}"
+        );
         $this->info("  ⊙ Skipped (already complete): {$skippedCount}");
         if ($warningCount > 0) {
             $this->warn("  ⚠ Warnings (features_text size limit): {$warningCount}");
