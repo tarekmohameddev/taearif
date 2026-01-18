@@ -96,6 +96,12 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             return;
         }
 
+        // SAFETY CHECK: Reject raw exports
+        // Raw exports contain 'user_id' and 'created_at' which are not in the official template.
+        if (isset($row['id']) && isset($row['created_at']) && isset($row['user_id'])) {
+             throw new \Exception("Row {$rowIndex}: Invalid file format. It appears you are trying to import a raw Export file which is not supported. Please copy your data into the official Import Template.");
+        }
+
         // SAFETY CHECK: Detect raw export files (not import-safe)
         // Export-only columns that should NOT be in import templates:
         $exportOnlyColumns = ['slug', 'user_id', 'user_name', 'created_by', 'creator_name', 'created_at', 'updated_at'];
@@ -686,20 +692,24 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
 
         // If we have amenity names, resolve them to IDs
         if (!empty($amenityNames) && is_array($amenityNames)) {
-            // Resolve amenity names to IDs
+            // Resolve names to IDs from database
             $amenityIdsFromDb = Amenity::where('user_id', $this->userId)
                 ->whereIn('name', $amenityNames)
                 ->pluck('id')
                 ->toArray();
             
             if (!empty($amenityIdsFromDb)) {
+                // Log success for debugging
+                Log::info("Row {$rowIndex}: Resolved amenity names", ['names' => $amenityNames, 'ids' => $amenityIdsFromDb]);
+                
                 // Merge with existing IDs (avoiding duplicates)
                 foreach ($amenityIdsFromDb as $id) {
                     if (!in_array($id, $amenityIds)) {
                         $amenityIds[] = (int)$id;
                     }
                 }
-                Log::info("Row {$rowIndex}: Resolved amenity names", ['count' => count($amenityIdsFromDb)]);
+            } else {
+                Log::warning("Row {$rowIndex}: Found amenity names but could not resolve to any IDs", ['names' => $amenityNames]);
             }
         }
 

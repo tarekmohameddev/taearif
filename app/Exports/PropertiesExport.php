@@ -18,12 +18,14 @@ class PropertiesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
     protected $userId;
     protected $allowedUserIds;
     protected $filters;
+    protected $isTemplate;
 
-    public function __construct($userId, array $allowedUserIds, array $filters = [])
+    public function __construct($userId, array $allowedUserIds, array $filters = [], $isTemplate = false)
     {
         $this->userId = $userId;
         $this->allowedUserIds = $allowedUserIds;
         $this->filters = $filters;
+        $this->isTemplate = $isTemplate;
     }
 
     public function query()
@@ -153,6 +155,20 @@ class PropertiesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
 
     public function headings(): array
     {
+        if ($this->isTemplate) {
+            return [
+                'title', 'price', 'address', 'description', 'purpose', 'type', 'area',
+                'beds', 'bath', 'city_name', 'district_name', 'featured_image', 'video_url',
+                'status', 'price_per_meter', 'gallery_images', 
+                'amenity_مصعد', 'amenity_أمن', 'amenity_كاميرات_مراقبة', 'amenity_تكييف_مركزي', 
+                'amenity_تدفئة_مركزية', 'amenity_صيانة', 'amenity_بواب', 'amenity_إنترنت', 
+                'additional_amenities', 'unit_number', 'floor_number', 'building_age', 
+                'view_type', 'furnished', 'parking_spaces', 'balcony', 'maid_room', 
+                'storage_room', 'swimming_pool', 'gym', 'garden_size', 'specifications', 
+                'payment_method', 'featured', 'features'
+            ];
+        }
+
         return [
             'id',
             'title',
@@ -362,6 +378,52 @@ class PropertiesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
             if (empty($creatorName)) {
                 $creatorName = $property->creator->username ?? '';
             }
+        }
+
+        if ($this->isTemplate) {
+            return [
+                $content?->title ?? '',
+                $property->price ?? '',
+                $content?->address ?? '',
+                $content?->description ?? '',
+                $property->purpose ?? '',
+                $property->type ?? '',
+                $property->area ?? '',
+                $property->beds ?? '',
+                $property->bath ?? '',
+                $cityName,
+                $districtName,
+                $featuredImage,
+                $property->video_url ?? '',
+                $property->status ? '1' : '0',
+                $property->pricePerMeter ?? '',
+                $galleryImages,
+                $amenityColumns['amenity_مصعد'] ?? '',
+                $amenityColumns['amenity_أمن'] ?? '',
+                $amenityColumns['amenity_كاميرات_مراقبة'] ?? '',
+                $amenityColumns['amenity_تكييف_مركزي'] ?? '',
+                $amenityColumns['amenity_تدفئة_مركزية'] ?? '',
+                $amenityColumns['amenity_صيانة'] ?? '',
+                $amenityColumns['amenity_بواب'] ?? '',
+                $amenityColumns['amenity_إنترنت'] ?? '',
+                $additionalAmenities,
+                $unitNumber,
+                $characteristics?->floor_number ?? '',
+                $characteristics?->building_age ?? '',
+                $viewType,
+                $furnished,
+                $parkingSpaces,
+                $characteristics?->balcony ? '1' : '0',
+                $characteristics?->maid_room ? '1' : '0',
+                $characteristics?->storage_room ? '1' : '0',
+                $characteristics?->swimming_pool ? '1' : '0',
+                $gym,
+                $gardenSize,
+                $specifications,
+                $property->payment_method ?? '',
+                $property->featured ? '1' : '0',
+                $features
+            ];
         }
 
         return [
