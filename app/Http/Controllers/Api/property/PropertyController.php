@@ -1007,14 +1007,29 @@ class PropertyController extends Controller
     }
 
 
-    public function show($id, GoogleAnalyticsService $analytics)
+    public function show(Request $request, $id, GoogleAnalyticsService $analytics)
     {
         try {
-            $days = (int) request()->query('days', 30);
-            $cacheKey = "property_api_{$id}_v1_days_{$days}";
+            $user = $request->user();
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
+            $ownerId = (int) $owner->id;
+            $allowedUserIds = [$ownerId];
+            try {
+                $cacheKey = "tenant_employees_{$ownerId}";
+                $employeeIds = Cache::remember($cacheKey, 300, function () use ($ownerId) {
+                    return \App\Models\User::where('tenant_id', $ownerId)
+                        ->where('account_type', 'employee')
+                        ->pluck('id')
+                        ->toArray();
+                });
+                $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
+            } catch (\Throwable $e) {}
+
+            $days = (int) $request->query('days', 30);
+            $cacheKey = "property_api_{$id}_owner_{$ownerId}_v1_days_{$days}";
             $cacheTtl = 300; // 5 minutes
 
-            $response = Cache::remember($cacheKey, $cacheTtl, function () use ($id, $analytics, $days) {
+            $response = Cache::remember($cacheKey, $cacheTtl, function () use ($id, $analytics, $days, $allowedUserIds) {
                 $property = Property::with([
                     'category',
                     'user',
@@ -1024,7 +1039,7 @@ class PropertyController extends Controller
                     'UserPropertyCharacteristics',
                     'creator',
                     'building',
-                ])->findOrFail($id);
+                ])->whereIn('user_id', $allowedUserIds)->findOrFail($id);
 
                 $content = $property->contents->first();
                 $characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
