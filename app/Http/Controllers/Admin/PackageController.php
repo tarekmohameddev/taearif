@@ -10,6 +10,7 @@ use App\Models\Language;
 use App\Models\Package;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 
@@ -99,6 +100,7 @@ class PackageController extends Controller
                     'features' => $features,
 
                 ]);
+                Cache::forget('payment_active_packages');
                 Session::flash('success', "Package Created Successfully");
                 return "success";
             });
@@ -162,6 +164,7 @@ class PackageController extends Controller
                         'slug' => make_slug($request->title),
                         'features' => $features,
                     ]);
+                Cache::forget('payment_active_packages');
                 Session::flash('success', "Package Update Successfully");
                 return "success";
             });
@@ -193,6 +196,7 @@ class PackageController extends Controller
                     }
                 }
                 $package->delete();
+                Cache::forget('payment_active_packages');
                 Session::flash('success', 'Package deleted successfully!');
                 return back();
             });
@@ -216,6 +220,7 @@ class PackageController extends Controller
                     }
                     $package->delete();
                 }
+                Cache::forget('payment_active_packages');
                 Session::flash('success', 'Package bulk deletion is successful!');
                 return "success";
             });
