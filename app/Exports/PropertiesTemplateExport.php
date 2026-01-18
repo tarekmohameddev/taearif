@@ -44,7 +44,6 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 'https://amp.dev/static/samples/img/image1.jpg',
                 'https://amp.dev/static/samples/img/image1.jpg',
                 '1',
-                '3333',
                 'https://amp.dev/static/samples/img/image1.jpg',
                 'Yes',
                 'Yes',
@@ -78,47 +77,46 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
     public function headings(): array
     {
         return [
-            'title',
-            'price',
-            'address',
-            'description',
-            'purpose',
-            'type',
-            'area',
-            'beds',
-            'bath',
-            'city_name',
-            'district_name',
-            'featured_image',
-            'video_url',
-            'status',
-            'price_per_meter',
-            'gallery_images',
-            'amenity_مصعد',
-            'amenity_أمن',
-            'amenity_كاميرات_مراقبة',
-            'amenity_تكييف_مركزي',
-            'amenity_تدفئة_مركزية',
-            'amenity_صيانة',
-            'amenity_بواب',
-            'amenity_إنترنت',
-            'additional_amenities',
-            'unit_number',
-            'floor_number',
-            'building_age',
-            'view_type',
-            'furnished',
-            'parking_spaces',
-            'balcony',
-            'maid_room',
-            'storage_room',
-            'swimming_pool',
-            'gym',
-            'garden_size',
-            'specifications',
-            'payment_method',
-            'featured',
-            'features'
+            'عنوان الإعلان',
+            'السعر',
+            'العنوان',
+            'الوصف',
+            'الغرض',
+            'النوع',
+            'المساحة',
+            'غرف النوم',
+            'دورات المياه',
+            'المدينة',
+            'الحي',
+            'الصورة الرئيسية',
+            'رابط الفيديو',
+            'الحالة',
+            'معرض الصور',
+            'مصعد',
+            'أمن',
+            'كاميرات مراقبة',
+            'تكييف مركزي',
+            'تدفئة مركزية',
+            'صيانة',
+            'بواب',
+            'إنترنت',
+            'مرافق إضافية',
+            'رقم الوحدة',
+            'رقم الطابق',
+            'عمر المبنى',
+            'نوع الإطلالة',
+            'مفروش',
+            'مواقف السيارات',
+            'بلكونة',
+            'غرفة خادمة',
+            'غرفة تخزين',
+            'مسبح',
+            'صالة رياضية',
+            'مساحة الحديقة',
+            'المواصفات',
+            'طريقة الدفع',
+            'مميز',
+            'مميزات'
         ];
     }
 
@@ -210,8 +208,8 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                     $sheet->getCell("K$i")->setDataValidation(clone $validation);
                 }
 
-                // Payment Method Column (AM) - "daily,monthly,yearly,semi_annual"
-                $validation = $sheet->getCell('AM2')->getDataValidation();
+                // Payment Method Column (AL) - "daily,monthly,yearly,semi_annual"
+                $validation = $sheet->getCell('AL2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
                 $validation->setAllowBlank(true);
@@ -221,11 +219,11 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 $validation->setFormula1('"شهري,ربع سنوي,نصف سنوي,سنوي"');
 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("AM$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("AL$i")->setDataValidation(clone $validation);
                 }
 
-                // Featured Column (AN) - "Yes,No"
-                $validation = $sheet->getCell('AN2')->getDataValidation();
+                // Featured Column (AM) - "Yes,No"
+                $validation = $sheet->getCell('AM2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
                 $validation->setAllowBlank(true);
@@ -235,7 +233,7 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 $validation->setFormula1('"Yes,No"');
 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("AN$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("AM$i")->setDataValidation(clone $validation);
                 }
             },
         ];
@@ -287,10 +285,10 @@ class PropertiesTemplateLookupSheetExport implements FromCollection, WithHeading
     public function headings(): array
     {
         return [
-            'City Name (Dropdown Source)',
-            'District Name (Dropdown Source)',
-            'District Name (Reference)',
-            'Belongs to City (Reference)',
+            'المدينة (مصدر القائمة)',
+            'الحي (مصدر القائمة)',
+            'اسم الحي (مرجع)',
+            'تابع للمدينة (مرجع)',
         ];
     }
 

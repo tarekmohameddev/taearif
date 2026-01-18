@@ -168,48 +168,47 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
     public function headings(): array
     {
         return [
-            'id',
-            'title',
-            'price',
-            'address',
-            'description',
-            'purpose',
-            'type',
-            'area',
-            'beds',
-            'bath',
-            'city_name',
-            'district_name',
-            'featured_image',
-            'video_url',
-            'status',
-            'price_per_meter',
-            'gallery_images',
-            'amenity_مصعد',
-            'amenity_أمن',
-            'amenity_كاميرات_مراقبة',
-            'amenity_تكييف_مركزي',
-            'amenity_تدفئة_مركزية',
-            'amenity_صيانة',
-            'amenity_بواب',
-            'amenity_إنترنت',
-            'additional_amenities',
-            'unit_number',
-            'floor_number',
-            'building_age',
-            'view_type',
-            'furnished',
-            'parking_spaces',
-            'balcony',
-            'maid_room',
-            'storage_room',
-            'swimming_pool',
-            'gym',
-            'garden_size',
-            'specifications',
-            'payment_method',
-            'featured',
-            'features'
+            'المعرّف',
+            'عنوان الإعلان',
+            'السعر',
+            'العنوان',
+            'الوصف',
+            'الغرض',
+            'النوع',
+            'المساحة',
+            'غرف النوم',
+            'دورات المياه',
+            'المدينة',
+            'الحي',
+            'الصورة الرئيسية',
+            'رابط الفيديو',
+            'الحالة',
+            'معرض الصور',
+            'مصعد',
+            'أمن',
+            'كاميرات مراقبة',
+            'تكييف مركزي',
+            'تدفئة مركزية',
+            'صيانة',
+            'بواب',
+            'إنترنت',
+            'مرافق إضافية',
+            'رقم الوحدة',
+            'رقم الطابق',
+            'عمر المبنى',
+            'نوع الإطلالة',
+            'مفروش',
+            'مواقف السيارات',
+            'بلكونة',
+            'غرفة خادمة',
+            'غرفة تخزين',
+            'مسبح',
+            'صالة رياضية',
+            'مساحة الحديقة',
+            'المواصفات',
+            'طريقة الدفع',
+            'مميز',
+            'مميزات'
         ];
     }
 
@@ -293,7 +292,6 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
             $featuredImage,
             $property->video_url ?? '',
             $property->status ? '1' : '0',
-            $property->pricePerMeter ?? '',
             $galleryImages,
             $amenityColumns['amenity_مصعد'] ?? 'No',
             $amenityColumns['amenity_أمن'] ?? 'No',
@@ -412,8 +410,8 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
                     $sheet->getCell("L$i")->setDataValidation(clone $validation);
                 }
 
-                // Payment Method Column (AK) - Arabic options
-                $validation = $sheet->getCell('AK2')->getDataValidation();
+                // Payment Method Column (AJ) - Arabic options
+                $validation = $sheet->getCell('AJ2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
                 $validation->setAllowBlank(true);
@@ -423,11 +421,11 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
                 $validation->setFormula1('"شهري,ربع سنوي,نصف سنوي,سنوي"');
 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("AK$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("AJ$i")->setDataValidation(clone $validation);
                 }
 
-                // Featured Column (AL) - "Yes,No"
-                $validation = $sheet->getCell('AL2')->getDataValidation();
+                // Featured Column (AK) - "Yes,No"
+                $validation = $sheet->getCell('AK2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
                 $validation->setAllowBlank(true);
@@ -437,7 +435,7 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
                 $validation->setFormula1('"Yes,No"');
 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("AL$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("AK$i")->setDataValidation(clone $validation);
                 }
             },
         ];
@@ -489,10 +487,10 @@ class PropertiesImportReadyLookupSheetExport implements \Maatwebsite\Excel\Conce
     public function headings(): array
     {
         return [
-            'City Name (Dropdown Source)',
-            'District Name (Dropdown Source)',
-            'District Name (Reference)',
-            'Belongs to City (Reference)',
+            'المدينة (مصدر القائمة)',
+            'الحي (مصدر القائمة)',
+            'اسم الحي (مرجع)',
+            'تابع للمدينة (مرجع)',
         ];
     }
 

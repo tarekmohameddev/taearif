@@ -76,11 +76,77 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         return $this->limit;
     }
 
+    /**
+     * Arabic heading → internal (English) key for import.
+     * Used so both Arabic and English template/export headers work.
+     */
+    private static function arabicHeaderToKey(): array
+    {
+        return [
+            'عنوان الإعلان' => 'title',
+            'السعر' => 'price',
+            'العنوان' => 'address',
+            'الوصف' => 'description',
+            'الغرض' => 'purpose',
+            'النوع' => 'type',
+            'المساحة' => 'area',
+            'غرف النوم' => 'beds',
+            'دورات المياه' => 'bath',
+            'المدينة' => 'city_name',
+            'الحي' => 'district_name',
+            'الصورة الرئيسية' => 'featured_image',
+            'رابط الفيديو' => 'video_url',
+            'الحالة' => 'status',
+            'معرض الصور' => 'gallery_images',
+            'مصعد' => 'amenity_مصعد',
+            'أمن' => 'amenity_أمن',
+            'كاميرات مراقبة' => 'amenity_كاميرات_مراقبة',
+            'تكييف مركزي' => 'amenity_تكييف_مركزي',
+            'تدفئة مركزية' => 'amenity_تدفئة_مركزية',
+            'صيانة' => 'amenity_صيانة',
+            'بواب' => 'amenity_بواب',
+            'إنترنت' => 'amenity_إنترنت',
+            'مرافق إضافية' => 'additional_amenities',
+            'رقم الوحدة' => 'unit_number',
+            'رقم الطابق' => 'floor_number',
+            'عمر المبنى' => 'building_age',
+            'نوع الإطلالة' => 'view_type',
+            'مفروش' => 'furnished',
+            'مواقف السيارات' => 'parking_spaces',
+            'بلكونة' => 'balcony',
+            'غرفة خادمة' => 'maid_room',
+            'غرفة تخزين' => 'storage_room',
+            'مسبح' => 'swimming_pool',
+            'صالة رياضية' => 'gym',
+            'مساحة الحديقة' => 'garden_size',
+            'المواصفات' => 'specifications',
+            'طريقة الدفع' => 'payment_method',
+            'مميز' => 'featured',
+            'مميزات' => 'features',
+            'المعرّف' => 'id',
+        ];
+    }
+
+    /**
+     * Normalize row keys: map Arabic headers to English, keep existing English keys.
+     */
+    private function normalizeRowKeys(array $row): array
+    {
+        $map = self::arabicHeaderToKey();
+        $out = [];
+        foreach ($row as $header => $value) {
+            $key = $map[$header] ?? $header;
+            $out[$key] = $value;
+        }
+        return $out;
+    }
+
     public function onRow(Row $row)
     {
         $rowIndex = $row->getIndex();
         
-        $row      = $row->toArray();
+        $row = $row->toArray();
+        $row = $this->normalizeRowKeys($row);
 
         // Skip completely empty rows (all values are null or empty)
         $hasData = !empty(array_filter($row, function($value) {
