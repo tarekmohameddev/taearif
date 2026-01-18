@@ -6,12 +6,29 @@ use App\Models\ApiCustomer;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Cache;
 
 class UserPropertyRequest extends Model
 {
     use HasFactory;
 
     protected $table = 'users_property_requests';
+
+    protected static function booted(): void
+    {
+        $forgetStats = function (UserPropertyRequest $model): void {
+            $ids = array_filter(
+                [$model->getOriginal('user_id'), $model->user_id],
+                fn ($v) => $v !== null
+            );
+            foreach (array_unique($ids) as $id) {
+                Cache::forget('property_requests_statistics_' . $id);
+            }
+        };
+
+        static::saved($forgetStats);
+        static::deleted($forgetStats);
+    }
 // wants_similar_offers purchase_method region
     protected $fillable = [
         'user_id',

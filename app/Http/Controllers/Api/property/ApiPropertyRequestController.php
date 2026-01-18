@@ -163,10 +163,13 @@ class ApiPropertyRequestController extends Controller
             'created_from' => 'nullable|date',
             'created_to'   => 'nullable|date',
 
-            'per_page'     => 'nullable|integer|min:1|max:100',
+            'per_page'        => 'nullable|integer|min:1|max:100',
+            'with_statistics' => 'nullable|boolean',
+            'cursor'          => 'nullable|string', // when set, use cursor-based pagination (avoids COUNT and OFFSET)
         ]);
 
         $perPage = (int) ($validated['per_page'] ?? 10);
+        $withStatistics = $request->boolean('with_statistics', false);
 
         $categoryId = $validated['category_id'] ?? ($validated['category'] ?? null);
         $districtId = $validated['districts_id'] ?? ($validated['district_id'] ?? null);
@@ -181,39 +184,48 @@ class ApiPropertyRequestController extends Controller
             ])
             ->where('user_id', $ownerId);
 
-        // Calculate statistics before applying filters
-        $totalRequests = $query->count();
-        $totalCustomers = $query->distinct('phone')->count('phone');
-
-        // Calculate status counts (all requests for this owner, regardless of filters)
-        $statusCountsQuery = UserPropertyRequest::query()
-            ->select('property_request_statuses.name_ar', DB::raw('COUNT(*) as count'))
-            ->leftJoin('property_request_statuses', 'users_property_requests.status_id', '=', 'property_request_statuses.id')
-            ->where('users_property_requests.user_id', $ownerId)
-            ->whereNotNull('property_request_statuses.name_ar')
-            ->groupBy('property_request_statuses.id', 'property_request_statuses.name_ar');
-
-        $statusCounts = $statusCountsQuery->pluck('count', 'name_ar')->filter(function ($value, $key) {
-            return !is_null($key) && $key !== '';
-        })->toArray();
-
-        // Get all active statuses to ensure all are included (with 0 if not found)
-        $allStatuses = PropertyRequestStatus::active()
-            ->ordered()
-            ->pluck('name_ar')
-            ->toArray();
-
-        // Build by_status object with all statuses (including those with 0 count)
+        $totalRequests = null;
+        $totalCustomers = null;
         $byStatus = [];
-        foreach ($allStatuses as $statusName) {
-            $byStatus[$statusName] = $statusCounts[$statusName] ?? 0;
-        }
 
-        // Also include statuses that have counts but might not be in the active list (for backward compatibility)
-        foreach ($statusCounts as $statusName => $count) {
-            if (!isset($byStatus[$statusName])) {
-                $byStatus[$statusName] = $count;
-            }
+        if ($withStatistics) {
+            $cacheKey = 'property_requests_statistics_' . $ownerId;
+            $ttlSeconds = 120;
+
+            $stats = Cache::remember($cacheKey, $ttlSeconds, function () use ($ownerId) {
+                $totalRequests = UserPropertyRequest::where('user_id', $ownerId)->count();
+                $totalCustomers = (int) DB::table('users_property_requests')
+                    ->where('user_id', $ownerId)
+                    ->selectRaw('COUNT(DISTINCT phone) as c')
+                    ->value('c');
+
+                $statusCounts = UserPropertyRequest::query()
+                    ->select('property_request_statuses.name_ar', DB::raw('COUNT(*) as count'))
+                    ->leftJoin('property_request_statuses', 'users_property_requests.status_id', '=', 'property_request_statuses.id')
+                    ->where('users_property_requests.user_id', $ownerId)
+                    ->whereNotNull('property_request_statuses.name_ar')
+                    ->groupBy('property_request_statuses.id', 'property_request_statuses.name_ar')
+                    ->pluck('count', 'name_ar')
+                    ->filter(fn ($v, $k) => $k !== null && $k !== '')
+                    ->toArray();
+
+                $allStatuses = PropertyRequestStatus::active()->ordered()->pluck('name_ar')->toArray();
+                $byStatus = [];
+                foreach ($allStatuses as $statusName) {
+                    $byStatus[$statusName] = $statusCounts[$statusName] ?? 0;
+                }
+                foreach ($statusCounts as $statusName => $count) {
+                    if (!isset($byStatus[$statusName])) {
+                        $byStatus[$statusName] = $count;
+                    }
+                }
+
+                return ['total_requests' => $totalRequests, 'total_customers' => $totalCustomers, 'by_status' => $byStatus];
+            });
+
+            $totalRequests = $stats['total_requests'];
+            $totalCustomers = $stats['total_customers'];
+            $byStatus = $stats['by_status'];
         }
 
         if (!empty($validated['q'])) {
@@ -289,31 +301,39 @@ class ApiPropertyRequestController extends Controller
             });
         }
 
-        $propertyRequests = $query->orderByDesc('id')->paginate($perPage);
+        $useCursor = $request->filled('cursor');
+        $propertyRequests = $useCursor
+            ? $query->orderByDesc('id')->cursorPaginate($perPage)
+            : $query->orderByDesc('id')->paginate($perPage);
 
-        /*
-         * Example payload per record:
-         * "status": {"id":1,"name_ar":"جديد","name_en":"New"},
-         * "employee": {"id":12,"name":"Ahmad Saleh"}
-         */
+        $pagination = $useCursor
+            ? [
+                'next_cursor' => $propertyRequests->nextCursor()?->encode(),
+                'prev_cursor' => $propertyRequests->previousCursor()?->encode(),
+                'has_more'    => $propertyRequests->hasMorePages(),
+                'per_page'    => $propertyRequests->perPage(),
+            ]
+            : [
+                'total'        => $propertyRequests->total(),
+                'per_page'     => $propertyRequests->perPage(),
+                'current_page' => $propertyRequests->currentPage(),
+                'last_page'    => $propertyRequests->lastPage(),
+            ];
 
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'property_requests' => $propertyRequests->items(),
-                'pagination' => [
-                    'total' => $propertyRequests->total(),
-                    'per_page' => $propertyRequests->perPage(),
-                    'current_page' => $propertyRequests->currentPage(),
-                    'last_page' => $propertyRequests->lastPage(),
-                ],
-                'statistics' => [
-                    'total_requests' => $totalRequests,
-                    'total_customers' => $totalCustomers,
-                    'by_status' => $byStatus,
-                ],
-            ],
-        ]);
+        $data = [
+            'property_requests' => $propertyRequests->items(),
+            'pagination'        => $pagination,
+        ];
+
+        if ($withStatistics) {
+            $data['statistics'] = [
+                'total_requests' => $totalRequests,
+                'total_customers' => $totalCustomers,
+                'by_status' => $byStatus,
+            ];
+        }
+
+        return response()->json(['status' => 'success', 'data' => $data]);
     }
 
     /**
