@@ -342,6 +342,10 @@ class ApiPropertyRequestController extends Controller
      * Query params:
      * - used_only (bool, default true): return only cities/districts used in this tenant's requests.
      * - city_id (int): optionally scope districts to a city.
+     * - groups (string): optional comma-separated list to return only those groups. When set, only
+     *   the requested groups are queried and returned (no cache). Valid: cities, districts,
+     *   categories, property_types, status, purchase_goals, seriousness_options, stages,
+     *   procedures, types, priorities, employees.
      *
      * When used_only=false, cities and districts are capped at 500 for performance. Pass city_id
      * to scope districts to one city when you need the full list for that city.
@@ -354,21 +358,178 @@ class ApiPropertyRequestController extends Controller
         $usedOnly = (bool) $request->boolean('used_only', true);
         $cityId   = $request->input('city_id');
 
-        // Cache filter options (1 hour TTL)
-        $cacheKey = "property_request_filter_options_{$ownerId}_{$usedOnly}_" . ($cityId ?? 'all');
-        $filterData = Cache::remember($cacheKey, 3600, function () use ($ownerId, $usedOnly, $cityId) {
-            // Cities
+        $allFilterGroups = ['cities', 'districts', 'categories', 'property_types'];
+        $allMetaGroups = ['status', 'purchase_goals', 'seriousness_options', 'stages', 'procedures', 'types', 'priorities', 'employees'];
+
+        $groupsInput = $request->input('groups');
+        $requested = $groupsInput ? array_values(array_unique(array_filter(array_map('trim', explode(',', (string) $groupsInput))))) : [];
+
+        if ($requested === []) {
+            $doFilter = $allFilterGroups;
+            $doMeta = $allMetaGroups;
+            $useCache = true;
+        } else {
+            $doFilter = array_values(array_intersect($requested, $allFilterGroups));
+            $doMeta = array_values(array_intersect($requested, $allMetaGroups));
+            $useCache = false;
+        }
+
+        if ($useCache) {
+            // Cache filter options (1 hour TTL)
+            $cacheKey = "property_request_filter_options_v2_{$ownerId}_{$usedOnly}_" . ($cityId ?? 'all');
+            $filterData = Cache::remember($cacheKey, 3600, function () use ($ownerId, $usedOnly, $cityId) {
+                // Districts (fetch districtIds first when used_only — needed for cities-from-districts)
+                $districtQuery = UserDistrict::query();
+                $districtIds = collect();
+                if ($usedOnly) {
+                    $districtIds = UserPropertyRequest::where('user_id', $ownerId)
+                        ->whereNotNull('districts_id')
+                        ->distinct()
+                        ->pluck('districts_id');
+                    $districtQuery->whereIn('id', $districtIds);
+                }
+
+                // Cities: when used_only, include city_id from requests and from districts (requests may have districts_id but null city_id)
+                if ($usedOnly) {
+                    $cityIdsFromRequests = UserPropertyRequest::where('user_id', $ownerId)
+                        ->whereNotNull('city_id')
+                        ->distinct()
+                        ->pluck('city_id');
+                    $cityIdsFromDistricts = $districtIds->isNotEmpty()
+                        ? UserDistrict::whereIn('id', $districtIds)->whereNotNull('city_id')->distinct()->pluck('city_id')
+                        : collect();
+                    $cityIds = $cityIdsFromRequests->merge($cityIdsFromDistricts)->unique()->values();
+                    $cities = UserCity::whereIn('id', $cityIds)->orderBy('name_ar')->get(['id', 'name_ar', 'name_en']);
+                } else {
+                    $cities = UserCity::orderBy('name_ar')->limit(500)->get(['id', 'name_ar', 'name_en']);
+                }
+                if ($cityId) {
+                    $districtQuery->where('city_id', (int) $cityId);
+                }
+                if (!$usedOnly && !$cityId) {
+                    $districtQuery->limit(500);
+                }
+                $districts = $districtQuery->orderBy('name_ar')->get(['id', 'city_id', 'name_ar', 'name_en']);
+
+                // Categories (tenant-visible)
+                $categories = ApiUserCategory::query()
+                    ->visibleForUser($ownerId)
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'slug', 'icon']);
+
+                // Property types used by this tenant (e.g., Residential/Commercial/etc.)
+                $propertyTypes = UserPropertyRequest::where('user_id', $ownerId)
+                    ->whereNotNull('property_type')
+                    ->distinct()
+                    ->orderBy('property_type')
+                    ->pluck('property_type')
+                    ->filter()
+                    ->values();
+
+                return [
+                    'cities' => $cities,
+                    'districts' => $districts,
+                    'categories' => $categories,
+                    'property_types' => $propertyTypes,
+                ];
+            });
+
+            // Cache dynamic/meta options (1 hour TTL) — statuses, purchase_goals, seriousness, stages, procedures, types, priorities, employees
+            $metaCacheKey = "property_request_filter_options_meta_{$ownerId}";
+            $metaData = Cache::remember($metaCacheKey, 3600, function () use ($ownerId) {
+                $statuses = PropertyRequestStatus::ordered()
+                    ->get(['id', 'name_ar', 'name_en']);
+
+                $purchaseGoals = UserPropertyRequest::where('user_id', $ownerId)
+                    ->whereNotNull('purchase_goal')
+                    ->distinct()
+                    ->orderBy('purchase_goal')
+                    ->pluck('purchase_goal')
+                    ->filter()
+                    ->values();
+
+                $seriousnessOptions = UserPropertyRequest::where('user_id', $ownerId)
+                    ->whereNotNull('seriousness')
+                    ->distinct()
+                    ->orderBy('seriousness')
+                    ->pluck('seriousness')
+                    ->filter()
+                    ->values();
+
+                $stages = UserApiCustomerStage::where('user_id', $ownerId)
+                    ->orderBy('order')
+                    ->get(['id', 'stage_name as name', 'icon', 'color']);
+
+                $procedures = UserApiCustomerProcedure::where('user_id', $ownerId)
+                    ->orderBy('order')
+                    ->get(['id', 'procedure_name as name', 'icon', 'color']);
+
+                $types = UserApiCustomerType::where('user_id', $ownerId)
+                    ->orderBy('order')
+                    ->get(['id', 'name', 'value', 'icon', 'color']);
+
+                $priorities = UserApiCustomerPriority::where('user_id', $ownerId)
+                    ->orderBy('order')
+                    ->get(['id', 'name', 'value', 'icon', 'color']);
+
+                $employees = User::where('tenant_id', $ownerId)
+                    ->where('account_type', 'employee')
+                    ->where('active', true)
+                    ->with('activeWhatsappUser')
+                    ->get(['id', 'first_name', 'last_name', 'email']);
+
+                $employeesList = $employees->map(function ($emp) {
+                    return [
+                        'id' => $emp->id,
+                        'name' => trim(($emp->first_name ?? '') . ' ' . ($emp->last_name ?? '')),
+                        'email' => $emp->email,
+                        'whatsapp_number' => $emp->activeWhatsappUser ? $emp->activeWhatsappUser->number : null,
+                    ];
+                });
+
+                return [
+                    'status' => $statuses,
+                    'purchase_goals' => $purchaseGoals,
+                    'seriousness_options' => $seriousnessOptions,
+                    'stages' => $stages,
+                    'procedures' => $procedures,
+                    'types' => $types,
+                    'priorities' => $priorities,
+                    'employees' => $employeesList,
+                ];
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => array_merge($filterData, $metaData),
+            ]);
+        }
+
+        // groups= specified: only fetch requested groups (no cache). Preserve full response structure; non-requested groups are [].
+        $filterData = array_fill_keys($allFilterGroups, []);
+        $metaData = array_fill_keys($allMetaGroups, []);
+
+        if (in_array('cities', $doFilter)) {
             if ($usedOnly) {
-                $cityIds = UserPropertyRequest::where('user_id', $ownerId)
+                $cityIdsFromRequests = UserPropertyRequest::where('user_id', $ownerId)
                     ->whereNotNull('city_id')
                     ->distinct()
                     ->pluck('city_id');
-                $cities = UserCity::whereIn('id', $cityIds)->orderBy('name_ar')->get(['id', 'name_ar', 'name_en']);
+                $districtIds = UserPropertyRequest::where('user_id', $ownerId)
+                    ->whereNotNull('districts_id')
+                    ->distinct()
+                    ->pluck('districts_id');
+                $cityIdsFromDistricts = $districtIds->isNotEmpty()
+                    ? UserDistrict::whereIn('id', $districtIds)->whereNotNull('city_id')->distinct()->pluck('city_id')
+                    : collect();
+                $cityIds = $cityIdsFromRequests->merge($cityIdsFromDistricts)->unique()->values();
+                $filterData['cities'] = UserCity::whereIn('id', $cityIds)->orderBy('name_ar')->get(['id', 'name_ar', 'name_en']);
             } else {
-                $cities = UserCity::orderBy('name_ar')->limit(500)->get(['id', 'name_ar', 'name_en']);
+                $filterData['cities'] = UserCity::orderBy('name_ar')->limit(500)->get(['id', 'name_ar', 'name_en']);
             }
+        }
 
-            // Districts
+        if (in_array('districts', $doFilter)) {
             $districtQuery = UserDistrict::query();
             if ($usedOnly) {
                 $districtIds = UserPropertyRequest::where('user_id', $ownerId)
@@ -383,76 +544,81 @@ class ApiPropertyRequestController extends Controller
             if (!$usedOnly && !$cityId) {
                 $districtQuery->limit(500);
             }
-            $districts = $districtQuery->orderBy('name_ar')->get(['id', 'city_id', 'name_ar', 'name_en']);
+            $filterData['districts'] = $districtQuery->orderBy('name_ar')->get(['id', 'city_id', 'name_ar', 'name_en']);
+        }
 
-            // Categories (tenant-visible)
-            $categories = ApiUserCategory::query()
+        if (in_array('categories', $doFilter)) {
+            $filterData['categories'] = ApiUserCategory::query()
                 ->visibleForUser($ownerId)
                 ->orderBy('name')
                 ->get(['id', 'name', 'slug', 'icon']);
+        }
 
-            // Property types used by this tenant (e.g., Residential/Commercial/etc.)
-            $propertyTypes = UserPropertyRequest::where('user_id', $ownerId)
+        if (in_array('property_types', $doFilter)) {
+            $filterData['property_types'] = UserPropertyRequest::where('user_id', $ownerId)
                 ->whereNotNull('property_type')
                 ->distinct()
                 ->orderBy('property_type')
                 ->pluck('property_type')
                 ->filter()
                 ->values();
+        }
 
-            return [
-                'cities' => $cities,
-                'districts' => $districts,
-                'categories' => $categories,
-                'property_types' => $propertyTypes,
-            ];
-        });
+        if (in_array('status', $doMeta)) {
+            $metaData['status'] = PropertyRequestStatus::ordered()->get(['id', 'name_ar', 'name_en']);
+        }
 
-        // Cache dynamic/meta options (1 hour TTL) — statuses, purchase_goals, seriousness, stages, procedures, types, priorities, employees
-        $metaCacheKey = "property_request_filter_options_meta_{$ownerId}";
-        $metaData = Cache::remember($metaCacheKey, 3600, function () use ($ownerId) {
-            $statuses = PropertyRequestStatus::ordered()
-                ->get(['id', 'name_ar', 'name_en']);
-
-            $purchaseGoals = UserPropertyRequest::where('user_id', $ownerId)
+        if (in_array('purchase_goals', $doMeta)) {
+            $metaData['purchase_goals'] = UserPropertyRequest::where('user_id', $ownerId)
                 ->whereNotNull('purchase_goal')
                 ->distinct()
                 ->orderBy('purchase_goal')
                 ->pluck('purchase_goal')
                 ->filter()
                 ->values();
+        }
 
-            $seriousnessOptions = UserPropertyRequest::where('user_id', $ownerId)
+        if (in_array('seriousness_options', $doMeta)) {
+            $metaData['seriousness_options'] = UserPropertyRequest::where('user_id', $ownerId)
                 ->whereNotNull('seriousness')
                 ->distinct()
                 ->orderBy('seriousness')
                 ->pluck('seriousness')
                 ->filter()
                 ->values();
+        }
 
-            $stages = UserApiCustomerStage::where('user_id', $ownerId)
+        if (in_array('stages', $doMeta)) {
+            $metaData['stages'] = UserApiCustomerStage::where('user_id', $ownerId)
                 ->orderBy('order')
                 ->get(['id', 'stage_name as name', 'icon', 'color']);
+        }
 
-            $procedures = UserApiCustomerProcedure::where('user_id', $ownerId)
+        if (in_array('procedures', $doMeta)) {
+            $metaData['procedures'] = UserApiCustomerProcedure::where('user_id', $ownerId)
                 ->orderBy('order')
                 ->get(['id', 'procedure_name as name', 'icon', 'color']);
+        }
 
-            $types = UserApiCustomerType::where('user_id', $ownerId)
+        if (in_array('types', $doMeta)) {
+            $metaData['types'] = UserApiCustomerType::where('user_id', $ownerId)
                 ->orderBy('order')
                 ->get(['id', 'name', 'value', 'icon', 'color']);
+        }
 
-            $priorities = UserApiCustomerPriority::where('user_id', $ownerId)
+        if (in_array('priorities', $doMeta)) {
+            $metaData['priorities'] = UserApiCustomerPriority::where('user_id', $ownerId)
                 ->orderBy('order')
                 ->get(['id', 'name', 'value', 'icon', 'color']);
+        }
 
+        if (in_array('employees', $doMeta)) {
             $employees = User::where('tenant_id', $ownerId)
                 ->where('account_type', 'employee')
                 ->where('active', true)
                 ->with('activeWhatsappUser')
                 ->get(['id', 'first_name', 'last_name', 'email']);
-
-            $employeesList = $employees->map(function ($emp) {
+            $metaData['employees'] = $employees->map(function ($emp) {
                 return [
                     'id' => $emp->id,
                     'name' => trim(($emp->first_name ?? '') . ' ' . ($emp->last_name ?? '')),
@@ -460,18 +626,7 @@ class ApiPropertyRequestController extends Controller
                     'whatsapp_number' => $emp->activeWhatsappUser ? $emp->activeWhatsappUser->number : null,
                 ];
             });
-
-            return [
-                'status' => $statuses,
-                'purchase_goals' => $purchaseGoals,
-                'seriousness_options' => $seriousnessOptions,
-                'stages' => $stages,
-                'procedures' => $procedures,
-                'types' => $types,
-                'priorities' => $priorities,
-                'employees' => $employeesList,
-            ];
-        });
+        }
 
         return response()->json([
             'status' => 'success',

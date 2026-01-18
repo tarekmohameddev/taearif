@@ -4,6 +4,7 @@ namespace App\Models\Api;
 
 use App\Models\ApiCustomer;
 use App\Models\User;
+use App\Support\PropertyRequestFilterOptionsCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\Cache;
@@ -23,8 +24,7 @@ class UserPropertyRequest extends Model
             );
             foreach (array_unique($ids) as $id) {
                 Cache::forget('property_requests_statistics_' . $id);
-                Cache::forget("property_request_filter_options_{$id}_1_all");
-                Cache::forget("property_request_filter_options_{$id}_0_all");
+                PropertyRequestFilterOptionsCache::forgetFilterDataForOwner($id);
                 Cache::forget("property_request_filter_options_meta_{$id}");
             }
         };

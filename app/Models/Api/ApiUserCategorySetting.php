@@ -4,8 +4,8 @@
 namespace App\Models\Api;
 
 use App\Models\User;
+use App\Support\PropertyRequestFilterOptionsCache;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
 
 class ApiUserCategorySetting extends Model
 {
@@ -16,8 +16,7 @@ class ApiUserCategorySetting extends Model
         $forgetFilterCaches = function (ApiUserCategorySetting $model): void {
             $id = (int) $model->user_id;
             if ($id > 0) {
-                Cache::forget("property_request_filter_options_{$id}_1_all");
-                Cache::forget("property_request_filter_options_{$id}_0_all");
+                PropertyRequestFilterOptionsCache::forgetFilterDataForOwner($id);
             }
         };
 
