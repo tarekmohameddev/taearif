@@ -75,4 +75,5 @@ database/seeders/AdminSeeder.php
 .cursor/rules
 tests/api-scripts/*
 *.bat
+111/*
 
