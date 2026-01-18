@@ -2140,7 +2140,15 @@ class PropertyController extends Controller
         $propertiesQuery = Property::with($eagerLoadRelations)
             ->whereIn('user_id', $allowedUserIds)
             ->where('completion_status', 'complete');
-        
+
+        // Optional: restrict to a specific user (must be in allowedUserIds)
+        if ($request->has('user_id') && $request->user_id !== '' && $request->user_id !== null) {
+            $uid = (int) $request->user_id;
+            if (in_array($uid, $allowedUserIds, true)) {
+                $propertiesQuery->where('user_id', $uid);
+            }
+        }
+
         // Ensure only properties with content records are returned (when no content JOIN is used)
         // This prevents "No Title" and "No Address" fallback values
         if (!$willNeedContentJoin) {
@@ -2735,22 +2743,9 @@ class PropertyController extends Controller
         }
         
         // OPTIMIZED: Use content from JOIN if available, otherwise use eager loaded relationship
-        // Filter out properties that don't have valid title and address to prevent "No Title"/"No Address" fallbacks
-        // Use ->values() after ->filter() to re-index the collection and maintain array structure (not object with keys)
-        $formattedProperties = $properties->getCollection()->filter(function ($property) use ($hasContentJoin) {
-            if ($hasContentJoin && isset($property->content_slug)) {
-                // When using JOIN, check if content from JOIN has valid title and address
-                $hasTitle = !empty($property->content_title ?? null);
-                $hasAddress = !empty($property->content_address ?? null);
-                return $hasTitle && $hasAddress;
-            } else {
-                // When using eager loading, check if first content has valid title and address
-                $content = optional($property->contents->first());
-                $hasTitle = !empty($content->title ?? null);
-                $hasAddress = !empty($content->address ?? null);
-                return $hasTitle && $hasAddress;
-            }
-        })->values()->map(function ($property) use ($viewsBySlug, $fieldsToInclude, $hasContentJoin) {
+        // NOTE: Content validation is already done in the whereHas('contents') filter before pagination (lines 2074-2081)
+        // No need to filter again here as it would cause pagination count mismatch
+        $formattedProperties = $properties->getCollection()->map(function ($property) use ($viewsBySlug, $fieldsToInclude, $hasContentJoin) {
             // Use content from JOIN if available (when filtering by city/district/search)
             if ($hasContentJoin && isset($property->content_slug)) {
                 $content = (object) [
@@ -3929,6 +3924,14 @@ class PropertyController extends Controller
                     $q->where('completion_status', '!=', 'complete')
                       ->orWhereNull('completion_status');
                 });
+
+            // Optional: restrict to a specific user (must be in allowedUserIds)
+            if ($request->has('user_id') && $request->user_id !== '' && $request->user_id !== null) {
+                $uid = (int) $request->user_id;
+                if (in_array($uid, $allowedUserIds, true)) {
+                    $query->where('user_id', $uid);
+                }
+            }
 
             // Search by title or address
             if ($request->has('search') && !empty($request->search)) {
