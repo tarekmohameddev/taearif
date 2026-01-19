@@ -12,6 +12,7 @@ use App\Models\User\RealestateManagement\PropertySpecification;
 use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\Language;
 use App\Models\User\UserDistrict;
+use App\Support\PropertyExcelMapping;
 use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
@@ -148,6 +149,14 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         $row = $row->toArray();
         $row = $this->normalizeRowKeys($row);
 
+        // Excel → DB: purpose, type (accepts Arabic and English)
+        if (array_key_exists('purpose', $row)) {
+            $row['purpose'] = PropertyExcelMapping::purposeToDb($row['purpose']);
+        }
+        if (array_key_exists('type', $row)) {
+            $row['type'] = PropertyExcelMapping::typeToDb($row['type']);
+        }
+
         // Skip completely empty rows (all values are null or empty)
         $hasData = !empty(array_filter($row, function($value) {
             return !is_null($value) && $value !== '';
@@ -208,9 +217,8 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             $features = [];
         }
         
-        // Parse featured (Yes/No or True/False or 1/0)
-        $featuredInput = strtolower($row['featured'] ?? '');
-        $featured = in_array($featuredInput, ['yes', 'true', '1']) ? 1 : 0;
+        // Parse featured (نعم/Yes/1/true/y or لا/No/0/false)
+        $featured = PropertyExcelMapping::booleanToDb($row['featured'] ?? null) ? 1 : 0;
 
         // Log parsing issues for debugging
         if (!empty($row['gallery_images']) && empty($galleryImages)) {
@@ -1059,7 +1067,7 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             'show_reservations' => 'nullable|in:Yes,No,yes,no,True,False,true,false,1,0',
             'reorder' => 'nullable|integer|min:0',
             'reorder_featured' => 'nullable|integer|min:0',
-            'featured' => 'nullable|string|in:Yes,No,yes,no,True,False,true,false,1,0',
+            'featured' => 'nullable|string|in:Yes,No,yes,no,True,False,true,false,1,0,نعم,لا',
             'features' => 'nullable|string|max:2000',
             'faqs' => 'nullable|string|max:5000',
             'category_name' => 'nullable|string|max:255',

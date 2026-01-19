@@ -4,6 +4,7 @@ namespace App\Exports;
 
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\UserDistrict;
+use App\Support\PropertyExcelMapping;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -245,7 +246,7 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
         $amenityColumns = [];
         foreach ($amenityMapping as $column => $arabicName) {
             $hasAmenity = $amenityNames->contains($arabicName);
-            $amenityColumns[$column] = $hasAmenity ? 'Yes' : 'No';
+            $amenityColumns[$column] = $hasAmenity ? PropertyExcelMapping::booleanToExcel(true) : PropertyExcelMapping::booleanToExcel(false);
         }
 
         // Get additional amenities
@@ -282,8 +283,8 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
             $property->price ?? '',
             $content?->address ?? '',
             $content?->description ?? '',
-            $property->purpose ?? '',
-            $property->type ?? '',
+            PropertyExcelMapping::purposeToExcel($property->purpose ?? null),
+            PropertyExcelMapping::typeToExcel($property->type ?? null),
             $property->area ?? '',
             $property->beds ?? '',
             $property->bath ?? '',
@@ -293,14 +294,14 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
             $property->video_url ?? '',
             $property->status ? '1' : '0',
             $galleryImages,
-            $amenityColumns['amenity_مصعد'] ?? 'No',
-            $amenityColumns['amenity_أمن'] ?? 'No',
-            $amenityColumns['amenity_كاميرات_مراقبة'] ?? 'No',
-            $amenityColumns['amenity_تكييف_مركزي'] ?? 'No',
-            $amenityColumns['amenity_تدفئة_مركزية'] ?? 'No',
-            $amenityColumns['amenity_صيانة'] ?? 'No',
-            $amenityColumns['amenity_بواب'] ?? 'No',
-            $amenityColumns['amenity_إنترنت'] ?? 'No',
+            $amenityColumns['amenity_مصعد'] ?? PropertyExcelMapping::booleanToExcel(false),
+            $amenityColumns['amenity_أمن'] ?? PropertyExcelMapping::booleanToExcel(false),
+            $amenityColumns['amenity_كاميرات_مراقبة'] ?? PropertyExcelMapping::booleanToExcel(false),
+            $amenityColumns['amenity_تكييف_مركزي'] ?? PropertyExcelMapping::booleanToExcel(false),
+            $amenityColumns['amenity_تدفئة_مركزية'] ?? PropertyExcelMapping::booleanToExcel(false),
+            $amenityColumns['amenity_صيانة'] ?? PropertyExcelMapping::booleanToExcel(false),
+            $amenityColumns['amenity_بواب'] ?? PropertyExcelMapping::booleanToExcel(false),
+            $amenityColumns['amenity_إنترنت'] ?? PropertyExcelMapping::booleanToExcel(false),
             $additionalAmenities,
             $specValues['unit_number'] ?? '',
             $specValues['floor_number'] ?? ($characteristics?->floor_number ?? ''),
@@ -308,22 +309,22 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
             $specValues['view_type'] ?? '',
             $specValues['furnished'] ?? '',
             $specValues['parking_spaces'] ?? ($characteristics?->private_parking ? '1' : ''),
-            $specValues['balcony'] ?? ($characteristics?->balcony ? 'Yes' : 'No'),
-            $specValues['maid_room'] ?? ($characteristics?->maid_room ? 'Yes' : 'No'),
-            $specValues['storage_room'] ?? ($characteristics?->storage_room ? 'Yes' : 'No'),
-            $specValues['swimming_pool'] ?? ($characteristics?->swimming_pool ? 'Yes' : 'No'),
+            $specValues['balcony'] ?? ($characteristics?->balcony ? PropertyExcelMapping::booleanToExcel(true) : PropertyExcelMapping::booleanToExcel(false)),
+            $specValues['maid_room'] ?? ($characteristics?->maid_room ? PropertyExcelMapping::booleanToExcel(true) : PropertyExcelMapping::booleanToExcel(false)),
+            $specValues['storage_room'] ?? ($characteristics?->storage_room ? PropertyExcelMapping::booleanToExcel(true) : PropertyExcelMapping::booleanToExcel(false)),
+            $specValues['swimming_pool'] ?? ($characteristics?->swimming_pool ? PropertyExcelMapping::booleanToExcel(true) : PropertyExcelMapping::booleanToExcel(false)),
             $specValues['gym'] ?? '',
             $specValues['garden_size'] ?? '',
             $specifications,
-            $property->payment_method ?? '',
-            $property->featured ? 'Yes' : 'No',
+            PropertyExcelMapping::paymentMethodToExcel($property->payment_method ?? null),
+            PropertyExcelMapping::booleanToExcel((bool) $property->featured),
             $features
         ];
     }
 
     public function title(): string
     {
-        return 'Properties for Import';
+        return 'العقارات للاستيراد';
     }
 
     public function registerEvents(): array
@@ -362,13 +363,13 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1('"sale,rent"');
+                $validation->setFormula1('"' . PropertyExcelMapping::purposeExcelOptions() . '"');
                 
                 for ($i = 3; $i <= $rowCount; $i++) {
                     $sheet->getCell("F$i")->setDataValidation(clone $validation);
                 }
 
-                // Type Column (G) - "residential,commercial"
+                // Type Column (G) - Arabic options
                 $validation = $sheet->getCell('G2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
@@ -376,7 +377,7 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1('"residential,commercial"');
+                $validation->setFormula1('"' . PropertyExcelMapping::typeExcelOptions() . '"');
 
                 for ($i = 3; $i <= $rowCount; $i++) {
                     $sheet->getCell("G$i")->setDataValidation(clone $validation);
@@ -390,7 +391,7 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1("'City-District Reference'!\$A\$2:\$A\$500");
+                $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$A\$2:\$A\$500");
 
                 for ($i = 3; $i <= $rowCount; $i++) {
                     $sheet->getCell("K$i")->setDataValidation(clone $validation);
@@ -404,7 +405,7 @@ class PropertiesImportReadyMainSheetExport implements FromQuery, WithHeadings, W
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1("'City-District Reference'!\$B\$2:\$B\$10000");
+                $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$B\$2:\$B\$10000");
 
                 for ($i = 3; $i <= $rowCount; $i++) {
                     $sheet->getCell("L$i")->setDataValidation(clone $validation);
@@ -496,6 +497,6 @@ class PropertiesImportReadyLookupSheetExport implements \Maatwebsite\Excel\Conce
 
     public function title(): string
     {
-        return 'City-District Reference';
+        return PropertyExcelMapping::LOOKUP_SHEET_TITLE;
     }
 }

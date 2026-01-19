@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\User\UserDistrict;
+use App\Support\PropertyExcelMapping;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -34,8 +35,8 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 '500000',
                 '123 Main Street, Downtown',
                 'Beautiful 3-bedroom apartment with city views',
-                'sale',
-                'residential',
+                'بيع',
+                'سكني',
                 '150',
                 '3',
                 '2',
@@ -45,14 +46,14 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 'https://amp.dev/static/samples/img/image1.jpg',
                 '1',
                 'https://amp.dev/static/samples/img/image1.jpg',
-                'Yes',
-                'Yes',
-                'Yes',
-                'Yes',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
                 '',
-                'Yes',
-                'Yes',
-                'Yes',
+                'نعم',
+                'نعم',
+                'نعم',
                 'موقف دراجات,غرفة غسيل',
                 'A-101',
                 '5',
@@ -60,15 +61,15 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 'Sea View',
                 'Fully Furnished',
                 '2',
-                'Yes',
-                'Yes',
-                'Yes',
-                'Yes',
-                'Yes',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
                 '50',
                 'Ceiling Height: 3.5m, Kitchen Type: Open Kitchen, Floor Material: Marble',
                 'نصف سنوي',
-                'Yes',
+                'نعم',
                 'Smart Home, Solar Panels'
             ],
         ];
@@ -122,7 +123,7 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
 
     public function title(): string
     {
-        return 'Import Template';
+        return 'قالب الاستيراد';
     }
 
     public function registerEvents(): array
@@ -188,7 +189,7 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1("'City-District Reference'!\$A\$2:\$A\$500");
+                $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$A\$2:\$A\$500");
 
                 for ($i = 3; $i <= $rowCount; $i++) {
                     $sheet->getCell("J$i")->setDataValidation(clone $validation);
@@ -202,7 +203,7 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1("'City-District Reference'!\$B\$2:\$B\$10000");
+                $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$B\$2:\$B\$10000");
 
                 for ($i = 3; $i <= $rowCount; $i++) {
                     $sheet->getCell("K$i")->setDataValidation(clone $validation);
@@ -230,7 +231,7 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1('"Yes,No"');
+                $validation->setFormula1('"نعم,لا"');
 
                 for ($i = 3; $i <= $rowCount; $i++) {
                     $sheet->getCell("AM$i")->setDataValidation(clone $validation);
@@ -294,6 +295,6 @@ class PropertiesTemplateLookupSheetExport implements FromCollection, WithHeading
 
     public function title(): string
     {
-        return 'City-District Reference';
+        return PropertyExcelMapping::LOOKUP_SHEET_TITLE;
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\User\RealestateManagement\Property;
+use App\Support\PropertyExcelMapping;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -312,7 +313,7 @@ class PropertiesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
         $amenityColumns = [];
         foreach ($amenityMapping as $column => $arabicName) {
             $hasAmenity = $amenityNames->contains($arabicName);
-            $amenityColumns[$column] = $hasAmenity ? 'Yes' : '';
+            $amenityColumns[$column] = $hasAmenity ? PropertyExcelMapping::booleanToExcel(true) : '';
         }
         
         // Get additional amenities (amenities not in the standard list)
@@ -420,7 +421,7 @@ class PropertiesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
                 $gym,
                 $gardenSize,
                 $specifications,
-                $property->payment_method ?? '',
+                PropertyExcelMapping::paymentMethodToExcel($property->payment_method ?? null),
                 $property->featured ? '1' : '0',
                 $features
             ];
@@ -437,15 +438,15 @@ class PropertiesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
             $countryName,
             $property->price ?? '',
             $property->pricePerMeter ?? '',
-            $property->purpose ?? '',
-            $property->type ?? '',
+            PropertyExcelMapping::purposeToExcel($property->purpose ?? null),
+            PropertyExcelMapping::typeToExcel($property->type ?? null),
             $property->area ?? '',
             $property->size ?? '',
             $property->beds ?? '',
             $property->bath ?? '',
             $property->status ? '1' : '0',
             $property->featured ? '1' : '0',
-            $property->property_status ?? '',
+            PropertyExcelMapping::propertyStatusToExcel($property->property_status ?? null),
             $property->category?->name ?? '',
             $property->latitude ?? '',
             $property->longitude ?? '',
@@ -477,7 +478,7 @@ class PropertiesExport implements FromQuery, WithHeadings, WithMapping, WithTitl
             $parkingSpaces,
             $gym,
             $gardenSize,
-            $property->payment_method ?? '',
+            PropertyExcelMapping::paymentMethodToExcel($property->payment_method ?? null),
             $property->water_meter_number ?? '',
             $property->electricity_meter_number ?? '',
             $property->deed_number ?? '',
