@@ -29,6 +29,7 @@ use App\Models\User\RealestateManagement\PropertySliderImg;
 use App\Models\User\RealestateManagement\PropertySpecification;
 use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\RealestateManagement\ApiUserCategory as Category;
+use App\Models\Analytics\AnalyticsDailySummary;
 use App\Support\Audit;
 use App\Services\GoogleAnalyticsService;
 use App\Services\DatabaseVersionService;
@@ -1008,7 +1009,7 @@ class PropertyController extends Controller
     }
 
 
-    public function show(Request $request, $id, GoogleAnalyticsService $analytics)
+    public function show(Request $request, $id)
     {
         try {
             $user = $request->user();
@@ -1030,7 +1031,7 @@ class PropertyController extends Controller
             $cacheKey = "property_api_{$id}_owner_{$ownerId}_v1_days_{$days}";
             $cacheTtl = 300; // 5 minutes
 
-            $response = Cache::remember($cacheKey, $cacheTtl, function () use ($id, $analytics, $days, $allowedUserIds) {
+            $response = Cache::remember($cacheKey, $cacheTtl, function () use ($id, $days, $allowedUserIds) {
                 $property = Property::with([
                     'category:id,name',
                     'user:id,username',
@@ -1048,46 +1049,25 @@ class PropertyController extends Controller
                 $content = $property->contents->first();
                 $characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
 
-                // Fetch views from Google Analytics (CACHED - 5 minutes)
+                // Fetch views from local materialized analytics data (INSTANT)
                 $views = 0;
                 if ($content && $content->slug && $property->user) {
                     $tenantId = $property->user->username;
-                    $gaCacheKey = "ga_views_property_{$id}_{$tenantId}_{$days}_{$content->slug}";
-                    
-                    $views = Cache::remember($gaCacheKey, 300, function () use ($analytics, $days, $content, $tenantId) {
-                        $result = 0;
-                        try {
-                            // Build paths for this property (with and without language prefixes)
-                            $paths = [
-                                "/property/{$content->slug}",
-                                "/ar/property/{$content->slug}",
-                                "/en/property/{$content->slug}",
-                            ];
+                    $paths = [
+                        "/property/{$content->slug}",
+                        "/ar/property/{$content->slug}",
+                        "/en/property/{$content->slug}",
+                    ];
 
-                            $allData = $analytics->getAllAnalyticsWithFilters(
-                                now()->subDays($days),
-                                now(),
-                                [
-                                    'tenant_ids' => [$tenantId],
-                                    'exclude_empty_tenant' => false,
-                                    'limit' => count($paths) * 10,
-                                ]
-                            );
-
-                            // Sum views across all path variants
-                            foreach ($allData['data'] as $item) {
-                                if (in_array($item['path'], $paths)) {
-                                    $result += (int) $item['views'];
-                                }
-                            }
-                        } catch (\Exception $e) {
-                            Log::error('Google Analytics error in admin PropertyController show', [
-                                'property_id' => $property->id ?? null,
-                                'error' => $e->getMessage(),
-                            ]);
-                        }
-                        return $result;
-                    });
+                    $views = AnalyticsDailySummary::forTenant($tenantId)
+                        ->forDateRange(now()->subDays($days), now())
+                        ->get()
+                        ->sum(function ($record) use ($paths) {
+                            $pages = $record->data['top_pages']['pages'] ?? [];
+                            return collect($pages)
+                                ->whereIn('path', $paths)
+                                ->sum('views');
+                        });
                 }
 
                 $propertyData = (new PropertyResource($property))
