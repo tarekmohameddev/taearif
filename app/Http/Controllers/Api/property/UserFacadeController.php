@@ -12,8 +12,9 @@ class UserFacadeController extends Controller
 {
     public function index(): JsonResponse
     {
-        $facades = Cache::remember('user_facades_list', 3600, function () {
-            return UserFacade::select('id', 'name')->get();
+        // Cache as plain array to avoid Eloquent serialization overhead
+        $facades = Cache::remember('api_property_facades_list', 3600, function () {
+            return UserFacade::select('id', 'name')->get()->toArray();
         });
 
         return response()->json([

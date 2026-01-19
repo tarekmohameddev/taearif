@@ -897,10 +897,11 @@ class PropertyController extends Controller
 
     public function properties_categories(Request $request)
     {
-        $categories = Cache::remember('property_categories_list', 3600, function () {
+        $categories = Cache::remember('api_property_categories_list', 3600, function () {
             return ApiUserCategory::where('is_active', true)
                 ->where('type', 'property')
-                ->get(['id', 'name']);
+                ->get(['id', 'name'])
+                ->toArray();
         });
 
         return response()->json([
