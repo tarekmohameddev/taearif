@@ -862,44 +862,46 @@ class PropertyController extends Controller
 
     public function faqs(Request $request)
     {
-        // $faqs = PropertyFaq::with('property')->get();
-        $faqs = [
-            "suggestedFaqs" => [
-                [
-                    "question" => "متى يمكنني معاينة هذا العقار؟",
-                    "priority" => 1
-                ],
-                [
-                    "question" => "هل العقار مفروش؟",
-                    "priority" => 2
-                ],
-                [
-                    "question" => "ما هي سياسة الحيوانات الأليفة؟",
-                    "priority" => 3
-                ],
-                [
-                    "question" => "هل تتوفر مواقف للسيارات؟",
-                    "priority" => 4
-                ],
-                [
-                    "question" => "هل يوجد بواب أو حارس أمن؟",
-                    "priority" => 5
+        $faqs = Cache::remember('property_suggested_faqs', 3600, function () {
+            return [
+                "suggestedFaqs" => [
+                    [
+                        "question" => "متى يمكنني معاينة هذا العقار؟",
+                        "priority" => 1
+                    ],
+                    [
+                        "question" => "هل العقار مفروش؟",
+                        "priority" => 2
+                    ],
+                    [
+                        "question" => "ما هي سياسة الحيوانات الأليفة؟",
+                        "priority" => 3
+                    ],
+                    [
+                        "question" => "هل تتوفر مواقف للسيارات؟",
+                        "priority" => 4
+                    ],
+                    [
+                        "question" => "هل يوجد بواب أو حارس أمن؟",
+                        "priority" => 5
+                    ]
                 ]
-            ]
-        ];
+            ];
+        });
 
         return response()->json([
             'status' => 'success',
             'data' => $faqs
         ]);
-
     }
 
     public function properties_categories(Request $request)
     {
-        $categories = ApiUserCategory::where('is_active', true)
-            ->where('type', 'property')
-            ->get(['id', 'name']);
+        $categories = Cache::remember('property_categories_list', 3600, function () {
+            return ApiUserCategory::where('is_active', true)
+                ->where('type', 'property')
+                ->get(['id', 'name']);
+        });
 
         return response()->json([
             'success' => true,
