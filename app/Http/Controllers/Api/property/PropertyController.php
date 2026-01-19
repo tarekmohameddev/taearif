@@ -1855,8 +1855,28 @@ class PropertyController extends Controller
         ], 200);
     }
 
+    /**
+     * Delete a property.
+     *
+     * DELETE /api/properties/{id}
+     * Requires: auth:sanctum, can:properties.delete
+     *
+     * @param int|string $id Property ID (numeric)
+     * @return \Illuminate\Http\JsonResponse 200 on success; 404 if property not found; 400 on other errors
+     */
     public function destroy($id)
     {
+        if (!is_numeric($id) || (int) $id < 1) {
+            return response()->json([
+                'status' => 'error',
+                'code' => 'VALIDATION_FAILED',
+                'message' => 'Invalid property ID',
+                'timestamp' => now()->toIso8601String(),
+            ], 422);
+        }
+
+        $id = (int) $id;
+
         try {
             $property = Property::with([
                 'galleryImages',
@@ -1893,7 +1913,9 @@ class PropertyController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Property not found'
+                'code' => 'RESOURCE_NOT_FOUND',
+                'message' => 'Property not found',
+                'timestamp' => now()->toIso8601String(),
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
