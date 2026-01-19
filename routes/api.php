@@ -1,3 +1,6 @@
+<?php
+
+use App\Http\Middleware\SetTenantForPermissions; // the middleware we added earlier
 
 use Illuminate\Http\Request;
 use App\Models\Api\ApiThemeSettings;
@@ -263,7 +266,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/rental-contracts/{id}/status', [RentalContractController::class, 'changeStatus']); // Change rental contract status
 });
 // project routes
-Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
     Route::get   ('/projects',            [ProjectController::class, 'index'])->middleware('can:projects.view');
     Route::get   ('/projects/{id}',       [ProjectController::class, 'show'])->middleware('can:projects.view');
     Route::post  ('/projects',            [ProjectController::class, 'store'])->middleware('can:projects.create');
@@ -277,7 +280,7 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
 
 // property routes
 
-Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
     Route::post  ('/properties/reorder-featured',        [PropertyController::class, 'properties_reorder_featured'])->middleware('can:properties.reorder');
     Route::post  ('/properties/reorder',                 [PropertyController::class, 'properties_reorder'])->middleware('can:properties.reorder');
         // properties/categories
@@ -449,7 +452,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::post('/apps/payment/callback/{gateway}', [AppPaymentController::class, 'handleCallback']);
 
 // api_customers
-Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
     Route::prefix('customers')->group(function () {
         Route::get   ('/filters',  [CustomerController::class, 'filterOptions'])->middleware('can:customers.view');
         Route::get   ('/',         [CustomerController::class, 'index'])->middleware('can:customers.view');
@@ -467,7 +470,7 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
 
 
 // Api crm Customer
-Route::middleware(['auth:sanctum', 'audit.ctx', 'log.employee.activity', 'can:crm.view'])->prefix('crm')->group(function () {
+Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx', 'log.employee.activity', 'can:crm.view'])->prefix('crm')->group(function () {
     // STAGES
     Route::apiResource('stages', UserApiCustomerStageController::class);
     // reorderStages
@@ -727,7 +730,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/inquiry', [CustomerInquiryController::class, 'index']);
 
     // ApiPropertyRequestController
-    Route::middleware(['can:properties.view'])->group(function () {
+    Route::middleware([SetTenantForPermissions::class, 'can:properties.view'])->group(function () {
         Route::get('/property-requests/filters', [ApiPropertyRequestController::class, 'filterOptions']);
         Route::get('/property-requests', [ApiPropertyRequestController::class, 'index']);
         Route::get('/property-requests/{id}', [ApiPropertyRequestController::class, 'show']);
