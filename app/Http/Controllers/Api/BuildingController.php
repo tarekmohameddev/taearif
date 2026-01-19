@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 
 class BuildingController extends Controller
 {
@@ -18,74 +19,83 @@ class BuildingController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = Auth::user();
+        $page = $request->get('page', 1);
+        $perPage = $request->get('per_page', 15);
+        $search = $request->get('search', '');
+        
+        $cacheKey = "user_buildings_{$user->id}_p{$page}_l{$perPage}_s" . md5($search);
+        
+        $response = Cache::remember($cacheKey, 300, function () use ($user, $request, $page, $perPage, $search) {
+            // Get Arabic language ID for property contents
+            $arabicLang = \App\Models\User\Language::where('user_id', $user->id)
+                ->where('code', 'ar')
+                ->first();
 
-        // Get Arabic language ID for property contents
-        $arabicLang = \App\Models\User\Language::where('user_id', $user->id)
-            ->where('code', 'ar')
-            ->first();
+            $languageId = $arabicLang ? $arabicLang->id : null;
 
-        $languageId = $arabicLang ? $arabicLang->id : null;
+            $query = Building::where('user_id', $user->id)
+                ->with([
+                    'user:id,username,email', // Only basic user info needed
+                    'properties' => function($q) use ($languageId) {
+                        $q->select('id', 'building_id', 'price', 'pricePerMeter', 'area', 'beds', 'bath', 'status', 'property_status', 'featured', 'featured_image', 'created_at')
+                        ->with([
+                            'contents' => function($q) use ($languageId) {
+                                $q->select('id', 'property_id', 'language_id', 'title', 'slug', 'address', 'city_id', 'state_id', 'country_id');
+                                if ($languageId) {
+                                    $q->where('language_id', $languageId);
+                                }
+                            },
+                            'contents.city:id,name',
+                            'contents.state:id,name',
+                            'contents.country:id,name'
+                        ]);
+                    }
+                ])
+                ->orderBy('created_at', 'desc');
 
-        $query = Building::where('user_id', $user->id)
-            ->with([
-                'user:id,username,email', // Only basic user info needed
-                'properties' => function($q) use ($languageId) {
-                    $q->select('id', 'building_id', 'price', 'pricePerMeter', 'area', 'beds', 'bath', 'status', 'property_status', 'featured', 'featured_image', 'created_at')
-                    ->with([
-                        'contents' => function($q) use ($languageId) {
-                            $q->select('id', 'property_id', 'language_id', 'title', 'slug', 'address', 'city_id', 'state_id', 'country_id');
-                            if ($languageId) {
-                                $q->where('language_id', $languageId);
-                            }
-                        },
-                        'contents.city:id,name',
-                        'contents.state:id,name',
-                        'contents.country:id,name'
-                    ]);
-                }
-            ])
-            ->orderBy('created_at', 'desc');
+            // Search by name
+            if ($search) {
+                $query->where('name', 'like', '%' . $search . '%');
+            }
 
-        // Search by name
-        if ($request->has('search') && $request->search) {
-            $query->where('name', 'like', '%' . $request->search . '%');
-        }
+            $buildings = $query->paginate($perPage);
 
-        $buildings = $query->paginate($request->get('per_page', 15));
-
-        // Transform the properties data to include only needed fields
-        $buildings->getCollection()->transform(function ($building) {
-            $building->properties->transform(function ($property) {
-                $content = $property->contents->first();
+            // Transform the properties data to include only needed fields
+            $buildings->getCollection()->transform(function ($building) {
+                $building->properties->transform(function ($property) {
+                    $content = $property->contents->first();
+                    
+                    return [
+                        'id' => $property->id,
+                        'title' => $content->title ?? 'N/A',
+                        'slug' => $content->slug ?? null,
+                        'address' => $content->address ?? 'N/A',
+                        'price' => $property->price,
+                        'pricePerMeter' => $property->pricePerMeter,
+                        'area' => $property->area,
+                        'beds' => $property->beds,
+                        'bath' => $property->bath,
+                        'status' => $property->status,
+                        'property_status' => $property->property_status,
+                        'featured' => (bool)$property->featured,
+                        'featured_image' => $property->featured_image ? asset($property->featured_image) : null,
+                        'city' => $content && $content->city ? $content->city->name : 'N/A',
+                        'state' => $content && $content->state ? $content->state->name : 'N/A',
+                        'country' => $content && $content->country ? $content->country->name : 'N/A',
+                        'created_at' => $property->created_at->toISOString(),
+                    ];
+                });
                 
-                return [
-                    'id' => $property->id,
-                    'title' => $content->title ?? 'N/A',
-                    'slug' => $content->slug ?? null,
-                    'address' => $content->address ?? 'N/A',
-                    'price' => $property->price,
-                    'pricePerMeter' => $property->pricePerMeter,
-                    'area' => $property->area,
-                    'beds' => $property->beds,
-                    'bath' => $property->bath,
-                    'status' => $property->status,
-                    'property_status' => $property->property_status,
-                    'featured' => (bool)$property->featured,
-                    'featured_image' => $property->featured_image ? asset($property->featured_image) : null,
-                    'city' => $content && $content->city ? $content->city->name : 'N/A',
-                    'state' => $content && $content->state ? $content->state->name : 'N/A',
-                    'country' => $content && $content->country ? $content->country->name : 'N/A',
-                    'created_at' => $property->created_at->toISOString(),
-                ];
+                return $building;
             });
-            
-            return $building;
+
+            return [
+                'status' => 'success',
+                'data' => $buildings
+            ];
         });
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $buildings
-        ]);
+        return response()->json($response);
     }
 
     /**
