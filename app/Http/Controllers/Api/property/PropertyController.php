@@ -45,6 +45,46 @@ use App\Imports\PropertiesImport;
 
 class PropertyController extends Controller
 {
+    private static $missingFieldsArMap = [
+        'type' => 'نوع الوحدة',
+        'area' => 'المساحة',
+        'size' => 'المساحة',
+        'purpose' => 'نوع المعاملة',
+        'category' => 'فئة الوحدة',
+        'category_id' => 'فئة الوحدة',
+        'title' => 'اسم الوحدة',
+        'description' => 'الوصف',
+        'address' => 'العنوان',
+        'city_id' => 'المدينة',
+        'price' => 'المبلغ',
+        'pricePerMeter' => 'سعر المتر',
+        'beds' => 'غرف النوم',
+        'bedrooms' => 'غرف النوم',
+        'bath' => 'غرف الحمام',
+        'bathrooms' => 'غرف الحمام',
+    ];
+
+    private function addMissingFieldsAr($propertyOrItems): void
+    {
+        $map = self::$missingFieldsArMap;
+        $translate = fn(string $f) => $map[$f] ?? $f;
+
+        $addOne = function (Property $p) use ($translate) {
+            $mf = $p->missing_fields;
+            $p->missing_fields_ar = (is_array($mf) && count($mf) > 0)
+                ? array_map($translate, $mf)
+                : [];
+        };
+
+        if (is_array($propertyOrItems)) {
+            foreach ($propertyOrItems as $p) {
+                if ($p instanceof Property) $addOne($p);
+            }
+        } elseif ($propertyOrItems instanceof Property) {
+            $addOne($propertyOrItems);
+        }
+    }
+
     public function bulkImport(Request $request)
     {
         try {
@@ -3895,6 +3935,8 @@ class PropertyController extends Controller
             $drafts = $query->orderBy('created_at', 'desc')
                 ->paginate($perPage);
 
+            $this->addMissingFieldsAr($drafts->items());
+
             return response()->json([
                 'status' => 'success',
                 'data' => $drafts->items(),
@@ -3944,6 +3986,8 @@ class PropertyController extends Controller
                     'message' => 'Draft property not found',
                 ], 404);
             }
+
+            $this->addMissingFieldsAr($property);
 
             return response()->json([
                 'status' => 'success',
