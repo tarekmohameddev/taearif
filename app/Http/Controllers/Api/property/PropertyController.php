@@ -1032,14 +1032,17 @@ class PropertyController extends Controller
 
             $response = Cache::remember($cacheKey, $cacheTtl, function () use ($id, $analytics, $days, $allowedUserIds) {
                 $property = Property::with([
-                    'category',
-                    'user',
-                    'contents' => fn($q) => $q->limit(1)->orderBy('language_id'),
-                    'galleryImages',
-                    'proertyAmenities.amenity',
+                    'category:id,name',
+                    'user:id,username',
+                    'contents' => function($q) {
+                        $q->select('id', 'property_id', 'language_id', 'title', 'slug', 'address', 'description', 'city_id', 'state_id')
+                          ->limit(1)
+                          ->orderBy('language_id');
+                    },
+                    'galleryImages:id,property_id,image',
                     'UserPropertyCharacteristics',
-                    'creator',
-                    'building',
+                    'creator:id,first_name,last_name,username,email,account_type',
+                    'building:id,name,image,deed_number,deed_image,water_meter_number',
                 ])->whereIn('user_id', $allowedUserIds)->findOrFail($id);
 
                 $content = $property->contents->first();
