@@ -2143,14 +2143,14 @@ class PropertyController extends Controller
         }
         
         $propertiesQuery = Property::with($eagerLoadRelations)
-            ->whereIn('user_id', $allowedUserIds)
-            ->where('completion_status', 'complete');
+            ->whereIn('user_properties.user_id', $allowedUserIds)
+            ->where('user_properties.completion_status', 'complete');
 
         // Optional: restrict to a specific user (must be in allowedUserIds)
         if ($request->has('user_id') && $request->user_id !== '' && $request->user_id !== null) {
             $uid = (int) $request->user_id;
             if (in_array($uid, $allowedUserIds, true)) {
-                $propertiesQuery->where('user_id', $uid);
+                $propertiesQuery->where('user_properties.user_id', $uid);
             }
         }
 
