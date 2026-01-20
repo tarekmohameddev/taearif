@@ -258,7 +258,7 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         
         // Check if city_id is missing (location is required)
         if (!$cityId && !$isUpdate) {
-            $locationValidationErrors[] = "City location is required. Please provide city_id or city_name.";
+            $locationValidationErrors[] = "موقع المدينة مطلوب. يرجى تقديم معرف المدينة (city_id) أو اسم المدينة (city_name).";
         }
         
         // Check if district was provided but couldn't be resolved (location validation error)
