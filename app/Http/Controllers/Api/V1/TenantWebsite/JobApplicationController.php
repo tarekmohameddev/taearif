@@ -7,6 +7,7 @@ use App\Models\User\JobApplication;
 use App\Http\Requests\TenantWebsite\JobApplication\StoreRequest;
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 use App\Services\AlibabaOssService;
+use Illuminate\Support\Facades\Log;
 
 class JobApplicationController extends Controller
 {
@@ -31,10 +32,18 @@ class JobApplicationController extends Controller
             );
             $pdfPath = $result['url'];
         } catch (\Exception $e) {
-            return response()->json([
+            Log::warning('Job application PDF upload failed', [
+                'tenant_id' => $tenant->id,
+                'error' => $e->getMessage(),
+            ]);
+            $payload = [
                 'success' => false,
                 'message' => 'Failed to upload PDF.',
-            ], 500);
+            ];
+            if (config('app.debug')) {
+                $payload['debug'] = $e->getMessage();
+            }
+            return response()->json($payload, 500);
         }
 
         $app = JobApplication::create([
