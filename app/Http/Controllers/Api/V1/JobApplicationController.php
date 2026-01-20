@@ -10,7 +10,7 @@ class JobApplicationController extends Controller
 {
     protected function tenantId(): int
     {
-        return (int) auth()->id();
+        return (int) auth()->user()->tenantOwnerId();
     }
 
     /**
