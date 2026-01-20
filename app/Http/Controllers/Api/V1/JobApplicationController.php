@@ -43,7 +43,9 @@ class JobApplicationController extends Controller
             'phone' => $a->phone,
             'email' => $a->email,
             'description' => $a->description,
-            'pdf_path' => $a->pdf_path ? asset('storage/' . $a->pdf_path) : null,
+            'pdf_path' => $a->pdf_path
+                ? (str_starts_with($a->pdf_path, 'http') ? $a->pdf_path : asset('storage/' . $a->pdf_path))
+                : null,
             'created_at' => $a->created_at?->toISOString(),
         ]);
 
@@ -77,7 +79,9 @@ class JobApplicationController extends Controller
                 'phone' => $a->phone,
                 'email' => $a->email,
                 'description' => $a->description,
-                'pdf_path' => $a->pdf_path ? asset('storage/' . $a->pdf_path) : null,
+                'pdf_path' => $a->pdf_path
+                    ? (str_starts_with($a->pdf_path, 'http') ? $a->pdf_path : asset('storage/' . $a->pdf_path))
+                    : null,
                 'created_at' => $a->created_at?->toISOString(),
             ],
         ]);

@@ -6,18 +6,36 @@ use App\Http\Controllers\Controller;
 use App\Models\User\JobApplication;
 use App\Http\Requests\TenantWebsite\JobApplication\StoreRequest;
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
-use Illuminate\Support\Str;
+use App\Services\AlibabaOssService;
 
 class JobApplicationController extends Controller
 {
     use ResolvesTenant;
+
+    private AlibabaOssService $ossService;
+
+    public function __construct(AlibabaOssService $ossService)
+    {
+        $this->ossService = $ossService;
+    }
 
     public function store(StoreRequest $request, string $tenantId)
     {
         $tenant = $this->resolveTenant($request, $tenantId);
         $validated = $request->validated();
 
-        $pdfPath = $request->file('pdf')->storeAs('job_applications', Str::uuid() . '.pdf', 'public');
+        try {
+            $result = $this->ossService->uploadFile(
+                $request->file('pdf'),
+                'job_applications/' . $tenant->id
+            );
+            $pdfPath = $result['url'];
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload PDF.',
+            ], 500);
+        }
 
         $app = JobApplication::create([
             'user_id' => $tenant->id,

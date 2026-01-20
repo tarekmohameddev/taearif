@@ -123,6 +123,7 @@ class AlibabaOssService
             'gif' => 'image/gif',
             'webp' => 'image/webp',
             'svg' => 'image/svg+xml',
+            'pdf' => 'application/pdf',
         ];
         
         return $contentTypes[strtolower($extension)] ?? 'application/octet-stream';
