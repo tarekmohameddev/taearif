@@ -17,6 +17,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Models\PropertyCharacteristic;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User\RealestateManagement\Amenity;
 use App\Models\User\RealestateManagement\Property;
@@ -2198,7 +2199,7 @@ class PropertyController extends Controller
             $propertiesQuery->where($contentJoinAlias . '.state_id', $request->district_id);
         }
 
-        // Text search functionality (title, address, description, price)
+        // Text search functionality (title, address, description only)
         // OPTIMIZED: Use JOIN instead of whereHas for better performance
         // Use INNER JOIN if city/district filters are present, otherwise LEFT JOIN for search-only
         // OPTIMIZED: Prefer prefix matching for better index usage, fallback to full-text or LIKE
@@ -2248,20 +2249,6 @@ class PropertyController extends Controller
                         }
                     });
                 }
-                
-                // Search in price if numeric (separate condition to allow index usage on price)
-                if (is_numeric($searchTerm)) {
-                    // Search by property ID (exact match, uses primary key index)
-                    $q->orWhere('user_properties.id', (int) $searchTerm);
-                    $q->orWhere(function($priceQ) use ($searchTerm, $minWildcardLength) {
-                        // Exact match first (can use index)
-                        $priceQ->where('user_properties.price', $searchTerm);
-                        // Only use wildcard for price if search term is long enough
-                        if (strlen($searchTerm) >= $minWildcardLength) {
-                            $priceQ->orWhere('user_properties.price', 'like', "%{$searchTerm}%");
-                        }
-                    });
-                }
             });
         }
 
@@ -2288,10 +2275,12 @@ class PropertyController extends Controller
                 DB::raw('MIN(' . $contentJoinAlias . '.description) as content_description')
             ]);
             
-            // GROUP BY primary key - all user_properties columns are functionally dependent
-            // MIN() aggregations ensure we get one content per property (the first one by ID)
-            // Optimized by idx_prop_content_property_id_id index on user_property_contents(property_id, id)
-            $propertiesQuery->groupBy('user_properties.id');
+            // GROUP BY all user_properties columns to satisfy ONLY_FULL_GROUP_BY when selecting user_properties.*.
+            // Rows are unique per user_properties.id; including other columns does not change the result.
+            // MIN() aggregations ensure we get one content per property (the first one by ID).
+            $propertiesQuery->groupBy(
+                array_map(fn ($c) => 'user_properties.' . $c, Schema::getColumnListing('user_properties'))
+            );
         }
 
         // Apply purpose filter if provided (consolidate purposes_filter and purpose)
@@ -2350,11 +2339,14 @@ class PropertyController extends Controller
         }
 
         // Apply specifics filters
-        if ($request->has('price_from') && !empty($request->price_from)) {
-            $propertiesQuery->where('price', '>=', $request->price_from);
+        // Price range: min and max only. Aliases: price_min (price_from), price_max (price_to).
+        $priceMin = $request->filled('price_min') ? $request->price_min : $request->price_from;
+        $priceMax = $request->filled('price_max') ? $request->price_max : $request->price_to;
+        if ($priceMin !== null && $priceMin !== '' && is_numeric($priceMin)) {
+            $propertiesQuery->where('price', '>=', (float) $priceMin);
         }
-        if ($request->has('price_to') && !empty($request->price_to)) {
-            $propertiesQuery->where('price', '<=', $request->price_to);
+        if ($priceMax !== null && $priceMax !== '' && is_numeric($priceMax)) {
+            $propertiesQuery->where('price', '<=', (float) $priceMax);
         }
         if ($request->has('area_from') && !empty($request->area_from)) {
             $propertiesQuery->where('area', '>=', $request->area_from);
