@@ -883,6 +883,11 @@ Route::prefix('v1')->group(function () {
 			Route::post('/bulk-action', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'bulkAction']);
 		});
 
+		Route::prefix('job-applications')->group(function () {
+			Route::get('/', [\App\Http\Controllers\Api\V1\JobApplicationController::class, 'index']);
+			Route::get('/{id}', [\App\Http\Controllers\Api\V1\JobApplicationController::class, 'show']);
+		});
+
         Route::get('/customers/{id}/logs',  [CustomerLogController::class, 'index'])->middleware('can:projects.view');
         Route::get('/projects/{id}/logs',   [ProjectLogController::class, 'index'])->middleware('can:projects.view');
         Route::get('/properties/{id}/logs', [PropertyLogController::class, 'index'])->middleware('can:properties.view');
@@ -973,6 +978,8 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
 
 	// Tenant Website Reservations (public - rate limited)
 	Route::post('{tenantId}/reservations', [\App\Http\Controllers\Api\V1\TenantWebsite\ReservationController::class, 'store'])->middleware('throttle:5,1');
+
+	Route::post('{tenantId}/job-applications', [\App\Http\Controllers\Api\V1\TenantWebsite\JobApplicationController::class, 'store'])->middleware('throttle:10,1');
 
     // Tenant Website Properties (public)
     Route::get('{tenantId}/properties', [\App\Http\Controllers\Api\V1\TenantWebsite\PropertyController::class, 'index']);
