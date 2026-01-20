@@ -17,12 +17,7 @@ class JobApplicationController extends Controller
         $tenant = $this->resolveTenant($request, $tenantId);
         $validated = $request->validated();
 
-        $pdfPath = null;
-        if ($request->hasFile('pdf')) {
-            $pdfPath = $request->file('pdf')->storeAs('job_applications', Str::uuid() . '.pdf', 'public');
-        } elseif (!empty($validated['pdf_path'])) {
-            $pdfPath = $validated['pdf_path'];
-        }
+        $pdfPath = $request->file('pdf')->storeAs('job_applications', Str::uuid() . '.pdf', 'public');
 
         $app = JobApplication::create([
             'user_id' => $tenant->id,

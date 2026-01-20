@@ -19,7 +19,6 @@ class StoreRequest extends FormRequest
             'email' => ['required', 'email', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'pdf' => ['required', 'file', 'mimes:pdf', 'max:5120'],
-            'pdf_path' => ['required', 'string', 'max:500'],
         ];
     }
 }
