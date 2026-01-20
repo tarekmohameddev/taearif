@@ -17,7 +17,9 @@ class PropertyResource extends JsonResource
         $property = $this->resource;
         $content = $property->contents->first();
         $characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
-        
+        // Exclude keys that would overwrite property fields (e.g. id, property_id from user_property_characteristics)
+        $characteristics = array_diff_key($characteristics, array_flip(['id', 'property_id', 'created_at', 'updated_at']));
+
         // External data passed through the resource
         $views = $this->additional['views'] ?? 0;
 

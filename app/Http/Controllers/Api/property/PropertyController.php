@@ -2251,6 +2251,8 @@ class PropertyController extends Controller
                 
                 // Search in price if numeric (separate condition to allow index usage on price)
                 if (is_numeric($searchTerm)) {
+                    // Search by property ID (exact match, uses primary key index)
+                    $q->orWhere('user_properties.id', (int) $searchTerm);
                     $q->orWhere(function($priceQ) use ($searchTerm, $minWildcardLength) {
                         // Exact match first (can use index)
                         $priceQ->where('user_properties.price', $searchTerm);
