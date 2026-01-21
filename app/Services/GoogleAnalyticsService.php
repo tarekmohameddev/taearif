@@ -15,6 +15,7 @@ use Google\Analytics\Data\V1beta\OrderBy\MetricOrderBy;
 use Google\Analytics\Data\V1beta\Filter\StringFilter\MatchType;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Google\Analytics\Data\V1beta\Filter\InListFilter;
 use Google\Analytics\Data\V1beta\FilterExpressionList;
 
@@ -206,26 +207,34 @@ class GoogleAnalyticsService
 
     public function getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter)
     {
-        // Get ALL device data (no GA4 filter) - filter on backend
-        $response = $this->executeWithRetry(function() use ($startDate, $endDate) {
-            return $this->client->runReport([
-                'property' => $this->propertyId,
-                'dateRanges' => [
-                    new DateRange([
-                        'start_date' => $startDate->format('Y-m-d'),
-                        'end_date' => $endDate->format('Y-m-d'),
-                    ]),
-                ],
-                'dimensions' => [
-                    new Dimension(['name' => 'deviceCategory']),
-                    new Dimension(['name' => 'pagePath']),
-                    new Dimension(['name' => 'customEvent:tenant_id']),
-                ],
-                'metrics' => [
-                    new Metric(['name' => 'sessions']),
-                    new Metric(['name' => 'screenPageViews']),
-                ],
-            ]);
+        // Use GA4 filter for security and performance (primary approach)
+        // Fallback to backend filtering is only for historical data recovery
+        $params = [
+            'property' => $this->propertyId,
+            'dateRanges' => [
+                new DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
+                ]),
+            ],
+            'dimensions' => [
+                new Dimension(['name' => 'deviceCategory']),
+                new Dimension(['name' => 'pagePath']),
+                new Dimension(['name' => 'customEvent:tenant_id']),
+            ],
+            'metrics' => [
+                new Metric(['name' => 'sessions']),
+                new Metric(['name' => 'screenPageViews']),
+            ],
+        ];
+
+        // Use GA4 dimensionFilter when tenant_id is available (security fix)
+        if ($tenantId && $tenantFilter) {
+            $params['dimensionFilter'] = $tenantFilter;
+        }
+
+        $response = $this->executeWithRetry(function() use ($params) {
+            return $this->client->runReport($params);
         }, 'getDeviceBreakdown');
 
         // Collect all paths that need slug lookup (batch optimization)
@@ -366,23 +375,31 @@ class GoogleAnalyticsService
             }
         }
 
-        // Get ALL overview data (no GA4 filter) - filter on backend
-        $response = $this->executeWithRetry(function() use ($startDate, $endDate) {
-            return $this->client->runReport([
-                'property' => $this->propertyId,
-                'dateRanges' => [new DateRange(['start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')])],
-                'dimensions' => [
-                    new Dimension(['name' => 'pagePath']),
-                    new Dimension(['name' => 'customEvent:tenant_id']),
-                ],
-                'metrics' => [
-                    new Metric(['name' => 'screenPageViews']),
-                    new Metric(['name' => 'sessions']),
-                    new Metric(['name' => 'totalUsers']),
-                    new Metric(['name' => 'bounceRate']),
-                    new Metric(['name' => 'averageSessionDuration']),
-                ],
-            ]);
+        // Use GA4 filter for security and performance (primary approach)
+        // Fallback to backend filtering is only for historical data recovery
+        $params = [
+            'property' => $this->propertyId,
+            'dateRanges' => [new DateRange(['start_date' => $startDate->format('Y-m-d'), 'end_date' => $endDate->format('Y-m-d')])],
+            'dimensions' => [
+                new Dimension(['name' => 'pagePath']),
+                new Dimension(['name' => 'customEvent:tenant_id']),
+            ],
+            'metrics' => [
+                new Metric(['name' => 'screenPageViews']),
+                new Metric(['name' => 'sessions']),
+                new Metric(['name' => 'totalUsers']),
+                new Metric(['name' => 'bounceRate']),
+                new Metric(['name' => 'averageSessionDuration']),
+            ],
+        ];
+
+        // Use GA4 dimensionFilter when tenant_id is available (security fix)
+        if ($tenantId) {
+            $params['dimensionFilter'] = $tenantFilter;
+        }
+
+        $response = $this->executeWithRetry(function() use ($params) {
+            return $this->client->runReport($params);
         }, 'getOverviewMetrics');
 
         // Collect all paths that need slug lookup (batch optimization)
@@ -493,27 +510,35 @@ class GoogleAnalyticsService
             }
         }
 
-        // Get ALL traffic sources (no GA4 filter) - filter on backend
-        $response = $this->executeWithRetry(function() use ($startDate, $endDate) {
-            return $this->client->runReport([
-                'property' => $this->propertyId,
-                'dateRanges' => [
-                    new DateRange([
-                        'start_date' => $startDate->format('Y-m-d'),
-                        'end_date' => $endDate->format('Y-m-d'),
-                    ]),
-                ],
-                'dimensions' => [
-                    new Dimension(['name' => 'sessionSource']),
-                    new Dimension(['name' => 'sessionMedium']),
-                    new Dimension(['name' => 'pagePath']),
-                    new Dimension(['name' => 'customEvent:tenant_id']),
-                ],
-                'metrics' => [
-                    new Metric(['name' => 'sessions']),
-                    new Metric(['name' => 'totalUsers']),
-                ],
-            ]);
+        // Use GA4 filter for security and performance (primary approach)
+        // Fallback to backend filtering is only for historical data recovery
+        $params = [
+            'property' => $this->propertyId,
+            'dateRanges' => [
+                new DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
+                ]),
+            ],
+            'dimensions' => [
+                new Dimension(['name' => 'sessionSource']),
+                new Dimension(['name' => 'sessionMedium']),
+                new Dimension(['name' => 'pagePath']),
+                new Dimension(['name' => 'customEvent:tenant_id']),
+            ],
+            'metrics' => [
+                new Metric(['name' => 'sessions']),
+                new Metric(['name' => 'totalUsers']),
+            ],
+        ];
+
+        // Use GA4 dimensionFilter when tenant_id is available (security fix)
+        if ($tenantId) {
+            $params['dimensionFilter'] = $tenantFilter;
+        }
+
+        $response = $this->executeWithRetry(function() use ($params) {
+            return $this->client->runReport($params);
         }, 'getTrafficSources');
 
         // Collect all paths that need slug lookup (batch optimization)
@@ -622,32 +647,40 @@ class GoogleAnalyticsService
             }
         }
 
-        // Get ALL pages data (no GA4 filter) - we'll filter on backend
-        $response = $this->executeWithRetry(function() use ($startDate, $endDate) {
-            return $this->client->runReport([
-                'property' => $this->propertyId,
-                'dateRanges' => [
-                    new DateRange([
-                        'start_date' => $startDate->format('Y-m-d'),
-                        'end_date' => $endDate->format('Y-m-d'),
-                    ]),
-                ],
-                'dimensions' => [
-                    new Dimension(['name' => 'pagePath']),
-                    new Dimension(['name' => 'pageTitle']),
-                    new Dimension(['name' => 'customEvent:tenant_id']),
-                ],
-                'metrics' => [
-                    new Metric(['name' => 'screenPageViews']),
-                    new Metric(['name' => 'averageSessionDuration']),
-                    new Metric(['name' => 'bounceRate']),
-                    new Metric(['name' => 'totalUsers']),
-                ],
-                'orderBys' => [
-                    new OrderBy(['metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']), 'desc' => true]),
-                ],
-                'limit' => 200,  // Get more to filter on backend
-            ]);
+        // Use GA4 filter for security and performance (primary approach)
+        // Fallback to backend filtering is only for historical data recovery
+        $params = [
+            'property' => $this->propertyId,
+            'dateRanges' => [
+                new DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
+                ]),
+            ],
+            'dimensions' => [
+                new Dimension(['name' => 'pagePath']),
+                new Dimension(['name' => 'pageTitle']),
+                new Dimension(['name' => 'customEvent:tenant_id']),
+            ],
+            'metrics' => [
+                new Metric(['name' => 'screenPageViews']),
+                new Metric(['name' => 'averageSessionDuration']),
+                new Metric(['name' => 'bounceRate']),
+                new Metric(['name' => 'totalUsers']),
+            ],
+            'orderBys' => [
+                new OrderBy(['metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']), 'desc' => true]),
+            ],
+            'limit' => 200,
+        ];
+
+        // Use GA4 dimensionFilter when tenant_id is available (security fix)
+        if ($tenantId) {
+            $params['dimensionFilter'] = $tenantFilter;
+        }
+
+        $response = $this->executeWithRetry(function() use ($params) {
+            return $this->client->runReport($params);
         }, 'getTopPages_allData');
 
         // Collect all paths that need slug lookup (batch optimization)
@@ -774,26 +807,40 @@ class GoogleAnalyticsService
             ? $this->propertyId
             : "properties/{$this->propertyId}";
 
-        // Get ALL visitor data (no GA4 filter) - we'll filter on backend to include historical data
-        $response = $this->executeWithRetry(function() use ($propertyName, $startDate, $endDate) {
-            return $this->client->runReport([
-                'property'        => $propertyName,
-                'dateRanges'      => [
-                    new DateRange([
-                        'start_date' => $startDate->format('Y-m-d'),
-                        'end_date'   => $endDate->format('Y-m-d'),
-                    ]),
-                ],
-                'dimensions'      => [
-                    new Dimension(['name' => 'date']),
-                    new Dimension(['name' => 'pagePath']),
-                    new Dimension(['name' => 'customEvent:tenant_id']),
-                ],
-                'metrics'         => [
-                    new Metric(['name' => 'sessions']),
-                    new Metric(['name' => 'totalUsers']),
-                ],
-            ]);
+        // Use GA4 filter for security and performance (primary approach)
+        // Fallback to backend filtering is only for historical data recovery
+        $tenantFilter = new FilterExpression([
+            'filter' => new Filter([
+                'field_name' => 'customEvent:tenant_id',
+                'string_filter' => new StringFilter([
+                    'value' => $tenantId,
+                    'match_type' => MatchType::EXACT,
+                ]),
+            ]),
+        ]);
+
+        $params = [
+            'property'        => $propertyName,
+            'dateRanges'      => [
+                new DateRange([
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date'   => $endDate->format('Y-m-d'),
+                ]),
+            ],
+            'dimensions'      => [
+                new Dimension(['name' => 'date']),
+                new Dimension(['name' => 'pagePath']),
+                new Dimension(['name' => 'customEvent:tenant_id']),
+            ],
+            'metrics'         => [
+                new Metric(['name' => 'sessions']),
+                new Metric(['name' => 'totalUsers']),
+            ],
+            'dimensionFilter' => $tenantFilter, // Use GA4 filter for security
+        ];
+
+        $response = $this->executeWithRetry(function() use ($params) {
+            return $this->client->runReport($params);
         }, 'getVisitorData');
 
         // Collect all paths that need slug lookup (batch optimization)
@@ -1006,7 +1053,7 @@ class GoogleAnalyticsService
 
         // ===== QUERY 2: Get events WITHOUT tenant filter (recover old data with empty tenant_id) =====
         try {
-            $response2 = $this->executeWithRetry(function() use ($startDate, $endDate, $pathsFilter) {
+            $response2 = $this->executeWithRetry(function() use ($startDate, $endDate, $pathsFilter, $paths) {
                 return $this->client->runReport([
                     'property'        => $this->propertyId,
                     'dateRanges'      => [new DateRange([
@@ -1728,6 +1775,24 @@ class GoogleAnalyticsService
      * The slug is looked up in the DB to find the owning tenant (user)
      * Uses cache first, then database lookup
      *
+     * **KNOWN LIMITATION - Historical Data Recovery Only:**
+     * This method is used as a fallback for historical analytics data that was
+     * collected before tenant_id tracking was implemented. For all new events,
+     * tenant_id should always be sent from the frontend and will be filtered
+     * at the GA4 API level for security.
+     *
+     * **Accuracy Concerns:**
+     * - Slugs may change over time, causing misattribution
+     * - Same slug could theoretically belong to different tenants (rare)
+     * - Database queries add latency to analytics requests
+     * - This is a best-effort recovery mechanism, not a reliable primary method
+     *
+     * **Security Note:**
+     * GA4 queries now use dimensionFilter with tenant_id for all production
+     * queries. This fallback is only used when tenant_id is missing from GA4
+     * data, which should only happen for historical data collected before
+     * tenant tracking was implemented.
+     *
      * @param string $path - GA4 pagePath (e.g., /ar/property/shk-llaygar-fy-sharaa-rkm-399)
      * @return string|null - tenant username or null if not found
      */
@@ -1778,7 +1843,7 @@ class GoogleAnalyticsService
             if ($type === 'property') {
                 // Look up property by slug in user_property_contents
                 // Use LOWER() for case-insensitive matching to handle Arabic slugs
-                $property = \DB::table('user_property_contents as upc')
+                $property = DB::table('user_property_contents as upc')
                     ->join('user_properties as up', 'up.id', '=', 'upc.property_id')
                     ->join('users as u', 'u.id', '=', 'up.user_id')
                     ->whereRaw('LOWER(upc.slug) = ?', [strtolower($slug)])
@@ -1791,7 +1856,7 @@ class GoogleAnalyticsService
             } elseif ($type === 'project') {
                 // Look up project by slug in user_project_contents (NOT project_contents)
                 // Use LOWER() for case-insensitive matching to handle Arabic slugs
-                $project = \DB::table('user_project_contents as upc')
+                $project = DB::table('user_project_contents as upc')
                     ->join('user_projects as p', 'p.id', '=', 'upc.project_id')
                     ->join('users as u', 'u.id', '=', 'p.user_id')
                     ->whereRaw('LOWER(upc.slug) = ?', [strtolower($slug)])
@@ -2012,6 +2077,58 @@ class GoogleAnalyticsService
                 'total_paths' => 0,
                 'error' => $e->getMessage(),
             ];
+        }
+    }
+
+    /**
+     * Get all unique tenant_ids found in GA4 for a date range
+     * Useful for debugging which tenants are being tracked
+     * 
+     * @param Carbon $startDate
+     * @param Carbon $endDate
+     * @return array Associative array [tenant_id => total_page_views]
+     */
+    public function getTenantIdsInGA4(Carbon $startDate, Carbon $endDate): array
+    {
+        try {
+            $response = $this->executeWithRetry(function() use ($startDate, $endDate) {
+                return $this->client->runReport([
+                    'property' => $this->propertyId,
+                    'dateRanges' => [
+                        new DateRange([
+                            'start_date' => $startDate->format('Y-m-d'),
+                            'end_date' => $endDate->format('Y-m-d'),
+                        ]),
+                    ],
+                    'dimensions' => [
+                        new Dimension(['name' => 'customEvent:tenant_id']),
+                    ],
+                    'metrics' => [
+                        new Metric(['name' => 'screenPageViews']),
+                    ],
+                    'limit' => 100,
+                ]);
+            }, 'getTenantIdsInGA4');
+
+            $tenants = [];
+            foreach ($response->getRows() as $row) {
+                $tenantId = $this->getSafeValue($row->getDimensionValues(), 0, '');
+                $views = (int) $this->getSafeValue($row->getMetricValues(), 0, 0);
+                
+                if (!empty($tenantId) && $tenantId !== '(not set)') {
+                    $tenants[$tenantId] = ($tenants[$tenantId] ?? 0) + $views;
+                }
+            }
+
+            arsort($tenants);
+            return $tenants;
+        } catch (\Exception $e) {
+            Log::warning('Failed to get tenant IDs from GA4', [
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date' => $endDate->format('Y-m-d'),
+                'error' => $e->getMessage(),
+            ]);
+            return [];
         }
     }
 

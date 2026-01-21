@@ -137,6 +137,10 @@ class PermissionTranslationsSeeder extends Seeder
                 'name_en' => 'Delete Property',
                 'name_ar' => 'حذف عقار',
             ],
+            'properties.owner_deed' => [
+                'name_en' => 'Manage Owner Details & Deed',
+                'name_ar' => 'إدارة تفاصيل المالك والصك',
+            ],
 
             // CRM permissions
             'crm.view' => [
@@ -172,4 +176,3 @@ class PermissionTranslationsSeeder extends Seeder
         $this->command->info('Total permissions updated: ' . count($translations));
     }
 }
-

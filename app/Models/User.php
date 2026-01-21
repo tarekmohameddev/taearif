@@ -51,6 +51,7 @@ use App\Models\User\CourseManagement\Coupon as CourseManagementCoupon;
 use App\Models\EmployeeAddon;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Cache;
 
 class User extends Authenticatable
 {
@@ -162,6 +163,29 @@ class User extends Authenticatable
             }
         });
 
+        static::saved(function (User $model): void {
+            $ids = [];
+            if (($model->account_type ?? null) === 'employee' && !empty($model->tenant_id)) {
+                $ids[] = (int) $model->tenant_id;
+            }
+            if (($model->getOriginal('account_type') ?? null) === 'employee' && !empty($model->getOriginal('tenant_id'))) {
+                $ids[] = (int) $model->getOriginal('tenant_id');
+            }
+            foreach (array_unique(array_filter($ids)) as $id) {
+                if ($id > 0) {
+                    Cache::forget("property_request_filter_options_meta_{$id}");
+                }
+            }
+        });
+
+        static::deleted(function (User $model): void {
+            if (($model->account_type ?? null) === 'employee' && !empty($model->tenant_id)) {
+                $id = (int) $model->tenant_id;
+                if ($id > 0) {
+                    Cache::forget("property_request_filter_options_meta_{$id}");
+                }
+            }
+        });
     }
 
 

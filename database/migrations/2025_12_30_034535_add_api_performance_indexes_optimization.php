@@ -12,7 +12,7 @@ return new class extends Migration
      *
      * Adds indexes to optimize API performance for:
      * - StepProgressController (user_steps.user_id)
-     * - AuthController getUserProfile (memberships, api_domain_settings, user_basic_settings)
+     * - AuthController getUserProfile (memberships, api_domains_settings, user_basic_settings)
      *
      * @return void
      */
@@ -64,10 +64,10 @@ return new class extends Migration
             }
         }
 
-        // Composite index for api_domain_settings (user_id, status) for active domain lookup
-        if (Schema::hasTable('api_domain_settings')) {
-            if (!$hasIndex('api_domain_settings', 'api_domain_settings_user_status_index')) {
-                Schema::table('api_domain_settings', function (Blueprint $table) {
+        // Composite index for api_domains_settings (user_id, status) for active domain lookup
+        if (Schema::hasTable('api_domains_settings')) {
+            if (!$hasIndex('api_domains_settings', 'api_domain_settings_user_status_index')) {
+                Schema::table('api_domains_settings', function (Blueprint $table) {
                     $table->index(['user_id', 'status'], 'api_domain_settings_user_status_index');
                 });
             }
@@ -103,8 +103,8 @@ return new class extends Migration
             });
         }
 
-        if (Schema::hasTable('api_domain_settings')) {
-            Schema::table('api_domain_settings', function (Blueprint $table) {
+        if (Schema::hasTable('api_domains_settings')) {
+            Schema::table('api_domains_settings', function (Blueprint $table) {
                 $table->dropIndex('api_domain_settings_user_status_index');
             });
         }

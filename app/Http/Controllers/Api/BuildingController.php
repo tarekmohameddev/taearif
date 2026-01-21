@@ -28,17 +28,19 @@ class BuildingController extends Controller
 
         $query = Building::where('user_id', $user->id)
             ->with([
-                'user',
+                'user:id,username,email', // Only basic user info needed
                 'properties' => function($q) use ($languageId) {
-                    $q->with([
+                    $q->select('id', 'building_id', 'price', 'pricePerMeter', 'area', 'beds', 'bath', 'status', 'property_status', 'featured', 'featured_image', 'created_at')
+                    ->with([
                         'contents' => function($q) use ($languageId) {
+                            $q->select('id', 'property_id', 'language_id', 'title', 'slug', 'address', 'city_id', 'state_id', 'country_id');
                             if ($languageId) {
                                 $q->where('language_id', $languageId);
                             }
                         },
-                        'contents.city',
-                        'contents.state',
-                        'contents.country'
+                        'contents.city:id,name',
+                        'contents.state:id,name',
+                        'contents.country:id,name'
                     ]);
                 }
             ])
@@ -178,17 +180,19 @@ class BuildingController extends Controller
         $building = Building::where('id', $id)
             ->where('user_id', $user->id)
             ->with([
-                'user',
+                'user:id,username,email',
                 'properties' => function($q) use ($languageId) {
-                    $q->with([
+                    $q->select('id', 'building_id', 'price', 'pricePerMeter', 'area', 'beds', 'bath', 'status', 'property_status', 'featured', 'featured_image', 'created_at')
+                    ->with([
                         'contents' => function($q) use ($languageId) {
+                            $q->select('id', 'property_id', 'language_id', 'title', 'slug', 'address', 'city_id', 'state_id', 'country_id');
                             if ($languageId) {
                                 $q->where('language_id', $languageId);
                             }
                         },
-                        'contents.city',
-                        'contents.state',
-                        'contents.country'
+                        'contents.city:id,name',
+                        'contents.state:id,name',
+                        'contents.country:id,name'
                     ]);
                 }
             ])

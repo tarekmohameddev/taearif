@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Membership;
 use App\Models\Api\ApiMenuItem;
+use App\Models\Api\ApiApp;
+use App\Models\Api\ApiInstallation;
+use App\Models\Api\ApiSidebarItem;
+use App\Enums\InstallStatus;
 
 class ApiSideMenusController extends Controller
 {
@@ -75,89 +79,62 @@ class ApiSideMenusController extends Controller
         $hasProjects = $package && ($package->project_limit_number > 0);
         $hasProperties = $package && ($package->real_estate_limit_number > 0);
 
-        // ---- declarative menu map (DRY) ----
-        $menuConfig = [
-            // Always show dashboard for all authenticated users
-            [
-                'perm'    => null, // no permission check needed
-                'section' => ['title' => 'لوحة التحكم', 'description' => 'نظره عامه عن الموقع', 'icon' => 'panel', 'path' => '/'],
-            ],
-            [
-                'perm'    => 'settings.view',
-                'section' => ['title' => 'اعدادات الموقع', 'description' => 'تكوين اعدادات الموقع', 'icon' => 'web-settings', 'path' => '/settings'],
-            ],
-            [
-                'perm'    => 'customers.view',
-                'section' => ['title' => 'ادارة العملاء', 'description' => 'ادارة عملائك', 'icon' => 'users', 'path' => '/customers'],
-            ],
-            [
-                'perm'    => 'crm.view',
-                'section' => ['title' => 'CRM', 'description' => 'تكوين اعدادات ادارة علاقات العملاء', 'icon' => 'crm', 'path' => '/crm'],
-            ],
-            // package + permission (package from OWNER)
-            [
-                'perm'    => 'projects.view',
-                'when'    => $hasProjects,
-                'section' => ['title' => 'المشاريع', 'description' => ' ادارة المشاريع', 'icon' => 'building', 'path' => '/projects'],
-            ],
-            [
-                'perm'    => 'properties.view',
-                'when'    => $hasProperties,
-                'section' => ['title' => 'العقارات', 'description' => 'ادارة العقارات', 'icon' => 'home', 'path' => '/properties'],
-            ],
-            [
-                'perm'    => 'properties.view',
-                'when'    => $hasProperties,
-                'section' => ['title' => 'طلبات العملاء', 'description' => 'ادارة طلبات العملاء العقارية', 'icon' => 'home', 'path' => '/property-requests'],
-            ],
-            [
-                'perm'    => 'properties.view',
-                'when'    => $hasProperties,
-                'section' => ['title' => 'مركز توافق الطلبات الذكائي', 'description' => 'احصل على توافق ذكي مع الطلبات', 'icon' => 'sparkles', 'path' => '/matching'],
-            ],
-            // Affiliate program
-            [
-                'perm'    => 'affiliate.view',
-                'when'    => $isAffiliateApproved,
-                'section' => ['title' => 'برنامج الشراكة', 'description' => 'إدارة برنامج العمولة', 'icon' => 'lucide lucide-user-check h-5 w-5 text-primary', 'path' => '/affiliate'],
-            ],
-            [
-                'perm'    => 'content.view',
-                'section' => ['title' => 'مدير الواتساب', 'description' => 'اضف ارقام واتساب', 'icon' => 'message-square-share', 'path' => '/whatsapp-center'],
-            ],
-            [
-                'perm'    => 'content.view',
-                'section' => ['title' => 'تعديل تصميم الموقع', 'description' => 'ادارة محتوى الموقع', 'icon' => 'content-settings', 'path' => 'live-editor'],
-            ],
-            [
-                'perm'    => 'content.view',
-                'section' => ['title' => 'ادارة الموظفين', 'description' => 'ادارة الموظفين', 'icon' => 'message-square-share', 'path' => '/access-control'],
-            ],
-            [
-                'perm'    => 'content.view',
-                'section' => ['title' => 'ادارة الايجارات', 'description' => 'ادارة ايجارتك', 'icon' => 'message-square-share', 'path' => '/rental-management'],
-            ],
-        ];
+        // Get sidebar items from database
+        $sidebarItems = ApiSidebarItem::active()->ordered()->get();
 
         $sections = [];
-        foreach ($menuConfig as $item) {
-            // Dashboard shows for all users (no permission check)
-            if ($item['perm'] === null) {
-                $sections[] = $item['section'];
+        foreach ($sidebarItems as $item) {
+            // Check permission (if null, show for all authenticated users)
+            if ($item->permission !== null && !$can($item->permission)) {
                 continue;
             }
 
-            // Check permission
-            if (!$can($item['perm'])) {
+            // Check condition type
+            $conditionMet = true;
+            if ($item->condition_type !== null) {
+                switch ($item->condition_type) {
+                    case 'has_projects':
+                        $conditionMet = $hasProjects;
+                        break;
+                    case 'has_properties':
+                        $conditionMet = $hasProperties;
+                        break;
+                    case 'is_affiliate_approved':
+                        $conditionMet = $isAffiliateApproved;
+                        break;
+                }
+            }
+
+            if (!$conditionMet) {
                 continue;
             }
 
-            // Check optional condition (now a boolean, not a closure)
-            if (isset($item['when']) && $item['when'] !== true) {
-                continue;
+            // Add item to sections
+            $icon = $item->icon;
+            if (!str_contains($icon, ' ') && !str_starts_with($icon, 'fa') && !str_starts_with($icon, 'flaticon')) {
+                $icon = 'flaticon-' . $icon;
             }
 
-            $sections[] = $item['section'];
+            $sections[] = [
+                'title' => $item->title,
+                'description' => $item->description,
+                'icon' => $icon,
+                'path' => $item->path,
+            ];
+        }
+
+        // Add installed apps to the sidebar
+        $installedApps = $this->getInstalledApps($user->id);
+        foreach ($installedApps as $app) {
+            $sections[] = [
+                'title' => $app['name'],
+                'description' => $app['description'] ?? '',
+                'icon' => 'app', // Default icon for apps, can be customized per app
+                'path' => $app['path'],
+                'type' => 'app', // Indicate this is an app
+                'app_id' => $app['id'],
+                'img' => $app['img'] ?? null,
+            ];
         }
 
         return $sections;
@@ -176,5 +153,38 @@ class ApiSideMenusController extends Controller
     private function isTenant($user): bool
     {
         return method_exists($user, 'isTenant') ? $user->isTenant() : (($user->account_type ?? 'tenant') === 'tenant');
+    }
+
+    /**
+     * Get installed apps for the user
+     *
+     * @param int $userId
+     * @return array
+     */
+    private function getInstalledApps(int $userId): array
+    {
+        // Cache installed apps per user
+        return Cache::remember("installed_apps:{$userId}", now()->addMinutes(5), function () use ($userId) {
+            $installations = ApiInstallation::where('user_id', $userId)
+                ->whereIn('status', [InstallStatus::Installed->value, InstallStatus::Trialing->value])
+                ->whereHas('app', function ($query) {
+                    $query->where('is_enabled', true)
+                          ->whereNotNull('path')
+                          ->where('path', '!=', '');
+                })
+                ->with('app')
+                ->get();
+
+            return $installations->map(function ($installation) {
+                $app = $installation->app;
+                return [
+                    'id' => $app->id,
+                    'name' => $app->name,
+                    'description' => $app->description,
+                    'path' => $app->path,
+                    'img' => $app->img,
+                ];
+            })->toArray();
+        });
     }
 }

@@ -25,8 +25,7 @@ class DomainSettingsController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $domains = $user->domains;
-
+        $domains = $user->domains()->select(['id', 'custom_name', 'status', 'primary', 'ssl', 'added_date'])->get();
 
         return response()->json([
             'domains' => $domains->map(function ($domain) {

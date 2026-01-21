@@ -2,14 +2,17 @@
 
 namespace App\Imports;
 
+use App\Models\User\RealestateManagement\Amenity;
 use App\Models\User\RealestateManagement\City;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\RealestateManagement\PropertySliderImg;
 use App\Models\User\RealestateManagement\PropertyAmenity;
 use App\Models\User\RealestateManagement\PropertySpecification;
+use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\Language;
 use App\Models\User\UserDistrict;
+use App\Support\PropertyExcelMapping;
 use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
@@ -36,11 +39,14 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
     protected $districtCityMap = [];
     
     public $importedCount = 0;
+    public $updatedCount = 0;
+    public $incompleteCount = 0;
     
     // Cache TTL in seconds (1 hour)
     private const CACHE_TTL = 3600;
 
     protected $limit;
+    public $importBatchId;
 
     public function __construct($userId, $limit = 1000)
     {
@@ -55,6 +61,9 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             throw new \Exception('No default language configured for user. Please set a default language before importing properties.');
         }
         
+        // Generate unique batch ID for this import
+        $this->importBatchId = Str::uuid()->toString();
+        
         // No upfront loading - cities and districts are loaded lazily on demand
         // This improves constructor performance and reduces memory usage
     }
@@ -68,11 +77,85 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         return $this->limit;
     }
 
+    /**
+     * Arabic heading → internal (English) key for import.
+     * Used so both Arabic and English template/export headers work.
+     */
+    private static function arabicHeaderToKey(): array
+    {
+        return [
+            'عنوان الإعلان' => 'title',
+            'السعر' => 'price',
+            'العنوان' => 'address',
+            'الوصف' => 'description',
+            'الغرض' => 'purpose',
+            'النوع' => 'type',
+            'المساحة' => 'area',
+            'غرف النوم' => 'beds',
+            'دورات المياه' => 'bath',
+            'المدينة' => 'city_name',
+            'الحي' => 'district_name',
+            'الصورة الرئيسية' => 'featured_image',
+            'رابط الفيديو' => 'video_url',
+            'الحالة' => 'status',
+            'معرض الصور' => 'gallery_images',
+            'مصعد' => 'amenity_مصعد',
+            'أمن' => 'amenity_أمن',
+            'كاميرات مراقبة' => 'amenity_كاميرات_مراقبة',
+            'تكييف مركزي' => 'amenity_تكييف_مركزي',
+            'تدفئة مركزية' => 'amenity_تدفئة_مركزية',
+            'صيانة' => 'amenity_صيانة',
+            'بواب' => 'amenity_بواب',
+            'إنترنت' => 'amenity_إنترنت',
+            'مرافق إضافية' => 'additional_amenities',
+            'رقم الوحدة' => 'unit_number',
+            'رقم الطابق' => 'floor_number',
+            'عمر المبنى' => 'building_age',
+            'نوع الإطلالة' => 'view_type',
+            'مفروش' => 'furnished',
+            'مواقف السيارات' => 'parking_spaces',
+            'بلكونة' => 'balcony',
+            'غرفة خادمة' => 'maid_room',
+            'غرفة تخزين' => 'storage_room',
+            'مسبح' => 'swimming_pool',
+            'صالة رياضية' => 'gym',
+            'مساحة الحديقة' => 'garden_size',
+            'المواصفات' => 'specifications',
+            'طريقة الدفع' => 'payment_method',
+            'مميز' => 'featured',
+            'مميزات' => 'features',
+            'المعرّف' => 'id',
+        ];
+    }
+
+    /**
+     * Normalize row keys: map Arabic headers to English, keep existing English keys.
+     */
+    private function normalizeRowKeys(array $row): array
+    {
+        $map = self::arabicHeaderToKey();
+        $out = [];
+        foreach ($row as $header => $value) {
+            $key = $map[$header] ?? $header;
+            $out[$key] = $value;
+        }
+        return $out;
+    }
+
     public function onRow(Row $row)
     {
         $rowIndex = $row->getIndex();
         
-        $row      = $row->toArray();
+        $row = $row->toArray();
+        $row = $this->normalizeRowKeys($row);
+
+        // Excel → DB: purpose, type (accepts Arabic and English)
+        if (array_key_exists('purpose', $row)) {
+            $row['purpose'] = PropertyExcelMapping::purposeToDb($row['purpose']);
+        }
+        if (array_key_exists('type', $row)) {
+            $row['type'] = PropertyExcelMapping::typeToDb($row['type']);
+        }
 
         // Skip completely empty rows (all values are null or empty)
         $hasData = !empty(array_filter($row, function($value) {
@@ -88,17 +171,54 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             return;
         }
 
+        // SAFETY CHECK: Reject raw exports
+        // Raw exports contain 'user_id' and 'created_at' which are not in the official template.
+        if (isset($row['id']) && isset($row['created_at']) && isset($row['user_id'])) {
+             throw new \Exception("Row {$rowIndex}: Invalid file format. It appears you are trying to import a raw Export file which is not supported. Please copy your data into the official Import Template.");
+        }
+
+        // SAFETY CHECK: Detect raw export files (not import-safe)
+        // Export-only columns that should NOT be in import templates:
+        $exportOnlyColumns = ['slug', 'user_id', 'user_name', 'created_by', 'creator_name', 'created_at', 'updated_at'];
+        $hasExportOnlyColumn = false;
+        foreach ($exportOnlyColumns as $col) {
+            if (isset($row[$col]) && $this->valueProvided($row[$col])) {
+                $hasExportOnlyColumn = true;
+                break;
+            }
+        }
+
+        // Also check if they're using the old 'amenities' comma-separated column (should use individual amenity_* columns)
+        $hasOldAmenitiesFormat = isset($row['amenities']) && $this->valueProvided($row['amenities']) && !isset($row['amenity_مصعد']);
+
+        if ($hasExportOnlyColumn || $hasOldAmenitiesFormat) {
+            throw new \Exception("Row {$rowIndex}: Invalid file format. This appears to be a raw export file. Please use the official Import Template or the 'Export for Import' feature to get a safe, re-importable file.");
+        }
+
         // Parse new relational columns
         $galleryImages = $this->parseCommaSeparated($row['gallery_images'] ?? null);
         $amenityIds = $this->parseAmenities($row, $rowIndex);
         $specifications = $this->parseSpecifications($row, $rowIndex);
         
+        // Ensure all parsed values are arrays
+        if (!is_array($galleryImages)) {
+            $galleryImages = [];
+        }
+        if (!is_array($amenityIds)) {
+            $amenityIds = [];
+        }
+        if (!is_array($specifications)) {
+            $specifications = [];
+        }
+        
         // Parse features (comma separated)
         $features = $this->parseCommaSeparated($row['features'] ?? null);
+        if (!is_array($features)) {
+            $features = [];
+        }
         
-        // Parse featured (Yes/No or True/False or 1/0)
-        $featuredInput = strtolower($row['featured'] ?? '');
-        $featured = in_array($featuredInput, ['yes', 'true', '1']) ? 1 : 0;
+        // Parse featured (نعم/Yes/1/true/y or لا/No/0/false)
+        $featured = PropertyExcelMapping::booleanToDb($row['featured'] ?? null) ? 1 : 0;
 
         // Log parsing issues for debugging
         if (!empty($row['gallery_images']) && empty($galleryImages)) {
@@ -108,7 +228,43 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             Log::warning("Row {$rowIndex}: Failed to parse amenity_ids", ['value' => $row['amenity_ids']]);
         }
 
+        // Check if this is an update (id column exists and has value)
+        $propertyId = isset($row['id']) && !empty($row['id']) ? (int)$row['id'] : null;
+        $isUpdate = false;
+        $existingProperty = null;
+
+        if ($propertyId) {
+            // Check if property exists and belongs to user
+            $existingProperty = Property::where('id', $propertyId)
+                ->where('user_id', $this->userId)
+                ->first();
+            
+            if ($existingProperty) {
+                $isUpdate = true;
+            } else {
+                // ID provided but property doesn't exist or doesn't belong to user
+                // Log warning and create new property instead
+                Log::warning("Row {$rowIndex}: Property ID {$propertyId} not found or doesn't belong to user. Creating new property.");
+                $propertyId = null;
+            }
+        }
+
         [$cityId, $stateId] = $this->resolveLocationIds($row, $rowIndex);
+        
+        // Track location resolution failures as validation errors for incomplete properties
+        // Location (city_id) is REQUIRED - if missing, property must be incomplete
+        // This check is done before validation_errors array is populated
+        $locationValidationErrors = [];
+        
+        // Check if city_id is missing (location is required)
+        if (!$cityId && !$isUpdate) {
+            $locationValidationErrors[] = "موقع المدينة مطلوب. يرجى تقديم معرف المدينة (city_id) أو اسم المدينة (city_name).";
+        }
+        
+        // Check if district was provided but couldn't be resolved (location validation error)
+        if ($this->valueProvided($row['district_name'] ?? null) && !$stateId && $cityId) {
+            $locationValidationErrors[] = "District '{$row['district_name']}' not found in the specified city. Please verify the district name or use state_id.";
+        }
 
         // Validate featured image URL format
         if (!empty($row['featured_image'])) {
@@ -124,94 +280,371 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             }
         }
 
-        // Wrap entire row processing in transaction
-        DB::transaction(function () use ($row, $rowIndex, $galleryImages, $amenityIds, $specifications, $cityId, $stateId, $features, $featured) {
-            // Prepare request data for Property::storeProperty
-            $propertyData = [
-                'price'           => $row['price'],
-                'pricePerMeter'   => $row['price_per_meter'] ?? null,
-                'purpose'         => $row['purpose'],
-                'type'            => $row['type'],
-                'beds'            => $row['beds'] ?? null,
-                'bath'            => $row['bath'] ?? null,
-                'area'            => $row['area'],
-                'video_url'       => $row['video_url'] ?? null,
-                'status'          => $row['status'] ?? 1,
-                'latitude'        => null,
-                'longitude'       => null,
-                'features'        => $features,
-                'region_id'       => null, // Region is automatically set to السعودية
-                'city_id'         => $cityId,
-                'category_id'     => null,
-                'show_reservations' => true,
-                'payment_method'  => $this->mapPaymentMethod($row['payment_method'] ?? null),
+        // Business rule validation (after determining if it's an update)
+        $this->validateBusinessRules($row, $rowIndex, $isUpdate);
+
+        // Check for missing required fields (only for new properties, not updates)
+        $missingFields = [];
+        $validationErrors = [];
+        
+        // Add location validation errors
+        $validationErrors = array_merge($validationErrors, $locationValidationErrors);
+        
+        if (!$isUpdate) {
+            $requiredFields = [
+                'title' => ['min' => 3, 'max' => 255],
+                'price' => ['min' => 0],
+                'address' => ['min' => 5, 'max' => 500],
+                'description' => ['min' => 10],
+                'purpose' => ['values' => ['sale', 'rent']],
+                'type' => ['values' => ['residential', 'commercial']],
+                'area' => ['min' => 1],
             ];
-
-            // Images (Expect URLs)
-            $featuredImage = $row['featured_image'] ?? null;
-            $videoImage    = null;
-            $floorPlans    = null;
-            // $featured is now set above based on row data
-
-            // Create Property
-            $property = Property::storeProperty(
-                $this->userId,
-                $propertyData,
-                $featuredImage,
-                $floorPlans,
-                $videoImage,
-                $featured
-            );
-
-            // Create Property Content (Title, Description, Address)
-            // Note: slug is auto-generated by PropertyContent::storePropertyContent
-            $contentData = [
-                'language_id'      => $this->defaultLanguageId,
-                'title'            => $row['title'],
-                'address'          => $row['address'],
-                'description'      => $row['description'],
-                'meta_keyword'     => null,
-                'meta_description' => Str::limit($row['description'], 150),
-                'category_id'      => $property->category_id,
-                'city_id'          => $cityId,
-                'state_id'         => $stateId, // District ID from user_districts table
-            ];
-
-            PropertyContent::storePropertyContent($this->userId, $property->id, $contentData);
-
-            // Process gallery images
-            foreach ($galleryImages as $galleryUrl) {
-                try {
-                    PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
-                } catch (\Exception $e) {
-                    Log::error("Row {$rowIndex}: Failed to store gallery image", [
-                        'url' => $galleryUrl,
-                        'error' => $e->getMessage()
-                    ]);
-                    throw new \Exception("Row {$rowIndex}: Invalid gallery image URL: {$galleryUrl}");
+            
+            foreach ($requiredFields as $field => $rules) {
+                $value = $row[$field] ?? null;
+                
+                // Check if field is missing or empty
+                if (is_null($value) || (is_string($value) && trim($value) === '') || $value === '') {
+                    $missingFields[] = $field;
+                    continue;
                 }
-            }
-
-            // Process amenities (no validation - same as API store method)
-            if (!empty($amenityIds)) {
-                foreach ($amenityIds as $amenityId) {
-                    PropertyAmenity::sotreAmenity($this->userId, $property->id, $amenityId);
+                
+                // Validate field rules
+                if (isset($rules['min']) && isset($rules['max'])) {
+                    $length = is_string($value) ? strlen($value) : $value;
+                    if ($length < $rules['min'] || $length > $rules['max']) {
+                        $validationErrors[] = "{$field} must be between {$rules['min']} and {$rules['max']} characters";
+                    }
+                } elseif (isset($rules['min'])) {
+                    if (is_string($value)) {
+                        if (strlen($value) < $rules['min']) {
+                            $validationErrors[] = "{$field} must be at least {$rules['min']} characters";
+                        }
+                    } elseif (is_numeric($value) && $value < $rules['min']) {
+                        $validationErrors[] = "{$field} must be at least {$rules['min']}";
+                    }
+                } elseif (isset($rules['values'])) {
+                    if (!in_array($value, $rules['values'])) {
+                        $validationErrors[] = "{$field} must be one of: " . implode(', ', $rules['values']);
+                    }
                 }
-            }
-
-            // Process specifications (use integer keys matching API behavior)
-            $specIndex = 0; // Counter for integer keys (matching API store method)
-            foreach ($specifications as $spec) {
-                $specData = [
-                    'language_id' => $this->defaultLanguageId,
-                    'key' => $specIndex++, // Use integer counter instead of string key (matching API)
-                    'label' => $spec['label'] ?? $spec['key'],
-                    'value' => $spec['value'],
-                ];
-                PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
             }
             
-            $this->importedCount++;
+            // Validate numeric fields
+            if (isset($row['price']) && !is_numeric($row['price'])) {
+                $validationErrors[] = "price must be a number";
+            }
+            if (isset($row['area']) && !is_numeric($row['area'])) {
+                $validationErrors[] = "area must be a number";
+            }
+        }
+
+        // Wrap entire row processing in transaction
+        DB::transaction(function () use ($row, $rowIndex, $galleryImages, $amenityIds, $specifications, $cityId, $stateId, $features, $featured, $isUpdate, $existingProperty, $propertyId, $missingFields, $validationErrors) {
+            if ($isUpdate && $existingProperty) {
+                // UPDATE EXISTING PROPERTY
+                $property = $existingProperty;
+
+                // Prepare update data (only include fields that are present in the row)
+                $propertyData = [];
+                if (isset($row['price'])) $propertyData['price'] = $row['price'];
+                if (isset($row['price_per_meter'])) $propertyData['pricePerMeter'] = $row['price_per_meter'];
+                if (isset($row['purpose'])) $propertyData['purpose'] = $row['purpose'];
+                if (isset($row['type'])) $propertyData['type'] = $row['type'];
+                if (isset($row['beds'])) $propertyData['beds'] = $row['beds'];
+                if (isset($row['bath'])) $propertyData['bath'] = $row['bath'];
+                if (isset($row['area'])) $propertyData['area'] = $row['area'];
+                if (isset($row['video_url'])) $propertyData['video_url'] = $row['video_url'];
+                if (isset($row['virtual_tour'])) $propertyData['virtual_tour'] = $row['virtual_tour'];
+                if (isset($row['status'])) $propertyData['status'] = $row['status'];
+                if (isset($row['features'])) $propertyData['features'] = $features;
+                if (isset($row['payment_method'])) $propertyData['payment_method'] = $this->mapPaymentMethod($row['payment_method']);
+                if (isset($row['water_meter_number'])) $propertyData['water_meter_number'] = $row['water_meter_number'];
+                if (isset($row['electricity_meter_number'])) $propertyData['electricity_meter_number'] = $row['electricity_meter_number'];
+                if (isset($row['deed_number'])) $propertyData['deed_number'] = $row['deed_number'];
+                if (isset($row['show_reservations'])) $propertyData['show_reservations'] = strtolower($row['show_reservations']) === '1' || strtolower($row['show_reservations']) === 'yes';
+                $propertyData['featured'] = $featured;
+
+                // Update featured image if provided
+                if (isset($row['featured_image']) && !empty($row['featured_image'])) {
+                    $propertyData['featured_image'] = $row['featured_image'];
+                }
+
+                // Update property
+                $property->updateProperty($propertyData);
+
+                // Update Property Content
+                $contentData = [];
+                if (isset($row['title'])) $contentData['title'] = $row['title'];
+                if (isset($row['address'])) $contentData['address'] = $row['address'];
+                if (isset($row['description'])) {
+                    $contentData['description'] = $row['description'];
+                    $contentData['meta_description'] = Str::limit($row['description'], 150);
+                }
+                if ($cityId) $contentData['city_id'] = $cityId;
+                if ($stateId) $contentData['state_id'] = $stateId;
+
+                // Delete existing content and create new (same as API update method)
+                PropertyContent::where('property_id', $property->id)->delete();
+                if (!empty($contentData) || $cityId || $stateId) {
+                    $contentData['language_id'] = $this->defaultLanguageId;
+                    $contentData['category_id'] = $property->category_id;
+                    PropertyContent::storePropertyContent($this->userId, $property->id, $contentData);
+                }
+
+                // Replace gallery images (delete existing, add new)
+                if (isset($row['gallery_images'])) {
+                    PropertySliderImg::where('property_id', $property->id)->delete();
+                    if (is_array($galleryImages)) {
+                        foreach ($galleryImages as $galleryUrl) {
+                            try {
+                                PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
+                            } catch (\Exception $e) {
+                                Log::error("Row {$rowIndex}: Failed to store gallery image", [
+                                    'url' => $galleryUrl,
+                                    'error' => $e->getMessage()
+                                ]);
+                                throw new \Exception("Row {$rowIndex}: Invalid gallery image URL: {$galleryUrl}");
+                            }
+                        }
+                    }
+                }
+
+                // Replace amenities (delete existing, add new)
+                PropertyAmenity::where('property_id', $property->id)->delete();
+                if (!empty($amenityIds)) {
+                    foreach ($amenityIds as $amenityId) {
+                        PropertyAmenity::sotreAmenity($this->userId, $property->id, $amenityId);
+                    }
+                }
+
+                // Replace specifications (delete existing, add new)
+                PropertySpecification::where('property_id', $property->id)->delete();
+                if (is_array($specifications) && !empty($specifications)) {
+                    $specIndex = 0;
+                    foreach ($specifications as $spec) {
+                        if (!is_array($spec)) {
+                            continue; // Skip invalid entries
+                        }
+                        $specData = [
+                            'language_id' => $this->defaultLanguageId,
+                            'key' => $specIndex++,
+                            'label' => $spec['label'] ?? $spec['key'] ?? '',
+                            'value' => $spec['value'] ?? '',
+                        ];
+                        PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
+                    }
+                }
+
+                // Update characteristics if provided
+                $this->updateCharacteristics($property, $row, $rowIndex);
+
+                $this->updatedCount++;
+            } else {
+                // CREATE NEW PROPERTY
+                
+                // Check if this is an incomplete property (missing required fields)
+                if (!empty($missingFields) || !empty($validationErrors)) {
+                    // Create incomplete property with partial data
+                    $propertyData = [
+                        'price'           => $row['price'] ?? null,
+                        'pricePerMeter'   => $row['price_per_meter'] ?? null,
+                        'purpose'         => $row['purpose'] ?? null,
+                        'type'            => $row['type'] ?? null,
+                        'beds'            => $row['beds'] ?? null,
+                        'bath'            => $row['bath'] ?? null,
+                        'area'            => $row['area'] ?? null,
+                        'video_url'       => $row['video_url'] ?? null,
+                        'status'          => 0, // Hidden
+                        'latitude'        => null,
+                        'longitude'       => null,
+                        'features'        => $features,
+                        'region_id'       => null,
+                        'city_id'         => $cityId,
+                        'category_id'     => null,
+                        'show_reservations' => true,
+                        'payment_method'  => $this->mapPaymentMethod($row['payment_method'] ?? null),
+                        'completion_status' => 'incomplete',
+                        'missing_fields'  => $missingFields,
+                        'validation_errors' => $validationErrors,
+                        'import_batch_id' => $this->importBatchId,
+                    ];
+
+                    // Images (Expect URLs)
+                    $featuredImage = $row['featured_image'] ?? null;
+                    $videoImage    = null;
+                    $floorPlans    = null;
+
+                    // Create incomplete Property
+                    $property = Property::storeProperty(
+                        $this->userId,
+                        $propertyData,
+                        $featuredImage,
+                        $floorPlans,
+                        $videoImage,
+                        $featured
+                    );
+
+                    // Only create PropertyContent if title and address are provided
+                    if (!empty($row['title']) && !empty($row['address'])) {
+                        $contentData = [
+                            'language_id'      => $this->defaultLanguageId,
+                            'title'            => $row['title'],
+                            'address'          => $row['address'],
+                            'description'      => $row['description'] ?? '',
+                            'meta_keyword'     => null,
+                            'meta_description' => !empty($row['description']) ? Str::limit($row['description'], 150) : null,
+                            'category_id'      => $property->category_id,
+                            'city_id'          => $cityId,
+                            'state_id'         => $stateId,
+                        ];
+
+                        PropertyContent::storePropertyContent($this->userId, $property->id, $contentData);
+                    }
+
+                    // Process gallery images if provided
+                    if (is_array($galleryImages)) {
+                        foreach ($galleryImages as $galleryUrl) {
+                            try {
+                                PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
+                            } catch (\Exception $e) {
+                                Log::warning("Row {$rowIndex}: Failed to store gallery image for incomplete property", [
+                                    'url' => $galleryUrl,
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
+                        }
+                    }
+
+                    // Process amenities if provided
+                    if (!empty($amenityIds) && is_array($amenityIds)) {
+                        foreach ($amenityIds as $amenityId) {
+                            PropertyAmenity::sotreAmenity($this->userId, $property->id, $amenityId);
+                        }
+                    }
+
+                    // Process specifications if provided
+                    if (is_array($specifications) && !empty($specifications)) {
+                        $specIndex = 0;
+                        foreach ($specifications as $spec) {
+                            if (!is_array($spec)) {
+                                continue; // Skip invalid spec entries
+                            }
+                            $specData = [
+                                'language_id' => $this->defaultLanguageId,
+                                'key' => $specIndex++,
+                                'label' => $spec['label'] ?? $spec['key'] ?? '',
+                                'value' => $spec['value'] ?? '',
+                            ];
+                            PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
+                        }
+                    }
+
+                    // Create characteristics if provided
+                    $this->updateCharacteristics($property, $row, $rowIndex);
+                    
+                    $this->incompleteCount++;
+                } else {
+                    // All required fields present - create complete property
+                    $propertyData = [
+                        'price'           => $row['price'],
+                        'pricePerMeter'   => $row['price_per_meter'] ?? null,
+                        'purpose'         => $row['purpose'],
+                        'type'            => $row['type'],
+                        'beds'            => $row['beds'] ?? null,
+                        'bath'            => $row['bath'] ?? null,
+                        'area'            => $row['area'],
+                        'video_url'       => $row['video_url'] ?? null,
+                        'status'          => $row['status'] ?? 1,
+                        'latitude'        => null,
+                        'longitude'       => null,
+                        'features'        => $features,
+                        'region_id'       => null, // Region is automatically set to السعودية
+                        'city_id'         => $cityId,
+                        'category_id'     => null,
+                        'show_reservations' => true,
+                        'payment_method'  => $this->mapPaymentMethod($row['payment_method'] ?? null),
+                        'completion_status' => 'complete',
+                    ];
+
+                    // Images (Expect URLs)
+                    $featuredImage = $row['featured_image'] ?? null;
+                    $videoImage    = null;
+                    $floorPlans    = null;
+                    // $featured is now set above based on row data
+
+                    // Create Property
+                    $property = Property::storeProperty(
+                        $this->userId,
+                        $propertyData,
+                        $featuredImage,
+                        $floorPlans,
+                        $videoImage,
+                        $featured
+                    );
+
+                    // Create Property Content (Title, Description, Address)
+                    // Note: slug is auto-generated by PropertyContent::storePropertyContent
+                    $contentData = [
+                        'language_id'      => $this->defaultLanguageId,
+                        'title'            => $row['title'],
+                        'address'          => $row['address'],
+                        'description'      => $row['description'],
+                        'meta_keyword'     => null,
+                        'meta_description' => Str::limit($row['description'], 150),
+                        'category_id'      => $property->category_id,
+                        'city_id'          => $cityId,
+                        'state_id'         => $stateId, // District ID from user_districts table
+                    ];
+
+                    PropertyContent::storePropertyContent($this->userId, $property->id, $contentData);
+
+                    // Process gallery images
+                    if (is_array($galleryImages)) {
+                        foreach ($galleryImages as $galleryUrl) {
+                            try {
+                                PropertySliderImg::storeSliderImage($this->userId, $property->id, $galleryUrl);
+                            } catch (\Exception $e) {
+                                Log::error("Row {$rowIndex}: Failed to store gallery image", [
+                                    'url' => $galleryUrl,
+                                    'error' => $e->getMessage()
+                                ]);
+                                throw new \Exception("Row {$rowIndex}: Invalid gallery image URL: {$galleryUrl}");
+                            }
+                        }
+                    }
+
+                    // Process amenities (no validation - same as API store method)
+                    if (!empty($amenityIds) && is_array($amenityIds)) {
+                        foreach ($amenityIds as $amenityId) {
+                            PropertyAmenity::sotreAmenity($this->userId, $property->id, $amenityId);
+                        }
+                    }
+
+                    // Process specifications (use integer keys matching API behavior)
+                    if (is_array($specifications) && !empty($specifications)) {
+                        $specIndex = 0; // Counter for integer keys (matching API store method)
+                        foreach ($specifications as $spec) {
+                            if (!is_array($spec)) {
+                                continue; // Skip invalid entries
+                            }
+                            $specData = [
+                                'language_id' => $this->defaultLanguageId,
+                                'key' => $specIndex++, // Use integer counter instead of string key (matching API)
+                                'label' => $spec['label'] ?? $spec['key'] ?? '',
+                                'value' => $spec['value'] ?? '',
+                            ];
+                            PropertySpecification::storeSpecification($this->userId, $property->id, $specData);
+                        }
+                    }
+
+                    // Create characteristics if provided
+                    $this->updateCharacteristics($property, $row, $rowIndex);
+                    
+                    $this->importedCount++;
+                }
+            }
         });
     }
 
@@ -248,14 +681,25 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
     /**
      * Parse comma-separated string into array of trimmed values
      */
-    protected function parseCommaSeparated(?string $value): array
+    protected function parseCommaSeparated($value): array
     {
         if (empty($value)) {
             return [];
         }
+        
+        // If already an array, return as-is
+        if (is_array($value)) {
+            return array_filter($value, fn($item) => !empty($item));
+        }
+        
+        // Convert to string if not already
+        $stringValue = (string) $value;
+        if (empty($stringValue)) {
+            return [];
+        }
 
         return array_filter(
-            array_map('trim', explode(',', $value)),
+            array_map('trim', explode(',', $stringValue)),
             fn($item) => !empty($item)
         );
     }
@@ -315,17 +759,32 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         $additionalAmenities = $row['additional_amenities'] ?? null;
         if ($this->valueProvided($additionalAmenities)) {
             $additionalNames = $this->parseCommaSeparated($additionalAmenities);
-            $amenityNames = array_merge($amenityNames, $additionalNames);
+            if (is_array($additionalNames)) {
+                $amenityNames = array_merge($amenityNames, $additionalNames);
+            }
         }
 
         // If we have amenity names, resolve them to IDs
-        if (!empty($amenityNames)) {
-            // Note: Since we don't have access to amenities table structure,
-            // we'll just return the names for now
-            // The actual resolution would happen in the database layer
-            // For now, return empty array and let amenity_ids be used
-            Log::info("Row {$rowIndex}: Found amenity names", ['names' => $amenityNames]);
-            // TODO: Implement amenity name to ID resolution when amenity table structure is available
+        if (!empty($amenityNames) && is_array($amenityNames)) {
+            // Resolve names to IDs from database
+            $amenityIdsFromDb = Amenity::where('user_id', $this->userId)
+                ->whereIn('name', $amenityNames)
+                ->pluck('id')
+                ->toArray();
+            
+            if (!empty($amenityIdsFromDb)) {
+                // Log success for debugging
+                Log::info("Row {$rowIndex}: Resolved amenity names", ['names' => $amenityNames, 'ids' => $amenityIdsFromDb]);
+                
+                // Merge with existing IDs (avoiding duplicates)
+                foreach ($amenityIdsFromDb as $id) {
+                    if (!in_array($id, $amenityIds)) {
+                        $amenityIds[] = (int)$id;
+                    }
+                }
+            } else {
+                Log::warning("Row {$rowIndex}: Found amenity names but could not resolve to any IDs", ['names' => $amenityNames]);
+            }
         }
 
         // Fallback to amenity_ids if provided (backward compatibility)
@@ -334,7 +793,8 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
             $amenityIds = $this->parseCommaSeparatedIntegers($amenityIdsRaw);
         }
 
-        return $amenityIds;
+        // Ensure we always return an array
+        return is_array($amenityIds) ? $amenityIds : [];
     }
 
     /**
@@ -344,6 +804,11 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
     protected function parseSpecifications(array $row, int $rowIndex): array
     {
         $specifications = [];
+        
+        // Ensure we always return an array
+        if (!is_array($row)) {
+            return [];
+        }
 
         // Map of individual columns to spec keys
         $specMapping = [
@@ -377,27 +842,34 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         $jsonValue = $row['specifications'] ?? null;
         if (!empty($jsonValue)) {
             $jsonSpecs = $this->parseSpecificationsFromJSON($jsonValue);
-            // Merge JSON specs (JSON takes precedence if key conflicts)
-            foreach ($jsonSpecs as $jsonSpec) {
-                $existingIndex = null;
-                foreach ($specifications as $index => $spec) {
-                    if ($spec['key'] === $jsonSpec['key']) {
-                        $existingIndex = $index;
-                        break;
+            // Ensure jsonSpecs is an array
+            if (is_array($jsonSpecs)) {
+                // Merge JSON specs (JSON takes precedence if key conflicts)
+                foreach ($jsonSpecs as $jsonSpec) {
+                    if (!is_array($jsonSpec)) {
+                        continue; // Skip invalid entries
                     }
-                }
-                
-                if ($existingIndex !== null) {
-                    // Replace with JSON value
-                    $specifications[$existingIndex] = $jsonSpec;
-                } else {
-                    // Add new spec from JSON
-                    $specifications[] = $jsonSpec;
+                    $existingIndex = null;
+                    foreach ($specifications as $index => $spec) {
+                        if (is_array($spec) && isset($spec['key']) && isset($jsonSpec['key']) && $spec['key'] === $jsonSpec['key']) {
+                            $existingIndex = $index;
+                            break;
+                        }
+                    }
+                    
+                    if ($existingIndex !== null) {
+                        // Replace with JSON value
+                        $specifications[$existingIndex] = $jsonSpec;
+                    } else {
+                        // Add new spec from JSON
+                        $specifications[] = $jsonSpec;
+                    }
                 }
             }
         }
 
-        return $specifications;
+        // Ensure we always return an array
+        return is_array($specifications) ? $specifications : [];
     }
 
     /**
@@ -474,46 +946,135 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
         return $specifications;
     }
 
+    /**
+     * Update or create property characteristics
+     */
+    protected function updateCharacteristics($property, array $row, int $rowIndex): void
+    {
+        // Only include fields that exist in UserPropertyCharacteristic model
+        $characteristicFields = [
+            'facade_id',
+            'length',
+            'width',
+            'street_width_north',
+            'street_width_south',
+            'street_width_east',
+            'street_width_west',
+            'building_age',
+            'rooms',
+            'bathrooms',
+            'floors',
+            'floor_number',
+            'driver_room',
+            'maid_room',
+            'dining_room',
+            'living_room',
+            'majlis',
+            'storage_room',
+            'basement',
+            'swimming_pool',
+            'kitchen',
+            'balcony',
+            'garden',
+            'annex',
+            'elevator',
+            'private_parking',
+            'size',
+        ];
+
+        $characteristicsData = [];
+        
+        foreach ($characteristicFields as $field) {
+            if (isset($row[$field]) && $this->valueProvided($row[$field])) {
+                $value = $row[$field];
+                
+                // Handle boolean fields (Yes/No, 1/0, true/false)
+                if (in_array($field, ['driver_room', 'maid_room', 'dining_room', 'living_room', 'majlis', 
+                    'storage_room', 'basement', 'swimming_pool', 'kitchen', 'balcony', 'garden', 
+                    'annex', 'elevator', 'private_parking'])) {
+                    $normalized = strtolower(trim($value));
+                    $characteristicsData[$field] = in_array($normalized, ['yes', '1', 'true', 'y', 'نعم']) ? 1 : 0;
+                } else {
+                    $characteristicsData[$field] = $value;
+                }
+            }
+        }
+
+        // Map parking_spaces from specifications to private_parking in characteristics
+        if (isset($row['parking_spaces']) && $this->valueProvided($row['parking_spaces'])) {
+            $characteristicsData['private_parking'] = !empty($row['parking_spaces']) ? 1 : 0;
+        }
+
+        if (!empty($characteristicsData)) {
+            UserPropertyCharacteristic::updateOrCreate(
+                ['property_id' => $property->id],
+                $characteristicsData
+            );
+        }
+    }
+
     public function rules(): array
     {
+        // Note: Fields are intentionally NOT required here to allow incomplete properties
+        // Custom validation in onRow() determines completeness and creates incomplete properties if needed
         return [
-            'title'       => 'required|string|max:255',
-            'price'       => 'required|numeric',
-            'address'     => 'required|string',
-            'description' => 'required|string',
-            'purpose'     => 'required|in:sale,rent',
-            'type'        => 'required|in:residential,commercial',
-            'area'        => 'required|numeric',
-            'city_name'   => 'nullable|string',
-            'district_name' => 'nullable|string',
-            'featured_image' => 'nullable|url',
-            'video_url'   => 'nullable|url',
+            'id'          => 'nullable|integer|exists:user_properties,id',
+            'title'       => 'nullable|string|max:255',
+            'price'       => 'nullable|numeric|min:0',
+            'price_per_meter' => 'nullable|numeric|min:0',
+            'address'     => 'nullable|string|max:500',
+            'description' => 'nullable|string',
+            'purpose'     => 'nullable|in:sale,rent',
+            'type'        => 'nullable|in:residential,commercial',
+            'area'        => 'nullable|numeric|min:0',
+            'size'        => 'nullable|numeric|min:0',
+            'beds'        => 'nullable|integer|min:0|max:50',
+            'bath'        => 'nullable|integer|min:0|max:50',
+            'status'      => 'nullable|in:0,1,active,inactive',
+            'city_name'   => 'nullable|string|max:255',
+            'district_name' => 'nullable|string|max:255',
+            'country_name' => 'nullable|string|max:255',
+            'featured_image' => 'nullable|url|max:500',
+            'video_url'   => 'nullable|url|max:500',
+            'virtual_tour' => 'nullable|url|max:500',
             'gallery_images' => 'nullable|string',
-            'amenity_مصعد' => 'nullable|string|max:10',
-            'amenity_أمن' => 'nullable|string|max:10',
-            'amenity_كاميرات_مراقبة' => 'nullable|string|max:10',
-            'amenity_تكييف_مركزي' => 'nullable|string|max:10',
-            'amenity_تدفئة_مركزية' => 'nullable|string|max:10',
-            'amenity_صيانة' => 'nullable|string|max:10',
-            'amenity_بواب' => 'nullable|string|max:10',
-            'amenity_إنترنت' => 'nullable|string|max:10',
-            'additional_amenities' => 'nullable|string',
+            'amenity_مصعد' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
+            'amenity_أمن' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
+            'amenity_كاميرات_مراقبة' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
+            'amenity_تكييف_مركزي' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
+            'amenity_تدفئة_مركزية' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
+            'amenity_صيانة' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
+            'amenity_بواب' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
+            'amenity_إنترنت' => 'nullable|string|max:10|in:Yes,No,yes,no,1,0,true,false',
+            'additional_amenities' => 'nullable|string|max:1000',
             'unit_number' => 'nullable|string|max:50',
-            'floor_number' => 'nullable|max:20',
-            'building_age' => 'nullable|max:20',
+            'floor_number' => 'nullable|integer|min:0|max:200',
+            'building_age' => 'nullable|integer|min:0|max:200',
             'view_type' => 'nullable|string|max:100',
             'furnished' => 'nullable|string|max:50',
-            'parking_spaces' => 'nullable|max:20',
+            'parking_spaces' => 'nullable|integer|min:0|max:100',
             'balcony' => 'nullable|string|max:50',
             'maid_room' => 'nullable|string|max:50',
             'storage_room' => 'nullable|string|max:50',
             'swimming_pool' => 'nullable|string|max:50',
             'gym' => 'nullable|string|max:50',
-            'garden_size' => 'nullable|max:50',
-            'specifications' => 'nullable',
+            'garden_size' => 'nullable|numeric|min:0',
+            'specifications' => 'nullable|string',
             'payment_method' => 'nullable|string|max:50',
-            'featured' => 'nullable|string|in:Yes,No,yes,no,True,False,true,false,1,0',
-            'features' => 'nullable|string',
+            'water_meter_number' => 'nullable|string|max:100',
+            'electricity_meter_number' => 'nullable|string|max:100',
+            'deed_number' => 'nullable|string|max:100',
+            'show_reservations' => 'nullable|in:Yes,No,yes,no,True,False,true,false,1,0',
+            'reorder' => 'nullable|integer|min:0',
+            'reorder_featured' => 'nullable|integer|min:0',
+            'featured' => 'nullable|string|in:Yes,No,yes,no,True,False,true,false,1,0,نعم,لا',
+            'features' => 'nullable|string|max:2000',
+            'faqs' => 'nullable|string|max:5000',
+            'category_name' => 'nullable|string|max:255',
+            'project_name' => 'nullable|string|max:255',
+            'building_name' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ];
     }
 
@@ -588,10 +1149,13 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                 }
             }
         } elseif ($this->valueProvided($districtNameRaw)) {
-            $stateId = $this->resolveDistrictId($districtNameRaw, $cityId, $rowIndex);
-            if (!$stateId) {
-                $cityHint = $cityId ? ' for the selected city' : '';
-                throw new \Exception("Row {$rowIndex}: Unable to find district '{$districtNameRaw}'{$cityHint}. Please copy a value from the reference sheet.");
+            try {
+                $stateId = $this->resolveDistrictId($districtNameRaw, $cityId, $rowIndex);
+                // If district not found, allow null - will be tracked as validation error for incomplete properties
+            } catch (\Exception $e) {
+                // If district resolution fails (e.g., multiple matches), allow null for incomplete properties
+                // The error will be tracked in validation_errors
+                $stateId = null;
             }
         }
 
@@ -715,10 +1279,10 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
                 throw new \Exception("{$prefix}Multiple districts named '{$value}' exist within the selected city. Please use state_id to specify the correct district.");
             }
 
-            // If city is specified but no district found in that city, throw error
+            // If city is specified but no district found in that city, return null
             // Don't fall through to global search as it could assign wrong district
-            $prefix = $rowIndex ? "Row {$rowIndex}: " : '';
-            throw new \Exception("{$prefix}District '{$value}' not found in the specified city. Please verify the district name or use state_id.");
+            // This allows incomplete property creation with location validation errors
+            return null;
         }
 
         // Global district lookup (no city specified)
@@ -878,6 +1442,128 @@ class PropertiesSingleSheetImport implements OnEachRow, WithHeadingRow, WithVali
     protected function valueProvided($value): bool
     {
         return !(is_null($value) || $value === '');
+    }
+
+    /**
+     * Validate business rules for property data
+     * 
+     * @param array $row Row data
+     * @param int $rowIndex Row index
+     * @param bool $isUpdate Whether this is an update operation
+     * @return void
+     * @throws \Exception If business rule validation fails
+     */
+    protected function validateBusinessRules(array $row, int $rowIndex, bool $isUpdate): void
+    {
+        // Validate price (must be positive if provided)
+        if (isset($row['price']) && $this->valueProvided($row['price'])) {
+            $price = is_numeric($row['price']) ? (float)$row['price'] : null;
+            if ($price === null || $price < 0) {
+                throw new \Exception("Row {$rowIndex}: The price must be a positive number. Provided: {$row['price']}");
+            }
+        }
+
+        // Validate price_per_meter (must be positive if provided)
+        if (isset($row['price_per_meter']) && $this->valueProvided($row['price_per_meter'])) {
+            $pricePerMeter = is_numeric($row['price_per_meter']) ? (float)$row['price_per_meter'] : null;
+            if ($pricePerMeter === null || $pricePerMeter < 0) {
+                throw new \Exception("Row {$rowIndex}: The price_per_meter must be a positive number. Provided: {$row['price_per_meter']}");
+            }
+        }
+
+        // Validate area (must be positive if provided)
+        if (isset($row['area']) && $this->valueProvided($row['area'])) {
+            $area = is_numeric($row['area']) ? (float)$row['area'] : null;
+            if ($area === null || $area <= 0) {
+                throw new \Exception("Row {$rowIndex}: The area must be a positive number greater than 0. Provided: {$row['area']}");
+            }
+        }
+
+        // Validate size (must be positive if provided)
+        if (isset($row['size']) && $this->valueProvided($row['size'])) {
+            $size = is_numeric($row['size']) ? (float)$row['size'] : null;
+            if ($size === null || $size < 0) {
+                throw new \Exception("Row {$rowIndex}: The size must be a positive number. Provided: {$row['size']}");
+            }
+        }
+
+        // Validate beds (must be non-negative integer if provided)
+        if (isset($row['beds']) && $this->valueProvided($row['beds'])) {
+            $beds = is_numeric($row['beds']) ? (int)$row['beds'] : null;
+            if ($beds === null || $beds < 0 || $beds > 50) {
+                throw new \Exception("Row {$rowIndex}: The beds must be a non-negative integer between 0 and 50. Provided: {$row['beds']}");
+            }
+        }
+
+        // Validate bath (must be non-negative integer if provided)
+        if (isset($row['bath']) && $this->valueProvided($row['bath'])) {
+            $bath = is_numeric($row['bath']) ? (int)$row['bath'] : null;
+            if ($bath === null || $bath < 0 || $bath > 50) {
+                throw new \Exception("Row {$rowIndex}: The bath must be a non-negative integer between 0 and 50. Provided: {$row['bath']}");
+            }
+        }
+
+        // Validate latitude if provided
+        if (isset($row['latitude']) && $this->valueProvided($row['latitude'])) {
+            $latitude = is_numeric($row['latitude']) ? (float)$row['latitude'] : null;
+            if ($latitude === null || $latitude < -90 || $latitude > 90) {
+                throw new \Exception("Row {$rowIndex}: The latitude must be a number between -90 and 90. Provided: {$row['latitude']}");
+            }
+        }
+
+        // Validate longitude if provided
+        if (isset($row['longitude']) && $this->valueProvided($row['longitude'])) {
+            $longitude = is_numeric($row['longitude']) ? (float)$row['longitude'] : null;
+            if ($longitude === null || $longitude < -180 || $longitude > 180) {
+                throw new \Exception("Row {$rowIndex}: The longitude must be a number between -180 and 180. Provided: {$row['longitude']}");
+            }
+        }
+
+        // Validate title length if provided
+        if (isset($row['title']) && $this->valueProvided($row['title'])) {
+            $titleLength = mb_strlen(trim($row['title']));
+            if ($titleLength < 3) {
+                throw new \Exception("Row {$rowIndex}: The title must be at least 3 characters long. Provided length: {$titleLength}");
+            }
+            if ($titleLength > 255) {
+                throw new \Exception("Row {$rowIndex}: The title must not exceed 255 characters. Provided length: {$titleLength}");
+            }
+        }
+
+        // Validate description length if provided
+        if (isset($row['description']) && $this->valueProvided($row['description'])) {
+            $descriptionLength = mb_strlen(trim($row['description']));
+            if ($descriptionLength < 10) {
+                throw new \Exception("Row {$rowIndex}: The description must be at least 10 characters long. Provided length: {$descriptionLength}");
+            }
+        }
+
+        // Validate address length if provided
+        if (isset($row['address']) && $this->valueProvided($row['address'])) {
+            $addressLength = mb_strlen(trim($row['address']));
+            if ($addressLength < 5) {
+                throw new \Exception("Row {$rowIndex}: The address must be at least 5 characters long. Provided length: {$addressLength}");
+            }
+            if ($addressLength > 500) {
+                throw new \Exception("Row {$rowIndex}: The address must not exceed 500 characters. Provided length: {$addressLength}");
+            }
+        }
+
+        // Validate purpose if provided
+        if (isset($row['purpose']) && $this->valueProvided($row['purpose'])) {
+            $purpose = strtolower(trim($row['purpose']));
+            if (!in_array($purpose, ['sale', 'rent'])) {
+                throw new \Exception("Row {$rowIndex}: The purpose must be either 'sale' or 'rent'. Provided: {$row['purpose']}");
+            }
+        }
+
+        // Validate type if provided
+        if (isset($row['type']) && $this->valueProvided($row['type'])) {
+            $type = strtolower(trim($row['type']));
+            if (!in_array($type, ['residential', 'commercial'])) {
+                throw new \Exception("Row {$rowIndex}: The type must be either 'residential' or 'commercial'. Provided: {$row['type']}");
+            }
+        }
     }
 
     protected function districtCityKey(int $cityId, string $normalized): string

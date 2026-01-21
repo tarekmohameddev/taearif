@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ApiCustomer;
 use App\Models\Api\UserApiCustomerStage;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -42,8 +43,7 @@ class CrmCustomerStageService
             }
         });
 
-        // Future: add any additional syncing logic here
-        // (e.g. update related CRM request records)
+        Cache::forget("customers:summary:{$customer->user_id}");
 
         return $customer->refresh();
     }

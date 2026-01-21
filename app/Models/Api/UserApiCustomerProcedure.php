@@ -5,11 +5,26 @@ namespace App\Models\Api;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Cache;
 
 class UserApiCustomerProcedure extends Model
 {
     use HasFactory;
+
     protected $table = 'users_api_customers_procedures';
+
+    protected static function booted(): void
+    {
+        $forgetMeta = function (UserApiCustomerProcedure $model): void {
+            $id = (int) $model->user_id;
+            if ($id > 0) {
+                Cache::forget("property_request_filter_options_meta_{$id}");
+            }
+        };
+
+        static::saved($forgetMeta);
+        static::deleted($forgetMeta);
+    }
     protected $fillable = [
         'procedure_name',
         'user_id',

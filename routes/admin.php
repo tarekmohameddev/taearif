@@ -109,6 +109,16 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         // admin custom js
         Route::get('js', 'Admin\BasicController@js')->name('js');
         Route::post('js/update', 'Admin\BasicController@updateJs')->name('js.update');
+
+        // Admin Sidebar Items Routes
+        Route::get('/sidebar-items', 'Admin\SidebarItemController@index')->name('sidebar-item.index');
+        Route::get('/sidebar-item/create', 'Admin\SidebarItemController@create')->name('sidebar-item.create');
+        Route::post('/sidebar-item/store', 'Admin\SidebarItemController@store')->name('sidebar-item.store');
+        Route::get('/sidebar-item/{id}/edit', 'Admin\SidebarItemController@edit')->name('sidebar-item.edit');
+        Route::post('/sidebar-item/update', 'Admin\SidebarItemController@update')->name('sidebar-item.update');
+        Route::post('/sidebar-item/delete', 'Admin\SidebarItemController@delete')->name('sidebar-item.delete');
+        Route::post('/sidebar-item/toggle-status', 'Admin\SidebarItemController@toggleStatus')->name('sidebar-item.toggle-status');
+        Route::post('/sidebar-item/reorder', 'Admin\SidebarItemController@reorder')->name('sidebar-item.reorder');
     });
 
     Route::group(['middleware' => 'checkpermission:Subscribers'], function () {

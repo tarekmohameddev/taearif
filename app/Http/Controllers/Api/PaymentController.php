@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\User;
 use App\Models\Package;
+use App\Models\Membership;
 use App\Models\Api\ApiApp;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Payment\ArbController;
 
 class PaymentController extends Controller
@@ -233,17 +235,21 @@ class PaymentController extends Controller
     {
         $user = Auth::user();
 
-        $packages = Package::where('is_active', true)
-            ->with(['memberships' => function ($query) {
-                $query->where('expire_date', '>=', now());
-            }])
-            ->get();
+        $packages = Cache::remember('payment_active_packages', 3600, function () {
+            return Package::where('is_active', true)->get();
+        });
+        $packageIds = $packages->pluck('id')->all();
+        $userActivePackageIds = Membership::where('user_id', $user->id)
+            ->whereIn('package_id', $packageIds)
+            ->where('expire_date', '>=', now())
+            ->pluck('package_id')
+            ->all();
 
         $plansMonthly = [];
         $plansYearly = [];
 
         foreach ($packages as $package) {
-            $isCurrent = $package->memberships->contains('user_id', $user->id);
+            $isCurrent = in_array($package->id, $userActivePackageIds);
 
             $planData = [
                 'id' => $package->id,

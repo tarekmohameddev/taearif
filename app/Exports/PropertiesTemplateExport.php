@@ -3,11 +3,16 @@
 namespace App\Exports;
 
 use App\Models\User\UserDistrict;
+use App\Support\PropertyExcelMapping;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\Concerns\WithTitle;
+
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 
 class PropertiesTemplateExport implements WithMultipleSheets
 {
@@ -20,9 +25,7 @@ class PropertiesTemplateExport implements WithMultipleSheets
     }
 }
 
-use Maatwebsite\Excel\Concerns\WithEvents;
-use Maatwebsite\Excel\Events\AfterSheet;
-use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
+
 
 class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, WithTitle, WithEvents
 {
@@ -30,47 +33,130 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
     {
         return [
             [
-                'Luxury Apartment Downtown',
-                '500000',
-                '123 Main Street, Downtown',
-                'Beautiful 3-bedroom apartment with city views',
-                'sale',
-                'residential',
-                '150',
+                'شقة فاخرة في القلب التجاري',
+                '750000',
+                'شارع الملك فهد، حي العليا',
+                'شقة ثلاث غرف نوم بإطلالة مدينة ومصعد وأمن على مدار الساعة',
+                'بيع',
+                'سكني',
+                '180',
                 '3',
                 '2',
                 'الرياض',
                 'حي العليا',
-                'https://amp.dev/static/samples/img/image1.jpg',
-                'https://amp.dev/static/samples/img/image1.jpg',
+                'https://example.com/img1.jpg',
+                'https://example.com/video1.mp4',
                 '1',
-                '3333',
-                'https://amp.dev/static/samples/img/image1.jpg',
-                'Yes',
-                'Yes',
-                'Yes',
-                'Yes',
-                '',
-                'Yes',
-                'Yes',
-                'Yes',
+                'https://example.com/g1.jpg,https://example.com/g2.jpg',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                'لا',
+                'نعم',
+                'نعم',
+                'نعم',
                 'موقف دراجات,غرفة غسيل',
                 'A-101',
                 '5',
                 '2020',
-                'Sea View',
-                'Fully Furnished',
+                'إطلالة مدينة',
+                'مفروش بالكامل',
                 '2',
-                'Yes',
-                'Yes',
-                'Yes',
-                'Yes',
-                'Yes',
-                '50',
-                'Ceiling Height: 3.5m, Kitchen Type: Open Kitchen, Floor Material: Marble',
-                'نصف سنوي',
-                'Yes',
-                'Smart Home, Solar Panels'
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                '0',
+                'ارتفاع السقف: 3.5 م، نوع المطبخ: مطبخ مفتوح، أرضيات: رخام',
+                'شهري',
+                'نعم',
+                'منزل ذكي، ألواح شمسية',
+            ],
+            [
+                'فيلا للإيجار بحديقة ومسبح',
+                '120000',
+                'حي النخيل، طريق الأمير محمد',
+                'فيلا أربع غرف نوم مع حديقة خاصة ومسبح وصالة رياضية',
+                'إيجار',
+                'سكني',
+                '350',
+                '4',
+                '4',
+                'جدة',
+                'حي النخيل',
+                'https://example.com/img2.jpg',
+                '',
+                '1',
+                'https://example.com/g1.jpg',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                'سونا، جاكوزي',
+                '1',
+                '0',
+                '2018',
+                'إطلالة حديقة',
+                'مفروش جزئياً',
+                '3',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                '120',
+                'مساحة مبنية: 350 م²، التكييف: مركزي',
+                'سنوي',
+                'نعم',
+                'مدخل مستقل، مواقف زوار',
+            ],
+            [
+                'مكتب تجاري للبيع بموقع مميز',
+                '1200000',
+                'شارع العليا العام، برج الأعمال',
+                'مكتب بإطلالة بحرية ومناسب للشركات، مواقف تحت الأرض',
+                'بيع',
+                'تجاري',
+                '220',
+                '0',
+                '2',
+                'الدمام',
+                'حي الفيصلية',
+                'https://example.com/img3.jpg',
+                '',
+                '1',
+                '',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                'نعم',
+                'غرفة اجتماعات، استقبال',
+                '301',
+                '3',
+                '2019',
+                'إطلالة بحرية',
+                'غير مفروش',
+                '10',
+                'نعم',
+                'لا',
+                'نعم',
+                'نعم',
+                'لا',
+                '0',
+                'نظام إطفاء حريق، إنذار، كاميرات',
+                'ربع سنوي',
+                'لا',
+                'مدخل فاخر، مصعد خاص بالمكتب',
             ],
         ];
     }
@@ -78,53 +164,52 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
     public function headings(): array
     {
         return [
-            'title',
-            'price',
-            'address',
-            'description',
-            'purpose',
-            'type',
-            'area',
-            'beds',
-            'bath',
-            'city_name',
-            'district_name',
-            'featured_image',
-            'video_url',
-            'status',
-            'price_per_meter',
-            'gallery_images',
-            'amenity_مصعد',
-            'amenity_أمن',
-            'amenity_كاميرات_مراقبة',
-            'amenity_تكييف_مركزي',
-            'amenity_تدفئة_مركزية',
-            'amenity_صيانة',
-            'amenity_بواب',
-            'amenity_إنترنت',
-            'additional_amenities',
-            'unit_number',
-            'floor_number',
-            'building_age',
-            'view_type',
-            'furnished',
-            'parking_spaces',
-            'balcony',
-            'maid_room',
-            'storage_room',
-            'swimming_pool',
-            'gym',
-            'garden_size',
-            'specifications',
-            'payment_method',
-            'featured',
-            'features'
+            'عنوان الإعلان',
+            'السعر',
+            'العنوان',
+            'الوصف',
+            'الغرض',
+            'النوع',
+            'المساحة',
+            'غرف النوم',
+            'دورات المياه',
+            'المدينة',
+            'الحي',
+            'الصورة الرئيسية',
+            'رابط الفيديو',
+            'الحالة',
+            'معرض الصور',
+            'مصعد',
+            'أمن',
+            'كاميرات مراقبة',
+            'تكييف مركزي',
+            'تدفئة مركزية',
+            'صيانة',
+            'بواب',
+            'إنترنت',
+            'مرافق إضافية',
+            'رقم الوحدة',
+            'رقم الطابق',
+            'عمر المبنى',
+            'نوع الإطلالة',
+            'مفروش',
+            'مواقف السيارات',
+            'بلكونة',
+            'غرفة خادمة',
+            'غرفة تخزين',
+            'مسبح',
+            'صالة رياضية',
+            'مساحة الحديقة',
+            'المواصفات',
+            'طريقة الدفع',
+            'مميز',
+            'مميزات'
         ];
     }
 
     public function title(): string
     {
-        return 'Import Template';
+        return 'قالب الاستيراد';
     }
 
     public function registerEvents(): array
@@ -162,7 +247,7 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1('"sale,rent"');
+                $validation->setFormula1('"' . PropertyExcelMapping::purposeExcelOptions() . '"');
                 
                 for ($i = 3; $i <= $rowCount; $i++) {
                     $sheet->getCell("E$i")->setDataValidation(clone $validation);
@@ -176,7 +261,7 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1('"residential,commercial"');
+                $validation->setFormula1('"' . PropertyExcelMapping::typeExcelOptions() . '"');
 
                 for ($i = 3; $i <= $rowCount; $i++) {
                     $sheet->getCell("F$i")->setDataValidation(clone $validation);
@@ -190,7 +275,7 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1("'City-District Reference'!\$A\$2:\$A\$500");
+                $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$A\$2:\$A\$500");
 
                 for ($i = 3; $i <= $rowCount; $i++) {
                     $sheet->getCell("J$i")->setDataValidation(clone $validation);
@@ -204,14 +289,14 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1("'City-District Reference'!\$B\$2:\$B\$10000");
+                $validation->setFormula1("'" . PropertyExcelMapping::LOOKUP_SHEET_TITLE . "'!\$B\$2:\$B\$10000");
 
                 for ($i = 3; $i <= $rowCount; $i++) {
                     $sheet->getCell("K$i")->setDataValidation(clone $validation);
                 }
 
-                // Payment Method Column (AM) - "daily,monthly,yearly,semi_annual"
-                $validation = $sheet->getCell('AM2')->getDataValidation();
+                // Payment Method Column (AL) - "daily,monthly,yearly,semi_annual"
+                $validation = $sheet->getCell('AL2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
                 $validation->setAllowBlank(true);
@@ -221,21 +306,21 @@ class PropertiesTemplateMainSheetExport implements FromArray, WithHeadings, With
                 $validation->setFormula1('"شهري,ربع سنوي,نصف سنوي,سنوي"');
 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("AM$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("AL$i")->setDataValidation(clone $validation);
                 }
 
-                // Featured Column (AN) - "Yes,No"
-                $validation = $sheet->getCell('AN2')->getDataValidation();
+                // Featured Column (AM) - "Yes,No"
+                $validation = $sheet->getCell('AM2')->getDataValidation();
                 $validation->setType(DataValidation::TYPE_LIST);
                 $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
                 $validation->setAllowBlank(true);
                 $validation->setShowInputMessage(true);
                 $validation->setShowErrorMessage(true);
                 $validation->setShowDropDown(true);
-                $validation->setFormula1('"Yes,No"');
+                $validation->setFormula1('"نعم,لا"');
 
                 for ($i = 3; $i <= $rowCount; $i++) {
-                    $sheet->getCell("AN$i")->setDataValidation(clone $validation);
+                    $sheet->getCell("AM$i")->setDataValidation(clone $validation);
                 }
             },
         ];
@@ -287,15 +372,15 @@ class PropertiesTemplateLookupSheetExport implements FromCollection, WithHeading
     public function headings(): array
     {
         return [
-            'City Name (Dropdown Source)',
-            'District Name (Dropdown Source)',
-            'District Name (Reference)',
-            'Belongs to City (Reference)',
+            'المدينة (مصدر القائمة)',
+            'الحي (مصدر القائمة)',
+            'اسم الحي (مرجع)',
+            'تابع للمدينة (مرجع)',
         ];
     }
 
     public function title(): string
     {
-        return 'City-District Reference';
+        return PropertyExcelMapping::LOOKUP_SHEET_TITLE;
     }
 }

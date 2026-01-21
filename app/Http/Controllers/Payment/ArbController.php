@@ -22,6 +22,7 @@ use App\Models\BasicExtended;
 use App\Models\BasicSetting;
 use App\Models\User\BasicSetting as UserBasicSetting;
 use App\Models\Api\ApiInstallation;
+use App\Models\Api\AppPaymentTransaction;
 use App\Services\InstallationStateMachine;
 use App\Enums\InstallStatus;
 
@@ -388,6 +389,12 @@ class ArbController extends Controller
      */
     protected function handleAppPayment(Request $request, array $paymentData)
     {
+        // Detect if this is an API request
+        $isApiRequest = $request->expectsJson() 
+            || $request->wantsJson() 
+            || $request->is('api/*')
+            || $request->header('Accept') === 'application/json';
+
         try {
             // Validate payment was successful
             if (!isset($paymentData['result']) || $paymentData['result'] !== 'CAPTURED') {
@@ -395,6 +402,15 @@ class ArbController extends Controller
                     'result' => $paymentData['result'] ?? 'unknown',
                     'payment_id' => $paymentData['transId'] ?? null,
                 ]);
+
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Payment failed or cancelled',
+                        'result' => $paymentData['result'] ?? 'unknown',
+                    ], 400);
+                }
+
                 return redirect()->route('failed.page');
             }
 
@@ -412,7 +428,38 @@ class ArbController extends Controller
                     'user_id' => $userId,
                     'payment_data' => $paymentData,
                 ]);
+
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Missing required payment data',
+                    ], 422);
+                }
+
                 return redirect()->route('failed.page');
+            }
+
+            // Check idempotency: if transaction already processed, return success
+            $existingTransaction = AppPaymentTransaction::where('payment_transaction_id', $paymentId)
+                ->first();
+
+            if ($existingTransaction && $existingTransaction->isCompleted()) {
+                Log::info('Duplicate payment callback received (idempotent)', [
+                    'payment_id' => $paymentId,
+                    'transaction_id' => $existingTransaction->id,
+                ]);
+
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Payment already processed',
+                        'installation_id' => $existingTransaction->installation_id,
+                        'transaction_id' => $existingTransaction->id,
+                    ], 200);
+                }
+
+                return redirect()->route('success.page')
+                    ->with('success', 'App installed successfully');
             }
 
             // Find installation by invoice_id (which stores the PaymentID)
@@ -428,6 +475,14 @@ class ArbController extends Controller
                     'app_id' => $appId,
                     'user_id' => $userId,
                 ]);
+
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Installation not found',
+                    ], 404);
+                }
+
                 return redirect()->route('failed.page');
             }
 
@@ -443,8 +498,36 @@ class ArbController extends Controller
                     'app_id' => $appId,
                     'user_id' => $userId,
                 ]);
+
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Payment amount mismatch',
+                    ], 422);
+                }
+
                 return redirect()->route('failed.page');
             }
+
+            // Create or update transaction record
+            $transaction = AppPaymentTransaction::updateOrCreate(
+                ['payment_transaction_id' => $paymentId],
+                [
+                    'user_id' => $userId,
+                    'installation_id' => $installation->id,
+                    'app_id' => $appId,
+                    'gateway' => 'arb',
+                    'amount' => $paidAmount,
+                    'currency' => 'SAR',
+                    'status' => 'completed',
+                    'gateway_response' => $paymentData,
+                    'verified_at' => now(),
+                    'metadata' => [
+                        'payment_processed_at' => now()->toIso8601String(),
+                        'recurring_id' => $paymentData['RecurringId'] ?? null,
+                    ],
+                ]
+            );
 
             // Activate installation using state machine
             try {
@@ -465,7 +548,18 @@ class ArbController extends Controller
                     'app_name' => $installation->app->name,
                     'payment_id' => $paymentId,
                     'amount' => $paidAmount,
+                    'transaction_id' => $transaction->id,
                 ]);
+
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Payment processed successfully',
+                        'installation_id' => $installation->id,
+                        'transaction_id' => $transaction->id,
+                        'app_name' => $installation->app->name,
+                    ], 200);
+                }
 
                 return redirect()->route('success.page')
                     ->with('success', 'App installed successfully');
@@ -476,6 +570,18 @@ class ArbController extends Controller
                     'current_status' => $installation->status->value,
                     'error' => $e->getMessage(),
                 ]);
+
+                // Mark transaction as failed
+                $transaction->markFailed($paymentData, ['error' => $e->getMessage()]);
+
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Invalid installation status transition',
+                        'error' => $e->getMessage(),
+                    ], 422);
+                }
+
                 return redirect()->route('failed.page');
             } catch (\Exception $e) {
                 Log::error('Failed to activate app installation via ARB payment', [
@@ -483,6 +589,18 @@ class ArbController extends Controller
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]);
+
+                // Mark transaction as failed
+                $transaction->markFailed($paymentData, ['error' => $e->getMessage()]);
+
+                if ($isApiRequest) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Failed to activate installation',
+                        'error' => $e->getMessage(),
+                    ], 500);
+                }
+
                 return redirect()->route('failed.page');
             }
 
@@ -492,6 +610,14 @@ class ArbController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'payment_data' => $paymentData ?? [],
             ]);
+
+            if ($isApiRequest) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Internal server error',
+                ], 500);
+            }
+
             return redirect()->route('failed.page');
         }
     }

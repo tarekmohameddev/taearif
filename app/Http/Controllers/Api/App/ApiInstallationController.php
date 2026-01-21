@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Api\ApiApp;
 use App\Models\Api\ApiMenuItem;
 use App\Models\Api\ApiInstallation;
+use App\Models\Api\AppPaymentTransaction;
 use App\Enums\InstallStatus;
+use App\Enums\BillingType;
 use App\Services\InstallationService;
 use App\Services\InstallationStateMachine;
 use App\Traits\ApiResponseTrait;
@@ -38,15 +40,45 @@ class ApiInstallationController extends Controller
         try {
             $userId = auth()->id();
 
+            // Single query to get all completed payments for this user (optimize to avoid N+1)
+            $completedPayments = AppPaymentTransaction::where('user_id', $userId)
+                ->where('status', 'completed')
+                ->pluck('app_id')
+                ->unique()
+                ->toArray();
+
             // Optimize query with eager loading
             $apps = ApiApp::where('is_enabled', true)
                 ->with(['installations' => function ($query) use ($userId) {
-                    $query->where('user_id', $userId)->with('settings');
+                    $query->where('user_id', $userId)
+                        ->with(['settings', 'paymentTransactions']);
                 }])
                 ->get();
 
-            $apps = $apps->map(function ($app) {
+            $apps = $apps->map(function ($app) use ($userId, $completedPayments) {
                 $installation = $app->installations->first();
+
+                // Determine purchase status - check if user has completed payment for this app
+                $isPurchased = in_array($app->id, $completedPayments);
+
+                // Determine pricing model
+                $pricingModel = null;
+                if ($app->billing_type !== BillingType::Free) {
+                    // If app has subscription_duration > 0, it's a subscription model
+                    // Otherwise, it's a one-time purchase
+                    $pricingModel = ($app->subscription_duration && $app->subscription_duration > 0)
+                        ? 'subscription'
+                        : 'one-time';
+                }
+
+                // Get subscription expiration (only if active subscription with future date)
+                $subscriptionExpiresAt = null;
+                if ($installation && $installation->current_period_end) {
+                    // Only return expiration if subscription is still active (future date)
+                    if ($installation->current_period_end->isFuture()) {
+                        $subscriptionExpiresAt = $installation->current_period_end->toIso8601String();
+                    }
+                }
 
                 return [
                     'id' => $app->id,
@@ -60,10 +92,15 @@ class ApiInstallationController extends Controller
                     'billing_type' => $app->billing_type->value,
                     'trial_days' => $app->trial_days ?? 0,
                     'installed' => $installation?->installed ?? false,
+                    'isInstalled' => $installation?->installed ?? false,
+                    'isPurchased' => $isPurchased,
+                    'pricingModel' => $pricingModel,
+                    'subscriptionExpiresAt' => $subscriptionExpiresAt,
                     'trial_ends_at' => $installation?->trial_ends_at?->toIso8601String(),
                     'current_period_end' => $installation?->current_period_end?->toIso8601String(),
                     'activated_at' => $installation?->activated_at?->toIso8601String(),
                     'status' => $installation?->status->value ?? 'pending',
+                    'payment_status' => $this->getPaymentStatus($installation, $app),
                     'settings' => $installation?->settings?->settings ?? null,
                     'installed_at' => $installation?->installed_at?->toIso8601String(),
                     'uninstalled_at' => $installation?->uninstalled_at?->toIso8601String(),
@@ -228,6 +265,7 @@ class ApiInstallationController extends Controller
                     'installed' => $result['installation']->installed,
                     'trial_ends_at' => $result['installation']->trial_ends_at?->toIso8601String(),
                     'activated_at' => $result['installation']->activated_at?->toIso8601String(),
+                    'payment_status' => $this->getPaymentStatus($result['installation'], $app),
                 ],
                 'app' => [
                     'id' => $app->id,
@@ -236,7 +274,6 @@ class ApiInstallationController extends Controller
                     'price' => $app->price,
                     'name' => $app->name,
                 ],
-                'payment_url' => $result['payment_url'],
             ], 'App installed successfully');
 
         } catch (ValidationException $e) {
@@ -254,19 +291,6 @@ class ApiInstallationController extends Controller
                 $e->getMessage(),
                 $e->getErrorCode(),
                 $e->getStatusCode()
-            );
-
-        } catch (PaymentInitiationException $e) {
-            Log::error('Payment initiation failed during install', [
-                'user_id' => $request->user()?->id,
-                'app_id' => $request->input('app_id'),
-                'error' => $e->getMessage(),
-            ]);
-
-            return $this->errorResponse(
-                'Failed to initiate payment. Please try again.',
-                $e->getErrorCode(),
-                500
             );
 
         } catch (\Exception $e) {
@@ -320,6 +344,11 @@ class ApiInstallationController extends Controller
     /**
      * Uninstall an app for the authenticated user.
      *
+     * IMPORTANT: This method only changes the installation status to 'Uninstalled'.
+     * It does NOT delete or remove purchase/subscription records (AppPaymentTransaction).
+     * Purchase history is preserved even after uninstall to maintain data integrity
+     * and allow users to see their purchase history regardless of installation status.
+     *
      * @param int $appId
      * @param InstallationStateMachine $stateMachine
      * @return \Illuminate\Http\JsonResponse
@@ -338,10 +367,11 @@ class ApiInstallationController extends Controller
             }
 
             // Use state machine for safe transition
+            // This only updates the installation status - purchase records are preserved
             $stateMachine->transition($installation, InstallStatus::Uninstalled);
 
-            // Delete settings
-            $installation->settings()->delete();
+            // Preserve settings for reinstall - don't delete
+            // $installation->settings()->delete(); // REMOVED - keep settings for reinstall
 
             // Deactivate menu items (app-specific)
             $this->handleAppSpecificUninstallation($userId, $installation->app);
@@ -425,6 +455,7 @@ class ApiInstallationController extends Controller
                 'installation' => $installation ? [
                     'installed' => $installation->installed ?? false,
                     'status' => $installation->status->value ?? null,
+                    'payment_status' => $this->getPaymentStatus($installation, $app),
                     'trial_ends_at' => $installation->trial_ends_at?->toIso8601String(),
                     'activated_at' => $installation->activated_at?->toIso8601String(),
                     'installed_at' => $installation->installed_at?->toIso8601String(),
@@ -475,6 +506,7 @@ class ApiInstallationController extends Controller
                     'id' => $result['installation']->id,
                     'status' => $result['installation']->status->value,
                     'installed' => $result['installation']->installed,
+                    'payment_status' => $this->getPaymentStatus($result['installation'], $app),
                 ],
                 'app' => [
                     'id' => $app->id,
@@ -483,10 +515,9 @@ class ApiInstallationController extends Controller
                     'price' => $app->price,
                     'name' => $app->name,
                 ],
-                'payment_url' => $result['payment_url'],
             ], 'WhatsApp app installed successfully');
 
-        } catch (ConcurrentInstallationException | InvalidInstallationException | PaymentInitiationException $e) {
+        } catch (ConcurrentInstallationException | InvalidInstallationException $e) {
             return $this->errorResponse(
                 $e->getMessage(),
                 $e->getErrorCode(),
@@ -536,8 +567,8 @@ class ApiInstallationController extends Controller
             // Use state machine for safe transition
             $stateMachine->transition($installation, InstallStatus::Uninstalled);
 
-            // Delete settings
-            $installation->settings()->delete();
+            // Preserve settings for reinstall - don't delete
+            // $installation->settings()->delete(); // REMOVED - keep settings for reinstall
 
             // Handle app-specific uninstallation
             $this->handleAppSpecificUninstallation($userId, $app);
@@ -566,6 +597,141 @@ class ApiInstallationController extends Controller
                 500
             );
         }
+    }
+
+    /**
+     * Get purchase URL for an app
+     *
+     * @param Request $request
+     * @param int $appId
+     * @param InstallationService $service
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPurchaseUrl(Request $request, int $appId, InstallationService $service)
+    {
+        try {
+            $user = $request->user();
+            $app = ApiApp::where('id', $appId)
+                ->where('is_enabled', true)
+                ->first();
+
+            if (!$app) {
+                return $this->errorResponse(
+                    'App not found or not enabled',
+                    'APP_NOT_FOUND',
+                    404
+                );
+            }
+
+            // Get or create installation if needed
+            $installation = ApiInstallation::where('user_id', $user->id)
+                ->where('app_id', $appId)
+                ->first();
+
+            if (!$installation) {
+                return $this->errorResponse(
+                    'App must be installed first',
+                    'INSTALLATION_NOT_FOUND',
+                    404
+                );
+            }
+
+            // Check if app requires payment
+            if ($app->billing_type === BillingType::Free) {
+                return $this->errorResponse(
+                    'This app is free and does not require payment',
+                    'PAYMENT_NOT_REQUIRED',
+                    400
+                );
+            }
+
+            // Check if already has valid subscription
+            if ($installation->hasValidSubscription()) {
+                return $this->errorResponse(
+                    'You already have an active subscription for this app',
+                    'SUBSCRIPTION_ACTIVE',
+                    400
+                );
+            }
+
+            // Get purchase URL
+            $paymentUrl = $service->getPurchaseUrl($installation, $app, $user);
+
+            return $this->successResponse([
+                'payment_url' => $paymentUrl,
+            ], 'Purchase URL generated successfully');
+
+        } catch (PaymentInitiationException $e) {
+            Log::error('Payment initiation failed', [
+                'user_id' => $request->user()?->id,
+                'app_id' => $appId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->errorResponse(
+                $e->getMessage(),
+                $e->getErrorCode(),
+                $e->getStatusCode()
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Failed to get purchase URL', [
+                'user_id' => $request->user()?->id,
+                'app_id' => $appId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return $this->errorResponse(
+                'Failed to generate purchase URL',
+                'PURCHASE_URL_ERROR',
+                500
+            );
+        }
+    }
+
+    /**
+     * Get payment status for an installation
+     *
+     * @param ApiInstallation|null $installation
+     * @param ApiApp $app
+     * @return string
+     */
+    private function getPaymentStatus(?ApiInstallation $installation, ApiApp $app): string
+    {
+        // Free apps don't require payment
+        if ($app->billing_type === \App\Enums\BillingType::Free) {
+            return 'not_required';
+        }
+
+        // No installation means not installed yet
+        if (!$installation) {
+            return 'unpaid';
+        }
+
+        // Check if there's a completed payment transaction
+        if ($installation->hasCompletedPayment()) {
+            return 'paid';
+        }
+
+        // Check if there's a pending payment transaction
+        $hasPendingPayment = $installation->paymentTransactions()
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($hasPendingPayment) {
+            return 'pending';
+        }
+
+        // For paid apps with trial, check if trial is active
+        if ($app->billing_type === \App\Enums\BillingType::PaidTrial) {
+            if ($installation->status === \App\Enums\InstallStatus::Trialing) {
+                return 'trial';
+            }
+        }
+
+        // Default to unpaid
+        return 'unpaid';
     }
 
 }
