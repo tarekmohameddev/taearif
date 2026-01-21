@@ -19,6 +19,7 @@ class RequestRepository
             $u->customerName = $row->full_name ?? null;
             $u->propertyType = $row->property_type;
             $u->categoryId = $row->category_id;
+            $u->purpose = $row->purpose ?? null;
             $u->region = $row->region;
             $u->cityId = $row->city_id;
             $u->districtId = $row->districts_id;
@@ -40,6 +41,7 @@ class RequestRepository
             $u->phone = $row->phone_number ?? null;
             $u->customerName = null;
             $u->propertyType = $row->property_type;
+            $u->purpose = $row->inquiry_type ?? null;
             $u->bedrooms = $row->bedrooms;
             $u->bathrooms = $row->bathrooms;
             $u->budget = $row->budget;

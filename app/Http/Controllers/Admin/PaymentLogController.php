@@ -13,6 +13,8 @@ use App\Http\Helpers\MegaMailer;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
+use PDF;
 
 class PaymentLogController extends Controller
 {
@@ -232,6 +234,114 @@ class PaymentLogController extends Controller
 
         session()->flash('success', "Membership status changed successfully!");
         return back();
+    }
+
+    /**
+     * Download invoice as PDF for a membership payment.
+     *
+     * @param int $id
+     * @return \Illuminate\Http\Response
+     */
+    public function downloadInvoice($id)
+    {
+        try {
+            Log::info('Starting PDF generation for membership ID: ' . $id);
+            
+            $currentLang = session()->has('lang') ?
+                (Language::where('code', session()->get('lang'))->first())
+                : (Language::where('is_default', 1)->first());
+            
+            if (!$currentLang) {
+                Log::error('Language not found for PDF generation');
+                return back()->with('error', 'Language not found');
+            }
+            
+            $be = $currentLang->basic_extended;
+            $bs = $currentLang->basic_setting;
+            
+            if (!$be || !$bs) {
+                Log::error('Basic settings not found for PDF generation');
+                return back()->with('error', 'Basic settings not found');
+            }
+            
+            Log::info('Loading membership data');
+            $membership = Membership::query()->findOrFail($id);
+            $user = User::query()->findOrFail($membership->user_id);
+            $package = Package::query()->findOrFail($membership->package_id);
+
+            // Prepare member data
+            $member = [
+                'first_name' => $user->first_name ?? '',
+                'last_name' => $user->last_name ?? '',
+                'username' => $user->username ?? '',
+                'email' => $user->email ?? '',
+            ];
+
+            // Prepare request data for invoice
+            $request = [
+                'payment_method' => $membership->payment_method ?? 'N/A',
+                'start_date' => Carbon::parse($membership->start_date)->format('d-m-Y'),
+                'expire_date' => $package->term == "lifetime" 
+                    ? Carbon::maxValue()->format('d-m-Y') 
+                    : Carbon::parse($membership->expire_date)->format('d-m-Y'),
+            ];
+
+            // Prepare all variables for PDF view
+            $password = $user->password ?? '';
+            $amount = $membership->price ?? 0;
+            $payment_method = $membership->payment_method ?? 'N/A';
+            $phone = $user->phone_number ?? $user->phone ?? '';
+            $base_currency_symbol_position = $be->base_currency_symbol_position ?? 'left';
+            $base_currency_symbol = $be->base_currency_symbol ?? '';
+            $base_currency_text = $be->base_currency_text ?? '';
+            $order_id = $membership->transaction_id ?? 'N/A';
+            $package_title = $package->title ?? 'N/A';
+
+            Log::info('Generating PDF view');
+            // Generate PDF with inline CSS (no external resources needed)
+            $pdf = PDF::setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => false, // Inline CSS, no remote resources
+                'logOutputFile' => storage_path('logs/log.htm'),
+                'tempDir' => storage_path('logs/'),
+                'defaultFont' => 'sans-serif'
+            ])->loadView('pdf.membership', compact(
+                'request',
+                'member',
+                'password',
+                'amount',
+                'payment_method',
+                'phone',
+                'base_currency_symbol_position',
+                'base_currency_symbol',
+                'base_currency_text',
+                'order_id',
+                'package_title',
+                'membership',
+                'bs'
+            ));
+
+            Log::info('Getting PDF output');
+            $filename = 'invoice_' . ($membership->transaction_id ?? $membership->id) . '.pdf';
+
+            // Get PDF output and return as download
+            $output = $pdf->output();
+            
+            Log::info('PDF generated successfully, size: ' . strlen($output) . ' bytes');
+            
+            return response($output, 200)
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                ->header('Content-Length', strlen($output));
+        } catch (\Exception $e) {
+            Log::error('PDF Invoice Generation Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'membership_id' => $id,
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return back()->with('error', 'Failed to generate invoice. Please check the logs for details.');
+        }
     }
 
     /**

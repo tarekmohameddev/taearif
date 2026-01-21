@@ -126,9 +126,10 @@ $selLang = \App\Models\Language::where('code', request()->input('language'))->fi
                                         </td>
                                         <td>{{$membership->payment_method}}</td>
                                         <td>
-                                            @if (!empty($membership->receipt))
-                                            <a class="btn btn-sm btn-info" href="#" data-toggle="modal"
-                                                data-target="#receiptModal{{$membership->id}}">Show</a>
+                                            @if ($membership->status == 1)
+                                            <a class="btn btn-sm btn-info" href="{{route('admin.payment-log.download-invoice', $membership->id)}}" target="_blank">
+                                                <i class="fas fa-download"></i> {{__('Download Invoice')}}
+                                            </a>
                                             @else
                                             -
                                             @endif
@@ -142,31 +143,6 @@ $selLang = \App\Models\Language::where('code', request()->input('language'))->fi
                                             @endif
                                         </td>
                                     </tr>
-                                    <div class="modal fade" id="receiptModal{{$membership->id}}" tabindex="-1"
-                                        role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                        <div class="modal-dialog" role="document">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title" id="exampleModalLabel">{{__('Receipt Image')}}
-                                                    </h5>
-                                                    <button type="button" class="close" data-dismiss="modal"
-                                                        aria-label="Close">
-                                                    <span aria-hidden="true">&times;</span>
-                                                    </button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <img
-                                                        src="{{asset('assets/front/img/membership/receipt/' . $membership->receipt)}}"
-                                                        alt="Receipt" width="100%">
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary"
-                                                        data-dismiss="modal">{{__('Close')}}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                                     <div class="modal fade" id="detailsModal{{$membership->id}}" tabindex="-1"
                                         role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                                         <div class="modal-dialog" role="document">

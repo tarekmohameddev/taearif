@@ -118,6 +118,7 @@ use App\Http\Controllers\Api\V1\TenantWebsite\{
     FormController,
 };
 use App\Http\Controllers\Api\V1\Matching\MatchingController as V1MatchingController;
+use App\Http\Controllers\Api\V1\Matching\CustomerRequestController as V1CustomerRequestController;
 
 use App\Http\Controllers\Api\PixelController; // Added import for PixelController
 
@@ -962,6 +963,15 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
 // Matching Endpoints (Dashboard APIs, require auth) - observer-only, retrieval endpoints
 Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
     Route::prefix('matching')->group(function () {
+        // Customer Requests (unified web + whatsapp)
+        Route::get('requests', [V1CustomerRequestController::class, 'index']);
+        Route::get('requests/{type}/{id}', [V1CustomerRequestController::class, 'show']);
+        Route::put('requests/{type}/{id}', [V1CustomerRequestController::class, 'update']);
+        Route::patch('requests/{type}/{id}/read', [V1CustomerRequestController::class, 'markAsRead']);
+        Route::patch('requests/{type}/{id}/unread', [V1CustomerRequestController::class, 'markAsUnread']);
+        Route::patch('requests/{type}/{id}/archive', [V1CustomerRequestController::class, 'archive']);
+        Route::patch('requests/{type}/{id}/unarchive', [V1CustomerRequestController::class, 'unarchive']);
+
         Route::get('customers', [V1MatchingController::class, 'customers']);
         Route::get('customers/{customer_key}/properties', [V1MatchingController::class, 'customerProperties']);
         Route::get('matches/{id}', [V1MatchingController::class, 'showMatch']);

@@ -52,6 +52,13 @@ class ApiCustomerInquiry extends Model
         'source_channel',
         'lang',
         'detected_entities_json',
+        'is_read',
+        'is_archived',
+    ];
+
+    protected $casts = [
+        'is_read' => 'boolean',
+        'is_archived' => 'boolean',
     ];
 
     public function customer(): BelongsTo
