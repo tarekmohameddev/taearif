@@ -181,7 +181,15 @@ class RegisterUserController extends Controller
         $offline = OfflineGateway::where('status', 1)->get();
         $gateways = $online->merge($offline);
 
-        return view('admin.register_user.details', compact('user', 'packages', 'gateways'));
+        // Get user's memberships/invoices (only successful payments for invoices)
+        $memberships = Membership::query()
+            ->where('user_id', $id)
+            ->where('status', 1) // Only successful/paid invoices
+            ->with('package')
+            ->orderBy('created_at', 'DESC')
+            ->get();
+
+        return view('admin.register_user.details', compact('user', 'packages', 'gateways', 'memberships'));
     }
 
     public function store(Request $request)
