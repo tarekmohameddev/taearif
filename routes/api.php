@@ -53,6 +53,9 @@ use App\Http\Controllers\Api\{
     property\ApiPropertyRequestController,
     property\ApiPropertyRequestSettingsController,
     blog\BlogController,
+    Blog\PostController,
+    Blog\MediaController as BlogMediaController,
+    Blog\CategoriesController,
     project\ProjectController,
     property\PropertyController,
     content\FooterSettingController,
@@ -239,6 +242,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/blog-categories', [BlogController::class, 'categories']); // Get blog categories
 });
 
+// Blog system (api_posts)
+Route::get('/posts', [PostController::class, 'index']);
+Route::get('/posts/{slug}', [PostController::class, 'show']);
+Route::get('/categories', [CategoriesController::class, 'index']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/posts', [PostController::class, 'store']);
+    Route::put('/posts/{id}', [PostController::class, 'update']);
+    Route::delete('/posts/{id}', [PostController::class, 'destroy']);
+    Route::post('/media', [BlogMediaController::class, 'store']);
+    Route::post('/categories', [CategoriesController::class, 'store']);
+    Route::put('/categories/{id}', [CategoriesController::class, 'update']);
+    Route::delete('/categories/{id}', [CategoriesController::class, 'destroy']);
+});
+
 // contract routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/contracts', [ApiContractController::class, 'index']); // Get all contracts
@@ -293,14 +310,14 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::get   ('/properties/available-units',         [PropertyController::class, 'availableUnits'])->middleware('can:properties.view');
     Route::get   ('/properties/export',                  [PropertyController::class, 'export'])->middleware('can:properties.view');
     Route::get   ('/properties/export-for-import',     [PropertyController::class, 'exportForImport'])->middleware('can:properties.view');
-    
+
     // Draft/Incomplete Properties Management - MUST be before /properties/{id} to avoid route conflict
     Route::get   ('/properties/drafts',                   [PropertyController::class, 'listDrafts'])->middleware('can:properties.view');
     Route::get   ('/properties/drafts/{id}',              [PropertyController::class, 'showDraft'])->middleware('can:properties.view');
     Route::patch ('/properties/drafts/{id}',              [PropertyController::class, 'updateDraft'])->middleware('can:properties.update');
     Route::post  ('/properties/drafts/{id}/complete',     [PropertyController::class, 'completeDraft'])->middleware('can:properties.create');
     Route::post  ('/properties/drafts/bulk-complete',     [PropertyController::class, 'bulkCompleteDrafts'])->middleware('can:properties.create');
-    
+
     Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
     Route::post  ('/properties/bulk-import',             [PropertyController::class, 'bulkImport'])->middleware('can:properties.create');
     // Route::get   ('/properties/bulk-import/template',    [PropertyController::class, 'downloadTemplate']); // Moved to public routes
@@ -311,7 +328,7 @@ Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::patch ('/properties/{id}/toggle-featured',    [PropertyController::class, 'toggleFeatured'])->middleware('can:properties.update');
     Route::post  ('/properties/{id}/toggle-status',      [PropertyController::class, 'toggleStatus'])->middleware('can:properties.update');
     Route::post  ('/properties/{propertyId}/duplicate',  [PropertyController::class, 'duplicate'])->middleware('can:properties.create');
-    
+
     Route::get   ('/property/facades',                   [UserFacadeController::class, 'index'])->middleware('can:properties.view');
     // faqs
     Route::get   ('/property-faqs',                      [PropertyController::class, 'faqs']);
@@ -501,7 +518,7 @@ Route::middleware(['auth:sanctum', 'audit.ctx', 'log.employee.activity', 'can:cr
 
     // Reminder Types (New System)
     Route::apiResource('reminder-types', ReminderTypeController::class);
-    
+
     // Reminders (New System)
     Route::apiResource('reminders', ReminderController::class);
 
