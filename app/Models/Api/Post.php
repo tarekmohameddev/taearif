@@ -21,6 +21,7 @@ class Post extends Model
         'excerpt',
         'status',
         'published_at',
+        'thumbnail_id',
     ];
 
     protected $casts = [
@@ -73,5 +74,10 @@ class Post extends Model
     public function media(): MorphMany
     {
         return $this->morphMany(Media::class, 'mediable');
+    }
+
+    public function thumbnail(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'thumbnail_id');
     }
 }

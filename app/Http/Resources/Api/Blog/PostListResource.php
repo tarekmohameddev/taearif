@@ -16,6 +16,10 @@ class PostListResource extends JsonResource
             'title' => $this->title,
             'slug' => $this->slug,
             'excerpt' => $this->excerpt,
+            'thumbnail' => $this->when(
+                $this->relationLoaded('thumbnail') && $this->thumbnail,
+                new MediaResource($this->thumbnail)
+            ),
             'published_at' => $this->published_at?->toISOString(),
         ];
     }

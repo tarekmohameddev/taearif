@@ -17,6 +17,7 @@ class PostController extends Controller
     public function index(Request $request): JsonResponse
     {
         $posts = Post::where('status', 'published')
+            ->with('thumbnail')
             ->orderByDesc('published_at')
             ->paginate($request->input('per_page', 15));
 
@@ -37,7 +38,7 @@ class PostController extends Controller
     {
         $post = Post::where('status', 'published')
             ->where('slug', $slug)
-            ->with(['categories', 'media', 'user'])
+            ->with(['categories', 'media', 'user', 'thumbnail'])
             ->firstOrFail();
 
         return (new PostResource($post))->response();
@@ -45,7 +46,11 @@ class PostController extends Controller
 
     public function store(StorePostRequest $request): JsonResponse
     {
-        $data = $request->only(['title', 'slug', 'content', 'excerpt', 'status']);
+        if ($request->has('thumbnail_id')) {
+            $this->validateThumbnailOwnership($request->input('thumbnail_id'), $request->user()->id);
+        }
+
+        $data = $request->only(['title', 'slug', 'content', 'excerpt', 'status', 'thumbnail_id']);
         $data['user_id'] = $request->user()->id;
         $data['status'] = $data['status'] ?? 'draft';
 
@@ -55,7 +60,7 @@ class PostController extends Controller
 
         $this->attachMedia($post, $request->input('media_ids', []), $request->user()->id);
 
-        $post->load(['categories', 'media', 'user']);
+        $post->load(['categories', 'media', 'user', 'thumbnail']);
 
         return (new PostResource($post))->response()->setStatusCode(201);
     }
@@ -68,7 +73,11 @@ class PostController extends Controller
             abort(403, 'You do not own this post.');
         }
 
-        $fill = $request->only(['title', 'slug', 'content', 'excerpt', 'status']);
+        if ($request->has('thumbnail_id')) {
+            $this->validateThumbnailOwnership($request->input('thumbnail_id'), $request->user()->id);
+        }
+
+        $fill = $request->only(['title', 'slug', 'content', 'excerpt', 'status', 'thumbnail_id']);
         $post->update(array_filter($fill, fn ($v) => $v !== null));
 
         if ($request->has('category_ids')) {
@@ -82,7 +91,7 @@ class PostController extends Controller
             $this->attachMedia($post, $request->input('media_ids', []), $request->user()->id);
         }
 
-        $post->load(['categories', 'media', 'user']);
+        $post->load(['categories', 'media', 'user', 'thumbnail']);
 
         return (new PostResource($post))->response();
     }
@@ -100,6 +109,17 @@ class PostController extends Controller
         return response()->json([
             'message' => 'Post deleted successfully',
         ], 200);
+    }
+
+    private function validateThumbnailOwnership(?int $thumbnailId, int $userId): void
+    {
+        if (!$thumbnailId) {
+            return;
+        }
+        $media = Media::findOrFail($thumbnailId);
+        if ($media->user_id !== $userId) {
+            abort(403, 'You do not own this thumbnail.');
+        }
     }
 
     private function attachMedia(Post $post, array $mediaIds, int $userId): void

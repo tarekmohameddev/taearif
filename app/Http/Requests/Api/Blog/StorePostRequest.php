@@ -26,6 +26,7 @@ class StorePostRequest extends FormRequest
             'category_ids.*' => 'exists:api_categories,id',
             'media_ids' => 'nullable|array',
             'media_ids.*' => 'exists:api_media,id',
+            'thumbnail_id' => 'nullable|integer|exists:api_media,id',
         ];
     }
 }

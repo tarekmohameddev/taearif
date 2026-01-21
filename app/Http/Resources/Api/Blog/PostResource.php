@@ -23,6 +23,10 @@ class PostResource extends JsonResource
             'slug' => $this->slug,
             'content' => $this->content,
             'excerpt' => $this->excerpt,
+            'thumbnail' => $this->when(
+                $this->relationLoaded('thumbnail') && $this->thumbnail,
+                new MediaResource($this->thumbnail)
+            ),
             'status' => $this->status,
             'published_at' => $this->published_at?->toISOString(),
             'created_at' => $this->created_at->toISOString(),
