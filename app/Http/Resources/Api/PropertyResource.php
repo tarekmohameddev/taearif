@@ -63,6 +63,7 @@ class PropertyResource extends JsonResource
             'electricity_meter_number' => $property->electricity_meter_number,
             'deed_number' => $property->deed_number ? asset($property->deed_number) : null,
             'advertising_license' => $property->advertising_license,
+            'owner_number' => $property->owner_number,
             'created_at' => $property->created_at->toISOString(),
             'updated_at' => $property->updated_at->toISOString(),
             'creator' => $property->creator ? [

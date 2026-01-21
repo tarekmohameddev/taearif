@@ -151,7 +151,7 @@ class PropertyController extends Controller
                 // This avoids reading thousands of empty rows
                 $filePath = $request->file('file')->getPathname();
                 $fileSize = $request->file('file')->getSize();
-                
+
                 // Check file size (10MB = 10485760 bytes)
                 if ($fileSize > 10485760) {
                     return response()->json([
@@ -173,44 +173,44 @@ class PropertyController extends Controller
                 $spreadsheet = $reader->load($filePath);
                 $worksheet = $spreadsheet->getActiveSheet();
                 $highestRow = $worksheet->getHighestDataRow(); // This gets the last row with actual data
-                
+
                 // Pass the smart limit to the import class
                 // highestRow includes header, so we pass it as the limit
                 $import = new PropertiesImport($user->id, $highestRow);
-                
+
                 $collection = Excel::toCollection($import, $request->file('file'));
-                
+
                 // Count only actual data rows (excluding header which is row 1)
                 // The collection excludes the header due to WithHeadingRow trait
                 $firstSheet = $collection->first();
-                
+
                 // Required fields for a complete property
                 $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'type', 'area'];
-                
+
                 // Count rows that will be complete (have all required fields)
                 // Only complete properties count toward the limit
                 $incomingCompleteCount = $firstSheet->filter(function($row) use ($requiredFields) {
                     $rowArray = $row->toArray();
-                    
+
                     // Skip rows marked as empty by prepareForValidation
                     if (isset($rowArray['_skip_empty_row']) && $rowArray['_skip_empty_row'] === true) {
                         return false;
                     }
-                    
+
                     // Skip rows where title is the dummy empty marker
                     if (isset($rowArray['title']) && $rowArray['title'] === '_EMPTY_ROW_SKIP_') {
                         return false;
                     }
-                    
+
                     // Skip completely empty rows
                     $hasData = !empty(array_filter($rowArray, function($value) {
                         return !is_null($value) && $value !== '';
                     }));
-                    
+
                     if (!$hasData) {
                         return false;
                     }
-                    
+
                     // Check if this row has all required fields (will be complete)
                     foreach ($requiredFields as $field) {
                         $value = $rowArray[$field] ?? null;
@@ -218,7 +218,7 @@ class PropertyController extends Controller
                             return false; // Missing required field - will be incomplete
                         }
                     }
-                    
+
                     // Validate numeric fields
                     if (isset($rowArray['price']) && !is_numeric($rowArray['price'])) {
                         return false; // Invalid price - will fail validation
@@ -226,7 +226,7 @@ class PropertyController extends Controller
                     if (isset($rowArray['area']) && (!is_numeric($rowArray['area']) || $rowArray['area'] < 1)) {
                         return false; // Invalid area - will fail validation
                     }
-                    
+
                     // Validate enum fields
                     if (isset($rowArray['purpose']) && !in_array($rowArray['purpose'], ['sale', 'rent'])) {
                         return false; // Invalid purpose - will fail validation
@@ -234,11 +234,11 @@ class PropertyController extends Controller
                     if (isset($rowArray['type']) && !in_array($rowArray['type'], ['residential', 'commercial'])) {
                         return false; // Invalid type - will fail validation
                     }
-                    
+
                     // All required fields present and valid - will be complete
                     return true;
                 })->count();
-                
+
                 // Only check limit for complete properties
                 // Incomplete properties don't count toward the limit
                 // Block only if complete properties would exceed the limit
@@ -299,12 +299,12 @@ class PropertyController extends Controller
                 foreach ($failures as $failure) {
                     $failureErrors = $failure->errors();
                     $failureValues = $failure->values();
-                    
+
                     // Ensure failureErrors is an array
                     if (!is_array($failureErrors)) {
                         continue;
                     }
-                    
+
                     // Extract field name from error message if possible
                     foreach ($failureErrors as $field => $errorMessages) {
                         // Ensure errorMessages is an array
@@ -335,7 +335,7 @@ class PropertyController extends Controller
                     $message = $error->getMessage();
                     $row = null;
                     $field = null;
-                    
+
                     // Extract row number if present in exception message
                     if (preg_match('/Row (\d+):/', $message, $matches)) {
                         $row = (int)$matches[1];
@@ -382,7 +382,7 @@ class PropertyController extends Controller
                                 } elseif (!is_array($missingFields)) {
                                     $missingFields = [];
                                 }
-                                
+
                                 $validationErrors = $property->validation_errors ?? [];
                                 if (is_string($validationErrors)) {
                                     $decoded = json_decode($validationErrors, true);
@@ -390,7 +390,7 @@ class PropertyController extends Controller
                                 } elseif (!is_array($validationErrors)) {
                                     $validationErrors = [];
                                 }
-                                
+
                                 return [
                                     'id' => $property->id,
                                     'title' => $property->contents->first()?->title ?? 'Untitled',
@@ -1129,7 +1129,7 @@ class PropertyController extends Controller
             // Build response with HTTP cache headers
             $responseObj = response()->json($response);
             $etag = md5($responseObj->getContent());
-            
+
             return $responseObj->withHeaders([
                 'Cache-Control' => 'private, max-age=' . $cacheTtl,
                 'ETag' => $etag,
@@ -1254,6 +1254,7 @@ class PropertyController extends Controller
             'electricity_meter_number' => 'nullable|string',
             'deed_number' => 'nullable|string',
             'advertising_license' => 'nullable|string',
+            'owner_number' => 'nullable|string',
             'video_file' => 'nullable|file', // Video upload now handled separately via VideoUploadController
         ];
 
@@ -1309,6 +1310,7 @@ class PropertyController extends Controller
                 'electricity_meter_number',
                 'deed_number',
                 'advertising_license',
+                'owner_number',
                 'show_reservations',
 
                 "facade_id",
@@ -1510,6 +1512,7 @@ class PropertyController extends Controller
             'electricity_meter_number' => $responseProperty->electricity_meter_number,
             'deed_number' => $responseProperty->deed_number ? asset($responseProperty->deed_number) : null,
             'advertising_license' => $responseProperty->advertising_license,
+            'owner_number' => $responseProperty->owner_number,
         ];
 
         TenantActivity::emit($request, 'property.created', 'user_properties', $responseProperty->id, null, [
@@ -1654,6 +1657,7 @@ class PropertyController extends Controller
             'electricity_meter_number' => 'nullable|string',
             'deed_number' => 'nullable|string',
             'advertising_license' => 'nullable|string',
+            'owner_number' => 'nullable|string',
             'video_url' => 'nullable|string',// For direct URL or OSS URL
             'virtual_tour' => 'nullable|string',
             'video_file' => 'nullable|file', // Video upload now handled separately via VideoUploadController
@@ -1837,6 +1841,7 @@ class PropertyController extends Controller
             'electricity_meter_number' => $responseProperty->electricity_meter_number,
             'deed_number' => $responseProperty->deed_number ? asset($responseProperty->deed_number) : null,
             'advertising_license' => $responseProperty->advertising_license,
+            'owner_number' => $responseProperty->owner_number,
         ], $characteristics);
 
         TenantActivity::emit($request, 'property.updated', 'user_properties', $property->id, $old ?? null, [
@@ -2090,7 +2095,7 @@ class PropertyController extends Controller
         // PERFORMANCE: Start timing for query performance monitoring
         $startTime = microtime(true);
         $queryStartCount = DB::getQueryLog() ? count(DB::getQueryLog()) : 0;
-        
+
         $user = $request->user();
 
         // Resolve tenant owner and include all employees under that tenant
@@ -2111,9 +2116,9 @@ class PropertyController extends Controller
 
         // OPTIMIZED: Track JOINs to avoid duplicates and ensure proper query structure
         $hasContentJoin = false;
-        
+
         // Check if we'll need a content JOIN (for city/district/search filters)
-        $willNeedContentJoin = $request->has('city_id') || $request->has('district_id') || 
+        $willNeedContentJoin = $request->has('city_id') || $request->has('district_id') ||
                                ($request->has('search') && !empty($request->search));
 
         // Build the properties query
@@ -2130,7 +2135,7 @@ class PropertyController extends Controller
             'galleryImages:id,property_id,image', // Added to prevent N+1
             'UserPropertyCharacteristics:id,property_id', // Added if needed for filtering
         ];
-        
+
         // Only eager load contents if we won't be using a JOIN
         if (!$willNeedContentJoin) {
             $eagerLoadRelations['contents'] = function($q) {
@@ -2142,7 +2147,7 @@ class PropertyController extends Controller
                   ->orderBy('id', 'asc'); // Load all valid contents for batch loading to prevent limit(1) issues
             };
         }
-        
+
         $propertiesQuery = Property::with($eagerLoadRelations)
             ->whereIn('user_properties.user_id', $allowedUserIds)
             ->where('user_properties.completion_status', 'complete');
@@ -2166,7 +2171,7 @@ class PropertyController extends Controller
                   ->where('address', '!=', '');
             });
         }
-        
+
         $contentJoinAlias = 'pc_content'; // Single alias for all content joins
         $useInnerJoin = false; // Determine if we need INNER JOIN (for city/district filters)
 
@@ -2181,7 +2186,7 @@ class PropertyController extends Controller
         // OPTIMIZED: Use INNER JOIN instead of whereHas for better performance
         if ($hasCityFilter) {
             if (!$hasContentJoin) {
-                $propertiesQuery->join('user_property_contents as ' . $contentJoinAlias, 
+                $propertiesQuery->join('user_property_contents as ' . $contentJoinAlias,
                     $contentJoinAlias . '.property_id', '=', 'user_properties.id');
                 $hasContentJoin = true;
             }
@@ -2192,7 +2197,7 @@ class PropertyController extends Controller
         // OPTIMIZED: Use INNER JOIN instead of whereHas for better performance
         if ($hasDistrictFilter) {
             if (!$hasContentJoin) {
-                $propertiesQuery->join('user_property_contents as ' . $contentJoinAlias, 
+                $propertiesQuery->join('user_property_contents as ' . $contentJoinAlias,
                     $contentJoinAlias . '.property_id', '=', 'user_properties.id');
                 $hasContentJoin = true;
             }
@@ -2207,18 +2212,18 @@ class PropertyController extends Controller
             $searchTerm = trim($request->search);
             if (!$hasContentJoin) {
                 if ($useInnerJoin) {
-                    $propertiesQuery->join('user_property_contents as ' . $contentJoinAlias, 
+                    $propertiesQuery->join('user_property_contents as ' . $contentJoinAlias,
                         $contentJoinAlias . '.property_id', '=', 'user_properties.id');
                 } else {
-                    $propertiesQuery->leftJoin('user_property_contents as ' . $contentJoinAlias, 
+                    $propertiesQuery->leftJoin('user_property_contents as ' . $contentJoinAlias,
                         $contentJoinAlias . '.property_id', '=', 'user_properties.id');
                 }
                 $hasContentJoin = true;
             }
-            
+
             // OPTIMIZED: Use cached MySQL version check to avoid repeated queries
             $isMysql56Plus = DatabaseVersionService::isMysql56Plus();
-            
+
             // OPTIMIZED: Simplify search query structure for better index usage
             // Prioritize full-text search, then prefix matching, then fallback to wildcard
             // PERFORMANCE: Require minimum 3 characters for wildcard searches to prevent slow queries
@@ -2236,7 +2241,7 @@ class PropertyController extends Controller
                         // Prefix matching can use indexes (term%)
                         $subQ->where($contentJoinAlias . '.title', 'like', $prefixTerm)
                             ->orWhere($contentJoinAlias . '.address', 'like', $prefixTerm);
-                        
+
                         // PERFORMANCE: Only use wildcard search if term is long enough (prevents slow index scans)
                         // Wildcard searches (%term%) cannot use indexes efficiently, so limit to 3+ characters
                         if (strlen($searchTerm) >= $minWildcardLength) {
@@ -2262,7 +2267,7 @@ class PropertyController extends Controller
                            ->where($contentJoinAlias . '.title', '!=', '')
                            ->whereNotNull($contentJoinAlias . '.address')
                            ->where($contentJoinAlias . '.address', '!=', '');
-            
+
             // OPTIMIZED: Select content fields from JOIN to avoid eager loading
             // Use MIN() to get first content when multiple contents exist (avoids DISTINCT overhead)
             // The composite index (property_id, id) on user_property_contents makes MIN(id) queries efficient
@@ -2274,7 +2279,7 @@ class PropertyController extends Controller
                 DB::raw('MIN(' . $contentJoinAlias . '.address) as content_address'),
                 DB::raw('MIN(' . $contentJoinAlias . '.description) as content_description')
             ]);
-            
+
             // GROUP BY all user_properties columns to satisfy ONLY_FULL_GROUP_BY when selecting user_properties.*.
             // Rows are unique per user_properties.id; including other columns does not change the result.
             // MIN() aggregations ensure we get one content per property (the first one by ID).
@@ -2369,7 +2374,7 @@ class PropertyController extends Controller
             if (!empty($featuresArray)) {
                 // OPTIMIZED: Use cached MySQL version check
                 $isMysql80Plus = DatabaseVersionService::isMysql80Plus();
-                
+
                 if ($isMysql80Plus && count($featuresArray) > 1) {
                     // MySQL 8.0+: Use JSON_OVERLAPS for better performance with multiple features
                     // This checks if the features array overlaps with any of the requested features
@@ -2417,7 +2422,7 @@ class PropertyController extends Controller
                 $query->select(DB::raw(1))
                     ->from('user_property_characteristics as upc')
                     ->whereColumn('upc.property_id', 'user_properties.id');
-                
+
                 foreach ($activeFilters as $filter => $value) {
                     $query->where("upc.{$filter}", $value);
                 }
@@ -2465,10 +2470,10 @@ class PropertyController extends Controller
         // OPTIMIZED: Make pagination configurable with max limit to prevent abuse
         // Increased default from 10 to 20 for better UX and fewer requests
         $perPage = min(50, max(1, (int) $request->input('per_page', 20)));
-        
+
         // OPTIMIZED: Support simple pagination to skip COUNT query for better performance
         $useSimplePagination = filter_var($request->input('simple_pagination', false), FILTER_VALIDATE_BOOLEAN);
-        
+
         // OPTIMIZED: Cache query results to improve performance
         // Cache key includes owner ID and hash of filters/pagination for uniqueness
         // OPTIMIZED: Use serialize() instead of json_encode() for better performance with arrays
@@ -2481,21 +2486,21 @@ class PropertyController extends Controller
             'per_page' => $perPage,
             'simple_pagination' => $useSimplePagination
         ]));
-        
+
         // Cache for 5 minutes (shorter TTL for first page, can be adjusted)
         $cacheTTL = $request->input('page', 1) == 1 ? 300 : 600; // 5 min for page 1, 10 min for others
-        
+
         // OPTIMIZED: Cache pagination COUNT separately to avoid executing on every request
         $totalCountCacheKey = $cacheKey . '_total';
         $totalCount = null;
-        
+
         // OPTIMIZED: Add cache stampede protection using locks
         // Prevents multiple requests from regenerating cache simultaneously when cache expires
         $lockKey = 'lock_' . $cacheKey;
-        
+
         // PERFORMANCE: Track cache hits/misses for monitoring
         $cacheStats = ['hits' => 0, 'misses' => 0];
-        
+
         // Helper function to get or set cache with stampede protection
         $getOrSetCache = function ($key, $ttl, $callback) use ($lockKey, &$cacheStats) {
             // Try to get from cache first
@@ -2504,9 +2509,9 @@ class PropertyController extends Controller
                 $cacheStats['hits']++;
                 return $cached;
             }
-            
+
             $cacheStats['misses']++;
-            
+
             // Cache miss - use lock to prevent stampede
             $lock = Cache::lock($lockKey, 10); // 10 second lock timeout
             try {
@@ -2519,14 +2524,14 @@ class PropertyController extends Controller
                             $cacheStats['misses']--; // Adjust stats
                             return $cached;
                         }
-                        
+
                         // Generate and cache the value
                         $queryStartTime = microtime(true);
                         $value = $callback();
                         $queryTime = (microtime(true) - $queryStartTime) * 1000; // Convert to milliseconds
-                        
+
                         Cache::put($key, $value, $ttl);
-                        
+
                         // PERFORMANCE: Log slow queries (>500ms) for monitoring
                         if ($queryTime > 500) {
                             Log::warning('Slow property query detected', [
@@ -2535,7 +2540,7 @@ class PropertyController extends Controller
                                 'threshold_ms' => 500
                             ]);
                         }
-                        
+
                         return $value;
                     } finally {
                         $lock->release();
@@ -2557,7 +2562,7 @@ class PropertyController extends Controller
                 return $callback();
             }
         };
-        
+
         if ($useSimplePagination) {
             // Simple pagination skips COUNT query for better performance
             $properties = $getOrSetCache($cacheKey, $cacheTTL, function () use ($propertiesQuery, $perPage) {
@@ -2568,7 +2573,7 @@ class PropertyController extends Controller
             $properties = $getOrSetCache($cacheKey, $cacheTTL, function () use ($propertiesQuery, $perPage) {
                 return $propertiesQuery->paginate($perPage);
             });
-            
+
             // Cache the total count separately to avoid re-executing COUNT on cached results
             $totalCount = $getOrSetCache($totalCountCacheKey, $cacheTTL, function () use ($propertiesQuery) {
                 return $propertiesQuery->count();
@@ -2579,7 +2584,7 @@ class PropertyController extends Controller
         // OPTIMIZED: Make GA query optional via include_views parameter to improve response time
         $viewsBySlug = [];
         $includeViews = filter_var($request->input('include_views', true), FILTER_VALIDATE_BOOLEAN);
-        
+
         if ($includeViews) {
             $tenantId  = $owner->username;                     // align GA context with tenant owner
             $days      = (int) $request->input('days', 30);   // override with ?days=7 if you want
@@ -2613,10 +2618,10 @@ class PropertyController extends Controller
             // Cache will be populated by background job or next request
             if (!empty($paths)) {
                 $cacheKey = "ga_views_{$tenantId}_{$days}_" . md5(implode(',', $slugs->toArray()));
-                
+
                 // Try to get from cache first (non-blocking)
                 $viewsBySlug = Cache::get($cacheKey, []);
-                
+
                 // DEBUG: Log if no slugs collected or cache miss
                 if ($slugs->isEmpty()) {
                     Log::warning('No slugs collected for GA views', [
@@ -2626,7 +2631,7 @@ class PropertyController extends Controller
                         'properties_count' => $properties->count()
                     ]);
                 }
-                
+
                 // If cache miss, dispatch background job to fetch and cache data
                 // This prevents blocking the response while still populating cache for future requests
                 if (empty($viewsBySlug)) {
@@ -2635,7 +2640,7 @@ class PropertyController extends Controller
                     try {
                         \App\Jobs\FetchGoogleAnalyticsViews::dispatch($cacheKey, $startDate, $endDate, $paths, $tenantId, $slugs->toArray())
                             ->onQueue('default');
-                        
+
                         // DEBUG: Log job dispatch for troubleshooting
                         Log::debug('GA views job dispatched', [
                             'cache_key' => $cacheKey,
@@ -2683,7 +2688,7 @@ class PropertyController extends Controller
         $categories = [];
         $paymentMethods = [];
         $dateRange = ['min' => null, 'max' => null];
-        
+
         if ($includeFilters) {
             $cacheKey = "property_filter_options_{$ownerId}";
             // OPTIMIZED: Use service to generate filter options (reusable for cache pre-warming)
@@ -2730,7 +2735,7 @@ class PropertyController extends Controller
             'area', 'transaction_type', 'features', 'status', 'featured_image', 'featured',
             'show_reservations', 'created_at', 'updated_at', 'payment_method', 'creator'
         ];
-        
+
         $fieldsToInclude = null;
         if ($requestedFields) {
             $requestedFieldsArray = array_map('trim', explode(',', $requestedFields));
@@ -2740,7 +2745,7 @@ class PropertyController extends Controller
                 $fieldsToInclude[] = 'id';
             }
         }
-        
+
         // OPTIMIZED: Use content from JOIN if available, otherwise use eager loaded relationship
         // NOTE: Content validation is already done in the whereHas('contents') filter before pagination (lines 2074-2081)
         // No need to filter again here as it would cause pagination count mismatch
@@ -2785,12 +2790,12 @@ class PropertyController extends Controller
                     'type' => $property->creator->account_type,
                 ] : null,
             ];
-            
+
             // Filter fields if field selection is requested
             if ($fieldsToInclude !== null) {
                 return array_intersect_key($propertyData, array_flip($fieldsToInclude));
             }
-            
+
             return $propertyData;
         });
 
@@ -2806,7 +2811,7 @@ class PropertyController extends Controller
                 ')
                 ->first();
         });
-        
+
         $totalReorderFeatured = (int) ($counts->total_reorder_featured ?? 0);
         $incompleteCount = (int) ($counts->incomplete_count ?? 0);
         $completedCount = (int) ($counts->completed_count ?? 0);
@@ -2818,7 +2823,7 @@ class PropertyController extends Controller
             'from'         => $properties->firstItem(),
             'to'           => $properties->lastItem(),
         ];
-        
+
         if ($useSimplePagination) {
             // Simple pagination: only include has_more_pages indicator
             $paginationData['has_more_pages'] = $properties->hasMorePages();
@@ -2830,7 +2835,7 @@ class PropertyController extends Controller
             $paginationData['total'] = $totalCount ?? $properties->total();
             $paginationData['last_page'] = (int) ceil(($totalCount ?? $properties->total()) / $properties->perPage());
         }
-        
+
         // Build response data
         $responseData = [
             'properties' => $formattedProperties,
@@ -2841,16 +2846,16 @@ class PropertyController extends Controller
             'completed_count' => $completedCount,
             'pagination' => $paginationData
         ];
-        
+
         // PERFORMANCE: Log performance metrics for monitoring
         $endTime = microtime(true);
         $totalTime = ($endTime - $startTime) * 1000; // Convert to milliseconds
         $queryEndCount = DB::getQueryLog() ? count(DB::getQueryLog()) : 0;
         $queryCount = $queryEndCount - $queryStartCount;
-        $cacheHitRate = ($cacheStats['hits'] + $cacheStats['misses']) > 0 
-            ? round(($cacheStats['hits'] / ($cacheStats['hits'] + $cacheStats['misses'])) * 100, 2) 
+        $cacheHitRate = ($cacheStats['hits'] + $cacheStats['misses']) > 0
+            ? round(($cacheStats['hits'] / ($cacheStats['hits'] + $cacheStats['misses'])) * 100, 2)
             : 0;
-        
+
         // Log slow requests (>1000ms) or cache misses for monitoring
         if ($totalTime > 1000 || $cacheStats['misses'] > 0) {
             Log::info('PropertyController::index performance metrics', [
@@ -2866,7 +2871,7 @@ class PropertyController extends Controller
                 'slow_request' => $totalTime > 1000
             ]);
         }
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $responseData
@@ -3231,10 +3236,10 @@ class PropertyController extends Controller
 
             // Get properties (units) that don't have active or draft rentals
             $query = Property::with([
-                'project.contents', 
+                'project.contents',
                 'building' => function($q) {
                     $q->select('id', 'name');
-                }, 
+                },
                 'contents'
             ])
                 ->where('user_id', $userId)
@@ -3737,13 +3742,13 @@ class PropertyController extends Controller
 
     /**
      * Get available property IDs based on filters
-     * 
+     *
      * Returns array of property IDs that are:
      * - Owned by the authenticated user/tenant
      * - Have property_status = 'available' or null (not 'rented')
      * - Optionally: without active rentals (if rentals relationship exists)
      * - Respects all the same filters as the export query
-     * 
+     *
      * @param array $filters Optional filters (date_from, date_to, purpose, type, status, etc.)
      * @param int|null $ownerId Optional owner ID (defaults to authenticated user's tenant owner)
      * @param array|null $allowedUserIds Optional array of allowed user IDs (defaults to owner + employees)
@@ -3752,7 +3757,7 @@ class PropertyController extends Controller
     protected function getAvailablePropertyIds(array $filters = [], ?int $ownerId = null, ?array $allowedUserIds = null): array
     {
         $user = auth()->user();
-        
+
         // Resolve tenant owner if not provided
         if ($ownerId === null) {
             $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
@@ -4048,9 +4053,9 @@ class PropertyController extends Controller
             DB::transaction(function () use ($property, $request, $owner, $defaultLanguage) {
                 // Update property fields
                 $propertyData = [];
-                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'type', 'beds', 'bath', 'area', 
-                    'size', 'video_url', 'virtual_tour', 'features', 'payment_method', 
-                    'water_meter_number', 'electricity_meter_number', 'deed_number', 
+                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'type', 'beds', 'bath', 'area',
+                    'size', 'video_url', 'virtual_tour', 'features', 'payment_method',
+                    'water_meter_number', 'electricity_meter_number', 'deed_number',
                     'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id'];
 
                 foreach ($allowedFields as $field) {
@@ -4095,7 +4100,7 @@ class PropertyController extends Controller
                 // Recalculate missing fields
                 $requiredFields = ['title', 'price', 'address', 'description', 'purpose', 'type', 'area'];
                 $missing = [];
-                
+
                 // Get current property data
                 $currentData = [
                     'title' => $property->contents()->where('language_id', $defaultLanguage->id)->value('title'),
@@ -4216,9 +4221,9 @@ class PropertyController extends Controller
             DB::transaction(function () use ($property, $request, $owner, $defaultLanguage, $completeData) {
                 // Update property with all data
                 $propertyData = [];
-                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'type', 'beds', 'bath', 'area', 
-                    'size', 'video_url', 'virtual_tour', 'features', 'payment_method', 
-                    'water_meter_number', 'electricity_meter_number', 'deed_number', 
+                $allowedFields = ['price', 'pricePerMeter', 'purpose', 'type', 'beds', 'bath', 'area',
+                    'size', 'video_url', 'virtual_tour', 'features', 'payment_method',
+                    'water_meter_number', 'electricity_meter_number', 'deed_number',
                     'advertising_license', 'latitude', 'longitude', 'category_id', 'project_id', 'building_id'];
 
                 foreach ($allowedFields as $field) {
@@ -4344,7 +4349,7 @@ class PropertyController extends Controller
             foreach ($propertyIds as $propertyId) {
                 try {
                     DB::beginTransaction();
-                    
+
                     // Get the property to complete
                     $property = Property::where('id', $propertyId)
                         ->where('user_id', $owner->id)
