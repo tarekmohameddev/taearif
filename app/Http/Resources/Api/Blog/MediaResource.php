@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources\Api\Blog;
+namespace App\Http\Resources\Api\blog;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
