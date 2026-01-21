@@ -15,7 +15,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('user_properties', function (Blueprint $table) {
-            $table->string('owner_number')->nullable()->after('advertising_license');
+            $table->string('owner_number')->nullable();
         });
     }
 
