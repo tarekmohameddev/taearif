@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Api\Blog;
+namespace App\Http\Controllers\Api\blog;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\Blog\StorePostRequest;
-use App\Http\Requests\Api\Blog\UpdatePostRequest;
-use App\Http\Resources\Api\Blog\PostListResource;
-use App\Http\Resources\Api\Blog\PostResource;
+use App\Http\Requests\Api\blog\StorePostRequest;
+use App\Http\Requests\Api\blog\UpdatePostRequest;
+use App\Http\Resources\Api\blog\PostListResource;
+use App\Http\Resources\Api\blog\PostResource;
 use App\Models\Api\Media;
 use App\Models\Api\Post;
 use Illuminate\Http\JsonResponse;

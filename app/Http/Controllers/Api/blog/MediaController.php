@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Api\Blog;
+namespace App\Http\Controllers\Api\blog;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\Blog\StoreMediaRequest;
-use App\Http\Resources\Api\Blog\MediaResource;
+use App\Http\Requests\Api\blog\StoreMediaRequest;
+use App\Http\Resources\Api\blog\MediaResource;
 use App\Models\Api\Media;
 use App\Services\AlibabaOssService;
 use Illuminate\Http\JsonResponse;

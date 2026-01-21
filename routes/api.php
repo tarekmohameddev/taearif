@@ -54,7 +54,7 @@ use App\Http\Controllers\Api\{
     property\ApiPropertyRequestSettingsController,
     blog\BlogController,
     Blog\PostController,
-    Blog\MediaController as BlogMediaController,
+    blog\MediaController as BlogMediaController,
     Blog\CategoriesController,
     project\ProjectController,
     property\PropertyController,
