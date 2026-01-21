@@ -10,6 +10,7 @@ use App\Enums\InstallStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Api\ApiInstallation;
+use App\Models\Api\AppPaymentTransaction;
 use App\Http\Controllers\Payment\ArbController;
 use App\Exceptions\Installation\InvalidInstallationException;
 use App\Exceptions\Installation\PaymentInitiationException;
@@ -45,9 +46,8 @@ class InstallationService
      * @param User $user The user installing the app
      * @param ApiApp $app The app to install
      * @param array $settings Optional installation settings
-     * @return array{installation: ApiInstallation, payment_url: string|null}
+     * @return array{installation: ApiInstallation, payment_url: null}
      * @throws InvalidInstallationException
-     * @throws PaymentInitiationException
      */
     public function install(User $user, ApiApp $app, array $settings = []): array
     {
@@ -82,6 +82,11 @@ class InstallationService
                     $existingInstall
                 );
 
+                // Check if reinstalling with valid subscription
+                $hasValidSubscription = $existingInstall && 
+                                       $existingInstall->status === InstallStatus::Uninstalled &&
+                                       $existingInstall->hasValidSubscription();
+
                 // Create or update installation
                 $install = ApiInstallation::updateOrCreate(
                     ['user_id' => $user->id, 'app_id' => $app->id],
@@ -92,33 +97,28 @@ class InstallationService
                         'trial_used_at' => $existingInstall?->trial_used_at ?? $trialUsedAt,
                         'installed' => in_array($status, [InstallStatus::Installed, InstallStatus::Trialing], true),
                         'installed_at' => $existingInstall?->installed_at ?? ($status === InstallStatus::Installed ? now() : null),
-                        'uninstalled_at' => null,
-                        'current_period_end' => $existingInstall?->current_period_end ?? $trialEnds,
-                        'invoice_id' => null,
-                        'payment_subscription_id' => null,
+                        'uninstalled_at' => null, // Clear uninstalled_at on reinstall
+                        // Preserve subscription data if subscription is valid, otherwise reset
+                        'current_period_end' => $hasValidSubscription 
+                            ? $existingInstall->current_period_end 
+                            : ($existingInstall?->current_period_end ?? $trialEnds),
+                        // Purchase keys are not updated here - they are only updated when payment is initiated via getPurchaseUrl()
                     ]
                 );
 
                 // Save settings
                 $install->settings()->updateOrCreate([], ['settings' => $settings]);
 
-                // Initiate payment if required
-                $paymentUrl = null;
-                if ($status === InstallStatus::PendingPayment) {
-                    $paymentUrl = $this->initiatePayment($install, $app, $user);
-                }
-
                 Log::info('App installation completed', [
                     'installation_id' => $install->id,
                     'user_id' => $user->id,
                     'app_id' => $app->id,
                     'status' => $status->value,
-                    'requires_payment' => $status === InstallStatus::PendingPayment,
                 ]);
 
                 return [
                     'installation' => $install->fresh(['settings', 'app']),
-                    'payment_url' => $paymentUrl,
+                    'payment_url' => null,
                 ];
             });
         });
@@ -147,7 +147,17 @@ class InstallationService
                 break;
 
             case BillingType::Paid:
-                $status = InstallStatus::PendingPayment;
+                // Check if reinstalling with valid subscription period
+                if ($existingInstall && $existingInstall->status === InstallStatus::Uninstalled) {
+                    if ($existingInstall->hasValidSubscription()) {
+                        // Subscription still valid, reinstall without payment
+                        $status = InstallStatus::Installed;
+                        break;
+                    }
+                    // Subscription expired, proceed with normal flow (will require payment)
+                }
+                // Install immediately, payment handled separately
+                $status = InstallStatus::Installed;
                 break;
 
             case BillingType::PaidTrial:
@@ -164,8 +174,17 @@ class InstallationService
                     $trialEnds = $this->trialService->calculateTrialEndDate($app);
                     $trialUsedAt = CarbonImmutable::now();
                 } else {
-                    // Trial used, requires payment
-                    $status = InstallStatus::PendingPayment;
+                    // Check if reinstalling with valid subscription period
+                    if ($existingInstall && $existingInstall->status === InstallStatus::Uninstalled) {
+                        if ($existingInstall->hasValidSubscription()) {
+                            // Subscription still valid, reinstall without payment
+                            $status = InstallStatus::Installed;
+                            break;
+                        }
+                        // Subscription expired, proceed with normal flow (will require payment)
+                    }
+                    // Trial used, install immediately, payment handled separately
+                    $status = InstallStatus::Installed;
                 }
                 break;
         }
@@ -174,7 +193,7 @@ class InstallationService
     }
 
     /**
-     * Initiate payment for paid apps
+     * Get purchase URL for paid apps
      *
      * @param ApiInstallation $install
      * @param ApiApp $app
@@ -182,7 +201,7 @@ class InstallationService
      * @return string Payment redirect URL
      * @throws PaymentInitiationException
      */
-    protected function initiatePayment(
+    public function getPurchaseUrl(
         ApiInstallation $install,
         ApiApp $app,
         User $user
@@ -203,14 +222,35 @@ class InstallationService
             parse_str(parse_url($resp['redirect_url'], PHP_URL_QUERY), $query);
             $paymentId = $query['PaymentID'] ?? null;
 
-            if ($paymentId) {
-                $install->markPending($paymentId);
+            if (!$paymentId) {
+                throw PaymentInitiationException::gatewayError('arb', 'Payment ID not found in redirect URL');
             }
+
+            // Create payment transaction record
+            $transaction = AppPaymentTransaction::create([
+                'user_id' => $user->id,
+                'installation_id' => $install->id,
+                'app_id' => $app->id,
+                'payment_transaction_id' => $paymentId,
+                'gateway' => 'arb',
+                'amount' => $app->price,
+                'currency' => 'SAR',
+                'status' => 'pending',
+                'gateway_response' => $resp,
+                'metadata' => [
+                    'payment_initiated_at' => now()->toIso8601String(),
+                    'redirect_url' => $resp['redirect_url'],
+                ],
+            ]);
+
+            // Store invoice_id for payment tracking (installation is already installed)
+            $install->update(['invoice_id' => $paymentId]);
 
             Log::info('Payment initiated for installation', [
                 'installation_id' => $install->id,
                 'payment_id' => $paymentId,
                 'app_id' => $app->id,
+                'transaction_id' => $transaction->id,
             ]);
 
             return $resp['redirect_url'];

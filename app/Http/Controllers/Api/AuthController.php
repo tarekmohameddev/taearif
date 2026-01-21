@@ -685,10 +685,14 @@ class AuthController extends Controller
             }
 
             // Resolve tenant owner (tenant for tenant; tenant for employee)
+            // Eager load tenant relationship if user is an employee to avoid N+1 query
+            if ($user->isEmployee() && !$user->relationLoaded('tenant')) {
+                $user->load('tenant');
+            }
             $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
 
-            // Check if performance optimizations are enabled
-            $useOptimizations = config('performance.enable_api_performance_optimizations');
+            // Check if performance optimizations are enabled (default to true for better performance)
+            $useOptimizations = config('performance.enable_api_performance_optimizations', true);
             $cacheKey = "user:profile:{$user->id}:{$owner->id}";
             $cacheTtl = 300; // 5 minutes
 
@@ -708,7 +712,7 @@ class AuthController extends Controller
 
             if ($useOptimizations) {
                 // Eager load relationships with column whitelists to reduce data transfer
-                // Load owner with memberships (latest), domains (active), and basic_setting in one go
+                // Load owner with memberships (latest), domains (active), basic_setting, and employee counts in one go
                 $owner->load([
                     'memberships' => function ($query) {
                         $query->select([
@@ -733,6 +737,15 @@ class AuthController extends Controller
                     },
                     'basic_setting' => function ($query) {
                         $query->select(['id', 'user_id', 'company_name']);
+                    }
+                ]);
+
+                // Eager load employee counts to avoid N+1 queries
+                // Use withCount to get counts in a single query instead of two separate count() calls
+                $owner->loadCount([
+                    'employees as total_employees_count',
+                    'employees as active_employees_count' => function ($query) {
+                        $query->where('active', true);
                     }
                 ]);
 
@@ -875,8 +888,13 @@ class AuthController extends Controller
                     'usage' => $owner->employee_usage,
                     'max_employees' => (isset($membershipDetails['package']) ? $membershipDetails['package']['employees_limit'] : 0),
                     'is_over_limit' => $owner->employee_usage >= $owner->employee_quota,
-                    'active_count' => $owner->employees()->where('active', true)->count(),
-                    'total_count' => $owner->employees()->count(),
+                    // Use eager loaded counts if available, otherwise fallback to queries
+                    'active_count' => $useOptimizations && isset($owner->active_employees_count) 
+                        ? $owner->active_employees_count 
+                        : $owner->employees()->where('active', true)->count(),
+                    'total_count' => $useOptimizations && isset($owner->total_employees_count)
+                        ? $owner->total_employees_count
+                        : $owner->employees()->count(),
                 ],
                 'permissions' => $permissions,
             ];

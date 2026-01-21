@@ -16,6 +16,8 @@ use App\Models\User\Language;
 use App\Models\User\RealestateManagement\PropertyContent;
 use App\Models\User\RealestateManagement\UserPropertyCharacteristic;
 use App\Models\User\RealestateManagement\ApiUserCategory;
+use App\Models\Reminder;
+use App\Http\Resources\Crm\ReminderResource;
 
 class CrmRequestController extends ApiController
 {
@@ -56,6 +58,7 @@ class CrmRequestController extends ApiController
 			'interested_category_ids' => 'nullable',
 			'interested_property_ids' => 'nullable',
 			'has_property' => 'nullable|in:0,1',
+			'reminder_type_id' => 'nullable|integer',
 			'sort_by' => 'nullable|in:position,created_at,id',
 			'sort_dir' => 'nullable|in:asc,desc',
 		]);
@@ -96,11 +99,12 @@ class CrmRequestController extends ApiController
 			$request->filled('procedure_id') || 
 			$request->filled('responsible_employee_id') || 
 			$request->filled('employee_whatsapp_number') || 
+			$request->filled('reminder_type_id') || 
 			!empty($catIds) || 
 			!empty($propIds);
 
 		if ($hasCustomerFilters) {
-			$baseQuery->whereHas('customer', function ($customerQuery) use ($request, $catIds, $propIds) {
+			$baseQuery->whereHas('customer', function ($customerQuery) use ($request, $catIds, $propIds, $userId) {
 			// General search (q)
 			if ($request->filled('q')) {
 				$qText = trim($request->input('q'));
@@ -142,6 +146,18 @@ class CrmRequestController extends ApiController
 			if ($request->filled('employee_whatsapp_number')) {
 				$customerQuery->whereHas('responsibleEmployee.activeWhatsappUser', function ($sub) use ($request) {
 					$sub->where('number', 'like', '%' . $request->input('employee_whatsapp_number') . '%');
+				});
+			}
+
+			// Reminder type filter
+			if ($request->filled('reminder_type_id')) {
+				$customerQuery->whereExists(function ($sub) use ($request, $userId) {
+					$sub->select(DB::raw(1))
+						->from('reminders')
+						->whereColumn('reminders.customer_id', 'api_customers.id')
+						->where('reminders.user_id', $userId)
+						->where('reminders.reminder_type_id', (int)$request->input('reminder_type_id'))
+						->whereNull('reminders.deleted_at');
 				});
 			}
 
@@ -436,6 +452,18 @@ class CrmRequestController extends ApiController
 
 		$model = CrmRequest::forUser($userId)->findOrFail($id);
 
+		// Get reminders for the customer
+		$reminders = [];
+		if (!empty($model->customer_id)) {
+			$tenantId = $request->user()->tenantOwnerId();
+			$reminders = Reminder::forUser($tenantId)
+				->forCustomer($model->customer_id)
+				->with(['reminderType', 'customer.city', 'customer.district'])
+				->orderBy('datetime', 'asc')
+				->get();
+			$reminders = ReminderResource::collection($reminders);
+		}
+
 		$customer = null;
 		if (!empty($model->customer_id)) {
 			$c = \App\Models\ApiCustomer::with('responsibleEmployee.activeWhatsappUser')->find($model->customer_id);
@@ -547,6 +575,7 @@ class CrmRequestController extends ApiController
 			'request' => $requestData,
 			'customer' => $customer,
 			'cards'   => $cards,
+			'reminders' => $reminders,
 			'property_source' => $model->property_id ? 'existing_property' : 'specifications',
 		];
 		if ($property) {
@@ -827,11 +856,13 @@ class CrmRequestController extends ApiController
 
 					$updateData = $propertyContentFields;
 
-					if (isset($updateData['title'])) {
-						$updateData['slug'] = PropertyContent::generateUniqueSlug($updateData['title'], $property->id);
-					}
-
 					if ($content) {
+						// Ensure slug is never accepted from request
+						unset($updateData['slug']);
+						// Regenerate slug if title is being updated
+						if (isset($updateData['title'])) {
+							$updateData['slug'] = PropertyContent::generateUniqueSlug($updateData['title'], $property->id);
+						}
 						$content->update($updateData);
 					} else {
 						$categoryId = $property->category_id ?? ApiUserCategory::where('slug', 'other')->value('id');

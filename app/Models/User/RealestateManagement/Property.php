@@ -27,6 +27,9 @@ class Property extends Model
         'faqs' => 'array',
         'beds' => 'integer',
         'bath' => 'integer',
+        'missing_fields' => 'array',
+        'validation_errors' => 'array',
+        'completed_at' => 'datetime',
     ];
 
 
@@ -62,8 +65,14 @@ class Property extends Model
         'water_meter_number',
         'electricity_meter_number',
         'deed_number',
+        'advertising_license',
         'reorder',
         'reorder_featured',
+        'completion_status',
+        'missing_fields',
+        'validation_errors',
+        'import_batch_id',
+        'completed_at',
     ];
 
     public function displayFaqs(): array
@@ -114,6 +123,40 @@ class Property extends Model
             $last = self::where('featured', 1)->max('reorder_featured');
             $reorderFeatured = $last ? $last + 1 : 1;
         }
+        
+        // Normalize features to array format
+        $features = $request['features'] ?? [];
+        if (is_string($features)) {
+            // Try to decode as JSON first
+            $decoded = json_decode($features, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $features = $decoded;
+            } else {
+                // If it's a plain string, wrap it in an array
+                $features = [$features];
+            }
+        } elseif (!is_array($features)) {
+            // If it's neither string nor array, default to empty array
+            $features = [];
+        }
+        
+        // Normalize missing_fields and validation_errors to arrays
+        $missingFields = $request['missing_fields'] ?? null;
+        if (is_string($missingFields)) {
+            $decoded = json_decode($missingFields, true);
+            $missingFields = (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) ? $decoded : null;
+        } elseif (!is_array($missingFields) && !is_null($missingFields)) {
+            $missingFields = null;
+        }
+        
+        $validationErrors = $request['validation_errors'] ?? null;
+        if (is_string($validationErrors)) {
+            $decoded = json_decode($validationErrors, true);
+            $validationErrors = (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) ? $decoded : null;
+        } elseif (!is_array($validationErrors) && !is_null($validationErrors)) {
+            $validationErrors = null;
+        }
+        
         return self::create([
             'region_id' => $request['region_id'] ?? null,
             'project_id' => $request['project_id'] ?? null,
@@ -131,7 +174,7 @@ class Property extends Model
             'area' => $request['area'],
             'size' => $request['size'] ?? null,
             'featured' => $featured,
-            'features' => $request['features'],
+            'features' => $features,
             'video_url' => $request['video_url'] ?? null,
             'virtual_tour' => $request['virtual_tour'] ?? null,
             'status' => $request['status'],
@@ -144,9 +187,15 @@ class Property extends Model
             'water_meter_number' => $request['water_meter_number'] ?? null,
             'electricity_meter_number' => $request['electricity_meter_number'] ?? null,
             'deed_number' => $request['deed_number'] ?? null,
+            'advertising_license' => $request['advertising_license'] ?? null,
             'reorder_featured' => $reorderFeatured,
             'reorder' => 0,
             'show_reservations' => $request['show_reservations'] ?? true,
+            'completion_status' => $request['completion_status'] ?? 'complete',
+            'missing_fields' => $missingFields,
+            'validation_errors' => $validationErrors,
+            'import_batch_id' => $request['import_batch_id'] ?? null,
+            'completed_at' => $request['completed_at'] ?? null,
         ]);
     }
 
@@ -185,6 +234,7 @@ class Property extends Model
             'water_meter_number' => $requestData['water_meter_number'] ?? $this->water_meter_number,
             'electricity_meter_number' => $requestData['electricity_meter_number'] ?? $this->electricity_meter_number,
             'deed_number' => $requestData['deed_number'] ?? $this->deed_number,
+            'advertising_license' => $requestData['advertising_license'] ?? $this->advertising_license,
             'reorder_featured' => $requestData['reorder_featured'] ?? $this->reorder_featured,
             'reorder' => $requestData['reorder'] ?? $this->reorder,
             'show_reservations' => $requestData['show_reservations'] ?? $this->show_reservations,
@@ -385,6 +435,42 @@ class Property extends Model
         return self::resolvePublicUrl($this->featured_image);
     }
 
+    /**
+     * Get gallery image URLs as array
+     * 
+     * @return array
+     */
+    public function getGalleryUrlsAttribute(): array
+    {
+        if (!$this->relationLoaded('galleryImages')) {
+            return [];
+        }
+        
+        return $this->galleryImages->map(function ($image) {
+            return asset($image->image);
+        })->toArray();
+    }
+
+    /**
+     * Get floor planning image URLs as array
+     * 
+     * @return array
+     */
+    public function getFloorPlanningImageUrlsAttribute(): array
+    {
+        if (empty($this->floor_planning_image)) {
+            return [];
+        }
+        
+        $images = is_array($this->floor_planning_image) 
+            ? $this->floor_planning_image 
+            : [$this->floor_planning_image];
+        
+        return array_map(function ($img) {
+            return asset($img);
+        }, array_filter($images));
+    }
+
     // If you expose gallery with legacy rows, you might want similar accessors
     // public function getVideoImageUrlAttribute(): ?string { ... }
 
@@ -428,5 +514,28 @@ class Property extends Model
         return asset(ltrim($path, '/'));
     }
 
+    /**
+     * Scope to exclude incomplete/draft properties from counts
+     */
+    public function scopeComplete($query)
+    {
+        return $query->where('completion_status', 'complete');
+    }
+
+    /**
+     * Scope to get only incomplete properties
+     */
+    public function scopeIncomplete($query)
+    {
+        return $query->where('completion_status', 'incomplete');
+    }
+
+    /**
+     * Scope to get draft properties (incomplete or pending review)
+     */
+    public function scopeDrafts($query)
+    {
+        return $query->where('completion_status', '!=', 'complete');
+    }
 
 }

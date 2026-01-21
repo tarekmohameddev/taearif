@@ -64,6 +64,7 @@ use App\Http\Controllers\Api\{
     ApiSideMenusController,
     ApiContractController,
     RentalContractController,
+    AppPaymentController,
 };
 
 use App\Http\Controllers\Api\V1\Logs\{
@@ -212,6 +213,8 @@ Route::middleware(['auth:sanctum', 'require.active.package'])->group(function ()
     Route::get('/analytics/page-locations', [AnalyticsDashboardController::class, 'getPageLocations']); // Get full URLs (page_location)
     Route::get('/analytics/today', [AnalyticsDashboardController::class, 'getToday']); // Get today's data (near realtime, perfect tenant filtering)
     Route::get('/analytics/realtime', [AnalyticsDashboardController::class, 'getRealtime']); // Get realtime data (last 30 minutes, limited filtering)
+    Route::get('/analytics/live-test', [AnalyticsDashboardController::class, 'liveTest']); // Live GA4 tenant filtering verification endpoint for debugging
+    Route::get('/analytics/tenants', [AnalyticsDashboardController::class, 'getTenantsList']); // Get list of all tenants with GA4 data
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -264,7 +267,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/rental-contracts/{id}/status', [RentalContractController::class, 'changeStatus']); // Change rental contract status
 });
 // project routes
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
+Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::get   ('/projects',            [ProjectController::class, 'index'])->middleware('can:projects.view');
     Route::get   ('/projects/{id}',       [ProjectController::class, 'show'])->middleware('can:projects.view');
     Route::post  ('/projects',            [ProjectController::class, 'store'])->middleware('can:projects.create');
@@ -278,14 +281,26 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
 
 // property routes
 
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
+Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::post  ('/properties/reorder-featured',        [PropertyController::class, 'properties_reorder_featured'])->middleware('can:properties.reorder');
     Route::post  ('/properties/reorder',                 [PropertyController::class, 'properties_reorder'])->middleware('can:properties.reorder');
         // properties/categories
     Route::get   ('/properties/categories',              [PropertyController::class, 'properties_categories']);
 
     Route::get   ('/properties',                         [PropertyController::class, 'index'])->middleware('can:properties.view');
+    Route::get   ('/properties/filter-options',         [PropertyController::class, 'filterOptions'])->middleware('can:properties.view');
+    Route::get   ('/properties/cards',                  [PropertyController::class, 'cards'])->middleware('can:properties.view');
     Route::get   ('/properties/available-units',         [PropertyController::class, 'availableUnits'])->middleware('can:properties.view');
+    Route::get   ('/properties/export',                  [PropertyController::class, 'export'])->middleware('can:properties.view');
+    Route::get   ('/properties/export-for-import',     [PropertyController::class, 'exportForImport'])->middleware('can:properties.view');
+    
+    // Draft/Incomplete Properties Management - MUST be before /properties/{id} to avoid route conflict
+    Route::get   ('/properties/drafts',                   [PropertyController::class, 'listDrafts'])->middleware('can:properties.view');
+    Route::get   ('/properties/drafts/{id}',              [PropertyController::class, 'showDraft'])->middleware('can:properties.view');
+    Route::patch ('/properties/drafts/{id}',              [PropertyController::class, 'updateDraft'])->middleware('can:properties.update');
+    Route::post  ('/properties/drafts/{id}/complete',     [PropertyController::class, 'completeDraft'])->middleware('can:properties.create');
+    Route::post  ('/properties/drafts/bulk-complete',     [PropertyController::class, 'bulkCompleteDrafts'])->middleware('can:properties.create');
+    
     Route::get   ('/properties/{id}',                    [PropertyController::class, 'show'])->middleware('can:properties.view');
     Route::post  ('/properties/bulk-import',             [PropertyController::class, 'bulkImport'])->middleware('can:properties.create');
     // Route::get   ('/properties/bulk-import/template',    [PropertyController::class, 'downloadTemplate']); // Moved to public routes
@@ -296,9 +311,10 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
     Route::patch ('/properties/{id}/toggle-featured',    [PropertyController::class, 'toggleFeatured'])->middleware('can:properties.update');
     Route::post  ('/properties/{id}/toggle-status',      [PropertyController::class, 'toggleStatus'])->middleware('can:properties.update');
     Route::post  ('/properties/{propertyId}/duplicate',  [PropertyController::class, 'duplicate'])->middleware('can:properties.create');
+    
     Route::get   ('/property/facades',                   [UserFacadeController::class, 'index'])->middleware('can:properties.view');
     // faqs
-    Route::get   ('/property-faqs',                               [PropertyController::class, 'faqs']);
+    Route::get   ('/property-faqs',                      [PropertyController::class, 'faqs']);
 
     // Building management routes
     Route::get   ('/buildings',                         [App\Http\Controllers\Api\BuildingController::class, 'index']);
@@ -419,16 +435,25 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/apps', [ApiInstallationController::class, 'index']);
     Route::post('/apps/install', [ApiInstallationController::class, 'install']);
     Route::post('/apps/uninstall/{appId}', [ApiInstallationController::class, 'uninstall']);
+    Route::get('/apps/{appId}/purchase-url', [ApiInstallationController::class, 'getPurchaseUrl']);
 
     // whatsapp
     Route::get('/apps/whatsapp', [ApiInstallationController::class, 'whatsapp']);
     Route::post('/apps/whatsapp/install', [ApiInstallationController::class, 'installWhatsapp']);
     Route::post('/apps/whatsapp/uninstall', [ApiInstallationController::class, 'uninstallWhatsapp']);
 
+    // App Payment Endpoints
+    Route::get('/installations/{installationId}/payment/status', [AppPaymentController::class, 'getPaymentStatus']);
+    Route::post('/apps/{appId}/payment/verify', [AppPaymentController::class, 'verifyPayment']);
+    Route::get('/apps/payments', [AppPaymentController::class, 'getPaymentHistory']);
+
 });
 
+// App Payment Callback (public, no auth required for webhooks)
+Route::post('/apps/payment/callback/{gateway}', [AppPaymentController::class, 'handleCallback']);
+
 // api_customers
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])->group(function () {
+Route::middleware(['auth:sanctum', 'audit.ctx'])->group(function () {
     Route::prefix('customers')->group(function () {
         Route::get   ('/filters',  [CustomerController::class, 'filterOptions'])->middleware('can:customers.view');
         Route::get   ('/',         [CustomerController::class, 'index'])->middleware('can:customers.view');
@@ -446,7 +471,7 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx'])
 
 
 // Api crm Customer
-Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx', 'log.employee.activity', 'can:crm.view'])->prefix('crm')->group(function () {
+Route::middleware(['auth:sanctum', 'audit.ctx', 'log.employee.activity', 'can:crm.view'])->prefix('crm')->group(function () {
     // STAGES
     Route::apiResource('stages', UserApiCustomerStageController::class);
     // reorderStages
@@ -494,6 +519,11 @@ Route::middleware(['auth:sanctum', SetTenantForPermissions::class, 'audit.ctx', 
 
     // searchCustomers
     Route::get('/customers/search', [CRMController::class, 'searchCustomers']); // search customers
+
+    // CRM Customer Import/Export
+    Route::get('/customers/export', [CRMController::class, 'export'])->middleware('can:crm.view');
+    Route::get('/customers/import/template', [CRMController::class, 'downloadTemplate'])->middleware('can:crm.view');
+    Route::post('/customers/import', [CRMController::class, 'bulkImport'])->middleware('can:crm.create');
 
     // Property Request Auto-Customer Settings
     Route::get('/property-requests/settings', [\App\Http\Controllers\Api\CRM\PropertyRequestSettingsController::class, 'index']);
@@ -701,7 +731,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/inquiry', [CustomerInquiryController::class, 'index']);
 
     // ApiPropertyRequestController
-    Route::middleware([SetTenantForPermissions::class, 'can:properties.view'])->group(function () {
+    Route::middleware(['can:properties.view'])->group(function () {
         Route::get('/property-requests/filters', [ApiPropertyRequestController::class, 'filterOptions']);
         Route::get('/property-requests', [ApiPropertyRequestController::class, 'index']);
         Route::get('/property-requests/{id}', [ApiPropertyRequestController::class, 'show']);
@@ -854,6 +884,11 @@ Route::prefix('v1')->group(function () {
 			Route::post('/bulk-action', [\App\Http\Controllers\Api\V1\ReservationsController::class, 'bulkAction']);
 		});
 
+		Route::prefix('job-applications')->group(function () {
+			Route::get('/', [\App\Http\Controllers\Api\V1\JobApplicationController::class, 'index']);
+			Route::get('/{id}', [\App\Http\Controllers\Api\V1\JobApplicationController::class, 'show']);
+		});
+
         Route::get('/customers/{id}/logs',  [CustomerLogController::class, 'index'])->middleware('can:projects.view');
         Route::get('/projects/{id}/logs',   [ProjectLogController::class, 'index'])->middleware('can:projects.view');
         Route::get('/properties/{id}/logs', [PropertyLogController::class, 'index'])->middleware('can:properties.view');
@@ -944,6 +979,8 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
 
 	// Tenant Website Reservations (public - rate limited)
 	Route::post('{tenantId}/reservations', [\App\Http\Controllers\Api\V1\TenantWebsite\ReservationController::class, 'store'])->middleware('throttle:5,1');
+
+	Route::post('{tenantId}/job-applications', [\App\Http\Controllers\Api\V1\TenantWebsite\JobApplicationController::class, 'store'])->middleware('throttle:10,1');
 
     // Tenant Website Properties (public)
     Route::get('{tenantId}/properties', [\App\Http\Controllers\Api\V1\TenantWebsite\PropertyController::class, 'index']);

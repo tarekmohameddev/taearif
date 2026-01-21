@@ -700,6 +700,191 @@ class CRMController extends Controller
         ]);
     }
 
+    /**
+     * Export CRM customers to Excel/CSV
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function export(Request $request)
+    {
+        $user = $request->user();
+        $tenantId = $user->tenantOwnerId();
+
+        $filters = $request->only([
+            'type_id',
+            'priority_id',
+            'stage_id',
+            'procedure_id',
+            'city_id',
+            'district_id',
+            'responsible_employee_id',
+            'search',
+        ]);
+
+        $format = $request->input('format', 'xlsx');
+        $filename = 'crm_customers_export_' . now()->format('Y-m-d_His');
+
+        if ($format === 'csv') {
+            return \Maatwebsite\Excel\Facades\Excel::download(
+                new \App\Exports\CrmCustomersExport($tenantId, $filters),
+                $filename . '.csv',
+                \Maatwebsite\Excel\Excel::CSV
+            );
+        }
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\CrmCustomersExport($tenantId, $filters),
+            $filename . '.xlsx'
+        );
+    }
+
+    /**
+     * Download the CRM customer import template
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function downloadTemplate(Request $request)
+    {
+        $user = $request->user();
+        $tenantId = $user->tenantOwnerId();
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\CrmCustomersTemplateExport($tenantId),
+            'crm_customers_import_template.xlsx'
+        );
+    }
+
+    /**
+     * Bulk import CRM customers from Excel/CSV file
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function bulkImport(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,csv|max:10240', // 10MB max
+        ], [
+            'file.required' => 'A file is required for import. Please select an Excel or CSV file.',
+            'file.mimes' => 'The file must be an Excel (.xlsx) or CSV (.csv) file.',
+            'file.max' => 'The file size must not exceed 10MB. Please use a smaller file or split it into multiple files.',
+        ]);
+
+        $user = $request->user();
+        $tenantId = $user->tenantOwnerId();
+
+        try {
+            // Calculate the exact number of rows with data
+            $filePath = $request->file('file')->getPathname();
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($filePath);
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($filePath);
+            $worksheet = $spreadsheet->getActiveSheet();
+            $highestRow = $worksheet->getHighestDataRow();
+
+            // Count incoming rows
+            $import = new \App\Imports\CrmCustomersImport($tenantId, $highestRow);
+            $collection = \Maatwebsite\Excel\Facades\Excel::toCollection($import, $request->file('file'));
+            $firstSheet = $collection->first();
+
+            $incomingRowCount = $firstSheet->filter(function ($row) {
+                $rowArray = $row->toArray();
+
+                if (isset($rowArray['_skip_empty_row']) && $rowArray['_skip_empty_row'] === true) {
+                    return false;
+                }
+
+                $hasData = !empty(array_filter($rowArray, function ($value) {
+                    return !is_null($value) && $value !== '';
+                }));
+
+                return $hasData;
+            })->count();
+
+            Log::info('CRM customer bulk import started', [
+                'user_id' => $user->id,
+                'tenant_id' => $tenantId,
+                'incoming_rows' => $incomingRowCount,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to read uploaded file: ' . $e->getMessage(),
+            ], 422);
+        }
+
+        try {
+            // Perform the actual import
+            $import = new \App\Imports\CrmCustomersImport($tenantId, $highestRow);
+            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('file'));
+
+            $failures = $import->sheetImport->failures();
+            $errors = $import->sheetImport->errors();
+            $detailedErrors = [];
+
+            // Collect Validation Failures
+            foreach ($failures as $failure) {
+                $detailedErrors[] = [
+                    'row' => $failure->row(),
+                    'message' => 'Validation Error: ' . implode(', ', $failure->errors()),
+                    'values' => $failure->values(),
+                ];
+            }
+
+            // Collect Logic Errors (Exceptions)
+            foreach ($errors as $error) {
+                $message = $error->getMessage();
+                $row = null;
+
+                if (preg_match('/Row (\d+):/', $message, $matches)) {
+                    $row = (int) $matches[1];
+                }
+
+                $detailedErrors[] = [
+                    'row' => $row,
+                    'message' => $message,
+                ];
+            }
+
+            $importedCount = $import->sheetImport->importedCount;
+            $failedCount = count($detailedErrors);
+
+            if ($failedCount > 0) {
+                return response()->json([
+                    'status' => 'partial_success',
+                    'message' => "Import completed with issues. Imported: {$importedCount}, Failed: {$failedCount}.",
+                    'imported_count' => $importedCount,
+                    'failed_count' => $failedCount,
+                    'errors' => $detailedErrors,
+                ], 422);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Import successful. {$importedCount} customers created.",
+                'imported_count' => $importedCount,
+                'failed_count' => 0,
+                'errors' => [],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('CRM bulk customer import critical error', [
+                'user_id' => $user->id,
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'A critical error occurred during import: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     private function ok($data = [], int $code = 200)
     {
         return response()->json(array_merge(['status' => 'success'], $data), $code);

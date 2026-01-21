@@ -45,9 +45,16 @@ class ApiInstallation extends Model
 
 
         /*──────── state helpers ────────*/
+    /**
+     * @deprecated This method is deprecated. Installations are now installed immediately.
+     * Payment is tracked separately via AppPaymentTransaction.
+     * Kept for backward compatibility only.
+     */
     public function markPending(string $invoiceId): void
     {
-        $this->update(['status' => InstallStatus::PendingPayment, 'invoice_id' => $invoiceId]);
+        // Deprecated: No longer used in new flow
+        // Just store invoice_id, installation should already be installed
+        $this->update(['invoice_id' => $invoiceId]);
     }
 
     public function markInstalled(?string $recurringId = null): void
@@ -64,6 +71,32 @@ class ApiInstallation extends Model
     {
         return $this->status === InstallStatus::Installed
             || ($this->status === InstallStatus::Trialing && $this->trial_ends_at?->isFuture());
+    }
+
+    /**
+     * Check if installation has a completed payment transaction
+     *
+     * @return bool
+     */
+    public function hasCompletedPayment(): bool
+    {
+        return $this->paymentTransactions()
+            ->where('status', 'completed')
+            ->exists();
+    }
+
+    /**
+     * Check if installation has a valid subscription period
+     *
+     * @return bool
+     */
+    public function hasValidSubscription(): bool
+    {
+        if (!$this->current_period_end) {
+            return false;
+        }
+
+        return $this->current_period_end->isFuture();
     }
 
     /*──────── relations ────────*/
@@ -84,6 +117,11 @@ class ApiInstallation extends Model
     public function settings()
     {
         return $this->hasOne(ApiInstallationSetting::class, 'installation_id');
+    }
+
+    public function paymentTransactions()
+    {
+        return $this->hasMany(AppPaymentTransaction::class, 'installation_id');
     }
     public function scopeInstalled($query)
     {

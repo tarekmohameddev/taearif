@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\MarketplaceApp\UpdateMarketplaceAppRequest;
 use App\Enums\BillingType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Cache;
 
 class MarketplaceAppController extends Controller
 {
@@ -82,6 +83,9 @@ class MarketplaceAppController extends Controller
 
         $this->appService->updateApp($appId, $data, $image);
 
+        // Clear sidebar cache since app changes affect sidebar
+        $this->clearSidebarCache();
+
         // Handle AJAX requests (maintain backward compatibility)
         if ($request->expectsJson() || $request->ajax()) {
             return "success";
@@ -102,6 +106,9 @@ class MarketplaceAppController extends Controller
 
         $this->appService->deleteApp($request->app_id);
 
+        // Clear sidebar cache since deleted app should not appear in sidebar
+        $this->clearSidebarCache();
+
         Session::flash('success', 'تم حذف تطبيق المتجر بنجاح!');
         return back();
     }
@@ -117,6 +124,9 @@ class MarketplaceAppController extends Controller
         ]);
 
         $deletedCount = $this->appService->bulkDeleteApps($request->ids);
+
+        // Clear sidebar cache since deleted apps should not appear in sidebar
+        $this->clearSidebarCache();
 
         // Handle AJAX requests (maintain backward compatibility)
         if ($request->expectsJson() || $request->ajax()) {
@@ -138,6 +148,9 @@ class MarketplaceAppController extends Controller
 
         $app = $this->appService->toggleAppStatus($request->app_id);
 
+        // Clear sidebar cache since app visibility affects sidebar
+        $this->clearSidebarCache();
+
         // Handle AJAX requests
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
@@ -149,6 +162,16 @@ class MarketplaceAppController extends Controller
 
         Session::flash('success', $app->is_enabled ? 'تم تفعيل التطبيق بنجاح!' : 'تم إلغاء تفعيل التطبيق بنجاح!');
         return back();
+    }
+
+    /**
+     * Clear all sidebar cache entries
+     */
+    private function clearSidebarCache()
+    {
+        // Clear cache by pattern (Laravel doesn't support pattern deletion natively)
+        // We'll need to clear the entire cache or use a tag-based cache if available
+        Cache::flush();
     }
 }
 

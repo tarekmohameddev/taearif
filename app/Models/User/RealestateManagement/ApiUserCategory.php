@@ -89,11 +89,15 @@ class ApiUserCategory extends Model
 
     public function scopeVisibleForUser($query, $userId)
     {
-        $activeIds = \App\Models\Api\ApiUserCategorySetting::where('user_id', $userId)
-            ->where('is_active', 1)
-            ->pluck('category_id');
-
-        return $query->whereIn('id', $activeIds)->where('is_active', true);
+        return $query
+            ->where('api_user_categories.is_active', true)
+            ->whereExists(function ($q) use ($userId) {
+                $q->selectRaw(1)
+                    ->from('api_user_category_settings')
+                    ->whereColumn('api_user_category_settings.category_id', 'api_user_categories.id')
+                    ->where('api_user_category_settings.user_id', $userId)
+                    ->where('api_user_category_settings.is_active', 1);
+            });
     }
 
     public function scopeOnlyWithPropertiesForUser($query, $userId)
