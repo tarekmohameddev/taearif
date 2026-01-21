@@ -36,6 +36,7 @@ class UserPropertyRequest extends Model
     protected $fillable = [
         'user_id',
         'region', // nullable
+        'purpose',
         'property_type',
         'category_id',
         'city_id',
@@ -53,6 +54,7 @@ class UserPropertyRequest extends Model
         'contact_on_whatsapp',
         'notes',
         'is_read',
+        'is_archived',
         'is_active',
         'status_id',
     ];
@@ -64,6 +66,8 @@ class UserPropertyRequest extends Model
         'budget_to'            => 'float',
         'area_from'            => 'integer',
         'area_to'              => 'integer',
+        'is_read'              => 'boolean',
+        'is_archived'          => 'boolean',
         'status_id'            => 'integer',
     ];
 

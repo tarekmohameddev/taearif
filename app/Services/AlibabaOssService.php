@@ -17,8 +17,9 @@ class AlibabaOssService
     public function __construct()
     {
         // Lazy initialization - only initialize when actually used
-        $this->bucket = env('OSS_BUCKET');
-        $this->endpoint = env('OSS_ENDPOINT');
+        // Use config() instead of env() to work with config cache
+        $this->bucket = config('filesystems.disks.oss.bucket');
+        $this->endpoint = config('filesystems.disks.oss.endpoint');
     }
     
     /**
@@ -30,8 +31,9 @@ class AlibabaOssService
             return;
         }
         
-        $accessKeyId = env('OSS_ACCESS_KEY_ID');
-        $accessKeySecret = env('OSS_ACCESS_KEY_SECRET');
+        // Use config() instead of env() to work with config cache
+        $accessKeyId = config('filesystems.disks.oss.key');
+        $accessKeySecret = config('filesystems.disks.oss.secret');
        
         // Check each required field individually
         if (empty($accessKeyId)) {
@@ -169,7 +171,8 @@ class AlibabaOssService
     {
         // Use third-level domain format: bucket.oss-region.aliyuncs.com
         $bucket = $this->bucket;
-        $region = env('OSS_REGION', 'me-central-1');
+        // Use config() instead of env() to work with config cache
+        $region = config('filesystems.disks.oss.region', 'me-central-1');
         
         return "https://{$bucket}.oss-{$region}.aliyuncs.com/{$filename}";
     }

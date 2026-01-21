@@ -480,6 +480,7 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         // Payment Log
         Route::get('/payment-log', 'Admin\PaymentLogController@index')->name('payment-log.index');
         Route::post('/payment-log/update', 'Admin\PaymentLogController@update')->name('payment-log.update');
+        Route::get('/payment-log/{id}/download-invoice', 'Admin\PaymentLogController@downloadInvoice')->name('payment-log.download-invoice');
     });
 
     // Custom Domains

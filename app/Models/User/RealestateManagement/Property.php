@@ -111,6 +111,13 @@ class Property extends Model
             ['name' => 'Other', 'type' => 'property', 'is_active' => 1]
         );
 
+        // Get the tenant owner ID (tenant_id for employees, user_id for tenants)
+        $user = User::find($userId);
+        $tenantId = $user ? $user->tenantOwnerId() : $userId;
+
+        // Get the creator ID (employee ID if employee created it, otherwise the tenant ID)
+        $creatorId = $createdBy ?? auth()->id();
+
         $reorderFeatured = 0;
         if ($featured) {
             $last = self::where('featured', 1)->max('reorder_featured');
@@ -153,8 +160,8 @@ class Property extends Model
         return self::create([
             'region_id' => $request['region_id'] ?? null,
             'project_id' => $request['project_id'] ?? null,
-            'user_id' => $userId,
-            'created_by' => $createdBy ?? auth()->id(),
+            'user_id' => $tenantId,
+            'created_by' => $creatorId,
             'featured_image' => $featuredImgName,
             'floor_planning_image' => $floorPlanningImage ?? null,
             'video_image' => $videoImage,

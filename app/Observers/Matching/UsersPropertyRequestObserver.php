@@ -4,6 +4,7 @@ namespace App\Observers\Matching;
 
 use App\Models\Api\UserPropertyRequest;
 use App\Services\Matching\MatchingService;
+use App\Services\Matching\RequestCompletenessService;
 use App\Services\PropertyRequestCustomerService;
 use Illuminate\Support\Facades\Log;
 
@@ -11,7 +12,8 @@ class UsersPropertyRequestObserver
 {
     public function __construct(
         private PropertyRequestCustomerService $customerService,
-        private MatchingService $matchingService
+        private MatchingService $matchingService,
+        private RequestCompletenessService $completeness
     ) {}
 
     public function created(UserPropertyRequest $model): void
@@ -21,14 +23,33 @@ class UsersPropertyRequestObserver
         // Auto-create customer if setting is enabled
         $this->customerService->autoCreateFromRequest($model);
 
+        $check = $this->completeness->validate('web', $model->id);
+        Log::info('UsersPropertyRequestObserver: completeness check', [
+            'id' => $model->id,
+            'is_complete' => $check['is_complete'],
+            'missing_fields' => $check['missing_fields'],
+        ]);
+
         // Generate property matches
-        $this->matchingService->generateMatchesForRequest('web', $model->id, 25, true);
+        $forceAi = (bool) $check['is_complete'];
+        $limit = $forceAi ? 25 : 10;
+        $this->matchingService->generateMatchesForRequest('web', $model->id, $limit, $forceAi, $model->user_id);
     }
 
     public function updated(UserPropertyRequest $model): void
     {
         Log::info('UsersPropertyRequestObserver.updated fired', ['id' => $model->id, 'changes' => $model->getChanges()]);
-        $this->matchingService->generateMatchesForRequest('web', $model->id, 25, true);
+
+        $check = $this->completeness->validate('web', $model->id);
+        Log::info('UsersPropertyRequestObserver: completeness check', [
+            'id' => $model->id,
+            'is_complete' => $check['is_complete'],
+            'missing_fields' => $check['missing_fields'],
+        ]);
+
+        $forceAi = (bool) $check['is_complete'];
+        $limit = $forceAi ? 25 : 10;
+        $this->matchingService->generateMatchesForRequest('web', $model->id, $limit, $forceAi, $model->user_id);
     }
 
 }
