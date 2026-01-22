@@ -66,6 +66,7 @@ class Property extends Model
         'electricity_meter_number',
         'deed_number',
         'advertising_license',
+        'owner_number',
         'reorder',
         'reorder_featured',
         'completion_status',
@@ -123,7 +124,7 @@ class Property extends Model
             $last = self::where('featured', 1)->max('reorder_featured');
             $reorderFeatured = $last ? $last + 1 : 1;
         }
-        
+
         // Normalize features to array format
         $features = $request['features'] ?? [];
         if (is_string($features)) {
@@ -139,7 +140,7 @@ class Property extends Model
             // If it's neither string nor array, default to empty array
             $features = [];
         }
-        
+
         // Normalize missing_fields and validation_errors to arrays
         $missingFields = $request['missing_fields'] ?? null;
         if (is_string($missingFields)) {
@@ -148,7 +149,7 @@ class Property extends Model
         } elseif (!is_array($missingFields) && !is_null($missingFields)) {
             $missingFields = null;
         }
-        
+
         $validationErrors = $request['validation_errors'] ?? null;
         if (is_string($validationErrors)) {
             $decoded = json_decode($validationErrors, true);
@@ -156,7 +157,7 @@ class Property extends Model
         } elseif (!is_array($validationErrors) && !is_null($validationErrors)) {
             $validationErrors = null;
         }
-        
+
         return self::create([
             'region_id' => $request['region_id'] ?? null,
             'project_id' => $request['project_id'] ?? null,
@@ -188,6 +189,7 @@ class Property extends Model
             'electricity_meter_number' => $request['electricity_meter_number'] ?? null,
             'deed_number' => $request['deed_number'] ?? null,
             'advertising_license' => $request['advertising_license'] ?? null,
+            'owner_number' => $request['owner_number'] ?? null,
             'reorder_featured' => $reorderFeatured,
             'reorder' => 0,
             'show_reservations' => $request['show_reservations'] ?? true,
@@ -235,6 +237,7 @@ class Property extends Model
             'electricity_meter_number' => $requestData['electricity_meter_number'] ?? $this->electricity_meter_number,
             'deed_number' => $requestData['deed_number'] ?? $this->deed_number,
             'advertising_license' => $requestData['advertising_license'] ?? $this->advertising_license,
+            'owner_number' => $requestData['owner_number'] ?? $this->owner_number,
             'reorder_featured' => $requestData['reorder_featured'] ?? $this->reorder_featured,
             'reorder' => $requestData['reorder'] ?? $this->reorder,
             'show_reservations' => $requestData['show_reservations'] ?? $this->show_reservations,
@@ -437,7 +440,7 @@ class Property extends Model
 
     /**
      * Get gallery image URLs as array
-     * 
+     *
      * @return array
      */
     public function getGalleryUrlsAttribute(): array
@@ -445,7 +448,7 @@ class Property extends Model
         if (!$this->relationLoaded('galleryImages')) {
             return [];
         }
-        
+
         return $this->galleryImages->map(function ($image) {
             return asset($image->image);
         })->toArray();
@@ -453,7 +456,7 @@ class Property extends Model
 
     /**
      * Get floor planning image URLs as array
-     * 
+     *
      * @return array
      */
     public function getFloorPlanningImageUrlsAttribute(): array
@@ -461,11 +464,11 @@ class Property extends Model
         if (empty($this->floor_planning_image)) {
             return [];
         }
-        
-        $images = is_array($this->floor_planning_image) 
-            ? $this->floor_planning_image 
+
+        $images = is_array($this->floor_planning_image)
+            ? $this->floor_planning_image
             : [$this->floor_planning_image];
-        
+
         return array_map(function ($img) {
             return asset($img);
         }, array_filter($images));
