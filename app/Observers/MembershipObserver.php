@@ -41,12 +41,24 @@ class MembershipObserver
 
     /**
      * Clear the active membership cache for a specific user.
+     * Also clears related caches that depend on membership data.
      *
      * @param int $userId
      * @return void
      */
     private function clearMembershipCache(int $userId): void
     {
-        Cache::forget("active_membership_{$userId}");
+        // Primary membership cache (standardized colon format)
+        Cache::forget("active_membership:{$userId}");
+        
+        // Membership package cache used in side menus
+        Cache::forget("membership_package:{$userId}");
+        
+        // User profile cache (membership affects profile data)
+        // Note: We clear all variants since we don't know the ownerId context here
+        // The user profile cache key is user:profile:{userId}:{ownerId}
+        // For tenant users, userId == ownerId; for employees, we'd need tenant_id
+        // Clearing by userId covers the tenant case; employee cases expire by TTL
+        Cache::forget("user:profile:{$userId}:{$userId}");
     }
 }

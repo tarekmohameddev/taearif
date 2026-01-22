@@ -38,6 +38,7 @@ use App\Services\PropertyFilterOptionsService;
 use Carbon\Carbon;
 use App\Services\AlibabaOssService;
 use App\Services\MembershipCacheService;
+use App\Services\PropertyListCacheVersionService;
 use App\Http\Resources\Api\PropertyResource;
 
 
@@ -938,7 +939,9 @@ class PropertyController extends Controller
 
     public function properties_categories(Request $request)
     {
-        $categories = Cache::remember('api_property_categories_list', 3600, function () {
+        // Reduced TTL from 1 hour to 5 minutes to reduce stale data risk
+        // Observer now handles automatic invalidation on category changes
+        $categories = Cache::remember('api_property_categories_list', 300, function () {
             return ApiUserCategory::where('is_active', true)
                 ->where('type', 'property')
                 ->get(['id', 'name'])
@@ -990,11 +993,15 @@ class PropertyController extends Controller
 
         array_splice($reordered, $newPosition - 1, 0, [$movingProperty]);
 
-        DB::transaction(function () use ($reordered) {
+        DB::transaction(function () use ($reordered, $user) {
             foreach ($reordered as $index => $prop) {
                 Property::where('id', $prop['id'])->update(['reorder_featured' => $index + 1]);
             }
         });
+
+        // Invalidate property list cache (reorder affects list display)
+        $ownerId = method_exists($user, 'tenantOwnerId') ? $user->tenantOwnerId() : $user->id;
+        PropertyListCacheVersionService::incrementVersion($ownerId);
 
         return response()->json([
             'status' => 'success',
@@ -1043,6 +1050,10 @@ class PropertyController extends Controller
                 Property::where('id', $prop['id'])->update(['reorder' => $index + 1]);
             }
         });
+
+        // Invalidate property list cache (reorder affects list display)
+        $ownerId = method_exists($user, 'tenantOwnerId') ? $user->tenantOwnerId() : $user->id;
+        PropertyListCacheVersionService::incrementVersion($ownerId);
 
         Audit::property($user->id, (int)$propertyId, 'custom', "reordered featured list to position {$newPosition}");
 
@@ -1849,10 +1860,12 @@ class PropertyController extends Controller
         ]);
 
         // Invalidate cache for this property (all days variants)
-        Cache::forget("property_api_{$id}_v1_days_7");
-        Cache::forget("property_api_{$id}_v1_days_30");
-        Cache::forget("property_api_{$id}_v1_days_90");
-        Cache::forget("property_api_{$id}_v1_days_365");
+        // Clear both legacy keys and owner-scoped keys
+        $ownerId = $property->user_id;
+        foreach ([7, 30, 90, 365] as $days) {
+            Cache::forget("property_api_{$id}_v1_days_{$days}");
+            Cache::forget("property_api_{$id}_owner_{$ownerId}_v1_days_{$days}");
+        }
 
         return response()->json([
             'status' => 'success',
@@ -1902,13 +1915,17 @@ class PropertyController extends Controller
                 Storage::delete('public/properties/' . $property->featured_image);
             }
 
+            // Capture owner ID before delete for cache invalidation
+            $ownerId = $property->user_id;
+            
             $property->delete();
 
             // Invalidate cache for this property (all days variants)
-            Cache::forget("property_api_{$id}_v1_days_7");
-            Cache::forget("property_api_{$id}_v1_days_30");
-            Cache::forget("property_api_{$id}_v1_days_90");
-            Cache::forget("property_api_{$id}_v1_days_365");
+            // Clear both legacy keys and owner-scoped keys
+            foreach ([7, 30, 90, 365] as $days) {
+                Cache::forget("property_api_{$id}_v1_days_{$days}");
+                Cache::forget("property_api_{$id}_owner_{$ownerId}_v1_days_{$days}");
+            }
 
             // TenantActivity::emit($request, 'property.deleted', 'user_properties', $property->id, $property->toArray(), null);
 
@@ -1938,6 +1955,14 @@ class PropertyController extends Controller
 
             $property->featured = !$property->featured;
             $property->save();
+            
+            // Invalidate property list cache (featured status affects list display)
+            $user = $property->user;
+            if ($user && method_exists($user, 'tenantOwnerId')) {
+                $ownerId = $user->tenantOwnerId();
+                PropertyListCacheVersionService::incrementVersion($ownerId);
+            }
+            
             Audit::property($property->user_id, $property->id, 'custom', "toggle featured -> ".($property->featured ? 'on' : 'off'));
 
             return response()->json([
@@ -1965,6 +1990,14 @@ class PropertyController extends Controller
 
             $property->status = !$property->status;
             $property->save();
+            
+            // Invalidate property list cache (status affects list visibility)
+            $user = $property->user;
+            if ($user && method_exists($user, 'tenantOwnerId')) {
+                $ownerId = $user->tenantOwnerId();
+                PropertyListCacheVersionService::incrementVersion($ownerId);
+            }
+            
             return response()->json([
                 'status' => 'success',
                 'message' => 'Property status updated successfully',
@@ -2475,17 +2508,23 @@ class PropertyController extends Controller
         $useSimplePagination = filter_var($request->input('simple_pagination', false), FILTER_VALIDATE_BOOLEAN);
 
         // OPTIMIZED: Cache query results to improve performance
-        // Cache key includes owner ID and hash of filters/pagination for uniqueness
+        // Cache key includes owner ID, version, and hash of filters/pagination for uniqueness
+        // Version-based invalidation: incrementing version invalidates all property list caches for owner
         // OPTIMIZED: Use serialize() instead of json_encode() for better performance with arrays
         // Sort filters to ensure consistent cache keys regardless of parameter order
         $filters = $request->except(['page', 'per_page', 'include_views', 'include_filters', 'simple_pagination']);
         ksort($filters); // Sort by key for consistent hashing
-        $cacheKey = 'properties_list_' . $ownerId . '_' . md5(serialize([
+        
+        // Build hash of filters/pagination (unchanged logic)
+        $hash = md5(serialize([
             'filters' => $filters,
             'page' => $request->input('page', 1),
             'per_page' => $perPage,
             'simple_pagination' => $useSimplePagination
         ]));
+        
+        // Build versioned cache key: properties_list_{ownerId}_v{version}_{hash}
+        $cacheKey = PropertyListCacheVersionService::buildCacheKey($ownerId, $hash);
 
         // Cache for 5 minutes (shorter TTL for first page, can be adjusted)
         $cacheTTL = $request->input('page', 1) == 1 ? 300 : 600; // 5 min for page 1, 10 min for others
@@ -4438,6 +4477,13 @@ class PropertyController extends Controller
                     ];
                     Log::error("Error completing draft property {$propertyId}: " . $e->getMessage());
                 }
+            }
+
+            // Invalidate property list cache for owner after bulk operation
+            // Note: PropertyObserver handles individual updates, but we increment here
+            // to ensure cache is invalidated even if observer fails
+            if ($completed > 0) {
+                PropertyListCacheVersionService::incrementVersion($owner->id);
             }
 
             return response()->json([

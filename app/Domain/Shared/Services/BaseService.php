@@ -71,12 +71,28 @@ abstract class BaseService
 
     /**
      * Clear cache by tag
+     * 
+     * Note: Cache tags require Redis, Memcached, or DynamoDB cache driver.
+     * With file driver, this method will return false and log a warning.
      *
      * @param string|array $tags
      * @return bool
      */
     protected function clearCacheByTag(string|array $tags): bool
     {
+        $store = Cache::getStore();
+        
+        // Check if store supports tags (Redis, Memcached, DynamoDB)
+        if (!method_exists($store, 'tags') || !$store instanceof \Illuminate\Contracts\Cache\TaggableStore) {
+            \Log::warning('Cache tags not supported with current cache driver', [
+                'driver' => get_class($store),
+                'tags' => $tags,
+                'file' => __FILE__,
+                'line' => __LINE__
+            ]);
+            return false;
+        }
+        
         return Cache::tags($tags)->flush();
     }
 

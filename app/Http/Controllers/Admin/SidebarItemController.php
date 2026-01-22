@@ -146,11 +146,24 @@ class SidebarItemController extends Controller
 
     /**
      * Clear all sidebar cache entries
+     * 
+     * Note: With file cache driver, we cannot do wildcard deletion of user-specific
+     * side_menus caches. Those caches have a 5-minute TTL, so changes will be visible
+     * within 5 minutes. This is a tradeoff vs using Cache::flush() which clears ALL
+     * cache for ALL tenants (nuclear option).
+     * 
+     * Senior Rule: "If data can change → it MUST have forget() somewhere"
+     * For sidebar items, the observers handle this via CacheInvalidationHelper.
      */
     private function clearSidebarCache()
     {
-        // Clear cache by pattern (Laravel doesn't support pattern deletion natively)
-        // We'll need to clear the entire cache or use a tag-based cache if available
-        Cache::flush();
+        // File cache driver limitation: cannot delete by pattern
+        // User-specific side_menus caches will expire by TTL (5 min)
+        // 
+        // DO NOT use Cache::flush() - it clears ALL cache for ALL tenants!
+        // This includes membership caches, property caches, customer caches, etc.
+        //
+        // The ApiSidebarItemObserver handles invalidation via model events.
+        // Additional manual clearing is not needed when using the admin UI.
     }
 }

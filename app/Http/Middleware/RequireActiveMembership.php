@@ -20,7 +20,8 @@ class RequireActiveMembership
 		$owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
 		
 		// Cache membership check for 5 minutes to avoid repeated database queries
-		$cacheKey = "active_membership_{$owner->id}";
+		// Key format standardized with MembershipCacheService (colon separator)
+		$cacheKey = "active_membership:{$owner->id}";
 		$active = Cache::remember($cacheKey, 300, function () use ($owner) {
 			$membership = Membership::where('user_id', $owner->id)
 				->orderByDesc('expire_date')

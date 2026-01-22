@@ -3,6 +3,12 @@
 namespace App\Providers;
 
 use App\Models\ApiCustomer;
+use App\Models\User;
+use App\Models\Api\ApiInstallation;
+use App\Models\Api\ApiSidebarItem;
+use App\Models\Api\PropertyRequestAutoCustomerSetting;
+use App\Models\User\RealestateManagement\ApiUserCategory;
+use App\Models\User\RealestateManagement\UserFacade;
 use App\Observers\CrmCardObserver;
 use App\Models\Api\Crm\CrmCard;
 use App\Models\Logs\CustomerLog;
@@ -12,6 +18,12 @@ use App\Models\Membership;
 
 use App\Observers\ProjectObserver;
 use App\Observers\PropertyObserver;
+use App\Observers\UserObserver;
+use App\Observers\ApiInstallationObserver;
+use App\Observers\ApiSidebarItemObserver;
+use App\Observers\ApiUserCategoryObserver;
+use App\Observers\UserFacadeObserver;
+use App\Observers\PropertyRequestAutoCustomerSettingObserver;
 use Illuminate\Support\Facades\Event;
 use App\Events\TenantActivityOccurred;
 use App\Events\UserDowngradedToFree;
@@ -72,5 +84,14 @@ class EventServiceProvider extends ServiceProvider
         CrmCard::observe(CrmCardObserver::class);
         \App\Models\WhatsappAddon::observe(\App\Observers\WhatsappAddonObserver::class);
         \App\Models\Membership::observe(MembershipObserver::class);
+        
+        // Cache invalidation observers
+        // Senior Rule: "If data can change → it MUST have forget() somewhere"
+        User::observe(UserObserver::class);
+        ApiInstallation::observe(ApiInstallationObserver::class);
+        ApiSidebarItem::observe(ApiSidebarItemObserver::class);
+        ApiUserCategory::observe(ApiUserCategoryObserver::class);
+        UserFacade::observe(UserFacadeObserver::class);
+        PropertyRequestAutoCustomerSetting::observe(PropertyRequestAutoCustomerSettingObserver::class);
     }
 }

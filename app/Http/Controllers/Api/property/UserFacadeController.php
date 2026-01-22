@@ -13,7 +13,9 @@ class UserFacadeController extends Controller
     public function index(): JsonResponse
     {
         // Cache as plain array to avoid Eloquent serialization overhead
-        $facades = Cache::remember('api_property_facades_list', 3600, function () {
+        // Reduced TTL from 1 hour to 5 minutes to reduce stale data risk
+        // Observer now handles automatic invalidation on facade changes
+        $facades = Cache::remember('api_property_facades_list', 300, function () {
             return UserFacade::select('id', 'name')->get()->toArray();
         });
 

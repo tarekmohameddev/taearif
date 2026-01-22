@@ -5,6 +5,8 @@ namespace App\Observers;
 use App\Models\User\RealestateManagement\Property;
 use App\Models\Logs\PropertyLog;
 use App\Support\AuditContext;
+use App\Support\CacheInvalidationHelper;
+use App\Services\PropertyListCacheVersionService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -14,10 +16,11 @@ class PropertyObserver
      * Clear property-related caches for a given user ID.
      * This ensures statistics and listings remain accurate after property changes.
      * 
-     * Note: Cache keys with hashed filters (properties_list_{ownerId}_{hash}) cannot be
-     * easily cleared individually. The cache will expire naturally based on TTL (5-10 minutes).
-     * For immediate invalidation of all property list caches, consider using cache tags
-     * (requires Redis/Memcached) or implementing a cache key registry.
+     * Senior Rule: "If data can change → it MUST have forget() somewhere"
+     * 
+     * Uses cache versioning pattern to immediately invalidate all property list caches
+     * by incrementing the owner's cache version. This works with file cache driver
+     * and doesn't require Redis or wildcard deletion.
      */
     private function clearPropertyCachesForUser(?int $userId): void
     {
@@ -31,17 +34,14 @@ class PropertyObserver
             if ($user && method_exists($user, 'tenantOwnerId')) {
                 $ownerId = $user->tenantOwnerId();
                 
+                // Increment cache version to immediately invalidate all property list caches
+                // This causes all cached property lists (with any filter combination) to become invalid
+                // Old cache entries expire naturally via TTL (5-10 minutes)
+                PropertyListCacheVersionService::incrementVersion($ownerId);
+                
                 // Clear property cards cache
                 $cacheKey = "property_cards_{$ownerId}";
                 Cache::forget($cacheKey);
-                
-                // Clear properties list cache (all variations)
-                // Note: Laravel cache doesn't support wildcard deletion, so we'll clear
-                // the most common cache keys. The hashed cache keys (properties_list_{ownerId}_{hash})
-                // will expire naturally based on TTL (5-10 minutes). For immediate invalidation
-                // of all property list caches, consider using cache tags (requires Redis/Memcached)
-                // or implementing a cache key registry.
-                $cachePrefix = "properties_list_{$ownerId}_";
                 
                 // Clear count caches
                 Cache::forget("property_counts_{$ownerId}");
@@ -54,9 +54,8 @@ class PropertyObserver
                 // Clear tenant employees cache (may affect allowed user IDs)
                 Cache::forget("tenant_employees_{$ownerId}");
                 
-                // Note: Pagination count caches (properties_list_{ownerId}_{hash}_total) 
-                // are hashed and cannot be easily cleared individually. They will expire
-                // with the same TTL as the main query cache (5-10 minutes).
+                // Clear dashboard caches (property changes affect dashboard stats)
+                CacheInvalidationHelper::clearDashboardCaches($userId, $user->username ?? null);
             }
         } catch (\Throwable $e) {
             // Silently fail cache clearing - don't break property operations

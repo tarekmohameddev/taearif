@@ -85,7 +85,9 @@ class PropertyRequestCustomerService
     {
         $cacheKey = "property_request_auto_customer_settings:{$userId}";
 
-        return Cache::remember($cacheKey, now()->addDay(), function () use ($userId) {
+        // Reduced TTL from 24 hours to 5 minutes to reduce stale data risk
+        // Observer now handles automatic invalidation on changes
+        return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($userId) {
             return PropertyRequestAutoCustomerSetting::where('user_id', $userId)->first();
         });
     }
@@ -107,7 +109,9 @@ class PropertyRequestCustomerService
     {
         $cacheKey = "customer_defaults:{$userId}";
 
-        return Cache::remember($cacheKey, now()->addHours(6), function () use ($userId) {
+        // Reduced TTL from 6 hours to 5 minutes to reduce stale data risk
+        // Observer now handles automatic invalidation on settings changes
+        return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($userId) {
             return [
                 'type_id' => UserApiCustomerType::where('user_id', $userId)
                     ->where('is_active', true)

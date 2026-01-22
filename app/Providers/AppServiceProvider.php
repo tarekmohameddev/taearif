@@ -480,17 +480,29 @@ class AppServiceProvider extends ServiceProvider
         
         // Track cache hit rates for important caches (property filter options)
         // Monitor cache effectiveness by logging cache misses
+        // NOTE: Counter tracking disabled for file driver to prevent disk space leak
         $originalRemember = Cache::getStore();
         Cache::macro('rememberWithTracking', function ($key, $ttl, $callback) {
+            $store = Cache::getStore();
+            $isFileDriver = $store instanceof \Illuminate\Cache\FileStore;
+            
             if (Cache::has($key)) {
-                // Cache hit - increment hit counter
-                $hitKey = "cache_stats_hit_{$key}";
-                Cache::increment($hitKey, 1);
+                // Cache hit - increment hit counter (only if not file driver)
+                if (!$isFileDriver) {
+                    $hitKey = "cache_stats_hit_{$key}";
+                    $currentValue = Cache::increment($hitKey, 1);
+                    // Set TTL on counter key to prevent indefinite growth (7 days)
+                    Cache::put($hitKey, $currentValue, now()->addDays(7));
+                }
                 return Cache::get($key);
             } else {
-                // Cache miss - increment miss counter and log
-                $missKey = "cache_stats_miss_{$key}";
-                Cache::increment($missKey, 1);
+                // Cache miss - increment miss counter and log (only if not file driver)
+                if (!$isFileDriver) {
+                    $missKey = "cache_stats_miss_{$key}";
+                    $currentValue = Cache::increment($missKey, 1);
+                    // Set TTL on counter key to prevent indefinite growth (7 days)
+                    Cache::put($missKey, $currentValue, now()->addDays(7));
+                }
                 
                 // Log cache miss for important caches
                 if (strpos($key, 'property_filter_options') !== false) {
