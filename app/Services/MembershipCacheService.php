@@ -39,13 +39,29 @@ class MembershipCacheService
     /**
      * Clear membership cache for all users (use with caution)
      * 
+     * WARNING: This method previously used Cache::flush() which clears ALL cache
+     * for ALL tenants - a nuclear option that should be avoided.
+     * 
+     * With file cache driver, we cannot do wildcard deletion.
+     * For Redis, consider using cache tags instead.
+     * 
+     * @deprecated This method is dangerous. Use clearCache($userId) for specific users instead.
      * @return void
      */
     public static function clearAllCache()
     {
-        // Note: This is a simple implementation
-        // For production with Redis, consider using cache tags
-        Cache::flush();
+        // DO NOT use Cache::flush() - it clears ALL cache for ALL tenants!
+        // This includes property caches, customer caches, dashboard caches, etc.
+        //
+        // With file cache driver, there's no safe way to clear all membership caches
+        // without affecting other caches. Options:
+        // 1. Clear specific user caches via clearCache($userId)
+        // 2. Wait for TTL expiration (5 minutes)
+        // 3. Migrate to Redis and use cache tags
+        //
+        // Keeping this method empty to prevent accidental cache flush.
+        // If you need to clear all caches, use artisan cache:clear via CLI.
+        \Log::warning('MembershipCacheService::clearAllCache() called but disabled to prevent Cache::flush()');
     }
 }
 
