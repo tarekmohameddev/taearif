@@ -2237,7 +2237,7 @@ class PropertyController extends Controller
             $propertiesQuery->where($contentJoinAlias . '.state_id', $request->district_id);
         }
 
-        // Text search functionality (title, address, description only)
+        // Text search functionality (title only)
         // OPTIMIZED: Use JOIN instead of whereHas for better performance
         // Use INNER JOIN if city/district filters are present, otherwise LEFT JOIN for search-only
         // OPTIMIZED: Prefer prefix matching for better index usage, fallback to full-text or LIKE
@@ -2266,24 +2266,19 @@ class PropertyController extends Controller
                 if (strlen($searchTerm) >= 3 && $isMysql56Plus) {
                     // Full-text search is most efficient - try this first
                     // Use JOIN alias to ensure proper index usage and query consistency
-                    $q->whereRaw("MATCH({$contentJoinAlias}.title, {$contentJoinAlias}.address, {$contentJoinAlias}.description) AGAINST(? IN BOOLEAN MODE)", [$searchTerm]);
+                    $q->whereRaw("MATCH({$contentJoinAlias}.title) AGAINST(? IN BOOLEAN MODE)", [$searchTerm]);
                 } else {
                     // For shorter terms or when full-text not available, use prefix matching
                     $prefixTerm = $searchTerm . '%';
                     $q->where(function($subQ) use ($prefixTerm, $searchTerm, $contentJoinAlias, $minWildcardLength) {
                         // Prefix matching can use indexes (term%)
-                        $subQ->where($contentJoinAlias . '.title', 'like', $prefixTerm)
-                            ->orWhere($contentJoinAlias . '.address', 'like', $prefixTerm);
+                        $subQ->where($contentJoinAlias . '.title', 'like', $prefixTerm);
 
                         // PERFORMANCE: Only use wildcard search if term is long enough (prevents slow index scans)
                         // Wildcard searches (%term%) cannot use indexes efficiently, so limit to 3+ characters
                         if (strlen($searchTerm) >= $minWildcardLength) {
                             // Group wildcard searches together to minimize index scan impact
-                            $subQ->orWhere(function($wildcardQ) use ($searchTerm, $contentJoinAlias) {
-                                $wildcardQ->where($contentJoinAlias . '.title', 'like', "%{$searchTerm}%")
-                                    ->orWhere($contentJoinAlias . '.address', 'like', "%{$searchTerm}%")
-                                    ->orWhere($contentJoinAlias . '.description', 'like', "%{$searchTerm}%");
-                            });
+                            $subQ->orWhere($contentJoinAlias . '.title', 'like', "%{$searchTerm}%");
                         }
                     });
                 }
