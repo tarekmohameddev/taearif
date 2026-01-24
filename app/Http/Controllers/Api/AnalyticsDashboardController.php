@@ -145,13 +145,14 @@ class AnalyticsDashboardController extends Controller
      * Generate cache key for GA most visited pages endpoint
      *
      * @param string $tenantId
+     * @param int $timeRange
      * @param Carbon $startDate
      * @param Carbon $endDate
      * @return string
      */
-    protected function getMostVisitedPagesCacheKey(string $tenantId, Carbon $startDate, Carbon $endDate): string
+    protected function getMostVisitedPagesCacheKey(string $tenantId, int $timeRange, Carbon $startDate, Carbon $endDate): string
     {
-        return "ga:most-visited-pages:{$tenantId}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
+        return "dashboard:most-visited-pages:{$tenantId}:{$timeRange}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
     }
 
     public function dashboard(Request $request)
@@ -600,16 +601,19 @@ class AnalyticsDashboardController extends Controller
         $startTime = microtime(true);
         $cacheHit = false;
         $dataSource = 'database';
-
+        
         $tenantId = $this->tenantId($request);
+
+        // Retrieve and validate time range from the request (default to 30 days if not provided)
+        $timeRange = $this->validateTimeRange($request->input('time_range', 30), 30);
 
         // Normalize Carbon::now() to compute once per request
         $endDate = Carbon::now();
-        $startDate = $endDate->copy()->subDays(7);
+        $startDate = $endDate->copy()->subDays($timeRange);
 
         // OPTIMIZATION: Check cached response first (20 minutes cache)
         // BUT: Skip cache if it's empty to allow retry
-        $cacheKey = "dashboard:most-visited-pages:{$tenantId}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
+        $cacheKey = $this->getMostVisitedPagesCacheKey($tenantId, $timeRange, $startDate, $endDate);
         $cachedResponse = Cache::get($cacheKey);
 
         // Only use cache if it has actual data (non-empty pages array)
@@ -717,8 +721,20 @@ class AnalyticsDashboardController extends Controller
             $formattedPages = array_slice($formattedPages, 0, 20);
         }
 
-        $response = ['pages' => $formattedPages ?? []];
-
+        $response = [
+            'pages' => $formattedPages ?? [],
+            'meta' => [
+                'date_range' => [
+                    'start' => $startDate->toDateString(),
+                    'end' => $endDate->toDateString(),
+                    'days' => $timeRange
+                ],
+                'data_source' => $dataSource,
+                'cache_hit' => $cacheHit,
+                'total_pages' => count($formattedPages ?? [])
+            ]
+        ];
+        
         // Only cache non-empty responses to prevent caching empty results
         // Empty responses are likely temporary (no data yet) and should be retried
         if (!empty($formattedPages)) {
@@ -726,13 +742,15 @@ class AnalyticsDashboardController extends Controller
             Cache::put($cacheKey, $response, 1200);
             Log::info('Most visited pages: cached response', [
                 'tenant_id' => $tenantId,
-                'pages_count' => count($formattedPages)
+                'pages_count' => count($formattedPages),
+                'time_range' => $timeRange
             ]);
         } else {
             Log::warning('Most visited pages: not caching empty response', [
                 'tenant_id' => $tenantId,
                 'data_source' => $dataSource,
-                'date_range' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d')
+                'date_range' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d'),
+                'time_range' => $timeRange
             ]);
         }
 
