@@ -711,22 +711,42 @@ class GoogleAnalyticsService
             ];
         }
         
+        // Log GA4 response details for diagnostics
+        Log::info('getTopPages: GA4 response received', [
+            'tenant_id' => $tenantId,
+            'total_rows' => count($rowsData),
+            'rows_with_tenant_id' => count(array_filter($rowsData, fn($r) => !empty($r['recordedTenant']) && $r['recordedTenant'] !== '(not set)')),
+            'rows_without_tenant_id' => count(array_filter($rowsData, fn($r) => empty($r['recordedTenant']) || $r['recordedTenant'] === '(not set)')),
+            'sample_tenant_ids' => array_values(array_unique(array_slice(array_column($rowsData, 'recordedTenant'), 0, 10))),
+            'date_range' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d')
+        ]);
+        
         // Batch lookup slugs for all paths at once
         $slugTenantMap = [];
         if (!empty($pathsToLookup)) {
-            $propertyPaths = array_filter($pathsToLookup, fn($p) => strpos($p, '/property/') !== false || strpos($p, '/ar/property/') !== false || strpos($p, '/en/property/') !== false);
-            $projectPaths = array_filter($pathsToLookup, fn($p) => strpos($p, '/project/') !== false || strpos($p, '/ar/project/') !== false || strpos($p, '/en/project/') !== false);
-            
-            if (!empty($propertyPaths)) {
-                $slugTenantMap = array_merge($slugTenantMap, $this->getSlugLookupService()->getTenantsForSlugs($propertyPaths, 'property'));
-            }
-            if (!empty($projectPaths)) {
-                $slugTenantMap = array_merge($slugTenantMap, $this->getSlugLookupService()->getTenantsForSlugs($projectPaths, 'project'));
+            try {
+                $propertyPaths = array_filter($pathsToLookup, fn($p) => strpos($p, '/property/') !== false || strpos($p, '/ar/property/') !== false || strpos($p, '/en/property/') !== false);
+                $projectPaths = array_filter($pathsToLookup, fn($p) => strpos($p, '/project/') !== false || strpos($p, '/ar/project/') !== false || strpos($p, '/en/project/') !== false);
+                
+                if (!empty($propertyPaths)) {
+                    $slugTenantMap = array_merge($slugTenantMap, $this->getSlugLookupService()->getTenantsForSlugs($propertyPaths, 'property'));
+                }
+                if (!empty($projectPaths)) {
+                    $slugTenantMap = array_merge($slugTenantMap, $this->getSlugLookupService()->getTenantsForSlugs($projectPaths, 'project'));
+                }
+            } catch (\Exception $e) {
+                // Log warning but continue processing - slug lookup failure shouldn't break the request
+                Log::warning('getTopPages: Slug lookup failed', [
+                    'tenant_id' => $tenantId,
+                    'error' => $e->getMessage(),
+                    'paths_count' => count($pathsToLookup)
+                ]);
             }
         }
 
         // Build map with smart tenant matching (backend filtering)
         $pageMap = [];
+        $rowsFilteredOut = 0;
         foreach ($rowsData as $rowData) {
             $pagePath = $rowData['pagePath'];
             $pageTitle = $rowData['pageTitle'];
@@ -760,6 +780,7 @@ class GoogleAnalyticsService
             }
 
             if (!$belongsToTenant) {
+                $rowsFilteredOut++;
                 continue;
             }
 
@@ -787,6 +808,15 @@ class GoogleAnalyticsService
                     ($pageMap[$pagePath]['bounceRate'] + $bounceRate) / 2;
             }
         }
+
+        // Log backend filtering results for diagnostics
+        Log::info('getTopPages: Backend filtering complete', [
+            'tenant_id' => $tenantId,
+            'rows_before_filter' => count($rowsData),
+            'rows_after_filter' => count($pageMap),
+            'rows_filtered_out' => $rowsFilteredOut,
+            'slug_lookup_matches' => count($slugTenantMap)
+        ]);
 
         // If no data found, return empty
         if (empty($pageMap)) {

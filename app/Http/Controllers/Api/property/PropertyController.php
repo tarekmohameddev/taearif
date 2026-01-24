@@ -2237,10 +2237,10 @@ class PropertyController extends Controller
             $propertiesQuery->where($contentJoinAlias . '.state_id', $request->district_id);
         }
 
-        // Text search functionality (title, address, description only)
+        // Text search functionality (title only)
         // OPTIMIZED: Use JOIN instead of whereHas for better performance
         // Use INNER JOIN if city/district filters are present, otherwise LEFT JOIN for search-only
-        // OPTIMIZED: Prefer prefix matching for better index usage, fallback to full-text or LIKE
+        // OPTIMIZED: Use prefix matching and wildcard LIKE queries for flexible title search
         if ($request->has('search') && !empty($request->search)) {
             $searchTerm = trim($request->search);
             if (!$hasContentJoin) {
@@ -2254,39 +2254,23 @@ class PropertyController extends Controller
                 $hasContentJoin = true;
             }
 
-            // OPTIMIZED: Use cached MySQL version check to avoid repeated queries
-            $isMysql56Plus = DatabaseVersionService::isMysql56Plus();
-
-            // OPTIMIZED: Simplify search query structure for better index usage
-            // Prioritize full-text search, then prefix matching, then fallback to wildcard
+            // OPTIMIZED: Use LIKE queries for title search (no FULLTEXT index needed for single column)
             // PERFORMANCE: Require minimum 3 characters for wildcard searches to prevent slow queries
             $minWildcardLength = 3;
-            $propertiesQuery->where(function($q) use ($searchTerm, $contentJoinAlias, $isMysql56Plus, $minWildcardLength) {
-                // For search terms 3+ chars, prioritize full-text search (fastest with proper index)
-                if (strlen($searchTerm) >= 3 && $isMysql56Plus) {
-                    // Full-text search is most efficient - try this first
-                    // Use JOIN alias to ensure proper index usage and query consistency
-                    $q->whereRaw("MATCH({$contentJoinAlias}.title, {$contentJoinAlias}.address, {$contentJoinAlias}.description) AGAINST(? IN BOOLEAN MODE)", [$searchTerm]);
-                } else {
-                    // For shorter terms or when full-text not available, use prefix matching
-                    $prefixTerm = $searchTerm . '%';
-                    $q->where(function($subQ) use ($prefixTerm, $searchTerm, $contentJoinAlias, $minWildcardLength) {
-                        // Prefix matching can use indexes (term%)
-                        $subQ->where($contentJoinAlias . '.title', 'like', $prefixTerm)
-                            ->orWhere($contentJoinAlias . '.address', 'like', $prefixTerm);
+            $propertiesQuery->where(function($q) use ($searchTerm, $contentJoinAlias, $minWildcardLength) {
+                // Use prefix matching (can use indexes) and wildcard search for flexibility
+                $prefixTerm = $searchTerm . '%';
+                $q->where(function($subQ) use ($prefixTerm, $searchTerm, $contentJoinAlias, $minWildcardLength) {
+                    // Prefix matching can use indexes (term%)
+                    $subQ->where($contentJoinAlias . '.title', 'like', $prefixTerm);
 
-                        // PERFORMANCE: Only use wildcard search if term is long enough (prevents slow index scans)
-                        // Wildcard searches (%term%) cannot use indexes efficiently, so limit to 3+ characters
-                        if (strlen($searchTerm) >= $minWildcardLength) {
-                            // Group wildcard searches together to minimize index scan impact
-                            $subQ->orWhere(function($wildcardQ) use ($searchTerm, $contentJoinAlias) {
-                                $wildcardQ->where($contentJoinAlias . '.title', 'like', "%{$searchTerm}%")
-                                    ->orWhere($contentJoinAlias . '.address', 'like', "%{$searchTerm}%")
-                                    ->orWhere($contentJoinAlias . '.description', 'like', "%{$searchTerm}%");
-                            });
-                        }
-                    });
-                }
+                    // PERFORMANCE: Only use wildcard search if term is long enough (prevents slow index scans)
+                    // Wildcard searches (%term%) cannot use indexes efficiently, so limit to 3+ characters
+                    if (strlen($searchTerm) >= $minWildcardLength) {
+                        // Group wildcard searches together to minimize index scan impact
+                        $subQ->orWhere($contentJoinAlias . '.title', 'like', "%{$searchTerm}%");
+                    }
+                });
             });
         }
 

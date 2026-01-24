@@ -82,7 +82,7 @@ class AnalyticsDashboardController extends Controller
     {
         $allowedRanges = [7, 30, 90, 365];
         $timeRange = (int) $timeRange;
-        
+
         return in_array($timeRange, $allowedRanges) ? $timeRange : $default;
     }
 
@@ -145,13 +145,14 @@ class AnalyticsDashboardController extends Controller
      * Generate cache key for GA most visited pages endpoint
      *
      * @param string $tenantId
+     * @param int $timeRange
      * @param Carbon $startDate
      * @param Carbon $endDate
      * @return string
      */
-    protected function getMostVisitedPagesCacheKey(string $tenantId, Carbon $startDate, Carbon $endDate): string
+    protected function getMostVisitedPagesCacheKey(string $tenantId, int $timeRange, Carbon $startDate, Carbon $endDate): string
     {
-        return "ga:most-visited-pages:{$tenantId}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
+        return "dashboard:most-visited-pages:{$tenantId}:{$timeRange}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
     }
 
     public function dashboard(Request $request)
@@ -173,7 +174,7 @@ class AnalyticsDashboardController extends Controller
     {
         $startTime = microtime(true);
         $cacheHit = false;
-        
+
         // Get the user and tenant ID
         $tenantId = $this->tenantId($request);
 
@@ -204,10 +205,10 @@ class AnalyticsDashboardController extends Controller
 
         // Try to get from materialized data first
         $cachedData = $this->getMaterializedVisitorsData($tenantId, $startDate, $endDate);
-        
+
         if ($cachedData !== null) {
             $cacheHit = true;
-            
+
             // Return cached data (already formatted)
             return response()->json($cachedData);
         }
@@ -228,7 +229,7 @@ class AnalyticsDashboardController extends Controller
 
                     // Fetch from GA API
                     $visitorData = $analytics->getVisitorData($tenantId, $startDate, $endDate);
-                    
+
                     // Ensure visitorData is an array
                     $visitorDataArray = is_array($visitorData) ? $visitorData : collect($visitorData)->toArray();
 
@@ -308,7 +309,7 @@ class AnalyticsDashboardController extends Controller
     {
         $startTime = microtime(true);
         $cacheHit = false;
-        
+
         $user = $request->user();
         $tenantId = $user->username;
 
@@ -325,7 +326,7 @@ class AnalyticsDashboardController extends Controller
         // OPTIMIZATION: Cache full summary response for 7 minutes to reduce database load
         $cacheKey = "dashboard:summary:{$tenantId}:{$user->id}";
         $cachedResponse = Cache::get($cacheKey);
-        
+
         if ($cachedResponse !== null) {
             $cacheHit = true;
             return response()->json($cachedResponse);
@@ -335,10 +336,10 @@ class AnalyticsDashboardController extends Controller
         // Even though called separately, caching in getMaterializedSummaryData prevents re-querying
         $currentOverview = $this->getMaterializedSummaryData($tenantId, $startDate, $endDate);
         $previousOverviewData = $this->getMaterializedSummaryData($tenantId, $previousStartDate, $previousEndDate);
-        
+
         // Track data source for logging
         $dataSource = 'database';
-        
+
         // If we have both periods from database, use them
         if ($currentOverview !== null && $previousOverviewData !== null) {
             $cacheHit = true;
@@ -350,17 +351,17 @@ class AnalyticsDashboardController extends Controller
             if ($currentOverview === null && $previousOverviewData === null) {
                 $dataSource = 'ga_api';
             }
-            
+
             try {
                 // Only fetch missing periods from GA API (not both if one exists)
                 if ($currentOverview === null) {
                     $overview = $analytics->getOverviewMetricsOnly($tenantId, $startDate, $endDate);
-                    
+
                     // Validate GA API response structure before processing
                     if (!$this->validateOverviewResponse($overview, "current period ({$startDate->format('Y-m-d')} to {$endDate->format('Y-m-d')})")) {
                         throw new \RuntimeException('Invalid GA API response structure - missing required keys');
                     }
-                    
+
                     // OPTIMIZATION: Store fetched GA API data in database for future requests
                     // Note: We store aggregated data for the date range under the end date
                     // This matches the materialization service pattern and allows getMaterializedSummaryData
@@ -370,15 +371,15 @@ class AnalyticsDashboardController extends Controller
                 } else {
                     $overview = $currentOverview;
                 }
-                
+
                 if ($previousOverviewData === null) {
                     $previousOverview = $analytics->getOverviewMetricsOnly($tenantId, $previousStartDate, $previousEndDate);
-                    
+
                     // Validate GA API response structure before processing
                     if (!$this->validateOverviewResponse($previousOverview, "previous period ({$previousStartDate->format('Y-m-d')} to {$previousEndDate->format('Y-m-d')})")) {
                         throw new \RuntimeException('Invalid GA API response structure - missing required keys');
                     }
-                    
+
                     // OPTIMIZATION: Store fetched GA API data in database for future requests
                     // Note: We store aggregated data for the date range under the end date
                     $this->storeSummaryDataSafely($tenantId, $previousEndDate, $previousOverview);
@@ -454,7 +455,7 @@ class AnalyticsDashboardController extends Controller
         $startTime = microtime(true);
         $cacheHit = false;
         $dataSource = 'database';
-        
+
         $tenantId = $this->tenantId($request);
 
         $endDate = Carbon::now();
@@ -463,7 +464,7 @@ class AnalyticsDashboardController extends Controller
         // OPTIMIZATION: Check cached response first (20 minutes cache)
         $cacheKey = "dashboard:devices:{$tenantId}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
         $cachedResponse = Cache::get($cacheKey);
-        
+
         if ($cachedResponse !== null) {
             $cacheHit = true;
             return response()->json($cachedResponse);
@@ -471,7 +472,7 @@ class AnalyticsDashboardController extends Controller
 
         // Try to get from materialized data first
         $cachedData = $this->getMaterializedDevicesData($tenantId, $startDate, $endDate);
-        
+
         if ($cachedData !== null) {
             $cacheHit = true;
             $devices = $cachedData['devices'] ?? [];
@@ -479,10 +480,10 @@ class AnalyticsDashboardController extends Controller
             // Fallback to GA API
             $dataSource = 'ga_api';
             $tenantFilter = $this->buildTenantFilter($tenantId, false);
-            
+
             try {
                 $devices = $analytics->getDeviceBreakdown($tenantId, $startDate, $endDate, $tenantFilter);
-                
+
                 // Validate and store fetched data
                 if (is_array($devices) && !empty($devices)) {
                     $this->storeDevicesDataSafely($tenantId, $endDate, $devices);
@@ -515,7 +516,7 @@ class AnalyticsDashboardController extends Controller
         }
 
         $response = ['devices' => $devices ?? []];
-        
+
         // Cache response for 20 minutes (1200 seconds)
         Cache::put($cacheKey, $response, 1200);
 
@@ -527,7 +528,7 @@ class AnalyticsDashboardController extends Controller
         $startTime = microtime(true);
         $cacheHit = false;
         $dataSource = 'database';
-        
+
         $tenantId = $this->tenantId($request);
 
         $endDate = Carbon::now();
@@ -536,7 +537,7 @@ class AnalyticsDashboardController extends Controller
         // OPTIMIZATION: Check cached response first (20 minutes cache)
         $cacheKey = "dashboard:traffic-sources:{$tenantId}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
         $cachedResponse = Cache::get($cacheKey);
-        
+
         if ($cachedResponse !== null) {
             $cacheHit = true;
             return response()->json($cachedResponse);
@@ -544,7 +545,7 @@ class AnalyticsDashboardController extends Controller
 
         // Try to get from materialized data first
         $cachedData = $this->getMaterializedTrafficSourcesData($tenantId, $startDate, $endDate);
-        
+
         if ($cachedData !== null) {
             $cacheHit = true;
             $sources = $cachedData['sources'] ?? [];
@@ -552,10 +553,10 @@ class AnalyticsDashboardController extends Controller
             // Fallback to GA API
             $dataSource = 'ga_api';
             $tenantFilter = $this->buildTenantFilter($tenantId, false); // Use EXACT match for security
-            
+
             try {
                 $sources = $analytics->getTrafficSources($startDate, $endDate, $tenantFilter);
-                
+
                 // Validate and store fetched data
                 if (is_array($sources) && !empty($sources)) {
                     $this->storeTrafficSourcesDataSafely($tenantId, $endDate, $sources);
@@ -588,7 +589,7 @@ class AnalyticsDashboardController extends Controller
         }
 
         $response = ['sources' => $sources ?? []];
-        
+
         // Cache response for 20 minutes (1200 seconds)
         Cache::put($cacheKey, $response, 1200);
 
@@ -603,33 +604,57 @@ class AnalyticsDashboardController extends Controller
         
         $tenantId = $this->tenantId($request);
 
+        // Retrieve and validate time range from the request (default to 30 days if not provided)
+        $timeRange = $this->validateTimeRange($request->input('time_range', 30), 30);
+
         // Normalize Carbon::now() to compute once per request
         $endDate = Carbon::now();
-        $startDate = $endDate->copy()->subDays(7);
+        $startDate = $endDate->copy()->subDays($timeRange);
 
         // OPTIMIZATION: Check cached response first (20 minutes cache)
-        $cacheKey = "dashboard:most-visited-pages:{$tenantId}:{$startDate->format('Y-m-d')}:{$endDate->format('Y-m-d')}";
+        // BUT: Skip cache if it's empty to allow retry
+        $cacheKey = $this->getMostVisitedPagesCacheKey($tenantId, $timeRange, $startDate, $endDate);
         $cachedResponse = Cache::get($cacheKey);
-        
-        if ($cachedResponse !== null) {
+
+        // Only use cache if it has actual data (non-empty pages array)
+        if ($cachedResponse !== null && !empty($cachedResponse['pages'] ?? [])) {
             $cacheHit = true;
+            Log::info('Most visited pages: returning cached data', [
+                'tenant_id' => $tenantId,
+                'pages_count' => count($cachedResponse['pages'] ?? [])
+            ]);
             return response()->json($cachedResponse);
         }
 
         // Try to get from materialized data first
         $cachedData = $this->getMaterializedTopPagesData($tenantId, $startDate, $endDate);
-        
+
         if ($cachedData !== null) {
             $cacheHit = true;
             $formattedPages = $cachedData['pages'] ?? [];
+            Log::info('Most visited pages: using materialized data', [
+                'tenant_id' => $tenantId,
+                'pages_count' => count($formattedPages)
+            ]);
         } else {
             // Fallback to GA API
             $dataSource = 'ga_api';
-            
+
             try {
+                Log::info('Most visited pages: fetching from GA API', [
+                    'tenant_id' => $tenantId,
+                    'date_range' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d')
+                ]);
+
                 $dashboardData = $analytics->getDashboardData($tenantId, $startDate, $endDate);
                 $pages = $dashboardData['topPages'] ?? [];
-                
+
+                Log::info('Most visited pages: GA API response', [
+                    'tenant_id' => $tenantId,
+                    'raw_pages_count' => count($pages),
+                    'has_topPages_key' => isset($dashboardData['topPages'])
+                ]);
+
                 if (!empty($pages)) {
                     $totalViews = collect($pages)->sum('pageViews');
 
@@ -660,13 +685,19 @@ class AnalyticsDashboardController extends Controller
                             'percentage' => $percentage,
                         ];
                     })->toArray();
-                    
+
                     // Store fetched data
                     $this->storeTopPagesDataSafely($tenantId, $endDate, $formattedPages);
+
+                    Log::info('Most visited pages: successfully formatted and stored', [
+                        'tenant_id' => $tenantId,
+                        'formatted_pages_count' => count($formattedPages)
+                    ]);
                 } else {
                     Log::warning('GA most visited pages API returned empty array', [
                         'tenant_id' => $tenantId,
-                        'date_range' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d')
+                        'date_range' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d'),
+                        'dashboard_data_keys' => array_keys($dashboardData ?? [])
                     ]);
                     $formattedPages = [];
                 }
@@ -690,10 +721,38 @@ class AnalyticsDashboardController extends Controller
             $formattedPages = array_slice($formattedPages, 0, 20);
         }
 
-        $response = ['pages' => $formattedPages ?? []];
+        $response = [
+            'pages' => $formattedPages ?? [],
+            'meta' => [
+                'date_range' => [
+                    'start' => $startDate->toDateString(),
+                    'end' => $endDate->toDateString(),
+                    'days' => $timeRange
+                ],
+                'data_source' => $dataSource,
+                'cache_hit' => $cacheHit,
+                'total_pages' => count($formattedPages ?? [])
+            ]
+        ];
         
-        // Cache response for 20 minutes (1200 seconds)
-        Cache::put($cacheKey, $response, 1200);
+        // Only cache non-empty responses to prevent caching empty results
+        // Empty responses are likely temporary (no data yet) and should be retried
+        if (!empty($formattedPages)) {
+            // Cache response for 20 minutes (1200 seconds)
+            Cache::put($cacheKey, $response, 1200);
+            Log::info('Most visited pages: cached response', [
+                'tenant_id' => $tenantId,
+                'pages_count' => count($formattedPages),
+                'time_range' => $timeRange
+            ]);
+        } else {
+            Log::warning('Most visited pages: not caching empty response', [
+                'tenant_id' => $tenantId,
+                'data_source' => $dataSource,
+                'date_range' => $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d'),
+                'time_range' => $timeRange
+            ]);
+        }
 
         return response()->json($response);
     }
@@ -733,16 +792,16 @@ class AnalyticsDashboardController extends Controller
         $records = AnalyticsDailySummary::forTenant($tenantId)
             ->forDateRange($start, $end)
             ->get();
-            
+
         if ($records->isEmpty()) {
             return null;
         }
-        
+
         // Merge data from multiple days - extract visitors metric from each day's data
         $allVisitorData = [];
         $totalVisits = 0;
         $totalUniqueVisitors = 0;
-        
+
         foreach ($records as $record) {
             $dayData = $record->data;
             if (isset($dayData['visitors']) && is_array($dayData['visitors'])) {
@@ -754,7 +813,7 @@ class AnalyticsDashboardController extends Controller
                 }
             }
         }
-        
+
         // If we have data, return it
         if (!empty($allVisitorData)) {
             return [
@@ -763,14 +822,14 @@ class AnalyticsDashboardController extends Controller
                 'total_unique_visitors' => $totalUniqueVisitors,
             ];
         }
-        
+
         return null;
     }
 
     /**
      * Store materialized visitors data in database
      * Stores each day's data separately using storeMetric
-     * 
+     *
      * @param string $tenantId
      * @param Carbon $start Start date of the range
      * @param Carbon $end End date of the range
@@ -798,7 +857,7 @@ class AnalyticsDashboardController extends Controller
             // Store each day's data separately
             foreach ($dataByDate as $dateStr => $dayData) {
                 $targetDate = Carbon::parse($dateStr);
-                
+
                 // Skip today's data (will be synced by scheduled job)
                 if ($targetDate->isToday()) {
                     continue;
@@ -855,11 +914,11 @@ class AnalyticsDashboardController extends Controller
             ->whereRaw("JSON_LENGTH(JSON_EXTRACT(data, '$.traffic_sources.sources')) > 0")
             ->orderByDesc('date')
             ->first();
-            
+
         if ($record && isset($record->data['traffic_sources']['sources']) && !empty($record->data['traffic_sources']['sources'])) {
             return ['sources' => $record->data['traffic_sources']['sources']];
         }
-        
+
         return null;
     }
 
@@ -877,11 +936,11 @@ class AnalyticsDashboardController extends Controller
             ->whereRaw("JSON_LENGTH(JSON_EXTRACT(data, '$.devices.devices')) > 0")
             ->orderByDesc('date')
             ->first();
-            
+
         if ($record && isset($record->data['devices']['devices']) && !empty($record->data['devices']['devices'])) {
             return ['devices' => $record->data['devices']['devices']];
         }
-        
+
         return null;
     }
 
@@ -899,17 +958,17 @@ class AnalyticsDashboardController extends Controller
             ->whereRaw("JSON_LENGTH(JSON_EXTRACT(data, '$.top_pages.pages')) > 0")
             ->orderByDesc('date')
             ->first();
-            
+
         if ($record && isset($record->data['top_pages']['pages']) && !empty($record->data['top_pages']['pages'])) {
             return ['pages' => $record->data['top_pages']['pages']];
         }
-        
+
         return null;
     }
 
     /**
      * Store summary data safely - uses atomic JSON_SET to prevent race conditions
-     * 
+     *
      * @param string $tenantId
      * @param Carbon $date The date to store the data under
      * @param array $overview The overview data from GA API
@@ -953,7 +1012,7 @@ class AnalyticsDashboardController extends Controller
 
     /**
      * Validate GA API overview response structure
-     * 
+     *
      * @param array $overview The overview data from GA API
      * @param string $context Context for error messages (e.g., 'current period', 'previous period')
      * @return bool True if valid, false otherwise
@@ -962,13 +1021,13 @@ class AnalyticsDashboardController extends Controller
     {
         $requiredKeys = ['sessions', 'pageViews', 'bounceRate', 'averageSessionDuration', 'users'];
         $missingKeys = [];
-        
+
         foreach ($requiredKeys as $key) {
             if (!isset($overview[$key])) {
                 $missingKeys[] = $key;
             }
         }
-        
+
         if (!empty($missingKeys)) {
             Log::error('Invalid GA API response structure', [
                 'context' => $context,
@@ -977,13 +1036,13 @@ class AnalyticsDashboardController extends Controller
             ]);
             return false;
         }
-        
+
         return true;
     }
 
     /**
      * Store devices data safely - uses atomic JSON_SET to prevent race conditions
-     * 
+     *
      * @param string $tenantId
      * @param Carbon $date The date to store the data under
      * @param array $devices The devices data from GA API
@@ -994,7 +1053,7 @@ class AnalyticsDashboardController extends Controller
         if (empty($devices)) {
             return false;
         }
-        
+
         try {
             // JSON_SET is atomic, so no cache lock needed
             AnalyticsDailySummary::storeMetric(
@@ -1017,7 +1076,7 @@ class AnalyticsDashboardController extends Controller
 
     /**
      * Store traffic sources data safely - uses atomic JSON_SET to prevent race conditions
-     * 
+     *
      * @param string $tenantId
      * @param Carbon $date The date to store the data under
      * @param array $sources The traffic sources data from GA API
@@ -1028,7 +1087,7 @@ class AnalyticsDashboardController extends Controller
         if (empty($sources)) {
             return false;
         }
-        
+
         try {
             // JSON_SET is atomic, so no cache lock needed
             AnalyticsDailySummary::storeMetric(
@@ -1051,7 +1110,7 @@ class AnalyticsDashboardController extends Controller
 
     /**
      * Store top pages data safely - uses atomic JSON_SET to prevent race conditions
-     * 
+     *
      * @param string $tenantId
      * @param Carbon $date The date to store the data under
      * @param array $pages The top pages data from GA API
@@ -1062,7 +1121,7 @@ class AnalyticsDashboardController extends Controller
         if (empty($pages)) {
             return false;
         }
-        
+
         try {
             // JSON_SET is atomic, so no cache lock needed
             AnalyticsDailySummary::storeMetric(
@@ -1092,7 +1151,7 @@ class AnalyticsDashboardController extends Controller
     {
         // OPTIMIZATION: Cache query results for 2 minutes to prevent repeated identical queries
         $cacheKey = "materialized:summary:{$tenantId}:{$start->format('Y-m-d')}:{$end->format('Y-m-d')}";
-        
+
         return Cache::remember($cacheKey, 120, function() use ($tenantId, $start, $end) {
             try {
                 // OPTIMIZATION: Use SQL aggregation - much faster than PHP loops
@@ -1113,12 +1172,12 @@ class AnalyticsDashboardController extends Controller
                         COUNT(*) as rowCount
                     ')
                     ->first();
-                
+
                 // Check if we have any data
                 if (!$result || $result->rowCount == 0) {
                     return null;
                 }
-                
+
                 return [
                     'pageViews' => (int) $result->pageViews,
                     'sessions' => (int) $result->sessions,
@@ -1135,16 +1194,16 @@ class AnalyticsDashboardController extends Controller
                 'end_date' => $end->format('Y-m-d'),
                 'error' => $e->getMessage()
             ]);
-            
+
             // Fallback: Use Eloquent model with PHP aggregation (original method)
             $records = AnalyticsDailySummary::forTenant($tenantId)
                 ->forDateRange($start, $end)
                 ->get();
-                
+
             if ($records->isEmpty()) {
                 return null;
             }
-            
+
             // Aggregate overview metrics across all days
             $totals = [
                 'pageViews' => 0,
@@ -1154,7 +1213,7 @@ class AnalyticsDashboardController extends Controller
                 'durationSum' => 0,
                 'rowCount' => 0,
             ];
-            
+
             foreach ($records as $record) {
                 // Extract summary data from consolidated JSON structure
                 if (isset($record->data['summary']['overview'])) {
@@ -1167,11 +1226,11 @@ class AnalyticsDashboardController extends Controller
                     $totals['rowCount']++;
                 }
             }
-            
+
             if ($totals['rowCount'] === 0) {
                 return null;
             }
-            
+
             return [
                 'pageViews' => $totals['pageViews'],
                 'sessions' => $totals['sessions'],
@@ -1204,7 +1263,7 @@ class AnalyticsDashboardController extends Controller
     {
         $user = $request->user();
         $tenantOwnerId = $user->tenantOwnerId();
-        
+
         // Get locale from request or use default
         $locale = $request->get('locale', app()->getLocale());
 
@@ -1212,7 +1271,7 @@ class AnalyticsDashboardController extends Controller
         // Validate limit parameter
         $limitInput = $request->input('limit');
         $defaultLimit = 10;
-        
+
         if ($limitInput !== null) {
             // Limit parameter was provided - validate it
             if (!is_numeric($limitInput)) {
@@ -1222,9 +1281,9 @@ class AnalyticsDashboardController extends Controller
                     'errors' => ['limit' => ['The limit must be a positive integer between 1 and 100.']]
                 ], 400);
             }
-            
+
             $limit = (int) $limitInput;
-            
+
             if ($limit <= 0) {
                 return response()->json([
                     'status' => 'error',
@@ -1232,7 +1291,7 @@ class AnalyticsDashboardController extends Controller
                     'errors' => ['limit' => ['The limit must be a positive integer between 1 and 100.']]
                 ], 400);
             }
-            
+
             if ($limit > 100) {
                 return response()->json([
                     'status' => 'error',
@@ -1244,7 +1303,7 @@ class AnalyticsDashboardController extends Controller
             // Limit parameter not provided - use default
             $limit = $defaultLimit;
         }
-        
+
         $actorId = $request->input('actor_id');
         $action = $request->input('action');
 
@@ -1267,13 +1326,13 @@ class AnalyticsDashboardController extends Controller
         $activities = $logs->map(function ($log) use ($locale) {
             $actor = $log->actor;
             $userName = $this->getUserName($actor);
-            
+
             // Translate action key
             $actionKey = $log->action ?? 'activity.unknown';
             $translatedAction = ActivityActionMapper::translateActionKey($actionKey, $locale);
-            
+
             $section = $this->getSectionFromTargetType($log->target_type);
-            
+
             // Get Arabic translations
             $actionAR = $this->getActionArabic($actionKey);
             // Use the same method as actionAR to ensure proper Arabic translation
@@ -1331,7 +1390,7 @@ class AnalyticsDashboardController extends Controller
 
         // Extract class basename if it's a full class name
         $basename = class_basename($targetType);
-        
+
         // Map common model names to readable section names
         $sectionMap = [
             'Property' => 'Properties',
@@ -1407,13 +1466,13 @@ class AnalyticsDashboardController extends Controller
         // Handle format like "property.created", "customer.updated", etc.
         if (str_contains($action, '.')) {
             [$resource, $actionType] = explode('.', $action, 2);
-            
+
             // Check if actionType contains underscore (special actions like "toggle_featured")
             if (str_contains($actionType, '_')) {
                 // Special action format: "toggle_featured.property" -> "activity.toggle_featured.property"
                 return "activity.{$actionType}.{$resource}";
             }
-            
+
             // Map standard action types
             $actionTypeMap = [
                 'created' => 'create',
@@ -1421,9 +1480,9 @@ class AnalyticsDashboardController extends Controller
                 'deleted' => 'delete',
                 'viewed' => 'view',
             ];
-            
+
             $normalizedActionType = $actionTypeMap[$actionType] ?? $actionType;
-            
+
             return "activity.{$normalizedActionType}.{$resource}";
         }
 
@@ -1438,10 +1497,10 @@ class AnalyticsDashboardController extends Controller
     {
         // Convert action format from "property.created" to "activity.create.property"
         $translationKey = $this->convertActionToTranslationKey($actionKey);
-        
+
         // Get Arabic translation
         $translation = trans("activity_log.{$translationKey}", [], 'ar');
-        
+
         // If translation not found, return the original key
         return $translation !== "activity_log.{$translationKey}" ? $translation : $actionKey;
     }
@@ -1548,20 +1607,20 @@ class AnalyticsDashboardController extends Controller
 
     /**
      * Get page locations (full URLs) with views
-     * 
+     *
      * Returns full URLs including domain (like Google Analytics shows)
-     * 
+     *
      * Usage examples:
      * - GET /api/analytics/page-locations?days=7
      * - GET /api/analytics/page-locations?days=30
-     * 
+     *
      * Note: Tenant is automatically determined from authenticated user
      */
     public function getPageLocations(Request $request)
     {
         $days = (int) $request->input('days', 7);
         $tenantId = $this->tenantId($request); // Use authenticated user's tenant
-        
+
         $startDate = Carbon::now()->subDays($days);
         $endDate = Carbon::now();
 
@@ -1581,13 +1640,13 @@ class AnalyticsDashboardController extends Controller
 
     /**
      * Get today's analytics (near realtime with perfect tenant filtering)
-     * 
+     *
      * Returns data from today only - better than realtime for multi-tenant!
      * Updates every 1-2 hours but supports tenant_id filtering perfectly.
-     * 
+     *
      * Usage examples:
      * - GET /api/analytics/today
-     * 
+     *
      * Note: Tenant is automatically determined from authenticated user
      */
     public function getToday(Request $request)
@@ -1605,15 +1664,15 @@ class AnalyticsDashboardController extends Controller
 
     /**
      * Get realtime data (last 30 minutes)
-     * 
+     *
      * Returns data from the last 30 minutes (like Google Analytics Realtime)
-     * 
+     *
      * NOTE: Realtime API cannot filter by tenant_id (GA4 limitation)
      * For better tenant filtering, use /api/analytics/today instead!
-     * 
+     *
      * Usage examples:
      * - GET /api/analytics/realtime
-     * 
+     *
      * Note: Tenant is automatically determined from authenticated user
      */
     public function getRealtime(Request $request)
@@ -1638,7 +1697,7 @@ class AnalyticsDashboardController extends Controller
      * - GET /api/analytics/search?min_views=10&path_contains=/property/
      * - GET /api/analytics/search?min_views=5&limit=20
      * - GET /api/analytics/search?days=7
-     * 
+     *
      * Note: Tenant is automatically determined from authenticated user
      */
     public function searchAnalytics(Request $request)
@@ -1801,7 +1860,7 @@ class AnalyticsDashboardController extends Controller
     /**
      * Comprehensive GA4 Diagnostic Test Endpoint
      * Tests GA4 tracking from multiple angles to identify issues
-     * 
+     *
      * Usage: GET /api/dashboard/diagnostic-ga-test?tenant_id=lira&slug=shk-fakhr-llaygar-hy-alaaard-shmal-alryad&days=7
      */
     public function diagnosticGATest(Request $request)
@@ -1809,7 +1868,7 @@ class AnalyticsDashboardController extends Controller
         $tenantId = $request->input('tenant_id', $this->tenantId($request));
         $slug = $request->input('slug', '');
         $days = (int) $request->input('days', 7);
-        
+
         $startDate = Carbon::now()->subDays($days);
         $endDate = Carbon::now();
 
@@ -1914,7 +1973,7 @@ class AnalyticsDashboardController extends Controller
         \Log::info('=== TEST 1: Query with tenant_id filter ===', [
             'tenant_id' => $tenantId,
         ]);
-        
+
         $paths = [
             "/property/{$slug}",
             "/ar/property/{$slug}",
@@ -2066,35 +2125,35 @@ class AnalyticsDashboardController extends Controller
 
     /**
      * Live Test Endpoint - Real-time GA4 Tenant Filtering Verification
-     * 
+     *
      * **Purpose:**
      * This endpoint provides real-time verification that GA4 tenant filtering is working
      * correctly. It executes a live GA4 query with tenant filters and returns detailed
      * information about the query, response, and security verification.
-     * 
+     *
      * **Security Implementation:**
      * - Uses GA4 dimensionFilter with MatchType::EXACT for tenant filtering
      * - Only accesses data for authenticated user's tenant (from $this->tenantId())
      * - Verifies that all returned rows match the authenticated tenant
-     * 
+     *
      * **Use Cases:**
      * - Debugging tenant data isolation
      * - Verifying GA4 filter configuration
      * - Testing security fixes after deployment
      * - Quick validation that tenant_id is being tracked correctly
-     * 
+     *
      * **AI Agent Context:**
      * This endpoint is specifically designed to help AI agents understand:
      * 1. How tenant filtering works in this multi-tenant GA4 implementation
      * 2. What security measures are in place (GA4 filters vs backend filtering)
      * 3. How to verify tenant data isolation is working correctly
      * 4. The structure of GA4 responses and tenant_id field usage
-     * 
+     *
      * **Request Parameters:**
      * - days (optional, default: 7) - Number of days to query (1-365)
      * - tenant_id (optional) - Specific tenant to test. If not provided, uses authenticated user's tenant.
      *   **Note:** This parameter is allowed for debugging/testing purposes only.
-     * 
+     *
      * **Response Structure:**
      * {
      *   "status": "success|error",
@@ -2119,19 +2178,19 @@ class AnalyticsDashboardController extends Controller
      *     "fallback_method": "Backend filtering only for historical data without tenant_id"
      *   }
      * }
-     * 
+     *
      * **Example Usage:**
      * ```bash
      * # Test with default 7 days (uses authenticated user's tenant)
      * GET /api/analytics/live-test
-     * 
+     *
      * # Test with 30 days (uses authenticated user's tenant)
      * GET /api/analytics/live-test?days=30
-     * 
+     *
      * # Test specific tenant (for debugging/testing)
      * GET /api/analytics/live-test?tenant_id=asl-aledarh-real-estate&days=30
      * ```
-     * 
+     *
      * **Example Response (Success):**
      * ```json
      * {
@@ -2161,14 +2220,14 @@ class AnalyticsDashboardController extends Controller
      *   }
      * }
      * ```
-     * 
+     *
      * **AI Agent Notes:**
      * - The endpoint uses $this->tenantId($request) which extracts tenant from authenticated user
      * - GA4 queries use dimensionFilter to filter at API level (security best practice)
      * - All production methods use this same pattern for tenant filtering
      * - Backend filtering is only used as fallback for historical data without tenant_id
      * - If security_verification.all_rows_match_tenant is false, investigate tenant_id tracking
-     * 
+     *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
@@ -2181,15 +2240,15 @@ class AnalyticsDashboardController extends Controller
             'total_execution_time_ms' => 0,
             'individual_query_times' => [],
         ];
-        
+
         // Allow tenant_id from request for testing/debugging purposes
         // This is a debug endpoint, so we allow overriding the authenticated tenant
         $requestTenantId = $request->input('tenant_id');
         $authenticatedTenantId = $this->tenantId($request);
-        
+
         // Use requested tenant_id if provided, otherwise use authenticated user's tenant
         $tenantId = $requestTenantId ?: $authenticatedTenantId;
-        
+
         // Validate tenant_id if provided (must be non-empty string)
         if ($requestTenantId && (!is_string($requestTenantId) || trim($requestTenantId) === '')) {
             return response()->json([
@@ -2198,9 +2257,9 @@ class AnalyticsDashboardController extends Controller
                 'provided' => $requestTenantId,
             ], 400);
         }
-        
+
         $days = (int) $request->input('days', 7);
-        
+
         // Validate days parameter
         if ($days < 1 || $days > 365) {
             return response()->json([
@@ -2209,13 +2268,13 @@ class AnalyticsDashboardController extends Controller
                 'provided' => $days,
             ], 400);
         }
-        
+
         $startDate = Carbon::now()->subDays($days);
         $endDate = Carbon::now();
-        
+
         // Build tenant filter using the same method as production code
         $tenantFilter = $this->buildTenantFilter($tenantId, false); // Use EXACT match
-        
+
         // Test query with tenant filter - same pattern as production methods
         // Use getTenantPageViews for simplicity (it already uses GA4 filters)
         try {
@@ -2225,14 +2284,14 @@ class AnalyticsDashboardController extends Controller
             $query1Time = (microtime(true) - $query1Start) * 1000; // Convert to milliseconds
             $performanceMetrics['queries_executed']++;
             $performanceMetrics['individual_query_times']['getTenantPageViews'] = round($query1Time, 2);
-            
+
             // Track query 2: getOverviewMetricsOnly
             $query2Start = microtime(true);
             $overviewMetrics = $this->analytics->getOverviewMetricsOnly($tenantId, $startDate, $endDate);
             $query2Time = (microtime(true) - $query2Start) * 1000;
             $performanceMetrics['queries_executed']++;
             $performanceMetrics['individual_query_times']['getOverviewMetricsOnly'] = round($query2Time, 2);
-            
+
             // Get raw GA4 API response for detailed inspection
             // Use reflection to access protected methods for raw response
             $rawGA4Response = null;
@@ -2243,26 +2302,26 @@ class AnalyticsDashboardController extends Controller
                 // If raw response fails, continue without it
                 $rawGA4Response = ['error' => 'Could not fetch raw GA4 response: ' . $e->getMessage()];
             }
-            
+
             // Get sample page paths for detailed verification
             $samplePaths = array_slice($tenantViews['paths'] ?? [], 0, 10);
-            
+
             // Prepare response data
             $totalPageViews = $overviewMetrics['pageViews'] ?? 0;
             $totalSessions = $overviewMetrics['sessions'] ?? 0;
-            
+
             // Verify that data was returned (indicates GA4 filter is working)
             $hasData = $totalPageViews > 0 || $totalSessions > 0;
-            
+
             // Track query 3: getTenantIdsInGA4
             $query3Start = microtime(true);
             $tenantIdsInGA4 = $this->analytics->getTenantIdsInGA4($startDate, $endDate);
             $query3Time = (microtime(true) - $query3Start) * 1000;
             $performanceMetrics['queries_executed']++;
             $performanceMetrics['individual_query_times']['getTenantIdsInGA4'] = round($query3Time, 2);
-            
+
             $tenantFoundInGA4 = isset($tenantIdsInGA4[$tenantId]);
-            
+
             // Track query 4: Verify GA4 is receiving data at all (across all tenants)
             $query4Start = microtime(true);
             try {
@@ -2277,7 +2336,7 @@ class AnalyticsDashboardController extends Controller
                 $query4Time = (microtime(true) - $query4Start) * 1000;
                 $performanceMetrics['individual_query_times']['getAllAnalyticsWithFilters'] = round($query4Time, 2) . ' (failed)';
             }
-            
+
             // Track query 5: Get today's data for recent events check
             $query5Start = microtime(true);
             try {
@@ -2292,20 +2351,20 @@ class AnalyticsDashboardController extends Controller
                 $query5Time = (microtime(true) - $query5Start) * 1000;
                 $performanceMetrics['individual_query_times']['getTodayData'] = round($query5Time, 2) . ' (failed)';
             }
-            
+
             // Security verification: All data returned should belong to authenticated tenant
             // (This is guaranteed by GA4 dimensionFilter, but we document it here)
-            $verificationStatus = $hasData 
-                ? '✅ SECURE - GA4 filter applied correctly, data returned matches authenticated tenant' 
+            $verificationStatus = $hasData
+                ? '✅ SECURE - GA4 filter applied correctly, data returned matches authenticated tenant'
                 : 'ℹ️ INFO - No data returned for this tenant in the specified date range (this is normal if no events occurred)';
-            
+
             return response()->json([
                 'status' => 'success',
                 'test_info' => [
                     'authenticated_tenant' => $authenticatedTenantId,
                     'tested_tenant' => $tenantId,
-                    'tenant_source' => $requestTenantId 
-                        ? 'request_parameter' 
+                    'tenant_source' => $requestTenantId
+                        ? 'request_parameter'
                         : 'authenticated_user',
                     'date_range' => [
                         'start' => $startDate->format('Y-m-d'),
@@ -2335,8 +2394,8 @@ class AnalyticsDashboardController extends Controller
                         'total_views' => $allTenantsData['total_views'] ?? 0,
                         'total_items' => $allTenantsData['total_items'] ?? 0,
                     ],
-                    'status' => $hasAnyData 
-                        ? '✅ GA4 is receiving data - issue may be with tenant_id tracking' 
+                    'status' => $hasAnyData
+                        ? '✅ GA4 is receiving data - issue may be with tenant_id tracking'
                         : '⚠️ GA4 shows no data at all - check GA4 setup and tracking code',
                 ],
                 'tenant_tracking_status' => [
@@ -2359,10 +2418,10 @@ class AnalyticsDashboardController extends Controller
                         'sample_pages' => array_slice($todayData['pages'] ?? [], 0, 5),
                     ],
                     'has_today_data' => $hasTodayData,
-                    'note' => $hasTodayData && !$hasData 
-                        ? '⚠️ Today\'s data exists but historical doesn\'t - data may still be processing (24-48 hour delay)' 
-                        : ($hasTodayData 
-                            ? '✅ Recent events are being tracked' 
+                    'note' => $hasTodayData && !$hasData
+                        ? '⚠️ Today\'s data exists but historical doesn\'t - data may still be processing (24-48 hour delay)'
+                        : ($hasTodayData
+                            ? '✅ Recent events are being tracked'
                             : 'ℹ️ No recent events found for today'),
                 ],
                 'security_verification' => [
@@ -2398,7 +2457,7 @@ class AnalyticsDashboardController extends Controller
                 ],
                 'performance_metrics' => $this->calculatePerformanceMetrics($performanceMetrics, $startTime),
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -2418,9 +2477,9 @@ class AnalyticsDashboardController extends Controller
 
     /**
      * Generate recommendations based on live test results
-     * 
+     *
      * Provides actionable troubleshooting steps based on what the test found
-     * 
+     *
      * @param bool $hasData Whether tenant has data
      * @param array $tenantIdsInGA4 All tenant IDs found in GA4
      * @param string $tenantId The authenticated tenant ID
@@ -2431,7 +2490,7 @@ class AnalyticsDashboardController extends Controller
     protected function generateRecommendations(bool $hasData, array $tenantIdsInGA4, string $tenantId, bool $hasAnyData, bool $hasTodayData): array
     {
         $recommendations = [];
-        
+
         if (!$hasAnyData) {
             $recommendations[] = [
                 'priority' => 'critical',
@@ -2481,7 +2540,7 @@ class AnalyticsDashboardController extends Controller
                 ],
             ];
         }
-        
+
         if (empty($recommendations)) {
             $recommendations[] = [
                 'priority' => 'info',
@@ -2489,16 +2548,16 @@ class AnalyticsDashboardController extends Controller
                 'message' => '✅ Everything looks good! Tenant filtering is working correctly and data is being tracked.',
             ];
         }
-        
+
         return $recommendations;
     }
 
     /**
      * Get raw GA4 API response for debugging
-     * 
+     *
      * Returns the actual raw response structure from GA4 API
      * Useful for understanding the exact data structure and verifying filters
-     * 
+     *
      * @param string $tenantId
      * @param Carbon $startDate
      * @param Carbon $endDate
@@ -2513,14 +2572,14 @@ class AnalyticsDashboardController extends Controller
             $clientProperty = $reflection->getProperty('client');
             $clientProperty->setAccessible(true);
             $client = $clientProperty->getValue($this->analytics);
-            
+
             $propertyIdProperty = $reflection->getProperty('propertyId');
             $propertyIdProperty->setAccessible(true);
             $propertyId = $propertyIdProperty->getValue($this->analytics);
-            
+
             $executeWithRetryMethod = $reflection->getMethod('executeWithRetry');
             $executeWithRetryMethod->setAccessible(true);
-            
+
             // Build the exact same query as production
             $queryParams = [
                 'property' => $propertyId,
@@ -2542,17 +2601,17 @@ class AnalyticsDashboardController extends Controller
                 'dimensionFilter' => $tenantFilter, // GA4 filter applied
                 'limit' => 10, // Limit for raw response
             ];
-            
+
             $response = $executeWithRetryMethod->invoke($this->analytics, function() use ($client, $queryParams) {
                 return $client->runReport($queryParams);
             }, 'getRawGA4Response');
-            
+
             // Parse raw response
             $rawRows = [];
             foreach ($response->getRows() as $index => $row) {
                 $dimensions = $row->getDimensionValues();
                 $metrics = $row->getMetricValues();
-                
+
                 $rawRows[] = [
                     'row_index' => $index,
                     'dimensions' => [
@@ -2566,7 +2625,7 @@ class AnalyticsDashboardController extends Controller
                     ],
                 ];
             }
-            
+
             return [
                 'query_params' => [
                     'property' => $propertyId,
@@ -2607,7 +2666,7 @@ class AnalyticsDashboardController extends Controller
 
     /**
      * Calculate and format performance metrics
-     * 
+     *
      * @param array $performanceMetrics
      * @param float $startTime
      * @return array
@@ -2616,16 +2675,16 @@ class AnalyticsDashboardController extends Controller
     {
         $totalTime = (microtime(true) - $startTime) * 1000; // Convert to milliseconds
         $performanceMetrics['total_execution_time_ms'] = round($totalTime, 2);
-        
+
         // Calculate average query time
         $successfulQueries = array_filter($performanceMetrics['individual_query_times'], function($time) {
             return is_numeric($time);
         });
-        
-        $avgQueryTime = !empty($successfulQueries) 
+
+        $avgQueryTime = !empty($successfulQueries)
             ? round(array_sum($successfulQueries) / count($successfulQueries), 2)
             : 0;
-        
+
         // Identify slowest query
         $slowestQuery = null;
         $slowestTime = 0;
@@ -2635,7 +2694,7 @@ class AnalyticsDashboardController extends Controller
                 $slowestQuery = $queryName;
             }
         }
-        
+
         // Performance assessment
         $performanceStatus = 'good';
         $performanceNote = '';
@@ -2648,7 +2707,7 @@ class AnalyticsDashboardController extends Controller
         } else {
             $performanceNote = '✅ Performance is good';
         }
-        
+
         return [
             'total_execution_time_ms' => $performanceMetrics['total_execution_time_ms'],
             'total_execution_time_seconds' => round($performanceMetrics['total_execution_time_ms'] / 1000, 2),
@@ -2662,9 +2721,9 @@ class AnalyticsDashboardController extends Controller
             'performance_assessment' => [
                 'status' => $performanceStatus,
                 'note' => $performanceNote,
-                'recommendation' => $performanceStatus === 'slow' 
+                'recommendation' => $performanceStatus === 'slow'
                     ? 'Consider using materialized/cached data or reducing number of queries'
-                    : ($performanceStatus === 'moderate' 
+                    : ($performanceStatus === 'moderate'
                         ? 'Caching recommended for frequently accessed data'
                         : 'No optimization needed'),
             ],
@@ -2678,27 +2737,27 @@ class AnalyticsDashboardController extends Controller
 
     /**
      * Get List of Tenants from GA4 Data
-     * 
+     *
      * **Purpose:**
      * Returns a list of all tenants that have analytics data in GA4 for the specified date range.
      * Useful for administrative overview, debugging which tenants are being tracked, and
      * verifying tenant tracking across the platform.
-     * 
+     *
      * **Security:**
      * This endpoint shows all tenants in GA4 (not filtered by authenticated user).
      * Use with caution in production - consider adding admin-only middleware if needed.
-     * 
+     *
      * **AI Agent Context:**
      * This endpoint helps AI agents understand:
      * 1. Which tenants are actively being tracked in GA4
      * 2. Tenant activity levels (page views, sessions) for each tenant
      * 3. The distribution of analytics data across tenants
      * 4. Whether tenant tracking is working across all tenants
-     * 
+     *
      * **Request Parameters:**
      * - days (optional, default: 30) - Number of days to query. Recommended: 30 or 90 days.
      *   Valid values: 7, 30, 90, 365
-     * 
+     *
      * **Response Structure:**
      * {
      *   "status": "success",
@@ -2722,19 +2781,19 @@ class AnalyticsDashboardController extends Controller
      *     "average_views_per_tenant": 100
      *   }
      * }
-     * 
+     *
      * **Example Usage:**
      * ```bash
      * # Get tenants from last 30 days (default)
      * GET /api/analytics/tenants
-     * 
+     *
      * # Get tenants from last 90 days
      * GET /api/analytics/tenants?days=90
-     * 
+     *
      * # Get tenants from last 7 days
      * GET /api/analytics/tenants?days=7
      * ```
-     * 
+     *
      * **Example Response:**
      * ```json
      * {
@@ -2761,25 +2820,25 @@ class AnalyticsDashboardController extends Controller
      *   }
      * }
      * ```
-     * 
+     *
      * **AI Agent Notes:**
      * - This endpoint queries GA4 directly using customEvent:tenant_id dimension
      * - Results are sorted by page views (descending)
      * - Only includes tenants that have actual analytics data in the date range
      * - Tenant IDs come from the customEvent:tenant_id parameter sent from frontend
      * - Empty or "(not set)" tenant_ids are excluded from results
-     * 
+     *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getTenantsList(Request $request)
     {
         $startTime = microtime(true);
-        
+
         // Validate days parameter (recommend 30 or 90, but allow 7 and 365 too)
         $days = (int) $request->input('days', 30);
         $allowedDays = [7, 30, 90, 365];
-        
+
         if (!in_array($days, $allowedDays)) {
             return response()->json([
                 'status' => 'error',
@@ -2788,19 +2847,19 @@ class AnalyticsDashboardController extends Controller
                 'allowed_values' => $allowedDays,
             ], 400);
         }
-        
+
         $startDate = Carbon::now()->subDays($days);
         $endDate = Carbon::now();
-        
+
         try {
             // Get tenant IDs with their page views from GA4
             $tenantsData = $this->analytics->getTenantIdsInGA4($startDate, $endDate);
-            
+
             // Calculate summary statistics
             $totalTenants = count($tenantsData);
             $totalPageViews = array_sum($tenantsData);
             $averageViewsPerTenant = $totalTenants > 0 ? round($totalPageViews / $totalTenants, 2) : 0;
-            
+
             // Format tenants list with ranking
             $tenantsList = [];
             $rank = 1;
@@ -2811,7 +2870,7 @@ class AnalyticsDashboardController extends Controller
                     'rank' => $rank++,
                 ];
             }
-            
+
             // Get additional metrics for each tenant (sessions, users)
             // This requires separate queries for each tenant, so we'll do batch queries
             $tenantsWithMetrics = [];
@@ -2823,7 +2882,7 @@ class AnalyticsDashboardController extends Controller
                         $startDate,
                         $endDate
                     );
-                    
+
                     $tenantsWithMetrics[] = [
                         'tenant_id' => $tenant['tenant_id'],
                         'page_views' => $tenant['page_views'],
@@ -2843,13 +2902,13 @@ class AnalyticsDashboardController extends Controller
                     ];
                 }
             }
-            
+
             $executionTime = (microtime(true) - $startTime) * 1000;
-            
+
             // Calculate summary with all metrics
             $totalSessions = array_sum(array_column($tenantsWithMetrics, 'sessions'));
             $totalUsers = array_sum(array_column($tenantsWithMetrics, 'users'));
-            
+
             return response()->json([
                 'status' => 'success',
                 'date_range' => [
@@ -2879,7 +2938,7 @@ class AnalyticsDashboardController extends Controller
                     'note' => 'Only tenants with analytics data in the date range are included',
                 ],
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
