@@ -711,35 +711,43 @@ class AuthController extends Controller
             $currentDate = now();
 
             if ($useOptimizations) {
-                // Eager load relationships with column whitelists to reduce data transfer
-                // Load owner with memberships (latest), domains (active), basic_setting, and employee counts in one go
-                $owner->load([
-                    'memberships' => function ($query) {
-                        $query->select([
-                            'id', 'user_id', 'package_id', 'package_price', 'discount', 
-                            'coupon_code', 'price', 'currency', 'currency_symbol', 
-                            'payment_method', 'transaction_id', 'status', 'is_trial', 
-                            'trial_days', 'start_date', 'expire_date'
-                        ])
-                        ->orderBy('id', 'desc')
-                        ->with(['package' => function ($pkgQuery) {
-                            $pkgQuery->select([
-                                'id', 'title', 'video_size_limit', 'file_size_limit',
-                                'number_of_vcards', 'trial_days', 'features',
-                                'project_limit_number', 'real_estate_limit_number',
-                                'whatsapp_numbers_limit', 'employees_limit'
-                            ]);
-                        }]);
-                    },
-                    'domains' => function ($query) {
-                        $query->select(['id', 'user_id', 'custom_name', 'status', 'primary', 'ssl'])
-                            ->where('status', 'active');
-                    },
-                    'basic_setting' => function ($query) {
-                        $query->select(['id', 'user_id', 'company_name']);
-                    }
-                ]);
-
+                // OPTIMIZATION: Use direct queries with limit(1) instead of eager loading all records
+                // This is much faster when we only need the latest/active record
+                
+                // Get latest membership with package in a single optimized query
+                $membership = Membership::where('user_id', $owner->id)
+                    ->select([
+                        'id', 'user_id', 'package_id', 'package_price', 'discount', 
+                        'coupon_code', 'price', 'currency', 'currency_symbol', 
+                        'payment_method', 'transaction_id', 'status', 'is_trial', 
+                        'trial_days', 'start_date', 'expire_date'
+                    ])
+                    ->orderBy('id', 'desc')
+                    ->with(['package' => function ($pkgQuery) {
+                        $pkgQuery->select([
+                            'id', 'title', 'video_size_limit', 'file_size_limit',
+                            'number_of_vcards', 'trial_days', 'features',
+                            'project_limit_number', 'real_estate_limit_number',
+                            'whatsapp_numbers_limit', 'employees_limit'
+                        ]);
+                    }])
+                    ->limit(1)
+                    ->first();
+                
+                // Get active domain with limit(1) - only fetch what we need
+                $domain = ApiDomainSetting::where('user_id', $owner->id)
+                    ->where('status', 'active')
+                    ->select(['id', 'user_id', 'custom_name', 'status', 'primary', 'ssl'])
+                    ->limit(1)
+                    ->first();
+                
+                // Get company name with limit(1)
+                $basicSetting = BasicSetting::where('user_id', $owner->id)
+                    ->select(['id', 'user_id', 'company_name'])
+                    ->limit(1)
+                    ->first();
+                $companyName = $basicSetting?->company_name;
+                
                 // Eager load employee counts to avoid N+1 queries
                 // Use withCount to get counts in a single query instead of two separate count() calls
                 $owner->loadCount([
@@ -748,15 +756,6 @@ class AuthController extends Controller
                         $query->where('active', true);
                     }
                 ]);
-
-                // Get latest membership from eager loaded relationship (first after ordering by id desc)
-                $membership = $owner->memberships->first();
-                
-                // Get active domain from eager loaded relationship (first active domain)
-                $domain = $owner->domains->first();
-                
-                // Get company name from eager loaded relationship
-                $companyName = $owner->basic_setting?->company_name;
             } else {
                 // Original code path without optimizations
                 // Get owner's latest membership from the membership table
@@ -809,10 +808,10 @@ class AuthController extends Controller
                     'is_free_plan' => $isFreePlan
                 ];
 
-                // Get package details if needed (already loaded via eager loading if optimizations enabled)
+                // Get package details if needed (already loaded via eager loading in direct query if optimizations enabled)
                 if ($membership->package_id) {
                     if ($useOptimizations && $membership->relationLoaded('package') && $membership->package) {
-                        // Package already loaded via eager loading
+                        // Package already loaded via eager loading in the direct query
                         $package = $membership->package;
                     } else {
                         // Fallback: load package if not eager loaded
@@ -836,21 +835,49 @@ class AuthController extends Controller
                 }
             }
 
-            // Get all permissions (direct + from roles) for the user
-            // Preload permissions via eager loading to cut N+1s from Spatie
+            // OPTIMIZATION: Cache permissions separately since they change less frequently
+            // Permissions cache with longer TTL (30 minutes vs 5 minutes for profile)
+            $permissionsCacheKey = "user:permissions:{$user->id}:{$owner->id}";
+            $permissionsCacheTtl = 1800; // 30 minutes
+
             if ($useOptimizations) {
+                // Try to get permissions from cache first
+                $permissions = Cache::get($permissionsCacheKey);
+                
+                if ($permissions === null) {
+                    // Set team ID for Spatie permissions (important for multi-tenant scenarios)
+                    $teamId = method_exists($user, 'tenantOwnerId') ? $user->tenantOwnerId() : $owner->id;
+                    app(PermissionRegistrar::class)->setPermissionsTeamId($teamId);
+                    
+                    // Preload permissions via eager loading to cut N+1s from Spatie
+                    $user->load(['roles.permissions', 'permissions']);
+                    
+                    $permissions = $user->getAllPermissions()->map(function ($permission) {
+                        return [
+                            'id' => $permission->id,
+                            'name' => $permission->name,
+                            'name_ar' => $permission->name_ar ?? null,
+                            'name_en' => $permission->name_en ?? null,
+                            'description' => $permission->description ?? null,
+                        ];
+                    })->values()->toArray();
+                    
+                    // Cache permissions separately with longer TTL
+                    Cache::put($permissionsCacheKey, $permissions, $permissionsCacheTtl);
+                }
+            } else {
+                // Original code path without optimizations
                 $user->load(['roles.permissions', 'permissions']);
+                $permissions = $user->getAllPermissions()->map(function ($permission) {
+                    return [
+                        'id' => $permission->id,
+                        'name' => $permission->name,
+                        'name_ar' => $permission->name_ar ?? null,
+                        'name_en' => $permission->name_en ?? null,
+                        'description' => $permission->description ?? null,
+                    ];
+                })->values()->toArray();
             }
-            
-            $permissions = $user->getAllPermissions()->map(function ($permission) {
-                return [
-                    'id' => $permission->id,
-                    'name' => $permission->name,
-                    'name_ar' => $permission->name_ar ?? null,
-                    'name_en' => $permission->name_en ?? null,
-                    'description' => $permission->description ?? null,
-                ];
-            })->values()->toArray();
 
             // Compile user data (keep the logged-in user's identity, but reflect owner's membership)
             $userData = [
