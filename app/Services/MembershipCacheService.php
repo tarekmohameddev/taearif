@@ -16,6 +16,19 @@ class MembershipCacheService
     public static function getActiveMembership($userId)
     {
         $cacheKey = "active_membership:{$userId}";
+
+        // Defensive: older code paths may have cached a boolean/array/etc.
+        // We only allow a Membership model (or null) under this key.
+        $cached = Cache::get($cacheKey);
+        if (!is_null($cached) && !($cached instanceof Membership)) {
+            Cache::forget($cacheKey);
+            \Log::warning('Invalid active_membership cache value purged', [
+                'user_id' => $userId,
+                'cache_key' => $cacheKey,
+                'cached_type' => gettype($cached),
+            ]);
+        }
+
         return Cache::remember($cacheKey, 300, function () use ($userId) {
             return Membership::where('user_id', $userId)
                 ->where('status', 1)
