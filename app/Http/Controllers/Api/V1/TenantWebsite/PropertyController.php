@@ -290,7 +290,7 @@ class PropertyController extends Controller
 			'contents',
 			'galleryImages',
 			'proertyAmenities.amenity',
-			'UserPropertyCharacteristics',
+			'UserPropertyCharacteristics.UserFacade',
 			'building',
 		])
 			->where('user_id', $tenant->id)
@@ -377,6 +377,15 @@ class PropertyController extends Controller
 
 		// Merge in extended fields to mirror admin show response
 		$characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
+		
+		// Add facade name if facade_id exists
+		if (isset($characteristics['facade_id']) && $characteristics['facade_id'] && $property->UserPropertyCharacteristics) {
+			$facade = $property->UserPropertyCharacteristics->UserFacade;
+			if ($facade) {
+				$characteristics['facade_name'] = $facade->name;
+			}
+		}
+		
 		$extra = [
 			'payment_method' => $this->translator->translatePaymentMethod($property->payment_method),
 			'payment_method_en' => $property->payment_method,
