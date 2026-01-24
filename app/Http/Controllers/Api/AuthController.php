@@ -120,7 +120,7 @@ class AuthController extends Controller
      */
     private function shouldReturnJson(Request $request): bool
     {
-        return $request->expectsJson() 
+        return $request->expectsJson()
             || $request->wantsJson()
             || $request->header('Accept') === 'application/json';
     }
@@ -153,7 +153,7 @@ class AuthController extends Controller
     public function callback(Request $request)
     {
         $wantsJson = $this->shouldReturnJson($request);
-        
+
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
 
@@ -163,7 +163,7 @@ class AuthController extends Controller
                 Log::error('Google Callback Error: ' . $error, [
                     'google_user' => $googleUser ? ['id' => $googleUser->id] : null,
                 ]);
-                
+
                 if ($wantsJson) {
                     return response()->json([
                         'status' => 'error',
@@ -171,7 +171,7 @@ class AuthController extends Controller
                         'message' => 'Invalid Google authentication data',
                     ], 400);
                 }
-                
+
                 return redirect()->away("https://api.taearif.com/oauth/login?error=invalid_google_data");
             }
 
@@ -220,7 +220,7 @@ class AuthController extends Controller
                         'message' => 'Your account has been banned',
                     ], 403);
                 }
-                
+
                 return redirect()->away('https://api.taearif.com/oauth/login?error=account_banned');
             }
 
@@ -251,7 +251,7 @@ class AuthController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'request_url' => $request->fullUrl(),
             ]);
-            
+
             if ($wantsJson) {
                 return response()->json([
                     'status' => 'error',
@@ -264,7 +264,7 @@ class AuthController extends Controller
                     ] : null,
                 ], 500);
             }
-            
+
             return redirect()->away("https://api.taearif.com/oauth/login?error=google_auth_failed");
         }
     }
@@ -713,13 +713,13 @@ class AuthController extends Controller
             if ($useOptimizations) {
                 // OPTIMIZATION: Use direct queries with limit(1) instead of eager loading all records
                 // This is much faster when we only need the latest/active record
-                
+
                 // Get latest membership with package in a single optimized query
                 $membership = Membership::where('user_id', $owner->id)
                     ->select([
-                        'id', 'user_id', 'package_id', 'package_price', 'discount', 
-                        'coupon_code', 'price', 'currency', 'currency_symbol', 
-                        'payment_method', 'transaction_id', 'status', 'is_trial', 
+                        'id', 'user_id', 'package_id', 'package_price', 'discount',
+                        'coupon_code', 'price', 'currency', 'currency_symbol',
+                        'payment_method', 'transaction_id', 'status', 'is_trial',
                         'trial_days', 'start_date', 'expire_date'
                     ])
                     ->orderBy('id', 'desc')
@@ -733,21 +733,21 @@ class AuthController extends Controller
                     }])
                     ->limit(1)
                     ->first();
-                
+
                 // Get active domain with limit(1) - only fetch what we need
                 $domain = ApiDomainSetting::where('user_id', $owner->id)
                     ->where('status', 'active')
                     ->select(['id', 'user_id', 'custom_name', 'status', 'primary', 'ssl'])
                     ->limit(1)
                     ->first();
-                
+
                 // Get company name with limit(1)
                 $basicSetting = BasicSetting::where('user_id', $owner->id)
                     ->select(['id', 'user_id', 'company_name'])
                     ->limit(1)
                     ->first();
                 $companyName = $basicSetting?->company_name;
-                
+
                 // Eager load employee counts to avoid N+1 queries
                 // Use withCount to get counts in a single query instead of two separate count() calls
                 $owner->loadCount([
@@ -817,7 +817,7 @@ class AuthController extends Controller
                         // Fallback: load package if not eager loaded
                         $package = Package::find($membership->package_id);
                     }
-                    
+
                     if ($package) {
                         $membershipDetails['package'] = [
                             'title' => $package->title,
@@ -843,15 +843,15 @@ class AuthController extends Controller
             if ($useOptimizations) {
                 // Try to get permissions from cache first
                 $permissions = Cache::get($permissionsCacheKey);
-                
+
                 if ($permissions === null) {
                     // Set team ID for Spatie permissions (important for multi-tenant scenarios)
                     $teamId = method_exists($user, 'tenantOwnerId') ? $user->tenantOwnerId() : $owner->id;
                     app(PermissionRegistrar::class)->setPermissionsTeamId($teamId);
-                    
+
                     // Preload permissions via eager loading to cut N+1s from Spatie
                     $user->load(['roles.permissions', 'permissions']);
-                    
+
                     $permissions = $user->getAllPermissions()->map(function ($permission) {
                         return [
                             'id' => $permission->id,
@@ -861,7 +861,7 @@ class AuthController extends Controller
                             'description' => $permission->description ?? null,
                         ];
                     })->values()->toArray();
-                    
+
                     // Cache permissions separately with longer TTL
                     Cache::put($permissionsCacheKey, $permissions, $permissionsCacheTtl);
                 }
@@ -916,8 +916,8 @@ class AuthController extends Controller
                     'max_employees' => (isset($membershipDetails['package']) ? $membershipDetails['package']['employees_limit'] : 0),
                     'is_over_limit' => $owner->employee_usage >= $owner->employee_quota,
                     // Use eager loaded counts if available, otherwise fallback to queries
-                    'active_count' => $useOptimizations && isset($owner->active_employees_count) 
-                        ? $owner->active_employees_count 
+                    'active_count' => $useOptimizations && isset($owner->active_employees_count)
+                        ? $owner->active_employees_count
                         : $owner->employees()->where('active', true)->count(),
                     'total_count' => $useOptimizations && isset($owner->total_employees_count)
                         ? $owner->total_employees_count
