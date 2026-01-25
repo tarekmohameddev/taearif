@@ -26,7 +26,7 @@ class ProjectController extends Controller
 		$tenant = $this->resolveTenant($request, $tenantId);
 
 		$query = Project::query()
-			->with(['contents', 'galleryImages', 'user'])
+			->with(['contents', 'galleryImages', 'user', 'properties.contents', 'properties.galleryImages'])
 			->where('user_id', $tenant->id);
 
 		// Published filter (optional)
@@ -123,6 +123,9 @@ class ProjectController extends Controller
                     'lng' => $project->longitude ? (float) $project->longitude : null,
                     'address' => $content?->address ?? '',
                 ],
+                'properties' => $project->properties->map(function ($property) {
+                    return $this->formatProperty($property);
+                }),
             ];
         });
 
@@ -157,6 +160,8 @@ class ProjectController extends Controller
 			'floorplanImages',
 			'specifications',
 			'types',
+			'properties.contents',
+			'properties.galleryImages',
 		])
 			->where('user_id', $tenant->id)
 			->whereHas('contents', function ($q) use ($slug) {
@@ -272,9 +277,55 @@ class ProjectController extends Controller
 			'types' => $types,
 			'createdAt' => $project->created_at?->toISOString(),
 			'updatedAt' => $project->updated_at?->toISOString(),
+			'properties' => $project->properties->map(function ($property) {
+				return $this->formatProperty($property);
+			}),
 		];
 
 		return response()->json(['project' => $data]);
+	}
+
+	/**
+	 * Format a property with all its details for API response.
+	 */
+	private function formatProperty($property): array
+	{
+		$content = $property->contents->first();
+
+		return [
+			'id' => $property->id,
+			'project_id' => $property->project_id,
+			'title' => optional($content)->title ?? '',
+			'slug' => optional($content)->slug ?? '',
+			'address' => optional($content)->address ?? '',
+			'description' => optional($content)->description ?? '',
+			'price' => $property->price,
+			'pricePerMeter' => $property->pricePerMeter,
+			'purpose' => $property->purpose,
+			'type' => $property->type,
+			'beds' => $property->beds,
+			'bath' => $property->bath,
+			'area' => $property->area,
+			'size' => $property->size,
+			'featured_image' => $property->featured_image ? asset($property->featured_image) : null,
+			'gallery' => $property->galleryImages->map(fn($img) => asset($img->image))->toArray(),
+			'location' => [
+				'latitude' => $property->latitude,
+				'longitude' => $property->longitude,
+			],
+			'status' => (bool) $property->status,
+			'featured' => (bool) $property->featured,
+			'show_reservations' => (bool) $property->show_reservations,
+			'property_status' => $property->property_status,
+			'features' => $property->features ?? [],
+			'faqs' => $property->faqs ?? [],
+			'category_id' => $property->category_id,
+			'payment_method' => $property->payment_method,
+			'video_url' => $property->video_url ? asset($property->video_url) : null,
+			'virtual_tour' => $property->virtual_tour ? asset($property->virtual_tour) : null,
+			'created_at' => $property->created_at?->toISOString(),
+			'updated_at' => $property->updated_at?->toISOString(),
+		];
 	}
 }
 

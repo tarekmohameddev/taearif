@@ -62,7 +62,7 @@ class ProjectController extends Controller
             $allowedUserIds = array_unique(array_merge($allowedUserIds, $employeeIds));
         } catch (\Throwable $e) {}
 
-        $projects = Project::with(['contents', 'specifications', 'types', 'creator'])
+        $projects = Project::with(['contents', 'specifications', 'types', 'creator', 'properties.contents', 'properties.galleryImages'])
             ->whereIn('user_id', $allowedUserIds)
             ->orderBy('id', 'desc')
             ->paginate(10);
@@ -193,6 +193,9 @@ class ProjectController extends Controller
                     "name" => trim(($project->creator->first_name ?? '') . ' ' . ($project->creator->last_name ?? '')) ?: ($project->creator->username ?? $project->creator->email),
                     "type" => $project->creator->account_type,
                 ] : null,
+                "properties"       => $project->properties->map(function ($property) {
+                    return $this->formatProperty($property);
+                }),
             ];
         });
 
@@ -227,6 +230,8 @@ class ProjectController extends Controller
             'types',
             'user',  
             'creator',
+            'properties.contents',
+            'properties.galleryImages',
         ])->find($id);
 
         if (!$project) {
@@ -250,7 +255,7 @@ class ProjectController extends Controller
                 $slugsHash = md5(implode(',', $slugs));
                 $cacheKey = "ga_views_project_{$id}_{$tenantId}_{$days}_{$slugsHash}";
                 
-                $visits = Cache::remember($cacheKey, 300, function () use ($analytics, $days, $slugs, $tenantId) {
+                $visits = Cache::remember($cacheKey, 300, function () use ($analytics, $days, $slugs, $tenantId, $id) {
                     $result = 0;
                     try {
                         // Build paths for all slug variants
@@ -279,7 +284,7 @@ class ProjectController extends Controller
                         }
                     } catch (\Exception $e) {
                         \Log::error('Google Analytics error in ProjectController show', [
-                            'project_id' => $project->id,
+                            'project_id' => $id,
                             'error' => $e->getMessage(),
                         ]);
                     }
@@ -351,6 +356,9 @@ class ProjectController extends Controller
                 "name" => trim(($project->creator->first_name ?? '') . ' ' . ($project->creator->last_name ?? '')) ?: ($project->creator->username ?? $project->creator->email),
                 "type" => $project->creator->account_type,
             ] : null,
+            "properties" => $project->properties->map(function ($property) {
+                return $this->formatProperty($property);
+            }),
         ];
 
         return response()->json([
@@ -516,7 +524,7 @@ class ProjectController extends Controller
             'specifications',
             'types',
 
-        ])->find($project->id);
+        ])->findOrFail($project->id);
 
         if ($responseProject->featured_image) {
             $responseProject->featured_image = asset($responseProject->featured_image);
@@ -619,6 +627,49 @@ class ProjectController extends Controller
                 'show_on_desktop' => true,
             ]);
         }
+    }
+
+    /**
+     * Format a property with all its details for API response.
+     */
+    private function formatProperty($property): array
+    {
+        $content = $property->contents->first();
+
+        return [
+            'id' => $property->id,
+            'project_id' => $property->project_id,
+            'title' => optional($content)->title ?? '',
+            'slug' => optional($content)->slug ?? '',
+            'address' => optional($content)->address ?? '',
+            'description' => optional($content)->description ?? '',
+            'price' => $property->price,
+            'pricePerMeter' => $property->pricePerMeter,
+            'purpose' => $property->purpose,
+            'type' => $property->type,
+            'beds' => $property->beds,
+            'bath' => $property->bath,
+            'area' => $property->area,
+            'size' => $property->size,
+            'featured_image' => $property->featured_image ? asset($property->featured_image) : null,
+            'gallery' => $property->galleryImages->map(fn($img) => asset($img->image))->toArray(),
+            'location' => [
+                'latitude' => $property->latitude,
+                'longitude' => $property->longitude,
+            ],
+            'status' => (bool) $property->status,
+            'featured' => (bool) $property->featured,
+            'show_reservations' => (bool) $property->show_reservations,
+            'property_status' => $property->property_status,
+            'features' => $property->features ?? [],
+            'faqs' => $property->faqs ?? [],
+            'category_id' => $property->category_id,
+            'payment_method' => $property->payment_method,
+            'video_url' => $property->video_url ? asset($property->video_url) : null,
+            'virtual_tour' => $property->virtual_tour ? asset($property->virtual_tour) : null,
+            'created_at' => $property->created_at?->toISOString(),
+            'updated_at' => $property->updated_at?->toISOString(),
+        ];
     }
 
 
