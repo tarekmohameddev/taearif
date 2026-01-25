@@ -32,8 +32,36 @@ class UploadService
             throw new \InvalidArgumentException("Invalid file type: {$extension}");
         }
 
-        if ($file->getSize() > $config['maxSize'] * 1024) {
+        // Check if file is empty
+        $fileSize = $file->getSize();
+        if ($fileSize === 0 || $fileSize === false) {
+            throw new \InvalidArgumentException("The uploaded file is empty or invalid.");
+        }
+
+        if ($fileSize > $config['maxSize'] * 1024) {
             throw new \InvalidArgumentException("File size exceeds the maximum allowed size");
+        }
+
+        // Validate MIME type for image files (except SVG)
+        if ($extension !== 'svg') {
+            $mimeType = $file->getMimeType();
+            $allowedMimeTypes = [
+                'jpg' => ['image/jpeg', 'image/jpg'],
+                'jpeg' => ['image/jpeg', 'image/jpg'],
+                'png' => ['image/png'],
+                'webp' => ['image/webp'],
+                'gif' => ['image/gif'],
+                'bmp' => ['image/bmp', 'image/x-ms-bmp'],
+            ];
+
+            if (isset($allowedMimeTypes[$extension]) && !in_array($mimeType, $allowedMimeTypes[$extension])) {
+                throw new \InvalidArgumentException("Invalid MIME type: {$mimeType}. Expected image file but got {$mimeType}.");
+            }
+
+            // Additional check: verify the file is actually a valid image
+            if (!in_array($mimeType, ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/bmp', 'image/x-ms-bmp'])) {
+                throw new \InvalidArgumentException("Unsupported image type {$mimeType}. GD driver is only able to decode JPG, PNG, GIF, BMP or WebP files.");
+            }
         }
 
         $filename = Str::uuid() . '.' . $extension;
@@ -46,22 +74,31 @@ class UploadService
         }
 
         if ($extension !== 'svg') {
-            $image = Image::make($file);
+            try {
+                $image = Image::make($file);
 
-            if ($image->width() > $config['maxWidth']) {
-                $image->resize($config['maxWidth'], null, function ($constraint) {
-                    $constraint->aspectRatio();
-                    $constraint->upsize();
-                });
+                if ($image->width() > $config['maxWidth']) {
+                    $image->resize($config['maxWidth'], null, function ($constraint) {
+                        $constraint->aspectRatio();
+                        $constraint->upsize();
+                    });
+                }
+
+                if (in_array($context, ['profile', 'logo'])) {
+                    $image->encode($extension, 85);
+                } else {
+                    $image->encode($extension, 80);
+                }
+
+                $image->save("{$fullPath}/{$filename}");
+            } catch (\Exception $e) {
+                // Handle image processing errors gracefully
+                if (strpos($e->getMessage(), 'Unsupported image type') !== false || 
+                    strpos($e->getMessage(), 'decode') !== false) {
+                    throw new \InvalidArgumentException("The uploaded file is not a valid image file. Please ensure the file is a valid JPG, PNG, GIF, BMP or WebP image.");
+                }
+                throw new \InvalidArgumentException("Failed to process image: " . $e->getMessage());
             }
-
-            if (in_array($context, ['profile', 'logo'])) {
-                $image->encode($extension, 85);
-            } else {
-                $image->encode($extension, 80);
-            }
-
-            $image->save("{$fullPath}/{$filename}");
         } else {
             $file->move($fullPath, $filename);
         }
