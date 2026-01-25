@@ -38,11 +38,19 @@ use App\Listeners\EnableMaintenanceMode;
 use App\Listeners\DisableMaintenanceMode;
 use App\Listeners\LogMembershipChange;
 use App\Listeners\GiveWelcomeCredits;
+use App\Listeners\ClearUserProfilePermissionCaches;
 use App\Models\User\RealestateManagement\Project;
 use App\Models\User\RealestateManagement\Property;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
-use App\Http\Middleware\SetTenantForPermissions; // the middleware we added earlier
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Spatie\Permission\Events\PermissionAttached;
+use Spatie\Permission\Events\PermissionDetached;
+use Spatie\Permission\Events\RoleAttached;
+use Spatie\Permission\Events\RoleDetached;
+use App\Models\Api\ApiDomainSetting;
+use App\Models\User\BasicSetting;
+use App\Observers\ApiDomainSettingObserver;
+use App\Observers\UserBasicSettingObserver;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -67,6 +75,20 @@ class EventServiceProvider extends ServiceProvider
         UserUpgradedFromFree::class => [
             DisableMaintenanceMode::class,
             LogMembershipChange::class,
+        ],
+
+        // RBAC changes should invalidate cached /api/user payload
+        RoleAttached::class => [
+            ClearUserProfilePermissionCaches::class,
+        ],
+        RoleDetached::class => [
+            ClearUserProfilePermissionCaches::class,
+        ],
+        PermissionAttached::class => [
+            ClearUserProfilePermissionCaches::class,
+        ],
+        PermissionDetached::class => [
+            ClearUserProfilePermissionCaches::class,
         ],
     ];
 
@@ -93,5 +115,9 @@ class EventServiceProvider extends ServiceProvider
         ApiUserCategory::observe(ApiUserCategoryObserver::class);
         UserFacade::observe(UserFacadeObserver::class);
         PropertyRequestAutoCustomerSetting::observe(PropertyRequestAutoCustomerSettingObserver::class);
+
+        // Profile payload dependencies for /api/user
+        ApiDomainSetting::observe(ApiDomainSettingObserver::class);
+        BasicSetting::observe(UserBasicSettingObserver::class);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -25,6 +26,19 @@ class CacheInvalidationHelper
     {
         $ownerId = $ownerId ?? $userId;
         Cache::forget("user:profile:{$userId}:{$ownerId}");
+    }
+
+    /**
+     * Clear cached permissions payload for a specific user.
+     * Note: This is separate from Spatie's own permission cache.
+     *
+     * @param int $userId
+     * @param int|null $ownerId If null, assumes userId is the owner (tenant)
+     */
+    public static function clearUserPermissionsCache(int $userId, ?int $ownerId = null): void
+    {
+        $ownerId = $ownerId ?? $userId;
+        Cache::forget("user:permissions:{$userId}:{$ownerId}");
     }
 
     /**
@@ -153,6 +167,7 @@ class CacheInvalidationHelper
     {
         // Clear tenant's own caches
         self::clearUserProfileCache($tenantId);
+        self::clearUserPermissionsCache($tenantId);
         self::clearSideMenusCache($tenantId);
         self::clearInstalledAppsCache($tenantId);
         self::clearMembershipCaches($tenantId);
@@ -160,8 +175,32 @@ class CacheInvalidationHelper
         // Clear employee caches (they reference tenant's data)
         foreach ($employeeIds as $employeeId) {
             self::clearUserProfileCache($employeeId, $tenantId);
+            self::clearUserPermissionsCache($employeeId, $tenantId);
             self::clearSideMenusCache($employeeId, $tenantId);
             self::clearInstalledAppsCache($employeeId);
+        }
+    }
+
+    /**
+     * Clear profile-related caches for a tenant + all employees.
+     * Use this when tenant-wide settings change (domains/basic settings/etc).
+     */
+    public static function clearTenantProfileCachesAuto(int $tenantId): void
+    {
+        $employeeIds = User::query()
+            ->where('tenant_id', $tenantId)
+            ->pluck('id')
+            ->all();
+
+        // Profile payload includes permissions array; clear both.
+        self::clearUserProfileCache($tenantId);
+        self::clearUserPermissionsCache($tenantId);
+        self::clearSideMenusCache($tenantId);
+
+        foreach ($employeeIds as $employeeId) {
+            self::clearUserProfileCache((int) $employeeId, $tenantId);
+            self::clearUserPermissionsCache((int) $employeeId, $tenantId);
+            self::clearSideMenusCache((int) $employeeId, $tenantId);
         }
     }
 }
