@@ -76,8 +76,8 @@ class UploadController extends Controller
     {
         // Validate the request
         $validator = Validator::make($request->all(), [
-            'files' => 'required|array',
-            'files.*' => 'required|file',
+            'files' => 'required|array|min:1',
+            'files.*' => 'nullable|file', // Changed to nullable to allow empty files to pass through
             'context' => 'required|string',
             'sub_folder' => 'nullable|string',
         ]);
@@ -91,6 +91,25 @@ class UploadController extends Controller
         }
 
         $files = $request->file('files');
+        
+        // Filter out null/empty file entries
+        $files = array_filter($files, function($file) {
+            return $file !== null && $file->isValid();
+        });
+
+        if (empty($files)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No valid files were provided for upload',
+                'data' => [
+                    'files' => [],
+                    'total' => 0,
+                    'success' => 0,
+                    'failed' => 0,
+                ]
+            ], 400);
+        }
+
         $context = $request->input('context');
         $subFolder = $request->input('sub_folder');
 
@@ -106,6 +125,17 @@ class UploadController extends Controller
 
         // Process each file individually to allow partial success
         foreach ($files as $index => $file) {
+            // Skip if file is not a valid UploadedFile instance
+            if (!$file || !($file instanceof \Illuminate\Http\UploadedFile)) {
+                $failedFiles[] = [
+                    'index' => $index,
+                    'filename' => 'unknown',
+                    'error' => 'Invalid file object provided',
+                ];
+                $failedCount++;
+                continue;
+            }
+
             try {
                 $path = $this->uploadService->uploadFile($file, $context, $options);
                 $uploadedFiles[] = [
