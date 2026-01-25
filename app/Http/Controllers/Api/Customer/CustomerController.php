@@ -500,7 +500,6 @@ class CustomerController extends Controller
                 'district_id'  => 'nullable|exists:user_districts,id',
                 'note'         => 'nullable|string',
                 'type_id'      => ['required', Rule::exists('users_api_customers_types','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-                'priority_id'  => ['nullable', Rule::exists('users_api_customers_priorities','id')->where(fn($q)=>$q->where('user_id',$user->id))],
                 'responsible_employee_id' => [
                     'nullable',
                     Rule::exists('users', 'id')->where(function ($query) use ($user) {
@@ -529,7 +528,6 @@ class CustomerController extends Controller
                     'district_id'  => $request->district_id,
                     'note'         => $request->note,
                     'type_id'      => $request->type_id,
-                    'priority_id'  => $request->priority_id,
                     'responsible_employee_id' => $request->responsible_employee_id,
                     'stage_id'     => $request->stage_id,
                     'procedure_id' => $request->procedure_id,
@@ -768,8 +766,6 @@ class CustomerController extends Controller
             'district_id'  => 'nullable|exists:user_districts,id',
             'note'         => 'nullable|string',
             'type_id'      => ['nullable', Rule::exists('users_api_customers_types','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-            'priority_id'  => ['nullable', Rule::exists('users_api_customers_priorities','id')->where(fn($q)=>$q->where('user_id',$user->id))],
-
             'stage_id'     => ['nullable', Rule::exists('users_api_customers_stages','id')->where(fn($q)=>$q->where('user_id',$user->id))],
             'responsible_employee_id' => [
                 'nullable',
@@ -796,7 +792,6 @@ class CustomerController extends Controller
             'city_id'      => $request->input('city_id'),
             'district_id'  => $request->input('district_id'),
             'type_id'      => $request->input('type_id'),
-            'priority_id'  => $request->input('priority_id'),
             // stage_id is handled via CrmCustomerStageService to centralize CRM side effects
             'responsible_employee_id' => $request->input('responsible_employee_id'),
             'procedure_id' => $request->input('procedure_id'),
