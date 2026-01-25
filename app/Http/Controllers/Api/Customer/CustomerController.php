@@ -488,6 +488,9 @@ class CustomerController extends Controller
                 'interested_property_ids' => $toIntArray($request->input('interested_property_ids')),
             ]);
 
+            // Remove priority_id from request to ignore it completely
+            $request->request->remove('priority_id');
+
             $request->validate([
                 'name'         => 'required|string|max:255',
                 'email'        => ['nullable','email',
@@ -753,6 +756,9 @@ class CustomerController extends Controller
             'interested_category_ids' => $toIntArray($request->input('interested_category_ids')),
             'interested_property_ids' => $toIntArray($request->input('interested_property_ids')),
         ]);
+
+        // Remove priority_id from request to ignore it completely
+        $request->request->remove('priority_id');
 
         $request->validate([
             'name'         => 'sometimes|string|max:255',
