@@ -1099,6 +1099,7 @@ class PropertyController extends Controller
                     'UserPropertyCharacteristics',
                     'creator:id,first_name,last_name,username,email,account_type',
                     'building:id,name,image,deed_number,deed_image,water_meter_number',
+                    'project.contents',
                 ])->whereIn('user_id', $allowedUserIds)->findOrFail($id);
 
                 $content = $property->contents->first();
@@ -2167,6 +2168,7 @@ class PropertyController extends Controller
             'creator:id,first_name,last_name,username,email,account_type',
             'galleryImages:id,property_id,image', // Added to prevent N+1
             'UserPropertyCharacteristics:id,property_id', // Added if needed for filtering
+            'project.contents',
         ];
 
         // Only eager load contents if we won't be using a JOIN
@@ -2787,6 +2789,17 @@ class PropertyController extends Controller
             }
             $slug = $content->slug ?? null;
 
+            // Get project data if relationship is loaded
+            $projectData = null;
+            if ($property->relationLoaded('project') && $property->project) {
+                $projectContent = $property->project->contents->first();
+                $projectData = [
+                    'id' => $property->project->id,
+                    'title' => optional($projectContent)->title ?? '',
+                    'slug' => optional($projectContent)->slug ?? '',
+                ];
+            }
+
             $propertyData = [
                 'id'               => $property->id,
                 'visits'           => (int) ($viewsBySlug[$slug] ?? 0),
@@ -2807,6 +2820,7 @@ class PropertyController extends Controller
                 'created_at'       => $property->created_at->toISOString(),
                 'updated_at'       => $property->updated_at->toISOString(),
                 'payment_method'   => $property->payment_method,
+                'project'          => $projectData,
                 'creator' => $property->creator ? [
                     'id'   => $property->creator->id,
                     'name' => trim(($property->creator->first_name ?? '') . ' ' . ($property->creator->last_name ?? '')) ?: ($property->creator->username ?? $property->creator->email),
