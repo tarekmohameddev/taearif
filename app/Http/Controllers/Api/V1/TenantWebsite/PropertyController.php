@@ -26,7 +26,7 @@ class PropertyController extends Controller
 		$tenant = $this->resolveTenant($request, $tenantId);
 
 		$query = Property::query()
-			->with(['contents', 'galleryImages'])
+			->with(['contents', 'galleryImages', 'project.contents'])
 			->where('user_id', $tenant->id)
 			->where('status', 1);
 
@@ -238,6 +238,17 @@ class PropertyController extends Controller
 			};
 			$isUnavailable = in_array($p->purpose, ['rented', 'sold'], true);
 
+			// Get project data if relationship is loaded
+			$projectData = null;
+			if ($p->relationLoaded('project') && $p->project) {
+				$projectContent = $p->project->contents->first();
+				$projectData = [
+					'id' => $p->project->id,
+					'title' => optional($projectContent)->title ?? '',
+					'slug' => optional($projectContent)->slug ?? '',
+				];
+			}
+
 			return [
                 'id' => (string) $p->id,
                 'slug' => $slug,
@@ -264,6 +275,7 @@ class PropertyController extends Controller
                     'address' => $content?->address ? ($content->address . ($city?->name_ar ? '، ' . $city->name_ar : '')) : '',
                 ],
                 'images' => $images,
+                'project' => $projectData,
             ];
         });
 
@@ -292,6 +304,7 @@ class PropertyController extends Controller
 			'proertyAmenities.amenity',
 			'UserPropertyCharacteristics.UserFacade',
 			'building',
+			'project.contents',
 		])
 			->where('user_id', $tenant->id)
 			->where('status', 1)
@@ -386,6 +399,18 @@ class PropertyController extends Controller
 			}
 		}
 		
+		// Get project data if relationship is loaded
+		$projectData = null;
+		if ($property->relationLoaded('project') && $property->project) {
+			$projectContent = $property->project->contents->first();
+			$projectData = [
+				'id' => $property->project->id,
+				'title' => optional($projectContent)->title ?? '',
+				'slug' => optional($projectContent)->slug ?? '',
+				'featured_image' => $property->project->featured_image ? asset($property->project->featured_image) : null,
+			];
+		}
+
 		$extra = [
 			'payment_method' => $this->translator->translatePaymentMethod($property->payment_method),
 			'payment_method_en' => $property->payment_method,
@@ -396,6 +421,7 @@ class PropertyController extends Controller
 			'video_image' => $property->video_image ? asset($property->video_image) : null,
 			'faqs' => $property->faqs ?? [],
 			'building' => $property->building,
+			'project' => $projectData,
 		];
 
 		$data = array_merge($data, $extra, $characteristics);

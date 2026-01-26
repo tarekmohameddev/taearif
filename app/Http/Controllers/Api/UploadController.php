@@ -76,8 +76,8 @@ class UploadController extends Controller
     {
         // Validate the request
         $validator = Validator::make($request->all(), [
-            'files' => 'required|array',
-            'files.*' => 'required|file',
+            'files' => 'required|array|min:1',
+            'files.*' => 'nullable|file', // Changed to nullable to allow empty files to pass through
             'context' => 'required|string',
             'sub_folder' => 'nullable|string',
         ]);
@@ -90,38 +90,103 @@ class UploadController extends Controller
             ], 422);
         }
 
-        try {
-            $files = $request->file('files');
-            $context = $request->input('context');
-            $subFolder = $request->input('sub_folder');
+        $files = $request->file('files');
+        
+        // Filter out null/empty file entries
+        $files = array_filter($files, function($file) {
+            return $file !== null && $file->isValid();
+        });
 
-            $options = [
-                'subFolder' => $subFolder,
-            ];
+        if (empty($files)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No valid files were provided for upload',
+                'data' => [
+                    'files' => [],
+                    'total' => 0,
+                    'success' => 0,
+                    'failed' => 0,
+                ]
+            ], 400);
+        }
 
-            $uploadedFiles = [];
+        $context = $request->input('context');
+        $subFolder = $request->input('sub_folder');
 
-            foreach ($files as $file) {
+        $options = [
+            'subFolder' => $subFolder,
+        ];
+
+        $uploadedFiles = [];
+        $failedFiles = [];
+        $totalFiles = count($files);
+        $successCount = 0;
+        $failedCount = 0;
+
+        // Process each file individually to allow partial success
+        foreach ($files as $index => $file) {
+            // Skip if file is not a valid UploadedFile instance
+            if (!$file || !($file instanceof \Illuminate\Http\UploadedFile)) {
+                $failedFiles[] = [
+                    'index' => $index,
+                    'filename' => 'unknown',
+                    'error' => 'Invalid file object provided',
+                ];
+                $failedCount++;
+                continue;
+            }
+
+            try {
                 $path = $this->uploadService->uploadFile($file, $context, $options);
                 $uploadedFiles[] = [
                     'url' => asset($path),
                     'path' => $path,
+                    'index' => $index,
+                    'filename' => $file->getClientOriginalName(),
                 ];
+                $successCount++;
+            } catch (\Exception $e) {
+                $failedFiles[] = [
+                    'index' => $index,
+                    'filename' => $file->getClientOriginalName(),
+                    'error' => $e->getMessage(),
+                ];
+                $failedCount++;
             }
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Files uploaded successfully',
-                'data' => [
-                    'files' => $uploadedFiles
-                ]
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 400);
         }
+
+        // Determine overall status
+        $overallStatus = 'success';
+        $message = 'Files uploaded successfully';
+
+        if ($failedCount > 0 && $successCount > 0) {
+            $overallStatus = 'partial';
+            $message = "{$successCount} file(s) uploaded successfully, {$failedCount} file(s) failed";
+        } elseif ($failedCount > 0 && $successCount === 0) {
+            $overallStatus = 'error';
+            $message = "All files failed to upload";
+        }
+
+        $response = [
+            'status' => $overallStatus,
+            'message' => $message,
+            'data' => [
+                'files' => $uploadedFiles,
+                'total' => $totalFiles,
+                'success' => $successCount,
+                'failed' => $failedCount,
+            ]
+        ];
+
+        // Include failed files details if any
+        if ($failedCount > 0) {
+            $response['data']['failed_files'] = $failedFiles;
+        }
+
+        // Return appropriate HTTP status code
+        $httpStatus = ($overallStatus === 'error') ? 400 : (($overallStatus === 'partial') ? 207 : 200);
+
+        return response()->json($response, $httpStatus);
     }
 
     /**

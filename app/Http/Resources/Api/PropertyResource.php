@@ -23,9 +23,22 @@ class PropertyResource extends JsonResource
         // External data passed through the resource
         $views = $this->additional['views'] ?? 0;
 
+        // Get project data if relationship is loaded
+        $projectData = null;
+        if ($property->relationLoaded('project') && $property->project) {
+            $projectContent = $property->project->contents->first();
+            $projectData = [
+                'id' => $property->project->id,
+                'title' => optional($projectContent)->title ?? '',
+                'slug' => optional($projectContent)->slug ?? '',
+                'featured_image' => $property->project->featured_image ? asset($property->project->featured_image) : null,
+            ];
+        }
+
         return array_merge([
             'id' => $property->id,
             'project_id' => $property->project_id,
+            'project' => $projectData,
             'payment_method' => $property->payment_method,
             'title' => optional($content)->title ?? '',
             'slug' => optional($content)->slug ?? '',
