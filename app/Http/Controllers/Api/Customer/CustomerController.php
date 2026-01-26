@@ -600,7 +600,13 @@ class CustomerController extends Controller
         $user = $request->user();
 
         $customer = ApiCustomer::where('user_id', $user->id)
-            ->with(['responsibleEmployee.activeWhatsappUser'])
+            ->with([
+                'responsibleEmployee.activeWhatsappUser',
+                'type',
+                'stage',
+                'city',
+                'district'
+            ])
             ->find($id);
 
         if (!$customer) {
@@ -611,6 +617,38 @@ class CustomerController extends Controller
         }
 
         $customerData = $customer->toArray();
+        
+        // Remove the _id fields from the response
+        unset($customerData['type_id']);
+        unset($customerData['city_id']);
+        unset($customerData['district_id']);
+        unset($customerData['stage_id']);
+        
+        // Add nested objects for type, city, district, and stage
+        $customerData['type'] = $customer->type ? [
+            'id' => $customer->type->id,
+            'arabic' => $customer->type->name,
+            'english' => $customer->type->name,
+        ] : null;
+        
+        $customerData['city'] = $customer->city ? [
+            'id' => $customer->city->id,
+            'arabic' => $customer->city->name_ar,
+            'english' => $customer->city->name_en,
+        ] : null;
+        
+        $customerData['district'] = $customer->district ? [
+            'id' => $customer->district->id,
+            'arabic' => $customer->district->name_ar,
+            'english' => $customer->district->name_en,
+        ] : null;
+        
+        $customerData['stage'] = $customer->stage ? [
+            'id' => $customer->stage->id,
+            'arabic' => $customer->stage->stage_name,
+            'english' => $customer->stage->stage_name,
+        ] : null;
+        
         if ($customer->responsibleEmployee) {
             $customerData['responsible_employee'] = [
                 'id' => $customer->responsibleEmployee->id,
