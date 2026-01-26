@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Services\Analytics\AnalyticsMaterializationService;
+use App\Services\Analytics\Ga4AnalyticsService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -16,7 +16,7 @@ class SyncAnalyticsData extends Command
      */
     protected $signature = 'analytics:sync 
                             {--tenant= : Sync specific tenant only}
-                            {--date= : Sync specific date (Y-m-d)}
+                            {--date= : Sync specific date (Y-m-d, defaults to yesterday)}
                             {--backfill : Sync last 7 days for initial setup}';
 
     /**
@@ -24,22 +24,18 @@ class SyncAnalyticsData extends Command
      *
      * @var string
      */
-    protected $description = 'Sync Google Analytics data to local database';
+    protected $description = 'Sync Google Analytics GA4 page_view events to local database';
 
     /**
      * Execute the console command.
      *
      * @return int
      */
-    public function handle(AnalyticsMaterializationService $service): int
+    public function handle(Ga4AnalyticsService $service): int
     {
         $date = $this->option('date') 
             ? Carbon::parse($this->option('date'))
             : Carbon::yesterday(); // GA4 has 24-48h delay
-            
-        $tenants = $this->option('tenant')
-            ? [$this->option('tenant')]
-            : $this->getAllTenants($service);
             
         if ($this->option('backfill')) {
             $this->info('Starting backfill sync for last 7 days...');
@@ -47,12 +43,12 @@ class SyncAnalyticsData extends Command
             for ($i = 0; $i < 7; $i++) {
                 $syncDate = $date->copy()->subDays($i);
                 $this->info("\nSyncing date: {$syncDate->format('Y-m-d')} (" . ($i + 1) . "/7)");
-                $this->syncDateForTenants($service, $tenants, $syncDate);
+                $this->syncDate($service, $syncDate);
             }
             $this->info("\nBackfill sync completed!");
         } else {
             $this->info("Syncing data for date: {$date->format('Y-m-d')}");
-            $this->syncDateForTenants($service, $tenants, $date);
+            $this->syncDate($service, $date);
             $this->info('Sync completed!');
         }
         
@@ -60,46 +56,46 @@ class SyncAnalyticsData extends Command
     }
     
     /**
-     * Get all active tenants
+     * Sync data for a specific date
      */
-    private function getAllTenants(AnalyticsMaterializationService $service): array
+    private function syncDate(Ga4AnalyticsService $service, Carbon $date): void
     {
-        return $service->getAllTenants();
-    }
-    
-    /**
-     * Sync data for all tenants for a specific date
-     */
-    private function syncDateForTenants(AnalyticsMaterializationService $service, array $tenants, Carbon $date): void
-    {
-        $total = count($tenants);
-        $this->info("Processing {$total} tenant(s) for date: {$date->format('Y-m-d')}...");
-        
-        $bar = $this->output->createProgressBar($total);
-        $bar->start();
-        
-        $successCount = 0;
-        $errorCount = 0;
-        
-        foreach ($tenants as $tenantId) {
-            try {
-                $service->materializeTenantData($tenantId, $date);
-                $successCount++;
-            } catch (\Exception $e) {
-                $errorCount++;
-                Log::error('Failed to sync tenant data', [
-                    'tenant_id' => $tenantId,
-                    'date' => $date->format('Y-m-d'),
-                    'error' => $e->getMessage(),
-                ]);
-                $this->warn("\nFailed to sync tenant: {$tenantId}");
+        try {
+            if ($this->option('tenant')) {
+                // Sync specific tenant
+                $tenantId = $this->option('tenant');
+                $this->info("Syncing page views for tenant: {$tenantId}");
+                $rowsProcessed = $service->syncPageViews($date, $tenantId);
+                $this->info("Synced {$rowsProcessed} page view records");
+                
+                $this->info("Syncing daily summary for tenant: {$tenantId}");
+                $service->syncDailySummary($date, $tenantId);
+                $this->info("Daily summary synced successfully");
+            } else {
+                // Sync all tenants
+                $this->info("Syncing data for all tenants...");
+                $summary = $service->syncAllTenants($date);
+                
+                $this->info("Sync Summary:");
+                $this->info("  Total tenants: {$summary['total']}");
+                $this->info("  Successful: {$summary['success']}");
+                $this->info("  Errors: {$summary['errors']}");
+                
+                if (!empty($summary['errors_detail'])) {
+                    $this->warn("\nError Details:");
+                    foreach ($summary['errors_detail'] as $error) {
+                        $this->warn("  - {$error['tenant_id']}: {$error['error']}");
+                    }
+                }
             }
-            
-            $bar->advance();
+        } catch (\Exception $e) {
+            Log::error('Failed to sync analytics data', [
+                'date' => $date->format('Y-m-d'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            $this->error("Failed to sync analytics data: {$e->getMessage()}");
+            throw $e;
         }
-        
-        $bar->finish();
-        $this->newLine();
-        $this->info("Completed: {$successCount} successful, {$errorCount} failed");
     }
 }

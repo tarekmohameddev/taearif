@@ -121,6 +121,8 @@ use App\Http\Controllers\Api\V1\TenantWebsite\{
     PublishController,
     FormController,
 };
+use App\Http\Controllers\Api\V1\Analytics\PageviewController;
+use App\Http\Controllers\Api\V1\Analytics\Ga4AnalyticsController;
 use App\Http\Controllers\Api\V1\Matching\MatchingController as V1MatchingController;
 use App\Http\Controllers\Api\V1\Matching\CustomerRequestController as V1CustomerRequestController;
 
@@ -218,6 +220,31 @@ Route::middleware(['auth:sanctum', 'require.active.package'])->group(function ()
     Route::get('/analytics/realtime', [AnalyticsDashboardController::class, 'getRealtime']); // Get realtime data (last 30 minutes, limited filtering)
     Route::get('/analytics/live-test', [AnalyticsDashboardController::class, 'liveTest']); // Live GA4 tenant filtering verification endpoint for debugging
     Route::get('/analytics/tenants', [AnalyticsDashboardController::class, 'getTenantsList']); // Get list of all tenants with GA4 data
+});
+
+// Pageview Analytics Routes (v1)
+// Public tracking endpoint - no auth required
+Route::post('/v1/analytics/page-view', [PageviewController::class, 'track'])
+    ->middleware('throttle:100,1'); // 100 requests per minute for tracking
+
+// Dashboard analytics endpoints - require authentication
+Route::prefix('v1/analytics')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/dashboard', [PageviewController::class, 'dashboard'])
+        ->middleware('throttle:60,1'); // 60 requests per minute
+    Route::get('/top-pages', [PageviewController::class, 'topPages'])
+        ->middleware('throttle:60,1');
+    Route::get('/top-posts', [PageviewController::class, 'topPosts'])
+        ->middleware('throttle:60,1');
+    Route::get('/views-summary', [PageviewController::class, 'summary'])
+        ->middleware('throttle:60,1');
+});
+
+// GA4 Analytics Routes (v1) - Read from database (no live GA calls)
+Route::prefix('v1/analytics/ga4')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/dashboard', [Ga4AnalyticsController::class, 'dashboard'])
+        ->middleware('throttle:60,1'); // 60 requests per minute
+    Route::get('/top-pages', [Ga4AnalyticsController::class, 'topPages'])
+        ->middleware('throttle:60,1');
 });
 
 Route::middleware('auth:sanctum')->group(function () {
