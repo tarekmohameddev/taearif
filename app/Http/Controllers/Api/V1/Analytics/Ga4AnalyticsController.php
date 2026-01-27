@@ -123,13 +123,17 @@ class Ga4AnalyticsController extends BaseApiController
                 new Ga4DashboardResource($result),
                 'Dashboard analytics retrieved successfully'
             );
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            // Re-throw HTTP response exceptions (from abort()) so they return proper JSON
+            throw $e;
         } catch (\Exception $e) {
             \Log::error('Failed to get GA4 dashboard analytics', [
                 'error' => $e->getMessage(),
                 'request' => $request->all(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return $this->error('Failed to retrieve dashboard analytics', 500);
+            return $this->error('Failed to retrieve dashboard analytics: ' . $e->getMessage(), 500);
         }
     }
 
@@ -196,13 +200,17 @@ class Ga4AnalyticsController extends BaseApiController
                 Ga4TopPageResource::collection($topPages),
                 'Top pages retrieved successfully'
             );
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            // Re-throw HTTP response exceptions (from abort()) so they return proper JSON
+            throw $e;
         } catch (\Exception $e) {
             \Log::error('Failed to get GA4 top pages', [
                 'error' => $e->getMessage(),
                 'request' => $request->all(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return $this->error('Failed to retrieve top pages', 500);
+            return $this->error('Failed to retrieve top pages: ' . $e->getMessage(), 500);
         }
     }
 
@@ -237,34 +245,59 @@ class Ga4AnalyticsController extends BaseApiController
                     'days' => $days,
                 ],
             ], 'Properties visits retrieved successfully');
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            // Re-throw HTTP response exceptions (from abort()) so they return proper JSON
+            throw $e;
         } catch (\Exception $e) {
             \Log::error('Failed to get properties visits', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return $this->error('Failed to retrieve properties visits', 500);
+            return $this->error('Failed to retrieve properties visits: ' . $e->getMessage(), 500);
         }
     }
 
     /**
      * Resolve tenant ID from request
      * For dashboard endpoints, use authenticated user's username
+     * Handles both tenants and employees (employees get tenant owner's username)
      *
      * @param Request $request
      * @return string
+     * @throws \Illuminate\Http\Exceptions\HttpResponseException
      */
     protected function resolveTenantId(Request $request): string
     {
-        // Try to get from authenticated user
         $user = $request->user();
-        if ($user && method_exists($user, 'username')) {
-            $tenantId = $user->username;
-            if (!empty($tenantId)) {
-                return $tenantId;
-            }
+        
+        if (!$user) {
+            abort(401, 'Unauthenticated. Please provide a valid authentication token.');
         }
 
-        // Validate tenant ID exists
-        abort(422, 'Missing tenant identifier. Ensure the user has a username.');
+        // Handle employees: get tenant owner's username
+        if (method_exists($user, 'isEmployee') && $user->isEmployee()) {
+            // Load tenant relationship if not already loaded
+            if (!$user->relationLoaded('tenant')) {
+                $user->load('tenant');
+            }
+            
+            $owner = $user->tenant;
+            if ($owner && isset($owner->username) && $owner->username !== null && $owner->username !== '') {
+                return $owner->username;
+            }
+            
+            // If employee but no tenant owner found
+            abort(422, 'Employee account is not associated with a tenant. Please contact support.');
+        }
+
+        // For tenants, use their own username
+        // Username is a column/attribute, not a method, so access it directly
+        if (isset($user->username) && $user->username !== null && $user->username !== '') {
+            return $user->username;
+        }
+
+        // If we get here, the user doesn't have a username
+        abort(422, 'Missing tenant identifier. The authenticated user does not have a username set. Please contact support.');
     }
 }
