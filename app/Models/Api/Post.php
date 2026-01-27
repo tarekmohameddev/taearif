@@ -43,21 +43,41 @@ class Post extends Model
             if ($post->status === 'published' && $post->published_at === null) {
                 $post->published_at = now();
             }
-        });
 
-        static::creating(function (Post $post): void {
-            // Slug: generate from title when empty on create
+            // Slug: always sanitize and ensure uniqueness
             $slug = trim((string) $post->slug);
             if ($slug === '') {
+                // Generate from title if slug is empty
                 $base = Str::slug($post->title);
                 $slug = $base;
-                $n = 2;
-                while (static::where('slug', $slug)->exists()) {
-                    $slug = $base . '-' . $n;
-                    $n++;
+            } else {
+                // Sanitize provided slug (remove spaces, special chars, etc.)
+                $base = Str::slug($slug);
+                // If slug becomes empty after sanitization, fall back to title
+                if ($base === '') {
+                    $base = Str::slug($post->title);
                 }
-                $post->slug = $slug;
+                $slug = $base;
             }
+
+            // Ensure uniqueness (check within same user's posts)
+            $query = static::where('slug', $slug)->where('user_id', $post->user_id);
+            if ($post->exists) {
+                $query->where('id', '!=', $post->id);
+            }
+            
+            $n = 2;
+            $originalSlug = $slug;
+            while ($query->exists()) {
+                $slug = $originalSlug . '-' . $n;
+                $query = static::where('slug', $slug)->where('user_id', $post->user_id);
+                if ($post->exists) {
+                    $query->where('id', '!=', $post->id);
+                }
+                $n++;
+            }
+            
+            $post->slug = $slug;
         });
     }
 
