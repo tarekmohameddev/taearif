@@ -16,6 +16,7 @@ class PostListResource extends JsonResource
             'title' => $this->title,
             'slug' => $this->slug,
             'excerpt' => $this->excerpt,
+            'status' => $this->status,
             'thumbnail' => $this->when(
                 $this->relationLoaded('thumbnail') && $this->thumbnail,
                 new MediaResource($this->thumbnail)

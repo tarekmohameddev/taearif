@@ -272,14 +272,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/blog-categories', [BlogController::class, 'categories']); // Get blog categories
 });
 
-// Blog system (api_posts)
-Route::get('/posts', [PostController::class, 'index']);
-Route::get('/posts/{slug}', [PostController::class, 'show']);
-Route::get('/categories', [CategoriesController::class, 'index']);
+// Authenticated Blog endpoints (user's own posts)
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/posts', [PostController::class, 'index']); // User's posts (supports ?status=draft|published)
+    Route::get('/posts/{slug}', [PostController::class, 'show']); // User's single post by slug
+    Route::get('/categories', [CategoriesController::class, 'index']); // All categories
     Route::post('/posts', [PostController::class, 'store']);
-    Route::put('/posts/{id}', [PostController::class, 'update']);
-    Route::delete('/posts/{id}', [PostController::class, 'destroy']);
+    Route::put('/posts/{slug}', [PostController::class, 'update']); // Changed from {id} to {slug}
+    Route::delete('/posts/{slug}', [PostController::class, 'destroy']); // Changed from {id} to {slug}
     Route::post('/media', [BlogMediaController::class, 'store']);
     Route::post('/categories', [CategoriesController::class, 'store']);
     Route::put('/categories/{id}', [CategoriesController::class, 'update']);
@@ -1042,6 +1042,10 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
     // Tenant Website Projects (public)
     Route::get('{tenantId}/projects', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'index']);
     Route::get('{tenantId}/projects/{slug}', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'show']);
+
+    // Tenant Website Posts (public)
+    Route::get('{tenantId}/posts', [\App\Http\Controllers\Api\V1\TenantWebsite\PostController::class, 'index']);
+    Route::get('{tenantId}/posts/{slug}', [\App\Http\Controllers\Api\V1\TenantWebsite\PostController::class, 'show']);
 
     // Tenant Website AI Export (public)
     Route::get('{tenantId}/ai-export', [\App\Http\Controllers\Api\V1\TenantWebsite\AiExportController::class, 'index']);
