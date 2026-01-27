@@ -11,6 +11,20 @@ class PostListResource extends JsonResource
      */
     public function toArray($request)
     {
+        // Always try to get categories, even if not eager loaded
+        $categories = [];
+        if ($this->relationLoaded('categories')) {
+            $categories = $this->categories ? CategoryResource::collection($this->categories)->resolve() : [];
+        } else {
+            // If not loaded, try to load them
+            try {
+                $this->loadMissing('categories');
+                $categories = $this->categories ? CategoryResource::collection($this->categories)->resolve() : [];
+            } catch (\Exception $e) {
+                $categories = [];
+            }
+        }
+
         return [
             'id' => $this->id,
             'title' => $this->title,
@@ -20,9 +34,7 @@ class PostListResource extends JsonResource
             'thumbnail' => ($this->relationLoaded('thumbnail') && $this->thumbnail)
                 ? new MediaResource($this->thumbnail)
                 : null,
-            'categories' => ($this->relationLoaded('categories'))
-                ? CategoryResource::collection($this->categories)
-                : [],
+            'categories' => $categories,
             'published_at' => $this->published_at?->toISOString(),
         ];
     }
