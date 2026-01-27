@@ -277,13 +277,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/posts', [PostController::class, 'index']); // User's posts (supports ?status=draft|published)
     Route::get('/posts/{slug}', [PostController::class, 'show']); // User's single post by slug
     Route::get('/categories', [CategoriesController::class, 'index']); // All categories
+    Route::get('/categories/{slug}', [CategoriesController::class, 'show']); // Single category by slug
+    Route::get('/categories/{slug}/posts', [CategoriesController::class, 'posts']); // Posts for a specific category by slug
     Route::post('/posts', [PostController::class, 'store']);
     Route::put('/posts/{slug}', [PostController::class, 'update']); // Changed from {id} to {slug}
     Route::delete('/posts/{slug}', [PostController::class, 'destroy']); // Changed from {id} to {slug}
     Route::post('/media', [BlogMediaController::class, 'store']);
     Route::post('/categories', [CategoriesController::class, 'store']);
-    Route::put('/categories/{id}', [CategoriesController::class, 'update']);
-    Route::delete('/categories/{id}', [CategoriesController::class, 'destroy']);
+    Route::put('/categories/{slug}', [CategoriesController::class, 'update']); // Changed from {id} to {slug}
+    Route::delete('/categories/{slug}', [CategoriesController::class, 'destroy']); // Changed from {id} to {slug}
 });
 
 // contract routes

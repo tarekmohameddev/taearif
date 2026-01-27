@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\blog\StoreCategoryRequest;
 use App\Http\Requests\Api\blog\UpdateCategoryRequest;
 use App\Http\Resources\Api\blog\CategoryResource;
+use App\Http\Resources\Api\blog\PostListResource;
 use App\Models\Api\Category;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -66,5 +67,49 @@ class CategoriesController extends Controller
         return response()->json([
             'message' => 'Category deleted successfully',
         ], 200);
+    }
+
+    public function posts(Request $request, int $id): JsonResponse
+    {
+        $userId = $request->user()->id;
+        
+        $category = Category::findOrFail($id);
+        
+        $query = $category->posts()
+            ->where('user_id', $userId)
+            ->with('thumbnail');
+        
+        // Filter by status if provided
+        $status = $request->input('status');
+        if ($status === 'draft') {
+            $query->where('status', 'draft');
+        } elseif ($status === 'published') {
+            $query->where('status', 'published');
+        }
+        // If no status, show both draft and published
+        
+        // Order by published_at for published posts, created_at for drafts
+        $query->orderByDesc($status === 'draft' ? 'created_at' : 'published_at')
+            ->orderByDesc('created_at');
+        
+        $perPage = min((int) $request->input('per_page', 15), 50);
+        $posts = $query->paginate($perPage);
+        
+        return response()->json([
+            'category' => [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+            ],
+            'data' => PostListResource::collection($posts),
+            'pagination' => [
+                'per_page' => $posts->perPage(),
+                'current_page' => $posts->currentPage(),
+                'from' => $posts->firstItem(),
+                'to' => $posts->lastItem(),
+                'total' => $posts->total(),
+                'last_page' => $posts->lastPage(),
+            ],
+        ]);
     }
 }

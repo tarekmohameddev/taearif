@@ -16,7 +16,9 @@ class UpdateCategoryRequest extends FormRequest
      */
     public function rules(): array
     {
-        $id = $this->route('id');
+        $slug = $this->route('slug');
+        $category = \App\Models\Api\Category::where('slug', $slug)->first();
+        $id = $category ? $category->id : null;
 
         return [
             'name' => 'required|string|max:255|unique:api_categories,name,' . $id,
