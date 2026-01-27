@@ -120,6 +120,7 @@ use App\Http\Controllers\Api\V1\TenantWebsite\{
     SettingsController,
     PublishController,
     FormController,
+    PixelController as TenantWebsitePixelController,
 };
 use App\Http\Controllers\Api\V1\Analytics\PageviewController;
 use App\Http\Controllers\Api\V1\Analytics\Ga4AnalyticsController;
@@ -1008,6 +1009,9 @@ if (!app()->environment('production')) {
 Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.id.response'])->group(function () {
     Route::post('getTenant', [GetTenantController::class, 'store']);
     Route::post('save-pages', [SavePagesController::class, 'store'])->middleware('auth:sanctum');
+
+    // Tenant Website Pixels (public)
+    Route::get('{tenantId}/pixels', [TenantWebsitePixelController::class, 'index'])->middleware('throttle:60,1');
 
     // Unified search endpoint (public) - must be before more specific routes
     Route::get('{tenantId}', [\App\Http\Controllers\Api\V1\TenantWebsite\SearchController::class, 'index']);
