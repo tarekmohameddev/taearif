@@ -21,6 +21,8 @@ class Ga4TopPageResource extends JsonResource
             'sessions' => $this->resource['sessions'] ?? 0,
             'users' => $this->resource['users'] ?? 0,
             'percentage' => $this->resource['percentage'] ?? 0,
+            'bounce_rate' => $this->resource['bounce_rate'] ?? null,
+            'avg_time' => $this->resource['avg_time'] ?? null,
         ];
     }
 }

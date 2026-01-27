@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1\TenantWebsite;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User\RealestateManagement\Project;
-use App\Services\GoogleAnalyticsService;
 use App\Http\Controllers\Api\V1\TenantWebsite\Concerns\ResolvesTenant;
 
 class ProjectController extends Controller
@@ -21,7 +20,7 @@ class ProjectController extends Controller
 		return $project->amenities ?? [];
 	}
 
-    public function index(Request $request, string $tenantId, GoogleAnalyticsService $analytics)
+    public function index(Request $request, string $tenantId)
 	{
 		$tenant = $this->resolveTenant($request, $tenantId);
 
@@ -53,11 +52,14 @@ class ProjectController extends Controller
             ->values()
             ->all();
 
-        // Fetch GA4 views for all projects
+        // Fetch views from pageview_analytics table (synced from GA4)
+        // OPTIMIZED: Query from local database instead of GA4 API for better performance
         $viewsBySlug = [];
         if (!empty($slugs)) {
             try {
                 $days = (int) $request->query('days', 30);
+                $startDate = \Carbon\Carbon::today()->subDays($days)->toDateString();
+                $endDate = \Carbon\Carbon::today()->toDateString();
                 $paths = [];
                 foreach ($slugs as $slug) {
                     $paths[] = "/project/{$slug}";
@@ -65,19 +67,20 @@ class ProjectController extends Controller
                     $paths[] = "/en/project/{$slug}";
                 }
 
-                $allData = $analytics->getAllAnalyticsWithFilters(
-                    now()->subDays($days),
-                    now(),
-                    [
-                        'tenant_ids' => [$tenant->username],
-                        'exclude_empty_tenant' => false,
-                        'limit' => count($paths) * 10,
-                    ]
-                );
+                // Query from pageview_analytics table
+                $viewsData = \Illuminate\Support\Facades\DB::table('pageview_analytics')
+                    ->where('tenant_id', $tenant->username)
+                    ->where('page_type', 'project')
+                    ->whereBetween('date_bucket', [$startDate, $endDate])
+                    ->whereIn('page_path', $paths)
+                    ->select('page_path', \Illuminate\Support\Facades\DB::raw('SUM(views_count) as total_views'))
+                    ->groupBy('page_path')
+                    ->get();
 
-                foreach ($allData['data'] as $item) {
-                    $path = $item['path'];
-                    $views = (int) $item['views'];
+                // Map views back to slugs
+                foreach ($viewsData as $data) {
+                    $path = $data->page_path;
+                    $views = (int) $data->total_views;
                     foreach ($slugs as $slug) {
                         if (strpos($path, $slug) !== false) {
                             $viewsBySlug[$slug] = ($viewsBySlug[$slug] ?? 0) + $views;
@@ -85,7 +88,7 @@ class ProjectController extends Controller
                     }
                 }
             } catch (\Exception $e) {
-                \Log::error('Google Analytics error in TenantWebsite ProjectController', [
+                \Log::error('Error fetching project views from pageview_analytics', [
                     'tenant' => $tenant->username,
                     'error' => $e->getMessage(),
                 ]);
@@ -142,7 +145,7 @@ class ProjectController extends Controller
         ]);
 	}
 
-	public function show(Request $request, string $tenantId, string $slug, GoogleAnalyticsService $analytics)
+	public function show(Request $request, string $tenantId, string $slug)
 	{
 		$tenant = $this->resolveTenant($request, $tenantId);
 
@@ -213,33 +216,35 @@ class ProjectController extends Controller
 			];
 		})->toArray();
 
-		// Fetch views from Google Analytics
+		// Fetch views from pageview_analytics table (synced from GA4)
+		// OPTIMIZED: Query from local database instead of GA4 API for better performance
 		$views = 0;
 		try {
 			$days = (int) $request->query('days', 30);
+			$startDate = \Carbon\Carbon::today()->subDays($days)->toDateString();
+			$endDate = \Carbon\Carbon::today()->toDateString();
 			$paths = [
 				"/project/{$slug}",
 				"/ar/project/{$slug}",
 				"/en/project/{$slug}",
 			];
 
-			$allData = $analytics->getAllAnalyticsWithFilters(
-				now()->subDays($days),
-				now(),
-				[
-					'tenant_ids' => [$tenant->username],
-					'exclude_empty_tenant' => false,
-					'limit' => count($paths) * 10,
-				]
-			);
+			// Query from pageview_analytics table
+			$viewsData = \Illuminate\Support\Facades\DB::table('pageview_analytics')
+				->where('tenant_id', $tenant->username)
+				->where('page_type', 'project')
+				->whereBetween('date_bucket', [$startDate, $endDate])
+				->whereIn('page_path', $paths)
+				->select('page_path', \Illuminate\Support\Facades\DB::raw('SUM(views_count) as total_views'))
+				->groupBy('page_path')
+				->get();
 
-			foreach ($allData['data'] as $item) {
-				if (in_array($item['path'], $paths)) {
-					$views += (int) $item['views'];
-				}
+			// Sum views across all path variants
+			foreach ($viewsData as $data) {
+				$views += (int) $data->total_views;
 			}
 		} catch (\Exception $e) {
-			\Log::error('Google Analytics error in TenantWebsite ProjectController show', [
+			\Log::error('Error fetching project views from pageview_analytics', [
 				'tenant' => $tenant->username,
 				'slug' => $slug,
 				'error' => $e->getMessage(),

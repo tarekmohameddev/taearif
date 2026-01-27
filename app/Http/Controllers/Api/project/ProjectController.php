@@ -67,11 +67,12 @@ class ProjectController extends Controller
             ->orderBy('id', 'desc')
             ->paginate(10);
 
-        // ===== GA4 (last 30 days by default) =====
-        $tenantId  = $owner->username;
-        $days      = (int)$request->input('days', 30);
-        $startDate = Carbon::now()->subDays($days);
-        $endDate   = Carbon::now();
+        // ===== Get views from pageview_analytics table (synced from GA4) =====
+        // OPTIMIZED: Query from local database instead of GA4 API for better performance
+        $tenantId = $owner->username;
+        $days = (int) $request->input('days', 30);
+        $startDate = Carbon::today()->subDays($days)->toDateString();
+        $endDate = Carbon::today()->toDateString();
 
         // Collect all slugs on the current page (all languages/contents)
         $slugsPerProject = $projects->getCollection()->mapWithKeys(function ($project) {
@@ -79,7 +80,7 @@ class ProjectController extends Controller
             return [$project->id => $slugs];
         });
 
-        // Build GA pagePaths to match public URLs: /project/{slug}, /ar/project/{slug}, /en/project/{slug}
+        // Build pagePaths to match public URLs: /project/{slug}, /ar/project/{slug}, /en/project/{slug}
         $supportedLanguages = ['ar', 'en'];
         $paths = [];
         $slugToPaths = [];
@@ -97,42 +98,23 @@ class ProjectController extends Controller
             }
         }
 
-        // One GA call for this page (CACHED - 5 minutes)
-        // Use backend filtering to get ALL data (including historical), not just recent tenant-filtered data
+        // Query from pageview_analytics table (much faster than GA4 API)
         $viewsByPath = [];
         if (!empty($paths)) {
-            $slugsHash = md5(implode(',', array_keys($slugsPerProject->toArray())));
-            $cacheKey = "ga_views_project_{$tenantId}_{$days}_{$slugsHash}";
-            $viewsByPath = Cache::remember($cacheKey, 300, function () use ($analytics, $startDate, $endDate, $paths, $tenantId) {
-                $result = [];
-                try {
-                    $allData = $analytics->getAllAnalyticsWithFilters(
-                        $startDate,
-                        $endDate,
-                        [
-                            'tenant_ids' => [$tenantId],       // Filter by this tenant
-                            'exclude_empty_tenant' => false,   // Include old data (will be matched by slug)
-                            'limit' => count($paths) * 10,     // Get more to ensure we capture all variants
-                        ]
-                    );
+            $viewsData = DB::table('pageview_analytics')
+                ->where('tenant_id', $tenantId)
+                ->where('page_type', 'project')
+                ->whereBetween('date_bucket', [$startDate, $endDate])
+                ->whereIn('page_path', $paths)
+                ->select('page_path', DB::raw('SUM(views_count) as total_views'))
+                ->groupBy('page_path')
+                ->get()
+                ->keyBy('page_path');
 
-                    // Build a map of path => views from all returned data
-                    foreach ($allData['data'] as $item) {
-                        $path = $item['path'];
-                        $views = (int) $item['views'];
-                        if (in_array($path, $paths)) {
-                            $result[$path] = ($result[$path] ?? 0) + $views;
-                        }
-                    }
-                } catch (\Exception $e) {
-                    // Log error but continue without views
-                    \Log::error('Google Analytics error in ProjectController', [
-                        'tenant' => $tenantId,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-                return $result;
-            });
+            // Build a map of path => views
+            foreach ($viewsData as $path => $data) {
+                $viewsByPath[$path] = (int) $data->total_views;
+            }
         }
 
         // Sum views per project across its content slugs and language variations
@@ -241,55 +223,42 @@ class ProjectController extends Controller
             ], 404);
         }
 
-        // Get views from Google Analytics (CACHED - 5 minutes)
+        // Get views from pageview_analytics table (synced from GA4)
+        // OPTIMIZED: Query from local database instead of GA4 API for better performance
         $visits = 0;
         if ($project->user && $project->contents->first()) {
-            $analytics = app(\App\Services\GoogleAnalyticsService::class);
-            $days = request()->query('days', 30);
+            $days = (int) request()->query('days', 30);
             $tenantId = $project->user->username;
             
             // Get all slugs for this project (multi-language support)
             $slugs = $project->contents->pluck('slug')->filter()->values()->all();
             
             if (!empty($slugs)) {
-                $slugsHash = md5(implode(',', $slugs));
-                $cacheKey = "ga_views_project_{$id}_{$tenantId}_{$days}_{$slugsHash}";
+                $startDate = Carbon::today()->subDays($days)->toDateString();
+                $endDate = Carbon::today()->toDateString();
                 
-                $visits = Cache::remember($cacheKey, 300, function () use ($analytics, $days, $slugs, $tenantId, $id) {
-                    $result = 0;
-                    try {
-                        // Build paths for all slug variants
-                        $paths = [];
-                        foreach ($slugs as $slug) {
-                            $paths[] = "/project/{$slug}";
-                            $paths[] = "/ar/project/{$slug}";
-                            $paths[] = "/en/project/{$slug}";
-                        }
+                // Build paths for all slug variants
+                $paths = [];
+                foreach ($slugs as $slug) {
+                    $paths[] = "/project/{$slug}";
+                    $paths[] = "/ar/project/{$slug}";
+                    $paths[] = "/en/project/{$slug}";
+                }
 
-                        $allData = $analytics->getAllAnalyticsWithFilters(
-                            now()->subDays($days),
-                            now(),
-                            [
-                                'tenant_ids' => [$tenantId],
-                                'exclude_empty_tenant' => false,
-                                'limit' => count($paths) * 10,
-                            ]
-                        );
+                // Query from pageview_analytics table
+                $viewsData = DB::table('pageview_analytics')
+                    ->where('tenant_id', $tenantId)
+                    ->where('page_type', 'project')
+                    ->whereBetween('date_bucket', [$startDate, $endDate])
+                    ->whereIn('page_path', $paths)
+                    ->select('page_path', DB::raw('SUM(views_count) as total_views'))
+                    ->groupBy('page_path')
+                    ->get();
 
-                        // Sum views across all path variants
-                        foreach ($allData['data'] as $item) {
-                            if (in_array($item['path'], $paths)) {
-                                $result += (int) $item['views'];
-                            }
-                        }
-                    } catch (\Exception $e) {
-                        \Log::error('Google Analytics error in ProjectController show', [
-                            'project_id' => $id,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                    return $result;
-                });
+                // Sum views across all path variants
+                foreach ($viewsData as $data) {
+                    $visits += (int) $data->total_views;
+                }
             }
         }
 

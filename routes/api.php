@@ -245,6 +245,8 @@ Route::prefix('v1/analytics/ga4')->middleware(['auth:sanctum'])->group(function 
         ->middleware('throttle:60,1'); // 60 requests per minute
     Route::get('/top-pages', [Ga4AnalyticsController::class, 'topPages'])
         ->middleware('throttle:60,1');
+    Route::get('/properties-visits', [Ga4AnalyticsController::class, 'propertiesVisits'])
+        ->middleware('throttle:60,1');
 });
 
 Route::middleware('auth:sanctum')->group(function () {

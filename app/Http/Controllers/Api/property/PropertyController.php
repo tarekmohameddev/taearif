@@ -2605,16 +2605,16 @@ class PropertyController extends Controller
             });
         }
 
-        // === GA4: views per property (last 30 days by default) ===
-        // OPTIMIZED: Make GA query optional via include_views parameter to improve response time
+        // === Get views from pageview_analytics table (synced from GA4) ===
+        // OPTIMIZED: Query from local database instead of GA4 API for better performance
         $viewsBySlug = [];
         $includeViews = filter_var($request->input('include_views', true), FILTER_VALIDATE_BOOLEAN);
 
         if ($includeViews) {
-            $tenantId  = $owner->username;                     // align GA context with tenant owner
-            $days      = (int) $request->input('days', 30);   // override with ?days=7 if you want
-            $startDate = Carbon::now()->subDays($days);
-            $endDate   = Carbon::now();
+            $tenantId = $owner->username;
+            $days = (int) $request->input('days', 30);
+            $startDate = Carbon::today()->subDays($days)->toDateString();
+            $endDate = Carbon::today()->toDateString();
 
             // Collect slugs for the current page
             // FIX: Handle both JOIN and eager loaded content scenarios
@@ -2630,71 +2630,36 @@ class PropertyController extends Controller
                 ->filter() // Remove null/empty values
                 ->values();
 
-            // Build candidate paths for each slug (adjust prefixes to match your frontend routes)
-            $paths = [];
-            foreach ($slugs as $slug) {
-                $paths[] = "/property/{$slug}";
-                $paths[] = "/ar/property/{$slug}";
-                $paths[] = "/en/property/{$slug}";
-            }
-
-            // OPTIMIZED: Query GA4 with non-blocking cache - returns cached data immediately
-            // If cache miss, returns empty array to avoid blocking response
-            // Cache will be populated by background job or next request
-            if (!empty($paths)) {
-                $cacheKey = "ga_views_{$tenantId}_{$days}_" . md5(implode(',', $slugs->toArray()));
-
-                // Try to get from cache first (non-blocking)
-                $viewsBySlug = Cache::get($cacheKey, []);
-
-                // DEBUG: Log if no slugs collected or cache miss
-                if ($slugs->isEmpty()) {
-                    Log::warning('No slugs collected for GA views', [
-                        'owner_id' => $ownerId,
-                        'tenant_id' => $tenantId,
-                        'has_content_join' => $hasContentJoin,
-                        'properties_count' => $properties->count()
-                    ]);
+            if ($slugs->isNotEmpty()) {
+                // Build candidate paths for each slug (adjust prefixes to match your frontend routes)
+                $paths = [];
+                foreach ($slugs as $slug) {
+                    $paths[] = "/property/{$slug}";
+                    $paths[] = "/ar/property/{$slug}";
+                    $paths[] = "/en/property/{$slug}";
                 }
 
-                // If cache miss, dispatch background job to fetch and cache data
-                // This prevents blocking the response while still populating cache for future requests
-                if (empty($viewsBySlug)) {
-                    // Dispatch job to fetch GA data in background (non-blocking)
-                    // The job will populate the cache for future requests
-                    try {
-                        \App\Jobs\FetchGoogleAnalyticsViews::dispatch($cacheKey, $startDate, $endDate, $paths, $tenantId, $slugs->toArray())
-                            ->onQueue('default');
+                // Query from pageview_analytics table (much faster than GA4 API)
+                $viewsData = DB::table('pageview_analytics')
+                    ->where('tenant_id', $tenantId)
+                    ->where('page_type', 'property')
+                    ->whereBetween('date_bucket', [$startDate, $endDate])
+                    ->whereIn('page_path', $paths)
+                    ->select('page_path', DB::raw('SUM(views_count) as total_views'))
+                    ->groupBy('page_path')
+                    ->get()
+                    ->keyBy('page_path');
 
-                        // DEBUG: Log job dispatch for troubleshooting
-                        Log::debug('GA views job dispatched', [
-                            'cache_key' => $cacheKey,
-                            'slugs_count' => $slugs->count(),
-                            'paths_count' => count($paths),
-                            'tenant_id' => $tenantId
-                        ]);
-                    } catch (\Exception $e) {
-                        // If job dispatch fails, log and continue with empty views
-                        Log::warning('Failed to dispatch GA views job', [
-                            'error' => $e->getMessage(),
-                            'cache_key' => $cacheKey,
-                            'tenant_id' => $tenantId
-                        ]);
+                // Map views back to slugs
+                foreach ($slugs as $slug) {
+                    $totalViews = 0;
+                    foreach (["/property/{$slug}", "/ar/property/{$slug}", "/en/property/{$slug}"] as $path) {
+                        if (isset($viewsData[$path])) {
+                            $totalViews += (int) $viewsData[$path]->total_views;
+                        }
                     }
-                } else {
-                    // DEBUG: Log cache hit for monitoring
-                    Log::debug('GA views cache hit', [
-                        'cache_key' => $cacheKey,
-                        'views_count' => count($viewsBySlug),
-                        'tenant_id' => $tenantId
-                    ]);
+                    $viewsBySlug[$slug] = $totalViews;
                 }
-            } else {
-                // DEBUG: Log when no paths are built
-                Log::debug('No paths built for GA views', [
-                    'slugs_count' => $slugs->count(),
-                    'tenant_id' => $tenantId
-                ]);
             }
         }
 

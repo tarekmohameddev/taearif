@@ -22,7 +22,7 @@ class GetDashboardRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'days' => 'required|integer|in:7,30,90',
+            'days' => 'required|integer|in:7,30,90,365',
         ];
     }
 
@@ -36,7 +36,7 @@ class GetDashboardRequest extends FormRequest
         return [
             'days.required' => 'The days parameter is required.',
             'days.integer' => 'The days parameter must be an integer.',
-            'days.in' => 'The days parameter must be 7, 30, or 90.',
+            'days.in' => 'The days parameter must be 7, 30, 90, or 365.',
         ];
     }
 }

@@ -15,12 +15,16 @@ class Ga4DashboardResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'total_views' => $this->resource['total_views'] ?? 0,
-            'total_sessions' => $this->resource['total_sessions'] ?? 0,
-            'total_users' => $this->resource['total_users'] ?? 0,
-            'unique_pages' => $this->resource['unique_pages'] ?? 0,
+            'pages' => $this->resource['pages'] ?? 0,
+            'views' => $this->resource['views'] ?? 0,
+            'unique_visitors' => $this->resource['unique_visitors'] ?? 0,
+            'total_visits' => $this->resource['total_visits'] ?? 0,
+            'total_unique_visitors' => $this->resource['total_unique_visitors'] ?? 0,
             'active_days' => $this->resource['active_days'] ?? 0,
-            'daily_trend' => $this->resource['daily_trend'] ?? [],
+            'visitor_data' => $this->resource['visitor_data'] ?? [],
+            'most_visited_pages' => $this->resource['most_visited_pages'] ?? [],
+            'properties_visits' => $this->resource['properties_visits'] ?? 0,
+            'time_range' => $this->resource['time_range'] ?? 30,
             'period' => $this->resource['period'] ?? [],
         ];
     }

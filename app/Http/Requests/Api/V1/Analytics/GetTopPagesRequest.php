@@ -22,7 +22,7 @@ class GetTopPagesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'days' => 'required|integer|in:7,30,90',
+            'days' => 'required|integer|in:7,30,90,365',
             'limit' => 'nullable|integer|min:1|max:100',
         ];
     }
@@ -37,7 +37,7 @@ class GetTopPagesRequest extends FormRequest
         return [
             'days.required' => 'The days parameter is required.',
             'days.integer' => 'The days parameter must be an integer.',
-            'days.in' => 'The days parameter must be 7, 30, or 90.',
+            'days.in' => 'The days parameter must be 7, 30, 90, or 365.',
             'limit.integer' => 'The limit parameter must be an integer.',
             'limit.min' => 'The limit parameter must be at least 1.',
             'limit.max' => 'The limit parameter must not exceed 100.',
