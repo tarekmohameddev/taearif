@@ -325,7 +325,7 @@ class Ga4AnalyticsService
                             'total_sessions' => $totalSessions,
                             'total_users' => $totalUsers,
                             'unique_pages' => $uniquePages,
-                            'data' => json_encode([]), // Empty JSON object for additional metrics
+                            'data' => '{}', // Empty JSON object for additional metrics
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
