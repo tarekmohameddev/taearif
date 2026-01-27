@@ -17,10 +17,9 @@ class PostListResource extends JsonResource
             'slug' => $this->slug,
             'excerpt' => $this->excerpt,
             'status' => $this->status,
-            'thumbnail' => $this->when(
-                $this->relationLoaded('thumbnail') && $this->thumbnail,
-                new MediaResource($this->thumbnail)
-            ),
+            'thumbnail' => ($this->relationLoaded('thumbnail') && $this->thumbnail)
+                ? new MediaResource($this->thumbnail)
+                : null,
             'categories' => $this->when(
                 $this->relationLoaded('categories'),
                 CategoryResource::collection($this->categories)
