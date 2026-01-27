@@ -297,20 +297,39 @@ class Ga4AnalyticsService
 
             // Upsert daily summary
             DB::transaction(function () use ($tenantId, $dateStr, $totalPageViews, $totalSessions, $totalUsers, $uniquePages) {
-                DB::table('analytics_daily_summary')
-                    ->updateOrInsert(
-                        [
-                            'tenant_id' => $tenantId,
-                            'date' => $dateStr,
-                        ],
-                        [
+                // Check if record exists
+                $exists = DB::table('analytics_daily_summary')
+                    ->where('tenant_id', $tenantId)
+                    ->where('date', $dateStr)
+                    ->exists();
+
+                if ($exists) {
+                    // Update existing record
+                    DB::table('analytics_daily_summary')
+                        ->where('tenant_id', $tenantId)
+                        ->where('date', $dateStr)
+                        ->update([
                             'total_page_views' => $totalPageViews,
                             'total_sessions' => $totalSessions,
                             'total_users' => $totalUsers,
                             'unique_pages' => $uniquePages,
                             'updated_at' => now(),
-                        ]
-                    );
+                        ]);
+                } else {
+                    // Insert new record with created_at
+                    DB::table('analytics_daily_summary')
+                        ->insert([
+                            'tenant_id' => $tenantId,
+                            'date' => $dateStr,
+                            'total_page_views' => $totalPageViews,
+                            'total_sessions' => $totalSessions,
+                            'total_users' => $totalUsers,
+                            'unique_pages' => $uniquePages,
+                            'data' => json_encode([]), // Empty JSON object for additional metrics
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                }
             });
 
             Log::info('Completed GA4 daily summary sync', [
