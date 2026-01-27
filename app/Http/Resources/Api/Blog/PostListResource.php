@@ -20,10 +20,9 @@ class PostListResource extends JsonResource
             'thumbnail' => ($this->relationLoaded('thumbnail') && $this->thumbnail)
                 ? new MediaResource($this->thumbnail)
                 : null,
-            'categories' => $this->when(
-                $this->relationLoaded('categories'),
-                CategoryResource::collection($this->categories)
-            ),
+            'categories' => ($this->relationLoaded('categories'))
+                ? CategoryResource::collection($this->categories)
+                : [],
             'published_at' => $this->published_at?->toISOString(),
         ];
     }
