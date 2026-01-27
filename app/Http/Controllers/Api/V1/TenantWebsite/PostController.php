@@ -20,7 +20,7 @@ class PostController extends Controller
 
         $query = Post::where('user_id', $tenant->id)
             ->where('status', 'published')
-            ->with('thumbnail')
+            ->with(['thumbnail', 'categories'])
             ->orderByDesc('published_at');
 
         $perPage = min((int) $request->query('per_page', 20), 50);
