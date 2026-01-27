@@ -1009,6 +1009,9 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
     Route::post('getTenant', [GetTenantController::class, 'store']);
     Route::post('save-pages', [SavePagesController::class, 'store'])->middleware('auth:sanctum');
 
+    // Unified search endpoint (public) - must be before more specific routes
+    Route::get('{tenantId}', [\App\Http\Controllers\Api\V1\TenantWebsite\SearchController::class, 'index']);
+
     Route::get('{tenantId}/pages', [PageController::class, 'index']);
     Route::get('{tenantId}/pages/{pageId}', [PageController::class, 'show']);
     Route::post('{tenantId}/pages', [PageController::class, 'store'])->middleware('auth:sanctum');
@@ -1039,6 +1042,9 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
     // Tenant Website AI Export (public)
     Route::get('{tenantId}/ai-export', [\App\Http\Controllers\Api\V1\TenantWebsite\AiExportController::class, 'index']);
     Route::get('{tenantId}/ai-export.txt', [\App\Http\Controllers\Api\V1\TenantWebsite\AiExportController::class, 'downloadTxt']);
+
+    // Unified search endpoint (public) - must be last to avoid conflicts with specific routes
+    Route::get('{tenantId}', [\App\Http\Controllers\Api\V1\TenantWebsite\SearchController::class, 'index']);
 
     // (moved Matching endpoints out of tenant-website scope)
 });
