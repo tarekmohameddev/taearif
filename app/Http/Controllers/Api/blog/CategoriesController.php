@@ -51,6 +51,35 @@ class CategoriesController extends Controller
         return (new CategoryResource($category))->response()->setStatusCode(201);
     }
 
+    public function show(Request $request, string $slug): JsonResponse
+    {
+        $category = Category::where('slug', $slug)->firstOrFail();
+
+        // Include posts if requested
+        if ($request->boolean('with_posts')) {
+            $userId = $request->user()->id;
+
+            // Load posts filtered by user_id and optionally by status
+            $category->load(['posts' => function ($q) use ($userId, $request) {
+                $q->where('user_id', $userId)
+                  ->with('thumbnail');
+
+                // Filter by status if provided
+                $status = $request->input('post_status');
+                if ($status === 'draft') {
+                    $q->where('status', 'draft');
+                } elseif ($status === 'published') {
+                    $q->where('status', 'published');
+                }
+
+                $q->orderByDesc('published_at')
+                  ->orderByDesc('created_at');
+            }]);
+        }
+
+        return (new CategoryResource($category))->response();
+    }
+
     public function update(UpdateCategoryRequest $request, string $slug): JsonResponse
     {
         $category = Category::where('slug', $slug)->firstOrFail();
