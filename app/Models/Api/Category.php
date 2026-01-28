@@ -18,9 +18,10 @@ class Category extends Model
 
         static::saving(function (Category $category): void {
             // Slug: always sanitize and ensure uniqueness
-            $slug = trim((string) $category->slug);
-            if ($slug === '') {
-                // Generate from name if slug is empty
+            // Handle null, empty string, or whitespace-only slugs
+            $slug = $category->slug;
+            if ($slug === null || trim((string) $slug) === '') {
+                // Generate from name if slug is null or empty
                 $base = Str::slug($category->name);
                 $slug = $base;
             } else {
@@ -38,7 +39,7 @@ class Category extends Model
             if ($category->exists) {
                 $query->where('id', '!=', $category->id);
             }
-            
+
             $n = 2;
             $originalSlug = $slug;
             while ($query->exists()) {
@@ -49,7 +50,7 @@ class Category extends Model
                 }
                 $n++;
             }
-            
+
             $category->slug = $slug;
         });
     }
