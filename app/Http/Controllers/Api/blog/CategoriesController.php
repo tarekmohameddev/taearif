@@ -16,16 +16,16 @@ class CategoriesController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Category::query();
-        
+
         // Include posts if requested
         if ($request->boolean('with_posts')) {
             $userId = $request->user()->id;
-            
+
             // Load posts filtered by user_id and optionally by status
             $query->with(['posts' => function ($q) use ($userId, $request) {
                 $q->where('user_id', $userId)
                   ->with('thumbnail');
-                
+
                 // Filter by status if provided
                 $status = $request->input('post_status');
                 if ($status === 'draft') {
@@ -33,12 +33,12 @@ class CategoriesController extends Controller
                 } elseif ($status === 'published') {
                     $q->where('status', 'published');
                 }
-                
+
                 $q->orderByDesc('published_at')
                   ->orderByDesc('created_at');
             }]);
         }
-        
+
         $categories = $query->orderBy('name')->get();
 
         return CategoryResource::collection($categories)->response();
@@ -51,17 +51,17 @@ class CategoriesController extends Controller
         return (new CategoryResource($category))->response()->setStatusCode(201);
     }
 
-    public function update(UpdateCategoryRequest $request, int $id): JsonResponse
+    public function update(UpdateCategoryRequest $request, string $slug): JsonResponse
     {
-        $category = Category::findOrFail($id);
+        $category = Category::where('slug', $slug)->firstOrFail();
         $category->update($request->only(['name']));
 
         return (new CategoryResource($category))->response();
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(string $slug): JsonResponse
     {
-        $category = Category::findOrFail($id);
+        $category = Category::where('slug', $slug)->firstOrFail();
         $category->delete();
 
         return response()->json([
@@ -69,16 +69,16 @@ class CategoriesController extends Controller
         ], 200);
     }
 
-    public function posts(Request $request, int $id): JsonResponse
+    public function posts(Request $request, string $slug): JsonResponse
     {
         $userId = $request->user()->id;
-        
-        $category = Category::findOrFail($id);
-        
+
+        $category = Category::where('slug', $slug)->firstOrFail();
+
         $query = $category->posts()
             ->where('user_id', $userId)
             ->with('thumbnail');
-        
+
         // Filter by status if provided
         $status = $request->input('status');
         if ($status === 'draft') {
@@ -87,14 +87,14 @@ class CategoriesController extends Controller
             $query->where('status', 'published');
         }
         // If no status, show both draft and published
-        
+
         // Order by published_at for published posts, created_at for drafts
         $query->orderByDesc($status === 'draft' ? 'created_at' : 'published_at')
             ->orderByDesc('created_at');
-        
+
         $perPage = min((int) $request->input('per_page', 15), 50);
         $posts = $query->paginate($perPage);
-        
+
         return response()->json([
             'category' => [
                 'id' => $category->id,
