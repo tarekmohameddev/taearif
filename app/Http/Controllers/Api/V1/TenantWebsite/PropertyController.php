@@ -42,6 +42,18 @@ class PropertyController extends Controller
 				$query->where('purpose', $purpose);
 			}
 		}
+		// Handle transactionType_en filter (same as purpose but with different parameter name)
+		if ($transactionType = $request->query('transactionType_en')) {
+			$purposeMap = [
+				'rent' => ['rent', 'rented'],
+				'sale' => ['sale', 'sold'],
+			];
+			if (isset($purposeMap[$transactionType])) {
+				$query->whereIn('purpose', $purposeMap[$transactionType]);
+			} else {
+				$query->where('purpose', $transactionType);
+			}
+		}
 		if ($q = $request->query('q')) {
 			$query->whereHas('contents', function ($qbuilder) use ($q) {
 				$qbuilder->where('title', 'like', "%{$q}%")
@@ -328,7 +340,7 @@ class PropertyController extends Controller
             try {
                 $analytics = app(\App\Services\GoogleAnalyticsService::class);
                 $days = (int) $request->query('days', 30);
-                
+
                 // Build paths for this property (with and without language prefixes)
                 $paths = [
                     "/property/{$content->slug}",
@@ -390,7 +402,7 @@ class PropertyController extends Controller
 
 		// Merge in extended fields to mirror admin show response
 		$characteristics = optional($property->UserPropertyCharacteristics)->toArray() ?? [];
-		
+
 		// Add facade name if facade_id exists
 		if (isset($characteristics['facade_id']) && $characteristics['facade_id'] && $property->UserPropertyCharacteristics) {
 			$facade = $property->UserPropertyCharacteristics->UserFacade;
@@ -398,7 +410,7 @@ class PropertyController extends Controller
 				$characteristics['facade_name'] = $facade->name;
 			}
 		}
-		
+
 		// Get project data if relationship is loaded
 		$projectData = null;
 		if ($property->relationLoaded('project') && $property->project) {
