@@ -1,4 +1,14 @@
 <!--====== Start Header ======-->
+@php
+    $homeUrl = '/';
+    try {
+        if (Route::has('front.index')) {
+            $homeUrl = route('front.index');
+        }
+    } catch (\Exception $e) {
+        $homeUrl = '/';
+    }
+@endphp
 <header class="header-area" data-aos="fade-down">
     <!-- Start mobile menu -->
     <div class="mobile-menu">
@@ -13,7 +23,7 @@
             <!-- Mobile Logo -->
             <div class="logo">
 
-                <a href="{{ route('front.index') }}"><img src="{{ asset('assets/front/img/' . $bs->logo) }}"
+                <a href="{{ $homeUrl }}"><img src="{{ asset('assets/front/img/' . $bs->logo) }}"
                         class="img-fluid" alt=""></a>
             </div>
             <!-- Menu toggle button -->
@@ -30,7 +40,7 @@
             <nav class="navbar navbar-expand-lg">
                 <!-- Logo -->
 
-                <a href="{{ route('front.index') }}"><img src="{{ asset('assets/front/img/' . $bs->logo) }}"
+                <a href="{{ $homeUrl }}"><img src="{{ asset('assets/front/img/' . $bs->logo) }}"
                         class=" navbar-brand img-fluid" alt=""></a>
                 <!-- Navigation items -->
                 <div class="collapse navbar-collapse">

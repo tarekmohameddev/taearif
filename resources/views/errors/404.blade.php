@@ -33,7 +33,17 @@
               {{ __('The page you are looking for might have been moved, renamed, or might never existed.') }}
 
             </p>
-            <a href="{{ route('front.index') }}" class="btn btn-lg btn-primary">{{ __('Go to Home') }}</a>
+            @php
+              $homeUrl = '/';
+              try {
+                if (Route::has('front.index')) {
+                  $homeUrl = route('front.index');
+                }
+              } catch (\Exception $e) {
+                $homeUrl = '/';
+              }
+            @endphp
+            <a href="{{ $homeUrl }}" class="btn btn-lg btn-primary">{{ __('Go to Home') }}</a>
           </div>
         </div>
       </div>

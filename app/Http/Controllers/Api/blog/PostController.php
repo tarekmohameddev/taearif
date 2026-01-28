@@ -16,10 +16,25 @@ class PostController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $posts = Post::where('status', 'published')
-            ->with('thumbnail')
-            ->orderByDesc('published_at')
-            ->paginate($request->input('per_page', 15));
+        $userId = $request->user()->id;
+        
+        $query = Post::where('user_id', $userId)
+            ->with('thumbnail');
+
+        // Filter by status if provided (draft, published, or all)
+        $status = $request->input('status');
+        if ($status === 'draft') {
+            $query->where('status', 'draft');
+        } elseif ($status === 'published') {
+            $query->where('status', 'published');
+        }
+        // If no status or 'all', show both draft and published
+
+        // Order by published_at for published posts, created_at for drafts
+        $query->orderByDesc($status === 'draft' ? 'created_at' : 'published_at')
+            ->orderByDesc('created_at');
+
+        $posts = $query->paginate($request->input('per_page', 15));
 
         return response()->json([
             'data' => PostListResource::collection($posts),
@@ -34,9 +49,11 @@ class PostController extends Controller
         ]);
     }
 
-    public function show(string $slug): JsonResponse
+    public function show(Request $request, string $slug): JsonResponse
     {
-        $post = Post::where('status', 'published')
+        $userId = $request->user()->id;
+        
+        $post = Post::where('user_id', $userId)
             ->where('slug', $slug)
             ->with(['categories', 'media', 'user', 'thumbnail'])
             ->firstOrFail();
@@ -65,16 +82,16 @@ class PostController extends Controller
         return (new PostResource($post))->response()->setStatusCode(201);
     }
 
-    public function update(UpdatePostRequest $request, int $id): JsonResponse
+    public function update(UpdatePostRequest $request, string $slug): JsonResponse
     {
-        $post = Post::findOrFail($id);
-
-        if ($post->user_id !== $request->user()->id) {
-            abort(403, 'You do not own this post.');
-        }
+        $userId = $request->user()->id;
+        
+        $post = Post::where('user_id', $userId)
+            ->where('slug', $slug)
+            ->firstOrFail();
 
         if ($request->has('thumbnail_id')) {
-            $this->validateThumbnailOwnership($request->input('thumbnail_id'), $request->user()->id);
+            $this->validateThumbnailOwnership($request->input('thumbnail_id'), $userId);
         }
 
         $fill = $request->only(['title', 'slug', 'content', 'excerpt', 'status', 'thumbnail_id']);
@@ -88,7 +105,7 @@ class PostController extends Controller
             Media::where('mediable_type', Post::class)
                 ->where('mediable_id', $post->id)
                 ->update(['mediable_id' => null, 'mediable_type' => null]);
-            $this->attachMedia($post, $request->input('media_ids', []), $request->user()->id);
+            $this->attachMedia($post, $request->input('media_ids', []), $userId);
         }
 
         $post->load(['categories', 'media', 'user', 'thumbnail']);
@@ -96,13 +113,13 @@ class PostController extends Controller
         return (new PostResource($post))->response();
     }
 
-    public function destroy(Request $request, int $id): JsonResponse
+    public function destroy(Request $request, string $slug): JsonResponse
     {
-        $post = Post::findOrFail($id);
-
-        if ($post->user_id !== $request->user()->id) {
-            abort(403, 'You do not own this post.');
-        }
+        $userId = $request->user()->id;
+        
+        $post = Post::where('user_id', $userId)
+            ->where('slug', $slug)
+            ->firstOrFail();
 
         $post->delete();
 

@@ -120,7 +120,10 @@ use App\Http\Controllers\Api\V1\TenantWebsite\{
     SettingsController,
     PublishController,
     FormController,
+    PixelController as TenantWebsitePixelController,
 };
+use App\Http\Controllers\Api\V1\Analytics\PageviewController;
+use App\Http\Controllers\Api\V1\Analytics\Ga4AnalyticsController;
 use App\Http\Controllers\Api\V1\Matching\MatchingController as V1MatchingController;
 use App\Http\Controllers\Api\V1\Matching\CustomerRequestController as V1CustomerRequestController;
 
@@ -220,6 +223,33 @@ Route::middleware(['auth:sanctum', 'require.active.package'])->group(function ()
     Route::get('/analytics/tenants', [AnalyticsDashboardController::class, 'getTenantsList']); // Get list of all tenants with GA4 data
 });
 
+// Pageview Analytics Routes (v1)
+// Public tracking endpoint - no auth required
+Route::post('/v1/analytics/page-view', [PageviewController::class, 'track'])
+    ->middleware('throttle:100,1'); // 100 requests per minute for tracking
+
+// Dashboard analytics endpoints - require authentication
+Route::prefix('v1/analytics')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/dashboard', [PageviewController::class, 'dashboard'])
+        ->middleware('throttle:60,1'); // 60 requests per minute
+    Route::get('/top-pages', [PageviewController::class, 'topPages'])
+        ->middleware('throttle:60,1');
+    Route::get('/top-posts', [PageviewController::class, 'topPosts'])
+        ->middleware('throttle:60,1');
+    Route::get('/views-summary', [PageviewController::class, 'summary'])
+        ->middleware('throttle:60,1');
+});
+
+// GA4 Analytics Routes (v1) - Read from database (no live GA calls)
+Route::prefix('v1/analytics/ga4')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/dashboard', [Ga4AnalyticsController::class, 'dashboard'])
+        ->middleware('throttle:60,1'); // 60 requests per minute
+    Route::get('/top-pages', [Ga4AnalyticsController::class, 'topPages'])
+        ->middleware('throttle:60,1');
+    Route::get('/properties-visits', [Ga4AnalyticsController::class, 'propertiesVisits'])
+        ->middleware('throttle:60,1');
+});
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     // Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
@@ -242,18 +272,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/blog-categories', [BlogController::class, 'categories']); // Get blog categories
 });
 
-// Blog system (api_posts)
-Route::get('/posts', [PostController::class, 'index']);
-Route::get('/posts/{slug}', [PostController::class, 'show']);
-Route::get('/categories', [CategoriesController::class, 'index']);
+// Authenticated Blog endpoints (user's own posts)
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/posts', [PostController::class, 'index']); // User's posts (supports ?status=draft|published)
+    Route::get('/posts/{slug}', [PostController::class, 'show']); // User's single post by slug
+    Route::get('/categories', [CategoriesController::class, 'index']); // All categories
+    Route::get('/categories/{slug}', [CategoriesController::class, 'show']); // Single category by slug
+    Route::get('/categories/{slug}/posts', [CategoriesController::class, 'posts']); // Posts for a specific category by slug
     Route::post('/posts', [PostController::class, 'store']);
-    Route::put('/posts/{id}', [PostController::class, 'update']);
-    Route::delete('/posts/{id}', [PostController::class, 'destroy']);
+    Route::put('/posts/{slug}', [PostController::class, 'update']); // Changed from {id} to {slug}
+    Route::delete('/posts/{slug}', [PostController::class, 'destroy']); // Changed from {id} to {slug}
     Route::post('/media', [BlogMediaController::class, 'store']);
     Route::post('/categories', [CategoriesController::class, 'store']);
-    Route::put('/categories/{id}', [CategoriesController::class, 'update']);
-    Route::delete('/categories/{id}', [CategoriesController::class, 'destroy']);
+    Route::put('/categories/{slug}', [CategoriesController::class, 'update']); // Changed from {id} to {slug}
+    Route::delete('/categories/{slug}', [CategoriesController::class, 'destroy']); // Changed from {id} to {slug}
 });
 
 // contract routes
@@ -980,6 +1012,12 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
     Route::post('getTenant', [GetTenantController::class, 'store']);
     Route::post('save-pages', [SavePagesController::class, 'store'])->middleware('auth:sanctum');
 
+    // Tenant Website Pixels (public)
+    Route::get('{tenantId}/pixels', [TenantWebsitePixelController::class, 'index'])->middleware('throttle:60,1');
+
+    // Unified search endpoint (public) - must be before more specific routes
+    Route::get('{tenantId}', [\App\Http\Controllers\Api\V1\TenantWebsite\SearchController::class, 'index']);
+
     Route::get('{tenantId}/pages', [PageController::class, 'index']);
     Route::get('{tenantId}/pages/{pageId}', [PageController::class, 'show']);
     Route::post('{tenantId}/pages', [PageController::class, 'store'])->middleware('auth:sanctum');
@@ -1007,9 +1045,16 @@ Route::prefix('v1/tenant-website')->middleware(['api','tenant.resolve','tenant.i
     Route::get('{tenantId}/projects', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'index']);
     Route::get('{tenantId}/projects/{slug}', [\App\Http\Controllers\Api\V1\TenantWebsite\ProjectController::class, 'show']);
 
+    // Tenant Website Posts (public)
+    Route::get('{tenantId}/posts', [\App\Http\Controllers\Api\V1\TenantWebsite\PostController::class, 'index']);
+    Route::get('{tenantId}/posts/{slug}', [\App\Http\Controllers\Api\V1\TenantWebsite\PostController::class, 'show']);
+
     // Tenant Website AI Export (public)
     Route::get('{tenantId}/ai-export', [\App\Http\Controllers\Api\V1\TenantWebsite\AiExportController::class, 'index']);
     Route::get('{tenantId}/ai-export.txt', [\App\Http\Controllers\Api\V1\TenantWebsite\AiExportController::class, 'downloadTxt']);
+
+    // Unified search endpoint (public) - must be last to avoid conflicts with specific routes
+    Route::get('{tenantId}', [\App\Http\Controllers\Api\V1\TenantWebsite\SearchController::class, 'index']);
 
     // (moved Matching endpoints out of tenant-website scope)
 });

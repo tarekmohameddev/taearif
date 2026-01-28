@@ -650,15 +650,21 @@ class ApiPropertyRequestController extends Controller
         return response()->json($propertyRequest);
     }
     
-    public function destroy($id)
+    public function destroy(Request $request, $id): JsonResponse
     {
-        $user = Auth::user();
+        $user = $request->user();
+        $ownerId = method_exists($user, 'tenantOwnerId') ? (int) $user->tenantOwnerId() : (int) $user->id;
+
         $propertyRequest = UserPropertyRequest::where('id', $id)
-            ->where('user_id', $user->id)
+            ->where('user_id', $ownerId)
             ->firstOrFail();
 
         $propertyRequest->delete();
-        return response()->json(['message' => 'Property request deleted successfully']);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Property request deleted successfully'
+        ]);
     }
 
     public function update(Request $request, $id)

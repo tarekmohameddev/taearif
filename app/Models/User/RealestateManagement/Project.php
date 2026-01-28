@@ -38,6 +38,7 @@ class Project extends Model
         'featured' => 'boolean',
         'published' => 'boolean',
         'units' => 'integer',
+        'complete_status' => 'integer',
     ];
 
     /**
@@ -56,16 +57,16 @@ class Project extends Model
                 if (is_array($value)) {
                     return $value;
                 }
-                
+
                 // If null, return empty array
                 if (is_null($value)) {
                     return [];
                 }
-                
+
                 // If it's a string, try to decode JSON first
                 if (is_string($value)) {
                     $decoded = json_decode($value, true);
-                    
+
                     // If decoding succeeded
                     if (json_last_error() === JSON_ERROR_NONE) {
                         // If result is an array, return it
@@ -77,23 +78,23 @@ class Project extends Model
                             return array_filter(array_map('trim', explode(',', $decoded)));
                         }
                     }
-                    
+
                     // If JSON decode failed, try splitting the string directly
                     // This handles cases where it's stored as plain comma-separated string
                     return array_filter(array_map('trim', explode(',', $value)));
                 }
-                
+
                 // Fallback to empty array
                 return [];
             },
             set: function ($value) {
                 // Normalize the input value and return JSON string for database storage
-                
+
                 // Handle null or empty values
                 if (is_null($value) || $value === '') {
                     return json_encode([]);
                 }
-                
+
                 // If it's already an array, filter and clean it
                 if (is_array($value)) {
                     // Filter out null/empty values and reindex
@@ -102,7 +103,7 @@ class Project extends Model
                     }));
                     return json_encode($cleaned);
                 }
-                
+
                 // If it's a string, try to decode as JSON first
                 if (is_string($value)) {
                     $decoded = json_decode($value, true);
@@ -120,7 +121,7 @@ class Project extends Model
                     // If it's a plain string, wrap it in an array
                     return json_encode([trim($value)]);
                 }
-                
+
                 // Fallback to empty array as JSON
                 return json_encode([]);
             },
@@ -142,7 +143,7 @@ class Project extends Model
             'developer' => $request['developer'] ?? 'Unknown Developer',
             'units' => $request['units'] ?? 0,
             'completion_date' => $request['completion_date'] ?? now()->addYear()->toDateString(),
-            'complete_status' => $request['complete_status'] ?? 'In Progress',
+            'complete_status' => $request['complete_status'] ?? 0,
             'latitude' => $request['latitude'] ?? null,
             'longitude' => $request['longitude'] ?? null,
             'amenities' => $request['amenities'] ?? [],
@@ -159,7 +160,7 @@ class Project extends Model
             'max_price' => $request['max_price'] ?? $this->max_price,
             'featured' => $request['featured'] ?? $this->featured,
             'published' => $request['published'] ?? $this->published,
-            'complete_status' => $request['complete_status'] ?? $this->complete_status ?? 'In Progress',
+            'complete_status' => $request['complete_status'] ?? $this->complete_status ?? 0,
             'developer' => $request['developer'] ?? $this->developer,
             'units' => $request['units'] ?? $this->units,
             'completion_date' => $request['completion_date'] ?? $this->completion_date,

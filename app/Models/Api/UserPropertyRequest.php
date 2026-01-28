@@ -106,6 +106,9 @@ class UserPropertyRequest extends Model
         // Get district name
         $districtName = $this->district ? $this->district->name_ar : null;
         
+        // Get property type Arabic translation
+        $propertyTypeAr = $this->getPropertyTypeArabic();
+        
         // Get customer_id from the customer relationship
         // This will use the eager loaded relationship if available, or lazy load it if not
         $customer = $this->customer;
@@ -121,6 +124,9 @@ class UserPropertyRequest extends Model
             if ($key === 'districts_id') {
                 $result['districtName'] = $districtName;
             }
+            if ($key === 'property_type') {
+                $result['property_type_ar'] = $propertyTypeAr;
+            }
         }
         
         // Fallback: if user_id wasn't in the array, add customer_id anyway
@@ -131,6 +137,11 @@ class UserPropertyRequest extends Model
         // Fallback: if districts_id wasn't in the array, add districtName anyway
         if (!isset($result['districtName'])) {
             $result['districtName'] = $districtName;
+        }
+        
+        // Fallback: if property_type wasn't in the array, add property_type_ar anyway
+        if (!isset($result['property_type_ar'])) {
+            $result['property_type_ar'] = $propertyTypeAr;
         }
 
         $result['status'] = $this->statusOption
@@ -186,5 +197,24 @@ class UserPropertyRequest extends Model
         }
 
         return null;
+    }
+
+    /**
+     * Get Arabic translation for property type
+     */
+    protected function getPropertyTypeArabic(): ?string
+    {
+        if (!$this->property_type) {
+            return null;
+        }
+
+        $map = [
+            'Commercial' => 'تجاري',
+            'Residential' => 'سكني',
+            'Industrial' => 'صناعي',
+            'Agricultural' => 'زراعي',
+        ];
+
+        return $map[$this->property_type] ?? $this->property_type;
     }
 }

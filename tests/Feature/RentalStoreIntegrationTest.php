@@ -23,11 +23,11 @@ class RentalStoreIntegrationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create a test user
         $this->user = User::factory()->create();
         $this->actingAs($this->user, 'sanctum');
-        
+
         // Create test project manually
         $this->project = Project::create([
             'user_id' => $this->user->id,
@@ -41,10 +41,10 @@ class RentalStoreIntegrationTest extends TestCase
             'developer' => 'Test Developer',
             'units' => 100,
             'completion_date' => now()->addYear()->toDateString(),
-            'complete_status' => 'In Progress',
+            'complete_status' => 0,
             'amenities' => []
         ]);
-        
+
         // Create test property manually
         $this->property = Property::create([
             'user_id' => $this->user->id,
@@ -244,7 +244,7 @@ class RentalStoreIntegrationTest extends TestCase
         ]);
 
         $rental = RmRental::where('tenant_full_name', 'Minimal Test')->first();
-        
+
         // No contract should be created due to missing required fields
         $contract = RmContract::where('rental_id', $rental->id)->first();
         $this->assertNull($contract);
@@ -344,7 +344,7 @@ class RentalStoreIntegrationTest extends TestCase
         $response->assertStatus(201);
 
         $rental = RmRental::where('tenant_full_name', 'Percentage Test')->first();
-        
+
         // Expected: (12 * 2000) * (10 / 100) = 24000 * 0.1 = 2400
         $this->assertEquals(2400.00, $rental->office_fee);
     }
@@ -363,7 +363,7 @@ class RentalStoreIntegrationTest extends TestCase
         $response->assertStatus(201);
 
         $rental = RmRental::where('tenant_full_name', 'Amount Test')->first();
-        
+
         // Expected: 3000 * 6 = 18000
         $this->assertEquals(18000.00, $rental->total_rental_amount);
     }
@@ -465,16 +465,16 @@ class RentalStoreIntegrationTest extends TestCase
         $response->assertStatus(201);
 
         $rental = RmRental::where('tenant_full_name', 'Full Fee Test')->first();
-        
+
         // Verify all fees are stored correctly
         $this->assertEquals(75.00, $rental->platform_fee);
         $this->assertEquals(25.00, $rental->water_fee);
         $this->assertEquals('percentage', $rental->office_commission_type);
         $this->assertEquals(3.0, $rental->office_commission_value);
-        
+
         // Office fee calculation: (12 * 2000) * (3 / 100) = 24000 * 0.03 = 720
         $this->assertEquals(720.00, $rental->office_fee);
-        
+
         // Total rental amount: 2000 * 12 = 24000
         $this->assertEquals(24000.00, $rental->total_rental_amount);
     }

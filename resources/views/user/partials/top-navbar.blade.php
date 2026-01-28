@@ -1,7 +1,17 @@
 <div class="main-header">
     <!-- Logo Header -->
     <div class="logo-header" @if(request()->cookie('user-theme') == 'dark') data-background-color="dark2" @endif>
-        <a href="{{route('front.index')}}" class="logo" target="_blank">
+        @php
+            $homeUrl = '/';
+            try {
+                if (Route::has('front.index')) {
+                    $homeUrl = route('front.index');
+                }
+            } catch (\Exception $e) {
+                $homeUrl = '/';
+            }
+        @endphp
+        <a href="{{ $homeUrl }}" class="logo" target="_blank">
             @if(!empty($logo))
         <img src="{{!empty($logo) ? $logo : 'logo'}}" alt="LOGO" class="navbar-brand">
             @else

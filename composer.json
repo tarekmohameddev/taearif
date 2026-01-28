@@ -54,6 +54,7 @@
         "spatie/laravel-sitemap": "^6.2.3"
     },
     "require-dev": {
+        "opcodesio/log-viewer": "^3.21",
         "barryvdh/laravel-debugbar": "^3.14",
         "fakerphp/faker": "^1.9.1",
         "laravel/sail": "^1.0.1",
