@@ -684,17 +684,25 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            // Resolve tenant owner (tenant for tenant; tenant for employee)
-            // Eager load tenant relationship if user is an employee to avoid N+1 query
-            if ($user->isEmployee() && !$user->relationLoaded('tenant')) {
-                $user->load('tenant');
-            }
-            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
-
             // Check if performance optimizations are enabled (default to true for better performance)
             $useOptimizations = config('performance.enable_api_performance_optimizations', true);
-            $cacheKey = "user:profile:{$user->id}:{$owner->id}";
-            $cacheTtl = 300; // 5 minutes
+            /**
+             * IMPORTANT PERF NOTE:
+             * We want cache hits to be as cheap as possible.
+             * So we compute ownerId WITHOUT loading any relationships first,
+             * then short-circuit on cache hit before any extra DB work.
+             */
+            $ownerId = null;
+            if (method_exists($user, 'tenantOwnerId')) {
+                $ownerId = $user->tenantOwnerId();
+            } elseif (method_exists($user, 'isEmployee') && $user->isEmployee() && !empty($user->tenant_id)) {
+                $ownerId = (int) $user->tenant_id;
+            } else {
+                $ownerId = (int) $user->id;
+            }
+
+            $cacheKey = "user:profile:{$user->id}:{$ownerId}";
+            $cacheTtl = 3600; // 60 minutes
 
             if ($useOptimizations) {
                 // Try to get from cache first
@@ -706,6 +714,13 @@ class AuthController extends Controller
                     ], 200);
                 }
             }
+
+            // Resolve tenant owner (tenant for tenant; tenant for employee)
+            // Eager load tenant relationship if user is an employee to avoid N+1 query
+            if ($user->isEmployee() && !$user->relationLoaded('tenant')) {
+                $user->load('tenant');
+            }
+            $owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
 
             // Get current date for comparing with membership expiration
             $currentDate = now();
@@ -838,7 +853,7 @@ class AuthController extends Controller
             // OPTIMIZATION: Cache permissions separately since they change less frequently
             // Permissions cache with longer TTL (30 minutes vs 5 minutes for profile)
             $permissionsCacheKey = "user:permissions:{$user->id}:{$owner->id}";
-            $permissionsCacheTtl = 1800; // 30 minutes
+            $permissionsCacheTtl = 21600; // 6 hours
 
             if ($useOptimizations) {
                 // Try to get permissions from cache first

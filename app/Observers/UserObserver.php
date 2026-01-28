@@ -78,11 +78,19 @@ class UserObserver
         
         // User profile cache
         CacheInvalidationHelper::clearUserProfileCache($userId, $ownerId);
+
+        // Cached permissions payload (used by /api/user)
+        CacheInvalidationHelper::clearUserPermissionsCache($userId, $ownerId);
         
         // Side menus cache (user permissions may have changed)
         CacheInvalidationHelper::clearSideMenusCache($userId, $ownerId);
         
         // Dashboard caches
         CacheInvalidationHelper::clearDashboardCaches($userId, $user->username);
+
+        // If this is a tenant, employees depend on tenant profile fields (membership/quota/domain/company_name/etc)
+        if ($user->account_type === 'tenant') {
+            CacheInvalidationHelper::clearTenantProfileCachesAuto($userId);
+        }
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Membership;
+use App\Support\CacheInvalidationHelper;
 use Illuminate\Support\Facades\Cache;
 
 class MembershipObserver
@@ -54,11 +55,8 @@ class MembershipObserver
         // Membership package cache used in side menus
         Cache::forget("membership_package:{$userId}");
         
-        // User profile cache (membership affects profile data)
-        // Note: We clear all variants since we don't know the ownerId context here
-        // The user profile cache key is user:profile:{userId}:{ownerId}
-        // For tenant users, userId == ownerId; for employees, we'd need tenant_id
-        // Clearing by userId covers the tenant case; employee cases expire by TTL
-        Cache::forget("user:profile:{$userId}:{$userId}");
+        // Membership affects tenant profile AND employee profiles (they reflect tenant membership/quota).
+        // Clear profile-related caches for tenant + all employees.
+        CacheInvalidationHelper::clearTenantProfileCachesAuto($userId);
     }
 }
