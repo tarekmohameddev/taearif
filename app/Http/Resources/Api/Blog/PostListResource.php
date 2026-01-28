@@ -13,16 +13,22 @@ class PostListResource extends JsonResource
     {
         // Always try to get categories, even if not eager loaded
         $categories = [];
-        if ($this->relationLoaded('categories')) {
-            $categories = $this->categories ? CategoryResource::collection($this->categories)->resolve() : [];
-        } else {
-            // If not loaded, try to load them
-            try {
+
+        try {
+            if ($this->relationLoaded('categories')) {
+                if ($this->categories && $this->categories->isNotEmpty()) {
+                    $categories = CategoryResource::collection($this->categories)->resolve();
+                }
+            } else {
+                // If not loaded, try to load them
                 $this->loadMissing('categories');
-                $categories = $this->categories ? CategoryResource::collection($this->categories)->resolve() : [];
-            } catch (\Exception $e) {
-                $categories = [];
+                if ($this->categories && $this->categories->isNotEmpty()) {
+                    $categories = CategoryResource::collection($this->categories)->resolve();
+                }
             }
+        } catch (\Exception $e) {
+            // If any error occurs, ensure categories is still an empty array
+            $categories = [];
         }
 
         return [
