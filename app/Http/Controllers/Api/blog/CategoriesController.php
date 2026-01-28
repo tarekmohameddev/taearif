@@ -17,6 +17,9 @@ class CategoriesController extends Controller
     {
         $query = Category::query();
 
+        // Always include posts count
+        $query->withCount('posts');
+
         // Include posts if requested
         if ($request->boolean('with_posts')) {
             $userId = $request->user()->id;
@@ -53,7 +56,12 @@ class CategoriesController extends Controller
 
     public function show(Request $request, string $slug): JsonResponse
     {
-        $category = Category::where('slug', $slug)->firstOrFail();
+        $query = Category::where('slug', $slug);
+
+        // Always include posts count
+        $query->withCount('posts');
+
+        $category = $query->firstOrFail();
 
         // Include posts if requested
         if ($request->boolean('with_posts')) {

@@ -59,4 +59,32 @@ class Category extends Model
     {
         return $this->belongsToMany(Post::class, 'api_post_categories');
     }
+
+    /**
+     * Get the slug attribute, generating it from name if null
+     */
+    public function getSlugAttribute($value)
+    {
+        // If slug exists, return it
+        if ($value !== null && trim($value) !== '') {
+            return $value;
+        }
+
+        // Generate slug from name if slug is null
+        $slug = Str::slug($this->attributes['name'] ?? '');
+
+        // Ensure uniqueness if we're generating on-the-fly
+        if ($this->exists && $slug) {
+            $query = static::where('slug', $slug)->where('id', '!=', $this->id);
+            $n = 2;
+            $originalSlug = $slug;
+            while ($query->exists()) {
+                $slug = $originalSlug . '-' . $n;
+                $query = static::where('slug', $slug)->where('id', '!=', $this->id);
+                $n++;
+            }
+        }
+
+        return $slug;
+    }
 }

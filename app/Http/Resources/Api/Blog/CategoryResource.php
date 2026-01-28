@@ -19,10 +19,9 @@ class CategoryResource extends JsonResource
                 $this->relationLoaded('posts'),
                 PostListResource::collection($this->posts)
             ),
-            'posts_count' => $this->when(
-                $this->relationLoaded('posts'),
-                $this->posts->count()
-            ),
+            'posts_count' => $this->relationLoaded('posts')
+                ? $this->posts->count()
+                : ($this->posts_count ?? 0),
         ];
     }
 }
