@@ -295,6 +295,88 @@
             </div>
         </div>
 
+        <!-- Customer Invoices Section -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4 class="card-title"><i class="fas fa-file-invoice"></i> {{__('Customer Invoices')}}</h4>
+            </div>
+            <div class="card-body">
+                @if($memberships->count() > 0)
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>{{__('Transaction ID')}}</th>
+                                    <th>{{__('Package')}}</th>
+                                    <th>{{__('Amount')}}</th>
+                                    <th>{{__('Payment Method')}}</th>
+                                    <th>{{__('Date')}}</th>
+                                    <th>{{__('Status')}}</th>
+                                    <th>{{__('Actions')}}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($memberships as $membership)
+                                    <tr>
+                                        <td>#{{ $membership->transaction_id ?? 'N/A' }}</td>
+                                        <td>
+                                            @if($membership->package)
+                                                <strong>{{ $membership->package->title }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ ucfirst($membership->package->term) }}</small>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($membership->price == 0)
+                                                <span class="badge badge-info">Free</span>
+                                            @else
+                                                {{ format_price($membership->price) }}
+                                            @endif
+                                            @if($membership->discount > 0)
+                                                <br>
+                                                <small class="text-success">
+                                                    <i class="fas fa-tag"></i> Discount: {{ format_price($membership->discount) }}
+                                                </small>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-secondary">{{ strtoupper($membership->payment_method) }}</span>
+                                        </td>
+                                        <td>
+                                            <small>
+                                                {{ \Carbon\Carbon::parse($membership->created_at)->format('d M Y') }}
+                                                <br>
+                                                <span class="text-muted">{{ \Carbon\Carbon::parse($membership->created_at)->format('h:i A') }}</span>
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-check-circle"></i> Paid
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ route('admin.payment-log.download-invoice', $membership->id) }}" 
+                                               class="btn btn-sm btn-primary" 
+                                               target="_blank"
+                                               title="Download Invoice">
+                                                <i class="fas fa-download"></i> Download
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> No invoices found for this customer.
+                    </div>
+                @endif
+            </div>
+        </div>
+
    </div>
 </div>
 

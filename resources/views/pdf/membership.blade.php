@@ -3,6 +3,46 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Invoice</title>
+    @php
+        // Helper function to detect and handle Arabic text for DomPDF
+        function cleanArabicText($text) {
+            if (empty($text)) return $text;
+            
+            // If text contains Arabic characters, provide English equivalent
+            if (preg_match('/[\x{0600}-\x{06FF}]/u', $text)) {
+                // Common Arabic to English mappings
+                $mappings = [
+                    'ريال سعودي' => 'SAR',
+                    'ريال' => 'SAR',
+                    'دولار' => 'USD',
+                    'الباقة المميزة سنوية' => 'Premium Annual Package',
+                    'الباقة الشهرية' => 'Monthly Package',
+                    'الباقة السنوية' => 'Annual Package',
+                    'الباقة المجانية' => 'Free Package',
+                ];
+                
+                foreach ($mappings as $arabic => $english) {
+                    if (strpos($text, $arabic) !== false) {
+                        return $english;
+                    }
+                }
+                
+                // If no mapping found, return a generic English version
+                // Remove Arabic characters and return cleaned text
+                $cleaned = preg_replace('/[\x{0600}-\x{06FF}]/u', '', $text);
+                $cleaned = trim($cleaned);
+                
+                // If nothing left after removing Arabic, return generic text
+                if (empty($cleaned)) {
+                    return 'Package'; // Generic fallback
+                }
+                
+                return $cleaned;
+            }
+            
+            return $text;
+        }
+    @endphp
     <style>
         @page {
             margin: 0;
@@ -242,7 +282,19 @@
             <div class="header-content">
                 <div class="logo-section">
                     @if($bs->logo)
-                        <img src="{{ public_path('assets/front/img/'.$bs->logo) }}" alt="Logo" class="logo">
+                        @php
+                            $logoPath = public_path('assets/front/img/'.$bs->logo);
+                            if(file_exists($logoPath)) {
+                                $logoData = base64_encode(file_get_contents($logoPath));
+                                $logoMime = mime_content_type($logoPath);
+                                $logoSrc = 'data:' . $logoMime . ';base64,' . $logoData;
+                            } else {
+                                $logoSrc = '';
+                            }
+                        @endphp
+                        @if(!empty($logoSrc))
+                            <img src="{{ $logoSrc }}" alt="Logo" class="logo">
+                        @endif
                     @endif
                 </div>
                 <div class="invoice-title-section">
@@ -313,10 +365,10 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>{{ $package_title }}</strong></td>
+                        <td><strong>{{ cleanArabicText($package_title) }}</strong></td>
                         <td>{{ $request['start_date'] }}</td>
                         <td>{{ \Carbon\Carbon::parse($request['expire_date'])->format('Y') == "9999" ? "Lifetime" : $request['expire_date'] }}</td>
-                        <td>{{ $base_currency_text }}</td>
+                        <td>{{ cleanArabicText($base_currency_text) }}</td>
                         <td style="text-align: right;"><strong>{{ $amount == 0 ? "Free" : number_format($amount, 2) }}</strong></td>
                     </tr>
                 </tbody>
@@ -328,24 +380,24 @@
             @if ($membership->discount > 0)
             <div class="summary-row">
                 <div class="summary-label">Package Price:</div>
-                <div class="summary-value">{{ $membership->package_price == 0 ? "Free" : number_format($membership->package_price, 2) . ' ' . $base_currency_text }}</div>
+                <div class="summary-value">{{ $membership->package_price == 0 ? "Free" : number_format($membership->package_price, 2) . ' ' . cleanArabicText($base_currency_text) }}</div>
             </div>
             <div class="summary-row">
                 <div class="summary-label">Discount:</div>
-                <div class="summary-value discount-highlight">- {{ number_format($membership->discount, 2) }} {{ $base_currency_text }}</div>
+                <div class="summary-value discount-highlight">- {{ number_format($membership->discount, 2) }} {{ cleanArabicText($base_currency_text) }}</div>
             </div>
             @endif
             
             <div class="summary-row summary-total">
                 <div class="summary-label">TOTAL AMOUNT:</div>
-                <div class="summary-value">{{ $amount == 0 ? "Free" : number_format($amount, 2) . ' ' . $base_currency_text }}</div>
+                <div class="summary-value">{{ $amount == 0 ? "Free" : number_format($amount, 2) . ' ' . cleanArabicText($base_currency_text) }}</div>
             </div>
         </div>
 
         <!-- Footer -->
         <div class="footer">
             <div class="footer-thanks">Thank you for your business!</div>
-            <div class="footer-company">{{ $bs->website_title }}</div>
+            <div class="footer-company">{{ cleanArabicText($bs->website_title) }}</div>
         </div>
     </div>
 </body>

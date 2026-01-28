@@ -114,7 +114,7 @@ class PropertyController extends Controller
             // Check if user has active membership (cached)
             $membership = MembershipCacheService::getActiveMembership($user->id);
 
-            if (!$membership || !$membership->package) {
+            if (!($membership instanceof Membership) || !$membership->package) {
                 return response()->json([
                     'status' => 'error',
                     'code' => 'IMPORT_PERMISSION_DENIED',
@@ -604,7 +604,7 @@ class PropertyController extends Controller
         // Check if user has active membership (cached)
         $membership = MembershipCacheService::getActiveMembership($user->id);
 
-        if (!$membership || !$membership->package) {
+        if (!($membership instanceof Membership) || !$membership->package) {
             return response()->json([
                 'status' => 'fail',
                 'message' => 'No active package found for the user.',
@@ -1180,7 +1180,7 @@ class PropertyController extends Controller
         // Check if user has active membership (cached)
         $membership = MembershipCacheService::getActiveMembership($owner->id);
 
-        if (!$membership || !$membership->package) {
+        if (!($membership instanceof Membership) || !$membership->package) {
             return response()->json([
                 'status' => 'fail',
                 'message' => 'No active package found for the user.',
@@ -4156,7 +4156,7 @@ class PropertyController extends Controller
 
             // Check property limit
             $membership = MembershipCacheService::getActiveMembership($owner->id);
-            if (!$membership || !$membership->package) {
+            if (!($membership instanceof Membership) || !$membership->package) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'No active package found',
@@ -4327,7 +4327,7 @@ class PropertyController extends Controller
 
             // Check property limit
             $membership = MembershipCacheService::getActiveMembership($owner->id);
-            if (!$membership || !$membership->package) {
+            if (!($membership instanceof Membership) || !$membership->package) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'No active package found',
