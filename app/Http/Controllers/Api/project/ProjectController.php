@@ -359,7 +359,7 @@ class ProjectController extends Controller
         // Check if user has active membership (cached)
         $membership = MembershipCacheService::getActiveMembership($ownerId);
 
-        if (!$membership || !$membership->package) {
+        if (!$membership || !is_object($membership) || !$membership->package) {
             return response()->json([
                 'status' => 'fail',
                 'message' => 'No active package found for the user.',
