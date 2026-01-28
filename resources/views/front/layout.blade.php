@@ -123,7 +123,18 @@
                     <h2>@yield('breadcrumb-title')</h2>
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('front.index') }}">{{ __('Home') }}</a>
+                            <li class="breadcrumb-item">
+                                @php
+                                    $homeUrl = '/';
+                                    try {
+                                        if (Route::has('front.index')) {
+                                            $homeUrl = route('front.index');
+                                        }
+                                    } catch (\Exception $e) {
+                                        $homeUrl = '/';
+                                    }
+                                @endphp
+                                <a href="{{ $homeUrl }}">{{ __('Home') }}</a>
                             </li>
                             <li class="breadcrumb-item active" aria-current="page">@yield('breadcrumb-link')</li>
                         </ol>

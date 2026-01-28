@@ -19,16 +19,13 @@ class RequireActiveMembership
 
 		$owner = method_exists($user, 'tenantOwner') ? $user->tenantOwner() : $user;
 		
-		// Cache membership check for 5 minutes to avoid repeated database queries
-		// Key format standardized with MembershipCacheService (colon separator)
-		$cacheKey = "active_membership:{$owner->id}";
-		$active = Cache::remember($cacheKey, 300, function () use ($owner) {
-			$membership = Membership::where('user_id', $owner->id)
-				->orderByDesc('expire_date')
-				->first();
-			
-			return $membership && now()->lte($membership->expire_date) && (int) $membership->status === 1;
-		});
+		// Use centralized MembershipCacheService to avoid cache collision
+		$membership = \App\Services\MembershipCacheService::getActiveMembership($owner->id);
+		
+		$active = $membership && 
+				  $membership->expire_date && 
+				  now()->lte($membership->expire_date) && 
+				  (int) $membership->status === 1;
 		
 		if (!$active) {
 			return response()->json(['message' => 'No active package.'], 402);

@@ -25,6 +25,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\RunAllScheduledTasks::class,
         \App\Console\Commands\SendCrmAppointmentReminders::class,
         \App\Console\Commands\BackfillInvoiceUuids::class,
+        \App\Console\Commands\CleanupOldPageviewsCommand::class,
     ];
 
     /**
@@ -40,7 +41,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('app:verify-pending-payments')->everyThirtyMinutes();
         $schedule->command('reminders:process')->dailyAt('04:00')->timezone('Asia/Riyadh');
         $schedule->command('health:check --auto')->dailyAt('03:55')->timezone('Asia/Riyadh');
-        
+
         // Schedule subscription expiration reminders
         // This will run daily at the configured time (default 09:00)
         $schedule->command('subscription:send-expiration-reminders')
@@ -56,9 +57,9 @@ class Kernel extends ConsoleKernel
             ->hourly()
             ->timezone('Asia/Riyadh');
 
-        // Sync analytics data every 2 hours 
+        // Sync GA4 analytics data every 6 hours (02:00, 08:00, 14:00, 20:00)
         $schedule->command('analytics:sync')
-            ->everyTwoHours()
+            ->everySixHours()
             ->timezone('Asia/Riyadh')
             ->withoutOverlapping()
             ->runInBackground();
@@ -67,6 +68,13 @@ class Kernel extends ConsoleKernel
         // Cache TTL is 1 hour, so this runs every 50 minutes to keep cache fresh
         $schedule->command('properties:prewarm-filter-cache')
             ->cron('*/50 * * * *') // Every 50 minutes
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->runInBackground();
+
+        // Clean up old pageview analytics records (runs weekly)
+        $schedule->command('analytics:cleanup-old-pageviews')
+            ->weekly()
             ->timezone('Asia/Riyadh')
             ->withoutOverlapping()
             ->runInBackground();

@@ -292,8 +292,27 @@ class CustomerController extends Controller
             return $map[$t] ?? $val;
         };
 
-        $formattedCustomers = $customers->map(function ($customer) use ($mapInquiryTypeToArabic, $mapPropertyTypeToArabic, $allInterestedCategories, $allInterestedProperties, $allInquiries) {
+        $mapCustomerTypeToArabic = function ($type) {
+            if (is_null($type) || $type === '') return null;
+            $val = trim($type);
+            // If already contains Arabic characters, keep as-is
+            if (preg_match('/\p{Arabic}/u', $val)) {
+                return $val;
+            }
+            $t = mb_strtolower($val);
+            $map = [
+                'rent'   => 'إيجار',
+                'sale'   => 'بيع',
+                'rented' => 'مؤجر',
+                'sold'   => 'مباع',
+                'both'   => 'كلاهما',
+            ];
+            return $map[$t] ?? $val;
+        };
+
+        $formattedCustomers = $customers->map(function ($customer) use ($mapInquiryTypeToArabic, $mapPropertyTypeToArabic, $mapCustomerTypeToArabic, $allInterestedCategories, $allInterestedProperties, $allInquiries) {
             $district = $customer->district;
+            $city = $customer->city;
             
             // Get pre-loaded data (same format as before)
             $interestedCategories = $allInterestedCategories->get($customer->id, collect());
@@ -358,7 +377,7 @@ class CustomerController extends Controller
                 'phone_number' => $customer->phone_number,
                 'type' => $customer->type ? [
                     'id' => $customer->type->id,
-                    'name' => $customer->type->name,
+                    'name' => $mapCustomerTypeToArabic($customer->type->name),
                 ] : null,
 
                 'stage' => $customer->stage ? [
@@ -384,6 +403,11 @@ class CustomerController extends Controller
                 'note' => $customer->note ?? null,
                 'inquiry' => $inquiryPayload,
                 'city_id' => $customer->city_id ?? null,
+                'city' => $city ? [
+                    'id'      => $city->id,
+                    'name_ar' => $city->name_ar,
+                    'name_en' => $city->name_en,
+                ] : null,
                 'district' => $district ? [
                     'id'      => $district->id,
                     'name_ar' => $district->name_ar,
@@ -576,7 +600,13 @@ class CustomerController extends Controller
         $user = $request->user();
 
         $customer = ApiCustomer::where('user_id', $user->id)
-            ->with(['responsibleEmployee.activeWhatsappUser'])
+            ->with([
+                'responsibleEmployee.activeWhatsappUser',
+                'type',
+                'stage',
+                'city',
+                'district'
+            ])
             ->find($id);
 
         if (!$customer) {
@@ -587,6 +617,38 @@ class CustomerController extends Controller
         }
 
         $customerData = $customer->toArray();
+        
+        // Remove the _id fields from the response
+        unset($customerData['type_id']);
+        unset($customerData['city_id']);
+        unset($customerData['district_id']);
+        unset($customerData['stage_id']);
+        
+        // Add nested objects for type, city, district, and stage
+        $customerData['type'] = $customer->type ? [
+            'id' => $customer->type->id,
+            'arabic' => $customer->type->name,
+            'english' => $customer->type->name,
+        ] : null;
+        
+        $customerData['city'] = $customer->city ? [
+            'id' => $customer->city->id,
+            'arabic' => $customer->city->name_ar,
+            'english' => $customer->city->name_en,
+        ] : null;
+        
+        $customerData['district'] = $customer->district ? [
+            'id' => $customer->district->id,
+            'arabic' => $customer->district->name_ar,
+            'english' => $customer->district->name_en,
+        ] : null;
+        
+        $customerData['stage'] = $customer->stage ? [
+            'id' => $customer->stage->id,
+            'arabic' => $customer->stage->stage_name,
+            'english' => $customer->stage->stage_name,
+        ] : null;
+        
         if ($customer->responsibleEmployee) {
             $customerData['responsible_employee'] = [
                 'id' => $customer->responsibleEmployee->id,
@@ -663,6 +725,24 @@ class CustomerController extends Controller
             return $map[$t] ?? $val;
         };
 
+        $mapCustomerTypeToArabic = function ($type) {
+            if (is_null($type) || $type === '') return null;
+            $val = trim($type);
+            // If already contains Arabic characters, keep as-is
+            if (preg_match('/\p{Arabic}/u', $val)) {
+                return $val;
+            }
+            $t = mb_strtolower($val);
+            $map = [
+                'rent'   => 'إيجار',
+                'sale'   => 'بيع',
+                'rented' => 'مؤجر',
+                'sold'   => 'مباع',
+                'both'   => 'كلاهما',
+            ];
+            return $map[$t] ?? $val;
+        };
+
         // Fetch all inquiries
         $rows = DB::table('api_customer_inquiry')
             ->where('customer_id', $customer->id)
@@ -714,7 +794,7 @@ class CustomerController extends Controller
                     'name' => $customer->name,
                     'email' => $customer->email,
                     'phone_number' => $customer->phone_number,
-                    'type' => $customer->type ? [ 'id' => $customer->type->id, 'name' => $customer->type->name ] : null,
+                    'type' => $customer->type ? [ 'id' => $customer->type->id, 'name' => $mapCustomerTypeToArabic($customer->type->name) ] : null,
                     'stage' => $customer->stage ? [ 'id' => $customer->stage->id, 'name' => $customer->stage->stage_name ] : null,
                     'priority' => $customer->priorityRef ? [ 'id' => $customer->priorityRef->id, 'name' => $customer->priorityRef->name ] : null,
                     'procedure' => $customer->procedure ? [ 'id' => $customer->procedure->id, 'name' => $customer->procedure->procedure_name ] : null,
@@ -914,7 +994,7 @@ class CustomerController extends Controller
         };
         $catIds  = $toIntArray($request->input('interested_category_ids'));
         $propIds = $toIntArray($request->input('interested_property_ids'));
-        $sortBy  = $request->input('sort_by', 'created_at');
+        $sortBy  = $request->input('sort_by', 'updated_at');
         $sortDir = $request->input('sort_dir', 'desc');
         $qText   = $request->get('q');
 
@@ -1101,7 +1181,7 @@ class CustomerController extends Controller
                 'phone_number'          => $customer->phone_number,
                 'type' => $customer->type ? [
                     'id' => $customer->type->id,
-                    'name' => $customer->type->name,
+                    'name' => $mapCustomerTypeToArabic($customer->type->name),
                 ] : null,
 
                 'stage' => $customer->stage ? [

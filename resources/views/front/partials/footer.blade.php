@@ -1,4 +1,14 @@
 <!--====== Start Footer ======-->
+@php
+    $homeUrl = '/';
+    try {
+        if (Route::has('front.index')) {
+            $homeUrl = route('front.index');
+        }
+    } catch (\Exception $e) {
+        $homeUrl = '/';
+    }
+@endphp
 <footer class="footer-area bg-primary-light">
     @if ($bs->top_footer_section == 1)
         <div class="footer-top pt-120 pb-90">
@@ -7,7 +17,7 @@
                     <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
                         <div class="footer-widget" data-aos="fade-up" data-aos-delay="100">
                             <div class="navbar-brand">
-                                <a href="{{ route('front.index') }}">
+                                <a href="{{ $homeUrl }}">
                                     <img class="lazyload" data-src="{{ asset('assets/front/img/' . $bs->footer_logo) }}"
                                         alt="">
                                 </a>

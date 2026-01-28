@@ -26,11 +26,25 @@
                         <p class="text-muted mb-4">
                             {{ $keywords['Friendly_404_message'] ?? 'يبدو أن هذه الصفحة لم يتم العثور عليها. لا تقلق، دعنا نساعدك على العودة إلى المسار الصحيح!' }}
                         </p>
+                        @php
+                          $homeUrl = '/';
+                          $contactUrl = '#';
+                          try {
+                            if (Route::has('front.user.detail.view') && function_exists('getParam')) {
+                              $homeUrl = route('front.user.detail.view', getParam());
+                            }
+                            if (Route::has('front.user.contact') && function_exists('getParam')) {
+                              $contactUrl = route('front.user.contact', getParam());
+                            }
+                          } catch (\Exception $e) {
+                            // Fallback to default values
+                          }
+                        @endphp
                         <div class="d-flex flex-column flex-md-row gap-3 justify-content-center justify-content-lg-end">
-                            <a href="{{ route('front.user.detail.view', getParam()) }}" class="btn btn-warning btn-lg">
+                            <a href="{{ $homeUrl }}" class="btn btn-warning btn-lg">
                                 {{ $keywords['Back_Home'] ?? 'الذهاب إلى الصفحة الرئيسية' }}
                             </a>
-                            <a href="{{ route('front.user.contact', getParam()) }}" class="btn btn-outline-secondary btn-lg">
+                            <a href="{{ $contactUrl }}" class="btn btn-outline-secondary btn-lg">
                                 {{ $keywords['Contact_Us'] ?? 'تواصل مع الدعم' }}
                             </a>
                         </div>

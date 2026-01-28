@@ -16,10 +16,15 @@ class UpdateCategoryRequest extends FormRequest
      */
     public function rules(): array
     {
-        $id = $this->route('id');
+        $slug = $this->route('slug');
+        $category = \App\Models\Api\Category::where('slug', $slug)->first();
+
+        // If category doesn't exist, validation will fail in controller anyway
+        // But we need the ID for unique validation rule
+        $id = $category?->id;
 
         return [
-            'name' => 'required|string|max:255|unique:api_categories,name,' . $id,
+            'name' => 'required|string|max:255|unique:api_categories,name,' . ($id ?? ''),
         ];
     }
 }

@@ -1,8 +1,17 @@
 <div class="main-header">
     <!-- Logo Header -->
     <div class="logo-header" @if (request()->cookie('admin-theme') == 'dark') data-background-color="dark2" @endif>
-
-        <a href="{{ route('front.index') }}" class="logo" target="_blank">
+        @php
+            $homeUrl = '/';
+            try {
+                if (Route::has('front.index')) {
+                    $homeUrl = route('front.index');
+                }
+            } catch (\Exception $e) {
+                $homeUrl = '/';
+            }
+        @endphp
+        <a href="{{ $homeUrl }}" class="logo" target="_blank">
             <img src="{{ asset('assets/front/img/' . $bs->logo) }}" alt="navbar brand" class="navbar-brand">
         </a>
         <button class="navbar-toggler sidenav-toggler ml-auto" type="button" data-toggle="collapse"

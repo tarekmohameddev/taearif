@@ -25,7 +25,11 @@ return new class extends Migration
             $table->id();
             $table->string('tenant_id', 255)->index();
             $table->date('date')->index();
-            $table->json('data')->nullable(); // All metrics consolidated here
+            $table->unsignedBigInteger('total_page_views')->default(0);
+            $table->unsignedBigInteger('total_sessions')->default(0);
+            $table->unsignedBigInteger('total_users')->default(0);
+            $table->unsignedInteger('unique_pages')->default(0);
+            $table->json('data')->nullable(); // Additional metrics consolidated here
             $table->timestamps();
             
             // Unique constraint ensures one row per tenant per day
