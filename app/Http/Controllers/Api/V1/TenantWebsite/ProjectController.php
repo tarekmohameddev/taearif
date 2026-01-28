@@ -38,6 +38,14 @@ class ProjectController extends Controller
 			$query->where('featured', 1);
 		}
 
+		// Status filter (0 = قيد الإنشاء, 1 = منتهي, 2 = لم ينشأ بعد)
+		if ($request->filled('status')) {
+			$status = (int) $request->query('status');
+			if (in_array($status, [0, 1, 2])) {
+				$query->where('complete_status', $status);
+			}
+		}
+
 		// Sort by created_at DESC
 		$query->orderBy('created_at', 'desc');
 
