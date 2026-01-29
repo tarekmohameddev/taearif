@@ -17,6 +17,10 @@ class MediaController extends Controller
 
     public function store(StoreMediaRequest $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
         $file = $request->file('file');
         $prefix = 'api-media/' . date('Y/m');
         $result = $this->ossService->uploadFile($file, $prefix);
@@ -27,7 +31,7 @@ class MediaController extends Controller
         $type = str_starts_with((string) $mime, 'video/') ? 'video' : 'image';
 
         $media = Media::create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'disk' => $disk,
             'path' => $path,
             'type' => $type,
