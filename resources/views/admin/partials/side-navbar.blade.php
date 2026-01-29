@@ -383,6 +383,32 @@
                     </li>
                 @endif
 
+                {{-- Admin Articles --}}
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Admin Articles', $permissions)))
+                    <li class="nav-item
+                        @if (request()->is('admin/admin-articles*')) active @endif">
+                        <a data-toggle="collapse" href="#adminArticles">
+                            <i class="fas fa-newspaper"></i>
+                            <p>{{ __('Admin Articles') }}</p>
+                            <span class="caret"></span>
+                        </a>
+                        <div class="collapse @if (request()->is('admin/admin-articles*')) show @endif" id="adminArticles">
+                            <ul class="nav nav-collapse">
+                                <li class="@if (request()->routeIs('admin.articles.index') || request()->routeIs('admin.articles.create') || request()->routeIs('admin.articles.edit') || request()->routeIs('admin.articles.show')) active @endif">
+                                    <a href="{{ route('admin.articles.index') }}">
+                                        <span class="sub-item">{{ __('Articles') }}</span>
+                                    </a>
+                                </li>
+                                <li class="@if (request()->routeIs('admin.articles.categories.*')) active @endif">
+                                    <a href="{{ route('admin.articles.categories.index') }}">
+                                        <span class="sub-item">{{ __('Categories') }}</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                @endif
+
                 {{-- communication --}}
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Communication', $permissions)))
                     <li class="nav-item
@@ -413,7 +439,7 @@
                                     <a href="{{ route('admin.whatsapp-templates.index') }}">
                                         <span class="sub-item">قوالب الواتس اب</span>
                                     </a>
-                                </li>      
+                                </li>
 
                                 <li class="@if (request()->is('admin/communication/email')) active @endif">
                                     <a href="{{ route('admin.communication.email') }}">

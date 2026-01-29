@@ -292,6 +292,26 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::get('/blog/{langid}/getcats', 'Admin\BlogController@getcats')->name('blog.getcats');
     });
 
+    Route::group(['middleware' => 'checkpermission:Admin Articles'], function () {
+        // Admin Article Categories Routes (names prefixed by group -> admin.articles.categories.*)
+        Route::get('/admin-articles/categories', 'Admin\ArticleCategoryController@index')->name('articles.categories.index');
+        Route::get('/admin-articles/categories/create', 'Admin\ArticleCategoryController@create')->name('articles.categories.create');
+        Route::post('/admin-articles/categories', 'Admin\ArticleCategoryController@store')->name('articles.categories.store');
+        Route::get('/admin-articles/categories/{id}/edit', 'Admin\ArticleCategoryController@edit')->name('articles.categories.edit');
+        Route::post('/admin-articles/categories/{id}', 'Admin\ArticleCategoryController@update')->name('articles.categories.update');
+        Route::post('/admin-articles/categories/{id}/delete', 'Admin\ArticleCategoryController@destroy')->name('articles.categories.destroy');
+
+        // Admin Articles Routes (names prefixed by group -> admin.articles.*)
+        Route::get('/admin-articles', 'Admin\ArticleController@index')->name('articles.index');
+        Route::get('/admin-articles/create', 'Admin\ArticleController@create')->name('articles.create');
+        Route::post('/admin-articles', 'Admin\ArticleController@store')->name('articles.store');
+        Route::get('/admin-articles/{id}', 'Admin\ArticleController@show')->name('articles.show');
+        Route::get('/admin-articles/{id}/edit', 'Admin\ArticleController@edit')->name('articles.edit');
+        Route::post('/admin-articles/{id}', 'Admin\ArticleController@update')->name('articles.update');
+        Route::post('/admin-articles/{id}/delete', 'Admin\ArticleController@destroy')->name('articles.destroy');
+        Route::post('/admin-articles/upload-image', 'Admin\ArticleController@uploadImage')->name('articles.upload-image');
+    });
+
     Route::group(['middleware' => 'checkpermission:Sitemap'], function () {
         Route::get('/sitemap', 'Admin\SitemapController@index')->name('sitemap.index');
         Route::post('/sitemap/store', 'Admin\SitemapController@store')->name('sitemap.store');
@@ -561,27 +581,27 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::delete('/credit-management/pricing/{id}', 'Admin\CreditManagementController@deletePricing')->name('credit-management.pricing.delete');
         Route::get('/credit-management/packages/{id}/estimates', 'Admin\CreditManagementController@getPackageEstimates')->name('credit-management.packages.estimates');
         Route::post('/credit-management/sync-pricing', 'Admin\CreditManagementController@syncPricingFromPackages')->name('credit-management.sync-pricing');
-        
+
         // WhatsApp Add-ons Management
         Route::get('/whatsapp-addons', 'Admin\WhatsappAddonController@index')->name('whatsapp-addons.index');
         Route::get('/whatsapp-addons/{id}', 'Admin\WhatsappAddonController@show')->name('whatsapp-addons.show');
         Route::post('/whatsapp-addons/{id}/approve', 'Admin\WhatsappAddonController@approve')->name('whatsapp-addons.approve');
         Route::post('/whatsapp-addons/{id}/reject', 'Admin\WhatsappAddonController@reject')->name('whatsapp-addons.reject');
         Route::delete('/whatsapp-addons/{id}', 'Admin\WhatsappAddonController@destroy')->name('whatsapp-addons.destroy');
-        
+
         // WhatsApp Numbers Management
         Route::get('/whatsapp-numbers/{id}/edit', 'Admin\WhatsappNumberController@edit')->name('whatsapp-numbers.edit');
         Route::put('/whatsapp-numbers/{id}', 'Admin\WhatsappNumberController@update')->name('whatsapp-numbers.update');
         Route::post('/whatsapp-numbers/{id}/toggle-status', 'Admin\WhatsappNumberController@toggleStatus')->name('whatsapp-numbers.toggle-status');
         Route::delete('/whatsapp-numbers/{id}', 'Admin\WhatsappNumberController@destroy')->name('whatsapp-numbers.destroy');
-        
+
         // WhatsApp Addon Plans Management
         Route::get('/whatsapp-addon-plans', 'Admin\WhatsappAddonPlanController@index')->name('whatsapp-addon-plans.index');
         Route::post('/whatsapp-addon-plans', 'Admin\WhatsappAddonPlanController@store')->name('whatsapp-addon-plans.store');
         Route::put('/whatsapp-addon-plans/{id}', 'Admin\WhatsappAddonPlanController@update')->name('whatsapp-addon-plans.update');
         Route::delete('/whatsapp-addon-plans/{id}', 'Admin\WhatsappAddonPlanController@destroy')->name('whatsapp-addon-plans.destroy');
         Route::post('/whatsapp-addon-plans/{id}/toggle-status', 'Admin\WhatsappAddonPlanController@toggleStatus')->name('whatsapp-addon-plans.toggle-status');
-        
+
         // Employee Addon Plans Management
         Route::get('/employee-addon-plans', 'Admin\EmployeeAddonPlanController@index')->name('employee-addon-plans.index');
         Route::post('/employee-addon-plans', 'Admin\EmployeeAddonPlanController@store')->name('employee-addon-plans.store');

@@ -43,7 +43,7 @@ class RouteServiceProvider extends ServiceProvider
 
         // Admin routes are loaded in mapAdminRoutes() method
         // But we need to ensure they're loaded here too for proper registration
-        Route::middleware('web')
+        Route::middleware(['web', 'setlang'])
         ->namespace($this->namespace)
         ->prefix('admin')
         ->name('admin.')

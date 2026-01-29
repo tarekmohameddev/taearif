@@ -93,6 +93,10 @@
                 			<span class="selectgroup-button">{{__('Blog')}}</span>
                 		</label>
 
+                		<label class="selectgroup-item">
+                			<input type="checkbox" name="permissions[]" value="Admin Articles" class="selectgroup-input" @if(is_array($permissions) && in_array('Admin Articles', $permissions)) checked @endif>
+                			<span class="selectgroup-button">{{__('Admin Articles')}}</span>
+                		</label>
 
                 		<label class="selectgroup-item">
                 			<input type="checkbox" name="permissions[]" value="FAQ Management" class="selectgroup-input" @if(is_array($permissions) && in_array('FAQ Management', $permissions)) checked @endif>
