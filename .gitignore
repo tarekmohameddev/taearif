@@ -46,6 +46,7 @@ composer.lock
 # Allow JS, CSS, and font files under public/assets
 !/public/assets/**/*.js
 !/public/assets/**/*.css
+!/public/assets/admin/js/
 !/public/assets/**/*.woff
 !/public/assets/**/*.woff2
 !/public/assets/**/*.ttf
