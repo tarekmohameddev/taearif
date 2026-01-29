@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @if(in_array(app()->getLocale(), ['ar', 'fa', 'ur'])) dir="rtl" @endif>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @if(admin_is_rtl()) dir="rtl" @endif>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -8,24 +8,10 @@
 	<title>{{$bs->website_title}} - {{__('Admin')}}</title>
 	<link rel="icon" href="{{asset('assets/front/img/'.$bs->favicon)}}">
 	@includeif('admin.partials.styles')
-    @php
-        $selLang = App\Models\Language::where('code', request()->input('language'))->first();
-    @endphp
-    @if (!empty($selLang) && $selLang->rtl == 1)
-    <style>
-    #editModal form input,
-    #editModal form textarea,
-    #editModal form select {
-        direction: rtl;
-    }
-    #editModal form .note-editor.note-frame .note-editing-area .note-editable {
-        direction: rtl;
-        text-align: right;
-    }
-    </style>
-    @endif
-
-    @yield('styles')
+	@if(admin_is_rtl())
+	<link rel="stylesheet" href="{{ asset('assets/admin/css/admin-rtl.css') }}">
+	@endif
+	@yield('styles')
 
 </head>
 <body @if(request()->cookie('admin-theme') == 'dark') data-background-color="dark" @endif>
