@@ -22,7 +22,11 @@ class CategoriesController extends Controller
 
         // Include posts if requested
         if ($request->boolean('with_posts')) {
-            $userId = $request->user()->id;
+            $user = $request->user();
+            if (!$user) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+            $userId = $user->id;
 
             // Load posts filtered by user_id and optionally by status
             $query->with(['posts' => function ($q) use ($userId, $request) {
@@ -65,7 +69,11 @@ class CategoriesController extends Controller
 
         // Include posts if requested
         if ($request->boolean('with_posts')) {
-            $userId = $request->user()->id;
+            $user = $request->user();
+            if (!$user) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+            $userId = $user->id;
 
             // Load posts filtered by user_id and optionally by status
             $category->load(['posts' => function ($q) use ($userId, $request) {
@@ -108,7 +116,11 @@ class CategoriesController extends Controller
 
     public function posts(Request $request, string $slug): JsonResponse
     {
-        $userId = $request->user()->id;
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+        $userId = $user->id;
 
         $category = Category::where('slug', $slug)->firstOrFail();
 
