@@ -10,80 +10,25 @@
 <div class="sidebar sidebar-style-2" @if (request()->cookie('admin-theme') == 'dark') data-background-color="dark2" @endif>
     <div class="sidebar-wrapper scrollbar scrollbar-inner">
         <div class="sidebar-content">
-            <div class="user">
-                <div class="avatar-sm float-left mr-2">
-                    @if (!empty(Auth::guard('admin')->user()->image))
-                        <img src="{{ asset('assets/admin/img/propics/' . Auth::guard('admin')->user()->image) }}"
-                            alt="..." class="avatar-img rounded">
-                    @else
-                        <img src="{{ asset('assets/admin/img/propics/blank_user.jpg') }}" alt="..."
-                            class="avatar-img rounded">
-                    @endif
-                </div>
-                <div class="info">
-                    <a data-toggle="collapse" href="#collapseExample" aria-expanded="true">
-                        <span>
-                            {{ Auth::guard('admin')->user()->first_name }}
-                             @php
-                                    $filePath = base_path('version.json');
-                                    if (File::exists($filePath)) {
-                                        // Get the contents of the file
-                                        $content = File::get($filePath);
-                                        $versionData = json_decode($content, true);
-                                        $version = $versionData['version'] ?? null;
-                                    }
-                                @endphp
-                            <span class="user-level">
+            <ul class="nav nav-primary" style="margin-top: 10px !important;">
 
-                               @isset($version)
-                                {{ __('Version') }} -  {{$version}}
-                               @else
-                               {{ __('Admin') }}
-                               @endisset
+                <li class="nav-item px-3 mb-1">
+                    <form action="" class="sidebar-search-container">
+                        <div class="position-relative">
+                            <span class="position-absolute" style="{{ admin_is_rtl() ? 'right' : 'left' }}: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">
+                                <i data-lucide="search" style="width: 16px;"></i>
                             </span>
-                            <span class="caret"></span>
-                        </span>
-                    </a>
-                    <div class="clearfix"></div>
+                            <input name="term" type="text" class="form-control sidebar-search ltr w-100"
+                                value="" placeholder="{{ __('Search Menu') }}...">
+                        </div>
+                    </form>
+                </li>
 
-                    <div class="collapse in" id="collapseExample">
-                        <ul class="nav">
-                            <li>
-                                <a href="{{ route('admin.editProfile') }}">
-                                    <span class="link-collapse">{{ __('Edit Profile') }}</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('admin.changePass') }}">
-                                    <span class="link-collapse">{{ __('Change Password') }}</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('admin.logout') }}">
-                                    <span class="link-collapse">{{ __('Logout') }}</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <ul class="nav nav-primary">
-
-                <div class="row mb-2">
-                    <div class="col-12">
-                        <form action="">
-                            <div class="form-group py-0">
-                                <input name="term" type="text" class="form-control sidebar-search ltr"
-                                    value="" placeholder="{{ __('Search Menu Here') }}...">
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
+                {{-- ========== NO DROPDOWN (top) ========== --}}
                 {{-- Dashboard --}}
                 <li class="nav-item @if (request()->path() == 'admin/dashboard') active @endif">
                     <a href="{{ route('admin.dashboard') }}">
-                        <i class="la flaticon-paint-palette"></i>
+                        <i data-lucide="layout-dashboard"></i>
                         <p>{{ __('Dashboard') }}</p>
                     </a>
                 </li>
@@ -91,12 +36,61 @@
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Isthara Consultations', $permissions)))
                     <li class="nav-item @if (request()->path() == 'admin/isthara') active @endif">
                         <a href="{{ route('admin.isthara.index') }}">
-                            <i class="la flaticon-paint-palette"></i>
+                            <i data-lucide="calendar-check"></i>
                             <p>{{ __('Consultation Bookings') }}</p>
                         </a>
                     </li>
                 @endif
 
+                {{-- Themes Management --}}
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Packages', $permissions)))
+                    <li class="nav-item @if (request()->is('admin/themes*')) active @endif">
+                        <a href="{{ route('admin.themes.index') }}">
+                            <i data-lucide="palette"></i>
+                            <p>{{ __('Themes Management') }}</p>
+                        </a>
+                    </li>
+                @endif
+
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Payment Log', $permissions)))
+                    <li class="nav-item
+                    @if (request()->path() == 'admin/payment-log') active @endif">
+                        <a href="{{ route('admin.payment-log.index') }}">
+                            <i data-lucide="file-text"></i>
+                            <p>{{ __('Payment Log') }}</p>
+                        </a>
+                    </li>
+                @endif
+
+                @if (empty($admin->role) || (!empty($permissions) && in_array('app Request', $permissions)))
+                    <li class="nav-item @if (request()->path() == 'admin/app-request') active @endif">
+                        <a href="{{ route('admin.app.request.index') }}">
+                            <i data-lucide="smartphone"></i>
+                            <p>{{ __('App Requests') }}</p>
+                        </a>
+                    </li>
+                @endif
+
+                @if (empty($admin->role) || (!empty($permissions) && in_array('app Request', $permissions)))
+                    <li class="nav-item @if (request()->is('admin/marketplace-apps*')) active @endif">
+                        <a href="{{ route('admin.marketplace-apps.index') }}">
+                            <i data-lucide="shopping-bag"></i>
+                            <p>{{ __('Marketplace Apps') }}</p>
+                        </a>
+                    </li>
+                @endif
+
+                {{-- Settings / Sidebar Items --}}
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Settings', $permissions)))
+                    <li class="nav-item @if (request()->is('admin/sidebar-items*') || request()->is('admin/sidebar-item/*')) active @endif">
+                        <a href="{{ route('admin.sidebar-item.index') }}">
+                            <i data-lucide="menu"></i>
+                            <p>{{ __('Sidebar Items') }}</p>
+                        </a>
+                    </li>
+                @endif
+
+                {{-- ========== WITH DROPDOWN (bottom) ========== --}}
                 {{-- Package --}}
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Packages', $permissions)))
                     <li
@@ -108,9 +102,9 @@
                     @elseif(request()->path() == 'admin/coupon') active
                     @elseif(request()->routeIs('admin.coupon.edit')) active @endif">
                         <a data-toggle="collapse" href="#packageManagement">
-                            <i class="fas fa-receipt"></i>
+                            <i data-lucide="package"></i>
                             <p>{{ __('Package Management') }}</p>
-                            <span class="caret"></span>
+                            <i data-lucide="chevron-down" class="caret"></i>
                         </a>
                         <div class="collapse
                         @if (request()->path() == 'admin/package/settings') show
@@ -130,7 +124,7 @@
                                     class="@if (request()->path() == 'admin/coupon') active
                             @elseif(request()->routeIs('admin.coupon.edit')) active @endif">
                                     <a href="{{ route('admin.coupon.index') }}">
-                                        <span class="sub-item">Coupons</span>
+                                        <span class="sub-item">{{ __('Coupons') }}</span>
                                     </a>
                                 </li>
                                 <li class="@if (request()->path() == 'admin/package/features') active @endif">
@@ -150,76 +144,38 @@
                     </li>
                 @endif
 
-                {{-- Themes Management --}}
-                @if (empty($admin->role) || (!empty($permissions) && in_array('Packages', $permissions)))
-                    <li class="nav-item @if (request()->is('admin/themes*')) active @endif">
-                        <a href="{{ route('admin.themes.index') }}">
-                            <i class="fas fa-palette"></i>
-                            <p>إدارة السمات</p>
-                        </a>
-                    </li>
-                @endif
-
-                @if (empty($admin->role) || (!empty($permissions) && in_array('Payment Log', $permissions)))
-                    <li class="nav-item
-                    @if (request()->path() == 'admin/payment-log') active @endif">
-                        <a href="{{ route('admin.payment-log.index') }}">
-                            <i class="fas fa-file-invoice-dollar"></i>
-                            <p>{{ __('Payment Log') }}</p>
-                        </a>
-                    </li>
-                @endif
-
-                @if (empty($admin->role) || (!empty($permissions) && in_array('app Request', $permissions)))
-                    <li class="nav-item @if (request()->path() == 'admin/app-request') active @endif">
-                        <a href="{{ route('admin.app.request.index') }}">
-                            <i class="fab fa-app"></i>
-                            <p>{{ __('App Requests') }}</p>
-                        </a>
-                    </li>
-                @endif
-
-                @if (empty($admin->role) || (!empty($permissions) && in_array('app Request', $permissions)))
-                    <li class="nav-item @if (request()->is('admin/marketplace-apps*')) active @endif">
-                        <a href="{{ route('admin.marketplace-apps.index') }}">
-                            <i class="fas fa-store"></i>
-                            <p>تطبيقات المتجر</p>
-                        </a>
-                    </li>
-                @endif
-
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Credit Management', $permissions)))
-                    <li class="nav-item submenu @if (request()->is('admin/credit-transactions*') || request()->is('admin/credit-management*') || request()->is('admin/whatsapp-addons*') || request()->is('whatsapp-addons*') || request()->is('admin/whatsapp-addon-plans*') || request()->is('admin/employee-addon-plans*')) active @endif">
+                    <li class="nav-item @if (request()->is('admin/credit-transactions*') || request()->is('admin/credit-management*') || request()->is('admin/whatsapp-addons*') || request()->is('whatsapp-addons*') || request()->is('admin/whatsapp-addon-plans*') || request()->is('admin/employee-addon-plans*')) active @endif">
                         <a data-toggle="collapse" href="#creditManagement">
-                            <i class="fas fa-coins"></i>
+                            <i data-lucide="coins"></i>
                             <p>{{ __('Credit Management') }}</p>
-                            <span class="caret"></span>
+                            <i data-lucide="chevron-down" class="caret"></i>
                         </a>
                         <div class="collapse @if (request()->is('admin/credit-transactions*') || request()->is('admin/credit-management*') || request()->is('admin/whatsapp-addons*') || request()->is('whatsapp-addons*') || request()->is('admin/whatsapp-addon-plans*') || request()->is('admin/employee-addon-plans*')) show @endif" id="creditManagement">
                             <ul class="nav nav-collapse">
-                                <li class="nav-item @if (request()->path() == 'admin/credit-transactions') active @endif">
+                                <li class="@if (request()->path() == 'admin/credit-transactions') active @endif">
                                     <a href="{{ route('admin.credit.transactions.index') }}">
                                         <span class="sub-item">{{ __('Credit Transactions') }}</span>
                                     </a>
                                 </li>
-                                <li class="nav-item @if (request()->is('admin/credit-management*')) active @endif">
+                                <li class="@if (request()->is('admin/credit-management*')) active @endif">
                                     <a href="{{ route('admin.credit-management.index') }}">
                                         <span class="sub-item">{{ __('Credit Management') }}</span>
                                     </a>
                                 </li>
-                                <li class="nav-item @if (request()->is('admin/whatsapp-addons*') || request()->is('whatsapp-addons*')) active @endif">
+                                <li class="@if (request()->is('admin/whatsapp-addons*') || request()->is('whatsapp-addons*')) active @endif">
                                     <a href="{{ url('admin/whatsapp-addons') }}">
-                                        <span class="sub-item">إضافات واتساب</span>
+                                        <span class="sub-item">{{ __('WhatsApp Add-ons') }}</span>
                                     </a>
                                 </li>
-                                <li class="nav-item @if (request()->is('admin/whatsapp-addon-plans*')) active @endif">
+                                <li class="@if (request()->is('admin/whatsapp-addon-plans*')) active @endif">
                                     <a href="{{ route('admin.whatsapp-addon-plans.index') }}">
-                                        <span class="sub-item">خطط إضافات واتساب</span>
+                                        <span class="sub-item">{{ __('WhatsApp Addon Plans') }}</span>
                                     </a>
                                 </li>
-                                <li class="nav-item @if (request()->is('admin/employee-addon-plans*')) active @endif">
+                                <li class="@if (request()->is('admin/employee-addon-plans*')) active @endif">
                                     <a href="{{ route('admin.employee-addon-plans.index') }}">
-                                        <span class="sub-item">خطط إضافات الموظفين</span>
+                                        <span class="sub-item">{{ __('Employee Addon Plans') }}</span>
                                     </a>
                                 </li>
                             </ul>
@@ -237,9 +193,9 @@
                         @elseif(request()->is('admin/affiliates/payment-history/*')) active
                         @endif">
                         <a data-toggle="collapse" href="#affiliateManagement">
-                            <i class="la flaticon-users"></i>
+                            <i data-lucide="users"></i>
                             <p>{{ __('Affiliate Management') }}</p>
-                            <span class="caret"></span>
+                            <i data-lucide="chevron-down" class="caret"></i>
                         </a>
                         <div class="collapse
                             @if (request()->path() == 'admin/affiliates') show
@@ -260,30 +216,15 @@
                     </li>
                 @endif
 
-                {{-- User Management --}}
-
-                {{-- App Management --}}
-
-
-                {{-- Settings --}}
-                @if (empty($admin->role) || (!empty($permissions) && in_array('Settings', $permissions)))
-                    <li class="nav-item @if (request()->is('admin/sidebar-items*') || request()->is('admin/sidebar-item/*')) active @endif">
-                        <a href="{{ route('admin.sidebar-item.index') }}">
-                            <i class="fas fa-bars"></i>
-                            <p>عناصر الشريط الجانبي</p>
-                        </a>
-                    </li>
-                @endif
-
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Custom Domains', $permissions)))
                     <li
                         class="nav-item
                         @if (request()->path() == 'admin/domains') active
                         @elseif(request()->path() == 'admin/domain/texts') active @endif">
                         <a data-toggle="collapse" href="#customDomains">
-                            <i class="fas fa-link"></i>
+                            <i data-lucide="globe"></i>
                             <p>{{ __('Custom Domains') }}</p>
-                            <span class="caret"></span>
+                            <i data-lucide="chevron-down" class="caret"></i>
                         </a>
                         <div class="collapse
                             @if (request()->path() == 'admin/domains') show
@@ -324,9 +265,9 @@
                     <li class="nav-item
                         @if (request()->path() == 'admin/subdomains') active @endif">
                         <a data-toggle="collapse" href="#subDomains">
-                            <i class="fas fa-link"></i>
+                            <i data-lucide="link"></i>
                             <p>{{ __('Subdomains') }}</p>
-                            <span class="caret"></span>
+                            <i data-lucide="chevron-down" class="caret"></i>
                         </a>
                         <div class="collapse
                             @if (request()->path() == 'admin/subdomains') show @endif"
@@ -363,9 +304,9 @@
                     @elseif (request()->routeIs('admin.register.user.changePass')) active @endif">
 
                         <a data-toggle="collapse" href="#users">
-                            <i class="la flaticon-users"></i>
+                            <i data-lucide="users"></i>
                             <p>{{ __('User Management') }}</p>
-                            <span class="caret"></span>
+                            <i data-lucide="chevron-down" class="caret"></i>
                         </a>
                         <div class="collapse @if (request()->path() == 'admin/register/users') show
                     @elseif(request()->is('admin/register/user/details/*')) show
@@ -388,9 +329,9 @@
                     <li class="nav-item
                         @if (request()->is('admin/admin-articles*')) active @endif">
                         <a data-toggle="collapse" href="#adminArticles">
-                            <i class="fas fa-newspaper"></i>
+                            <i data-lucide="file-plus"></i>
                             <p>{{ __('Admin Articles') }}</p>
-                            <span class="caret"></span>
+                            <i data-lucide="chevron-down" class="caret"></i>
                         </a>
                         <div class="collapse @if (request()->is('admin/admin-articles*')) show @endif" id="adminArticles">
                             <ul class="nav nav-collapse">
@@ -418,9 +359,9 @@
                         @elseif(request()->is('admin/communication/whatsapp-templates*')) active
                         @elseif(request()->is('admin/communication/email-templates*')) active @endif">
                         <a data-toggle="collapse" href="#communication">
-                            <i class="fas fa-comments"></i>
-                            <p>التواصل</p>
-                            <span class="caret"></span>
+                            <i data-lucide="message-square"></i>
+                            <p>{{ __('Communication') }}</p>
+                            <i data-lucide="chevron-down" class="caret"></i>
                         </a>
                         <div class="collapse
                             @if (request()->is('admin/communication/whatsapp')) show
@@ -437,18 +378,18 @@
                                 </li>
                                 <li class="@if (request()->is('admin/communication/whatsapp-templates*')) active @endif">
                                     <a href="{{ route('admin.whatsapp-templates.index') }}">
-                                        <span class="sub-item">قوالب الواتس اب</span>
+                                        <span class="sub-item">{{ __('WhatsApp Templates') }}</span>
                                     </a>
                                 </li>
 
                                 <li class="@if (request()->is('admin/communication/email')) active @endif">
                                     <a href="{{ route('admin.communication.email') }}">
-                                        <span class="sub-item">البريد الإلكتروني</span>
+                                        <span class="sub-item">{{ __('Email') }}</span>
                                     </a>
                                 </li>
                                 <li class="@if (request()->is('admin/communication/email-templates*')) active @endif">
                                     <a href="{{ route('admin.email-templates.index') }}">
-                                        <span class="sub-item">قوالب البريد الإلكتروني</span>
+                                        <span class="sub-item">{{ __('Email Templates') }}</span>
                                     </a>
                                 </li>
                             </ul>
