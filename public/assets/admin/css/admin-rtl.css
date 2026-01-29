@@ -1,0 +1,446 @@
+/**
+ * Admin RTL (Right-to-Left) Redesign
+ * Scoped to [dir="rtl"] for seamless integration.
+ * Premium Arabic Typography and Component Alignment.
+ */
+
+/* ========== Global & Typography ========== */
+[dir="rtl"] {
+    direction: rtl;
+    text-align: right;
+}
+
+[dir="rtl"] body {
+    text-align: right;
+}
+
+/* ========== Bootstrap Utility Overrides ========== */
+[dir="rtl"] .float-left {
+    float: right !important;
+}
+
+[dir="rtl"] .float-right {
+    float: left !important;
+}
+
+[dir="rtl"] .text-left {
+    text-align: right !important;
+}
+
+[dir="rtl"] .text-right {
+    text-align: left !important;
+}
+
+/* Margins & Paddings using logical property logic where possible via manual overrides */
+[dir="rtl"] .ml-0,
+[dir="rtl"] .mx-0 {
+    margin-left: 0 !important;
+}
+
+[dir="rtl"] .ml-1 {
+    margin-left: 0 !important;
+    margin-right: 0.25rem !important;
+}
+
+[dir="rtl"] .ml-2 {
+    margin-left: 0 !important;
+    margin-right: 0.5rem !important;
+}
+
+[dir="rtl"] .ml-3 {
+    margin-left: 0 !important;
+    margin-right: 1rem !important;
+}
+
+[dir="rtl"] .ml-4 {
+    margin-left: 0 !important;
+    margin-right: 1.5rem !important;
+}
+
+[dir="rtl"] .ml-5 {
+    margin-left: 0 !important;
+    margin-right: 3rem !important;
+}
+
+[dir="rtl"] .ml-auto {
+    margin-left: 0 !important;
+    margin-right: auto !important;
+}
+
+[dir="rtl"] .mr-0,
+[dir="rtl"] .mx-0 {
+    margin-right: 0 !important;
+}
+
+[dir="rtl"] .mr-1 {
+    margin-right: 0 !important;
+    margin-left: 0.25rem !important;
+}
+
+[dir="rtl"] .mr-2 {
+    margin-right: 0 !important;
+    margin-left: 0.5rem !important;
+}
+
+[dir="rtl"] .mr-3 {
+    margin-right: 0 !important;
+    margin-left: 1rem !important;
+}
+
+[dir="rtl"] .mr-4 {
+    margin-right: 0 !important;
+    margin-left: 1.5rem !important;
+}
+
+[dir="rtl"] .mr-5 {
+    margin-right: 0 !important;
+    margin-left: 3rem !important;
+}
+
+[dir="rtl"] .mr-auto {
+    margin-right: 0 !important;
+    margin-left: auto !important;
+}
+
+[dir="rtl"] .pl-1 {
+    padding-left: 0 !important;
+    padding-right: 0.25rem !important;
+}
+
+[dir="rtl"] .pl-2 {
+    padding-left: 0 !important;
+    padding-right: 0.5rem !important;
+}
+
+[dir="rtl"] .pl-3 {
+    padding-left: 0 !important;
+    padding-right: 1rem !important;
+}
+
+[dir="rtl"] .pl-4 {
+    padding-left: 0 !important;
+    padding-right: 1.5rem !important;
+}
+
+[dir="rtl"] .pl-5 {
+    padding-left: 0 !important;
+    padding-right: 3rem !important;
+}
+
+[dir="rtl"] .pr-1 {
+    padding-right: 0 !important;
+    padding-left: 0.25rem !important;
+}
+
+[dir="rtl"] .pr-2 {
+    padding-right: 0 !important;
+    padding-left: 0.5rem !important;
+}
+
+[dir="rtl"] .pr-3 {
+    padding-right: 0 !important;
+    padding-left: 1rem !important;
+}
+
+[dir="rtl"] .pr-4 {
+    padding-right: 0 !important;
+    padding-left: 1.5rem !important;
+}
+
+[dir="rtl"] .pr-5 {
+    padding-right: 0 !important;
+    padding-left: 3rem !important;
+}
+
+/* ========== Layout: Sidebar & Main Panel ========== */
+
+/* Sidebar fixed to right */
+[dir="rtl"] .sidebar {
+    left: auto !important;
+    right: 0 !important;
+    border-right: none !important;
+    border-left: 1px solid var(--border-color) !important;
+    box-shadow: none !important;
+}
+
+[dir="rtl"] .main-panel {
+    float: left !important;
+    margin-right: var(--sidebar-width) !important;
+    margin-left: 0 !important;
+}
+
+/* Sidebar toggled state */
+[dir="rtl"] .sidebar-mini .main-panel {
+    margin-right: 75px !important;
+}
+
+/* Navigation items alignment */
+[dir="rtl"] .sidebar .nav>.nav-item a {
+    text-align: right;
+}
+
+[dir="rtl"] .sidebar .nav>.nav-item a i[data-lucide] {
+    margin-right: 0 !important;
+    margin-left: 12px !important;
+}
+
+[dir="rtl"] .sidebar .nav>.nav-item a .caret {
+    right: auto !important;
+    left: 15px !important;
+}
+
+[dir="rtl"] .sidebar .nav-collapse li a {
+    padding: 8px 45px 8px 12px !important;
+}
+
+/* User Info Section */
+[dir="rtl"] .sidebar .user .info .caret {
+    left: 0 !important;
+    right: auto !important;
+}
+
+/* ========== Header & Top Navbar ========== */
+[dir="rtl"] .main-header .logo-header {
+    float: right !important;
+}
+
+[dir="rtl"] .main-header .navbar-header {
+    padding-left: 0 !important;
+    padding-right: 20px !important;
+}
+
+[dir="rtl"] .navbar-nav {
+    padding-right: 0;
+}
+
+[dir="rtl"] .navbar-nav>li {
+    float: right;
+}
+
+[dir="rtl"] .navbar-expand-lg .navbar-nav .dropdown-menu {
+    right: auto;
+    left: 0;
+}
+
+/* Top search box */
+[dir="rtl"] .navbar-left {
+    float: right !important;
+}
+
+[dir="rtl"] .navbar-right {
+    float: left !important;
+}
+
+/* ========== Tables ========== */
+[dir="rtl"] .table th,
+[dir="rtl"] .table td {
+    text-align: right !important;
+}
+
+[dir="rtl"] .table thead th {
+    border-bottom: 2px solid #ebedf2 !important;
+}
+
+/* Action buttons in tables */
+[dir="rtl"] .table td .btn-group,
+[dir="rtl"] .table td .d-flex {
+    justify-content: flex-start !important;
+}
+
+/* ========== Forms ========== */
+[dir="rtl"] .form-group label,
+[dir="rtl"] .form-check-label {
+    width: 100%;
+    text-align: right !important;
+}
+
+[dir="rtl"] .form-group p,
+[dir="rtl"] .form-group .text-warning,
+[dir="rtl"] .form-group small {
+    text-align: right !important;
+}
+
+[dir="rtl"] .form-control {
+    text-align: right !important;
+}
+
+/* Input icons */
+[dir="rtl"] .input-icon .input-icon-addon {
+    right: 0;
+    left: auto;
+}
+
+[dir="rtl"] .input-icon .form-control {
+    padding-right: 2.5rem !important;
+    padding-left: 0.75rem !important;
+}
+
+/* Select2 RTL */
+[dir="rtl"] .select2-container--default .select2-selection--single .select2-selection__rendered {
+    text-align: right;
+    padding-right: 12px;
+    padding-left: 20px;
+}
+
+[dir="rtl"] .select2-selection__arrow {
+    left: 1px !important;
+    right: auto !important;
+}
+
+/* ========== Modals ========== */
+[dir="rtl"] .modal-header .close {
+    margin: -1rem -1rem -1rem auto !important;
+}
+
+[dir="rtl"] .modal-footer {
+    justify-content: flex-start !important;
+}
+
+[dir="rtl"] .modal-footer> :not(:first-child) {
+    margin-right: .25rem;
+    margin-left: 0;
+}
+
+/* ========== Page Header (content area) – start from right ========== */
+[dir="rtl"] .main-panel .page-header {
+    flex-direction: row-reverse !important;
+    justify-content: flex-end !important;
+    text-align: right !important;
+}
+
+[dir="rtl"] .main-panel .page-header .page-title {
+    text-align: right !important;
+    margin-left: 1rem !important;
+    margin-right: 0 !important;
+}
+
+[dir="rtl"] .main-panel .page-header .breadcrumbs {
+    flex-direction: row-reverse !important;
+    padding-right: 15px !important;
+    padding-left: 0 !important;
+    margin-right: 0 !important;
+    margin-left: 15px !important;
+    border-right: none !important;
+    border-left: 1px solid #eee !important;
+}
+
+[dir="rtl"] .breadcrumbs li a i {
+    margin-left: 5px;
+    margin-right: 0;
+}
+
+[dir="rtl"] .breadcrumbs li.separator i {
+    transform: rotate(180deg);
+}
+
+/* ========== Breadcrumbs (shared) ========== */
+[dir="rtl"] .breadcrumbs {
+    padding-right: 15px !important;
+    padding-left: 0 !important;
+    border-right: 1px solid #eee !important;
+    border-left: none !important;
+    margin-right: 15px !important;
+    margin-left: 0 !important;
+}
+
+[dir="rtl"] .breadcrumbs li {
+    display: flex;
+    align-items: center;
+}
+
+/* ========== Cards ========== */
+[dir="rtl"] .card,
+[dir="rtl"] .card-body {
+    text-align: right !important;
+}
+
+[dir="rtl"] .card-header {
+    text-align: right !important;
+}
+
+[dir="rtl"] .card-title {
+    float: right !important;
+    text-align: right !important;
+}
+
+[dir="rtl"] .card-tools {
+    float: left !important;
+}
+
+/* Card footer: primary action (Submit) on the right in RTL */
+[dir="rtl"] .card-footer {
+    display: flex !important;
+    flex-direction: row-reverse !important;
+    justify-content: flex-start !important;
+    text-align: right !important;
+}
+
+[dir="rtl"] .card-footer .btn + .btn {
+    margin-right: 0.5rem !important;
+    margin-left: 0 !important;
+}
+
+/* ========== Summernote RTL Fix ========== */
+[dir="rtl"] .note-editor .note-editable {
+    text-align: right !important;
+    direction: rtl !important;
+}
+
+[dir="rtl"] .note-toolbar .note-btn-group {
+    float: right !important;
+}
+
+/* ========== Dashboard Stats Card ========== */
+[dir="rtl"] .card-stats .icon-big {
+    text-align: center;
+}
+
+[dir="rtl"] .card-stats .numbers {
+    text-align: left !important;
+}
+
+/* ========== RTL specific fixes for Lucide icons used in buttons ========== */
+[dir="rtl"] .btn i[data-lucide="chevron-right"] {
+    transform: rotate(180deg);
+}
+
+[dir="rtl"] .btn i[data-lucide="chevron-left"] {
+    transform: rotate(180deg);
+}
+
+/* ========== Icon picker dropdown – start from right to left in RTL ========== */
+[dir="rtl"] .btn-group .icp-dd ~ .dropdown-menu,
+[dir="rtl"] .btn-group .dropdown-menu.iconpicker-container {
+    left: auto !important;
+    right: 0 !important;
+    direction: rtl !important;
+    text-align: right !important;
+}
+
+[dir="rtl"] .iconpicker-popover.popover {
+    left: auto !important;
+    right: 0 !important;
+    text-align: right !important;
+}
+
+[dir="rtl"] .dropdown-menu.iconpicker-container .iconpicker-popover.popover {
+    left: auto !important;
+    right: 0 !important;
+}
+
+/* Icon picker content: grid and search flow right-to-left */
+[dir="rtl"] .iconpicker-popover .popover-title,
+[dir="rtl"] .iconpicker-popover .popover-content {
+    text-align: right !important;
+    direction: rtl !important;
+}
+
+[dir="rtl"] .iconpicker .iconpicker-items {
+    padding: 12px 12px 0 0 !important;
+    direction: rtl !important;
+}
+
+[dir="rtl"] .iconpicker .iconpicker-item {
+    float: right !important;
+    margin: 0 0 12px 12px !important;
+}
