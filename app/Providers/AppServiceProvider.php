@@ -360,7 +360,8 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('adminLanguages', \App\Models\Language::orderBy('is_default', 'desc')->get());
                 $locale = app()->getLocale();
                 $lang = \App\Models\Language::where('code', $locale)->first();
-                $view->with('admin_rtl', $lang && (int) $lang->rtl === 1);
+                // RTL when language has rtl=1 or when locale is Arabic (admin is Arabic-first)
+                $view->with('admin_rtl', ($lang && (int) $lang->rtl === 1) || $locale === 'ar');
             });
 
             View::share('socials', $socials);

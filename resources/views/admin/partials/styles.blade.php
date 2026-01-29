@@ -968,6 +968,15 @@
         transition: all var(--transition-fast);
     }
 
+    /* Slightly taller text inputs for better readability */
+    input.form-control[type="text"],
+    input.form-control[type="email"],
+    input.form-control[type="password"],
+    input.form-control[type="search"],
+    input.form-control[type="url"] {
+        min-height: 46px !important;
+    }
+
     .form-control:focus {
         border-color: var(--primary-color) !important;
         box-shadow: 0 0 0 3px var(--primary-light) !important;
