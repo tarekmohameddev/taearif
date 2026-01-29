@@ -7,6 +7,10 @@ use App\Models\MaintenanceMode;
 use App\Policies\MaintenanceModePolicy;
 use App\Policies\ReservationPolicy;
 use App\Models\Reservation;
+use App\Models\AdminArticleCategory;
+use App\Models\AdminArticle;
+use App\Policies\AdminArticleCategoryPolicy;
+use App\Policies\AdminArticlePolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use App\Models\User;
@@ -21,6 +25,8 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         MaintenanceMode::class => MaintenanceModePolicy::class,
         Reservation::class => ReservationPolicy::class,
+        AdminArticleCategory::class => AdminArticleCategoryPolicy::class,
+        AdminArticle::class => AdminArticlePolicy::class,
     ];
 
     /**
@@ -40,14 +46,14 @@ class AuthServiceProvider extends ServiceProvider
             if (is_null($admin->role_id)) {
                 return true;
             }
-            
+
             // Check if admin has "Registered Users" permission
             if (!empty($admin->role) && !empty($admin->role->permissions)) {
                 $raw = $admin->role->permissions;
                 $permissions = is_array($raw) ? $raw : (json_decode($raw, true) ?: []);
                 return in_array('Registered Users', $permissions);
             }
-            
+
             return false;
         });
         Gate::before(function ($user, string $ability) {
@@ -55,12 +61,12 @@ class AuthServiceProvider extends ServiceProvider
             if (!$user instanceof User) {
                 return null; // Let other gates handle Admin models
             }
-            
+
             // Don't override maintenance mode policies - let them handle their own logic
             if (in_array($ability, ['control', 'disable', 'enable', 'toggle'])) {
                 return null; // Let the policy handle this
             }
-            
+
             // Treat both 'tenant' and 'user' as tenant owners
             $isTenant = method_exists($user, 'isTenant')
                 ? $user->isTenant()

@@ -68,6 +68,8 @@ use App\Http\Controllers\Api\{
     ApiContractController,
     RentalContractController,
     AppPaymentController,
+    AdminArticleController,
+    AdminArticleCategoryController,
 };
 
 use App\Http\Controllers\Api\V1\Logs\{
@@ -271,6 +273,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/blogs/{id}', [BlogController::class, 'show']); // Get a single blog post
     Route::get('/blog-categories', [BlogController::class, 'categories']); // Get blog categories
 });
+
+// Admin Articles Public API Routes (no auth required)
+Route::get('/articles', [AdminArticleController::class, 'index']);
+Route::get('/articles/{slug}', [AdminArticleController::class, 'show']);
+Route::get('/categories', [AdminArticleCategoryController::class, 'index']);
+Route::get('/categories/{slug}/articles', [AdminArticleCategoryController::class, 'articles']);
 
 // Authenticated Blog endpoints (user's own posts)
 Route::middleware('auth:sanctum')->group(function () {

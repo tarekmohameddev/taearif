@@ -41,12 +41,12 @@
                 <form action="{{ route('admin.credit-management.pricing.update', $pricing->id) }}" method="POST">
                     @csrf
                     @method('PUT')
-                    
+
                     <div class="row">
                         <div class="col-lg-6">
                             <div class="form-group">
                                 <label for="channel_type">Channel Type</label>
-                                <input type="text" class="form-control bg-light" 
+                                <input type="text" class="form-control bg-light"
                                        value="{{ $pricing->channel_type_name }}" readonly>
                                 <small class="text-muted">Channel type cannot be changed</small>
                             </div>
@@ -55,9 +55,9 @@
                         <div class="col-lg-3">
                             <div class="form-group">
                                 <label for="credits_per_message">Credits per Message <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control @error('credits_per_message') is-invalid @enderror" 
-                                       id="credits_per_message" name="credits_per_message" 
-                                       value="{{ old('credits_per_message', $pricing->credits_per_message) }}" 
+                                <input type="number" class="form-control @error('credits_per_message') is-invalid @enderror"
+                                       id="credits_per_message" name="credits_per_message"
+                                       value="{{ old('credits_per_message', $pricing->credits_per_message) }}"
                                        min="1" required>
                                 @error('credits_per_message')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -68,9 +68,9 @@
                         <div class="col-lg-3">
                             <div class="form-group">
                                 <label for="price_per_credit">Price per Credit <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control @error('price_per_credit') is-invalid @enderror" 
-                                       id="price_per_credit" name="price_per_credit" 
-                                       value="{{ old('price_per_credit', $pricing->price_per_credit) }}" 
+                                <input type="number" class="form-control @error('price_per_credit') is-invalid @enderror"
+                                       id="price_per_credit" name="price_per_credit"
+                                       value="{{ old('price_per_credit', $pricing->price_per_credit) }}"
                                        step="0.0001" min="0" required>
                                 @error('price_per_credit')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -83,7 +83,7 @@
                         <div class="col-lg-3">
                             <div class="form-group">
                                 <label for="currency">Currency <span class="text-danger">*</span></label>
-                                <select class="form-control @error('currency') is-invalid @enderror" 
+                                <select class="form-control @error('currency') is-invalid @enderror"
                                         id="currency" name="currency" required>
                                     <option value="SAR" selected>SAR</option>
                                 </select>
@@ -96,9 +96,9 @@
                         <div class="col-lg-3">
                             <div class="form-group">
                                 <label>Effective Price/Message (Calculated)</label>
-                                <input type="text" class="form-control bg-light" 
+                                <input type="text" class="form-control bg-light"
                                        id="effective_price_display"
-                                       value="{{ number_format($pricing->effective_price_per_message, 4) }} {{ $pricing->currency }}" 
+                                       value="{{ number_format($pricing->effective_price_per_message, 4) }} {{ $pricing->currency }}"
                                        readonly>
                             </div>
                         </div>
@@ -116,7 +116,7 @@
                         <div class="col-lg-3">
                             <div class="form-group">
                                 <label>Created</label>
-                                <input type="text" class="form-control bg-light" 
+                                <input type="text" class="form-control bg-light"
                                        value="{{ $pricing->created_at->format('Y-m-d H:i') }}" readonly>
                             </div>
                         </div>
@@ -136,7 +136,7 @@
                     </div>
 
                     <div class="form-group text-center mt-4">
-                        <a href="{{ route('admin.credit-management.index') }}" class="btn btn-secondary">Cancel</a>
+                        <a href="{{ route('admin.credit-management.index') }}" class="btn btn-secondary">{{ __('Cancel') }}</a>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Update Pricing
                         </button>
@@ -159,7 +159,7 @@
         const creditsPerMessage = parseFloat(document.getElementById('credits_per_message').value) || 0;
         const pricePerCredit = parseFloat(document.getElementById('price_per_credit').value) || 0;
         const currency = document.getElementById('currency').value;
-        
+
         const effectivePrice = (creditsPerMessage * pricePerCredit).toFixed(4);
         document.getElementById('effective_price_display').value = effectivePrice + ' ' + currency;
     }

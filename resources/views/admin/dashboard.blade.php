@@ -10,13 +10,14 @@
 
 @section('content')
   <div class="mt-2 mb-4">
-    <h2 class="text-green-500 pb-2">{{__('Welcome back')}}, {{Auth::guard('admin')->user()->first_name}} {{Auth::guard('admin')->user()->last_name}}!</h2>
+    <h2 class="font-weight-bold" style="color: var(--primary-color);">{{__('Welcome back')}}, {{Auth::guard('admin')->user()->first_name}} {{Auth::guard('admin')->user()->last_name}}!</h2>
+    <p class="text-muted">{{ __('Here is a summary of what is happening.') }}</p>
   </div>
 
   {{-- Flash Messages --}}
   @if(session('error'))
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-      <strong>Error!</strong> {{ session('error') }}
+      <strong>{{ __('Error') }}!</strong> {{ session('error') }}
       <button type="button" class="close" data-dismiss="alert" aria-label="Close">
         <span aria-hidden="true">&times;</span>
       </button>
@@ -25,7 +26,7 @@
 
   @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-      <strong>Success!</strong> {{ session('success') }}
+      <strong>{{ __('Success') }}!</strong> {{ session('success') }}
       <button type="button" class="close" data-dismiss="alert" aria-label="Close">
         <span aria-hidden="true">&times;</span>
       </button>
@@ -34,7 +35,7 @@
 
   @if(session('warning'))
     <div class="alert alert-warning alert-dismissible fade show" role="alert">
-      <strong>Warning!</strong> {{ session('warning') }}
+      <strong>{{ __('Warning') }}!</strong> {{ session('warning') }}
       <button type="button" class="close" data-dismiss="alert" aria-label="Close">
         <span aria-hidden="true">&times;</span>
       </button>
@@ -42,19 +43,19 @@
   @endif
   <div class="row">
 		@if (empty($admin->role) || (!empty($permissions) && in_array('Registered Users', $permissions)))
-		<div class="col-sm-4 col-md-2">
-			<a class="card card-stats card-info card-round" href="{{route('admin.register.user')}}">
+		<div class="col-sm-6 col-md-3 col-lg-2">
+			<a class="card card-stats card-round dashboard-stat-card" href="{{route('admin.register.user')}}">
 				<div class="card-body">
-					<div class="row">
-						<div class="col-5">
-							<div class="icon-big text-center">
-								<i class="fas fa-users"></i>
+					<div class="row align-items-center">
+						<div class="col-4">
+							<div class="icon-big text-center" style="background: rgba(79, 70, 229, 0.1); color: #4f46e5; border-radius: 12px; padding: 10px;">
+								<i data-lucide="users"></i>
 							</div>
 						</div>
-						<div class="col-7 col-stats">
+						<div class="col-8 col-stats">
 							<div class="numbers">
-								<p class="card-category">{{__('Registered Users')}}</p>
-								<h4 class="card-title">{{App\Models\User::count()}}</h4>
+								<p class="card-category text-muted mb-1">{{__('Registered Users')}}</p>
+								<h4 class="card-title font-weight-bold mb-0">{{App\Models\User::count()}}</h4>
 							</div>
 						</div>
 					</div>
@@ -65,19 +66,19 @@
 
 
 		@if (empty($admin->role) || (!empty($permissions) && in_array('Subscribers', $permissions)))
-		<div class="col-sm-4 col-md-2">
-			<a class="card card-stats card-warning card-round" href="{{route('admin.subscriber.index')}}">
+		<div class="col-sm-6 col-md-3 col-lg-2">
+			<a class="card card-stats card-round dashboard-stat-card" href="{{route('admin.subscriber.index')}}">
 				<div class="card-body ">
-					<div class="row">
-						<div class="col-5">
-							<div class="icon-big text-center">
-								<i class="fas fa-mail-bulk"></i>
+					<div class="row align-items-center">
+						<div class="col-4">
+							<div class="icon-big text-center" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-radius: 12px; padding: 10px;">
+								<i data-lucide="mail"></i>
 							</div>
 						</div>
-						<div class="col-7 col-stats">
+						<div class="col-8 col-stats">
 							<div class="numbers">
-								<p class="card-category">{{__('Subscribers')}}</p>
-								<h4 class="card-title">{{App\Models\Subscriber::count()}}</h4>
+								<p class="card-category text-muted mb-1">{{__('Subscribers')}}</p>
+								<h4 class="card-title font-weight-bold mb-0">{{App\Models\Subscriber::count()}}</h4>
 							</div>
 						</div>
 					</div>
@@ -88,19 +89,19 @@
 
 
 		@if (empty($admin->role) || (!empty($permissions) && in_array('Packages', $permissions)))
-		<div class="col-sm-4 col-md-2">
-			<a class="card card-stats card-success card-round" href="{{route('admin.package.index')}}">
+		<div class="col-sm-6 col-md-3 col-lg-2">
+			<a class="card card-stats card-round dashboard-stat-card" href="{{route('admin.package.index')}}">
 				<div class="card-body ">
-					<div class="row">
-						<div class="col-5">
-							<div class="icon-big text-center">
-								<i class="fas fa-list-ul"></i>
+					<div class="row align-items-center">
+						<div class="col-4">
+							<div class="icon-big text-center" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 12px; padding: 10px;">
+								<i data-lucide="package"></i>
 							</div>
 						</div>
-						<div class="col-7 col-stats">
+						<div class="col-8 col-stats">
 							<div class="numbers">
-								<p class="card-category">{{__('Packages')}}</p>
-								<h4 class="card-title">{{App\Models\Package::count()}}</h4>
+								<p class="card-category text-muted mb-1">{{__('Packages')}}</p>
+								<h4 class="card-title font-weight-bold mb-0">{{App\Models\Package::count()}}</h4>
 							</div>
 						</div>
 					</div>
@@ -111,19 +112,19 @@
 
 
 		@if (empty($admin->role) || (!empty($permissions) && in_array('Payment Log', $permissions)))
-		<div class="col-sm-4 col-md-2">
-			<a class="card card-stats card-danger card-round" href="{{route('admin.payment-log.index')}}">
+		<div class="col-sm-6 col-md-3 col-lg-2">
+			<a class="card card-stats card-round dashboard-stat-card" href="{{route('admin.payment-log.index')}}">
 				<div class="card-body ">
-					<div class="row">
-						<div class="col-5">
-							<div class="icon-big text-center">
-								<i class="fas fa-money-check-alt"></i>
+					<div class="row align-items-center">
+						<div class="col-4">
+							<div class="icon-big text-center" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 12px; padding: 10px;">
+								<i data-lucide="file-text"></i>
 							</div>
 						</div>
-						<div class="col-7 col-stats">
+						<div class="col-8 col-stats">
 							<div class="numbers">
-								<p class="card-category">{{__('Payment Logs')}}</p>
-								<h4 class="card-title">{{App\Models\Membership::count()}}</h4>
+								<p class="card-category text-muted mb-1">{{__('Payment Logs')}}</p>
+								<h4 class="card-title font-weight-bold mb-0">{{App\Models\Membership::count()}}</h4>
 							</div>
 						</div>
 					</div>
@@ -133,19 +134,19 @@
 		@endif
 
 		@if (empty($admin->role) || (!empty($permissions) && in_array('Admins Management', $permissions)))
-		<div class="col-sm-4 col-md-2">
-			<a class="card card-stats card-secondary card-round" href="{{route('admin.user.index')}}">
-				<div class="card-body ">
-					<div class="row">
-						<div class="col-5">
-							<div class="icon-big text-center">
-								<i class="fas fa-users-cog"></i>
+		<div class="col-sm-6 col-md-3 col-lg-2">
+			<a class="card card-stats card-round dashboard-stat-card" href="{{route('admin.user.index')}}">
+				<div class="card-body">
+					<div class="row align-items-center">
+						<div class="col-4">
+							<div class="icon-big text-center" style="background: rgba(100, 116, 139, 0.15); color: #64748b; border-radius: 12px; padding: 10px;">
+								<i data-lucide="shield-check"></i>
 							</div>
 						</div>
-						<div class="col-7 col-stats">
+						<div class="col-8 col-stats">
 							<div class="numbers">
-								<p class="card-category">{{__('Admins')}}</p>
-								<h4 class="card-title">{{App\Models\Admin::count()}}</h4>
+								<p class="card-category text-muted mb-1">{{__('Admins')}}</p>
+								<h4 class="card-title font-weight-bold mb-0">{{App\Models\Admin::count()}}</h4>
 							</div>
 						</div>
 					</div>
@@ -155,19 +156,19 @@
 		@endif
 
 		@if (empty($admin->role) || (!empty($permissions) && in_array('Blogs', $permissions)))
-		<div class="col-sm-4 col-md-2">
-			<a class="card card-stats card-primary card-round" href="{{route('admin.blog.index', ['language' => $defaultLang->code])}}">
-				<div class="card-body ">
-					<div class="row">
-						<div class="col-5">
-							<div class="icon-big text-center">
-								<i class="fas fa-users-cog"></i>
+		<div class="col-sm-6 col-md-3 col-lg-2">
+			<a class="card card-stats card-round dashboard-stat-card" href="{{route('admin.blog.index', ['language' => $defaultLang->code])}}">
+				<div class="card-body">
+					<div class="row align-items-center">
+						<div class="col-4">
+							<div class="icon-big text-center" style="background: rgba(14, 165, 233, 0.15); color: #0ea5e9; border-radius: 12px; padding: 10px;">
+								<i data-lucide="book-open"></i>
 							</div>
 						</div>
-						<div class="col-7 col-stats">
+						<div class="col-8 col-stats">
 							<div class="numbers">
-								<p class="card-category">{{__('Blog')}}</p>
-								<h4 class="card-title">{{$defaultLang->blogs()->count()}}</h4>
+								<p class="card-category text-muted mb-1">{{__('Blog')}}</p>
+								<h4 class="card-title font-weight-bold mb-0">{{$defaultLang->blogs()->count()}}</h4>
 							</div>
 						</div>
 					</div>
@@ -176,66 +177,69 @@
 		</div>
 		@endif
 
-  <!--  Customers total-->
-  <div class="col-sm-4 col-md-2">
-  <a class="card card-stats card-primary card-round" href="#">
-    <div class="card-body">
-      <div class="row">
-        <div class="col-5">
-          <div class="icon-big text-center"><i class="fas fa-user-friends"></i></div>
-        </div>
-        <div class="col-7 col-stats">
-          <div class="numbers">
-            <p class="card-category">{{ __('Customers') }}</p>
-            <h4 class="card-title">{{ number_format($customersTotal ?? 0) }}</h4>
-          </div>
-        </div>
-      </div>
-    </div>
-  </a>
-</div>
-<!--  -->
-<!--  Projects total-->
-<div class="col-sm-4 col-md-2">
-  <a class="card card-stats card-warning card-round" href="#">
-    <div class="card-body">
-      <div class="row">
-        <div class="col-5">
-          <div class="icon-big text-center"><i class="fas fa-city"></i></div>
-        </div>
-        <div class="col-7 col-stats">
-          <div class="numbers">
-            <p class="card-category">{{ __('Projects') }}</p>
-            <h4 class="card-title">{{ number_format($projectsTotal ?? 0) }}</h4>
-          </div>
-        </div>
-      </div>
-    </div>
-  </a>
-</div>
-<!--  -->
-<!--  -->
-@foreach(($propertiesPurposeTotals ?? collect()) as $row)
-  <div class="col-sm-4 col-md-2">
-    <div class="card card-stats card-secondary card-round">
-      <div class="card-body">
-        <div class="row">
-          <div class="col-5">
-            <div class="icon-big text-center"><i class="fas fa-exchange-alt"></i></div>
-          </div>
-          <div class="col-7 col-stats">
-            <div class="numbers">
-              <p class="card-category">
-                {{ __($row->purpose ?? 'Unknown') }}
-              </p>
-              <h4 class="card-title">{{ number_format($row->total) }}</h4>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-@endforeach
+		<!-- Customers total -->
+		<div class="col-sm-6 col-md-3 col-lg-2">
+			<a class="card card-stats card-round dashboard-stat-card" href="#">
+				<div class="card-body">
+					<div class="row align-items-center">
+						<div class="col-4">
+							<div class="icon-big text-center" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border-radius: 12px; padding: 10px;">
+								<i data-lucide="users-round"></i>
+							</div>
+						</div>
+						<div class="col-8 col-stats">
+							<div class="numbers">
+								<p class="card-category text-muted mb-1">{{ __('Customers') }}</p>
+								<h4 class="card-title font-weight-bold mb-0">{{ number_format($customersTotal ?? 0) }}</h4>
+							</div>
+						</div>
+					</div>
+				</div>
+			</a>
+		</div>
+
+		<!-- Projects total -->
+		<div class="col-sm-6 col-md-3 col-lg-2">
+			<a class="card card-stats card-round dashboard-stat-card" href="#">
+				<div class="card-body">
+					<div class="row align-items-center">
+						<div class="col-4">
+							<div class="icon-big text-center" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border-radius: 12px; padding: 10px;">
+								<i data-lucide="building-2"></i>
+							</div>
+						</div>
+						<div class="col-8 col-stats">
+							<div class="numbers">
+								<p class="card-category text-muted mb-1">{{ __('Projects') }}</p>
+								<h4 class="card-title font-weight-bold mb-0">{{ number_format($projectsTotal ?? 0) }}</h4>
+							</div>
+						</div>
+					</div>
+				</div>
+			</a>
+		</div>
+
+		@foreach(($propertiesPurposeTotals ?? collect()) as $row)
+		<div class="col-sm-6 col-md-3 col-lg-2">
+			<div class="card card-stats card-round dashboard-stat-card">
+				<div class="card-body">
+					<div class="row align-items-center">
+						<div class="col-4">
+							<div class="icon-big text-center" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border-radius: 12px; padding: 10px;">
+								<i data-lucide="bar-chart-2"></i>
+							</div>
+						</div>
+						<div class="col-8 col-stats">
+							<div class="numbers">
+								<p class="card-category text-muted mb-1">{{ __($row->purpose ?? 'Unknown') }}</p>
+								<h4 class="card-title font-weight-bold mb-0">{{ number_format($row->total) }}</h4>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		@endforeach
 
 <!--  -->
 

@@ -79,6 +79,7 @@ class Kernel extends HttpKernel
         'checkpermission' => \App\Http\Middleware\CheckPermission::class,
         'checkAdminApiPermission' => \App\Http\Middleware\CheckAdminApiPermission::class,
         'setlang' => \App\Http\Middleware\SetLangMiddleware::class,
+        'setadminlocale' => \App\Http\Middleware\SetAdminLocaleMiddleware::class,
         'checkstatus' => \App\Http\Middleware\CheckStatus::class,
         'userstatus' => \App\Http\Middleware\UserStatus::class,
         'checkUserPermission' => \App\Http\Middleware\CheckPermissionUser::class,

@@ -85,10 +85,7 @@
 
     $.notify(content, {
       type: 'success',
-      placement: {
-        from: 'top',
-        align: 'right'
-      },
+      placement: getNotifyPlacement(),
       showProgressbar: true,
       time: 1000,
       delay: 4000,
@@ -108,10 +105,7 @@
 
     $.notify(content, {
       type: 'warning',
-      placement: {
-        from: 'top',
-        align: 'right'
-      },
+      placement: getNotifyPlacement(),
       showProgressbar: true,
       time: 1000,
       delay: 4000,
@@ -130,10 +124,7 @@
 
     $.notify(content, {
       type: 'danger',
-      placement: {
-        from: 'top',
-        align: 'right'
-      },
+      placement: getNotifyPlacement(),
       showProgressbar: true,
       time: 1000,
       delay: 4000,
@@ -145,5 +136,29 @@
     // Initialize Lucide icons
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
+    }
+
+    // Global RTL support for plugins
+    $(document).ready(function() {
+        if ($('html').attr('dir') === 'rtl') {
+            // Select2 RTL support
+            if ($.fn.select2) {
+                $.fn.select2.defaults.set("theme", "bootstrap4");
+                $.fn.select2.defaults.set("dir", "rtl");
+            }
+
+            // Bootstrap Datepicker RTL support
+            if ($.fn.datepicker) {
+                $.fn.datepicker.defaults.rtl = true;
+            }
+        }
+    });
+
+    // Adjust notifications for RTL
+    function getNotifyPlacement() {
+        return {
+            from: 'top',
+            align: $('html').attr('dir') === 'rtl' ? 'left' : 'right'
+        };
     }
 </script>

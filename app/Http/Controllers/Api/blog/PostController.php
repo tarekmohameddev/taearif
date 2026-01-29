@@ -16,8 +16,12 @@ class PostController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $userId = $request->user()->id;
-        
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+        $userId = $user->id;
+
         $query = Post::where('user_id', $userId)
             ->with('thumbnail');
 
@@ -51,8 +55,12 @@ class PostController extends Controller
 
     public function show(Request $request, string $slug): JsonResponse
     {
-        $userId = $request->user()->id;
-        
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+        $userId = $user->id;
+
         $post = Post::where('user_id', $userId)
             ->where('slug', $slug)
             ->with(['categories', 'media', 'user', 'thumbnail'])
@@ -63,19 +71,23 @@ class PostController extends Controller
 
     public function store(StorePostRequest $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
         if ($request->has('thumbnail_id')) {
-            $this->validateThumbnailOwnership($request->input('thumbnail_id'), $request->user()->id);
+            $this->validateThumbnailOwnership($request->input('thumbnail_id'), $user->id);
         }
 
         $data = $request->only(['title', 'slug', 'content', 'excerpt', 'status', 'thumbnail_id']);
-        $data['user_id'] = $request->user()->id;
+        $data['user_id'] = $user->id;
         $data['status'] = $data['status'] ?? 'draft';
 
         $post = Post::create($data);
 
         $post->categories()->sync($request->input('category_ids', []));
 
-        $this->attachMedia($post, $request->input('media_ids', []), $request->user()->id);
+        $this->attachMedia($post, $request->input('media_ids', []), $user->id);
 
         $post->load(['categories', 'media', 'user', 'thumbnail']);
 
@@ -84,8 +96,12 @@ class PostController extends Controller
 
     public function update(UpdatePostRequest $request, string $slug): JsonResponse
     {
-        $userId = $request->user()->id;
-        
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+        $userId = $user->id;
+
         $post = Post::where('user_id', $userId)
             ->where('slug', $slug)
             ->firstOrFail();
@@ -115,8 +131,12 @@ class PostController extends Controller
 
     public function destroy(Request $request, string $slug): JsonResponse
     {
-        $userId = $request->user()->id;
-        
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+        $userId = $user->id;
+
         $post = Post::where('user_id', $userId)
             ->where('slug', $slug)
             ->firstOrFail();

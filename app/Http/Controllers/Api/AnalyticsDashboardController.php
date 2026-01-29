@@ -601,7 +601,7 @@ class AnalyticsDashboardController extends Controller
         $startTime = microtime(true);
         $cacheHit = false;
         $dataSource = 'database';
-        
+
         $tenantId = $this->tenantId($request);
 
         // Retrieve and validate time range from the request (default to 30 days if not provided)
@@ -734,7 +734,7 @@ class AnalyticsDashboardController extends Controller
                 'total_pages' => count($formattedPages ?? [])
             ]
         ];
-        
+
         // Only cache non-empty responses to prevent caching empty results
         // Empty responses are likely temporary (no data yet) and should be retried
         if (!empty($formattedPages)) {
@@ -1769,6 +1769,10 @@ class AnalyticsDashboardController extends Controller
      */
     public function gaFullDiagnostics(Request $request)
     {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
         // Allow custom tenant_id for testing, otherwise use authenticated user's tenant
         $tenantId = $request->input('tenant_id', $this->tenantId($request));
         $days = (int) $request->input('days', 30);
@@ -1792,7 +1796,7 @@ class AnalyticsDashboardController extends Controller
             $paths = array_map('trim', explode(',', $pathsInput));
         } else {
             // Default: show recent properties from database
-            $recentProperties = Property::where('user_id', $request->user()->id)
+            $recentProperties = Property::where('user_id', $user->id)
                 ->with('contents')
                 ->orderBy('id', 'desc')
                 ->limit(3)

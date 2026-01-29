@@ -37,8 +37,8 @@
                             @if (!empty(request()->input('type')))
                                 <input type="hidden" name="type" value="{{request()->input('type')}}">
                             @endif
-                            <input name="username" class="min-w-250 form-control mr-2" type="text" placeholder="Search by Username" value="{{request()->input('username')}}">
-                            <input name="domain" class="min-w-250 form-control" type="text" placeholder="Search by Domain" value="{{request()->input('domain')}}">
+                            <input name="username" class="min-w-250 form-control mr-2" type="text" placeholder="{{ __('Search by Username') }}" value="{{request()->input('username')}}">
+                            <input name="domain" class="min-w-250 form-control" type="text" placeholder="{{ __('Search by Domain') }}" value="{{request()->input('domain')}}">
                             <button type="submit" class="d-none"></button>
                         </form>
                     </div>
@@ -159,7 +159,7 @@
                                 @csrf
                                 <div class="form-group">
                                     <label for="">{{__('Email Address')}} **</label>
-                                    <input id="inemail" type="text" class="form-control" name="email" value="" placeholder="Enter email">
+                                    <input id="inemail" type="text" class="form-control" name="email" value="" placeholder="{{ __('Enter Your Email') }}">
                                     <p id="eerremail" class="mb-0 text-danger em"></p>
                                 </div>
                                 <div class="form-group">

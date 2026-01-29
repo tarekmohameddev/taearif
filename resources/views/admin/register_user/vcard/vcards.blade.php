@@ -33,7 +33,7 @@
                         <div class="col-lg-6 mt-2 mt-lg-0">
                             <form action="{{ url()->full() }}" class="float-lg-right float-none">
                                 <input type="text" name="term" class="form-control min-w-250"
-                                    value="{{ request()->input('term') }}" placeholder="Search by Vcard Name / Email">
+                                    value="{{ request()->input('term') }}" placeholder="{{ __('Search by Vcard Name / Email') }}">
                             </form>
                         </div>
                     </div>

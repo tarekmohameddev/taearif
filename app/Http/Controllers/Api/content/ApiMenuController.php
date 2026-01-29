@@ -17,7 +17,11 @@ class ApiMenuController extends Controller
      */
     public function index(Request $request)
     {
-        $user_id = $request->user()->id;
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+        $user_id = $user->id;
 
         $whatsappApp = \App\Models\Api\ApiApp::where('name', 'واتس اب')->first(); // Make sure this name is accurate
         $hasWhatsappInstalled = false;
@@ -208,8 +212,11 @@ class ApiMenuController extends Controller
             ], 422);
         }
 
-        $user_id = $request->user();
-        $user_id = $user_id->id;
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+        $user_id = $user->id;
 
         $menuItemsData = $request->menuItems;
         $settingsData = $request->settings;

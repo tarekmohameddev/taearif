@@ -17,6 +17,16 @@ class SetLangMiddleware
      */
      public function handle($request, Closure $next)
      {
+         // Allow ?language=ar (or any valid code) to set locale for this request and session (e.g. admin panel)
+         $langCode = $request->query('language');
+         if ($langCode) {
+             $lang = Language::where('code', $langCode)->first();
+             if ($lang) {
+                 session()->put('lang', $lang->code);
+                 app()->setLocale($lang->code);
+                 return $next($request);
+             }
+         }
 
          if (session()->has('lang')) {
            app()->setLocale(session()->get('lang'));
@@ -26,7 +36,6 @@ class SetLangMiddleware
              app()->setLocale($defaultLang->code);
            }
          }
-
 
          return $next($request);
      }

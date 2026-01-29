@@ -37,7 +37,7 @@
                                     <input type="hidden" name="type" value="{{request()->input('type')}}">
                                 @endif
                                 <input name="username" class="min-w-250 form-control mr-2" type="text"
-                                       placeholder="Search by Username" value="{{request()->input('username')}}">
+                                       placeholder="{{ __('Search by Username') }}" value="{{request()->input('username')}}">
                                 <button type="submit" class="d-none"></button>
                             </form>
                         </div>

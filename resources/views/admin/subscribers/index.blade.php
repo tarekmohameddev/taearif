@@ -35,7 +35,7 @@
                 <div class="col-6 mt-2 mt-lg-0">
                     <button class="btn btn-danger float-right btn-sm ml-2 mt-1 d-none bulk-delete" data-href="{{route('admin.subscriber.bulk.delete')}}"><i class="flaticon-interface-5"></i> {{__('Delete')}}</button>
                     <form action="{{url()->full()}}" class="float-right">
-                        <input type="text" name="term" class="form-control" value="{{request()->input('term')}}" placeholder="Search by Email">
+                        <input type="text" name="term" class="form-control" value="{{request()->input('term')}}" placeholder="{{ __('Search by Email') }}">
                     </form>
                 </div>
             </div>
