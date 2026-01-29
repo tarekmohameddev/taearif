@@ -22,7 +22,7 @@
       </li>
    </ul>
 
-   <a href="{{route('admin.register.user')}}" class="btn-md btn btn-primary ml-auto">Back</a>
+   <a href="{{route('admin.register.user')}}" class="btn-md btn btn-primary ml-auto">{{ __('Back') }}</a>
 </div>
 <div class="row">
     <div class="col-md-3">
@@ -357,8 +357,8 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <a href="{{ route('admin.payment-log.download-invoice', $membership->id) }}" 
-                                               class="btn btn-sm btn-primary" 
+                                            <a href="{{ route('admin.payment-log.download-invoice', $membership->id) }}"
+                                               class="btn btn-sm btn-primary"
                                                target="_blank"
                                                title="Download Invoice">
                                                 <i class="fas fa-download"></i> Download

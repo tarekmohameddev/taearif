@@ -158,7 +158,7 @@
                                     <button class="btn btn-outline-primary btn-sm btn-edit-package" data-package-id="{{ $package->id }}" title="Edit Package">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button class="btn btn-outline-{{ $package->is_active ? 'warning' : 'success' }} btn-sm btn-toggle-package" 
+                                    <button class="btn btn-outline-{{ $package->is_active ? 'warning' : 'success' }} btn-sm btn-toggle-package"
                                             data-package-id="{{ $package->id }}" title="{{ $package->is_active ? 'Deactivate' : 'Activate' }}">
                                         <i class="fas fa-{{ $package->is_active ? 'pause' : 'play' }}"></i>
                                     </button>
@@ -199,7 +199,7 @@
                                         </div>
                                     </div>
                             </div>
-                            
+
                             <!-- Package Estimates -->
                             @if($package->supports_marketing_channels && isset($packageEstimates[$package->id]) && count($packageEstimates[$package->id]) > 0)
                             <div class="mt-4 pt-3 border-top">
@@ -309,7 +309,7 @@
                                     <button class="btn btn-outline-primary btn-sm btn-edit-pricing" data-pricing-id="{{ $pricing->id }}" title="Edit Pricing">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button class="btn btn-outline-{{ $pricing->is_active ? 'warning' : 'success' }} btn-sm btn-toggle-pricing" 
+                                    <button class="btn btn-outline-{{ $pricing->is_active ? 'warning' : 'success' }} btn-sm btn-toggle-pricing"
                                             data-pricing-id="{{ $pricing->id }}" title="{{ $pricing->is_active ? 'Deactivate' : 'Activate' }}">
                                         <i class="fas fa-{{ $pricing->is_active ? 'pause' : 'play' }}"></i>
                                     </button>
@@ -422,7 +422,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Cancel') }}</button>
                     <button type="submit" class="btn btn-primary">Create Package</button>
                 </div>
             </form>
@@ -476,7 +476,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Cancel') }}</button>
                     <button type="submit" class="btn btn-success">Create Pricing</button>
                 </div>
             </form>
@@ -502,7 +502,7 @@
         transition: none !important;
         border: 1px solid !important;
     }
-    
+
     /* Flat Success Badge */
     .badge.bg-success,
     span.badge.bg-success {
@@ -511,14 +511,14 @@
         border-color: #27ae60 !important;
         box-shadow: none !important;
     }
-    
+
     .badge.bg-success:hover,
     span.badge.bg-success:hover {
         background: #27ae60 !important;
         box-shadow: none !important;
         transform: none !important;
     }
-    
+
     /* Flat Secondary Badge */
     .badge.bg-secondary,
     span.badge.bg-secondary {
@@ -527,14 +527,14 @@
         border-color: #6b7280 !important;
         box-shadow: none !important;
     }
-    
+
     .badge.bg-secondary:hover,
     span.badge.bg-secondary:hover {
         background: #6b7280 !important;
         box-shadow: none !important;
         transform: none !important;
     }
-    
+
     /* Flat Info Badge */
     .badge.bg-info,
     span.badge.bg-info {
@@ -543,39 +543,39 @@
         border-color: #2980b9 !important;
         box-shadow: none !important;
     }
-    
+
     .badge.bg-info:hover,
     span.badge.bg-info:hover {
         background: #2980b9 !important;
         box-shadow: none !important;
         transform: none !important;
     }
-    
+
     /* Flat Color Palette */
     .bg-gradient-primary {
         background: #3498db !important;
     }
-    
+
     .bg-gradient-success {
         background: #2ecc71 !important;
     }
-    
+
     .bg-gradient-light {
         background: #ecf0f1 !important;
     }
-    
+
     .bg-gradient-orange {
         background: #f39c12 !important;
     }
-    
+
     .bg-gradient-red {
         background: #e74c3c !important;
     }
-    
+
     .bg-gradient-turquoise {
         background: #1abc9c !important;
     }
-    
+
     /* Flat items with subtle hover effects */
     .package-item, .pricing-item {
         transition: all 0.2s ease !important;
@@ -583,99 +583,99 @@
         box-shadow: none !important;
         cursor: pointer;
     }
-    
+
     .package-item:hover, .pricing-item:hover {
         transform: none !important;
         box-shadow: none !important;
         border-left-color: #3498db !important;
         background-color: #f8f9fa !important;
     }
-    
+
     /* Statistics cards hover */
     .stat-card {
         transition: all 0.3s ease !important;
         cursor: pointer;
     }
-    
+
     .stat-card:hover {
         transform: translateY(-5px) !important;
         opacity: 0.9;
     }
-    
+
     .stat-icon {
         position: relative;
     }
-    
+
     /* Remove all rounded corners */
     .rounded-lg {
         border-radius: 0 !important;
     }
-    
+
     .rounded-3 {
         border-radius: 0 !important;
     }
-    
+
     .rounded {
         border-radius: 0 !important;
     }
-    
+
     .rounded-circle {
         border-radius: 0 !important;
     }
-    
+
     /* Remove all shadows */
     .shadow,
     .shadow-sm,
     .shadow-lg {
         box-shadow: none !important;
     }
-    
+
     /* Flat cards */
     .card {
         border-radius: 0 !important;
         box-shadow: none !important;
     }
-    
+
     /* Flat buttons */
     .btn {
         border-radius: 0 !important;
         box-shadow: none !important;
     }
-    
+
     .btn:hover {
         box-shadow: none !important;
     }
-    
+
     .btn-rounded-pill {
         border-radius: 50px !important;
     }
-    
+
     .card {
         transition: all 0.3s ease;
     }
-    
+
     .card:hover {
         transform: translateY(-1px);
     }
-    
+
     .badge {
         font-weight: 500;
         letter-spacing: 0.5px;
     }
-    
+
     .form-control:focus, .form-select:focus {
         outline: 2px solid #007bff;
         box-shadow: none !important;
         border-color: #007bff;
     }
-    
+
     .text-gradient {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
-    
+
     .icon-wrapper {
         width: 40px;
         height: 40px;
@@ -685,11 +685,11 @@
         border-radius: 50%;
         background: rgba(255, 255, 255, 0.2);
     }
-    
+
     .pagination-wrapper .pagination {
         margin: 0;
     }
-    
+
     .pagination-wrapper .page-link {
         border-radius: 50%;
         margin: 0 2px;
@@ -697,26 +697,26 @@
         color: #667eea;
         font-weight: 500;
     }
-    
+
     .pagination-wrapper .page-item.active .page-link {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-color: transparent;
     }
-    
+
     .pagination-wrapper .page-link:hover {
         background-color: #f8f9fa;
         color: #667eea;
     }
-    
+
     @media (max-width: 768px) {
         .package-item, .pricing-item {
             margin-bottom: 1rem;
         }
-        
+
         .btn-group-vertical {
             margin-top: 1rem;
         }
-        
+
         .d-flex.justify-content-between {
             flex-direction: column;
             align-items: flex-start !important;
@@ -730,7 +730,7 @@
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Dashboard JavaScript loaded');
-    
+
     // Check if CSRF token exists
     const csrfToken = document.querySelector('meta[name="csrf-token"]');
     if (!csrfToken) {
@@ -738,7 +738,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.log('CSRF token found:', csrfToken.getAttribute('content').substring(0, 10) + '...');
     }
-    
+
     // Event delegation for package buttons
     document.body.addEventListener('click', function(e) {
         // Edit package
@@ -747,35 +747,35 @@ document.addEventListener('DOMContentLoaded', function() {
             const packageId = btn.getAttribute('data-package-id');
             editPackage(packageId);
         }
-        
+
         // Toggle package status
         if (e.target.closest('.btn-toggle-package')) {
             const btn = e.target.closest('.btn-toggle-package');
             const packageId = btn.getAttribute('data-package-id');
             togglePackageStatus(packageId);
         }
-        
+
         // Delete package
         if (e.target.closest('.btn-delete-package')) {
             const btn = e.target.closest('.btn-delete-package');
             const packageId = btn.getAttribute('data-package-id');
             deletePackage(packageId);
         }
-        
+
         // Edit pricing
         if (e.target.closest('.btn-edit-pricing')) {
             const btn = e.target.closest('.btn-edit-pricing');
             const pricingId = btn.getAttribute('data-pricing-id');
             editPricing(pricingId);
         }
-        
+
         // Toggle pricing status
         if (e.target.closest('.btn-toggle-pricing')) {
             const btn = e.target.closest('.btn-toggle-pricing');
             const pricingId = btn.getAttribute('data-pricing-id');
             togglePricingStatus(pricingId);
         }
-        
+
         // Delete pricing
         if (e.target.closest('.btn-delete-pricing')) {
             const btn = e.target.closest('.btn-delete-pricing');
@@ -783,20 +783,20 @@ document.addEventListener('DOMContentLoaded', function() {
             deletePricing(pricingId);
         }
     });
-    
+
     console.log('Event delegation set up for all buttons');
 });
 
 // AJAX functions for quick actions
 function togglePackageStatus(packageId) {
     console.log('Toggle package status:', packageId);
-    
+
     const csrfToken = document.querySelector('meta[name="csrf-token"]');
     if (!csrfToken) {
         alert('Security token not found. Please refresh the page.');
         return;
     }
-    
+
     fetch('{{ url("admin/credit-management/packages") }}/' + packageId + '/toggle-status', {
         method: 'POST',
         headers: {
@@ -826,13 +826,13 @@ function togglePackageStatus(packageId) {
 
 function togglePricingStatus(pricingId) {
     console.log('Toggle pricing status:', pricingId);
-    
+
     const csrfToken = document.querySelector('meta[name="csrf-token"]');
     if (!csrfToken) {
         alert('Security token not found. Please refresh the page.');
         return;
     }
-    
+
     fetch('{{ url("admin/credit-management/pricing") }}/' + pricingId + '/toggle-status', {
         method: 'POST',
         headers: {
@@ -863,13 +863,13 @@ function togglePricingStatus(pricingId) {
 function deletePackage(packageId) {
     if (confirm('Are you sure you want to delete this package?')) {
         console.log('Delete package:', packageId);
-        
+
         const csrfToken = document.querySelector('meta[name="csrf-token"]');
         if (!csrfToken) {
             alert('Security token not found. Please refresh the page.');
             return;
         }
-        
+
         fetch('{{ url("admin/credit-management/packages") }}/' + packageId, {
             method: 'DELETE',
             headers: {
@@ -900,13 +900,13 @@ function deletePackage(packageId) {
 function deletePricing(pricingId) {
     if (confirm('Are you sure you want to delete this channel pricing?')) {
         console.log('Delete pricing:', pricingId);
-        
+
         const csrfToken = document.querySelector('meta[name="csrf-token"]');
         if (!csrfToken) {
             alert('Security token not found. Please refresh the page.');
             return;
         }
-        
+
         fetch('{{ url("admin/credit-management/pricing") }}/' + pricingId, {
             method: 'DELETE',
             headers: {
@@ -941,16 +941,16 @@ document.addEventListener('DOMContentLoaded', function() {
         createPackageForm.addEventListener('submit', function(e) {
             e.preventDefault();
             console.log('Create package form submitted');
-            
+
             const formData = new FormData(this);
             const data = Object.fromEntries(formData);
-            
+
             const csrfToken = document.querySelector('meta[name="csrf-token"]');
             if (!csrfToken) {
                 alert('Security token not found. Please refresh the page.');
                 return;
             }
-            
+
             fetch('{{ route("admin.credit-management.packages.quick-create") }}', {
                 method: 'POST',
                 headers: {
@@ -987,21 +987,21 @@ document.addEventListener('DOMContentLoaded', function() {
         createPricingForm.addEventListener('submit', function(e) {
             e.preventDefault();
             console.log('Create pricing form submitted');
-            
+
             const formData = new FormData(this);
             const data = Object.fromEntries(formData);
-            
+
             // Sanitize channel type: convert to lowercase and replace spaces with underscores
             if (data.channel_type) {
                 data.channel_type = data.channel_type.toLowerCase().trim().replace(/\s+/g, '_');
             }
-            
+
             const csrfToken = document.querySelector('meta[name="csrf-token"]');
             if (!csrfToken) {
                 alert('Security token not found. Please refresh the page.');
                 return;
             }
-            
+
             fetch('{{ route("admin.credit-management.pricing.quick-create") }}', {
                 method: 'POST',
                 headers: {
@@ -1078,25 +1078,25 @@ document.addEventListener('DOMContentLoaded', function() {
             applyFilters();
         });
     }
-    
+
     console.log('All event listeners attached');
 });
 
 function applyFilters() {
     const params = new URLSearchParams();
-    
+
     const packageStatus = document.getElementById('packageStatusFilter').value;
     const marketingSupport = document.getElementById('marketingSupportFilter').value;
     const packageSearch = document.getElementById('packageSearch').value;
     const channelStatus = document.getElementById('channelStatusFilter').value;
     const channelSearch = document.getElementById('channelSearch').value;
-    
+
     if (packageStatus) params.append('package_status', packageStatus);
     if (marketingSupport) params.append('marketing_support', marketingSupport);
     if (packageSearch) params.append('package_search', packageSearch);
     if (channelStatus) params.append('channel_status', channelStatus);
     if (channelSearch) params.append('channel_search', channelSearch);
-    
+
     window.location.href = '{{ route("admin.credit-management.index") }}?' + params.toString();
 }
 

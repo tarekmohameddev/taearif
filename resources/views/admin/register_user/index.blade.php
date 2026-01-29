@@ -30,7 +30,7 @@
 {{-- Flash Messages --}}
 @if(session('error'))
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <strong>Error!</strong> {{ session('error') }}
+        <strong>{{ __('Error') }}!</strong> {{ session('error') }}
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
             <span aria-hidden="true">&times;</span>
         </button>
@@ -39,7 +39,7 @@
 
 @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <strong>Success!</strong> {{ session('success') }}
+        <strong>{{ __('Success') }}!</strong> {{ session('success') }}
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
             <span aria-hidden="true">&times;</span>
         </button>
@@ -48,7 +48,7 @@
 
 @if(session('warning'))
     <div class="alert alert-warning alert-dismissible fade show" role="alert">
-        <strong>Warning!</strong> {{ session('warning') }}
+        <strong>{{ __('Warning') }}!</strong> {{ session('warning') }}
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
             <span aria-hidden="true">&times;</span>
         </button>
@@ -112,7 +112,7 @@
                             {{ __('Delete') }}</button>
                         <button class="btn btn-primary float-lg-right float-none btn-sm ml-2 mt-1" data-toggle="modal" data-target="#addUserModal"><i class="fas fa-plus"></i> {{ __('Add User') }}</button>
                         <form action="{{ url()->full() }}" class="float-lg-right float-none">
-                            <input type="text" name="term" class="form-control min-w-250" value="{{ request()->input('term') }}" placeholder="Search by Username / Email">
+                            <input type="text" name="term" class="form-control min-w-250" value="{{ request()->input('term') }}" placeholder="{{ __('Search by Username') }} / {{ __('email') }}">
                         </form>
                     </div>
 
