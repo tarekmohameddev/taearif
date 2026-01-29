@@ -139,13 +139,13 @@ class AppServiceProvider extends ServiceProvider
                         ]
                     );
                     Config::set('app.timezone', $userBs->timezoneinfo->timezone ?? '');
-                    
+
                     // Language logic usually depends on the USER'S preference or the TENANT'S defaults.
-                    // For now, let's assume we keep the authenticated user's language preference context, 
+                    // For now, let's assume we keep the authenticated user's language preference context,
                     // but we might need to look up available languages from the TENANT.
-                    
+
                     // However, languages are often tied to the "site" (Tenant).
-                    $userId = $settingsUserId; 
+                    $userId = $settingsUserId;
 
                     if (request()->has('language')) {
                         $lang = UserLanguage::where([
@@ -232,11 +232,11 @@ class AppServiceProvider extends ServiceProvider
                 // However, 'user-front' usually implies the PUBLIC facing site of a tenant.
                 // In that case, $user (from getUser()) is usually the Tenant.
                 // But let's verify if $user can be an employee here.
-                // getUser() likely retrieves the owner of the domain/username. 
+                // getUser() likely retrieves the owner of the domain/username.
                 // IF it returns an employee, we should map to tenant.
-                
+
                 $settingsUserId = $user->tenantOwnerId();
-                
+
                 $userSeo = SEO::where('language_id', $userCurrentLang->id)->where('user_id', $settingsUserId)->first();
                 $userLangs = UserLanguage::where('user_id', $settingsUserId)->get();
                 $userShopSetting = UserShopSetting::where('user_id', $settingsUserId)->first();
@@ -314,7 +314,7 @@ class AppServiceProvider extends ServiceProvider
                         ['start_date', '<=', \Carbon\Carbon::now()->format('Y-m-d')],
                         ['expire_date', '>=', \Carbon\Carbon::now()->format('Y-m-d')]
                     ])->orderBy('id', 'DESC')->first();
-                    
+
                     // Show custom copyright ONLY if user has active membership AND it's not free package
                     if ($currentMembership && $currentMembership->package_id != 16) {
                         $showTaearifBranding = false; // Show custom copyright for non-free active packages
@@ -355,6 +355,11 @@ class AppServiceProvider extends ServiceProvider
             });
 
             View::share('langs', $langs);
+
+            View::composer(['admin.layout', 'admin.partials.top-navbar'], function ($view) {
+                $view->with('adminLanguages', \App\Models\Language::orderBy('is_default', 'desc')->get());
+            });
+
             View::share('socials', $socials);
         }
 
@@ -373,7 +378,7 @@ class AppServiceProvider extends ServiceProvider
                 // Use tenantOwnerId() to get the correct User ID (Tenant or Employee's Tenant)
                 $settingsUserId = $user->tenantOwnerId();
                 $steps = UserStep::firstOrCreate(['user_id' => $settingsUserId]);
-                
+
                 $progressSteps = [
                     ['url' => 'user.basic_settings.general-settings','title' => 'تحديث الشعار الخاص بك', 'completed' => (bool) $steps->logo_uploaded],
                     ['url' => 'user.basic_settings.general-settings','title' => 'تحديث ايقونة الموقع', 'completed' => (bool) $steps->favicon_uploaded],
@@ -395,12 +400,12 @@ class AppServiceProvider extends ServiceProvider
         // View composer for customer dropdown - provides variables to all views that include it
         View::composer('user-front.realestate.partials.customer-dropdown', function ($view) {
             $user = getUser();
-            
+
             if ($user) {
                 // If $user is an employee, use the Tenant ID
                 $settingsUserId = $user->tenantOwnerId();
                 $dropdownSettings = CustomerDropdownSetting::where('user_id', $settingsUserId)->first();
-                
+
                 $view->with([
                     'customer_dropdown_visible' => $dropdownSettings ? $dropdownSettings->is_visible : true,
                     'customer_dropdown_show_login' => $dropdownSettings ? $dropdownSettings->show_login : true,
@@ -434,7 +439,7 @@ class AppServiceProvider extends ServiceProvider
         // In production, uses info level; in development, uses warning level
         $logLevel = app()->environment('production') ? 'info' : 'warning';
         $slowQueryThreshold = (int) config('app.slow_query_threshold', 100); // Configurable threshold
-        
+
         DB::listen(function ($query) use ($logLevel, $slowQueryThreshold) {
             if ($query->time > $slowQueryThreshold) {
                 $logData = [
@@ -443,14 +448,14 @@ class AppServiceProvider extends ServiceProvider
                     'bindings' => $query->bindings,
                     'connection' => $query->connectionName ?? 'default',
                 ];
-                
+
                 // In production, don't log full SQL for security, just summary
                 if (app()->environment('production')) {
                     // Extract table name and operation type for production logging
                     $sql = $query->sql;
                     $operation = 'unknown';
                     $table = 'unknown';
-                    
+
                     if (preg_match('/^\s*(SELECT|INSERT|UPDATE|DELETE)\s+/i', $sql, $matches)) {
                         $operation = strtoupper(trim($matches[1]));
                     }
@@ -461,7 +466,7 @@ class AppServiceProvider extends ServiceProvider
                     } elseif (preg_match('/UPDATE\s+`?(\w+)`?/i', $sql, $matches)) {
                         $table = $matches[1];
                     }
-                    
+
                     $logData = [
                         'time' => $query->time . 'ms',
                         'operation' => $operation,
@@ -469,7 +474,7 @@ class AppServiceProvider extends ServiceProvider
                         'connection' => $query->connectionName ?? 'default',
                     ];
                 }
-                
+
                 if ($logLevel === 'info') {
                     Log::info('Slow Query Detected', $logData);
                 } else {
@@ -477,7 +482,7 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
         });
-        
+
         // Track cache hit rates for important caches (property filter options)
         // Monitor cache effectiveness by logging cache misses
         // NOTE: Counter tracking disabled for file driver to prevent disk space leak
@@ -485,7 +490,7 @@ class AppServiceProvider extends ServiceProvider
         Cache::macro('rememberWithTracking', function ($key, $ttl, $callback) {
             $store = Cache::getStore();
             $isFileDriver = $store instanceof \Illuminate\Cache\FileStore;
-            
+
             if (Cache::has($key)) {
                 // Cache hit - increment hit counter (only if not file driver)
                 if (!$isFileDriver) {
@@ -503,7 +508,7 @@ class AppServiceProvider extends ServiceProvider
                     // Set TTL on counter key to prevent indefinite growth (7 days)
                     Cache::put($missKey, $currentValue, now()->addDays(7));
                 }
-                
+
                 // Log cache miss for important caches
                 if (strpos($key, 'property_filter_options') !== false) {
                     Log::info('Property filter options cache miss', [
@@ -511,7 +516,7 @@ class AppServiceProvider extends ServiceProvider
                         'ttl' => $ttl
                     ]);
                 }
-                
+
                 $value = $callback();
                 Cache::put($key, $value, $ttl);
                 return $value;
