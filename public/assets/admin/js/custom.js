@@ -276,8 +276,11 @@ $(function ($) {
     } else {
       theight = 200;
     }
+    var docDir = document.documentElement.getAttribute('dir');
+    var summernoteDirection = docDir === 'rtl' ? 'rtl' : 'ltr';
     $('.summernote').eq(i).summernote({
       height: theight,
+      direction: summernoteDirection,
       dialogsInBody: true,
       dialogsFade: false,
       toolbar: [
