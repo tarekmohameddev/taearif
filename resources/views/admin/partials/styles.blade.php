@@ -995,6 +995,23 @@
     }
 
     /* ========================================
+       SELECT DROPDOWNS - HEIGHT FOR TEXT (admin)
+    ======================================== */
+    .main-panel select.form-control,
+    .main-panel select.form-control-sm,
+    div.dataTables_wrapper div.dataTables_length select {
+        min-height: 34px !important;
+        height: auto !important;
+        line-height: 1.4 !important;
+        padding: 0.35rem 0.75rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+    }
+    div.dataTables_wrapper div.dataTables_length select {
+        min-width: 70px;
+    }
+
+    /* ========================================
        BUTTONS - MODERN
     ======================================== */
     .btn {

@@ -1,7 +1,7 @@
 @extends('admin.layout')
 @section('content')
 <div class="page-header">
-   <h4 class="page-title">Customer Details</h4>
+   <h4 class="page-title">{{ __('Customer Details') }}</h4>
    <ul class="breadcrumbs">
       <li class="nav-home">
          <a href="{{route('admin.dashboard')}}">

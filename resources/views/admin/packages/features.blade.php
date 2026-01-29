@@ -86,12 +86,12 @@
                                         <label class="selectgroup-item">
                                             <input type="checkbox" name="features[]" value="projectLimit"
                                                 class="selectgroup-input" @if (is_array($features) && in_array('projectLimit', $features)) checked @endif>
-                                            <span class="selectgroup-button">{{ __('projectLimit') }}</span>
+                                            <span class="selectgroup-button">{{ __('Project Limit') }}</span>
                                         </label>
                                         <label class="selectgroup-item">
                                             <input type="checkbox" name="features[]" value="real_estate_Limit"
                                                 class="selectgroup-input" @if (is_array($features) && in_array('real_estate_Limit', $features)) checked @endif>
-                                            <span class="selectgroup-button">{{ __('real_estate_Limit') }}</span>
+                                            <span class="selectgroup-button">{{ __('Real Estate Limit') }}</span>
                                         </label>
                                         <label class="selectgroup-item">
                                             <input type="checkbox" name="features[]" value="QR Builder"

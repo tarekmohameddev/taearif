@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="page-header">
-        <h4 class="page-title">Coupons</h4>
+        <h4 class="page-title">{{ __('Coupons') }}</h4>
         <ul class="breadcrumbs">
             <li class="nav-home">
                 <a href="{{ route('admin.dashboard') }}">
@@ -13,13 +13,13 @@
                 <i class="flaticon-right-arrow"></i>
             </li>
             <li class="nav-item">
-                <a href="#">Packages</a>
+                <a href="#">{{ __('Packages') }}</a>
             </li>
             <li class="separator">
                 <i class="flaticon-right-arrow"></i>
             </li>
             <li class="nav-item">
-                <a href="#">Coupons</a>
+                <a href="#">{{ __('Coupons') }}</a>
             </li>
         </ul>
     </div>
@@ -30,11 +30,11 @@
                 <div class="card-header">
                     <div class="row">
                         <div class="col-lg-8">
-                            <div class="card-title d-inline-block">Coupons</div>
+                            <div class="card-title d-inline-block">{{ __('Coupons') }}</div>
                         </div>
                         <div class="col-lg-4 mt-2 mt-lg-0">
                             <a href="#" class="btn btn-primary float-right btn-sm" data-toggle="modal"
-                                data-target="#createModal"><i class="fas fa-plus"></i> Add New</a>
+                                data-target="#createModal"><i class="fas fa-plus"></i> {{ __('Add New') }}</a>
                         </div>
                     </div>
                 </div>
@@ -42,18 +42,18 @@
                     <div class="row">
                         <div class="col-lg-12">
                             @if (count($coupons) == 0)
-                                <h3 class="text-center">NO COUPON FOUND</h3>
+                                <h3 class="text-center">{{ __('NO COUPON FOUND') }}</h3>
                             @else
                                 <div class="table-responsive">
                                     <table class="table table-striped mt-3">
                                         <thead>
                                             <tr>
-                                                <th scope="col">Name</th>
-                                                <th scope="col">Code</th>
-                                                <th scope="col">Discount</th>
-                                                <th scope="col">Status</th>
-                                                <th scope="col">Created</th>
-                                                <th scope="col">Actions</th>
+                                                <th scope="col">{{ __('Name') }}</th>
+                                                <th scope="col">{{ __('Code') }}</th>
+                                                <th scope="col">{{ __('Discount') }}</th>
+                                                <th scope="col">{{ __('Status') }}</th>
+                                                <th scope="col">{{ __('Created') }}</th>
+                                                <th scope="col">{{ __('Actions') }}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -71,12 +71,12 @@
                                                             $diff = $end->diffInDays($now);
                                                         @endphp
                                                         @if ($start->greaterThan($now))
-                                                            <h3 class="d-inline-block badge badge-warning">Pending</h3>
+                                                            <h3 class="d-inline-block badge badge-warning">{{ __('Pending') }}</h3>
                                                         @else
                                                             @if ($now->lessThan($end))
-                                                                <h3 class="d-inline-block badge badge-success">Active</h3>
+                                                                <h3 class="d-inline-block badge badge-success">{{ __('Active') }}</h3>
                                                             @else
-                                                                <h3 class="d-inline-block badge badge-danger">Expired</h3>
+                                                                <h3 class="d-inline-block badge badge-danger">{{ __('Expired') }}</h3>
                                                             @endif
                                                         @endif
                                                     </td>
@@ -85,18 +85,18 @@
                                                             $created = Carbon\Carbon::parse($coupon->created_at);
                                                             $diff = $created->diffInDays($now);
                                                         @endphp
-                                                        {{ $created->subDays($diff)->diffForHumans() }}
+                                                        {{ $created->subDays($diff)->locale(app()->getLocale())->diffForHumans() }}
                                                     </td>
                                                     <td>
                                                         <a href="{{ route('admin.coupon.edit', $coupon->id) }}"
-                                                            class="btn btn-warning btn-sm">Edit</a>
+                                                            class="btn btn-warning btn-sm">{{ __('Edit') }}</a>
                                                         <form class="d-inline-block deleteform"
                                                             action="{{ route('admin.coupon.delete') }}" method="POST">
                                                             @csrf
                                                             <input type="hidden" name="coupon_id"
                                                                 value="{{ $coupon->id }}">
                                                             <button type="submit"
-                                                                class="btn btn-danger btn-sm deletebtn">Delete</button>
+                                                                class="btn btn-danger btn-sm deletebtn">{{ __('Delete') }}</button>
                                                         </form>
                                                     </td>
                                                 </tr>
@@ -126,7 +126,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLongTitle">Add Coupon</h5>
+                    <h5 class="modal-title" id="exampleModalLongTitle">{{ __('Add Coupon') }}</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -138,15 +138,15 @@
                         <div class="row no-gutters">
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label for="">Name **</label>
-                                    <input type="text" class="form-control" name="name" value="" placeholder="Enter name">
+                                    <label for="">{{ __('Name') }} **</label>
+                                    <input type="text" class="form-control" name="name" value="" placeholder="{{ __('Enter name') }}">
                                     <p id="errname" class="mb-0 text-danger em"></p>
                                 </div>
                             </div>
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label for="">Code **</label>
-                                    <input type="text" class="form-control" name="code" value="" placeholder="Enter code">
+                                    <label for="">{{ __('Code') }} **</label>
+                                    <input type="text" class="form-control" name="code" value="" placeholder="{{ __('Enter code') }}">
                                     <p id="errcode" class="mb-0 text-danger em"></p>
                                 </div>
                             </div>
@@ -154,19 +154,19 @@
                         <div class="row no-gutters">
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label for="">Type **</label>
+                                    <label for="">{{ __('Type') }} **</label>
                                     <select name="type" id="" class="form-control">
-                                        <option value="percentage">Percentage</option>
-                                        <option value="fixed">Fixed</option>
+                                        <option value="percentage">{{ __('Percentage') }}</option>
+                                        <option value="fixed">{{ __('Fixed') }}</option>
                                     </select>
                                     <p id="errtype" class="mb-0 text-danger em"></p>
                                 </div>
                             </div>
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label for="">Value **</label>
+                                    <label for="">{{ __('Value') }} **</label>
                                     <input type="text" class="form-control" name="value" value=""
-                                        placeholder="Enter value" autocomplete="off">
+                                        placeholder="{{ __('Enter value') }}" autocomplete="off">
                                     <p id="errvalue" class="mb-0 text-danger em"></p>
                                 </div>
                             </div>
@@ -175,17 +175,17 @@
                         <div class="row no-gutters">
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label for="">Start Date **</label>
+                                    <label for="">{{ __('Start Date') }} **</label>
                                     <input type="text" class="form-control datepicker" name="start_date" value=""
-                                        placeholder="Enter start date" autocomplete="off">
+                                        placeholder="{{ __('Enter start date') }}" autocomplete="off">
                                     <p id="errstart_date" class="mb-0 text-danger em"></p>
                                 </div>
                             </div>
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label for="">End Date **</label>
+                                    <label for="">{{ __('End Date') }} **</label>
                                     <input type="text" class="form-control datepicker" name="end_date" value=""
-                                        placeholder="Enter end date" autocomplete="off">
+                                        placeholder="{{ __('Enter end date') }}" autocomplete="off">
                                     <p id="errend_date" class="mb-0 text-danger em"></p>
                                 </div>
                             </div>
@@ -194,35 +194,35 @@
                         <div class="row no-gutters">
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label for="">Packages</label>
+                                    <label for="">{{ __('Packages') }}</label>
                                     <select class="select2" name="packages[]" multiple="multiple"
-                                        placeholder="Select Packages">
+                                        placeholder="{{ __('Select Packages') }}">
                                         @foreach ($packages as $package)
                                             <option value="{{ $package->id }}">
                                                 {{ $package->title }} {{ ucfirst($package->term) }}
                                             </option>
                                         @endforeach
                                     </select>
-                                    <p class="mb-0 text-warning">This coupon can be applied to these packages</p>
-                                    <p class="mb-0 text-warning">Leave this field blank for all packages</p>
+                                    <p class="mb-0 text-warning">{{ __('This coupon can be applied to these packages') }}</p>
+                                    <p class="mb-0 text-warning">{{ __('Leave this field blank for all packages') }}</p>
                                     <p id="errpackages" class="mb-0 text-danger em"></p>
                                 </div>
                             </div>
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label for="">Maximum uses limit **</label>
+                                    <label for="">{{ __('Maximum uses limit') }} **</label>
                                     <input type="number" class="form-control " name="maximum_uses_limit" value=""
-                                        placeholder="Enter Maximum uses limit" autocomplete="off">
+                                        placeholder="{{ __('Enter Maximum uses limit') }}" autocomplete="off">
                                     <p id="errmaximum_uses_limit" class="mb-0 text-danger em"></p>
-                                    <p class="mb-0 text-warning">Enter 999999 to make it unlimited</p>
+                                    <p class="mb-0 text-warning">{{ __('Enter 999999 to make it unlimited') }}</p>
                                 </div>
                             </div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button id="submitBtn" type="button" class="btn btn-primary">Submit</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
+                    <button id="submitBtn" type="button" class="btn btn-primary">{{ __('Submit') }}</button>
                 </div>
             </div>
         </div>

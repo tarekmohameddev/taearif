@@ -95,7 +95,7 @@
                                                     </td>
                                                     <td>{{ strlen($package->title) > 30 ? mb_substr($package->title, 0, 30, 'UTF-8') . '...' : $package->title }}
                                                         <span
-                                                            class="badge text-capitalize @if ($package->term == 'monthly') badge-info @elseif($package->term == 'yearly')badge-primary @else badge-success @endif nav-pills ">{{ $package->term }}</span>
+                                                            class="badge text-capitalize @if ($package->term == 'monthly') badge-info @elseif($package->term == 'yearly')badge-primary @else badge-success @endif nav-pills ">{{ __($package->term) }}</span>
                                                     </td>
                                                     <td>
                                                         @if ($package->price == 0)
@@ -158,7 +158,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="exampleModalLongTitle">{{ __('Add Package') }}</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="{{ __('Close') }}">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -169,7 +169,7 @@
                         @csrf
                         <div class="form-group">
                             <label for="">{{ __('Icon') }} **</label>
-                            <div class="btn-group d-block">
+                            <div class="btn-group d-inline-flex">
                                 <button type="button" class="btn btn-primary iconpicker-component"><i
                                         class="fa fa-fw fa-heart"></i></button>
                                 <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle"
@@ -337,7 +337,7 @@
                                 <label class="selectgroup-item">
                                     <input type="checkbox" name="features[]" value="employees_Limit"
                                         class="selectgroup-input">
-                                    <span class="selectgroup-button">حد الموظفين</span>
+                                    <span class="selectgroup-button">{{ __('Employees limit') }}</span>
                                 </label>
                             </div>
                         </div>
@@ -364,7 +364,7 @@
                             <label for="">{{ __('Number of vcards') }} * </label>
                             <input type="number" class="form-control" name="number_of_vcards" value="">
                             <p id="errnumber_of_vcards" class="mb-0 text-danger em"></p>
-                            <p class="text-warning">Enter 999999 , then it will appear as unlimited</p>
+                            <p class="text-warning">{{ __('Enter 999999, then it will appear as unlimited') }}</p>
                         </div>
 
 <div class="form-group project-limit-box" style="display: none;">
@@ -386,10 +386,10 @@
     <p class="text-warning">{{ __('Enter 999999, then it will appear as unlimited') }}</p>
 </div>
 <div class="form-group employees-limit-box" style="display: none;">
-    <label for="employees_limit">حد الموظفين * </label>
+    <label for="employees_limit">{{ __('Employees limit') }} * </label>
     <input type="number" id="employees_limit" class="form-control" name="employees_limit" value="">
     <p id="erremployees_limit" class="mb-0 text-danger em"></p>
-    <p class="text-warning">أدخل 999999 ليظهر بلا حدود</p>
+    <p class="text-warning">{{ __('Enter 999999, then it will appear as unlimited') }}</p>
 </div>
 
                         <div class="form-group">
@@ -453,7 +453,7 @@
                             <label for="">{{ __('Serial Number') }} * </label>
                             <input type="number" class="form-control" name="serial_number" value="">
                             <p id="errserial_number" class="mb-0 text-danger em"></p>
-                            <p class="text-warning">The higher the serial number is, the later the feature will be shown.
+                            <p class="text-warning">{{ __('The higher the serial number, the later the feature will be shown.') }}
                             </p>
                         </div>
                     </form>

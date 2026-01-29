@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="page-header">
-    <h4 class="page-title">Edit Credit Package</h4>
+    <h4 class="page-title">{{ __('Edit Credit Package') }}</h4>
     <ul class="breadcrumbs">
         <li class="nav-home">
             <a href="{{ route('admin.dashboard') }}">
