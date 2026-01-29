@@ -715,7 +715,7 @@ if (!function_exists('formatNumber')) {
 if (!function_exists('formatNumberWithoutTrailingZeros')) {
     /**
      * Format a number by removing trailing zeros after decimal point.
-     * 
+     *
      * @param int|float|string|null $number
      * @return string Returns formatted number without trailing zeros, or '0' if input is null/empty
      */
@@ -726,7 +726,7 @@ if (!function_exists('formatNumberWithoutTrailingZeros')) {
         }
 
         $floatValue = (float) $number;
-        
+
         // If it's a whole number, return without decimals
         if ($floatValue == (int) $floatValue) {
             return (string) (int) $floatValue;
@@ -787,5 +787,21 @@ if (!function_exists('isMatchingRoute')) {
         }
         return false;
 
+    }
+}
+
+if (!function_exists('admin_is_rtl')) {
+    /**
+     * Determine if the admin panel should use RTL (right-to-left) layout
+     * based on the current locale's Language model rtl flag.
+     *
+     * @return bool
+     */
+    function admin_is_rtl()
+    {
+        $locale = app()->getLocale();
+        $lang = Language::where('code', $locale)->first();
+
+        return $lang && (int) $lang->rtl === 1;
     }
 }
