@@ -356,8 +356,11 @@ class AppServiceProvider extends ServiceProvider
 
             View::share('langs', $langs);
 
-            View::composer(['admin.layout', 'admin.partials.top-navbar'], function ($view) {
+            View::composer(['admin.layout', 'admin.partials.top-navbar', 'admin.partials.side-navbar', 'admin.partials.styles'], function ($view) {
                 $view->with('adminLanguages', \App\Models\Language::orderBy('is_default', 'desc')->get());
+                $locale = app()->getLocale();
+                $lang = \App\Models\Language::where('code', $locale)->first();
+                $view->with('admin_rtl', $lang && (int) $lang->rtl === 1);
             });
 
             View::share('socials', $socials);

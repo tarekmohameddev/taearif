@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @if(admin_is_rtl()) dir="rtl" @endif>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @if(!empty($admin_rtl)) dir="rtl" @endif>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -8,7 +8,7 @@
 	<title>{{$bs->website_title}} - {{__('Admin')}}</title>
 	<link rel="icon" href="{{asset('assets/front/img/'.$bs->favicon)}}">
 	@includeif('admin.partials.styles')
-	@if(admin_is_rtl())
+	@if(!empty($admin_rtl))
 	<link rel="stylesheet" href="{{ asset('assets/admin/css/admin-rtl.css') }}">
 	@endif
 	@yield('styles')

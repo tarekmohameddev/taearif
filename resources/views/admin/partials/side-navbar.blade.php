@@ -15,7 +15,7 @@
                 <li class="nav-item px-3 mb-1">
                     <form action="" class="sidebar-search-container">
                         <div class="position-relative">
-                            <span class="position-absolute" style="{{ admin_is_rtl() ? 'right' : 'left' }}: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">
+                            <span class="position-absolute" style="{{ !empty($admin_rtl) ? 'right' : 'left' }}: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">
                                 <i data-lucide="search" style="width: 16px;"></i>
                             </span>
                             <input name="term" type="text" class="form-control sidebar-search ltr w-100"

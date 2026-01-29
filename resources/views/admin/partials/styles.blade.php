@@ -119,7 +119,7 @@
         overflow-x: hidden !important;
     }
 
-    @if(admin_is_rtl())
+    @if(!empty($admin_rtl))
     [dir="rtl"], [dir="rtl"] body {
         font-family: 'Almarai', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
     }
