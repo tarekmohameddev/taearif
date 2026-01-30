@@ -37,8 +37,10 @@ class ArticleService extends BaseService
             $query->where('status', $status);
         }
 
-        // Filter by category
-        if (isset($filters['category_id'])) {
+        // Filter by category (single or multiple)
+        if (!empty($filters['category_ids'])) {
+            $query->whereIn('category_id', $filters['category_ids']);
+        } elseif (isset($filters['category_id'])) {
             $query->where('category_id', $filters['category_id']);
         }
 

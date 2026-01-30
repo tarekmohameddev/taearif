@@ -112,17 +112,21 @@ class PublicAdminArticlesController extends BaseApiController
 
     /**
      * List published articles (admin_articles).
+     * Supports single category (?category=1) or multiple (?categories=1,2,3 or ?categories[]=1&categories[]=2).
      */
     public function articles(Request $request): JsonResponse
     {
+        $categoryIds = $this->parseCategoryIds($request);
         $filters = [
             'published_only' => true,
             'status' => $request->input('status'),
-            'category_id' => $request->input('category'),
             'search' => $request->input('search'),
             'order_by' => $request->input('order_by', 'published_at'),
             'order_dir' => $request->input('order_dir', 'desc'),
         ];
+        if (!empty($categoryIds)) {
+            $filters['category_ids'] = $categoryIds;
+        }
 
         $perPage = min((int) $request->input('per_page', 20), 50);
         $articles = $this->articleService->getArticles($filters, $perPage);
@@ -173,5 +177,27 @@ class PublicAdminArticlesController extends BaseApiController
         } catch (\Exception $e) {
             return ErrorResponse::notFound('Article');
         }
+    }
+
+    /**
+     * Parse category filter from request: single ?category=1 or multiple ?categories=1,2,3 or ?categories[]=1&categories[]=2.
+     *
+     * @return int[]
+     */
+    private function parseCategoryIds(Request $request): array
+    {
+        if ($request->has('categories')) {
+            $raw = $request->input('categories');
+            if (is_array($raw)) {
+                return array_values(array_filter(array_map('intval', $raw)));
+            }
+            $ids = array_map('intval', array_filter(explode(',', (string) $raw)));
+            return array_values(array_filter($ids));
+        }
+        if ($request->filled('category')) {
+            $id = (int) $request->input('category');
+            return $id > 0 ? [$id] : [];
+        }
+        return [];
     }
 }
