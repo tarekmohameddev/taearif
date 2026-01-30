@@ -99,6 +99,11 @@
                 		</label>
 
                 		<label class="selectgroup-item">
+                			<input type="checkbox" name="permissions[]" value="Center of Support" class="selectgroup-input" @if(is_array($permissions) && in_array('Center of Support', $permissions)) checked @endif>
+                			<span class="selectgroup-button">{{__('Center of Support')}}</span>
+                		</label>
+
+                		<label class="selectgroup-item">
                 			<input type="checkbox" name="permissions[]" value="FAQ Management" class="selectgroup-input" @if(is_array($permissions) && in_array('FAQ Management', $permissions)) checked @endif>
                 			<span class="selectgroup-button">{{__('FAQ Management')}}</span>
                 		</label>
