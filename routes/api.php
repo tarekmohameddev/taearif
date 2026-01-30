@@ -71,6 +71,7 @@ use App\Http\Controllers\Api\{
     AdminArticleController,
     AdminArticleCategoryController,
     PublicAdminArticlesController,
+    PublicSupportCenterController,
 };
 
 use App\Http\Controllers\Api\V1\Logs\{
@@ -177,6 +178,12 @@ Route::get('/public/admin-article-categories', [PublicAdminArticlesController::c
 Route::get('/public/admin-article-categories/{slug}/articles', [PublicAdminArticlesController::class, 'categoryArticles']);
 Route::get('/public/admin-articles', [PublicAdminArticlesController::class, 'articles']);
 Route::get('/public/admin-articles/{slug}', [PublicAdminArticlesController::class, 'show']);
+
+// Public support center (support_center_categories + support_center_articles) — no auth
+Route::get('/public/support-center/categories', [PublicSupportCenterController::class, 'categories']);
+Route::get('/public/support-center/categories/{slug}/articles', [PublicSupportCenterController::class, 'categoryArticles']);
+Route::get('/public/support-center/articles', [PublicSupportCenterController::class, 'articles']);
+Route::get('/public/support-center/articles/{slug}', [PublicSupportCenterController::class, 'show']);
 
 // =============================================================================
 // PROTECTED API ROUTES (authentication required)

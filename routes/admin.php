@@ -312,6 +312,24 @@ Route::middleware(['web', 'auth:admin', 'checkstatus', 'Demo'])
         Route::post('/admin-articles/upload-image', 'Admin\ArticleController@uploadImage')->name('articles.upload-image');
     });
 
+    Route::group(['middleware' => 'checkpermission:Center of Support'], function () {
+        Route::get('/support-center/categories', 'Admin\SupportCenterCategoryController@index')->name('support_center.categories.index');
+        Route::get('/support-center/categories/create', 'Admin\SupportCenterCategoryController@create')->name('support_center.categories.create');
+        Route::post('/support-center/categories', 'Admin\SupportCenterCategoryController@store')->name('support_center.categories.store');
+        Route::get('/support-center/categories/{id}/edit', 'Admin\SupportCenterCategoryController@edit')->name('support_center.categories.edit');
+        Route::post('/support-center/categories/{id}', 'Admin\SupportCenterCategoryController@update')->name('support_center.categories.update');
+        Route::post('/support-center/categories/{id}/delete', 'Admin\SupportCenterCategoryController@destroy')->name('support_center.categories.destroy');
+
+        Route::get('/support-center/articles', 'Admin\SupportCenterArticleController@index')->name('support_center.articles.index');
+        Route::get('/support-center/articles/create', 'Admin\SupportCenterArticleController@create')->name('support_center.articles.create');
+        Route::post('/support-center/articles', 'Admin\SupportCenterArticleController@store')->name('support_center.articles.store');
+        Route::get('/support-center/articles/{id}', 'Admin\SupportCenterArticleController@show')->name('support_center.articles.show');
+        Route::get('/support-center/articles/{id}/edit', 'Admin\SupportCenterArticleController@edit')->name('support_center.articles.edit');
+        Route::post('/support-center/articles/{id}', 'Admin\SupportCenterArticleController@update')->name('support_center.articles.update');
+        Route::post('/support-center/articles/{id}/delete', 'Admin\SupportCenterArticleController@destroy')->name('support_center.articles.destroy');
+        Route::post('/support-center/articles/upload-image', 'Admin\SupportCenterArticleController@uploadImage')->name('support_center.articles.upload-image');
+    });
+
     Route::group(['middleware' => 'checkpermission:Sitemap'], function () {
         Route::get('/sitemap', 'Admin\SitemapController@index')->name('sitemap.index');
         Route::post('/sitemap/store', 'Admin\SitemapController@store')->name('sitemap.store');
