@@ -9,8 +9,12 @@ use App\Policies\ReservationPolicy;
 use App\Models\Reservation;
 use App\Models\AdminArticleCategory;
 use App\Models\AdminArticle;
+use App\Models\SupportCenterCategory;
+use App\Models\SupportCenterArticle;
 use App\Policies\AdminArticleCategoryPolicy;
 use App\Policies\AdminArticlePolicy;
+use App\Policies\SupportCenterCategoryPolicy;
+use App\Policies\SupportCenterArticlePolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use App\Models\User;
@@ -27,6 +31,8 @@ class AuthServiceProvider extends ServiceProvider
         Reservation::class => ReservationPolicy::class,
         AdminArticleCategory::class => AdminArticleCategoryPolicy::class,
         AdminArticle::class => AdminArticlePolicy::class,
+        SupportCenterCategory::class => SupportCenterCategoryPolicy::class,
+        SupportCenterArticle::class => SupportCenterArticlePolicy::class,
     ];
 
     /**
