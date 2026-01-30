@@ -47,8 +47,13 @@ class PublicAdminArticlesController extends BaseApiController
         });
 
         $resolved = CategoryResource::collection($categoriesWithArticles)->resolve();
-        $data = $resolved['data'] ?? $resolved;
-        return $this->successResponse($data);
+        $categories = $resolved['data'] ?? $resolved;
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'categories' => $categories,
+            ],
+        ]);
     }
 
     /**
@@ -76,24 +81,30 @@ class PublicAdminArticlesController extends BaseApiController
             $perPage = min((int) $request->input('per_page', 20), 50);
             $articles = $this->articleService->getArticles($filters, $perPage);
 
-            $payload = [
-                'category' => [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'slug' => $category->slug,
-                    'description' => $category->description,
-                ],
-                'data' => ArticleListResource::collection($articles)->resolve()['data'] ?? ArticleListResource::collection($articles)->resolve(),
-                'pagination' => [
-                    'per_page' => $articles->perPage(),
-                    'current_page' => $articles->currentPage(),
-                    'from' => $articles->firstItem(),
-                    'to' => $articles->lastItem(),
-                    'total' => $articles->total(),
-                    'last_page' => $articles->lastPage(),
-                ],
+            $articlesList = ArticleListResource::collection($articles)->resolve()['data'] ?? ArticleListResource::collection($articles)->resolve();
+            $pagination = [
+                'per_page' => $articles->perPage(),
+                'current_page' => $articles->currentPage(),
+                'from' => $articles->firstItem(),
+                'to' => $articles->lastItem(),
+                'total' => $articles->total(),
+                'last_page' => $articles->lastPage(),
             ];
-            return $this->successResponse($payload);
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'category' => [
+                        'id' => $category->id,
+                        'name' => $category->name,
+                        'slug' => $category->slug,
+                        'description' => $category->description,
+                    ],
+                    'articles' => $articlesList,
+                ],
+                'meta' => [
+                    'pagination' => $pagination,
+                ],
+            ]);
         } catch (\Exception $e) {
             return ErrorResponse::notFound('Category');
         }
@@ -116,18 +127,24 @@ class PublicAdminArticlesController extends BaseApiController
         $perPage = min((int) $request->input('per_page', 20), 50);
         $articles = $this->articleService->getArticles($filters, $perPage);
 
-        $payload = [
-            'data' => ArticleListResource::collection($articles)->resolve()['data'] ?? ArticleListResource::collection($articles)->resolve(),
-            'pagination' => [
-                'per_page' => $articles->perPage(),
-                'current_page' => $articles->currentPage(),
-                'from' => $articles->firstItem(),
-                'to' => $articles->lastItem(),
-                'total' => $articles->total(),
-                'last_page' => $articles->lastPage(),
-            ],
+        $articlesList = ArticleListResource::collection($articles)->resolve()['data'] ?? ArticleListResource::collection($articles)->resolve();
+        $pagination = [
+            'per_page' => $articles->perPage(),
+            'current_page' => $articles->currentPage(),
+            'from' => $articles->firstItem(),
+            'to' => $articles->lastItem(),
+            'total' => $articles->total(),
+            'last_page' => $articles->lastPage(),
         ];
-        return $this->successResponse($payload);
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'articles' => $articlesList,
+            ],
+            'meta' => [
+                'pagination' => $pagination,
+            ],
+        ]);
     }
 
     /**
@@ -146,8 +163,13 @@ class PublicAdminArticlesController extends BaseApiController
                 return ErrorResponse::notFound('Article');
             }
 
-            $data = (new ArticleResource($article))->resolve();
-            return $this->successResponse($data);
+            $articleData = (new ArticleResource($article))->resolve();
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'article' => $articleData,
+                ],
+            ]);
         } catch (\Exception $e) {
             return ErrorResponse::notFound('Article');
         }
