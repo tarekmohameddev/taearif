@@ -86,3 +86,4 @@ tests/api-scripts/*
 *.bat
 111/*
 
+/the_test_db
