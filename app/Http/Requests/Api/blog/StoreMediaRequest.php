@@ -19,7 +19,7 @@ class StoreMediaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file' => 'required|file|mimes:jpeg,png,gif,webp,mp4,mov,webm|max:51200',
+            'file' => 'required|file|mimes:jpeg,png,gif,webp,mp4,mov,webm,pdf|max:51200',
             'mediable_type' => 'nullable|string|in:App\\Models\\Api\\Post',
             'mediable_id' => 'nullable|integer|required_with:mediable_type|exists:api_posts,id',
         ];
