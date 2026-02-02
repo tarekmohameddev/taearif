@@ -75,7 +75,7 @@
 
                                 <div class="form-group">
                                     <label for="">{{ __('Icon') }} **</label>
-                                    <div class="btn-group d-block">
+                                    <div class="btn-group d-inline-flex">
                                         <button type="button" class="btn btn-primary iconpicker-component"><i
                                                 class="{{ $package->icon }}"></i></button>
                                         <button type="button" class="icp icp-dd btn btn-primary dropdown-toggle"
@@ -113,7 +113,7 @@
                                         <option value="yearly" {{ $package->term == 'yearly' ? 'selected' : '' }}>
                                             {{ __('yearly') }}</option>
                                         <option value="lifetime" {{ $package->term == 'lifetime' ? 'selected' : '' }}>
-                                            {{ 'lifetime' }}</option>
+                                            {{ __('lifetime') }}</option>
                                     </select>
                                     <p id="errterm" class="mb-0 text-danger em"></p>
                                 </div>
@@ -270,7 +270,7 @@
                                         <label class="selectgroup-item">
                                             <input type="checkbox" name="features[]" value="employees_Limit" class="selectgroup-input"
                                             @if (is_array($permissions) && in_array('employees_Limit', $permissions)) checked @endif>
-                                            <span class="selectgroup-button">حد الموظفين</span>
+                                            <span class="selectgroup-button">{{ __('Employees limit') }}</span>
                                         </label>
                                     </div>
                                 </div>
@@ -300,7 +300,7 @@
                                     <input type="number" class="form-control" name="number_of_vcards"
                                         value="{{ $package->number_of_vcards }}">
                                     <p id="errnumber_of_vcards" class="mb-0 text-danger em"></p>
-                                    <p class="text-warning">Enter 999999 , then it will appear as unlimited</p>
+                                    <p class="text-warning">{{ __('Enter 999999, then it will appear as unlimited') }}</p>
                                 </div>
 
                                 <!-- NEW: Project Limit Field -->
@@ -318,7 +318,7 @@
                                     <p id="errreal_estate_limit_number" class="mb-0 text-danger em"></p>
                                     <p class="text-warning">{{ __('Enter 999999, then it will appear as unlimited') }}</p>
                                 </div>
-                                
+
                                  <!-- NEW: WhatsApp Limit Field -->
                                 <div class="form-group whatsapp-limit-box @if (is_array($permissions) && in_array('whatsapp_Limit', $permissions)) @else whatsapp-limit-none @endif">
                                     <label for="whatsapp_numbers_limit">{{ __('WhatsApp Number Limit') }} * </label>
@@ -329,10 +329,10 @@
 
                                 <!-- NEW: Employees Limit Field -->
                                 <div class="form-group employees-limit-box @if (is_array($permissions) && in_array('employees_Limit', $permissions)) @else employees-limit-none @endif">
-                                    <label for="employees_limit">حد الموظفين * </label>
+                                    <label for="employees_limit">{{ __('Employees limit') }} * </label>
                                     <input type="number" id="employees_limit" class="form-control" name="employees_limit" value="{{ $package->employees_limit }}">
                                     <p id="erremployees_limit" class="mb-0 text-danger em"></p>
-                                    <p class="text-warning">أدخل 999999 ليظهر بلا حدود</p>
+                                    <p class="text-warning">{{ __('Enter 999999, then it will appear as unlimited') }}</p>
                                 </div>
 
                                 <div class="form-group">
@@ -410,8 +410,7 @@
                                     <input type="number" class="form-control" name="serial_number"
                                         value="{{ $package->serial_number }}">
                                     <p id="errserial_number" class="mb-0 text-danger em"></p>
-                                    <p class="text-warning">The higher the serial number is, the later the feature will be
-                                        shown.
+                                    <p class="text-warning">{{ __('The higher the serial number, the later the feature will be shown.') }}
                                     </p>
                                 </div>
                             </form>

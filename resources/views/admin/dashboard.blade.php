@@ -327,6 +327,8 @@
 		var months = @php echo json_encode($months) @endphp;
 		var inTotals = @php echo json_encode($inTotals) @endphp;
 		var userTotals = @php echo json_encode($userTotals) @endphp;
+		var chartLabelIncome = @json(__('Monthly Income'));
+		var chartLabelPremiumUsers = @json(__('Monthly Premium Users'));
 	</script>
 	<script src="{{asset('assets/admin/js/dashboard.js')}}"></script>
 @endsection

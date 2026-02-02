@@ -28,7 +28,7 @@ class ThemeController extends Controller
 
         $query = ApiThemeSettings::query();
 
-        if (isset($filters['category']) && $filters['category'] !== 'all' && $filters['category'] !== null) {
+        if (!empty($filters['category']) && $filters['category'] !== 'all') {
             $query->where('category', $filters['category']);
         }
 
@@ -58,7 +58,7 @@ class ThemeController extends Controller
             ->whereNotNull('category')
             ->distinct()
             ->pluck('category');
-        
+
         return view('admin.themes.create', $data);
     }
 

@@ -43,6 +43,15 @@ composer.lock
 /public/themes/*
 /public/footer/*
 /public/assets/*
+# Allow JS, CSS, and font files under public/assets
+!/public/assets/**/*.js
+!/public/assets/**/*.css
+!/public/assets/admin/js/
+!/public/assets/**/*.woff
+!/public/assets/**/*.woff2
+!/public/assets/**/*.ttf
+!/public/assets/**/*.eot
+!/public/assets/**/*.otf
 *.md
 database/seeders/RentalDashboardTestSeeder833.php
 database/seeds/RentalDashboardTestSeeder833.php
@@ -77,3 +86,4 @@ tests/api-scripts/*
 *.bat
 111/*
 
+/the_test_db

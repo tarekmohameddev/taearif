@@ -1,12 +1,12 @@
 (function ($) {
     "use strict";
-    var lineChart = document.getElementById('lineChart').getContext('2d');	
+    var lineChart = document.getElementById('lineChart').getContext('2d');
     var myLineChart = new Chart(lineChart, {
         type: 'line',
         data: {
             labels: months,
             datasets: [{
-                label: "Monthly Income",
+                label: typeof chartLabelIncome !== 'undefined' ? chartLabelIncome : "Monthly Income",
                 borderColor: "#1d7af3",
                 pointBorderColor: "#FFF",
                 pointBackgroundColor: "#1d7af3",
@@ -21,7 +21,7 @@
             }]
         },
         options : {
-            responsive: true, 
+            responsive: true,
             maintainAspectRatio: false,
             legend: {
                 position: 'bottom',
@@ -45,13 +45,13 @@
         }
     });
 
-    var usersChart = document.getElementById('usersChart').getContext('2d');	
+    var usersChart = document.getElementById('usersChart').getContext('2d');
     var myUsersChart = new Chart(usersChart, {
         type: 'line',
         data: {
             labels: months,
             datasets: [{
-                label: "Monthly Premium Users",
+                label: typeof chartLabelPremiumUsers !== 'undefined' ? chartLabelPremiumUsers : "Monthly Premium Users",
                 borderColor: "#1d7af3",
                 pointBorderColor: "#FFF",
                 pointBackgroundColor: "#1d7af3",
@@ -66,7 +66,7 @@
             }]
         },
         options : {
-            responsive: true, 
+            responsive: true,
             maintainAspectRatio: false,
             legend: {
                 position: 'bottom',

@@ -176,7 +176,7 @@
               </form>
           </div>
           <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
               <button type="submit" form="editCommissionForm" class="btn btn-primary">Save changes</button>
           </div>
       </div>
@@ -209,7 +209,7 @@
               </form>
           </div>
           <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
               <button type="submit" form="edit_date_Form" class="btn btn-primary">Save changes</button>
           </div>
       </div>

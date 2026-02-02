@@ -350,6 +350,31 @@
                     </li>
                 @endif
 
+                {{-- Center of Support --}}
+                @if (empty($admin->role) || (!empty($permissions) && in_array('Center of Support', $permissions)))
+                    <li class="nav-item @if (request()->is('admin/support-center*')) active @endif">
+                        <a data-toggle="collapse" href="#supportCenter">
+                            <i data-lucide="help-circle"></i>
+                            <p>{{ __('Center of Support') }}</p>
+                            <i data-lucide="chevron-down" class="caret"></i>
+                        </a>
+                        <div class="collapse @if (request()->is('admin/support-center*')) show @endif" id="supportCenter">
+                            <ul class="nav nav-collapse">
+                                <li class="@if (request()->routeIs('admin.support_center.articles.*')) active @endif">
+                                    <a href="{{ route('admin.support_center.articles.index') }}">
+                                        <span class="sub-item">{{ __('Support Center Articles') }}</span>
+                                    </a>
+                                </li>
+                                <li class="@if (request()->routeIs('admin.support_center.categories.*')) active @endif">
+                                    <a href="{{ route('admin.support_center.categories.index') }}">
+                                        <span class="sub-item">{{ __('Support Center Categories') }}</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                @endif
+
                 {{-- communication --}}
                 @if (empty($admin->role) || (!empty($permissions) && in_array('Communication', $permissions)))
                     <li class="nav-item

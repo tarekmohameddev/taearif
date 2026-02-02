@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class PixelController extends Controller
 {
@@ -50,9 +51,16 @@ class PixelController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'platform' => 'required|in:facebook,tiktok,snapchat',
-            'pixel_id' => 'required|string|max:255',
+            'platform' => 'required|in:facebook,tiktok,snapchat,gtm',
+            'pixel_id' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::when($request->input('platform') === 'gtm', 'regex:/^GTM-[A-Z0-9]+$/i'),
+            ],
             'is_active' => 'boolean',
+        ], [
+            'pixel_id.regex' => 'GTM Container ID must start with \'GTM-\' followed by alphanumeric characters.',
         ]);
 
         if ($validator->fails()) {
@@ -143,22 +151,8 @@ class PixelController extends Controller
      */
     public function update(Request $request, int $id): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'platform' => 'sometimes|in:facebook,tiktok,snapchat',
-            'pixel_id' => 'sometimes|string|max:255',
-            'is_active' => 'sometimes|boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         $user = $request->user();
-        
+
         $pixel = ApiPixel::where('user_id', $user->id)
             ->where('id', $id)
             ->first();
@@ -168,6 +162,33 @@ class PixelController extends Controller
                 'success' => false,
                 'message' => 'Pixel not found'
             ], 404);
+        }
+
+        $effectivePlatform = $request->input('platform', $pixel->platform);
+        $pixelIdRules = ['sometimes', 'string', 'max:255'];
+        if ($effectivePlatform === 'gtm') {
+            $pixelIdRules[] = 'regex:/^GTM-[A-Z0-9]+$/i';
+        }
+
+        $updateData = $request->all();
+        if ($effectivePlatform === 'gtm' && !$request->has('pixel_id')) {
+            $updateData['pixel_id'] = $pixel->pixel_id;
+        }
+
+        $validator = Validator::make($updateData, [
+            'platform' => 'sometimes|in:facebook,tiktok,snapchat,gtm',
+            'pixel_id' => $pixelIdRules,
+            'is_active' => 'sometimes|boolean',
+        ], [
+            'pixel_id.regex' => 'GTM Container ID must start with \'GTM-\' followed by alphanumeric characters.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
         // Check if platform is being changed and if it conflicts with existing pixel

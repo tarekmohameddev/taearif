@@ -138,6 +138,10 @@
         lucide.createIcons();
     }
 
+    // Admin locale strings for plugins (e.g. iconpicker "Type to filter")
+    window.__adminLang = window.__adminLang || {};
+    window.__adminLang.typeToFilter = @json(__('Type to filter'));
+
     // Global RTL support for plugins
     $(document).ready(function() {
         if ($('html').attr('dir') === 'rtl') {
@@ -151,6 +155,39 @@
             if ($.fn.datepicker) {
                 $.fn.datepicker.defaults.rtl = true;
             }
+
+            // Iconpicker: translate "Type to filter" placeholder when popover is added
+            if (window.__adminLang.typeToFilter) {
+                var observer = new MutationObserver(function() {
+                    $(document).find('input[placeholder="Type to filter"]').attr('placeholder', window.__adminLang.typeToFilter);
+                });
+                observer.observe(document.body, { childList: true, subtree: true });
+            }
+
+            // Iconpicker dropdown: keep inside modal, aligned with the open modal (RTL support)
+            function positionIconpickerDropdown($trigger) {
+                var $menu = $trigger.siblings('.dropdown-menu');
+                if (!$menu.length || !$menu.is(':visible')) return;
+                
+                // For RTL, we want it aligned to the right of its parent (.btn-group)
+                // Use absolute positioning within the relative parent to ensure it follows the trigger
+                $menu.css({
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    left: 'auto',
+                    bottom: 'auto',
+                    zIndex: 2000,
+                    transform: 'none',
+                    display: 'block' // Ensure it's shown if triggered manually
+                });
+            }
+            $(document).on('shown.bs.dropdown', '.btn-group .icp-dd, .btn-group .icp-dd2', function() {
+                var $trigger = $(this);
+                positionIconpickerDropdown($trigger);
+                // Reposition after a short delay to account for plugin-injected content
+                setTimeout(function() { positionIconpickerDropdown($trigger); }, 100);
+            });
         }
     });
 
