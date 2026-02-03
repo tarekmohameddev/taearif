@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 
 class PixelController extends Controller
 {
@@ -52,15 +51,8 @@ class PixelController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'platform' => 'required|in:facebook,tiktok,snapchat,gtm',
-            'pixel_id' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::when($request->input('platform') === 'gtm', 'regex:/^GTM-[A-Z0-9]+$/i'),
-            ],
+            'pixel_id' => 'required|string|max:255',
             'is_active' => 'boolean',
-        ], [
-            'pixel_id.regex' => 'GTM Container ID must start with \'GTM-\' followed by alphanumeric characters.',
         ]);
 
         if ($validator->fails()) {
@@ -164,23 +156,10 @@ class PixelController extends Controller
             ], 404);
         }
 
-        $effectivePlatform = $request->input('platform', $pixel->platform);
-        $pixelIdRules = ['sometimes', 'string', 'max:255'];
-        if ($effectivePlatform === 'gtm') {
-            $pixelIdRules[] = 'regex:/^GTM-[A-Z0-9]+$/i';
-        }
-
-        $updateData = $request->all();
-        if ($effectivePlatform === 'gtm' && !$request->has('pixel_id')) {
-            $updateData['pixel_id'] = $pixel->pixel_id;
-        }
-
-        $validator = Validator::make($updateData, [
+        $validator = Validator::make($request->all(), [
             'platform' => 'sometimes|in:facebook,tiktok,snapchat,gtm',
-            'pixel_id' => $pixelIdRules,
+            'pixel_id' => 'sometimes|string|max:255',
             'is_active' => 'sometimes|boolean',
-        ], [
-            'pixel_id.regex' => 'GTM Container ID must start with \'GTM-\' followed by alphanumeric characters.',
         ]);
 
         if ($validator->fails()) {
