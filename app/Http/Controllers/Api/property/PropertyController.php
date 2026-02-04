@@ -1098,7 +1098,8 @@ class PropertyController extends Controller
                     'galleryImages:id,property_id,image',
                     'UserPropertyCharacteristics',
                     'creator:id,first_name,last_name,username,email,account_type',
-                    'building:id,name,image,deed_number,deed_image,water_meter_number',
+                    'building:id,name,image,deed_number,deed_image',
+                    'building.meters',
                     'project.contents',
                 ])->whereIn('user_id', $allowedUserIds)->findOrFail($id);
 

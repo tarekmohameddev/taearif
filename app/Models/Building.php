@@ -20,7 +20,6 @@ class Building extends Model
         'image',
         'deed_number',
         'deed_image',
-        'water_meter_number',
         'user_id',
     ];
 
@@ -53,6 +52,14 @@ class Building extends Model
     public function rentals(): HasMany
     {
         return $this->hasMany(\App\Models\Api\Rms\RmRental::class);
+    }
+
+    /**
+     * Get the meters (water and electricity) for the building.
+     */
+    public function meters(): HasMany
+    {
+        return $this->hasMany(BuildingMeter::class);
     }
 
     /**

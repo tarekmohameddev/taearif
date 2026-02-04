@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Building;
+use App\Models\BuildingMeter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -28,7 +29,8 @@ class BuildingController extends Controller
 
         $query = Building::where('user_id', $user->id)
             ->with([
-                'user:id,username,email', // Only basic user info needed
+                'user:id,username,email',
+                'meters',
                 'properties' => function($q) use ($languageId) {
                     $q->select('id', 'building_id', 'price', 'pricePerMeter', 'area', 'beds', 'bath', 'status', 'property_status', 'featured', 'featured_image', 'created_at')
                     ->with([
@@ -96,24 +98,26 @@ class BuildingController extends Controller
         // Check if request is JSON (raw) or form-data
         $isJsonRequest = $request->isJson() || $request->header('Content-Type') === 'application/json';
         
+        $meterRules = [
+            'water_meter_numbers' => 'nullable|array',
+            'water_meter_numbers.*' => 'string|max:255',
+            'electricity_meter_numbers' => 'nullable|array',
+            'electricity_meter_numbers.*' => 'string|max:255',
+        ];
         if ($isJsonRequest) {
-            // Handle JSON request with file paths
-            $validator = Validator::make($request->all(), [
+            $validator = Validator::make($request->all(), array_merge([
                 'name' => 'required|string|max:255',
                 'image' => 'nullable|string|max:500',
                 'deed_number' => 'nullable|string|max:255',
                 'deed_image' => 'nullable|string|max:500',
-                'water_meter_number' => 'nullable|string|max:255',
-            ]);
+            ], $meterRules));
         } else {
-            // Handle form-data request with file uploads
-            $validator = Validator::make($request->all(), [
+            $validator = Validator::make($request->all(), array_merge([
                 'name' => 'required|string|max:255',
                 'image' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
                 'deed_number' => 'nullable|string|max:255',
                 'deed_image' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-                'water_meter_number' => 'nullable|string|max:255',
-            ]);
+            ], $meterRules));
         }
 
         if ($validator->fails()) {
@@ -126,11 +130,10 @@ class BuildingController extends Controller
 
         try {
             $user = Auth::user();
-            $data = $request->only(['name', 'deed_number', 'water_meter_number']);
+            $data = $request->only(['name', 'deed_number']);
             $data['user_id'] = $user->id;
 
             if ($isJsonRequest) {
-                // Handle JSON request - use provided file paths directly
                 if ($request->has('image') && $request->image) {
                     $data['image'] = $request->image;
                 }
@@ -138,7 +141,6 @@ class BuildingController extends Controller
                     $data['deed_image'] = $request->deed_image;
                 }
             } else {
-                // Handle file uploads
                 if ($request->hasFile('image')) {
                     $data['image'] = $this->uploadImageFile($request->file('image'), 'buildings');
                 }
@@ -148,11 +150,12 @@ class BuildingController extends Controller
             }
 
             $building = Building::create($data);
+            $this->syncBuildingMeters($building, $request);
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Building created successfully',
-                'data' => $building->load('user')
+                'data' => $building->load(['user', 'meters'])
             ], 201);
 
         } catch (\Exception $e) {
@@ -181,6 +184,7 @@ class BuildingController extends Controller
             ->where('user_id', $user->id)
             ->with([
                 'user:id,username,email',
+                'meters',
                 'properties' => function($q) use ($languageId) {
                     $q->select('id', 'building_id', 'price', 'pricePerMeter', 'area', 'beds', 'bath', 'status', 'property_status', 'featured', 'featured_image', 'created_at')
                     ->with([
@@ -257,24 +261,26 @@ class BuildingController extends Controller
         // Check if request is JSON (raw) or form-data
         $isJsonRequest = $request->isJson() || $request->header('Content-Type') === 'application/json';
         
+        $meterRules = [
+            'water_meter_numbers' => 'nullable|array',
+            'water_meter_numbers.*' => 'string|max:255',
+            'electricity_meter_numbers' => 'nullable|array',
+            'electricity_meter_numbers.*' => 'string|max:255',
+        ];
         if ($isJsonRequest) {
-            // Handle JSON request with file paths
-            $validator = Validator::make($request->all(), [
+            $validator = Validator::make($request->all(), array_merge([
                 'name' => 'required|string|max:255',
                 'image' => 'nullable|string|max:500',
                 'deed_number' => 'nullable|string|max:255',
                 'deed_image' => 'nullable|string|max:500',
-                'water_meter_number' => 'nullable|string|max:255',
-            ]);
+            ], $meterRules));
         } else {
-            // Handle form-data request with file uploads
-            $validator = Validator::make($request->all(), [
+            $validator = Validator::make($request->all(), array_merge([
                 'name' => 'required|string|max:255',
                 'image' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
                 'deed_number' => 'nullable|string|max:255',
                 'deed_image' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-                'water_meter_number' => 'nullable|string|max:255',
-            ]);
+            ], $meterRules));
         }
 
         if ($validator->fails()) {
@@ -286,7 +292,7 @@ class BuildingController extends Controller
         }
 
         try {
-            $data = $request->only(['name', 'deed_number', 'water_meter_number']);
+            $data = $request->only(['name', 'deed_number']);
 
             if ($isJsonRequest) {
                 // Handle JSON request - use provided file paths directly
@@ -325,11 +331,12 @@ class BuildingController extends Controller
             }
 
             $building->update($data);
+            $this->syncBuildingMeters($building, $request);
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Building updated successfully',
-                'data' => $building->load('user')
+                'data' => $building->load(['user', 'meters'])
             ]);
 
         } catch (\Exception $e) {
@@ -524,6 +531,45 @@ class BuildingController extends Controller
     {
         if ($imagePath && file_exists(public_path($imagePath))) {
             unlink(public_path($imagePath));
+        }
+    }
+
+    /**
+     * Sync building meters from request (water_meter_numbers and electricity_meter_numbers arrays).
+     */
+    private function syncBuildingMeters(Building $building, Request $request): void
+    {
+        $building->meters()->delete();
+
+        $now = now();
+        $meters = [];
+        foreach ($request->input('water_meter_numbers', []) as $number) {
+            $number = is_string($number) ? trim($number) : (string) $number;
+            if ($number !== '') {
+                $meters[] = [
+                    'building_id' => $building->id,
+                    'meter_type' => BuildingMeter::TYPE_WATER,
+                    'meter_number' => $number,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+        }
+        foreach ($request->input('electricity_meter_numbers', []) as $number) {
+            $number = is_string($number) ? trim($number) : (string) $number;
+            if ($number !== '') {
+                $meters[] = [
+                    'building_id' => $building->id,
+                    'meter_type' => BuildingMeter::TYPE_ELECTRICITY,
+                    'meter_number' => $number,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+        }
+
+        if (!empty($meters)) {
+            BuildingMeter::insert($meters);
         }
     }
 }
