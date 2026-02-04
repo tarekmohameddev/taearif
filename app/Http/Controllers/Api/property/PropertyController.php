@@ -1919,7 +1919,7 @@ class PropertyController extends Controller
 
             // Capture owner ID before delete for cache invalidation
             $ownerId = $property->user_id;
-            
+
             $property->delete();
 
             // Invalidate cache for this property (all days variants)
@@ -1957,14 +1957,14 @@ class PropertyController extends Controller
 
             $property->featured = !$property->featured;
             $property->save();
-            
+
             // Invalidate property list cache (featured status affects list display)
             $user = $property->user;
             if ($user && method_exists($user, 'tenantOwnerId')) {
                 $ownerId = $user->tenantOwnerId();
                 PropertyListCacheVersionService::incrementVersion($ownerId);
             }
-            
+
             Audit::property($property->user_id, $property->id, 'custom', "toggle featured -> ".($property->featured ? 'on' : 'off'));
 
             return response()->json([
@@ -1992,14 +1992,14 @@ class PropertyController extends Controller
 
             $property->status = !$property->status;
             $property->save();
-            
+
             // Invalidate property list cache (status affects list visibility)
             $user = $property->user;
             if ($user && method_exists($user, 'tenantOwnerId')) {
                 $ownerId = $user->tenantOwnerId();
                 PropertyListCacheVersionService::incrementVersion($ownerId);
             }
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Property status updated successfully',
@@ -2501,7 +2501,7 @@ class PropertyController extends Controller
         // Sort filters to ensure consistent cache keys regardless of parameter order
         $filters = $request->except(['page', 'per_page', 'include_views', 'include_filters', 'simple_pagination']);
         ksort($filters); // Sort by key for consistent hashing
-        
+
         // Build hash of filters/pagination (unchanged logic)
         $hash = md5(serialize([
             'filters' => $filters,
@@ -2509,7 +2509,7 @@ class PropertyController extends Controller
             'per_page' => $perPage,
             'simple_pagination' => $useSimplePagination
         ]));
-        
+
         // Build versioned cache key: properties_list_{ownerId}_v{version}_{hash}
         $cacheKey = PropertyListCacheVersionService::buildCacheKey($ownerId, $hash);
 

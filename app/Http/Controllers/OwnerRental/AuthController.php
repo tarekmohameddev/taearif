@@ -8,6 +8,7 @@ use App\Http\Requests\OwnerRental\ResetPasswordRequest;
 use App\Models\OwnerRental;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -77,10 +78,13 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         try {
-            $ownerRental = Auth::user();
-            
-            // Revoke current token
-            $ownerRental->currentAccessToken()->delete();
+            $token = $request->bearerToken();
+            if ($token) {
+                $accessToken = PersonalAccessToken::findToken($token);
+                if ($accessToken) {
+                    $accessToken->delete();
+                }
+            }
 
             return response()->json([
                 'success' => true,

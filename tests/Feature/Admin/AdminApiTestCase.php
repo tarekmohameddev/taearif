@@ -40,6 +40,23 @@ abstract class AdminApiTestCase extends TestCase
     }
 
     /**
+     * Create a table only if it does not exist; ignore "already exists" when using imported DB.
+     */
+    private function createTableIfNotExists(string $table, \Closure $callback): void
+    {
+        if (Schema::hasTable($table)) {
+            return;
+        }
+        try {
+            Schema::create($table, $callback);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if (strpos($e->getMessage(), 'already exists') === false) {
+                throw $e;
+            }
+        }
+    }
+
+    /**
      * Authenticate a freshly created admin for the admin API guard.
      */
     protected function signInAdmin(array $attributes = []): Admin
@@ -160,8 +177,7 @@ abstract class AdminApiTestCase extends TestCase
      */
     private function ensureDailyTables(): void
     {
-        Schema::dropIfExists('users_api_customers_reminders');
-        Schema::create('users_api_customers_reminders', function (Blueprint $table) {
+        $this->createTableIfNotExists('users_api_customers_reminders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->unsignedBigInteger('customer_id')->nullable();
@@ -171,8 +187,7 @@ abstract class AdminApiTestCase extends TestCase
             $table->timestamps();
         });
 
-        Schema::dropIfExists('users_api_customers_appointments');
-        Schema::create('users_api_customers_appointments', function (Blueprint $table) {
+        $this->createTableIfNotExists('users_api_customers_appointments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->unsignedBigInteger('customer_id')->nullable();
@@ -185,8 +200,7 @@ abstract class AdminApiTestCase extends TestCase
             $table->timestamps();
         });
 
-        Schema::dropIfExists('rm_reminders');
-        Schema::create('rm_reminders', function (Blueprint $table) {
+        $this->createTableIfNotExists('rm_reminders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->string('type')->nullable();
@@ -200,18 +214,15 @@ abstract class AdminApiTestCase extends TestCase
             $table->timestamps();
         });
 
-        if (!Schema::hasTable('api_customers')) {
-            Schema::create('api_customers', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
-                $table->string('name')->nullable();
-                $table->string('email')->nullable();
-                $table->timestamps();
-            });
-        }
+        $this->createTableIfNotExists('api_customers', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('name')->nullable();
+            $table->string('email')->nullable();
+            $table->timestamps();
+        });
 
-        Schema::dropIfExists('rm_rentals');
-        Schema::create('rm_rentals', function (Blueprint $table) {
+        $this->createTableIfNotExists('rm_rentals', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('name')->nullable();
@@ -219,8 +230,7 @@ abstract class AdminApiTestCase extends TestCase
             $table->softDeletes();
         });
 
-        Schema::dropIfExists('memberships');
-        Schema::create('memberships', function (Blueprint $table) {
+        $this->createTableIfNotExists('memberships', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->nullable()->unique();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
@@ -252,7 +262,9 @@ abstract class AdminApiTestCase extends TestCase
      */
     private function ensureDomainTables(): void
     {
-        Schema::dropIfExists('user_custom_domains');
+        if (Schema::hasTable('user_custom_domains')) {
+            return;
+        }
 
         Schema::create('user_custom_domains', function (Blueprint $table) {
             $table->id();
@@ -269,20 +281,23 @@ abstract class AdminApiTestCase extends TestCase
      */
     private function ensureMarketingTables(): void
     {
-        Schema::dropIfExists('whatsapp_templates');
-        Schema::dropIfExists('basic_settings');
-        Schema::dropIfExists('languages');
+        if (Schema::hasTable('languages') && Schema::hasTable('basic_settings') && Schema::hasTable('whatsapp_templates')) {
+            return;
+        }
 
-        Schema::create('languages', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('code')->unique();
-            $table->boolean('is_default')->default(false);
-            $table->boolean('rtl')->default(false);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('languages')) {
+            Schema::create('languages', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->string('code')->unique();
+                $table->boolean('is_default')->default(false);
+                $table->boolean('rtl')->default(false);
+                $table->timestamps();
+            });
+        }
 
-        Schema::create('basic_settings', function (Blueprint $table) {
+        if (!Schema::hasTable('basic_settings')) {
+            Schema::create('basic_settings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('language_id')->nullable();
             $table->string('website_title')->nullable();
@@ -331,20 +346,29 @@ abstract class AdminApiTestCase extends TestCase
             $table->string('favicon')->nullable();
             $table->string('preloader')->nullable();
             $table->timestamps();
-        });
+            });
+        }
 
-        Schema::create('whatsapp_templates', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->unique();
-            $table->string('description')->nullable();
-            $table->text('content');
-            $table->string('type');
-            $table->string('language', 5);
-            $table->string('variables')->nullable();
-            $table->boolean('status')->default(true);
-            $table->unsignedInteger('character_count')->default(0);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('whatsapp_templates')) {
+            try {
+                Schema::create('whatsapp_templates', function (Blueprint $table) {
+                    $table->id();
+                    $table->string('name')->unique();
+                    $table->string('description')->nullable();
+                    $table->text('content');
+                    $table->string('type');
+                    $table->string('language', 5);
+                    $table->string('variables')->nullable();
+                    $table->boolean('status')->default(true);
+                    $table->unsignedInteger('character_count')->default(0);
+                    $table->timestamps();
+                });
+            } catch (\Illuminate\Database\QueryException $e) {
+                if (strpos($e->getMessage(), 'already exists') === false) {
+                    throw $e;
+                }
+            }
+        }
     }
 
     /**
@@ -443,14 +467,7 @@ abstract class AdminApiTestCase extends TestCase
      */
     private function ensureReferralTables(): void
     {
-        Schema::disableForeignKeyConstraints();
-
-        Schema::dropIfExists('affiliate_transactions');
-        Schema::dropIfExists('api_affiliate_users');
-
-        Schema::enableForeignKeyConstraints();
-
-        Schema::create('api_affiliate_users', function (Blueprint $table) {
+        $this->createTableIfNotExists('api_affiliate_users', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('fullname')->nullable();
@@ -465,7 +482,7 @@ abstract class AdminApiTestCase extends TestCase
             $table->timestamps();
         });
 
-        Schema::create('affiliate_transactions', function (Blueprint $table) {
+        $this->createTableIfNotExists('affiliate_transactions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('affiliate_id')->nullable()->constrained('api_affiliate_users')->nullOnDelete();
             $table->foreignId('referral_user_id')->nullable()->constrained('users')->nullOnDelete();
@@ -483,11 +500,7 @@ abstract class AdminApiTestCase extends TestCase
      */
     private function ensureCrmTables(): void
     {
-        Schema::dropIfExists('lead_activities');
-        Schema::dropIfExists('leads');
-        Schema::dropIfExists('admin_crm_cards');
-
-        Schema::create('admin_crm_cards', function (Blueprint $table) {
+        $this->createTableIfNotExists('admin_crm_cards', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('name');
@@ -498,7 +511,7 @@ abstract class AdminApiTestCase extends TestCase
             $table->timestamps();
         });
 
-        Schema::create('leads', function (Blueprint $table) {
+        $this->createTableIfNotExists('leads', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('name');
@@ -516,7 +529,7 @@ abstract class AdminApiTestCase extends TestCase
             $table->timestamps();
         });
 
-        Schema::create('lead_activities', function (Blueprint $table) {
+        $this->createTableIfNotExists('lead_activities', function (Blueprint $table) {
             $table->id();
             $table->foreignId('lead_id')->constrained('leads')->cascadeOnDelete();
             $table->foreignId('admin_id')->nullable()->constrained('admins')->nullOnDelete();
@@ -527,16 +540,18 @@ abstract class AdminApiTestCase extends TestCase
             $table->timestamps();
         });
 
-        DB::table('admin_crm_cards')->insert([
-            'uuid' => (string) \Illuminate\Support\Str::uuid(),
-            'name' => 'New',
-            'slug' => 'new',
-            'order' => 1,
-            'color' => '#2563eb',
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        if (Schema::hasTable('admin_crm_cards') && DB::table('admin_crm_cards')->count() === 0) {
+            DB::table('admin_crm_cards')->insert([
+                'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                'name' => 'New',
+                'slug' => 'new',
+                'order' => 1,
+                'color' => '#2563eb',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
     }
 
     /**
@@ -748,16 +763,18 @@ abstract class AdminApiTestCase extends TestCase
         if (Schema::hasTable('admin_crm_cards')) {
             DB::table('admin_crm_cards')->truncate();
 
-            DB::table('admin_crm_cards')->insert([
-                'uuid' => (string) Str::uuid(),
-                'name' => 'New',
-                'slug' => 'new',
-                'order' => 1,
-                'color' => '#2563eb',
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            if (DB::table('admin_crm_cards')->where('slug', 'new')->doesntExist()) {
+                DB::table('admin_crm_cards')->insert([
+                    'uuid' => (string) Str::uuid(),
+                    'name' => 'New',
+                    'slug' => 'new',
+                    'order' => 1,
+                    'color' => '#2563eb',
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         }
 
         if (Schema::hasTable('user_properties')) {

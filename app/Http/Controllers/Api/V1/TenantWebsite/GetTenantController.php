@@ -39,40 +39,66 @@ class GetTenantController extends Controller
         if (!$tenant) {
             return response()->json([], 204);
         }
-        // Auto-bootstrap tenant website data if missing
-        $hasPages = \App\Models\TenantPage::where('user_id', $tenant->id)->exists();
-        $hasGlobals = \App\Models\TenantGlobalComponent::where('user_id', $tenant->id)->exists();
-        $hasLayout = \App\Models\TenantWebsiteLayout::where('user_id', $tenant->id)->exists();
 
-        if (!$hasPages || !$hasGlobals || !$hasLayout) {
-            app(\App\Services\TenantWebsiteSeeder::class)->reseedWebsite($tenant);
+        try {
+            // Auto-bootstrap tenant website data if missing
+            $hasPages = \App\Models\TenantPage::where('user_id', $tenant->id)->exists();
+            $hasGlobals = \App\Models\TenantGlobalComponent::where('user_id', $tenant->id)->exists();
+            $hasLayout = \App\Models\TenantWebsiteLayout::where('user_id', $tenant->id)->exists();
+
+            if (!$hasPages || !$hasGlobals || !$hasLayout) {
+                app(\App\Services\TenantWebsiteSeeder::class)->reseedWebsite($tenant);
+            }
+            $pages = TenantPage::where('user_id', $tenant->id)->get()->keyBy('page_id')->map->components;
+            $staticPages = TenantStaticPage::where('user_id', $tenant->id)->get();
+            $staticPagesData = $staticPages->isEmpty() ? null : $staticPages->keyBy('page_id')->map->components;
+            $globals = TenantGlobalComponent::where('user_id', $tenant->id)->first();
+            $layout = TenantWebsiteLayout::where('user_id', $tenant->id)->first();
+            $basicSetting = BasicSetting::where('user_id', $tenant->id)->first();
+            $tenantSetting = TenantSetting::where('user_id', $tenant->id)->first();
+
+            $rawLogo = $basicSetting?->logo ?: $this->extractLogoFromWebsiteData($globals?->data ?? []);
+            $logoUrl = $this->toPublicUrl($rawLogo);
+
+            $branding = [
+                'logo' => $logoUrl,
+                'name' => $basicSetting?->company_name ?: $tenant->username,
+                'websiteBranding' => data_get($tenantSetting?->settings, 'websiteBranding'),
+            ];
+            return response()->json([
+                'username' => $tenant->username,
+                'websiteName' => $tenant->username,
+                'branding' => $branding,
+                'componentSettings' => $pages,
+                'globalComponentsData' => $globals?->data ?? [],
+                'WebsiteLayout' => $layout?->data ?? [],
+                'ThemesBackup' => $layout?->themes_backup ?? null,
+                'StaticPages' => $staticPagesData,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('GetTenant failed', [
+                'tenant_id' => $tenant->id,
+                'username' => $tenant->username,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            $basicSetting = BasicSetting::where('user_id', $tenant->id)->first();
+            $branding = [
+                'logo' => $this->toPublicUrl($basicSetting?->logo),
+                'name' => $basicSetting?->company_name ?: $tenant->username,
+                'websiteBranding' => null,
+            ];
+            return response()->json([
+                'username' => $tenant->username,
+                'websiteName' => $tenant->username,
+                'branding' => $branding,
+                'componentSettings' => [],
+                'globalComponentsData' => [],
+                'WebsiteLayout' => [],
+                'ThemesBackup' => null,
+                'StaticPages' => null,
+            ]);
         }
-        $pages = TenantPage::where('user_id', $tenant->id)->get()->keyBy('page_id')->map->components;
-        $staticPages = TenantStaticPage::where('user_id', $tenant->id)->get();
-        $staticPagesData = $staticPages->isEmpty() ? null : $staticPages->keyBy('page_id')->map->components;
-        $globals = TenantGlobalComponent::where('user_id', $tenant->id)->first();
-        $layout = TenantWebsiteLayout::where('user_id', $tenant->id)->first();
-        $basicSetting = BasicSetting::where('user_id', $tenant->id)->first();
-        $tenantSetting = TenantSetting::where('user_id', $tenant->id)->first();
-
-        $rawLogo = $basicSetting?->logo ?: $this->extractLogoFromWebsiteData($globals?->data ?? []);
-        $logoUrl = $this->toPublicUrl($rawLogo);
-
-        $branding = [
-            'logo' => $logoUrl,
-            'name' => $basicSetting?->company_name ?: $tenant->username,
-            'websiteBranding' => data_get($tenantSetting?->settings, 'websiteBranding'),
-        ];
-        return response()->json([
-            'username' => $tenant->username,
-            'websiteName' => $tenant->username,
-            'branding' => $branding,
-            'componentSettings' => $pages,
-            'globalComponentsData' => $globals?->data ?? [],
-            'WebsiteLayout' => $layout?->data ?? [],
-            'ThemesBackup' => $layout?->themes_backup ?? null,
-            'StaticPages' => $staticPagesData,
-        ]);
     }
 
     private function toPublicUrl(?string $value): ?string
