@@ -190,6 +190,23 @@ class RentalService
                     $contractQuery->whereDate('created_at', '<=', $request->contract_created_to_date);
                 });
             })
+            ->when($request->contract_start_period || $request->contract_end_period, function($q) use ($request) {
+                $q->whereHas('activeContract', function($contractQuery) use ($request) {
+                    if ($request->contract_start_period) {
+                        $startDate = $this->convertPeriodToStartDate($request->contract_start_period);
+                        if ($startDate) {
+                            $contractQuery->whereDate('start_date', '>=', $startDate);
+                        }
+                    }
+                    
+                    if ($request->contract_end_period) {
+                        $endDate = $this->convertPeriodToEndDate($request->contract_end_period);
+                        if ($endDate) {
+                            $contractQuery->whereDate('end_date', '<=', $endDate);
+                        }
+                    }
+                });
+            })
             ->when($request->payment_status, function($q) use ($request) {
                 $q->whereHas('installments', function($installmentQuery) use ($request) {
                     $today = now()->toDateString();
@@ -2681,5 +2698,75 @@ class RentalService
                 'days_until_due' => $today->diffInDays($dueDate),
             ]
         ];
+    }
+
+    /**
+     * Convert period string to start date (for filtering contracts starting from a period)
+     * 
+     * @param string|null $period Period string (today, week, month, quarter, year)
+     * @return string|null Date string in Y-m-d format or null
+     */
+    private function convertPeriodToStartDate(?string $period): ?string
+    {
+        if (!$period) {
+            return null;
+        }
+
+        $today = now()->startOfDay();
+
+        switch ($period) {
+            case 'today':
+                return $today->toDateString();
+            
+            case 'week':
+                return $today->copy()->startOfWeek()->toDateString();
+            
+            case 'month':
+                return $today->copy()->startOfMonth()->toDateString();
+            
+            case 'quarter':
+                return $today->copy()->startOfQuarter()->toDateString();
+            
+            case 'year':
+                return $today->copy()->startOfYear()->toDateString();
+            
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Convert period string to end date (for filtering contracts ending within a period)
+     * 
+     * @param string|null $period Period string (today, week, month, quarter, year)
+     * @return string|null Date string in Y-m-d format or null
+     */
+    private function convertPeriodToEndDate(?string $period): ?string
+    {
+        if (!$period) {
+            return null;
+        }
+
+        $today = now()->startOfDay();
+
+        switch ($period) {
+            case 'today':
+                return $today->toDateString();
+            
+            case 'week':
+                return $today->copy()->endOfWeek()->toDateString();
+            
+            case 'month':
+                return $today->copy()->endOfMonth()->toDateString();
+            
+            case 'quarter':
+                return $today->copy()->endOfQuarter()->toDateString();
+            
+            case 'year':
+                return $today->copy()->endOfYear()->toDateString();
+            
+            default:
+                return null;
+        }
     }
 }
