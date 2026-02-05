@@ -92,5 +92,3 @@ tests/api-scripts/*
 111/*
 
 /the_test_db
-phpunit.xml
-phpunit.xml
